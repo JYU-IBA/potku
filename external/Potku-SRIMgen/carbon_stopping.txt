@@ -1,0 +1,30 @@
+carbon_stopping
+
+This program calculates stopping in a carbon foil (very special case)
+
+
+Installation
+-------------
+
+make
+make install
+make carbon_stopping
+
+
+
+Usage ------------
+
+Give the carbon foil thickness as ug/cm^2 as an argument e.g.
+
+./carbon_stopping 3.1
+
+Give ions (element, isotope) and energy (in MeV) piped in from standard input
+e.g.
+
+echo -e "4-He 1.000\n16-O 4.5" |./carbon_stopping 3.1
+
+The output will consist of beam proton number, nuclide number, energy, stopping
+as eV/10^15 atoms at given energy, energy loss in foil of given thickness
+
+So the last column should be the one of interest. Note that the energy loss in
+the foil is still a positive number.
