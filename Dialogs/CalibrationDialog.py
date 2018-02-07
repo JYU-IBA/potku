@@ -70,13 +70,13 @@ class CalibrationDialog(QtWidgets.QDialog):
         
         # Go through all the measurements and their cut files and list them.
         for measurement in self.measurements:
-            item = QtGui.QTreeWidgetItem([measurement.measurement_name])
+            item = QtWidgets.QTreeWidgetItem([measurement.measurement_name])
             
             cuts, unused_cuts_elemloss = measurement.get_cut_files()
             # May also return a list of cut file's element losses 
             # cut files as one of the list elements
             for cut_file in cuts:
-                subitem = QtGui.QTreeWidgetItem([cut_file])
+                subitem = QtWidgets.QTreeWidgetItem([cut_file])
                 subitem.directory = measurement.directory_cuts
                 subitem.file_name = cut_file
                 item.addChild(subitem)
@@ -281,7 +281,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         """Adds a ToF Calibration point to the pointsTreeWidget and sets the 
         QTreeWidgetItem's attribute 'point' as the given TOFCalibrationPoint. 
         """
-        item = QtGui.QTreeWidgetItem([tof_calibration_point.get_name()])
+        item = QtWidgets.QTreeWidgetItem([tof_calibration_point.get_name()])
         item.point = tof_calibration_point
         item.setCheckState(0, QtCore.Qt.Checked)
         self.ui.pointsTreeWidget.addTopLevelItem(item)
