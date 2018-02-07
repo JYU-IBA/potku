@@ -28,9 +28,9 @@ __versio__ = "1.0"
 
 #import logging
 import os
-from PyQt5 import QtCore
-from PyQt5 import QtGui, QtWidgets
-from PyQt5 import uic
+from PyQt5 import QtCore, QtWidgets, QtGui, uic
+# from PyQt4 import QtGui
+# from PyQt4 import uic
 
 from Modules.CalibrationParameters import CalibrationParameters
 from Modules.Functions import open_file_dialog

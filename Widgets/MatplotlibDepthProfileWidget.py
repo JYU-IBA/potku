@@ -29,7 +29,7 @@ depth profile graph.
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtWidgets
 from Widgets.MatplotlibWidget import MatplotlibWidget
 import Modules.DepthFiles as df
 import os
@@ -209,21 +209,21 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__button_drag.clicked.connect(self.__uncheck_custom_buttons)
         self.__button_zoom.clicked.connect(self.__uncheck_custom_buttons)
         
-        self.limButton = QtGui.QToolButton(self)
+        self.limButton = QtWidgets.QToolButton(self)
         self.limButton.clicked.connect(self.__toggle_lim_lines)
         self.limButton.setCheckable(True)
         self.limButton.setToolTip("Toggle the view of the limit lines on and off")
         self.icon_manager.set_icon(self.limButton, "amarok_edit.svg")
         self.mpl_toolbar.addWidget(self.limButton)
 
-        self.modeButton = QtGui.QToolButton(self)
+        self.modeButton = QtWidgets.QToolButton(self)
         self.modeButton.clicked.connect(self.__toggle_lim_mode)
         self.modeButton.setEnabled(False)
         self.modeButton.setToolTip("Toggles between selecting the entire histogram, area included in the limits and areas included of the limits")
         self.icon_manager.set_icon(self.modeButton, "depth_profile_lim_all.svg")
         self.mpl_toolbar.addWidget(self.modeButton)
         
-        self.viewButton = QtGui.QToolButton(self)
+        self.viewButton = QtWidgets.QToolButton(self)
         self.viewButton.clicked.connect(self.__toggle_rel)
         #self.viewButton.setCheckable(True)
         self.viewButton.setToolTip("Switch between relative and absolute view")

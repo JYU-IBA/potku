@@ -27,8 +27,8 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt5 import QtGui, QtCore, QtWidgets
-from PyQt5 import uic
+from PyQt5 import QtWidgets, QtCore, uic
+# from PyQt4 import uic
 
 from Widgets.MatplotlibTofeHistogramWidget import MatplotlibHistogramWidget
 
@@ -54,9 +54,10 @@ class TofeHistogramWidget(QtWidgets.QWidget):
         self.ui.saveCutsButton.clicked.connect(self.measurement.save_cuts)
         self.ui.loadSelectionsButton.clicked.connect(
                                                  self.matplotlib.load_selections)
-        #self.connect(self.matplotlib,
-        #             QtCore.SIGNAL("selectionsChanged(PyQt_PyObject)"),
-        #             self.set_cut_button_enabled)
+        # self.connect(self.matplotlib,
+        #              QtCore.SIGNAL("selectionsChanged(PyQt_PyObject)"),
+        #              self.set_cut_button_enabled)
+
         self.matplotlib.selectionsChanged.connect(self.set_cut_button_enabled)
         self.set_cut_button_enabled(measurement.selector.selections)
         

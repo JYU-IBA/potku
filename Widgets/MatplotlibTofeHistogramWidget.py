@@ -28,8 +28,8 @@ __versio__ = "1.0"
 
 from matplotlib import cm
 from matplotlib.colors import LogNorm
-from PyQt5 import QtCore
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtCore, QtWidgets
+# from PyQt4 import QtGui
 
 from Dialogs.SelectionDialog import SelectionSettingsDialog
 from Dialogs.GraphSettingsDialog import TofeGraphSettingsWidget
@@ -388,6 +388,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         """
         #self.emit(QtCore.SIGNAL("selectionsChanged(PyQt_PyObject)"), self.measurement.selector.selections)
         self.selectionsChanged.emit(self.measurement.selector.selections)
+    
     
     def __context_menu(self, event, cursorlocation):
             menu = QtWidgets.QMenu(self)

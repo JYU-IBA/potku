@@ -28,8 +28,8 @@ __versio__ = "1.0"
 
 import logging
 from os.path import join
-from PyQt5 import QtGui, QtWidgets
-from PyQt5 import uic
+from PyQt5 import QtWidgets, uic
+# from PyQt4 import uic
 
 from Modules.EnergySpectrum import EnergySpectrum
 from Widgets.MatplotlibEnergySpectrumWidget import MatplotlibEnergySpectrumWidget

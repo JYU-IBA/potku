@@ -28,8 +28,8 @@ __versio__ = "1.0"
 
 import logging
 import os
-from PyQt5 import QtGui, QtWidgets
-from PyQt5 import uic
+from PyQt5 import QtWidgets, uic
+# from PyQt4 import uic
 
 from Modules.DepthFiles import DepthFiles
 from Modules.Element import Element
@@ -62,7 +62,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
     def __accept_params(self):
         '''Accept given parameters
         '''
-        progress_bar = QtGui.QProgressBar() 
+        progress_bar = QtWidgets.QProgressBar()
         self.__statusbar.addWidget(progress_bar, 1) 
         progress_bar.show() 
         
@@ -100,7 +100,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
             
             # Get the x-axis unit to be used from the radio buttons
             x_units = 'nm'
-            radio_buttons = self.findChildren(QtGui.QRadioButton)
+            radio_buttons = self.findChildren(QtWidgets.QRadioButton)
             for radio_button in radio_buttons:
                 if radio_button.isChecked():
                     x_units = radio_button.text()

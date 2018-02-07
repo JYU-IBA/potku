@@ -27,9 +27,9 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt5 import QtCore
-from PyQt5 import QtGui, QtWidgets
-from PyQt5 import uic
+from PyQt5 import QtCore, QtWidgets, QtGui, uic
+# from PyQt4 import QtGui
+# from PyQt4 import uic
 
 from Dialogs.ElementSelectionDialog import ElementSelectionDialog
 from Modules.Element import Element
@@ -148,11 +148,11 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         '''Shows dialog to change selection element.
         
         Args:
-            button: QtGui.QPushButton (button to select element)
-            isotope_combobox: QtGui.QComboBox
-            isotope_radio: QtGui.QRadioButton
-            standard_mass_radio: QtGui.QRadioButton
-            standard_mass_label: QtGui.QLabel
+            button: QtWidgets.QPushButton (button to select element)
+            isotope_combobox: QtWidgets.QComboBox
+            isotope_radio: QtWidgets.QRadioButton
+            standard_mass_radio: QtWidgets.QRadioButton
+            standard_mass_label: QtWidgets.QLabel
         '''
         dialog = ElementSelectionDialog()
         # Only disable these once, not if you cancel after selecting once.
@@ -176,10 +176,10 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         
         Args:
             element: String representing element.
-            isotope_combobox: QtGui.QComboBox
-            isotope_radio: QtGui.QRadioButton
-            standard_mass_radio: QtGui.QRadioButton
-            standard_mass_label: QtGui.QLabel
+            isotope_combobox: QtWidgets.QComboBox
+            isotope_radio: QtWidgets.QRadioButton
+            standard_mass_radio: QtWidgets.QRadioButton
+            standard_mass_label: QtWidgets.QLabel
             sample: Boolean representing if element is sample (and not RBS element).
         '''
         isotope_radio.setEnabled(True)
@@ -242,8 +242,8 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         '''Change isotope information regarding element
         
         Args:
-            combobox: QtGui.QComboBox where element's isotopes are loaded to.
-            standard_mass_label: QtGui.QLabel where element's standard mass is shown.
+            combobox: QtWidgets.QComboBox where element's isotopes are loaded to.
+            standard_mass_label: QtWidgets.QLabel where element's standard mass is shown.
             element: String representing element.
             current_isotope: String representing current isotope.
         '''
@@ -360,8 +360,8 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         '''Toggle combobox visibility depending on if radio button is checked.
         
         Args:
-            radio: QtGui.QRadioButton
-            combobox: QtGui.QComboBox
+            radio: QtWidgets.QRadioButton
+            combobox: QtWidgets.QComboBox
         '''
         combobox.setEnabled(radio.isChecked())
 

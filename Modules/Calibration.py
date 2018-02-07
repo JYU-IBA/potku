@@ -35,6 +35,7 @@ from scipy.special import erf
 from numpy import array, linspace
 import collections
 
+
 class TOFCalibrationHistogram:
     """Class for creating a histogram based on a cut file data. Can make a curve 
     fit to histogram's front edge.

@@ -32,7 +32,7 @@ import shutil
 import sys
 import logging
 import time
-from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt5 import QtWidgets, QtCore
 
 from Modules.CutFile import CutFile
 from Modules.Selection import Selector
@@ -102,6 +102,7 @@ class Measurements:
                     new_file = os.path.join(self.project.directory, file_name)
                     dirtyinteger += 1
                 shutil.copyfile(measurement_file, new_file)
+                print(new_file)
                 file_directory, file_name = os.path.split(new_file)
                 
                 log = "Added new measurement {0} to the project.".format(file_name)
@@ -147,7 +148,7 @@ class Measurement:
             tab_id: Integer representing tab identifier for measurement.
         '''
         measurement_folder, measurement_name = os.path.split(measurement_file)
-        self.measurement_file = measurement_name  # With extension
+        self.measurement_file = measurement_name;  # With extension
         self.measurement_name = os.path.splitext(measurement_name)[0]         
         
         self.directory = os.path.join(measurement_folder, self.measurement_name)
@@ -510,7 +511,7 @@ class Measurement:
         '''Fill QTreeWidget with cut files.
         
         Args:
-            treewidget: QtGui.QTreeWidget, where cut files are added to.
+            treewidget: QtWidgets.QTreeWidget, where cut files are added to.
             elemloss: Boolean representing whether to add elemental losses or not.
         '''
         treewidget.clear()

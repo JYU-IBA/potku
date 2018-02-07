@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
+Copyright (C) Jarkko Aalto, Timo Konu, Samuli K�rkk�inen, Samuli Rahkonen and 
 Miika Raunio
 
 This program is free software; you can redistribute it and/or

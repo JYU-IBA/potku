@@ -33,7 +33,7 @@ from os.path import realpath
 import platform
 import re
 import subprocess
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtWidgets
 
 
 def open_file_dialog(parent, default_folder, title, files):
@@ -109,8 +109,8 @@ def hist(data, width=1.0, col=1):
     y = sorted(y, reverse=False)
     data_length = len(y)
 
-    a = int(y[0] / width) * width
-    i = 0
+    a = int(y[0] / width) * width;
+    i = 0;
     hist_list = []
     while i < data_length:
         b = 0.0
@@ -141,13 +141,10 @@ def tof_list(cut_file):
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
             command = "{0} {1}".format(join(bin_dir, "tof_list.exe"), cut_file)
-            try:
-                stdout = subprocess.check_output(command.split(' '),
+            stdout = subprocess.check_output(command.split(' '),
                                              cwd=bin_dir,
                                              shell=False,
                                              startupinfo=startupinfo)
-            except subprocess.CalledProcessError as e:
-                print(e)
         else:
             command = "{0} {1}".format(join(".", "tof_list"), cut_file, bin_dir)
             p = subprocess.Popen(command.split(' '), cwd=bin_dir,

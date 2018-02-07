@@ -28,8 +28,8 @@ __versio__ = "1.0"
 
 import logging
 import os
-from PyQt5 import QtGui, QtWidgets
-from PyQt5 import uic
+from PyQt5 import QtWidgets, uic
+# from PyQt4 import uic
 
 from Modules.ElementLosses import ElementLosses
 from Widgets.MatplotlibElementLossesWidget import MatplotlibElementLossesWidget

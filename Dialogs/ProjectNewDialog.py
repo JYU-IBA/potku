@@ -29,8 +29,7 @@ __versio__ = "1.0"
 
 import logging
 import os
-from PyQt5 import QtGui, QtWidgets
-from PyQt5 import uic
+from PyQt5 import QtWidgets, uic
 
 
 class ProjectNewDialog(QtWidgets.QDialog):
@@ -69,7 +68,7 @@ class ProjectNewDialog(QtWidgets.QDialog):
     
     
     def __browser_folder(self):
-        folder = QtGui.QFileDialog.getExistingDirectory(self,
+        folder = QtWidgets.QFileDialog.getExistingDirectory(self,
                                      self.ui.browseFolderButton.text())
         if folder:
             self.folder = folder

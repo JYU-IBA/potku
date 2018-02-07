@@ -27,9 +27,9 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt5 import QtGui, QtWidgets
-from PyQt5 import uic
-from PyQt5 import QtCore
+from PyQt5 import QtWidgets, QtCore, uic
+# from PyQt4 import uic
+# from PyQt4 import QtCore
 
 class LogWidget(QtWidgets.QWidget):
     '''Log widget which displays the log. This widget handles the loghandlers emits.    

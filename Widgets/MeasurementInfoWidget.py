@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 13.4.2013
 Updated on 23.5.2013
 
@@ -22,14 +22,14 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt5 import uic, QtGui, QtWidgets
+from PyQt4 import uic, QtGui
 
-class MeasurementInfoWidget(QtWidgets.QWidget):
+class MeasurementInfoWidget(QtGui.QWidget):
     """Class for creating an info tab widget
     """
     def __init__(self):

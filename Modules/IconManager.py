@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os import listdir, path
-from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt5 import QtWidgets, QtGui, QtCore
 
 class IconManager:
     '''Icon manager class to handle all icons for the program.

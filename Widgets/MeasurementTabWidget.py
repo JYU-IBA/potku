@@ -29,8 +29,8 @@ __versio__ = "1.0"
 import os
 import logging
 
-from PyQt5 import QtGui, QtCore, QtWidgets
-from PyQt5 import uic
+from PyQt5 import QtWidgets, QtGui, QtCore, uic
+# from PyQt4 import uic
 
 from Dialogs.ElementLossesDialog import ElementLossesDialog
 from Dialogs.EnergySpectrumDialog import EnergySpectrumParamsDialog
@@ -88,7 +88,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
              self.open_calibration_settings)
         
         
-        #self.connect(self.histogram.matplotlib, QtCore.pyqtSignal("selectionsChanged(PyQt_PyObject)"), self.__set_cut_button_enabled)
+        #self.connect(self.histogram.matplotlib, QtCore.SIGNAL("selectionsChanged(PyQt_PyObject)"), self.__set_cut_button_enabled)
         self.histogram.matplotlib.selectionsChanged.connect(self.__set_cut_button_enabled)
         # Check if there are selections in the measurement and enable save cut 
         # button. 
@@ -130,7 +130,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         else:
             self.ui.hidePanelButton.setText('<')
 
-        self.ui.frame.setShown(self.panel_shown)
+        self.ui.frame.setVisible(self.panel_shown)
     
     
     def measurement_save_cuts(self):
@@ -192,7 +192,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             minimized: Boolean representing if widget should be minimized.
             icon: QtGui.QIcon for the subwindow. 
         '''
-        # QtGui.QMdiArea.addSubWindow(QWidget, flags=0)
+        # QtWidgets.QMdiArea.addSubWindow(QWidget, flags=0)
         if has_close_button:
             subwindow = self.ui.mdiArea.addSubWindow(widget)
         else:

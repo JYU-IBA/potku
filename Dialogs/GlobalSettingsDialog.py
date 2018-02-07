@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os import path
-from PyQt5 import QtCore, uic, QtGui, QtWidgets
+from PyQt5 import QtCore, uic, QtWidgets, QtGui
 
 class GlobalSettingsDialog(QtWidgets.QDialog):
     def __init__(self, masses, settings):

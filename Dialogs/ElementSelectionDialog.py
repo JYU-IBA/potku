@@ -29,7 +29,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtWidgets
 from PyQt5 import uic
 
 class ElementSelectionDialog(QtWidgets.QDialog):
