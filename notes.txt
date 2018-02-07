@@ -18,5 +18,6 @@ u_measurement_tab.ui -> slot setVisible
  jos koittaa avata elemental losses työkalua ilman että on measurementtejä auki, kaatuu (pitäisi ehkä olla jokin tarkistus?)
  
  energy spectrum työkalu kaataa potkun kun sitä yrittää avata silloin kun on olemassa cutseja projektiin liittyen
+ could not fing element energy
  
  projektin uudelleen avaamisessa projektin polkua ei osata käsitellä oikein (escapeaus puuttuu?)
