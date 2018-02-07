@@ -410,8 +410,8 @@ class Potku(QtWidgets.QMainWindow):
                                 "Open an existing project", "Project file (*.proj)")
         if file:
             self.__close_project()
-            folder = os.path.split(file[0])[0]
-            name = os.path.splitext(os.path.basename(file[0]))[0]
+            folder = os.path.split(file)[0]
+            name = os.path.splitext(os.path.basename(file))[0]
             self.ui.setWindowTitle("{0} - Project: {1}".format(
                                                            self.title,
                                                            name))
