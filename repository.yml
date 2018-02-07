@@ -1,0 +1,6 @@
+--- 
+name: monisiro
+merge_requests_enabled: true
+license: Academic Free License v3.0
+private_repo: true
+deny_force_pushing: false

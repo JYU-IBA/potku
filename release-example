@@ -1,0 +1,19 @@
+# You can create releases by pushing release metafiles with Git.
+# You can use this file as a template for release metafiles.
+
+# You can also remove releases by deleting the corresponding
+# release metafiles from your repository, so be careful.
+
+# The release metafiles have to be saved in 'releases' folder in
+# the metafiles branch with the version as filename. For example,
+# if you save this file as 'releases/1.0' a release called 'My App'
+# would have the version '1.0'.
+
+# The scm_tag is the hash of the commit that will be released.
+
+---
+title       : "My App"
+author      : "John Doe"
+license     : "GNU General Public License version 3"
+scm_tag     : "ff16722a6906ead1c417535d0e5b1b929c83e52a"
+description : "This app is awesome."
