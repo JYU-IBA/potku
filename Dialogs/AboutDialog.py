@@ -30,7 +30,7 @@ __versio__ = "1.0"
 import os
 # from PyQt5 import QtGui, QtCore
 # from PyQt5 import uic
-from PyQt5 import QtWidgets, QtCore, uic
+from PyQt5 import QtWidgets, QtCore, uic, QtGui
 from math import sin
 
 class AboutDialog(QtWidgets.QDialog):
