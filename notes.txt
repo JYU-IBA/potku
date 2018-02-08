@@ -21,3 +21,6 @@ u_measurement_tab.ui -> slot setVisible
  could not fing element energy
  
  projektin uudelleen avaamisessa projektin polkua ei osata käsitellä oikein (escapeaus puuttuu?)
+ 
+ kun yrittää käyttää depth profile työkalua, tulee error Could not find element Energy:
+Error in input file tof.in at line 1
