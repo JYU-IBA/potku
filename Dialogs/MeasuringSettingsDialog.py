@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 19.3.2013
-Updated on 23.5.2013
+Updated on 26.8.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -29,9 +29,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt5 import QtCore, QtWidgets, QtGui, uic
-# from PyQt5 import QtGui
-# from PyQt5 import uic
+from PyQt4 import QtCore, QtGui, uic
 
 from Dialogs.CalibrationDialog import CalibrationDialog
 from Dialogs.ElementSelectionDialog import ElementSelectionDialog
@@ -43,7 +41,7 @@ from Modules.InputValidator import InputValidator
 from Modules.MeasuringSettings import MeasuringSettings
 
 
-class ProjectSettingsDialog(QtWidgets.QDialog):
+class ProjectSettingsDialog(QtGui.QDialog):
     
     def __init__(self, masses, project):
         '''Constructor for the program
@@ -73,7 +71,7 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
             self.ui.elementButton.setText("Select")
             self.ui.isotopeComboBox.setEnabled(False)
 
-        #self.masses.load_isotopes(self.measuring_unit_settings.element.name,
+        # self.masses.load_isotopes(self.measuring_unit_settings.element.name,
         #                          self.ui.isotopeComboBox,
         #                          str(self.measuring_unit_settings.element.isotope))
         
@@ -106,10 +104,11 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
         self.ui.applyButton.clicked.connect(self.update_settings)
         self.ui.cancelButton.clicked.connect(self.close)
         self.ui.elementButton.clicked.connect(
-                               lambda: self.__change_element(self.ui.elementButton))
+                           lambda: self.__change_element(self.ui.elementButton))
         self.ui.executeCalibrationButton.clicked.connect(
-                                                     self.__open_calibration_dialog)
-        
+                           self.__open_calibration_dialog)
+        self.ui.executeCalibrationButton.setEnabled(
+                           not self.project.measurements.is_empty())
         double_validator = InputValidator()
         positive_double_validator = InputValidator(bottom=0)
         
@@ -197,20 +196,48 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
         '''Updates measuring settings values with the dialog's values and saves them
         to default ini file.
         '''
-        self.update_settings()
-        self.close()
-        
-        
+        try:
+            self.__update_settings()
+            self.close()
+        except TypeError:
+            # Message has already been shown in update_settings()
+            pass
+            
     def update_settings(self):
-        self.measuring_unit_settings.set_settings(self)
-        self.calibration_settings.set_settings(self)
-        self.depth_profile_settings.set_settings(self)
+        '''Update values from dialog to every setting object.
+        '''
+        try:
+            self.__update_settings()
+        except TypeError:
+            # Message is already displayed within private method.
+            pass
         
-        self.measuring_unit_settings.save_settings()
-        self.calibration_settings.save_settings()
-        self.depth_profile_settings.save_settings()
-        
-        
+    
+    def __update_settings(self):
+        '''Update values from dialog to every setting object.
+        '''
+        # TODO: Proper checking for all setting values
+        # This try-catch works for Beam Element that has not been set yet.
+        try:
+            self.measuring_unit_settings.set_settings(self)
+            self.calibration_settings.set_settings(self)
+            self.depth_profile_settings.set_settings(self)
+            
+            if not self.settings.has_been_set():
+                raise TypeError
+            
+            self.measuring_unit_settings.save_settings()
+            self.calibration_settings.save_settings()
+            self.depth_profile_settings.save_settings()
+        except TypeError:
+            QtGui.QMessageBox.question(self,
+                "Warning",
+                "Some of the setting values have not been set.\n" + \
+                "Please input setting values to save them.",
+                QtGui.QMessageBox.Ok)
+            raise TypeError
+    
+    
     def __change_element(self, button):
         '''Opens element selection dialog and loads selected element's isotopes 
         to a combobox.

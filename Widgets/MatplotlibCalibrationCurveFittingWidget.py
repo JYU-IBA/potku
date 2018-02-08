@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 18.4.2013
-Updated on 23.5.2013
+Updated on 5.7.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -26,7 +26,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-from PyQt5 import QtWidgets, QtGui
+from PyQt4 import QtGui
 
 from Modules.Calibration import TOFCalibrationPoint, TOFCalibrationHistogram
 from Widgets.MatplotlibWidget import MatplotlibWidget
@@ -35,7 +35,7 @@ from Widgets.MatplotlibWidget import MatplotlibWidget
 class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
     '''Energy spectrum widget
     '''
-    def __init__(self, parent, settings, tof_calibration, cut, masses, 
+    def __init__(self, parent, settings, tof_calibration, cut, masses,
                  bin_width=2.0, column=1, dialog=None):
         '''Inits Energy Spectrum widget.
         
@@ -52,6 +52,7 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
         '''
         super().__init__(parent)
         super().fork_toolbar_buttons()
+        self.canvas.manager.set_title("ToF-E Calibration - curve fitting")
         self.__fork_toolbar_buttons()
         self.dialog = dialog
         self.settings = settings
@@ -158,11 +159,11 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
                            self.tof_histogram.histogram_y)
             
             # Get some value between the cut data's both edges.
-            middle = self.tof_histogram.find_middle()
-            
-            print("Maximum value's index is: " + str(middle) + " maximum value: " \
-                  + str(self.tof_histogram.histogram_y[middle]))
-            params = self.tof_histogram.get_error_function_parameters(middle)
+            # middle = self.tof_histogram.find_middle()
+            # params = self.tof_histogram.get_error_function_parameters(middle)
+            err_start, err_end = self.tof_histogram.find_leading_edge_borders()
+            params = self.tof_histogram.get_error_function_parameters(err_end,
+                                                                      err_start)
             
             # Generate points for the fitted curve to be drawn.
             fit_points_x, fit_points_y = self.tof_histogram.get_curve_fit_points(
@@ -210,9 +211,9 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
     def __fork_toolbar_buttons(self):
         '''Custom toolbar buttons be here.
         '''
-        self.selectButton = QtWidgets.QToolButton(self)
+        self.selectButton = QtGui.QToolButton(self)
         self.selectButton.clicked.connect(self.toggle_clicks)
         self.selectButton.setCheckable(True)
-        self.selectButton.setIcon(QtGui.QIcon("ui_icons/reinhardt/amarok_edit.svg")) # TODO: Make this the new way
+        self.selectButton.setIcon(QtGui.QIcon("ui_icons/reinhardt/amarok_edit.svg"))  # TODO: Make this the new way
         self.selectButton.setToolTip("Select the point manually.")
         self.mpl_toolbar.addWidget(self.selectButton)

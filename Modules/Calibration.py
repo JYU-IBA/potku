@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 19.4.2013
-Updated on 23.5.2013
+Updated on 5.7.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -129,17 +129,63 @@ class TOFCalibrationHistogram:
         return p.x0, p.A, p.k
 
 
-    def find_middle(self):
-        """
-        Finds the point at x axis that is somewhere in the middle of the histogram.
-        This is very inaccurate way.
+    def find_leading_edge_borders(self):
+        """Finds the beginning and the end of the leading edge.
         
         Return:
-            The value at the histogram's x axis that is somewhere in the middle of 
-            the top of the graph.
+            Returns a tuple of the beginning and end indexes of the leading edge.
         """
-        # Just take the biggest value.
-        return self.histogram_y.index(max(self.histogram_y))
+        # return self.histogram_y.index(max(self.histogram_y))
+        # Find the "actual" beginning of the file, ignoring low values at the 
+        # beginning. Cut the size when using large amounts of data, since the 
+        # leading edge is in the first half of the data.
+        threshold_mix = max(self.histogram_y) * 0.025
+        threshold_min = max(self.histogram_y) * 0.05
+        t_mix = 0
+        for y in self.histogram_y:
+            if y >= threshold_mix and t_mix == 0:
+                if y >= threshold_min:
+                    break
+                t_mix = self.histogram_y.index(y)
+        size = len(self.histogram_y)
+        if size > 50:
+            list_y = self.histogram_y[t_mix:t_mix + int(size / 4)]
+        else:
+            list_y = self.histogram_y
+        y_max = max(list_y)
+        threshold_max = y_max * 0.95
+        t_min_over = False
+        t_max_over = False
+        t_min = 0  # Temporary indexes
+        t_max = len(list_y) - 1  # Temporary indexes
+        # Try to find index of which's value exceeds threshold minimum and
+        # maximum to get the beginning and end of the leading edge.  
+        for y in list_y:
+            if y >= threshold_mix and y <= threshold_min and t_mix == 0:
+                t_mix = self.histogram_y.index(y)
+            if y >= threshold_min and not t_min_over:
+                t_min_over = True
+                t_min = self.histogram_y.index(y)
+            elif y <= threshold_min and not t_max_over:
+                # Keep pushing min threshold until we've passed max threshold.
+                t_min_over = False 
+            elif y >= threshold_max and not t_max_over:
+                if not t_min_over:
+                    t_min_over = True
+                t_max_over = True
+                t_max = self.histogram_y.index(y)
+                break
+        # If the data happens to be extremely small, we might need to increase
+        # index values since SciPy will not appreciate when distance between
+        # index values is under three. Error function requires a list with at 
+        # least three values.
+        if t_min + 2 >= t_max:
+            if t_max + 2 < len(list_y):
+                t_max += 2
+                t_min -= 1  # Always at least 1, this is fine.
+            elif t_min - 2 > 0:
+                t_min -= 2
+        return t_min, t_max
     
     
     def get_curve_fit_points(self, params, points_in_range):
@@ -218,6 +264,14 @@ class TOFCalibration:
              for point in self.tof_points if point.point_used]
         y = [point.time_of_flight_seconds 
              for point in self.tof_points if point.point_used]
+        # name = []  # TODO: RBS element shown differently.
+        # for point in self.tof_points:
+        #    if not point.point_used:
+        #        continue
+        #    if point.cut.type == "ERD":
+        #        name.append(str(point.cut.element))
+        #    else:
+        #        name.append("{0}*".format(point.cut.element_scatter))
         name = [str(point.cut.element) 
                 for point in self.tof_points if point.point_used]
         return x, y, name
@@ -315,58 +369,54 @@ class TOFCalibrationPoint:
         """ Inits the class.
         
         Args:
-            time_of_flight:
-            cut: CutFile class object.
-            masses: Reference to Masses class object.
-            settings: Settings class object.
+            time_of_flight: An integer representing time of flight channel.
+            cut: A CutFile class object.
+            masses: A Masses class object.
+            settings: A Settings class object.
         """
         self.cut = cut
         self.type = cut.type
         self.point_used = True
         self.masses = masses
         measuring_settings = settings.measuring_unit_settings
-        
+               
         # Recoiled atoms' parameters
+        stopping_element = self.cut.element.name
         if cut.element.isotope.mass:
             mass = float(cut.element.isotope.mass)
+            isotope = int(mass)
         else:  # If the cut doesn't have a isotope, calculate standard atomic mass.
-            mass = self.masses.get_standard_isotope(self.cut.element.name) 
-        self.recoiled_mass = convert_amu_to_kg(mass) 
-        standard_scatter_mass = self.masses.get_standard_isotope(
-                                                         self.cut.element_scatter)
+            mass = self.masses.get_standard_isotope(self.cut.element.name)
+            isotope = self.masses.get_most_common_isotope(self.cut.element.name)[0]
+        self.recoiled_mass = convert_amu_to_kg(mass)
+        
+        if self.type == "RBS":
+            element_scatter = self.cut.element_scatter
+            if element_scatter.isotope.mass:
+                mass_scatter = float(element_scatter.isotope.mass)
+            else:
+                mass_scatter = self.masses.get_standard_isotope(
+                                                self.cut.element_scatter.name)
+            self.scatter_element_mass = convert_amu_to_kg(mass_scatter)
         
         # Measuring unit parameters
         beam_mass = float(measuring_settings.element.isotope.mass)
-        # print("Beam mass: " + str(beam_mass))
         self.beam_mass = convert_amu_to_kg(beam_mass)
         self.beam_energy = convert_mev_to_joule(measuring_settings.energy)
         self.lenght = measuring_settings.time_of_flight_lenght
         # Target angle, same with both recoiled and scattered atoms when
         # using same hardware.
-        self.target_angle = measuring_settings.detector_angle * pi / 180  
-        self.scatter_element_mass_kg = convert_amu_to_kg(standard_scatter_mass)
-        
-        # print("Scatter mass: {0} amu {1} kg".format(standard_scatter_mass, 
-        #                                            self.scatter_element_mass_kg))
-        self.carbon_thickness = measuring_settings.carbon_foil_thickness
-        
-        # Calculate             
-        energy = self.__calculate_particle_energy(self.beam_energy)
-        
-        isotope = self.cut.element.isotope.mass
-        # If there's no isotope for the element, use the most common isotope
-        if not isotope:  #
-            isotope = self.masses.get_most_common_isotope(self.cut.element.name)[0]
-            
-        print(str(isotope))
+        self.target_angle = measuring_settings.detector_angle * pi / 180
+        carbon_thickness = measuring_settings.carbon_foil_thickness   
+        energy = self.__calculate_particle_energy(self.beam_energy)    
+
         # Carbon stopping gives a list of different result values. 
         # The last value is the stopping energy. 
         try:
-            carb_stop = carbon_stopping(self.cut.element.name,
-                                              isotope,
-                                              energy,
-                                              self.carbon_thickness)
-            carbon_stopping_energy = float(carb_stop[-1])
+            carbon_stopping_energy = carbon_stopping(stopping_element,
+                                        isotope,
+                                        energy,
+                                        carbon_thickness)
         except:
             error_msg = "Carbon stopping doesn't work. {0} {1}".format(
                                                "Continuing without it.",
@@ -374,11 +424,8 @@ class TOFCalibrationPoint:
             # logging.getLogger("").error(error_msg) # TODO: Add to error logger
             print(error_msg)
             carbon_stopping_energy = 0
-    
-        self.stopping_energy = convert_mev_to_joule(carbon_stopping_energy)
-        
-        
-        print(self.stopping_energy)
+        print(carbon_stopping_energy) 
+        self.stopping_energy = carbon_stopping_energy
         
         self.time_of_flight_channel = time_of_flight  # (CHANNEL)
         self.time_of_flight_seconds = self.calculate_time_of_flight()  # (SECONDS)
@@ -438,36 +485,42 @@ class TOFCalibrationPoint:
         """ Calculates the kinematic factor.
         
         ERD: (4 * M_I * M_R * cos(a)^2) / (M_I + M_R)^2
-        RBS: (sqrt(( M_R^2 - M_I^2 * cos(a)^2) + M_I * cos(a)) / (M_I + M_R))^2
+        RBS: (sqrt(( M_R^2 - M_I^2 * sin(a)^2) + M_I * cos(a)) / (M_I + M_R))^2
         
         Args:
-            selection_type: String representing what type of selection was detected.
+            selection_type: A string representing what type of selection 
+                            was detected.
         
         Return:
             Returns calculated kinematic factor based on selection type.
         """
         # TODO: Print -> Raise and/or logger.error
         error_msg = "Impossible parameters for calculating kinematic factor."
+        cosin = cos(self.target_angle)
+        cosin2 = cosin * cosin
+        sine = sin(self.target_angle)
+        sine2 = sine * sine
+        M_I = self.beam_mass
         if selection_type == "ERD":
-            cosin = cos(self.target_angle)
-            mass_sum = self.beam_mass + self.recoiled_mass
+            M_R = self.recoiled_mass
+            mass_sum = M_I + M_R
+            mass_sum2 = mass_sum * mass_sum
             if mass_sum == 0:
                 raise
                 print("{0}{1}".format(error_msg, "Division by zero."))
                 return None
-            kinematic_factor = 4 * self.beam_mass * self.recoiled_mass * cosin \
-                * cosin / (mass_sum * mass_sum)
+            kinematic_factor = (4.0 * M_I * M_R * cosin2) / mass_sum2
             return kinematic_factor
         elif selection_type == "RBS":
-            cosin = cos(self.target_angle)
-            sine = sin(self.target_angle)
-            mass_sum = self.beam_mass + self.recoiled_mass
-            square = self.recoiled_mass * self.recoiled_mass \
-                - self.beam_mass * self.beam_mass * sine * sine
+            M_R = self.scatter_element_mass
+            M_R2 = M_R * M_R
+            M_I2 = M_I * M_I
+            mass_sum = M_I + M_R
+            square = M_R2 - M_I2 * sine2
             if square <= 0:
                 print("{0}".format(error_msg))
                 return None
-            k = (sqrt(square) + self.beam_mass * cosin) / mass_sum
+            k = (sqrt(square) + M_I * cosin) / mass_sum
             kinematic_factor = k * k
             return kinematic_factor
         else:
@@ -476,60 +529,39 @@ class TOFCalibrationPoint:
         
     def calculate_time_of_flight(self):
         """ Calculates the time of flight.
-            In case of ERD use:
-            
-            t = l/(sqrt( 2 * (k * E_I0 - dE_RT1) / M_R))
-            where:
-            
-            E_I0 = beam energy
-            dE_RT1 = stopping energy of the recoiled particle
-            M_R = mass of the recoiled particle
-            M_I = mass of the scattered particle
-            k = kinetic factor, which is (4 * M_I * M_R * cos(a)^2) / (M_I + M_R)^2
-            
-            In case of RBS use:
-            
-            t = l/(sqrt( 2 * (k * E_I0 - dE_IT1) / M_R))
-            where:
-            
-            dE_RT1 = stopping energy of the scattered particle
-            M_R = mass of the recoiled particle
-            M_I = mass of the scattered particle
-            k = kinetic factor, which is (sqrt(( M_R^2 - M_I^2 * cos(a)^2) + M_I * 
-                    cos(a)) / (M_I + M_R))^2
-            
-            
-            Return:
-                Calculated time of flight as float. None if the cut file's type is 
-                not either ERD or RBS.
+        
+        In case of ERD use:
+        
+        t = l / sqrt(2 * (k * (E_I0 - dE_RT1)) / M_R)
+        where:
+        
+        E_I0 = beam energy
+        dE_RT1 = stopping energy of the recoiled particle
+        M_R = mass of the recoiled particle
+        M_I = mass of the scattered particle
+        k = kinetic factor, which is (4 * M_I * M_R * cos(a)^2) / (M_I + M_R)^2
+        
+        In case of RBS use:
+        
+        t = l / sqrt(2 * (k * (E_I0 - dE_IT1)) / M_R)
+        where:
+        
+        dE_RT1 = stopping energy of the scattered particle
+        M_R = mass of the recoiled particle
+        M_I = mass of the scattered particle
+        k = kinetic factor, which is ((sqrt( M_R^2 - M_I^2 * sin(a)^2) + M_I * 
+                cos(a)) / (M_I + M_R))^2
+        
+        
+        Return:
+            Calculated time of flight as float. None if the cut file's type is 
+            not either ERD or RBS.
         """
-        # TODO: Print -> Raise and/or logger.error
-        t = None
-        if self.type == "ERD":
-            cosin = cos(self.target_angle)
-            mass_sum = self.beam_mass + self.recoiled_mass
-            kinematic_factor = 4 * self.beam_mass * self.recoiled_mass * cosin \
-                * cosin / (mass_sum * mass_sum)
-            square = ((2.0 * (kinematic_factor * self.beam_energy) \
-                - self.stopping_energy) / self.recoiled_mass)
-            if square <= 0:
-                print("Impossible parameters.")
-                return None
-            t = self.lenght / (sqrt(square))
-        elif self.type == "RBS":
-            cosin = cos(self.target_angle)
-            sine = sin(self.target_angle)
-            mass_sum = self.beam_mass + self.scatter_element_mass_kg
-            square = self.scatter_element_mass_kg * self.scatter_element_mass_kg \
-                - self.beam_mass * self.beam_mass * sine * sine
-            if square <= 0:
-                print("Impossible parameters.")
-                return None
-            k = (sqrt(square) + self.beam_mass * cosin) / mass_sum
-            kinematic_factor = k * k
-            
-            t = self.lenght / (sqrt((2.0 * (kinematic_factor * self.beam_energy) \
-                - self.stopping_energy) / self.beam_mass))
+        kinematic_factor = self.__kinematic_factor(self.type)
+        energy = kinematic_factor * self.beam_energy - self.stopping_energy
+        t = self.lenght / sqrt(2.0 * energy / self.recoiled_mass)
+        # ERD: Uses recoiled_mass
+        # RBS: Uses beam_mass, which is the same as recoiled_mass
         return t
     
     
