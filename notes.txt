@@ -8,22 +8,23 @@ UUSI self.lineedit.returnPressed.connect(self.updateUi)
 
 u_measurement_tab.ui -> slot setVisible
 
- if self.color.name() == self.element_colormap[element]:
- kun valitsee RBSn ja elementin, yllä oleva element on " //??
+if self.color.name() == self.element_colormap[element]:
+kun valitsee RBSn ja elementin, yllä oleva element on " //??
  
- global settingsin kautta kun yrittää vaihtaa elementin väriä, 
- jossain välissä tulee error että qpushbuttonilla ei ole attribuuttia color (muilla kyllä on) /??
- globalsettingsdialog. line 67: self.settings.set_element_color(button.text(), button.color)
+global settingsin kautta kun yrittää vaihtaa elementin väriä, 
+jossain välissä tulee error että qpushbuttonilla ei ole attribuuttia color (muilla kyllä on) /??
+globalsettingsdialog. line 67: self.settings.set_element_color(button.text(), button.color)
  
- jos koittaa avata elemental losses työkalua ilman että on measurementtejä auki, kaatuu (pitäisi ehkä olla jokin tarkistus?)
+jos koittaa avata elemental losses työkalua ilman että on measurementtejä auki, kaatuu (pitäisi ehkä olla jokin tarkistus?)
  
- energy spectrum työkalu kaataa potkun kun sitä yrittää avata silloin kun on olemassa cutseja projektiin liittyen
- could not fing element energy
+energy spectrum työkalu kaataa potkun kun sitä yrittää avata silloin kun on olemassa cutseja projektiin liittyen
+could not fing element energy (tämä tulee kun ei ole project settingsejä määritetty)
  
- projektin uudelleen avaamisessa projektin polkua ei osata käsitellä oikein (escapeaus puuttuu?)
+projektin uudelleen avaamisessa projektin polkua ei osata käsitellä oikein (escapeaus puuttuu?) 
+ei näytä vaikuttavan mihinkään?
  
- kun yrittää käyttää depth profile työkalua, tulee error Could not find element Energy:
-Error in input file tof.in at line 1
+kun yrittää käyttää depth profile työkalua, tulee error Could not find element Energy:
+Error in input file tof.in at line 1 -> nyt kaatuu siihen etä .exe tiedosto kaatuu
 
 measuringsettings, calibrationparameters ja depthprofilesettings: filepath cancelia klikatessa on tuple ('',''), lisätty
 jonkinlainen tarkistus (jos laittaa filepath[0] ilman tarkistusta, kaatuu kun yrittää avata tyhjää hakemistoa)
