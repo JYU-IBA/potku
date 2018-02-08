@@ -169,8 +169,12 @@ class DepthProfileSettings:
         
         if not filepath:
             filepath = self.filepath
+
+        # filepathin korjaus
+        if filepath[0] == '':
+            return
         
-        with open(filepath, 'wt+') as configfile:  # save
+        with open(filepath[0], 'wt+') as configfile:  # save
             self.config.write(configfile)
         
 

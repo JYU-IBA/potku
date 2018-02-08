@@ -198,7 +198,10 @@ class MeasuringSettings:
         
         if filepath == None:
             filepath = self.filepath
-        
-        with open(filepath, 'wt+') as configfile:
+        #filepathin korjaus
+        if filepath[0] == '':
+            return
+
+        with open(filepath[0], 'wt+') as configfile:
             self.config.write(configfile)
         

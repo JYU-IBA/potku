@@ -125,7 +125,11 @@ class CalibrationParameters:
         
         if not filepath:
             filepath = self.filepath
-        
-        with open(filepath, 'wt+') as configfile:  # save
+
+        # filepathin korjaus
+        if filepath[0] == '':
+            return
+
+        with open(filepath[0], 'wt+') as configfile:  # save
             self.config.write(configfile)
                 

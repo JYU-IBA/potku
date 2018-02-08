@@ -24,3 +24,10 @@ u_measurement_tab.ui -> slot setVisible
  
  kun yrittää käyttää depth profile työkalua, tulee error Could not find element Energy:
 Error in input file tof.in at line 1
+
+measuringsettings, calibrationparameters ja depthprofilesettings: filepath cancelia klikatessa on tuple ('',''), lisätty
+jonkinlainen tarkistus (jos laittaa filepath[0] ilman tarkistusta, kaatuu kun yrittää avata tyhjää hakemistoa)
+
+projectsettings-ikkunassa arvojen syöttö hyvin hämärää (esim. kenttään ei pysty syöttämään mitään ennen kuin piste
+on poistettu, jos pisteen poistaa sitä ei saa takaisin, jos piste on jo valmiiksi saa lisää pisteitä, tabilla
+liikkuminen tekee pisteen poiston vaikutukset)
