@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 15.3.2013
-Updated on 23.5.2013
+Updated on 25.6.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -115,7 +115,7 @@ class Selector:
         self.selections = []  
         self.new_selection_is_allowed = True
         self.is_transposed = False
-        self.looseness = 50  # Default 40, how loose the selection completion is.
+        self.looseness = 10  # Default 40, how loose the selection completion is.
         self.axes = None
         self.axes_limits = AxesLimits()
         self.selected_id = None
@@ -212,11 +212,15 @@ class Selector:
                     self.__remove_last()
                 self.reset_colors()
                 self.auto_save()
+                #self.update_selection_points() <-- redundant? remove comment if you disagree...
                 self.new_selection_is_allowed = True 
                 return 1
         # Do not allow selection of too close point
-        elif sel.count() >= 1 and self.distance(sel.get_last(), point) < 60:  
-            return -1
+        if sel.count() >= 1:
+            for point2 in sel.get_points():
+                if self.distance(point2, point) < self.looseness:  
+                    print("Point too close!")
+                    return -1
         
         sel.add_point(point)
         return 0
@@ -250,7 +254,7 @@ class Selector:
         
         Removes selected selection if one is selected. Otherwise do nothing.
         '''
-        if self.selected_id == None: # Can be 0.
+        if self.selected_id == None:  # Can be 0.
             return
         for s in self.selections:
             if s.id == self.selected_id:
@@ -340,6 +344,7 @@ class Selector:
                 self.__remove_last()
             self.reset_colors()
             self.auto_save() 
+            self.update_single_selection_points(sel)
             self.new_selection_is_allowed = True
             return 1
         return 0
@@ -395,6 +400,8 @@ class Selector:
         color_dict = {}
         for sel in self.selections:
             element, isotope = sel.element.get_element_and_isotope()
+            if sel.type == "RBS":
+                element, isotope = sel.element_scatter.get_element_and_isotope()
             dirtyinteger = 0
             # Use dirtyinteger to differentiate multiple selections of same 
             # selection. This is roundabout method, but works as it should with
@@ -464,6 +471,7 @@ class Selector:
         self.update_axes_limits()
         self.draw()  # Draw all selections
         self.auto_save()
+        self.update_selection_points()
         message = "Selection file {0} was read successfully!".format(filename)
         logging.getLogger(self.measurement_name).info(message)
 
@@ -486,8 +494,34 @@ class Selector:
         for selection in self.selections:
             selection.transpose(is_transposed)
 
+    
+    def update_single_selection_points(self, selection):
+        selection.events_counted=False
+        selection.event_count = 0
+        data = self.measurement.data
+        if not selection.is_closed:
+            selection.events_counted=True
+            return
+        for n in range(len(data)):
+            selection.point_inside(data[n])    
+        selection.events_counted=True
+            
 
-
+    def update_selection_points(self):
+        '''Update all selections event counts.
+        '''
+        data = self.measurement.data
+        for selection in self.selections:
+            selection.events_counted = False
+            selection.event_count = 0
+        for n in range(len(data)):
+            point = data[n]
+            for selection in self.selections:
+                if selection.is_closed:
+                    selection.point_inside(point)
+        for selection in self.selections:
+            selection.events_counted = True
+                
 
 class Selection:
     '''Selection object which knows all selection points.
@@ -535,6 +569,8 @@ class Selection:
         self.weight_factor = weight_factor
         self.element_scatter = Element(scatter)
         
+        self.events_counted = False
+        self.event_count = 0
         self.__is_transposed = False
         self.is_closed = False
         self.points = None 
@@ -615,11 +651,8 @@ class Selection:
         '''
         points = self.points.get_data()
         pointlist = []
-        n = 0
-        x = len(points[0])
-        while n < x:
-            pointlist.append([points[0][n], points[1][n]])
-            n += 1
+        for i in range(len(points[0])):
+            pointlist.append([points[0][i], points[1][i]])
         return pointlist
     
     
@@ -652,10 +685,10 @@ class Selection:
         
     
     def count(self):
-        '''Get count of points in selection
+        '''Get the count of node points in selection.
         
         Return
-            Integer: Count of points in selection
+            Returns the count of node points in selection.
         '''
         if self.points == None:  # No data yet, "empty" list
             return 0
@@ -687,14 +720,15 @@ class Selection:
         x, y = self.points.get_data()
         x.pop()
         y.pop()
-        self.is_closed = True
-
+        
+        selection_completed = True;
         if canvas != None:
             canvas.draw_idle()
             selection_settings_dialog = SelectionSettingsDialog(self) 
             # True = ok, False = cancel -> delete selection
-            return selection_settings_dialog.isOk  
-        return True
+            selection_completed = selection_settings_dialog.isOk  
+        self.is_closed = True
+        return selection_completed
     
     
     def delete(self):
@@ -741,8 +775,10 @@ class Selection:
         # to
         # 1,4,2,6
         x, y = self.points.get_data()
-        x = str(x).strip('[').strip(']').strip(' ')  # TODO: format?
-        y = str(y).strip('[').strip(']').strip(' ')  # TODO: format?
+        x = ','.join(str(i) for i in x)
+        y = ','.join(str(j) for j in y)
+        # x = str(x).strip('[').strip(']').strip(' ')  # TODO: format?
+        # y = str(y).strip('[').strip(']').strip(' ')  # TODO: format?
         if is_transposed:
             x, y = y, x
         s = (x, y)
@@ -790,6 +826,16 @@ class Selection:
             self.points.set_data(y, x)
         
     
+    def get_event_count(self):
+        '''Get the count of event points within the selection.
+        
+        Return:
+            Returns an integer representing the count of event points within 
+            the selection.
+        '''
+        return self.event_count
+    
+    
     def point_inside(self, point):
         '''Check if point is inside selection.
         
@@ -801,7 +847,11 @@ class Selection:
         '''
         if not self.axes_limits.is_inside(point):
             return False
-        return self.__point_inside_polygon(point[0], point[1], self.get_points())
+        inside = self.__point_inside_polygon(point[0], point[1], self.get_points())
+        # While at it, increase event point counts if not counted already.
+        if inside and not self.events_counted:
+            self.event_count += 1
+        return inside
     
     
     def __point_inside_polygon(self, x, y, poly):

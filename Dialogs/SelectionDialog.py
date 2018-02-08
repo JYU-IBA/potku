@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 15.3.2013
-Updated on 23.5.2013
+Updated on 20.8.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -27,15 +27,13 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt5 import QtCore, QtWidgets, QtGui, uic
-# from PyQt4 import QtGui
-# from PyQt4 import uic
+from PyQt4 import QtCore, QtGui, uic
 
 from Dialogs.ElementSelectionDialog import ElementSelectionDialog
 from Modules.Element import Element
 
 
-class SelectionSettingsDialog(QtWidgets.QDialog):
+class SelectionSettingsDialog(QtGui.QDialog):
     '''Selection Settings dialog handles showing settings for selection made in 
     measurement (in matplotlib graph).
     '''
@@ -50,14 +48,19 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         self.settings = selection.settings
         self.element_colormap = self.selection.element_colormap
         self.ui = uic.loadUi(join("ui_files", "ui_selection_settings.ui"), self)
+        self.__set_isotope_weight_factor()
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         # Setup connections
         self.ui.sampleType.currentIndexChanged.connect(self.__change_type)
         self.ui.sample_element_button.clicked.connect(self.__change_sample_element)
         self.ui.sample_isotope_radio.toggled.connect(self.__toggle_isotope_sample)
+        self.ui.sample_isotope_combobox.currentIndexChanged.connect(
+            lambda: self.__set_isotope_weight_factor(self.ui.sample_isotope_combobox))
         self.ui.rbs_element_button.clicked.connect(self.__change_rbs_element)
-        self.ui.rbs_isotope_radio.toggled.connect(self.__toggle_isotope_rbs)        
+        self.ui.rbs_isotope_radio.toggled.connect(self.__toggle_isotope_rbs)
+        self.ui.rbs_isotope_combobox.currentIndexChanged.connect(
+            lambda: self.__set_isotope_weight_factor(self.ui.rbs_isotope_combobox))
         self.ui.colorButton.clicked.connect(self.__click_color_button)
         self.ui.OKButton.clicked.connect(self.__accept_settings) 
         self.ui.cancelButton.clicked.connect(self.close)
@@ -73,9 +76,6 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         '''Set parent's values into the dialog.
         '''
         element, isotope = self.selection.element.get_element_and_isotope()
-        if not element:  # This is not old selection
-            self.color = QtGui.QColor("white")
-            return
         
         # Set proper type (ERD / RBS) of the element
         for i in range(self.ui.sampleType.count()):
@@ -84,12 +84,14 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         self.ui.sampleWeightFactor.setValue(self.selection.weight_factor)
         
         # Selection Element
-        self.ui.sample_element_button.setText(element)
-        self.ui.colorButton.setText("Automatic [{0}]".format(element))
-
+        if element:
+            self.ui.sample_element_button.setText(element)
+            self.ui.colorButton.setText("Automatic [{0}]".format(element))
+            
         selection_isotope = None
         if isotope.mass:
             self.ui.sample_isotope_radio.setChecked(True)
+            self.ui.sample_isotope_combobox.setEnabled(True)
             selection_isotope = isotope.mass
         self.__enable_element_fields(element,
                                      self.ui.sample_isotope_combobox,
@@ -97,9 +99,10 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
                                      self.ui.sample_standard_mass_radio,
                                      self.ui.sample_standard_mass_label,
                                      current_isotope=selection_isotope)
-        self.color = QtGui.QColor(self.selection.default_color)
+
+        # self.color = QtGui.QColor(self.selection.default_color)
         # Check if selection color is same as default color for "automatic" text.
-        self.__change_color_button_color(element)
+        # self.__change_color_button_color(element)
             
         # RBS Element
         if self.selection.type == "RBS":
@@ -108,6 +111,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
             self.ui.rbs_element_button.setText(self.selection.element_scatter.name)
             if self.selection.element_scatter.isotope.mass:
                 self.ui.rbs_isotope_radio.setChecked(True)
+                self.ui.rbs_isotope_combobox.setEnabled(True)
                 rbs_isotope = self.selection.element_scatter.isotope.mass
             self.__enable_element_fields(self.selection.element_scatter.name,
                                          self.ui.rbs_isotope_combobox,
@@ -148,11 +152,11 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         '''Shows dialog to change selection element.
         
         Args:
-            button: QtWidgets.QPushButton (button to select element)
-            isotope_combobox: QtWidgets.QComboBox
-            isotope_radio: QtWidgets.QRadioButton
-            standard_mass_radio: QtWidgets.QRadioButton
-            standard_mass_label: QtWidgets.QLabel
+            button: QtGui.QPushButton (button to select element)
+            isotope_combobox: QtGui.QComboBox
+            isotope_radio: QtGui.QRadioButton
+            standard_mass_radio: QtGui.QRadioButton
+            standard_mass_label: QtGui.QLabel
         '''
         dialog = ElementSelectionDialog()
         # Only disable these once, not if you cancel after selecting once.
@@ -176,20 +180,20 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         
         Args:
             element: String representing element.
-            isotope_combobox: QtWidgets.QComboBox
-            isotope_radio: QtWidgets.QRadioButton
-            standard_mass_radio: QtWidgets.QRadioButton
-            standard_mass_label: QtWidgets.QLabel
+            isotope_combobox: QtGui.QComboBox
+            isotope_radio: QtGui.QRadioButton
+            standard_mass_radio: QtGui.QRadioButton
+            standard_mass_label: QtGui.QLabel
             sample: Boolean representing if element is sample (and not RBS element).
         '''
-        isotope_radio.setEnabled(True)
-        standard_mass_radio.setEnabled(True)
-        standard_mass_label.setEnabled(True)
-        self.__load_isotopes(isotope_combobox,
-                             standard_mass_label,
-                             element,
-                             current_isotope)
-        if sample:
+        if element:
+            isotope_radio.setEnabled(True)
+            standard_mass_radio.setEnabled(True)
+            standard_mass_label.setEnabled(True)
+            self.__load_isotopes(isotope_combobox,
+                                 standard_mass_label,
+                                 element,
+                                 current_isotope)
             self.__set_color_button_color(element)
         
     
@@ -200,18 +204,35 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
             element: String representing element.
         '''
         self.ui.groupBox_coloring.setEnabled(True)
-        if element:
+        if element and element != "Select":
             self.color = QtGui.QColor(self.element_colormap[element])
+            if self.selection.is_closed:
+                self.color = QtGui.QColor(self.selection.default_color)
             self.__change_color_button_color(element)
         
     
+    def __set_isotope_weight_factor(self, isotope_combobox=None):
+        '''Set a specific isotope's weight factor to label.
+        
+        Args:
+            isotope_combobox: A QtGui.QComboBox element of isotopes.
+        '''
+        if not isotope_combobox or not isotope_combobox.isEnabled():
+            self.ui.isotope_specific_weight_factor_label.setText("")
+        else:
+            isotope_index = isotope_combobox.currentIndex()
+            unused_isotope, propability = isotope_combobox.itemData(isotope_index)
+            isotope_weightfactor = 100.0 / float(propability)
+            text = "%.3f for specific isotope" % isotope_weightfactor
+            self.ui.isotope_specific_weight_factor_label.setText(text)
+        
+        
     def __click_color_button(self):
         '''Shows dialog to change selection color.
         '''
-        dialog = QtWidgets.QColorDialog(self)
-        color = dialog.getColor(QtGui.QColor(self.color))
-        if color.isValid():
-            self.color = color
+        dialog = QtGui.QColorDialog(self)
+        self.color = dialog.getColor(QtGui.QColor(self.color))
+        if self.color.isValid():
             self.__change_color_button_color(self.ui.sample_element_button.text())
     
     
@@ -242,8 +263,8 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         '''Change isotope information regarding element
         
         Args:
-            combobox: QtWidgets.QComboBox where element's isotopes are loaded to.
-            standard_mass_label: QtWidgets.QLabel where element's standard mass is shown.
+            combobox: QtGui.QComboBox where element's isotopes are loaded to.
+            standard_mass_label: QtGui.QLabel where element's standard mass is shown.
             element: String representing element.
             current_isotope: String representing current isotope.
         '''
@@ -251,7 +272,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         standard_mass_label.setText(str(round(standard_mass, 3)))
         self.selection.masses.load_isotopes(element, combobox, current_isotope)
 
-
+        
     def __change_type(self):
         '''Toggle ERD/RBS type change.
         '''
@@ -268,13 +289,6 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         self.ui.groupBox_sample.setEnabled(False)
         # Put current sample settings to RBS
         self.ui.rbs_isotope_combobox.clear()
-        if self.ui.sample_element_button.text() != "Select":
-            self.__enable_element_fields(self.ui.sample_element_button.text(),
-                                         self.ui.rbs_isotope_combobox,
-                                         self.ui.rbs_isotope_radio,
-                                         self.ui.rbs_standard_mass_radio,
-                                         self.ui.rbs_standard_mass_label,
-                                         sample=False)
         self.ui.rbs_element_button.setText(self.ui.sample_element_button.text())
         self.ui.rbs_isotope_radio.setChecked(
                                    self.ui.sample_isotope_radio.isChecked())
@@ -282,6 +296,19 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
                                    self.ui.sample_isotope_radio.isChecked())
         self.ui.rbs_standard_mass_radio.setChecked(
                                    self.ui.sample_standard_mass_radio.isChecked())
+        current_isotope = None
+        if self.ui.sample_element_button.text() != "Select":
+            if self.ui.sample_isotope_radio.isChecked():
+                mass_index = self.ui.sample_isotope_combobox.currentIndex()
+                isotope_data = self.ui.sample_isotope_combobox.itemData(mass_index)
+                current_isotope = isotope_data[0]
+            self.__enable_element_fields(self.ui.sample_element_button.text(),
+                                         self.ui.rbs_isotope_combobox,
+                                         self.ui.rbs_isotope_radio,
+                                         self.ui.rbs_standard_mass_radio,
+                                         self.ui.rbs_standard_mass_label,
+                                         sample=False,
+                                         current_isotope=current_isotope)
         
         # Put measurement settings element information to sample settings.
         use_settings = self.settings.get_measurement_settings()
@@ -294,12 +321,15 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         self.ui.sample_standard_mass_label.setEnabled(False)
         self.ui.sample_standard_mass_label.setText(sample_standard_mass)
         self.ui.sample_isotope_radio.setChecked(True)
-        self.ui.sample_isotope_radio.setEnabled(True)
-        self.ui.sample_isotope_combobox.setEnabled(True)
+        self.ui.sample_isotope_radio.setEnabled(False)
+        self.ui.sample_isotope_combobox.setEnabled(False)
         self.selection.masses.load_isotopes(sample_element,
                                             self.ui.sample_isotope_combobox,
                                             sample_isotope)
-        self.__set_color_button_color(sample_element)
+        # self.__set_color_button_color(sample_element)
+        self.__set_color_button_color(self.ui.rbs_element_button.text())
+        if current_isotope:
+            self.__set_isotope_weight_factor(self.ui.rbs_isotope_combobox)
     
     
     def __change_type_to_erd(self):
@@ -310,12 +340,6 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         
         # Put RBS information to sample settings.
         self.ui.sample_isotope_combobox.clear()
-        if self.ui.rbs_element_button.text() != "Select":
-            self.__enable_element_fields(self.ui.rbs_element_button.text(),
-                                         self.ui.sample_isotope_combobox,
-                                         self.ui.sample_isotope_radio,
-                                         self.ui.sample_standard_mass_radio,
-                                         self.ui.sample_standard_mass_label)
         self.ui.sample_element_button.setText(self.ui.rbs_element_button.text())
         self.ui.sample_isotope_radio.setChecked(
                                       self.ui.rbs_isotope_radio.isChecked())
@@ -325,6 +349,18 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
                                       self.ui.rbs_standard_mass_radio.isChecked())
         self.ui.sample_standard_mass_label.setText(
                                       self.ui.rbs_standard_mass_label.text())
+        current_isotope = None
+        if self.ui.rbs_element_button.text() != "Select":
+            if self.ui.sample_isotope_radio.isChecked():
+                mass_index = self.ui.rbs_isotope_combobox.currentIndex()
+                isotope_data = self.ui.rbs_isotope_combobox.itemData(mass_index)
+                current_isotope = isotope_data[0]
+            self.__enable_element_fields(self.ui.rbs_element_button.text(),
+                                         self.ui.sample_isotope_combobox,
+                                         self.ui.sample_isotope_radio,
+                                         self.ui.sample_standard_mass_radio,
+                                         self.ui.sample_standard_mass_label,
+                                         current_isotope=current_isotope)
         if self.ui.sample_element_button.text() == "Select":
             self.ui.sample_standard_mass_label.setEnabled(False)
             self.ui.sample_standard_mass_radio.setEnabled(False)
@@ -340,6 +376,8 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         self.ui.rbs_isotope_combobox.clear()
         # Switch to this by default.
         self.ui.rbs_standard_mass_radio.setChecked(True)
+        if current_isotope:
+            self.__set_isotope_weight_factor(self.ui.sample_isotope_combobox)
     
     
     def __toggle_isotope_sample(self):
@@ -360,11 +398,16 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         '''Toggle combobox visibility depending on if radio button is checked.
         
         Args:
-            radio: QtWidgets.QRadioButton
-            combobox: QtWidgets.QComboBox
+            radio: A QtGui.QRadioButton element.
+            combobox: A QtGui.QComboBox element.
         '''
         combobox.setEnabled(radio.isChecked())
-
+        # self.__set_isotope_weight_factor()
+        if radio.isChecked():
+            self.__set_isotope_weight_factor(combobox)
+        else:
+            self.__set_isotope_weight_factor()
+        
  
     def __check_if_settings_ok(self):
         '''Check if sample settings are ok, and enable ok button.
@@ -393,9 +436,15 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         
         # Check if specific isotope was chosen and use that instead.
         if self.ui.sample_isotope_radio.isChecked():
-            sample_isotope = self.ui.sample_isotope_combobox.currentText()
+            isotope_index = self.ui.sample_isotope_combobox.currentIndex()
+            isotope_data = self.ui.sample_isotope_combobox.itemData(isotope_index)
+            sample_isotope = isotope_data[0]
+            # sample_isotope = self.ui.sample_isotope_combobox.currentText()
         if self.ui.rbs_isotope_radio.isChecked():
-            rbs_isotope = self.ui.rbs_isotope_combobox.currentText()
+            isotope_index = self.ui.sample_isotope_combobox.currentIndex()
+            isotope_data = self.ui.sample_isotope_combobox.itemData(isotope_index)
+            rbs_isotope = isotope_data[0]
+            # rbs_isotope = self.ui.rbs_isotope_combobox.currentText()
 
         self.selection.element = Element(sample_element, sample_isotope)
         self.selection.type = self.ui.sampleType.currentText()

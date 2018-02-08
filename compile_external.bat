@@ -1,9 +1,5 @@
-cd external\Potku-zbl96
-make clean
+cd external\Potku-gsto
 make
-make install
-make lib
-make inst-lib
 cd ..\Potku-tof_list
 make clean
 make
@@ -12,3 +8,8 @@ cd ..\Potku-erd_depth
 make clean
 make
 make install
+cd ..\Potku-coinc
+make clean
+make
+make install
+cd ..\..

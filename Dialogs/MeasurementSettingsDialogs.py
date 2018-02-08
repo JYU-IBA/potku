@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 17.4.2013
-Updated on 23.5.2013
+Updated on 26.8.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -23,24 +23,20 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 '''
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli K�rkk�inen \n Samuli Rahkonen \n Miika Raunio"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-#import logging
 import os
-from PyQt5 import QtCore, QtWidgets, QtGui, uic
-# from PyQt4 import QtGui
-# from PyQt4 import uic
+from PyQt4 import QtCore, QtGui, uic
 
 from Modules.CalibrationParameters import CalibrationParameters
-from Modules.Functions import open_file_dialog
-from Modules.Functions import save_file_dialog
+from Modules.Functions import open_file_dialog, save_file_dialog
 from Modules.MeasuringSettings import MeasuringSettings
 from Modules.InputValidator import InputValidator
 from Dialogs.ElementSelectionDialog import ElementSelectionDialog
 from Dialogs.CalibrationDialog import CalibrationDialog
 
-class MeasurementUnitSettings(QtWidgets.QDialog):
+class MeasurementUnitSettings(QtGui.QDialog):
     def __init__(self, measurement_settings, masses):
         '''Constructor for the program
         
@@ -53,6 +49,8 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
                               "ui_measurement_measuring_unit_settings.ui"), self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.masses = masses
+        
+        self.__measurement_settings = measurement_settings
         
         proj_settings = measurement_settings.project_settings
         self.project_settings = proj_settings.measuring_unit_settings
@@ -115,10 +113,7 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
         """
         if self.ui.useProjectSettingsValuesCheckBox.isChecked():
             self.project_settings.show(self)
-            
-        # else:
-        #    self.settings = self.measurement.measurement_settings.measuring_unit_settings
-        
+
         
     def __load_file(self):
         '''Opens file dialog and loads and shows selected ini file's values.
@@ -150,14 +145,26 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
     def update_and_close_settings(self):
         '''Updates measuring settings values with the dialog's values and saves them to default ini file.
         '''
-        if self.ui.useProjectSettingsValuesCheckBox.isChecked():
-            use_settings = "PROJECT"
-        else:
-            use_settings = "MEASUREMENT"
-        
-        self.settings.set_settings(self, use_settings)
-        self.settings.save_settings()
-        self.close()
+        try:
+            if self.ui.useProjectSettingsValuesCheckBox.isChecked():
+                use_settings = "PROJECT"
+            else:
+                use_settings = "MEASUREMENT"
+            
+            self.settings.set_settings(self, use_settings)
+            
+            if not self.__measurement_settings.has_been_set() and \
+            use_settings == "MEASUREMENT":
+                raise TypeError
+            
+            self.settings.save_settings()
+            self.close()
+        except TypeError:
+            QtGui.QMessageBox.question(self,
+                "Warning",
+                "Some of the setting values have not been set.\n" + \
+                "Please input setting values to save them.",
+                QtGui.QMessageBox.Ok)
             
             
     def __change_element(self, button):
@@ -181,7 +188,7 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
 
 
 
-class CalibrationSettings(QtWidgets.QDialog):
+class CalibrationSettings(QtGui.QDialog):
     def __init__(self, measurement):
         '''Constructor for the program
         
@@ -197,8 +204,9 @@ class CalibrationSettings(QtWidgets.QDialog):
                               "ui_measurement_calibration_parameters.ui"), self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         
-        m_settings = self.measurement.measurement_settings
-        self.project_settings = m_settings.project_settings.calibration_settings
+        self.__measurement_settings = self.measurement.measurement_settings
+        self.project_settings = self.__measurement_settings.project_settings.\
+            calibration_settings
         
         # Get the settings from the measurement
         self.settings = self.measurement.measurement_settings.calibration_settings
@@ -273,21 +281,30 @@ class CalibrationSettings(QtWidgets.QDialog):
         '''Updates measuring settings values with the dialog's values and saves
         them to default ini file.
         '''
-        
-        if self.ui.useProjectSettingsValuesCheckBox.isChecked():
-            use_settings = "PROJECT"
-        else:
-            use_settings = "MEASUREMENT"
-             
-        self.settings.set_settings(self, use_settings)
-        self.settings.save_settings()
+        try:
+            if self.ui.useProjectSettingsValuesCheckBox.isChecked():
+                use_settings = "PROJECT"
+            else:
+                use_settings = "MEASUREMENT"
+            
+            self.settings.set_settings(self, use_settings)
+            
+            if not self.__measurement_settings.has_been_set() and \
+            use_settings == "MEASUREMENT":
+                raise TypeError
+            
+            self.settings.save_settings()
+            self.close()
+        except TypeError:
+            QtGui.QMessageBox.question(self,
+                "Warning",
+                "Some of the setting values have not been set.\n" + \
+                "Please input setting values to save them.",
+                QtGui.QMessageBox.Ok)
 
-        self.close()
 
 
-
-
-class DepthProfileSettings(QtWidgets.QDialog):
+class DepthProfileSettings(QtGui.QDialog):
     def __init__(self, measurement_settings):
         '''Constructor for the program
         
@@ -301,7 +318,9 @@ class DepthProfileSettings(QtWidgets.QDialog):
         self.default_folder = os.path.curdir
         self.ui = uic.loadUi('ui_files/ui_measurement_depth_profile_settings.ui', self)
         
-        self.project_settings = measurement_settings.project_settings.depth_profile_settings
+        self.__measurement_settings = measurement_settings
+        self.project_settings = measurement_settings.project_settings.\
+            depth_profile_settings
         
         # Get the settings from the measurement
         self.settings = measurement_settings.depth_profile_settings
@@ -367,14 +386,26 @@ class DepthProfileSettings(QtWidgets.QDialog):
     def update_and_close_settings(self):
         '''Updates measuring settings values with the dialog's values and saves them to default ini file.
         '''
-        
-        if self.ui.useProjectSettingsValuesCheckBox.isChecked():
-            use_settings = "PROJECT"
-        else:
-            use_settings = "MEASUREMENT"
-        
-        self.settings.set_settings(self, use_settings)
-        self.settings.save_settings()
+        try:
+            if self.ui.useProjectSettingsValuesCheckBox.isChecked():
+                use_settings = "PROJECT"
+            else:
+                use_settings = "MEASUREMENT"
+            
+            self.settings.set_settings(self, use_settings)
+            
+            if not self.__measurement_settings.has_been_set() and \
+            use_settings == "MEASUREMENT":
+                raise TypeError
+                
+            self.settings.save_settings()
+            self.close()
+        except TypeError:
+            QtGui.QMessageBox.question(self,
+                "Warning",
+                "Some of the setting values have not been set.\n" + \
+                "Please input setting values to save them.",
+                QtGui.QMessageBox.Ok)
 
-        self.close()
+
 

@@ -1,0 +1,60 @@
+gsto - General purpose STopping library
+Copyright (C) 2013 Jaakko Julin <jaakko.julin@jyu.fi>
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+
+Introduction
+-------------- 
+
+The purpose of this library is to provide other programs with stopping (-dE/dx)
+forces. The program is under construction, so no proper documentation is
+available currently. It is however the intention of the author to use simple
+data formats which should be self explanatory when examples are given.
+
+
+Installation
+--------------
+
+Assuming a sane environment with gcc and make and other relevant tools running
+"make" will make AND install the library AND the auxiliary programs.
+
+Build the library only with "make lib" and "make lib_install". Note that the
+library is currently tailored to the needs of the Potku software and therefore
+the installation procedure does not actually conform to any conventions.
+
+
+Usage
+--------------
+
+stopping.txt contains a list of stopping files along with information which
+stopping (Z1, Z2 combinations) they are assigned to.  The file should be self
+explanatory. Each Z1, Z2 combination when automatically assigned will be
+assigned to a the stopping file that is first suitable file in the list. The
+library can also be used in a way which allows manual assignments.
+
+
+Stopping data
+--------------
+
+Several file formats are and will be supported. Mainly ascii formats. A
+generator is included, which should be used for reference until a proper
+reference is finalized.
+
+
+Limitations
+-------------
+
+Several. See TODO.

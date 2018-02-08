@@ -71,9 +71,6 @@
             <property name="horizontalScrollBarPolicy">
              <enum>Qt::ScrollBarAsNeeded</enum>
             </property>
-            <property name="animated">
-             <bool>false</bool>
-            </property>
             <attribute name="headerCascadingSectionResizes">
              <bool>false</bool>
             </attribute>
@@ -332,6 +329,9 @@
                 <property name="text">
                  <string>Remove</string>
                 </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
                </widget>
               </item>
               <item>
@@ -544,6 +544,9 @@
       <widget class="QPushButton" name="cancelButton">
        <property name="text">
         <string>Close</string>
+       </property>
+       <property name="autoDefault">
+        <bool>false</bool>
        </property>
       </widget>
      </item>
