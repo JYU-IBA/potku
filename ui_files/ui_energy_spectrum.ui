@@ -17,7 +17,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Energy Spectra</string>
+   <string>Energy Spectrum</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <property name="margin">

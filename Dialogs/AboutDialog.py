@@ -28,11 +28,12 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli K�rkk�inen \n Samuli Rahko
 __versio__ = "1.0"
 
 import os
-from PyQt4 import QtGui, QtCore
-from PyQt4 import uic
+# from PyQt5 import QtGui, QtCore
+# from PyQt5 import uic
+from PyQt5 import QtWidgets, QtCore, uic, QtGui
 from math import sin
 
-class AboutDialog(QtGui.QDialog):
+class AboutDialog(QtWidgets.QDialog):
     '''About dialog that shows information about the program itself.
     '''
     def __init__(self):

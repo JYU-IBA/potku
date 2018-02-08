@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 21.4.2013
-Updated on 15.8.2013
+Updated on 23.5.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -26,36 +26,30 @@ along with this program (file named 'LICENCE').
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-import logging, os, sys, numpy
-from PyQt4 import QtCore
+import os
 
 from Modules.Element import Element
-from Modules.Functions import hist, tof_list
+from Modules.Functions import hist
+from Modules.Functions import tof_list
 from Modules.Null import Null
 
 
 class EnergySpectrum:
     '''
     '''
-    def __init__(self, measurement, cut_files, spectrum_width, progress_bar=Null()):
+    def __init__(self, cut_files, spectrum_width, progress_bar=Null()):
         '''Inits energy spectrum
         
         Args:
-            measurement: A Measurement class object for which Energy Spectrum
-                         is made.
             cut_files: String list of cut files.
             spectrum_width: Float representing energy spectrum graph width.
             progress_bar: QtGui.QProgressBar for GUI (Null class object otherwise).
         '''
-        self.__measurement = measurement
-        self.__global_settings = self.__measurement.project.global_settings
-        self.__cut_files = cut_files
-        self.__spectrum_width = spectrum_width
-        self.__progress_bar = progress_bar
-        self.__directory_es = os.path.join(self.__measurement.directory,
-                                        "energy_spectrum")
+        self.cut_files = cut_files
+        self.spectrum_width = spectrum_width
+        self.progress_bar = progress_bar
         # tof_list files here just in case progress bar might happen to 'disappear'.
-        self.__tof_listed_files = self.__load_cuts()
+        self.tof_listed_files = self.__load_cuts()
         
     
     def calculate_spectrum(self):
@@ -64,24 +58,10 @@ class EnergySpectrum:
         Returns list of cut files 
         '''
         histed_files = {}
-        keys = self.__tof_listed_files.keys()
+        keys = self.tof_listed_files.keys()
         for key in keys:
-            histed_files[key] = hist(self.__tof_listed_files[key],
-                                     self.__spectrum_width, 3)
-            first_val = (histed_files[key][0][0] - self.__spectrum_width, 0)
-            last_val = (histed_files[key][-1][0] + self.__spectrum_width, 0)
-            histed_files[key].insert(0, first_val)
-            histed_files[key].append(last_val)
-        if self.__global_settings.is_es_output_saved():
-            for key in keys:
-                file = self.__measurement.measurement_file
-                histed = histed_files[key]
-                filename = os.path.join(self.__directory_es,
-                                "{0}.{1}.hist".format(os.path.splitext(file)[0],
-                                                      key))
-                numpy_array = numpy.array(histed,
-                                          dtype=[('float', float), ('int', int)])
-                numpy.savetxt(filename, numpy_array, delimiter=" ", fmt="%5.5f %6d")
+            histed_files[key] = hist(self.tof_listed_files[key],
+                                     self.spectrum_width, 3)
         return histed_files
         
         
@@ -91,42 +71,24 @@ class EnergySpectrum:
         Return:
             Returns list of cut files' tof_list results.
         '''
-        try:
-            cut_dict = {}
-            save_output = self.__global_settings.is_es_output_saved()
-            count = len(self.__cut_files)
-            dirtyinteger = 0
-            
-            
-            if not os.path.exists(self.__directory_es):
-                os.makedirs(self.__directory_es)
-            
-            for cut_file in self.__cut_files:
-                filename_split = os.path.basename(cut_file).split('.')
-                element = Element(filename_split[1])
-                if len(filename_split) == 4:  # Regular cut file
-                    key = "{0}.{1}".format(element, filename_split[2])
-                else:  # Elemental Losses cut file
-                    key = "{0}.{1}.{2}".format(element, filename_split[2],
-                                               filename_split[3])
-                cut_dict[key] = tof_list(cut_file, self.__directory_es, save_output)
-    
-                dirtyinteger += 1
-                self.__progress_bar.setValue((dirtyinteger / count) * 100)
-                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-                # Mac requires event processing to show progress bar and its
-                # process.
-        except:
-            import traceback
-            msg = "Could not calculate Energy Spectrum. "
-            err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
-            str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + \
-                          traceback._some_str(sys.exc_info()[1]),
-                          err_file,
-                          str(sys.exc_info()[2].tb_lineno)])
-            msg += str_err
-            logging.getLogger(self.__measurement.measurement_name).error(msg)
+        cut_dict = {}
+
+        count = len(self.cut_files)
+        dirtyinteger = 0
+        for cut_file in self.cut_files:
+            filename_split = os.path.basename(cut_file).split('.')
+            element = Element(filename_split[1])
+            if len(filename_split) == 4:  # Regular cut file
+                key = "{0}.{1}".format(element, filename_split[2])
+            else:  # Elemental Losses cut file
+                key = "{0}.{1}.{2}".format(element, filename_split[2],
+                                           filename_split[3])
+            cut_dict[key] = tof_list(cut_file)
+
+            dirtyinteger += 1
+            self.progress_bar.setValue((dirtyinteger / count) * 100)
         return cut_dict
     
-        
+    
+    
     

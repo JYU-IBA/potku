@@ -2,7 +2,7 @@
 # coding=utf-8
 '''
 Created on 11.4.2013
-Updated on 3.6.2013
+Updated on 23.5.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -29,11 +29,10 @@ __versio__ = "1.0"
 
 import logging
 import os
-from PyQt4 import QtGui
-from PyQt4 import uic
+from PyQt5 import QtWidgets, uic
 
 
-class ProjectNewDialog(QtGui.QDialog):
+class ProjectNewDialog(QtWidgets.QDialog):
     '''Dialog creating a new project.
     '''
     def __init__(self, parent):
@@ -69,7 +68,7 @@ class ProjectNewDialog(QtGui.QDialog):
     
     
     def __browser_folder(self):
-        folder = QtGui.QFileDialog.getExistingDirectory(self,
+        folder = QtWidgets.QFileDialog.getExistingDirectory(self,
                                      self.ui.browseFolderButton.text())
         if folder:
             self.folder = folder
@@ -78,9 +77,7 @@ class ProjectNewDialog(QtGui.QDialog):
         
     def __create_project(self):
         self.folder = self.ui.projectDirectoryLineEdit.text()
-        self.name = self.ui.projectNameLineEdit.text().replace(' ', '_')
-        # TODO: Remove replace above to allow spaces in project names.
-        # This does not include the actual project folder, replace below.
+        self.name = self.ui.projectNameLineEdit.text()
         # TODO: check for valid folder needed
         # TODO: Get rid of print -> message window perhaps
         if not self.folder:  
@@ -90,7 +87,7 @@ class ProjectNewDialog(QtGui.QDialog):
             print("Project name required!")
             return
         try:
-            directory = os.path.join(self.folder, self.name.replace(' ', '_'))
+            directory = os.path.join(self.folder, self.name)
             if not os.path.exists(directory):
                 os.makedirs(directory)
                 self.directory = directory

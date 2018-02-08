@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 10.4.2013
-Updated on 19.6.2013
+Updated on 23.5.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -49,10 +49,8 @@ class Element:
         >>> print(test_f) # Suppose we ignore numbers or whatever after element.
         H
         '''
-        if type(element) == Element:
-            element = str(element)
         if element:
-            m = re.match("(?P<isotope>[0-9]{0,3})(?P<element>[a-zA-Z]{1,2})",
+            m = re.match("(?P<isotope>[0-9]{0,2})(?P<element>[a-zA-Z]{1,2})", 
                          element.strip())
             if m:
                 self.name = m.group("element")
@@ -76,12 +74,6 @@ class Element:
         return "{0}{1}".format(self.isotope, self.name)
 
 
-    def __eq__(self, other): 
-        '''Compare object.
-        '''
-        return str(self) == str(other)
-    
-                          
     def get_element_and_isotope(self):
         '''Get Element's name and isotope.
         
@@ -121,8 +113,6 @@ class Isotope:
             return ""
         else:
             return str(self.mass)
-        
-
 
 
 if __name__ == "__main__":

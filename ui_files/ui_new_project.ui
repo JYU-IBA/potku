@@ -26,11 +26,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="projectNameLineEdit">
-         <property name="toolTip">
-          <string>Name of the project.</string>
-         </property>
-        </widget>
+        <widget class="QLineEdit" name="projectNameLineEdit"/>
        </item>
       </layout>
      </item>
@@ -47,18 +43,12 @@
             <property name="enabled">
              <bool>false</bool>
             </property>
-            <property name="toolTip">
-             <string>The project will be saved to this directory.</string>
-            </property>
            </widget>
           </item>
           <item>
            <widget class="QPushButton" name="browseFolderButton">
             <property name="enabled">
              <bool>false</bool>
-            </property>
-            <property name="toolTip">
-             <string>Choose location where the project is saved to.</string>
             </property>
             <property name="text">
              <string>Browse</string>
@@ -69,9 +59,6 @@
         </item>
         <item row="0" column="0">
          <widget class="QCheckBox" name="useDefaultCheckBox">
-          <property name="toolTip">
-           <string>Use the default directory for the project.</string>
-          </property>
           <property name="text">
            <string>Use default</string>
           </property>

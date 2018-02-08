@@ -2088,7 +2088,7 @@
         <string notr="true">QPushButton{background: rgb(170, 170, 170);}</string>
        </property>
        <property name="text">
-        <string>Fl</string>
+        <string>Uuq</string>
        </property>
        <attribute name="buttonGroup">
         <string notr="true">elementButtons</string>
@@ -2132,7 +2132,7 @@
         <string notr="true">QPushButton{background: rgb(170, 170, 170);}</string>
        </property>
        <property name="text">
-        <string>Lv</string>
+        <string>Uuh</string>
        </property>
        <attribute name="buttonGroup">
         <string notr="true">elementButtons</string>

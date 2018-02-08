@@ -29,10 +29,10 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt4 import QtGui
-from PyQt4 import uic
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 
-class ElementSelectionDialog(QtGui.QDialog):
+class ElementSelectionDialog(QtWidgets.QDialog):
     """ElementSelectionDialog opens a periodic table from which user can select
     an element.
     """
@@ -41,7 +41,7 @@ class ElementSelectionDialog(QtGui.QDialog):
         """
         super().__init__()
         self.ui = uic.loadUi(join("ui_files", "ui_element_selection.ui"), self)
-        buttons = self.ui.findChild(QtGui.QButtonGroup, "elementButtons")
+        buttons = self.ui.findChild(QtWidgets.QButtonGroup, "elementButtons")
         buttons.buttonClicked.connect(self.__set_element)  # Because we can.
         self.ui.pushButton_Cancel.clicked.connect(self.close)
         self.element = None
