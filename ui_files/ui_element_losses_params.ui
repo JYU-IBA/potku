@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Composition changes</string>
+   <string>Elemental Losses</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="2" column="0">
@@ -66,11 +66,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="referenceCut">
-         <property name="toolTip">
-          <string>Select reference cut file for target cut files.</string>
-         </property>
-        </widget>
+        <widget class="QComboBox" name="referenceCut"/>
        </item>
       </layout>
      </item>
@@ -85,9 +81,6 @@
        </item>
        <item>
         <widget class="QSpinBox" name="partitionCount">
-         <property name="toolTip">
-          <string>Define how many splits the cut files will be diveded to.</string>
-         </property>
          <property name="minimum">
           <number>2</number>
          </property>

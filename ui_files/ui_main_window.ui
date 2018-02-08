@@ -69,7 +69,7 @@
                 </size>
                </property>
                <property name="text">
-                <string>General Settings...</string>
+                <string>Global Settings...</string>
                </property>
                <property name="description">
                 <string/>
@@ -192,7 +192,7 @@
          <enum>QTabWidget::Rounded</enum>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <property name="elideMode">
          <enum>Qt::ElideNone</enum>
@@ -526,25 +526,17 @@ Start by creating a new measurement</string>
      <x>0</x>
      <y>0</y>
      <width>1467</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
     </property>
-    <widget class="QMenu" name="menuImport">
-     <property name="title">
-      <string>Import measurements</string>
-     </property>
-     <addaction name="actionImport_pelletron"/>
-     <addaction name="actionBinary_data_lst"/>
-    </widget>
     <addaction name="actionNew_Project_2"/>
     <addaction name="actionOpen_Project_2"/>
     <addaction name="separator"/>
     <addaction name="actionNew_measurement_2"/>
-    <addaction name="menuImport"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -563,7 +555,6 @@ Start by creating a new measurement</string>
     <property name="title">
      <string>Help</string>
     </property>
-    <addaction name="action_manual"/>
     <addaction name="actionAbout"/>
    </widget>
    <addaction name="menuFile"/>
@@ -673,25 +664,16 @@ Start by creating a new measurement</string>
    </property>
   </action>
   <action name="actionAnalyze_elemental_losses">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
    <property name="text">
-    <string>Analyze composition changes...</string>
+    <string>Analyze elemental losses...</string>
    </property>
   </action>
   <action name="actionCreate_energy_spectrum">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
    <property name="text">
     <string>Create energy spectrum...</string>
    </property>
   </action>
   <action name="actionCreate_depth_profile">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
    <property name="text">
     <string>Create depth profile...</string>
    </property>
@@ -706,22 +688,7 @@ Start by creating a new measurement</string>
   </action>
   <action name="actionGlobal_Settings">
    <property name="text">
-    <string>General Settings...</string>
-   </property>
-  </action>
-  <action name="action_manual">
-   <property name="text">
-    <string>Open user manual</string>
-   </property>
-  </action>
-  <action name="actionImport_pelletron">
-   <property name="text">
-    <string>JYFL Pelletron... (.evnt)</string>
-   </property>
-  </action>
-  <action name="actionBinary_data_lst">
-   <property name="text">
-    <string>FAST ComTec binary ... (.lst)</string>
+    <string>Global Settings...</string>
    </property>
   </action>
  </widget>

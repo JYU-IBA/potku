@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 15.3.2013
-Updated on 26.8.2013
+Updated on 23.5.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -26,11 +26,15 @@ along with this program (file named 'LICENCE').
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-import logging, os, shutil, sys, time, hashlib
-from PyQt4 import QtGui, QtCore
+import os
+# import re
+import shutil
+import sys
+import logging
+import time
+from PyQt5 import QtWidgets, QtCore
 
 from Modules.CutFile import CutFile
-from Modules.Functions import md5_for_file
 from Modules.Selection import Selector
 from Modules.Settings import Settings
 
@@ -98,6 +102,7 @@ class Measurements:
                     new_file = os.path.join(self.project.directory, file_name)
                     dirtyinteger += 1
                 shutil.copyfile(measurement_file, new_file)
+                print(new_file)
                 file_directory, file_name = os.path.split(new_file)
                 
                 log = "Added new measurement {0} to the project.".format(file_name)
@@ -107,7 +112,7 @@ class Measurements:
                 if self.measurements[key].measurement_file == file_name:
                     return measurement  # measurement = None
             measurement = Measurement(new_file, self.project, tab_id)
-            # measurement.load_data()
+            measurement.load_data()
             self.measurements[tab_id] = measurement
         except:
             log = "Something went wrong while adding a new measurement."
@@ -151,7 +156,7 @@ class Measurement:
         self.directory_elemloss = os.path.join(self.directory_cuts, "elemloss")
         
         self.project = project  # To which project be belong to
-        self.data = []
+        self.data = ([], [])
         self.tab_id = tab_id
 
         self.__make_directories(self.directory)
@@ -191,22 +196,22 @@ class Measurement:
         # import cProfile, pstats
         # pr = cProfile.Profile()
         # pr.enable()
-        n=0
         try:
             extension = os.path.splitext(self.measurement_file)[1]
-            extension = extension.lower()
             if extension == ".asc":
                 with open("{0}{1}".format(self.directory, extension)) as fp:
                     for line in fp:
-                        n += 1 #Event number
                         # TODO: Figure good way to split into columns. REGEX too slow.
-                        split = line.split()
+                        # See test below
+                        # split = re.split("\s+", line.strip()) #TEST #1
+                        split = line.strip().split(" ")  # TEST #2
                         split_len = len(split)
-                        if split_len == 2:  # At least two columns
-                            self.data.append([int(split[0]), int(split[1]), n])
-                        if split_len == 3:
-                            self.data.append([int(split[0]), int(split[1]), int(split[2]), n])
-            self.selector.measurement = self
+                        if split_len == 1:  # Different separator
+                            split = line.strip().split("    ")
+                            split_len = len(split)
+                        if split_len == 2:  # Two columns
+                            self.data[0].append(int(split[0]))
+                            self.data[1].append(int(split[1]))
         except IOError as e:
             error_log = "Error while loading the {0} {1}. {2}".format(
                         "measurement date for the measurement",
@@ -422,12 +427,9 @@ class Measurement:
         if not os.path.exists(self.directory_cuts):
             os.makedirs(self.directory_cuts)
 
-        progress_bar = QtGui.QProgressBar()
+        progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        # Mac requires event processing to show progress bar and its
-        # process.
 
         starttime = time.time()
         
@@ -437,15 +439,11 @@ class Measurement:
         points_in_selection = [[] for unused_i in range(self.selector.count())]
 
         # Go through all points in measurement data
-        data_count = len(self.data)
+        data_count = len(self.data[0])
         for n in range(data_count):  # while n < data_count: 
-            if n % 5000 == 0:
-                # Do not always update UI to make it faster.
-                progress_bar.setValue((n / data_count) * 90)
-                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-                # Mac requires event processing to show progress bar and its
-                # process.
-            point=self.data[n]
+            progress_bar.setValue((n / data_count) * 90)
+            
+            point = [self.data[0][n], self.data[1][n], n]
             # Check if point is within selectors' limits for faster processing.
             if not self.selector.axes_limits.is_inside(point):
                 continue
@@ -468,11 +466,8 @@ class Measurement:
                 cut_file = CutFile(self.directory)
                 cut_file.set_info(selection, points)
                 cut_file.save()
-            dirtyinteger += 1
             progress_bar.setValue(90 + (dirtyinteger / content_lenght) * 10) 
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process.
+            dirtyinteger += 1 
             
         self.statusbar.removeWidget(progress_bar)
         progress_bar.hide()
@@ -512,36 +507,28 @@ class Measurement:
         return cuts, elemloss
     
     
-    def fill_cuts_treewidget(self, treewidget, use_elemloss=False,
-                             checked_files=[]):
+    def fill_cuts_treewidget(self, treewidget, use_elemloss=False):
         '''Fill QTreeWidget with cut files.
         
         Args:
-            treewidget: A QtGui.QTreeWidget, where cut files are added to.
-            use_elemloss: A boolean representing whether to add elemental losses.
-            checked_files: A list of previously checked files.
+            treewidget: QtWidgets.QTreeWidget, where cut files are added to.
+            elemloss: Boolean representing whether to add elemental losses or not.
         '''
         treewidget.clear()
         cuts, cuts_elemloss = self.get_cut_files()
         for cut in cuts:
-            item = QtGui.QTreeWidgetItem([cut]) 
+            item = QtWidgets.QTreeWidgetItem([cut])
             item.directory = self.directory_cuts
             item.file_name = cut
-            if not checked_files or item.file_name in checked_files:
-                item.setCheckState(0, QtCore.Qt.Checked)
-            else:
-                item.setCheckState(0, QtCore.Qt.Unchecked)
+            item.setCheckState(0, QtCore.Qt.Checked)
             treewidget.addTopLevelItem(item)
-        if use_elemloss and cuts_elemloss:
-            elem_root = QtGui.QTreeWidgetItem(["Elemental Losses"])
+        if use_elemloss:
+            elem_root = QtWidgets.QTreeWidgetItem(["Elemental Losses"])
             for elemloss in cuts_elemloss:
-                item = QtGui.QTreeWidgetItem([elemloss])
+                item = QtWidgets.QTreeWidgetItem([elemloss])
+                item.setCheckState(0, QtCore.Qt.Unchecked)
                 item.directory = self.directory_elemloss
                 item.file_name = elemloss
-                if item.file_name in checked_files:
-                    item.setCheckState(0, QtCore.Qt.Checked)
-                else:
-                    item.setCheckState(0, QtCore.Qt.Unchecked)
                 elem_root.addChild(item)
             treewidget.addTopLevelItem(elem_root)
     
@@ -568,94 +555,48 @@ class Measurement:
                                         "Potku-bin")
         tof_in_file = os.path.join(tof_in_directory, "tof.in")
         
-        # Get settings 
-        use_settings = self.measurement_settings.get_measurement_settings()
-        global_settings = self.project.global_settings
-        
-        # Measurement settings
-        str_beam = "Beam: {0}\n".format(
-            use_settings.measuring_unit_settings.element)
-        str_energy = "Energy: {0}\n".format(
-            use_settings.measuring_unit_settings.energy)
-        str_detector = "Detector angle: {0}\n".format(
-            use_settings.measuring_unit_settings.detector_angle)
-        str_target = "Target angle: {0}\n".format(
-            use_settings.measuring_unit_settings.target_angle)
-        str_toflen = "Toflen: {0}\n".format(
-            use_settings.measuring_unit_settings.time_of_flight_lenght)
-        str_carbon = "Carbon foil thickness: {0}\n".format(
-            use_settings.measuring_unit_settings.carbon_foil_thickness)
-        str_density = "Target density: {0}\n".format(
-            use_settings.measuring_unit_settings.target_density)
-        
-        # Depth Profile settings
-        str_depthnumber = "Number of depth steps: {0}\n".format(
-            use_settings.depth_profile_settings.number_of_depth_steps)
-        str_depthstop = "Depth step for stopping: {0}\n".format(
-            use_settings.depth_profile_settings.depth_step_for_stopping)
-        str_depthout = "Depth step for output: {0}\n".format(
-            use_settings.depth_profile_settings.depth_step_for_output)
-        str_depthscale = "Depths for concentration scaling: {0} {1}\n".format(
-            use_settings.depth_profile_settings.depths_for_concentration_from,
-            use_settings.depth_profile_settings.depths_for_concentration_to)
-        
-        #Cross section
-        flag_cross = global_settings.get_cross_sections()
-        str_cross = "Cross section: {0}\n".format(flag_cross)
-        #Cross Sections: 1=Rutherford, 2=L'Ecuyer, 3=Andersen
-        
-        str_num_iterations = "Number of iterations: {0}\n".format(global_settings.get_num_iterations())
-
-        # Efficiency directory
-        eff_directory = global_settings.get_efficiency_directory()
-        str_eff_dir = "Efficiency directory: {0}".format(eff_directory)
-        
-        # Combine strings
-        measurement = str_beam + str_energy + str_detector + str_target \
-                      + str_toflen + str_carbon + str_density
-        calibration = "TOF calibration: {0} {1}\n".format(
-                          use_settings.calibration_settings.slope,
-                          use_settings.calibration_settings.offset)
-        anglecalibration = "Angle calibration: {0} {1}\n".format(use_settings.calibration_settings.angleslope, use_settings.calibration_settings.angleoffset)
-        depthprofile = str_depthnumber + str_depthstop + str_depthout + str_depthscale
-        
-        tof_in = measurement + calibration + anglecalibration + depthprofile + \
-                 str_cross + str_num_iterations + str_eff_dir
-
-        # Get md5 of file and new settings
-        md5 = hashlib.md5()
-        md5.update(tof_in.encode('utf8'))
-        digest = md5.digest()
-        digest_file = None
-        if os.path.isfile(tof_in_file):
-            f = open(tof_in_file, 'r')
-            digest_file = md5_for_file(f)
-            f.close()
-        
-        # If different back up old tof.in and generate a new one.
-        if digest_file != digest:
-            # Try to back up old file.
+        if os.path.exists(tof_in_file):
             try:
                 new_file = "{0}_{1}.bak".format(tof_in_file,
                                                 time.strftime("%Y-%m-%d_%H.%M.%S"))
                 shutil.copyfile(tof_in_file, new_file)
                 back_up_msg = "Backed up old tof.in file to {0}".format(
                                                         os.path.realpath(new_file))
-                logging.getLogger(self.measurement_name).info(back_up_msg)      
+                logging.getLogger(self.measurement_name).info(back_up_msg)
             except:
-                import traceback
-                err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
-                str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + \
-                              traceback._some_str(sys.exc_info()[1]),
-                              err_file,
-                              str(sys.exc_info()[2].tb_lineno)])
-                error_msg = "Unexpected error when generating tof.in: {0}".format(
-                                str_err)
+                error_msg = "Unexpected error: {0}".format(sys.exc_info()[0])
                 logging.getLogger(self.measurement_name).error(error_msg)
-            # Write new settings to the file.
-            with open(tof_in_file, "wt+") as fp:
-                fp.write(tof_in)
-            str_logmsg = "Generated tof.in with params> {0}".format(
-                             tof_in.replace("\n", "; "))
-            logging.getLogger(self.measurement_name).info(str_logmsg)
+                
+        use_settings = self.measurement_settings.get_measurement_settings()
+        with open(tof_in_file, "wt+") as fp:
+            measurement = "Beam: {0}\n".format(
+                     use_settings.measuring_unit_settings.element) \
+                + "Energy: {0}\n".format(
+                     use_settings.measuring_unit_settings.energy) \
+                + "Detector angle: {0}\n".format(
+                     use_settings.measuring_unit_settings.detector_angle) \
+                + "Target angle: {0}\n".format(
+                     use_settings.measuring_unit_settings.target_angle) \
+                + "Toflen: {0}\n".format(
+                     use_settings.measuring_unit_settings.time_of_flight_lenght) \
+                + "Carbon foil thickness: {0}\n".format(
+                     use_settings.measuring_unit_settings.carbon_foil_thickness) \
+                + "Target density: {0}\n".format(
+                     use_settings.measuring_unit_settings.target_density)
+            fp.write(measurement)
             
+            # ToF Calibration
+            fp.write("TOF calibration: {0} {1}\n".format(
+                                        use_settings.calibration_settings.slope,
+                                        use_settings.calibration_settings.offset))
+            
+            # Depth settings
+            depth = "Depth step for stopping: {0}\n".format(
+                    use_settings.depth_profile_settings.depth_step_for_stopping) \
+                + "Depth step for output: {0}\n".format(
+                    use_settings.depth_profile_settings.depth_step_for_output) \
+                + "Depths for concentration scaling: {0} {1}\n".format(
+                use_settings.depth_profile_settings.depths_for_concentration_from,
+                use_settings.depth_profile_settings.depths_for_concentration_to)
+            fp.write(depth)            
+

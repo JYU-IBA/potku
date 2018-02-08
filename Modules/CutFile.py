@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 26.3.2013
-Updated on 1.7.2013
+Updated on 23.5.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -121,13 +121,16 @@ class CutFile:
                         elif key == "Detector Angle":
                             self.detector_angle = int(value)
                         elif key == "Scatter Element":
-                            self.element_scatter = Element(value)
+                            self.element_scatter = value
                         elif key == "Element losses":
                             self.is_elem_loss = bool(value)
                         elif key == "Split count":
                             self.split_count = int(value)
                 else:
-                    self.data.append([int(i) for i in line.split()])
+                    line_split = line.strip().split(' ')
+                    self.data.append([int(line_split[0]), 
+                                      int(line_split[1]), 
+                                      int(line_split[2])])
                 dirtyinteger += 1
         
     
@@ -178,8 +181,7 @@ class CutFile:
             myFile.write("\n")
             myFile.write("ToF, Energy, Event number\n")
             for p in self.data:  # Write all points
-                myFile.write(' '.join(map(str, p))) 
-                myFile.write('\n')
+                myFile.write("{0[0]} {0[1]} {0[2]}\n".format(p))
             myFile.close()
         
          
@@ -201,8 +203,8 @@ class CutFile:
         cut_splits = [[] for unused_i in range(splits)]
         while split < splits and row_index < self_size:
             # Get last event number in first split
-            max_event = reference_cut.data[((split + 1) * split_size) - 1][-1]  
-            while row_index < self_size and self.data[row_index][-1] <= max_event:
+            max_event = reference_cut.data[((split + 1) * split_size) - 1][2]  
+            while row_index < self_size and self.data[row_index][2] <= max_event:
                 cut_splits[split].append(self.data[row_index])
                 row_index += 1
             split += 1
@@ -238,60 +240,10 @@ class CutFile:
         '''
         self.directory = cut_file.directory
         self.data = data
-        self.element = Element(cut_file.element)
+        self.element = cut_file.element
         self.count = len(data)
         self.type = cut_file.type
         self.weight_factor = cut_file.weight_factor * additional_weight_factor
         self.energy = cut_file.energy
         self.detector_angle = cut_file.detector_angle
-        self.element_scatter = Element(cut_file.element_scatter)
-
-
-
-
-def is_rbs(file):
-    '''Check if cut file is RBS.
-    
-    Args:
-        file: A string representing file to be checked.
-        
-    Return:
-        Returns True if cut file is RBS and False if not.
-    '''
-    with open(file) as fp:
-        dirtyinteger = 0
-        for line in fp:
-            if dirtyinteger >= 10:
-                break
-            line_split = line.strip().split(':')
-            if len(line_split) > 1: 
-                key = line_split[0].strip()
-                value = line_split[1].strip()
-            if key == "Type":
-                return value == "RBS"            
-            dirtyinteger += 1
-    return False
-
-
-def get_scatter_element(file):
-    '''Check if cut file is RBS.
-    
-    Args:
-        file: A string representing file to be checked.
-        
-    Return:
-        Returns an Element class object of scatter element. Returns an empty 
-        Element class object if there is no scatter element (in case of ERD).
-    '''
-    with open(file) as fp:
-        dirtyinteger = 0
-        for line in fp:
-            if dirtyinteger >= 10:
-                break
-            line_split = line.strip().split(':')
-            if len(line_split) > 1: 
-                key = line_split[0].strip()
-                value = line_split[1].strip()
-            if key == "Scatter Element":
-                return Element(value)
-    return Element()
+        self.element_scatter = cut_file.element_scatter

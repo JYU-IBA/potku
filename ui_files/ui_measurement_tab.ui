@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>739</width>
-    <height>668</height>
+    <height>628</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -94,9 +94,9 @@
              <property name="geometry">
               <rect>
                <x>0</x>
-               <y>-72</y>
-               <width>241</width>
-               <height>768</height>
+               <y>0</y>
+               <width>264</width>
+               <height>573</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout">
@@ -201,7 +201,7 @@
                             <string>Open the depth profile settings for the active measurement and define the parameters for the depth profiles.</string>
                            </property>
                            <property name="text">
-                            <string>Depth Profiles</string>
+                            <string>Depth profile</string>
                            </property>
                            <property name="iconSize">
                             <size>
@@ -257,20 +257,20 @@
                 <item>
                  <widget class="QCommandLinkButton" name="makeSelectionsButton">
                   <property name="text">
-                   <string>Mass Selection</string>
+                   <string>Elemental selection</string>
                   </property>
                   <property name="checkable">
                    <bool>true</bool>
                   </property>
                   <property name="description">
-                   <string>Select the masses using the selection tool.</string>
+                   <string>Select the elements using the selection tool.</string>
                   </property>
                  </widget>
                 </item>
                 <item>
                  <widget class="QCommandLinkButton" name="saveCutsButton">
                   <property name="text">
-                   <string>Save Cuts</string>
+                   <string>Save cuts</string>
                   </property>
                   <property name="description">
                    <string>Save points grouped inside the selection areas.</string>
@@ -280,43 +280,30 @@
                 <item>
                  <widget class="QCommandLinkButton" name="analyzeElementLossesButton">
                   <property name="text">
-                   <string>Composition Changes</string>
+                   <string>Elemental losses</string>
                   </property>
                   <property name="description">
-                   <string>Analyze the composition changes of the target sample.</string>
+                   <string>Analyze the elemental losses of the target sample.</string>
                   </property>
                  </widget>
                 </item>
                 <item>
                  <widget class="QCommandLinkButton" name="energySpectrumButton">
                   <property name="text">
-                   <string>Energy Spectra</string>
+                   <string>Energy spectrum</string>
                   </property>
                   <property name="description">
-                   <string>Draw energy spectra graph of the sample.</string>
+                   <string>Draw energy spectrum graphs of the target sample.</string>
                   </property>
                  </widget>
                 </item>
                 <item>
                  <widget class="QCommandLinkButton" name="createDepthProfileButton">
                   <property name="text">
-                   <string>Depth Profiles</string>
+                   <string>Depth profile</string>
                   </property>
                   <property name="description">
                    <string>Visualize the consentrations of the elements in the different depths of the sample</string>
-                  </property>
-                 </widget>
-                </item>
-                <item>
-                 <widget class="QCommandLinkButton" name="command_master">
-                  <property name="enabled">
-                   <bool>false</bool>
-                  </property>
-                  <property name="text">
-                   <string>Master Measurement</string>
-                  </property>
-                  <property name="description">
-                   <string>Issue actions from master measurement to slave measurements of the project</string>
                   </property>
                  </widget>
                 </item>
@@ -367,7 +354,7 @@
    <sender>hideShowSettingsButton</sender>
    <signal>toggled(bool)</signal>
    <receiver>settingsFrame</receiver>
-   <slot>setShown(bool)</slot>
+   <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>586</x>

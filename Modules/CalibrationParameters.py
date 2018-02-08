@@ -49,9 +49,7 @@ class CalibrationParameters:
         self.use_settings = ""      
         self.slope = 0
         self.offset = 0
-        self.angleslope = 0
-        self.angleoffset = 0
-
+        
         self.__set_config_parameters()
         if settings_filepath == None:
             return
@@ -73,9 +71,7 @@ class CalibrationParameters:
         """
         dialog.slopeLineEdit.setText(str(self.slope))
         dialog.offsetLineEdit.setText(str(self.offset))
-        dialog.angleSlopeLineEdit.setText(str(self.angleslope))
-        dialog.angleOffsetLineEdit.setText(str(self.angleoffset))
- 
+        
         
     def set_settings(self, dialog, used_settings=None):
         """Takes inputted parameters from the given dialog and sets them to the 
@@ -91,8 +87,7 @@ class CalibrationParameters:
         
         self.slope = float(dialog.slopeLineEdit.text())
         self.offset = float(dialog.offsetLineEdit.text())
-        self.angleslope = float(dialog.angleSlopeLineEdit.text())
-        self.angleoffset = float(dialog.angleOffsetLineEdit.text())
+        
         
     def load_settings(self, filepath):
         """Loads settings' parameters from the given filepath.
@@ -106,9 +101,6 @@ class CalibrationParameters:
             
             self.slope = float(self.config['parameters']['slope'])
             self.offset = float(self.config['parameters']['offset'])
-            self.angleslope = float(self.config['parameters']['angleslope'])
-            self.angleoffset = float(self.config['parameters']['angleoffset'])
-
         except:  # If there is a problem, use default values
             return
         
@@ -119,9 +111,7 @@ class CalibrationParameters:
         self.config.add_section('parameters')
         self.config.set('parameters', 'slope', str(self.slope))
         self.config.set('parameters', 'offset', str(self.offset))
-        self.config.set('parameters', 'angleslope', str(self.angleslope))
-        self.config.set('parameters', 'angleoffset', str(self.angleoffset))
-
+        
         
     def save_settings(self, filepath=None):
         """Saves settings' parameters to the given filepath.
@@ -132,13 +122,14 @@ class CalibrationParameters:
         self.config['default']['use_settings'] = self.use_settings
         self.config['parameters']['slope'] = str(self.slope)
         self.config['parameters']['offset'] = str(self.offset)
-        self.config['parameters']['angleslope'] = str(self.angleslope)
-        self.config['parameters']['angleoffset'] = str(self.angleoffset)
-
-
+        
         if not filepath:
             filepath = self.filepath
-        
-        with open(filepath, 'wt+') as configfile:  # save
+
+        # filepathin korjaus
+        if filepath[0] == '':
+            return
+
+        with open(filepath[0], 'wt+') as configfile:  # save
             self.config.write(configfile)
                 

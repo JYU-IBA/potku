@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>381</width>
-    <height>357</height>
+    <height>327</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -33,7 +33,7 @@
        <item>
         <widget class="QCheckBox" name="useProjectSettingsValuesCheckBox">
          <property name="text">
-          <string>Use Project Setting Values (default)</string>
+          <string>Use project settings's values (default)</string>
          </property>
          <property name="checked">
           <bool>true</bool>
@@ -61,15 +61,15 @@
         <bool>false</bool>
        </property>
        <property name="title">
-        <string>Active measurement's depth profile settings</string>
+        <string>Project's depth profile settings</string>
        </property>
        <layout class="QGridLayout" name="gridLayout_2">
-        <item row="5" column="0">
+        <item row="2" column="0">
          <layout class="QHBoxLayout" name="horizontalLayout_36">
           <item>
            <widget class="QLabel" name="label_26">
             <property name="text">
-             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Step for stopping [1e15 at./cm&lt;span style=&quot; vertical-align:super;&quot;&gt;2&lt;/span&gt;]:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Analysis depth [1e15 at./cm&lt;span style=&quot; vertical-align:super;&quot;&gt;2&lt;/span&gt;]:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
             </property>
            </widget>
           </item>
@@ -141,7 +141,7 @@
           </item>
          </layout>
         </item>
-        <item row="7" column="0">
+        <item row="4" column="0">
          <layout class="QHBoxLayout" name="horizontalLayout_38">
           <item>
            <widget class="QGroupBox" name="groupBox_9">
@@ -217,7 +217,7 @@
           </item>
          </layout>
         </item>
-        <item row="6" column="0">
+        <item row="3" column="0">
          <layout class="QHBoxLayout" name="horizontalLayout_39">
           <item>
            <widget class="QLabel" name="label_27">
@@ -241,46 +241,6 @@
           </item>
           <item>
            <widget class="QLineEdit" name="depthStepForOutputLineEdit">
-            <property name="minimumSize">
-             <size>
-              <width>70</width>
-              <height>0</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>70</width>
-              <height>16777215</height>
-             </size>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="2" column="0">
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
-          <item>
-           <widget class="QLabel" name="label">
-            <property name="text">
-             <string>Number of depth steps:</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer_4">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="numberOfDepthStepsLineEdit">
             <property name="minimumSize">
              <size>
               <width>70</width>

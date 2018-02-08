@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 21.3.2013
-Updated on 7.6.2013
+Updated on 23.5.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -26,21 +26,20 @@ along with this program (file named 'LICENCE').
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-from os.path import join
-from PyQt4 import QtGui
+from PyQt5 import QtGui, QtWidgets
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
 
 
-class MatplotlibWidget(QtGui.QWidget):
+class MatplotlibWidget(QtWidgets.QWidget):
     '''Base class for matplotlib widgets
     '''
     def __init__(self, parent):
         '''Inits matplotlib widget.
         
         Args:
-            parent: A Parent class object.
+            parent: parent class object.
         '''
         super().__init__()
         self.main_frame = parent
@@ -53,12 +52,11 @@ class MatplotlibWidget(QtGui.QWidget):
         self.fig = Figure((5.0, 3.0), dpi=self.dpi)
         self.fig.patch.set_facecolor("white")
         self.canvas = FigureCanvas(self.fig)
-        self.canvas.manager = MockManager(self.main_frame)
         self.canvas.setParent(self.main_frame)
         self.axes = self.fig.add_subplot(111)
         
         self.mpl_toolbar = NavigationToolbar(self.canvas, self.main_frame)
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         
         self.main_frame.ui.matplotlib_layout.addWidget(self.canvas)
         self.main_frame.ui.matplotlib_layout.addWidget(self.mpl_toolbar)
@@ -69,7 +67,7 @@ class MatplotlibWidget(QtGui.QWidget):
         '''Remove figure options & subplot config that might not work properly.
         '''
         try:
-            self.mpl_toolbar.removeAction(self.mpl_toolbar.children()[21]) 
+            self.mpl_toolbar.removeAction(self.mpl_toolbar.children()[21])  
             self.mpl_toolbar.removeAction(self.mpl_toolbar.children()[17])
         except:
             pass  # Already removed
@@ -101,33 +99,3 @@ class MatplotlibWidget(QtGui.QWidget):
         
         import gc
         gc.collect()
-
-
-class MockManager:
-    '''MockManager class to force matplotlib's figure (image) saving directory.
-    '''
-    def __init__(self, parent):
-        '''Init the mock manager class to be used when saving figure.
-        
-        Args:
-            parent: A parent object which has measurement object.
-        '''
-        if hasattr(parent, "measurement"):
-            self.directory = parent.measurement.directory
-        elif hasattr(parent, "img_dir"):
-            self.directory = parent.img_dir
-        else:
-            self.directory = None
-        self.title = "image"
-        
-    def get_window_title(self):
-        '''Get full path to the file (no extension).
-        '''
-        if self.directory:
-            return join(self.directory, self.title)
-        return self.title
-
-    def set_title(self, title):
-        '''Set file name.
-        '''
-        self.title = title

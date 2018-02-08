@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 20.3.2013
-Updated on 26.6.2013
+Updated on 23.5.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -68,10 +68,8 @@ class Masses:
         for isotope, tn in isotopes:
             # We don't need rare isotopes to be shown
             if float(tn) > 0.0:
-                combobox.addItem("{0} ({1}%)".format(isotope,
-                                                     round(float(tn), 3)),
-                                 userData=(isotope, tn)) 
-                if isotope == str(current_isotope):
+                combobox.addItem(isotope) 
+                if isotope == current_isotope:
                     combobox.setCurrentIndex(dirtyinteger) 
             dirtyinteger += 1
     

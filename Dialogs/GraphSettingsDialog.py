@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 21.3.2013
-Updated on 16.8.2013
+Updated on 23.5.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -27,11 +27,13 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt4 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtWidgets, uic
+# from PyQt4 import QtGui
+# from PyQt4 import uic
 
 
-class TofeGraphSettingsWidget(QtGui.QDialog):
-    '''Graph settings dialog for the ToF-E histogram graph.
+class TofeGraphSettingsWidget(QtWidgets.QDialog):
+    '''
     '''
     def __init__(self, parent):
         '''Inits ToF-E graph histogram graph settings dialog.
@@ -49,15 +51,13 @@ class TofeGraphSettingsWidget(QtGui.QDialog):
         # Connect and show
         self.ui.OKButton.clicked.connect(self.accept_settings) 
         self.ui.cancelButton.clicked.connect(self.close)
-                
         self.exec_()
     
     
     def accept_settings(self):
         '''Accept changed settings and save them.
         '''
-        self.parent.compression_x = self.ui.bin_x.value()
-        self.parent.compression_y = self.ui.bin_y.value()
+        self.parent.bins = [self.ui.bin_x.value(), self.ui.bin_y.value()]
         self.parent.invert_X = self.ui.invert_x.checkState() == QtCore.Qt.Checked
         self.parent.invert_Y = self.ui.invert_y.checkState() == QtCore.Qt.Checked
         self.parent.show_axis_ticks = \
@@ -65,21 +65,6 @@ class TofeGraphSettingsWidget(QtGui.QDialog):
         self.parent.transpose_axes = \
                   self.ui.transposeAxesCheckBox.checkState() == QtCore.Qt.Checked
         self.parent.measurement.color_scheme = self.ui.colorbox.currentText()
-        if self.ui.radio_range_auto.isChecked():    
-            self.parent.axes_range_mode = 0
-        elif self.ui.radio_range_manual.isChecked(): 
-            self.parent.axes_range_mode = 1
-        x_range_min = self.ui.spin_range_x_min.value()
-        x_range_max = self.ui.spin_range_x_max.value()
-        y_range_min = self.ui.spin_range_y_min.value()
-        y_range_max = self.ui.spin_range_y_max.value()
-        if x_range_min > x_range_max: x_range_min
-        if y_range_min > y_range_max: y_range_min
-        self.parent.axes_range = [(x_range_min, x_range_max),
-                                  (y_range_min, y_range_max)]
         self.parent.on_draw()
         self.close()
-
-
-
 
