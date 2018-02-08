@@ -1,11 +1,11 @@
-Beam: 
-Energy: 0.0
-Detector angle: 0.0
-Target angle: 0.0
+Beam: 52Cr
+Energy: 2.0
+Detector angle: 18.7
+Target angle: 3.6
 Toflen: 0.0
 Carbon foil thickness: 0.0
 Target density: 0.0
-TOF calibration: 0.0 0.0
-Depth step for stopping: 0.0
-Depth step for output: 0.0
-Depths for concentration scaling: 0.0 0.0
+TOF calibration: 30.0 33.0
+Depth step for stopping: 30.0
+Depth step for output: 4.8
+Depths for concentration scaling: 1.0 5.0

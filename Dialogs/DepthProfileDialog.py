@@ -126,7 +126,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
             else:
                 print("No cuts have been selected for depth profile.")
         except Exception as e:
-            error_log = "Unexpected error: {0}".format(e.strerror)
+            error_log = "Unexpected error: {0}".format(str(e))
             logging.getLogger(self.measurement.measurement_name).error(error_log)
         finally:
             self.__statusbar.removeWidget(progress_bar)
