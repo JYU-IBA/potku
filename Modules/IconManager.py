@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os import listdir, path
-from PyQt5 import QtWidgets, QtGui, QtCore
+from PyQt4 import QtGui, QtCore
 
 class IconManager:
     '''Icon manager class to handle all icons for the program.
@@ -60,7 +60,7 @@ class IconManager:
         '''
         icon = self.get_icon(icon_name)
         target.setIcon(icon)
-        if type(target) != QtWidgets.QAction:
+        if type(target) != QtGui.QAction:
             target.setIconSize(QtCore.QSize(size[0], size[1]))
     
     

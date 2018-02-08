@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 12.4.2013
-Updated on 23.5.2013
+Updated on 15.7.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -71,9 +71,64 @@ class Settings:
         else:
             use_depth = self.project_settings.depth_profile_settings
             
-        settings = Settings() # TODO: Use setters instead of directly modifying.
+        settings = Settings()  # TODO: Use setters instead of directly modifying.
         settings.measuring_unit_settings = use_measuring
         settings.calibration_settings = use_calibration
         settings.depth_profile_settings = use_depth
         return settings
     
+    
+    def has_been_set(self):
+        '''Are settings changed or still default values.
+        
+        Return:
+            Returns True if user has changed settings and False if settings 
+            have default values.
+        '''
+        zero_equality_large = 0.01
+        zero_equality_small = 0.000000000000001  # For calibration, e-15
+        if self.project_settings:
+            settings = self.get_measurement_settings()
+        else:
+            settings = self
+        mus = settings.measuring_unit_settings
+        cs = settings.calibration_settings
+        dps = settings.depth_profile_settings
+        
+        # Check Measurement Settings
+        if not mus.element:
+            return False
+        if abs(mus.carbon_foil_thickness) < zero_equality_large:
+            return False
+        if abs(mus.energy) < zero_equality_large:
+            return False
+        if abs(mus.detector_angle) < zero_equality_large:
+            return False
+        if abs(mus.target_angle) < zero_equality_large:
+            return False
+        if abs(mus.target_density) < zero_equality_large:
+            return False
+        if abs(mus.time_of_flight_lenght) < zero_equality_large:
+            return False
+        
+        # Check Calibration Settings
+        if abs(cs.slope) < zero_equality_small:
+            return False
+        if abs(cs.offset) < zero_equality_small:
+            return False
+        
+        # Check Depth Profile Settings
+        if dps.number_of_depth_steps == 0:
+            return False
+        if abs(dps.depth_step_for_stopping) < zero_equality_large:
+            return False
+        if abs(dps.depth_step_for_output) < zero_equality_large:
+            return False
+        if abs(dps.depths_for_concentration_from) < zero_equality_large:
+            return False
+        if abs(dps.depths_for_concentration_to) < zero_equality_large:
+            return False
+        return True
+
+
+

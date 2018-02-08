@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 5.4.2013
-Updated on 23.5.2013
+Updated on 20.8.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -29,16 +29,14 @@ Also handles several tasks necessary for operating with depth files.
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-import os
-import platform
-import re
-import subprocess
+import math, os, platform, re, subprocess
+
 
 class DepthFiles(object):
     '''DepthFiles handles calling the external programs to create depth files.
     '''
     def __init__(self, filepaths, outputpath):
-        '''Inits DepthFiles
+        '''Inits DepthFiles.
         
         Args:
             filepaths: Full paths of cutfiles to be used.
@@ -94,11 +92,14 @@ def extract_from_depth_files(files, elements, x_column, y_column):
                     file_element = element
         axe1 = []
         axe2 = []
+        axe3 = []
         for line in open(file):
             columns = re.split(' +', line.strip())
             axe1.append(float(columns[x_column]))
             axe2.append(float(columns[y_column]) * 100)
-        read_files.append([file_element, axe1, axe2])
+            if file_element != "total":
+                axe3.append(int(columns[-1]))
+        read_files.append([file_element, axe1, axe2, axe3])
     return read_files
         
 
@@ -117,27 +118,25 @@ def create_relational_depth_files(read_files):
     rel_files = []
     total_file_axe = []
     for file in read_files:
-        file_element, axe1, axe2 = file
+        file_element, axe1, axe2, unused_axe3 = file
         if file_element == 'total':
             total_file_axe = axe2
             break
     for file in read_files:
-        file_element, axe1, axe2 = file
+        file_element, axe1, axe2, axe3 = file
         rel_axe = []
-        i = 0
-        while i < len(axe2) and i < len(total_file_axe):
+        for i in range(0, len(total_file_axe)):
             division = total_file_axe[i]
             if division != 0:
                 rel_val = (axe2[i] / total_file_axe[i]) * 100
             else:
                 rel_val = 0
             rel_axe.append(rel_val)
-            i += 1
-        rel_files.append([file_element, axe1, rel_axe])
+        rel_files.append([file_element, axe1, rel_axe, axe3])
     return rel_files
 
 
-def merge_files_in_range(fil_a, fil_b, lim_a, lim_b):
+def merge_files_in_range(file_a, file_b, lim_a, lim_b):
     '''Merges two lists that contain n amount of [str,[x],[y]] items.
     When within range [lim_a, lim_b] values from fil_b are used,
     otherwise values from fil_a.
@@ -150,76 +149,130 @@ def merge_files_in_range(fil_a, fil_b, lim_a, lim_b):
     Return:
         A merged file.
     '''
-    i = 0
-    fil_c = []
-    while i < len(fil_a):
-        item = fil_a[i]
+    file_c = []
+    for i in range(len(file_a)):
+        item = file_a[i]
         new_item = [item[0], item[1], []]
-        j = 0
-        while j < len(item[1]):
+        for j in range(len(item[1])):
             if item[1][j] >= lim_a and item[1][j] <= lim_b:
-                new_item[2].append(fil_b[i][2][j])
+                new_item[2].append(file_b[i][2][j])
             else:
-                new_item[2].append(fil_a[i][2][j])
-            j += 1
-        i += 1
-        fil_c.append(new_item)
-    return fil_c
+                new_item[2].append(file_a[i][2][j])
+        file_c.append(new_item)
+    return file_c
 
 
-def integrate_lists(lists, lim_a, lim_b):
-    '''Calculates and returns the relative amounts of values within lists.
+def integrate_concentrations(depth_files, ignore_elements, lim_a, lim_b):
+    '''Calculates concenration for elements
     
     Args:
-        lists: List of lists containing float values, the first list 
+        depth_files: List of lists containing float values, the first list 
         is the one the rest are compared to.
+        ignore_elements: A list of elements that are not counted.
         lim_a: The lower limit.
         lim_b: The higher limit.
     
     Return:
         List of lists filled with percentages.
     '''
-    total_sum = float
-    sums = []
-    percentages = []
+    # TARKISTA, ETTÄ TOIMII!!!
+    concentration = {}
     # Extract the sum of data point within the [lim_a,lim_b]-range
-    for lst in lists:
-        i = 1
-        p = []
-        x = lst[1]
-        y = lst[2]
-        while True:  # TODO: for katso listanlukuolio
-            curr = x[i]
-            prev_val = y[i - 1]
-            curr_val = y[i]
-            if curr > lim_b:
-                value = (prev_val + curr_val) / 2
-                p.append(value)
+    bin_width = abs(depth_files[0][1][0] - depth_files[0][1][1])
+    for element in depth_files:
+        if element[0] == "total":
+            continue
+        concentration[element[0]] = []
+        for i in range(0, len(element[2])):
+            depth = element[1][i]
+            if depth >= lim_a and depth <= lim_b:
+                concentration[element[0]].append(element[2][i] * bin_width / 100)
+            elif depth > lim_b:
+                concentration[element[0]].append(element[2][i] * bin_width / 100)
                 break
-            elif curr < lim_a:
-                pass
-            elif curr >= lim_a and curr <= lim_b:
-                value = (prev_val + curr_val) / 2
-                p.append(value)
-            i += 1
-            if i == len(x):
-                break
-        sums.append(sum(p))
-    # Calculate the relative sums
-    has_total = False
-    for element_sum in sums:
-        if not has_total:
-            total_sum = element_sum
-            percentage = 100.0
-            has_total = True
-        else:
-            if abs(total_sum) < 0.001:
-                percentage = 0
-            else:
-                percentage = (element_sum / total_sum) * 100
-        percentages.append(percentage)
-    return percentages
+    return concentration
 
+
+def integrate_lists(depth_files, ignore_elements, lim_a, lim_b, systematic_error):
+    '''Calculates and returns the relative amounts of values within lists.
+    
+    Args:
+        depth_files: List of lists containing float values, the first list 
+        is the one the rest are compared to.
+        ignore_elements: A list of elements that are not counted.
+        lim_a: The lower limit.
+        lim_b: The higher limit.
+        systematic_error: A double representing systematic error.
+    
+    Return:
+        List of lists filled with percentages.
+    '''
+    percentages = {}
+    margin_of_errors = {}
+    # Extract the sum of data point within the [lim_a,lim_b]-range
+    total_values = depth_files[0]
+    total_values_sum = 0
+    skip_values_sum = 0
+    for n in range(1, len(total_values[1])):
+        curr = total_values[1][n]
+        prev_val = total_values[2][n - 1]
+        curr_val = total_values[2][n]
+        if curr >= lim_a and curr <= lim_b:
+            total_values_sum += (prev_val + curr_val) / 2
+        elif curr > lim_b:
+            total_values_sum += (prev_val + curr_val) / 2
+            break
+    for element in ignore_elements:
+        for i in range(1, len(depth_files)):
+            if depth_files[i][0] != element:
+                continue
+            for n in range(1, len(depth_files[i][1])):
+                curr = depth_files[i][1][n]
+                prev_val = depth_files[i][2][n - 1]
+                curr_val = depth_files[i][2][n]
+                if curr >= lim_a and curr <= lim_b:
+                    skip_values_sum += (prev_val + curr_val) / 2
+                elif curr > lim_b:
+                    skip_values_sum += (prev_val + curr_val) / 2
+                    break
+    total_values_sum -= skip_values_sum
+    
+    # Process all elements
+    for i in range(1, len(depth_files)):
+        element = depth_files[i][0]
+        
+        if element in ignore_elements:
+            percentages[element] = None
+            margin_of_errors[element] = None
+            continue
+        
+        element_x = depth_files[i][1]
+        element_y = depth_files[i][2]
+        element_e = depth_files[i][3]  # Events at profile depth
+        
+        element_conc = []
+        element_event = []
+        for j in range(1, len(element_x)):
+            curr = element_x[j]
+            prev_val = element_y[j - 1]
+            curr_val = element_y[j]
+            if curr >= lim_a and curr <= lim_b:
+                element_conc.append((prev_val + curr_val) / 2)
+                element_event.append(element_e[j])
+            elif curr > lim_b:
+                element_conc.append((prev_val + curr_val) / 2)
+                element_event.append(element_e[j])
+                break
+        percentages[element] = (sum(element_conc) / total_values_sum) * 100
+        if sum(element_event) > 0:
+            stat_err = (1 / math.sqrt(sum(element_event))) * percentages[element]
+        else:
+            stat_err = 0
+        syst_err = (systematic_error / 100) * percentages[element]
+        margin_of_errors[element] = math.sqrt(stat_err * stat_err + \
+                                              syst_err * syst_err)
+    return percentages, margin_of_errors
+    
 
 def get_depth_files(elements, dir_cuts):
     '''Returns a list of depth files in a directory

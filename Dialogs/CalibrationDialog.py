@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 15.4.2013
-Updated on 23.5.2013
+Updated on 3.7.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -27,9 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 import os
-from PyQt5 import QtCore, QtWidgets, QtGui, uic
-# from PyQt4 import QtGui
-# from PyQt4 import uic
+from PyQt4 import QtCore, QtGui, uic
 
 from Modules.CutFile import CutFile
 from Modules.Calibration import TOFCalibration
@@ -38,29 +36,31 @@ import MatplotlibCalibrationCurveFittingWidget
 from Widgets.MatplotlibCalibrationLinearFittingWidget \
 import MatplotlibCalibrationLinearFittingWidget
 
-class CalibrationDialog(QtWidgets.QDialog):
+
+class CalibrationDialog(QtGui.QDialog):
     """A dialog for the time of flight calibration
     """
     def __init__(self, measurements, settings, masses, parent_settings_dialog=None):
-        """Inits the calibration dialog class
+        """Inits the calibration dialog class.
         
         Args:
-            measurements: String list representing measurements files.
-            settings: Settings object
-            masses: Reference to Masses class object.
-            parent_settings_dialog: Representing from which dialog this was opened 
-                                    from.
+            measurements: A string list representing measurements files.
+            settings: A Settings class object.
+            masses: A Masses class object.
+            parent_settings_dialog: A representing from which dialog this was 
+                                    opened from.
         """
         super().__init__()
-        self.measurements = measurements  # List
+        self.measurements = measurements
         # TODO: Settings should be loaded from the measurement depending on is the 
         # calibration dialog opened from the project settings (measurement's 
         # project settings is loaded) or the measurement specific settings
         # (measurement's measurement settings is loaded). This has to be done for
         # better architecture.
         self.settings = settings 
-        self.cuts = []
-
+        self.__cut_file = CutFile()
+        self.__cut_files = {}
+        
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_calibration_dialog.ui"), self)
         self.parent_settings_dialog = parent_settings_dialog 
@@ -70,25 +70,28 @@ class CalibrationDialog(QtWidgets.QDialog):
         
         # Go through all the measurements and their cut files and list them.
         for measurement in self.measurements:
-            item = QtWidgets.QTreeWidgetItem([measurement.measurement_name])
+            item = QtGui.QTreeWidgetItem([measurement.measurement_name])
             
             cuts, unused_cuts_elemloss = measurement.get_cut_files()
             # May also return a list of cut file's element losses 
             # cut files as one of the list elements
             for cut_file in cuts:
-                subitem = QtWidgets.QTreeWidgetItem([cut_file])
+                subitem = QtGui.QTreeWidgetItem([cut_file])
                 subitem.directory = measurement.directory_cuts
                 subitem.file_name = cut_file
                 item.addChild(subitem)
+                cut_object = CutFile()
+                cut_object.load_file(os.path.join(measurement.directory_cuts,
+                                                  cut_file))
+                self.__cut_files[cut_file] = cut_object
             self.ui.cutFilesTreeWidget.addTopLevelItem(item)
             item.setExpanded(True)
         # Resize columns to fit the content nicely
         for column in range(0, self.ui.cutFilesTreeWidget.columnCount()):
             self.ui.cutFilesTreeWidget.resizeColumnToContents(column)
 
-            
-        self.cut_file = CutFile()
-        self.curveFittingWidget = CalibrationCurveFittingWidget(self, self.cut_file,
+        self.curveFittingWidget = CalibrationCurveFittingWidget(self,
+                                                    self.__cut_file,
                                                     self.tof_calibration,
                                                     self.settings,
                                                     self.ui.binWidthSpinBox.value(),
@@ -113,7 +116,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.calibrationResultsLayout.addWidget(self.linearFittingWidget)        
         
         # Set up connections
-        self.ui.cutFilesTreeWidget.itemClicked.connect(
+        self.ui.cutFilesTreeWidget.itemSelectionChanged.connect(
             lambda: self.change_current_cut(
                 self.ui.cutFilesTreeWidget.currentItem()))
         self.ui.pointsTreeWidget.itemClicked.connect(self.__set_state_for_point)
@@ -191,7 +194,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         """Changes the current cut file drawn to the curve fitting widget.
         
         Args:
-            current_item: QtWidgets.QTreeWidgetItem of CutFile which was selected.
+            current_item: QtGui.QTreeWidgetItem of CutFile which was selected. 
         """
         self.__change_accept_point_label("")
         if current_item and hasattr(current_item, 'directory') and \
@@ -205,28 +208,24 @@ class CalibrationDialog(QtWidgets.QDialog):
         """Sets the current open cut file in the calibration dialog.
         
         Args:
-            current_item: QtWidgets.QTreeWidgetItem of CutFile which was selected.
+            current_item: QtGui.QTreeWidgetItem of CutFile which was selected. 
         """
-        # TODO: Do not read cut files every time. 
-        # Read them once and then switch here.
-        self.cut_file = CutFile()
-        self.cut_file.load_file(os.path.join(current_item.directory,
-                                             current_item.file_name))
-    
+        self.__cut_file = self.__cut_files[current_item.file_name]
+
     
     def __update_curve_fit(self):
         """Redraws everything in the curve fitting graph. Updates the bin width too.
         """
         bin_width = self.ui.binWidthSpinBox.value()
         self.curveFittingWidget.matplotlib.change_bin_width(bin_width)
-        self.curveFittingWidget.matplotlib.change_cut(self.cut_file)
+        self.curveFittingWidget.matplotlib.change_cut(self.__cut_file)
     
     
     def __set_state_for_point(self, tree_item):
         """Sets if the tof calibration point is drawn to the linear fit graph
         
         Args:
-            tree_item: QtWidgets.QTreeWidgetItem
+            tree_item: QtGui.QTreeWidgetItem
         """
         if tree_item and hasattr(tree_item, 'point'):
             tree_item.point.point_used = tree_item.checkState(0)
@@ -281,7 +280,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         """Adds a ToF Calibration point to the pointsTreeWidget and sets the 
         QTreeWidgetItem's attribute 'point' as the given TOFCalibrationPoint. 
         """
-        item = QtWidgets.QTreeWidgetItem([tof_calibration_point.get_name()])
+        item = QtGui.QTreeWidgetItem([tof_calibration_point.get_name()])
         item.point = tof_calibration_point
         item.setCheckState(0, QtCore.Qt.Checked)
         self.ui.pointsTreeWidget.addTopLevelItem(item)
@@ -295,7 +294,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         
 
 
-class CalibrationCurveFittingWidget(QtWidgets.QWidget):
+class CalibrationCurveFittingWidget(QtGui.QWidget):
     '''Widget class for holding MatplotlibCalibrationCurveFittingWidget.
     '''
     def __init__(self, dialog, cut, tof_calibration,
@@ -314,6 +313,11 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_tof_curve_fitting_widget.ui"), self)
+        # NOTE: One of these should always be there. Could probably use "else"
+        if hasattr(dialog.parent_settings_dialog, "project"):
+            self.img_dir = dialog.parent_settings_dialog.project.directory
+        elif hasattr(dialog.parent_settings_dialog, "measurement"):
+            self.img_dir = dialog.parent_settings_dialog.measurement.directory
         self.matplotlib = MatplotlibCalibrationCurveFittingWidget(self,
                                                                   settings,
                                                                   tof_calibration,
@@ -325,7 +329,7 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
         
         
             
-class CalibrationLinearFittingWidget(QtWidgets.QWidget):
+class CalibrationLinearFittingWidget(QtGui.QWidget):
     '''Widget class for holding MatplotlibCalibrationLinearFittingWidget.
     '''
     def __init__(self, dialog, tof_calibration, old_params):
@@ -339,6 +343,11 @@ class CalibrationLinearFittingWidget(QtWidgets.QWidget):
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_tof_linear_fitting_widget.ui"), self)
+        # NOTE: One of these should always be there. Could probably use "else"
+        if hasattr(dialog.parent_settings_dialog, "project"):
+            self.img_dir = dialog.parent_settings_dialog.project.directory
+        elif hasattr(dialog.parent_settings_dialog, "measurement"):
+            self.img_dir = dialog.parent_settings_dialog.measurement.directory
         self.matplotlib = MatplotlibCalibrationLinearFittingWidget(self,
                                                            tof_calibration,
                                                            dialog=dialog,

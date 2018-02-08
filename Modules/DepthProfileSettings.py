@@ -47,6 +47,7 @@ class DepthProfileSettings:
         # uses its own settings ('MEASUREMENT') or project's 
         # settings ('PROJECT') 
         self.use_settings = ""   
+        self.number_of_depth_steps = 0
         self.depth_step_for_stopping = 0
         self.depth_step_for_output = 0
         self.depths_for_concentration_from = 0
@@ -72,6 +73,9 @@ class DepthProfileSettings:
         depth_profile_settings = "depth_profile_settings"
         self.config.add_section(depth_profile_settings)
         self.config.set(depth_profile_settings,
+                        'number_of_depth_steps',
+                        str(self.number_of_depth_steps))
+        self.config.set(depth_profile_settings,
                         'depth_step_for_stopping',
                         str(self.depth_step_for_stopping))
         self.config.set(depth_profile_settings,
@@ -96,6 +100,8 @@ class DepthProfileSettings:
                                            str(self.depth_step_for_stopping))
         dialog.depthStepForOutputLineEdit.setText(
                                            str(self.depth_step_for_output))
+        dialog.numberOfDepthStepsLineEdit.setText(
+                                            str(self.number_of_depth_steps))
         dialog.depthsForConcentrationScalingLineEdit_1.setText(
                                            str(self.depths_for_concentration_from))
         dialog.depthsForConcentrationScalingLineEdit_2.setText(
@@ -114,7 +120,7 @@ class DepthProfileSettings:
         else:
             self.use_settings = used_settings
         
-        
+        self.number_of_depth_steps = int(dialog.numberOfDepthStepsLineEdit.text())
         self.depth_step_for_stopping = float(
                              dialog.depthStepForStoppingLineEdit.text())
         self.depth_step_for_output = float(
@@ -137,6 +143,8 @@ class DepthProfileSettings:
             self.use_settings = self.config['default']['use_settings']
 
             depth = "depth_profile_settings"
+            self.number_of_depth_steps = int(
+                            self.config[depth]['number_of_depth_steps'])
             self.depth_step_for_stopping = float(
                              self.config[depth]['depth_step_for_stopping'])
             self.depth_step_for_output = float(
@@ -162,6 +170,7 @@ class DepthProfileSettings:
         
         # self.config['DEFAULT']['path'] = 'value'
         depth = "depth_profile_settings"
+        self.config[depth]['number_of_depth_steps'] = str(self.number_of_depth_steps)
         self.config[depth]['depth_step_for_stopping'] = str(self.depth_step_for_stopping) 
         self.config[depth]['depth_step_for_output'] = str(self.depth_step_for_output)
         self.config[depth]['depths_for_concentration_from'] = str(self.depths_for_concentration_from)
@@ -169,12 +178,8 @@ class DepthProfileSettings:
         
         if not filepath:
             filepath = self.filepath
-
-        # filepathin korjaus
-        if filepath[0] == '':
-            return
         
-        with open(filepath[0], 'wt+') as configfile:  # save
+        with open(filepath, 'wt+') as configfile:  # save
             self.config.write(configfile)
         
 

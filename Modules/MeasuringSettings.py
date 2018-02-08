@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 18.3.2013
-Updated on 23.5.2013
+Updated on 26.6.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -28,8 +28,7 @@ Holds, loads and saves measuring settings.
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-import configparser
-import os
+import configparser, os
 from Modules.Element import Element
 
 class MeasuringSettings:
@@ -118,8 +117,9 @@ class MeasuringSettings:
         else:
             self.use_settings = used_settings
         
-        self.element = Element(dialog.elementButton.text(),
-                               dialog.isotopeComboBox.currentText())
+        isotope_index = dialog.isotopeComboBox.currentIndex()
+        isotope_data = dialog.isotopeComboBox.itemData(isotope_index)
+        self.element = Element(dialog.elementButton.text(), isotope_data[0])
         self.energy = float(dialog.energyLineEdit.text())
         self.detector_angle = float(dialog.detectorAngleLineEdit.text())
         self.target_angle = float(dialog.targetAngleLineEdit.text())
@@ -198,10 +198,7 @@ class MeasuringSettings:
         
         if filepath == None:
             filepath = self.filepath
-        #filepathin korjaus
-        if filepath[0] == '':
-            return
-
-        with open(filepath[0], 'wt+') as configfile:
+        
+        with open(filepath, 'wt+') as configfile:
             self.config.write(configfile)
         

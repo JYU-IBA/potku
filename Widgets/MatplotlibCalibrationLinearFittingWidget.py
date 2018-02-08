@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 18.4.2013
-Updated on 23.5.2013
+Updated on 18.6.2013
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -42,6 +42,7 @@ class MatplotlibCalibrationLinearFittingWidget(MatplotlibWidget):
         '''
         super().__init__(parent)
         super().fork_toolbar_buttons()
+        self.canvas.manager.set_title("ToF-E Calibration - linear fitting")
         self.dialog = dialog
         self.old_params = old_params
         self.tof_calibration = tof_calibration
@@ -68,14 +69,12 @@ class MatplotlibCalibrationLinearFittingWidget(MatplotlibWidget):
         '''Draw method for matplotlib.
         '''
         self.axes.clear() 
-
+        
         # Get the point set as a tuple(x, y). 
         points = self.tof_calibration.get_points() 
         self.axes.plot(points[0], points[1], ".")
         
-        x_min, x_max = self.axes.get_xlim() 
-        y_min, y_max = self.axes.get_ylim()  
-        
+        # Draw point texts
         if points[0]:
             for i in range(len(points[0])):
                 self.axes.text(points[0][i],
@@ -83,30 +82,28 @@ class MatplotlibCalibrationLinearFittingWidget(MatplotlibWidget):
                                s=" {0}".format(points[2][i]),
                                va="top",
                                ha="left")
-
-        # Draw old calibration line
+        
+        # Get axes limits, for linear fit drawing.
+        x_min, x_max = self.axes.get_xlim() 
+        y_min, y_max = self.axes.get_ylim()  
+        
+        # Draw selected points
+        params = self.tof_calibration.fit_linear_function(points[0], points[1],
+                                                          0, 0)
+        if params[0] is not None and params[1] is not None:
+            prms = self.tof_calibration.get_linear_fit_points(params, x_min,
+                                                              x_max, 2)
+            self.axes.plot(prms[0], prms[1], "-")
+            
+        # Draw old calibration
         if self.old_params:
             o_params = self.tof_calibration.get_linear_fit_points(self.old_params,
                                                                 x_min, x_max, 2)
             self.axes.plot(o_params[0], o_params[1], color="0.8", linestyle="--")
-  
-        params = self.tof_calibration.fit_linear_function(points[0], points[1], 
-                                                          0, 0)
-        #print(str(params))
-        #print("X_MAX: {0}".format(x_max))
-        #print("Y_MIN: {0}".format(y_min))  
-        if params[0] is not None and params[1] is not None:
-            prms = self.tof_calibration.get_linear_fit_points(params, x_min, 
-                                                              x_max, 2)
-            self.axes.plot(prms[0], prms[1], "-")
-        
+
         self.__update_dialog_values()
-        if x_max > 0.09 and x_max < 1.01:  # This works... # TODO: tarvitaanko??
-            x_max = self.axes.get_xlim()[1]
-        if y_max > 0.09 and y_max < 1.01:
-            y_max = self.axes.get_ylim()[1]
-            
-        # Set limits accordingly
+
+        # Set limits so we've appropriate looking graph.
         self.axes.set_ylim([y_min, y_max])
         self.axes.set_xlim([x_min, x_max])
         
@@ -118,4 +115,6 @@ class MatplotlibCalibrationLinearFittingWidget(MatplotlibWidget):
 
         # Draw magic
         self.canvas.draw()
+
+
 
