@@ -559,9 +559,9 @@ class Potku(QtWidgets.QMainWindow):
         if measurement:  # TODO: Finish this (load_data)
             tab = MeasurementTabWidget(self.tab_id, measurement,
                                        self.masses, self.icon_manager)
-            self.connect(tab,
-                         QtCore.SIGNAL("issueMaster"),
-                         self.__master_issue_commands)
+            #self.connect(tab, QtCore.SIGNAL("issueMaster"), self.__master_issue_commands)
+            tab.issueMaster.connect(self.__master_issue_commands)
+
             tab.setAttribute(QtCore.Qt.WA_DeleteOnClose)
             self.measurement_tab_widgets[self.tab_id] = tab
             tab.add_log()

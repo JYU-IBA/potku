@@ -46,6 +46,7 @@ from Widgets.TofeHistogramWidget import TofeHistogramWidget
 class MeasurementTabWidget(QtWidgets.QWidget):
     '''Tab widget where measurement stuff is added.
     '''
+    issueMaster = QtCore.pyqtSignal()
     def __init__(self, tab_id, measurement, masses, icon_manager):
         '''Init measurement tab class.
         
@@ -71,7 +72,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         # self.check_previous_state_files()  # For above three.
         
         # Hide the measurement specific settings buttons
-        self.ui.settingsFrame.setShown(False)  
+        self.ui.settingsFrame.setVisible(False)
         
         self.ui.saveCutsButton.clicked.connect(self.measurement_save_cuts)
         self.ui.analyzeElementLossesButton.clicked.connect(
@@ -483,7 +484,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         meas_name = self.measurement.measurement_name
         master_name = self.measurement.project.has_master()
         if meas_name == master_name:
-            self.emit(QtCore.SIGNAL("issueMaster"))
+            #self.emit(QtCore.SIGNAL("issueMaster"))
+            self.issueMaster.emit()
         
         
     def __read_log_file(self, file, state=1):
