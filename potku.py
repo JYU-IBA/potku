@@ -232,7 +232,7 @@ class Potku(QtWidgets.QMainWindow):
                                        measurement.measurement_file))
             except:
                 print("Error with removing files")
-                QtGui.QMessageBox.question(self, "Confirmation",
+                QtWidgets.QMessageBox.question(self, "Confirmation",
                                "Problem with deleting files.",
                                QtWidgets.QMessageBox.Ok)
                 measurement.set_loggers()
@@ -375,7 +375,7 @@ class Potku(QtWidgets.QMainWindow):
         else:
             measurements_in_project = self.project.get_measurements_files()
             load_data = False
-        progress_bar = QtGui.QProgressBar()
+        progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
         
@@ -439,7 +439,7 @@ class Potku(QtWidgets.QMainWindow):
             except: 
                 pass  # If there is no info tab, no need to worry about.
                 # print("Can't find an info tab to remove")
-            progress_bar = QtGui.QProgressBar()
+            progress_bar = QtWidgets.QProgressBar()
             self.statusbar.addWidget(progress_bar, 1)
             progress_bar.show()
             self.__add_new_tab(filename, progress_bar, load_data=True)
@@ -523,7 +523,7 @@ class Potku(QtWidgets.QMainWindow):
             measurement_name: A string representing measurement's name.
             load_data: A boolean representing if measurement data is loaded.
         '''
-        tree_item = QtGui.QTreeWidgetItem()
+        tree_item = QtWidgets.QTreeWidgetItem()
         tree_item.setText(0, measurement_name)
         tree_item.tab_id = self.tab_id
         # tree_item.setIcon(0, self.icon_manager.get_icon("folder_open.svg"))
@@ -543,7 +543,7 @@ class Potku(QtWidgets.QMainWindow):
         
         Args:
             filename: A string representing measurement file.
-            progress_bar: A QtGui.QProgressBar to be updated.
+            progress_bar: A QtWidgets.QProgressBar to be updated.
             file_current: An integer representing which number is currently being
                           read. (for GUI)
             file_count: An integer representing how many files will be loaded.
@@ -567,7 +567,7 @@ class Potku(QtWidgets.QMainWindow):
             tab.add_log()
             tab.data_loaded = load_data
             if load_data:
-                loading_bar = QtGui.QProgressBar()
+                loading_bar = QtWidgets.QProgressBar()
                 loading_bar.setMinimum(0)
                 loading_bar.setMaximum(0)
                 self.statusbar.addWidget(loading_bar, 1)
@@ -588,7 +588,7 @@ class Potku(QtWidgets.QMainWindow):
         '''Change tab icon in QTreeWidgetItem.
         
         Args:
-            tree_item: A QtGui.QTreeWidgetItem class object.
+            tree_item: A QtWidgets.QTreeWidgetItem class object.
             icon: A string representing the icon name.
         '''
         tree_item.setIcon(0, self.icon_manager.get_icon(icon))
@@ -686,19 +686,19 @@ class Potku(QtWidgets.QMainWindow):
         """Issue commands from master measurement to all slave measurements in 
         the project.
         """
-        reply = QtGui.QMessageBox.question(self,
+        reply = QtWidgets.QMessageBox.question(self,
                 "Confirmation",
                 "You are about to issue actions from master measurement to all " + \
                 "slave measurements in the project. This can take several " + \
                 "minutes. Please wait until notification is shown." + \
                 "\nDo you wish to continue?",
-                QtGui.QMessageBox.Yes,
-                QtGui.QMessageBox.No)
-        if reply == QtGui.QMessageBox.No:
+                QtWidgets.QMessageBox.Yes,
+                QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.No:
             return
         
         time_start = datetime.now()
-        progress_bar = QtGui.QProgressBar()
+        progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
         nonslaves = self.project.get_nonslaves()
@@ -731,7 +731,7 @@ class Potku(QtWidgets.QMainWindow):
             # Load measurement data if the slave is
             if not tab.data_loaded:
                 tab.data_loaded = True
-                progress_bar_data = QtGui.QProgressBar()
+                progress_bar_data = QtWidgets.QProgressBar()
                 self.statusbar.addWidget(progress_bar_data, 1)
                 progress_bar_data.show()
                 progress_bar_data.setValue(5)
@@ -780,11 +780,11 @@ class Potku(QtWidgets.QMainWindow):
         time_end = datetime.now()
         time_duration = (time_end - time_start).seconds
         time_str = timedelta(seconds=time_duration)
-        QtGui.QMessageBox.question(self,
+        QtWidgets.QMessageBox.question(self,
                 "Notification",
                 "Master measurement's actions have been issued to slaves. " + \
                 "\nElapsed time: {0}".format(time_str),
-                QtGui.QMessageBox.Ok)
+                QtWidgets.QMessageBox.Ok)
         
         
     def __open_measurement_info_tab(self):
@@ -894,7 +894,7 @@ class Potku(QtWidgets.QMainWindow):
 def main():
     """Main function
     """
-    app = QtGui.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     window = Potku()
     window.show()
     sys.exit(app.exec_())

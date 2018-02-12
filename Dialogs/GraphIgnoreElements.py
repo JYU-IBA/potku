@@ -29,10 +29,10 @@ __author__ = "Timo Konu"
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt4 import QtGui, QtCore, uic
+from PyQt5 import QtGui, QtCore, uic, QtWidgets
 
 
-class GraphIgnoreElements(QtGui.QDialog):
+class GraphIgnoreElements(QtWidgets.QDialog):
     def __init__(self, elements, ignored):
         '''Init the dialog.
         
@@ -54,7 +54,7 @@ class GraphIgnoreElements(QtGui.QDialog):
         '''Set elements to tree widget.
         '''
         for element in self.__elements:
-            item = QtGui.QTreeWidgetItem([str(element)]) 
+            item = QtWidgets.QTreeWidgetItem([str(element)])
             item.element = str(element)
             if not item.element in self.ignored_elements:
                 item.setCheckState(0, QtCore.Qt.Checked)

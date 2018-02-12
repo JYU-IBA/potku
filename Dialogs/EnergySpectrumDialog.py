@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 import logging, os, sys
-from PyQt4 import QtGui, uic, QtCore
+from PyQt5 import QtGui, uic, QtCore, QtWidgets
 
 from Modules.CutFile import is_rbs, get_scatter_element
 from Modules.Element import Element
@@ -36,7 +36,7 @@ from Modules.Null import Null
 from Widgets.MatplotlibEnergySpectrumWidget import MatplotlibEnergySpectrumWidget
 
 
-class EnergySpectrumParamsDialog(QtGui.QDialog):
+class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     checked_cuts = {}
     bin_width = 0.1
     def __init__(self, parent):
@@ -71,18 +71,18 @@ class EnergySpectrumParamsDialog(QtGui.QDialog):
         self.__update_eff_files()
         
         if not hasattr(self.measurement, "measurement_settings"):
-            QtGui.QMessageBox.question(self,
+            QtWidgets.QMessageBox.question(self,
               "Warning",
               "Settings have not been set. Please set settings before continuing.",
-              QtGui.QMessageBox.Ok)
+              QtWidgets.QMessageBox.Ok)
         else:
             if not self.measurement.measurement_settings.has_been_set():
-                reply = QtGui.QMessageBox.question(self,
+                reply = QtWidgets.QMessageBox.question(self,
                        "Warning",
                        "Not all settings have been set. Do you want to continue?",
-                       QtGui.QMessageBox.Yes,
-                       QtGui.QMessageBox.No)
-                if reply == QtGui.QMessageBox.No:
+                       QtWidgets.QMessageBox.Yes,
+                       QtWidgets.QMessageBox.No)
+                if reply == QtWidgets.QMessageBox.No:
                     self.close()
                     return
             self.exec_()
@@ -182,7 +182,7 @@ class EnergySpectrumParamsDialog(QtGui.QDialog):
 
 
 
-class EnergySpectrumWidget(QtGui.QWidget):
+class EnergySpectrumWidget(QtWidgets.QWidget):
     '''Energy spectrum widget which is added to measurement tab.
     '''
     save_file = "widget_energy_spectrum.save"
@@ -203,7 +203,7 @@ class EnergySpectrumWidget(QtGui.QWidget):
             self.use_cuts = use_cuts
             self.width = width
             if self.measurement.statusbar:
-                self.progress_bar = QtGui.QProgressBar()
+                self.progress_bar = QtWidgets.QProgressBar()
                 self.measurement.statusbar.addWidget(self.progress_bar, 1) 
                 self.progress_bar.show()
                 QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)

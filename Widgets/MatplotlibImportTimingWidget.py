@@ -25,7 +25,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Timo Konu"
 __versio__ = "1.0"
 
-from PyQt4 import QtGui
+from PyQt5 import QtGui, QtWidgets
 
 from Widgets.MatplotlibWidget import MatplotlibWidget
 
@@ -131,7 +131,7 @@ class MatplotlibImportTimingWidget(MatplotlibWidget):
         self.__button_drag.clicked.connect(self.__uncheck_custom_buttons)
         self.__button_zoom.clicked.connect(self.__uncheck_custom_buttons)
         
-        self.limButton = QtGui.QToolButton(self)
+        self.limButton = QtWidgets.QToolButton(self)
         self.limButton.clicked.connect(self.__limit_button_click)
         self.limButton.setCheckable(True)
         self.limButton.setToolTip("Change timing's low and high limits for more accurate coincidence reading.")

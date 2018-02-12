@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 import logging, os, shutil, sys, time, hashlib
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore, QtWidgets
 
 from Modules.CutFile import CutFile
 from Modules.Functions import md5_for_file
@@ -422,7 +422,7 @@ class Measurement:
         if not os.path.exists(self.directory_cuts):
             os.makedirs(self.directory_cuts)
 
-        progress_bar = QtGui.QProgressBar()
+        progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
@@ -524,7 +524,7 @@ class Measurement:
         treewidget.clear()
         cuts, cuts_elemloss = self.get_cut_files()
         for cut in cuts:
-            item = QtGui.QTreeWidgetItem([cut]) 
+            item = QtWidgets.QTreeWidgetItem([cut])
             item.directory = self.directory_cuts
             item.file_name = cut
             if not checked_files or item.file_name in checked_files:
@@ -533,9 +533,9 @@ class Measurement:
                 item.setCheckState(0, QtCore.Qt.Unchecked)
             treewidget.addTopLevelItem(item)
         if use_elemloss and cuts_elemloss:
-            elem_root = QtGui.QTreeWidgetItem(["Elemental Losses"])
+            elem_root = QtWidgets.QTreeWidgetItem(["Elemental Losses"])
             for elemloss in cuts_elemloss:
-                item = QtGui.QTreeWidgetItem([elemloss])
+                item = QtWidgets.QTreeWidgetItem([elemloss])
                 item.directory = self.directory_elemloss
                 item.file_name = elemloss
                 if item.file_name in checked_files:

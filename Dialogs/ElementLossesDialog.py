@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 import logging, os, sys
-from PyQt4 import QtGui, uic, QtCore
+from PyQt5 import QtGui, uic, QtCore, QtWidgets
 
 from Modules.CutFile import is_rbs, get_scatter_element
 from Modules.ElementLosses import ElementLosses
@@ -35,7 +35,7 @@ from Modules.Null import Null
 from Widgets.MatplotlibElementLossesWidget import MatplotlibElementLossesWidget
 
 
-class ElementLossesDialog(QtGui.QDialog):
+class ElementLossesDialog(QtWidgets.QDialog):
     """Class to handle element losses dialogs.
     """
     checked_cuts = {}
@@ -153,7 +153,7 @@ class ElementLossesDialog(QtGui.QDialog):
 
 
         
-class ElementLossesWidget(QtGui.QWidget):
+class ElementLossesWidget(QtWidgets.QWidget):
     '''Element losses widget which is added to measurement tab.
     '''
     save_file = "widget_elemental_losses.save"
@@ -181,7 +181,7 @@ class ElementLossesWidget(QtGui.QWidget):
             self.y_scale = y_scale
             # TODO: Use Null with GUI ProgresBar.
             if self.measurement.statusbar:
-                self.progress_bar = QtGui.QProgressBar()
+                self.progress_bar = QtWidgets.QProgressBar()
                 self.measurement.statusbar.addWidget(self.progress_bar, 1) 
                 self.progress_bar.show()
                 QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
@@ -256,7 +256,7 @@ class ElementLossesWidget(QtGui.QWidget):
 
     def __save_splits(self):  # TODO: Use Null with GUI ProgresBar.
         if self.progress_bar:
-            self.progress_bar = QtGui.QProgressBar()
+            self.progress_bar = QtWidgets.QProgressBar()
             self.measurement.statusbar.addWidget(self.progress_bar, 1) 
             self.progress_bar.show()
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)

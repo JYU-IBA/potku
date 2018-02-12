@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 import logging, os, sys
-from PyQt4 import QtGui, uic, QtCore
+from PyQt5 import QtGui, uic, QtCore, QtWidgets
 
 from Modules.CutFile import is_rbs, get_scatter_element
 from Modules.DepthFiles import DepthFiles
@@ -36,7 +36,7 @@ from Modules.Null import Null
 from Widgets.MatplotlibDepthProfileWidget import MatplotlibDepthProfileWidget
 
 
-class DepthProfileDialog(QtGui.QDialog):
+class DepthProfileDialog(QtWidgets.QDialog):
     checked_cuts = {}
     x_unit = "1e15 at./cm²"
     line_zero = False
@@ -70,7 +70,7 @@ class DepthProfileDialog(QtGui.QDialog):
             DepthProfileDialog.checked_cuts[m_name])
         
         x_unit = DepthProfileDialog.x_unit
-        radio_buttons = self.findChildren(QtGui.QRadioButton)
+        radio_buttons = self.findChildren(QtWidgets.QRadioButton)
         for radio_button in radio_buttons:
             radio_button.setChecked(radio_button.text() == x_unit)
         
@@ -82,18 +82,18 @@ class DepthProfileDialog(QtGui.QDialog):
         self.ui.spin_systerr.setValue(DepthProfileDialog.systerr)
         
         if not hasattr(self.measurement, "measurement_settings"):
-            QtGui.QMessageBox.question(self,
+            QtWidgets.QMessageBox.question(self,
               "Warning",
               "Settings have not been set. Please set settings before continuing.",
-              QtGui.QMessageBox.Ok)
+              QtWidgets.QMessageBox.Ok)
         else:
             if not self.measurement.measurement_settings.has_been_set():
-                reply = QtGui.QMessageBox.question(self,
+                reply = QtWidgets.QMessageBox.question(self,
                        "Warning",
                        "Not all settings have been set. Do you want to continue?",
-                       QtGui.QMessageBox.Yes,
-                       QtGui.QMessageBox.No)
-                if reply == QtGui.QMessageBox.No:
+                       QtWidgets.QMessageBox.Yes,
+                       QtWidgets.QMessageBox.No)
+                if reply == QtWidgets.QMessageBox.No:
                     self.close()
                     return
             self.__update_eff_files()
@@ -104,7 +104,7 @@ class DepthProfileDialog(QtGui.QDialog):
     def __accept_params(self):
         '''Accept given parameters
         '''
-        progress_bar = QtGui.QProgressBar() 
+        progress_bar = QtWidgets.QProgressBar()
         self.__statusbar.addWidget(progress_bar, 1) 
         progress_bar.show() 
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
@@ -147,7 +147,7 @@ class DepthProfileDialog(QtGui.QDialog):
             
             # Get the x-axis unit to be used from the radio buttons
             x_unit = DepthProfileDialog.x_unit
-            radio_buttons = self.findChildren(QtGui.QRadioButton)
+            radio_buttons = self.findChildren(QtWidgets.QRadioButton)
             for radio_button in radio_buttons:
                 if radio_button.isChecked():
                     x_unit = radio_button.text()
@@ -252,7 +252,7 @@ class DepthProfileDialog(QtGui.QDialog):
         
                 
             
-class DepthProfileWidget(QtGui.QWidget):
+class DepthProfileWidget(QtWidgets.QWidget):
     '''Depth Profile widget which is added to measurement tab.
     '''
     save_file = "widget_depth_profile.save"

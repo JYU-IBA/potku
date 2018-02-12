@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 import os
-from PyQt4 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtGui, uic, QtWidgets
 
 from Modules.CalibrationParameters import CalibrationParameters
 from Modules.Functions import open_file_dialog, save_file_dialog
@@ -36,7 +36,7 @@ from Modules.InputValidator import InputValidator
 from Dialogs.ElementSelectionDialog import ElementSelectionDialog
 from Dialogs.CalibrationDialog import CalibrationDialog
 
-class MeasurementUnitSettings(QtGui.QDialog):
+class MeasurementUnitSettings(QtWidgets.QDialog):
     def __init__(self, measurement_settings, masses):
         '''Constructor for the program
         
@@ -160,11 +160,11 @@ class MeasurementUnitSettings(QtGui.QDialog):
             self.settings.save_settings()
             self.close()
         except TypeError:
-            QtGui.QMessageBox.question(self,
+            QtWidgets.QMessageBox.question(self,
                 "Warning",
                 "Some of the setting values have not been set.\n" + \
                 "Please input setting values to save them.",
-                QtGui.QMessageBox.Ok)
+                QtWidgets.QMessageBox.Ok)
             
             
     def __change_element(self, button):
@@ -188,7 +188,7 @@ class MeasurementUnitSettings(QtGui.QDialog):
 
 
 
-class CalibrationSettings(QtGui.QDialog):
+class CalibrationSettings(QtWidgets.QDialog):
     def __init__(self, measurement):
         '''Constructor for the program
         
@@ -296,15 +296,15 @@ class CalibrationSettings(QtGui.QDialog):
             self.settings.save_settings()
             self.close()
         except TypeError:
-            QtGui.QMessageBox.question(self,
+            QtWidgets.QMessageBox.question(self,
                 "Warning",
                 "Some of the setting values have not been set.\n" + \
                 "Please input setting values to save them.",
-                QtGui.QMessageBox.Ok)
+                QtWidgets.QMessageBox.Ok)
 
 
 
-class DepthProfileSettings(QtGui.QDialog):
+class DepthProfileSettings(QtWidgets.QDialog):
     def __init__(self, measurement_settings):
         '''Constructor for the program
         
@@ -401,11 +401,11 @@ class DepthProfileSettings(QtGui.QDialog):
             self.settings.save_settings()
             self.close()
         except TypeError:
-            QtGui.QMessageBox.question(self,
+            QtWidgets.QMessageBox.question(self,
                 "Warning",
                 "Some of the setting values have not been set.\n" + \
                 "Please input setting values to save them.",
-                QtGui.QMessageBox.Ok)
+                QtWidgets.QMessageBox.Ok)
 
 
 

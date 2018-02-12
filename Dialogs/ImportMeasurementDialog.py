@@ -29,7 +29,7 @@ from collections import OrderedDict
 import logging
 from os import unlink
 from os.path import join, isfile, split, splitext
-from PyQt4 import QtGui, uic, QtCore
+from PyQt5 import QtGui, uic, QtCore, QtWidgets
 import re
 from time import clock
 
@@ -37,7 +37,7 @@ from Dialogs.ImportTimingGraphDialog import ImportTimingGraphDialog
 from Modules.Functions import open_files_dialog, coinc
 
 
-class ImportMeasurementsDialog(QtGui.QDialog):
+class ImportMeasurementsDialog(QtWidgets.QDialog):
     '''Measurement importing class. Used to import measurement data
     from detecting unit into potku.
     '''
@@ -77,7 +77,7 @@ class ImportMeasurementsDialog(QtGui.QDialog):
         self.spin_adctrigger.setKeyboardTracking(False)
         
         self.treeWidget.itemClicked.connect(self.__select_file)
-        remove_file = QtGui.QAction("Delete", self.treeWidget)
+        remove_file = QtWidgets.QAction("Delete", self.treeWidget)
         self.treeWidget.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
         self.treeWidget.addAction(remove_file)
         remove_file.triggered.connect(self.__remove_selected)
@@ -97,7 +97,7 @@ class ImportMeasurementsDialog(QtGui.QDialog):
                 continue
             directoty, filename = split(file)
             name, unused_ext = splitext(filename)
-            item = QtGui.QTreeWidgetItem([name]) 
+            item = QtWidgets.QTreeWidgetItem([name])
             item.file = file
             item.name = name
             item.filename = filename
@@ -117,8 +117,8 @@ class ImportMeasurementsDialog(QtGui.QDialog):
             removable: A boolean representing if row can be removed.
         '''
         self.__import_row_count += 1
-        label = QtGui.QLabel("{0}".format(self.__import_row_count))
-        remove_button = QtGui.QPushButton("Remove")
+        label = QtWidgets.QLabel("{0}".format(self.__import_row_count))
+        remove_button = QtWidgets.QPushButton("Remove")
         remove_button.clicked.connect(
               lambda: self.__remove_import_column_row(remove_button))
         remove_button.setEnabled(removable)
@@ -130,9 +130,9 @@ class ImportMeasurementsDialog(QtGui.QDialog):
     def __add_timing_labels(self):
         '''Add timing labels in code side
         '''
-        label_adc = QtGui.QLabel("ADC")
-        label_low = QtGui.QLabel("Low")
-        label_high = QtGui.QLabel("High")
+        label_adc = QtWidgets.QLabel("ADC")
+        label_low = QtWidgets.QLabel("Low")
+        label_high = QtWidgets.QLabel("High")
         self.grid_timing.addWidget(label_adc, 0, 0)
         self.grid_timing.addWidget(label_low, 1, 0)
         self.grid_timing.addWidget(label_high, 2, 0)
@@ -166,7 +166,7 @@ class ImportMeasurementsDialog(QtGui.QDialog):
                 timing[coinc_timing.adc] = (coinc_timing.low.value(),
                                             coinc_timing.high.value())
         start_time = clock()
-        progress_bar = QtGui.QProgressBar()
+        progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
@@ -348,7 +348,7 @@ class ImportMeasurementsDialog(QtGui.QDialog):
             adc: An integer representing ADC.        
         '''
         adc_keys = sorted(self.adc_occurance.keys())
-        combobox = QtGui.QComboBox()
+        combobox = QtWidgets.QComboBox()
         for key in adc_keys:
             combobox.addItem("ADC {0}".format(key))
             if key == adc:
@@ -359,7 +359,7 @@ class ImportMeasurementsDialog(QtGui.QDialog):
            
         
     def __create_spinbox(self, default):
-        spinbox = QtGui.QSpinBox()
+        spinbox = QtWidgets.QSpinBox()
         spinbox.stepBy(1)
         spinbox.setMinimum(-1000)
         spinbox.setMaximum(1000)
@@ -376,7 +376,7 @@ class ImportMeasurementsDialog(QtGui.QDialog):
                 continue
             timing = self.global_settings.get_import_timing(adc)
 
-            label = QtGui.QLabel("{0}".format(adc))
+            label = QtWidgets.QLabel("{0}".format(adc))
             spin_low = self.__create_spinbox(timing[0])
             spin_high = self.__create_spinbox(timing[1])
             self.__added_timings[adc] = CoincTiming(adc, spin_low, spin_high)
@@ -390,7 +390,7 @@ class ImportMeasurementsDialog(QtGui.QDialog):
         '''Remove row from columns in import data.
         
         Args:
-            button: A QtGui.QPushButton class object which was pressed.
+            button: A QtWidgets.QPushButton class object which was pressed.
         '''
         index = self.grid_column.indexOf(button)
         row, column, unused_cols, unused_rows = self.grid_column.getItemPosition(index)
@@ -466,8 +466,8 @@ class CoincTiming:
         
         Args:
             adc: An integer representing ADC.
-            low: A QtGui.QSpinBox representing spinbox for low value.
-            high: A QtGui.QSpinBox representing spinbox for high value. 
+            low: A QtWidgets.QSpinBox representing spinbox for low value.
+            high: A QtWidgets.QSpinBox representing spinbox for high value.
         '''
         self.adc = adc
         self.low = low

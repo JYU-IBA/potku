@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 import logging, os, sys, numpy
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 
 from Modules.Element import Element
 from Modules.Functions import hist, tof_list
@@ -45,7 +45,7 @@ class EnergySpectrum:
                          is made.
             cut_files: String list of cut files.
             spectrum_width: Float representing energy spectrum graph width.
-            progress_bar: QtGui.QProgressBar for GUI (Null class object otherwise).
+            progress_bar: QtWidgets.QProgressBar for GUI (Null class object otherwise).
         '''
         self.__measurement = measurement
         self.__global_settings = self.__measurement.project.global_settings

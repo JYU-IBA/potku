@@ -27,13 +27,13 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os import path
-from PyQt4 import QtCore, uic, QtGui
+from PyQt5 import QtCore, uic, QtGui, QtWidgets
 
 from Dialogs.ImportMeasurementDialog import CoincTiming
 from Widgets.MatplotlibTofeHistogramWidget import MatplotlibHistogramWidget
 
 
-class GlobalSettingsDialog(QtGui.QDialog):
+class GlobalSettingsDialog(QtWidgets.QDialog):
     def __init__(self, masses, settings):
         '''Constructor for the program
         '''
@@ -51,7 +51,7 @@ class GlobalSettingsDialog(QtGui.QDialog):
                                                   self.__change_project_directory)
         self.ui.loadEffPathButton.clicked.connect(
                                               self.__change_efficiency_directory)
-        buttons = self.ui.findChild(QtGui.QButtonGroup, "elementButtons")
+        buttons = self.ui.findChild(QtWidgets.QButtonGroup, "elementButtons")
         buttons.buttonClicked.connect(self.__change_element_color)
         self.line_coinc_count.setValidator(QtGui.QIntValidator(0, 1000000))
         
@@ -65,19 +65,19 @@ class GlobalSettingsDialog(QtGui.QDialog):
         self.ui.projectPathLineEdit.setText(self.settings.get_project_directory())
         self.ui.lineEdit_eff_directory.setText(
                                        self.settings.get_efficiency_directory())
-        for button in self.ui.groupBox_3.findChildren(QtGui.QPushButton):
+        for button in self.ui.groupBox_3.findChildren(QtWidgets.QPushButton):
             self.__set_button_color(button,
                                     self.settings.get_element_color(button.text()))
             
-        label_adc = QtGui.QLabel("ADC")
-        label_low = QtGui.QLabel("Low")
-        label_high = QtGui.QLabel("High")
+        label_adc = QtWidgets.QLabel("ADC")
+        label_low = QtWidgets.QLabel("Low")
+        label_high = QtWidgets.QLabel("High")
         self.ui.grid_timing.addWidget(label_adc, 0, 0)
         self.ui.grid_timing.addWidget(label_low, 1, 0)
         self.ui.grid_timing.addWidget(label_high, 2, 0)
         for i in range(0, 3):
             timing = self.settings.get_import_timing(i)
-            label = QtGui.QLabel("{0}".format(i))
+            label = QtWidgets.QLabel("{0}".format(i))
             spin_low = self.__create_spinbox(timing[0])
             spin_high = self.__create_spinbox(timing[1])
             self.__added_timings[i] = CoincTiming(i, spin_low, spin_high)
@@ -116,7 +116,7 @@ class GlobalSettingsDialog(QtGui.QDialog):
     
     
     def __create_spinbox(self, default):
-        spinbox = QtGui.QSpinBox()
+        spinbox = QtWidgets.QSpinBox()
         spinbox.stepBy(1)
         spinbox.setMinimum(-1000)
         spinbox.setMaximum(1000)
@@ -130,7 +130,7 @@ class GlobalSettingsDialog(QtGui.QDialog):
         self.settings.set_project_directory(self.ui.projectPathLineEdit.text())
         self.settings.set_efficiency_directory(
                                            self.ui.lineEdit_eff_directory.text())
-        for button in self.ui.groupBox_3.findChildren(QtGui.QPushButton):
+        for button in self.ui.groupBox_3.findChildren(QtWidgets.QPushButton):
             self.settings.set_element_color(button.text(), button.color)
         for key in self.__added_timings.keys():
             coinc_timing = self.__added_timings[key]
@@ -180,7 +180,7 @@ class GlobalSettingsDialog(QtGui.QDialog):
     def __change_project_directory(self):
         '''Change default project directory.
         '''
-        folder = QtGui.QFileDialog.getExistingDirectory(self,
+        folder = QtWidgets.QFileDialog.getExistingDirectory(self,
             "Select default project directory",
             directory=self.ui.projectPathLineEdit.text())
         if folder:
@@ -190,7 +190,7 @@ class GlobalSettingsDialog(QtGui.QDialog):
     def __change_efficiency_directory(self):
         '''Change efficiency file directory.
         '''
-        folder = QtGui.QFileDialog.getExistingDirectory(self,
+        folder = QtWidgets.QFileDialog.getExistingDirectory(self,
             "Select efficiency file directory",
             directory=self.ui.lineEdit_eff_directory.text())
         if folder:
@@ -203,7 +203,7 @@ class GlobalSettingsDialog(QtGui.QDialog):
         Args:
             button: QPushButton
         '''
-        dialog = QtGui.QColorDialog(self)
+        dialog = QtWidgets.QColorDialog(self)
         self.color = dialog.getColor(QtGui.QColor(button.color),
                                      self,
                                      "Select Color for Element: {0}".format(

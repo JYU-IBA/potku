@@ -30,7 +30,7 @@ import numpy, hashlib
 from os import makedirs
 from os.path import curdir, join, exists, realpath, split, splitext
 import platform, re, subprocess, sys
-from PyQt4 import QtGui
+from PyQt5 import QtGui, QtWidgets
 from subprocess import Popen
 
 
@@ -53,7 +53,7 @@ def open_file_dialog(parent, default_folder, title, files):
         
         "C:/Transfer/FinlandiaData/esimerkkidata.zip"
     '''
-    filename = QtGui.QFileDialog.getOpenFileName(parent,
+    filename = QtWidgets.QFileDialog.getOpenFileName(parent,
                                                  title,
                                                  default_folder,
                                                  parent.tr(files))
@@ -79,7 +79,7 @@ def open_files_dialog(parent, default_folder, title, files):
         
         "C:/Transfer/FinlandiaData/esimerkkidata.zip"
     '''
-    filenames = QtGui.QFileDialog.getOpenFileNames(parent,
+    filenames = QtWidgets.QFileDialog.getOpenFileNames(parent,
                                                    title,
                                                    default_folder,
                                                    parent.tr(files))
@@ -105,7 +105,7 @@ def save_file_dialog(parent, default_folder, title, files):
         
         "C:/Transfer/FinlandiaData/esimerkkidata.zip"
     '''
-    filename = QtGui.QFileDialog.getSaveFileName(parent,
+    filename = QtWidgets.QFileDialog.getSaveFileName(parent,
                                                  title,
                                                  default_folder,
                                                  parent.tr(files))

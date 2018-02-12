@@ -26,7 +26,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-from PyQt4 import QtGui
+from PyQt5 import QtGui, QtWidgets
 
 from Modules.Calibration import TOFCalibrationPoint, TOFCalibrationHistogram
 from Widgets.MatplotlibWidget import MatplotlibWidget
@@ -211,7 +211,7 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
     def __fork_toolbar_buttons(self):
         '''Custom toolbar buttons be here.
         '''
-        self.selectButton = QtGui.QToolButton(self)
+        self.selectButton = QtWidgets.QToolButton(self)
         self.selectButton.clicked.connect(self.toggle_clicks)
         self.selectButton.setCheckable(True)
         self.selectButton.setIcon(QtGui.QIcon("ui_icons/reinhardt/amarok_edit.svg"))  # TODO: Make this the new way

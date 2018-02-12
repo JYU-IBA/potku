@@ -26,13 +26,13 @@ __author__ = "Timo Konu"
 __versio__ = "1.0"
 
 from os import path, stat
-from PyQt4 import QtGui, uic
+from PyQt5 import QtGui, uic, QtWidgets
 
 from Modules.Functions import coinc
 from Widgets.MatplotlibImportTimingWidget import MatplotlibImportTimingWidget
 
 
-class ImportTimingGraphDialog(QtGui.QDialog):
+class ImportTimingGraphDialog(QtWidgets.QDialog):
     '''Timing graph class for importing measurements.
     '''
     def __init__(self, parent, input_file, output_file, adc_timing_spin,
@@ -66,10 +66,10 @@ class ImportTimingGraphDialog(QtGui.QDialog):
               tablesize=10, trigger=trigger, adc_count=adc_count, timing=timing,
               nevents=coinc_count, temporary=True)
         if not stat(self.__output_file).st_size:
-            unused_reply = QtGui.QMessageBox.question(self,
+            unused_reply = QtWidgets.QMessageBox.question(self,
                 "Empty File",
                 "No coincidence events were found.",
-                QtGui.QMessageBox.Ok)
+                QtWidgets.QMessageBox.Ok)
             self.close()  # Just in case.
         else:
             self.matplotlib = MatplotlibImportTimingWidget(self,

@@ -28,7 +28,7 @@ __versio__ = "1.0"
 
 from matplotlib import cm
 from matplotlib.colors import LogNorm
-from PyQt4 import QtCore, QtGui
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 from Dialogs.SelectionDialog import SelectionSettingsDialog
 from Dialogs.GraphSettingsDialog import TofeGraphSettingsWidget
@@ -387,7 +387,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         
         # Make own buttons
         self.mpl_toolbar.addSeparator()
-        self.elementSelectionButton = QtGui.QToolButton(self)
+        self.elementSelectionButton = QtWidgets.QToolButton(self)
         self.elementSelectionButton.clicked.connect(self.enable_element_selection)
         self.elementSelectionButton.setCheckable(True)
         self.__icon_manager.set_icon(self.elementSelectionButton, "select.png")
@@ -395,7 +395,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.elementSelectionButton)
         
         # Selection undo button
-        self.elementSelectUndoButton = QtGui.QToolButton(self)
+        self.elementSelectUndoButton = QtWidgets.QToolButton(self)
         self.elementSelectUndoButton.clicked.connect(self.undo_point)
         self.__icon_manager.set_icon(self.elementSelectUndoButton, "undo.png")
         self.elementSelectUndoButton.setToolTip("Undo last point in open selection")
@@ -404,7 +404,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.mpl_toolbar.addSeparator()
         
         # Element Selection selecting tool
-        self.elementSelectionSelectButton = QtGui.QToolButton(self)
+        self.elementSelectionSelectButton = QtWidgets.QToolButton(self)
         self.elementSelectionSelectButton.clicked.connect(
                                                       self.enable_selection_select)
         self.elementSelectionSelectButton.setCheckable(True)
@@ -415,7 +415,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.elementSelectionSelectButton)
         
         # Selection delete button
-        self.elementSelectDeleteButton = QtGui.QToolButton(self)
+        self.elementSelectDeleteButton = QtWidgets.QToolButton(self)
         self.elementSelectDeleteButton.setEnabled(False)
         self.elementSelectDeleteButton.clicked.connect(self.remove_selected)
         self.__icon_manager.set_icon(self.elementSelectDeleteButton, "del.png")
@@ -424,7 +424,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.mpl_toolbar.addSeparator()
         
         # Selection delete all -button
-        self.elementSelectionDeleteButton = QtGui.QToolButton(self)
+        self.elementSelectionDeleteButton = QtWidgets.QToolButton(self)
         self.elementSelectionDeleteButton.clicked.connect(
                                                       self.remove_all_selections)
         self.__icon_manager.set_icon(self.elementSelectionDeleteButton,
@@ -510,24 +510,24 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     
     
     def __context_menu(self, event, cursorlocation):
-            menu = QtGui.QMenu(self)
+            menu = QtWidgets.QMenu(self)
             
-            Action = QtGui.QAction(self.tr("Graph Settings..."), self)
+            Action = QtWidgets.QAction(self.tr("Graph Settings..."), self)
             Action.triggered.connect(self.graph_settings_dialog)
             menu.addAction(Action)
             
             if self.measurement.selection_select(cursorlocation,
                                                  highlight=False) == 1:
-                Action = QtGui.QAction(self.tr("Selection settings..."), self)
+                Action = QtWidgets.QAction(self.tr("Selection settings..."), self)
                 Action.triggered.connect(self.selection_settings_dialog)
                 menu.addAction(Action)
                 
             menu.addSeparator()
-            Action = QtGui.QAction(self.tr("Load selections..."), self)
+            Action = QtWidgets.QAction(self.tr("Load selections..."), self)
             Action.triggered.connect(self.load_selections)
             menu.addAction(Action)
 
-            Action = QtGui.QAction(self.tr("Save cuts"), self)
+            Action = QtWidgets.QAction(self.tr("Save cuts"), self)
             Action.triggered.connect(self.save_cuts)
             menu.addAction(Action)
             if len(self.measurement.selector.selections) == 0:
@@ -637,12 +637,12 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     def remove_all_selections(self):
         '''Remove all selections.
         '''
-        reply = QtGui.QMessageBox.question(self,
+        reply = QtWidgets.QMessageBox.question(self,
                "Delete all selections",
                "Do you want to delete all selections?\nThis cannot be reversed.",
-               QtGui.QMessageBox.Yes,
-               QtGui.QMessageBox.No)
-        if reply == QtGui.QMessageBox.Yes:
+               QtWidgets.QMessageBox.Yes,
+               QtWidgets.QMessageBox.No)
+        if reply == QtWidgets.QMessageBox.Yes:
             self.measurement.remove_all()
             self.__on_draw_legend()
             self.canvas.draw_idle()

@@ -28,8 +28,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli K�rkk�inen \n Samuli Rahko
 __versio__ = "1.0"
 
 import os
-from PyQt4 import QtGui, QtCore
-from PyQt4 import uic
+from PyQt5 import QtWidgets, QtCore, QtGui, uic
 from math import sin
 
 class AboutDialog(QtWidgets.QDialog):

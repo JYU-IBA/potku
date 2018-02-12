@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 import os, logging, sys
-from PyQt4 import QtGui, QtCore, uic
+from PyQt5 import QtGui, QtCore, uic, QtWidgets
 
 from Dialogs.ElementLossesDialog import ElementLossesDialog, ElementLossesWidget
 from Dialogs.EnergySpectrumDialog import EnergySpectrumParamsDialog, \
@@ -43,7 +43,7 @@ from Widgets.LogWidget import LogWidget
 from Widgets.TofeHistogramWidget import TofeHistogramWidget
 
 
-class MeasurementTabWidget(QtGui.QWidget):    
+class MeasurementTabWidget(QtWidgets.QWidget):
     '''Tab widget where measurement stuff is added.
     '''
     def __init__(self, tab_id, measurement, masses, icon_manager):
@@ -188,7 +188,7 @@ class MeasurementTabWidget(QtGui.QWidget):
         Profile exists. If yes, load them also.
         
         Args:
-            progress_bar: A QtGui.QProgressBar where loading of previous
+            progress_bar: A QtWidgets.QProgressBar where loading of previous
                           graph can be shown.
         '''
         if not directory:

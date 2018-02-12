@@ -26,7 +26,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-from PyQt4 import QtGui
+from PyQt5 import QtGui, QtWidgets
 
 from Dialogs.GraphIgnoreElements import GraphIgnoreElements
 from Modules.Element import Element
@@ -64,7 +64,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
         
         self.mpl_toolbar.addSeparator()
-        self.__button_toggle_log = QtGui.QToolButton(self)
+        self.__button_toggle_log = QtWidgets.QToolButton(self)
         self.__button_toggle_log.clicked.connect(self.__toggle_log_scale)
         self.__button_toggle_log.setCheckable(True)
         self.__button_toggle_log.setToolTip("Toggle logarithmic Y axis scaling")
@@ -72,7 +72,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                      "monitoring_section.svg")
         self.mpl_toolbar.addWidget(self.__button_toggle_log)
         
-        self.__button_ignores = QtGui.QToolButton(self)
+        self.__button_ignores = QtWidgets.QToolButton(self)
         self.__button_ignores.clicked.connect(self.__ignore_elements_from_graph)
         self.__button_ignores.setToolTip("Select elements which are included in" + \
                                          " the graph.")

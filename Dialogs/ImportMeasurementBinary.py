@@ -27,12 +27,12 @@ __versio__ = "1.0"
 
 import struct, numpy
 from os.path import join, isfile, split, splitext
-from PyQt4 import QtGui, uic, QtCore
+from PyQt5 import QtGui, uic, QtCore, QtWidgets
 
 from Modules.Functions import open_files_dialog
 
 
-class ImportDialogBinary(QtGui.QDialog):
+class ImportDialogBinary(QtWidgets.QDialog):
     """Binary measurement importing class.
     """
     def __init__(self, project, icon_manager, statusbar, parent):
@@ -52,7 +52,7 @@ class ImportDialogBinary(QtGui.QDialog):
         self.button_cancel.clicked.connect(self.close) 
         self.button_addimport.clicked.connect(self.__add_file)
         
-        remove_file = QtGui.QAction("Remove selected files", self.treeWidget)
+        remove_file = QtWidgets.QAction("Remove selected files", self.treeWidget)
         remove_file.triggered.connect(self.__remove_selected)
         self.treeWidget.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
         self.treeWidget.addAction(remove_file)
@@ -72,7 +72,7 @@ class ImportDialogBinary(QtGui.QDialog):
                 continue
             directoty, filename = split(file)
             name, unused_ext = splitext(filename)
-            item = QtGui.QTreeWidgetItem([name]) 
+            item = QtWidgets.QTreeWidgetItem([name])
             item.file = file
             item.name = name
             item.filename = filename
@@ -115,7 +115,7 @@ class ImportDialogBinary(QtGui.QDialog):
         """Import binary files.
         """
         imported_files = []
-        progress_bar = QtGui.QProgressBar()
+        progress_bar = QtWidgets.QProgressBar()
         self.__statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
         

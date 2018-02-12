@@ -26,7 +26,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli K�rkk�inen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-from PyQt4.QtGui import QDoubleValidator, QValidator
+from PyQt5.QtGui import QDoubleValidator, QValidator
 from sys import float_info
 
 class InputValidator(QDoubleValidator):

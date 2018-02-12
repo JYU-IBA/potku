@@ -26,7 +26,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-from PyQt4 import QtGui
+from PyQt5 import QtGui, QtWidgets
 
 from Dialogs.GraphIgnoreElements import GraphIgnoreElements
 from Modules.Element import Element
@@ -69,7 +69,7 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
         
         # Add button to toggle scaling of the graph
         self.mpl_toolbar.addSeparator()
-        self.__button_scale = QtGui.QToolButton(self)
+        self.__button_scale = QtWidgets.QToolButton(self)
         self.__button_scale.clicked.connect(self.__toggle_scaling)
         self.__button_scale.setToolTip("Toggle scaling mode for the graph " + \
                                        "default, log and 100%.")
@@ -78,7 +78,7 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.__button_scale)
         
         # Add button to ignore elements.
-        self.__button_ignores = QtGui.QToolButton(self)
+        self.__button_ignores = QtWidgets.QToolButton(self)
         self.__button_ignores.clicked.connect(self.__ignore_elements_from_graph)
         self.__button_ignores.setToolTip("Select elements which are included in" + \
                                          " the graph.")
