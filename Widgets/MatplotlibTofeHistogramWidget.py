@@ -39,6 +39,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     '''Matplotlib histogram widget, used to graph "bananas" (ToF-E).
     '''
     selectionsChanged = QtCore.pyqtSignal("PyQt_PyObject")
+    saveCuts = QtCore.pyqtSignal("PyQt_PyObject")
     color_scheme = {"Default color":"jet",
                     "Greyscale":"Greys",
                     "Greyscale (inverted)":"gray"}
@@ -506,8 +507,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     def __emit_save_cuts(self):
         """Emits a 'selectionsChanged' signal with the selections list as a parameter. 
         """
-        self.emit(QtCore.SIGNAL("saveCuts(PyQt_PyObject)"), self.measurement)
-    
+        #self.emit(QtCore.SIGNAL("saveCuts(PyQt_PyObject)"), self.measurement)
+        self.saveCuts.emit(self.measurement.selector.selections)
     
     def __context_menu(self, event, cursorlocation):
             menu = QtWidgets.QMenu(self)

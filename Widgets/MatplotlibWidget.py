@@ -30,8 +30,9 @@ from os.path import join
 from PyQt5 import QtGui, QtWidgets
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+#from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 
+import Modules.NavigationToolBar2QTView as NavigationToolbar
 
 class MatplotlibWidget(QtWidgets.QWidget):
     '''Base class for matplotlib widgets
@@ -57,7 +58,7 @@ class MatplotlibWidget(QtWidgets.QWidget):
         self.canvas.setParent(self.main_frame)
         self.axes = self.fig.add_subplot(111)
         
-        self.mpl_toolbar = NavigationToolbar(self.canvas, self.main_frame)
+        self.mpl_toolbar = NavigationToolbar.NavigationToolBar2QTView(self.canvas, self.main_frame)
         hbox = QtWidgets.QHBoxLayout()
         
         self.main_frame.ui.matplotlib_layout.addWidget(self.canvas)
