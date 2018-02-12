@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 import os
-from PyQt4 import QtCore
+from PyQt5 import QtCore
 
 from Modules.CutFile import CutFile
 from Modules.Element import Element
@@ -47,7 +47,7 @@ class ElementLosses:
             reference_cut_file: String representing reference cut file.
             checked_cuts: String list of cut files to be graphed.
             partition_count: Integer representing split count.
-            progress_bar: QtGui.QProgressBar or Null() if not given.
+            progress_bar: QtWidgets.QProgressBar or Null() if not given.
         '''
         self.directory_cuts = directory_cuts
         self.directory_elemloss = directory_elemloss

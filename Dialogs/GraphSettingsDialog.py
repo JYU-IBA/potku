@@ -27,10 +27,10 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt4 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtGui, uic, QtWidgets
 
 
-class TofeGraphSettingsWidget(QtGui.QDialog):
+class TofeGraphSettingsWidget(QtWidgets.QDialog):
     '''Graph settings dialog for the ToF-E histogram graph.
     '''
     def __init__(self, parent):

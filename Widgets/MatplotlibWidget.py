@@ -27,13 +27,13 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt4 import QtGui
+from PyQt5 import QtGui, QtWidgets
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 
 
-class MatplotlibWidget(QtGui.QWidget):
+class MatplotlibWidget(QtWidgets.QWidget):
     '''Base class for matplotlib widgets
     '''
     def __init__(self, parent):
@@ -58,7 +58,7 @@ class MatplotlibWidget(QtGui.QWidget):
         self.axes = self.fig.add_subplot(111)
         
         self.mpl_toolbar = NavigationToolbar(self.canvas, self.main_frame)
-        hbox = QtGui.QHBoxLayout()
+        hbox = QtWidgets.QHBoxLayout()
         
         self.main_frame.ui.matplotlib_layout.addWidget(self.canvas)
         self.main_frame.ui.matplotlib_layout.addWidget(self.mpl_toolbar)

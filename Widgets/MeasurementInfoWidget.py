@@ -27,9 +27,9 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt4 import uic, QtGui
+from PyQt5 import uic, QtGui, QtWidgets
 
-class MeasurementInfoWidget(QtGui.QWidget):
+class MeasurementInfoWidget(QtWidgets.QWidget):
     """Class for creating an info tab widget
     """
     def __init__(self):

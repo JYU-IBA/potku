@@ -29,10 +29,10 @@ __author__ = "Timo Konu"
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt4 import QtGui, QtCore, uic
+from PyQt5 import QtGui, QtCore, uic, QtWidgets
 
 
-class DepthProfileIgnoreElements(QtGui.QDialog):
+class DepthProfileIgnoreElements(QtWidgets.QDialog):
     def __init__(self, elements, ignored_graph, ignored_ratio):
         '''Init the dialog.
         
@@ -75,7 +75,7 @@ class DepthProfileIgnoreElements(QtGui.QDialog):
         for element in self.__elements:
             element_str = str(element)
             # Add to graph list
-            item = QtGui.QTreeWidgetItem([element_str]) 
+            item = QtWidgets.QTreeWidgetItem([element_str])
             item.element = element_str
             if not item.element in self.ignore_from_graph:
                 item.setCheckState(0, QtCore.Qt.Checked)
@@ -83,7 +83,7 @@ class DepthProfileIgnoreElements(QtGui.QDialog):
                 item.setCheckState(0, QtCore.Qt.Unchecked)
             self.tree_elements.addTopLevelItem(item)
             # Add to ratio list
-            item2 = QtGui.QTreeWidgetItem([element_str]) 
+            item2 = QtWidgets.QTreeWidgetItem([element_str])
             item2.element = element_str
             if not item2.element in self.ignore_from_ratio and \
             not item2.element in self.ignore_from_graph:

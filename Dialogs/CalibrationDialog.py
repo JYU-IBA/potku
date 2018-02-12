@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 import os
-from PyQt4 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtGui, uic, QtWidgets
 
 from Modules.CutFile import CutFile
 from Modules.Calibration import TOFCalibration
@@ -37,7 +37,7 @@ from Widgets.MatplotlibCalibrationLinearFittingWidget \
 import MatplotlibCalibrationLinearFittingWidget
 
 
-class CalibrationDialog(QtGui.QDialog):
+class CalibrationDialog(QtWidgets.QDialog):
     """A dialog for the time of flight calibration
     """
     def __init__(self, measurements, settings, masses, parent_settings_dialog=None):
@@ -70,13 +70,13 @@ class CalibrationDialog(QtGui.QDialog):
         
         # Go through all the measurements and their cut files and list them.
         for measurement in self.measurements:
-            item = QtGui.QTreeWidgetItem([measurement.measurement_name])
+            item = QtWidgets.QTreeWidgetItem([measurement.measurement_name])
             
             cuts, unused_cuts_elemloss = measurement.get_cut_files()
             # May also return a list of cut file's element losses 
             # cut files as one of the list elements
             for cut_file in cuts:
-                subitem = QtGui.QTreeWidgetItem([cut_file])
+                subitem = QtWidgets.QTreeWidgetItem([cut_file])
                 subitem.directory = measurement.directory_cuts
                 subitem.file_name = cut_file
                 item.addChild(subitem)
@@ -194,7 +194,7 @@ class CalibrationDialog(QtGui.QDialog):
         """Changes the current cut file drawn to the curve fitting widget.
         
         Args:
-            current_item: QtGui.QTreeWidgetItem of CutFile which was selected. 
+            current_item: QtWidgets.QTreeWidgetItem of CutFile which was selected. 
         """
         self.__change_accept_point_label("")
         if current_item and hasattr(current_item, 'directory') and \
@@ -208,7 +208,7 @@ class CalibrationDialog(QtGui.QDialog):
         """Sets the current open cut file in the calibration dialog.
         
         Args:
-            current_item: QtGui.QTreeWidgetItem of CutFile which was selected. 
+            current_item: QtWidgets.QTreeWidgetItem of CutFile which was selected. 
         """
         self.__cut_file = self.__cut_files[current_item.file_name]
 
@@ -225,7 +225,7 @@ class CalibrationDialog(QtGui.QDialog):
         """Sets if the tof calibration point is drawn to the linear fit graph
         
         Args:
-            tree_item: QtGui.QTreeWidgetItem
+            tree_item: QtWidgets.QTreeWidgetItem
         """
         if tree_item and hasattr(tree_item, 'point'):
             tree_item.point.point_used = tree_item.checkState(0)
@@ -280,7 +280,7 @@ class CalibrationDialog(QtGui.QDialog):
         """Adds a ToF Calibration point to the pointsTreeWidget and sets the 
         QTreeWidgetItem's attribute 'point' as the given TOFCalibrationPoint. 
         """
-        item = QtGui.QTreeWidgetItem([tof_calibration_point.get_name()])
+        item = QtWidgets.QTreeWidgetItem([tof_calibration_point.get_name()])
         item.point = tof_calibration_point
         item.setCheckState(0, QtCore.Qt.Checked)
         self.ui.pointsTreeWidget.addTopLevelItem(item)
@@ -294,7 +294,7 @@ class CalibrationDialog(QtGui.QDialog):
         
 
 
-class CalibrationCurveFittingWidget(QtGui.QWidget):
+class CalibrationCurveFittingWidget(QtWidgets.QWidget):
     '''Widget class for holding MatplotlibCalibrationCurveFittingWidget.
     '''
     def __init__(self, dialog, cut, tof_calibration,
@@ -329,7 +329,7 @@ class CalibrationCurveFittingWidget(QtGui.QWidget):
         
         
             
-class CalibrationLinearFittingWidget(QtGui.QWidget):
+class CalibrationLinearFittingWidget(QtWidgets.QWidget):
     '''Widget class for holding MatplotlibCalibrationLinearFittingWidget.
     '''
     def __init__(self, dialog, tof_calibration, old_params):

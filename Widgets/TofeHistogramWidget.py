@@ -27,12 +27,12 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt4 import QtGui, QtCore, uic
+from PyQt5 import QtGui, QtCore, uic, QtWidgets
 
 from Widgets.MatplotlibTofeHistogramWidget import MatplotlibHistogramWidget
 
 
-class TofeHistogramWidget(QtGui.QWidget):
+class TofeHistogramWidget(QtWidgets.QWidget):
     '''HistogramWidget used to draw ToF-E Histograms.
     '''
     def __init__(self, measurement, masses, icon_manager):
@@ -90,24 +90,24 @@ class TofeHistogramWidget(QtGui.QWidget):
         """Set shortcuts for the ToF-E histogram.
         """
         # X axis
-        self.__sc_comp_x_inc = QtGui.QShortcut(self)
+        self.__sc_comp_x_inc = QtWidgets.QShortcut(self)
         self.__sc_comp_x_inc.setKey(QtCore.Qt.Key_Q)
         self.__sc_comp_x_inc.activated.connect(lambda: self.matplotlib.sc_comp_inc(0))
-        self.__sc_comp_x_dec = QtGui.QShortcut(self)
+        self.__sc_comp_x_dec = QtWidgets.QShortcut(self)
         self.__sc_comp_x_dec.setKey(QtCore.Qt.Key_W)
         self.__sc_comp_x_dec.activated.connect(lambda: self.matplotlib.sc_comp_dec(0))
         # Y axis
-        self.__sc_comp_y_inc = QtGui.QShortcut(self)
+        self.__sc_comp_y_inc = QtWidgets.QShortcut(self)
         self.__sc_comp_y_inc.setKey(QtCore.Qt.Key_Z)
         self.__sc_comp_y_inc.activated.connect(lambda: self.matplotlib.sc_comp_inc(1))
-        self.__sc_comp_y_dec = QtGui.QShortcut(self)
+        self.__sc_comp_y_dec = QtWidgets.QShortcut(self)
         self.__sc_comp_y_dec.setKey(QtCore.Qt.Key_X)
         self.__sc_comp_y_dec.activated.connect(lambda: self.matplotlib.sc_comp_dec(1))
         # Both axes
-        self.__sc_comp_inc = QtGui.QShortcut(self)
+        self.__sc_comp_inc = QtWidgets.QShortcut(self)
         self.__sc_comp_inc.setKey(QtCore.Qt.Key_A)
         self.__sc_comp_inc.activated.connect(lambda: self.matplotlib.sc_comp_inc(2))
-        self.__sc_comp_dec = QtGui.QShortcut(self)
+        self.__sc_comp_dec = QtWidgets.QShortcut(self)
         self.__sc_comp_dec.setKey(QtCore.Qt.Key_S)
         self.__sc_comp_dec.activated.connect(lambda: self.matplotlib.sc_comp_dec(2))
 

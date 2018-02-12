@@ -29,11 +29,10 @@ __versio__ = "1.0"
 
 import logging
 import os
-from PyQt4 import QtGui
-from PyQt4 import uic
+from PyQt5 import QtGui, uic, QtWidgets
 
 
-class ProjectNewDialog(QtGui.QDialog):
+class ProjectNewDialog(QtWidgets.QDialog):
     '''Dialog creating a new project.
     '''
     def __init__(self, parent):
@@ -69,7 +68,7 @@ class ProjectNewDialog(QtGui.QDialog):
     
     
     def __browser_folder(self):
-        folder = QtGui.QFileDialog.getExistingDirectory(self,
+        folder = QtWidgets.QFileDialog.getExistingDirectory(self,
                                      self.ui.browseFolderButton.text())
         if folder:
             self.folder = folder

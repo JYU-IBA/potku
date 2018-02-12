@@ -29,7 +29,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt4 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtGui, uic, QtWidgets
 
 from Dialogs.CalibrationDialog import CalibrationDialog
 from Dialogs.ElementSelectionDialog import ElementSelectionDialog
@@ -41,7 +41,7 @@ from Modules.InputValidator import InputValidator
 from Modules.MeasuringSettings import MeasuringSettings
 
 
-class ProjectSettingsDialog(QtGui.QDialog):
+class ProjectSettingsDialog(QtWidgets.QDialog):
     
     def __init__(self, masses, project):
         '''Constructor for the program
@@ -230,11 +230,11 @@ class ProjectSettingsDialog(QtGui.QDialog):
             self.calibration_settings.save_settings()
             self.depth_profile_settings.save_settings()
         except TypeError:
-            QtGui.QMessageBox.question(self,
+            QtWidgets.QMessageBox.question(self,
                 "Warning",
                 "Some of the setting values have not been set.\n" + \
                 "Please input setting values to save them.",
-                QtGui.QMessageBox.Ok)
+                QtWidgets.QMessageBox.Ok)
             raise TypeError
     
     

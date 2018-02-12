@@ -27,13 +27,13 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt4 import QtCore, QtGui, uic
+from PyQt5 import QtCore, QtGui, uic, QtWidgets
 
 from Dialogs.ElementSelectionDialog import ElementSelectionDialog
 from Modules.Element import Element
 
 
-class SelectionSettingsDialog(QtGui.QDialog):
+class SelectionSettingsDialog(QtWidgets.QDialog):
     '''Selection Settings dialog handles showing settings for selection made in 
     measurement (in matplotlib graph).
     '''
@@ -152,11 +152,11 @@ class SelectionSettingsDialog(QtGui.QDialog):
         '''Shows dialog to change selection element.
         
         Args:
-            button: QtGui.QPushButton (button to select element)
-            isotope_combobox: QtGui.QComboBox
+            button: QtWidgets.QPushButton (button to select element)
+            isotope_combobox: QtWidgets.QComboBox
             isotope_radio: QtGui.QRadioButton
             standard_mass_radio: QtGui.QRadioButton
-            standard_mass_label: QtGui.QLabel
+            standard_mass_label: QtWidgets.QLabel
         '''
         dialog = ElementSelectionDialog()
         # Only disable these once, not if you cancel after selecting once.
@@ -180,10 +180,10 @@ class SelectionSettingsDialog(QtGui.QDialog):
         
         Args:
             element: String representing element.
-            isotope_combobox: QtGui.QComboBox
+            isotope_combobox: QtWidgets.QComboBox
             isotope_radio: QtGui.QRadioButton
             standard_mass_radio: QtGui.QRadioButton
-            standard_mass_label: QtGui.QLabel
+            standard_mass_label: QtWidgets.QLabel
             sample: Boolean representing if element is sample (and not RBS element).
         '''
         if element:
@@ -215,7 +215,7 @@ class SelectionSettingsDialog(QtGui.QDialog):
         '''Set a specific isotope's weight factor to label.
         
         Args:
-            isotope_combobox: A QtGui.QComboBox element of isotopes.
+            isotope_combobox: A QtWidgets.QComboBox element of isotopes.
         '''
         if not isotope_combobox or not isotope_combobox.isEnabled():
             self.ui.isotope_specific_weight_factor_label.setText("")
@@ -230,7 +230,7 @@ class SelectionSettingsDialog(QtGui.QDialog):
     def __click_color_button(self):
         '''Shows dialog to change selection color.
         '''
-        dialog = QtGui.QColorDialog(self)
+        dialog = QtWidgets.QColorDialog(self)
         self.color = dialog.getColor(QtGui.QColor(self.color))
         if self.color.isValid():
             self.__change_color_button_color(self.ui.sample_element_button.text())
@@ -263,8 +263,8 @@ class SelectionSettingsDialog(QtGui.QDialog):
         '''Change isotope information regarding element
         
         Args:
-            combobox: QtGui.QComboBox where element's isotopes are loaded to.
-            standard_mass_label: QtGui.QLabel where element's standard mass is shown.
+            combobox: QtWidgets.QComboBox where element's isotopes are loaded to.
+            standard_mass_label: QtWidgets.QLabel where element's standard mass is shown.
             element: String representing element.
             current_isotope: String representing current isotope.
         '''
@@ -399,7 +399,7 @@ class SelectionSettingsDialog(QtGui.QDialog):
         
         Args:
             radio: A QtGui.QRadioButton element.
-            combobox: A QtGui.QComboBox element.
+            combobox: A QtWidgets.QComboBox element.
         '''
         combobox.setEnabled(radio.isChecked())
         # self.__set_isotope_weight_factor()
