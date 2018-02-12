@@ -1,7 +1,0 @@
-
-- reduced units
-- check case when E == 0
-+ correct bug discovered by Liisa
-
-+ Si -> Si, the value for lower critical velocity (below which the
-  energy loss is velocity proportional) is wrong
