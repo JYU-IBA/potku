@@ -133,9 +133,9 @@ class MeasurementTabWidget(QtGui.QWidget):
         self.ui.makeSelectionsButton.clicked.connect(
              lambda: self.histogram.matplotlib.elementSelectionButton.setChecked(
                                                                              True))
-        self.connect(self.histogram.matplotlib,
-                     QtCore.SIGNAL("selectionsChanged(PyQt_PyObject)"),
-                     self.__set_cut_button_enabled)
+        #self.connect(self.histogram.matplotlib, QtCore.SIGNAL("selectionsChanged(PyQt_PyObject)"), self.__set_cut_button_enabled)
+        self.histogram.matplotlib.selectionsChanged.connect(self.__set_cut_button_enabled)
+
         # Draw after giving axes -> selections set properly
         self.histogram.matplotlib.on_draw()  
         if not self.measurement.selector.is_empty():
@@ -241,7 +241,7 @@ class MeasurementTabWidget(QtGui.QWidget):
         else:
             self.ui.hidePanelButton.setText('<')
 
-        self.ui.frame.setShown(self.panel_shown)
+        self.ui.frame.setVisible(self.panel_shown)
     
     
     def make_depth_profile(self, directory, name):

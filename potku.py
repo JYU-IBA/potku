@@ -28,7 +28,7 @@ __versio__ = "1.0"
 
 import gc, os, shutil, sys, platform, subprocess
 from datetime import datetime, timedelta
-from PyQt4 import QtGui, QtCore, uic
+from PyQt5 import QtWidgets, QtCore, uic
 
 from Dialogs.AboutDialog import AboutDialog
 from Dialogs.GlobalSettingsDialog import GlobalSettingsDialog
@@ -44,7 +44,7 @@ from Modules.Project import Project
 from Widgets.MeasurementTabWidget import MeasurementTabWidget
 
 
-class Potku(QtGui.QMainWindow):
+class Potku(QtWidgets.QMainWindow):
     '''Potku is main window class.
     '''
     
@@ -104,15 +104,15 @@ class Potku(QtGui.QMainWindow):
         self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
         
         # Add the context menu to the treewidget.
-        delete_measurement = QtGui.QAction("Delete", self.ui.treeWidget)
+        delete_measurement = QtWidgets.QAction("Delete", self.ui.treeWidget)
         delete_measurement.triggered.connect(self.delete_selections)
-        master_measurement = QtGui.QAction("Make master", self.ui.treeWidget)
+        master_measurement = QtWidgets.QAction("Make master", self.ui.treeWidget)
         master_measurement.triggered.connect(self.__make_master_measurement)
-        master_measurement_rem = QtGui.QAction("Remove master", self.ui.treeWidget)
+        master_measurement_rem = QtWidgets.QAction("Remove master", self.ui.treeWidget)
         master_measurement_rem.triggered.connect(self.__remove_master_measurement)
-        slave_measurement = QtGui.QAction("Exclude from slaves", self.ui.treeWidget)
+        slave_measurement = QtWidgets.QAction("Exclude from slaves", self.ui.treeWidget)
         slave_measurement.triggered.connect(self.__make_nonslave_measurement)
-        slave_measurement_rem = QtGui.QAction("Include as slave", self.ui.treeWidget)
+        slave_measurement_rem = QtWidgets.QAction("Include as slave", self.ui.treeWidget)
         slave_measurement_rem.triggered.connect(self.__make_slave_measurement)
         self.ui.treeWidget.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
         self.ui.treeWidget.addAction(master_measurement)
@@ -150,10 +150,10 @@ class Potku(QtGui.QMainWindow):
         if hasattr(widget, "measurement"):
             widget.open_depth_profile(widget)
         else:
-            QtGui.QMessageBox.question(self,
+            QtWidgets.QMessageBox.question(self,
               "Notification",
               "An open measurement is required to do this action.",
-              QtGui.QMessageBox.Ok)
+              QtWidgets.QMessageBox.Ok)
         
         
     def current_measurement_analyze_elemental_losses(self):
@@ -164,10 +164,10 @@ class Potku(QtGui.QMainWindow):
         if hasattr(widget, "measurement"):
             widget.open_element_losses(widget)
         else:
-            QtGui.QMessageBox.question(self,
+            QtWidgets.QMessageBox.question(self,
               "Notification",
               "An open measurement is required to do this action.",
-              QtGui.QMessageBox.Ok)
+              QtWidgets.QMessageBox.Ok)
         
         
     def current_measurement_create_energy_spectrum(self):
@@ -178,10 +178,10 @@ class Potku(QtGui.QMainWindow):
         if hasattr(widget, "measurement"):
             widget.open_energy_spectrum(widget)
         else:
-            QtGui.QMessageBox.question(self,
+            QtWidgets.QMessageBox.question(self,
               "Notification",
               "An open measurement is required to do this action.",
-              QtGui.QMessageBox.Ok)
+              QtWidgets.QMessageBox.Ok)
 
 
     def current_measurement_save_cuts(self):
@@ -192,10 +192,10 @@ class Potku(QtGui.QMainWindow):
         if hasattr(widget, "measurement"):
             widget.measurement_save_cuts()
         else:
-            QtGui.QMessageBox.question(self,
+            QtWidgets.QMessageBox.question(self,
               "Notification",
               "An open measurement is required to do this action.",
-              QtGui.QMessageBox.Ok)
+              QtWidgets.QMessageBox.Ok)
     
     
     def delete_selections(self):
@@ -207,16 +207,16 @@ class Potku(QtGui.QMainWindow):
         selected_tabs = [self.measurement_tab_widgets[item.tab_id] for 
                          item in self.ui.treeWidget.selectedItems()]
         if selected_tabs:  # Ask user a confirmation.
-            reply = QtGui.QMessageBox.question(self,
+            reply = QtWidgets.QMessageBox.question(self,
                    "Confirmation",
                    "Deleting selected measurements will " \
                    + "delete all files and folders under" \
                    + " selected measurement directories." + \
                    "\n\nAre you sure you want to delete selected measurements?",
-                   QtGui.QMessageBox.Yes,
-                   QtGui.QMessageBox.No,
-                   QtGui.QMessageBox.Cancel)
-            if reply == QtGui.QMessageBox.No or reply == QtGui.QMessageBox.Cancel:
+                   QtWidgets.QMessageBox.Yes,
+                   QtWidgets.QMessageBox.No,
+                   QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == QtWidgets.QMessageBox.Cancel:
                 return  # If clicked Yes, then continue normally
         
         for tab in selected_tabs:
@@ -234,7 +234,7 @@ class Potku(QtGui.QMainWindow):
                 print("Error with removing files")
                 QtGui.QMessageBox.question(self, "Confirmation",
                                "Problem with deleting files.",
-                               QtGui.QMessageBox.Ok)
+                               QtWidgets.QMessageBox.Ok)
                 measurement.set_loggers()
                 return
             
@@ -275,8 +275,8 @@ class Potku(QtGui.QMainWindow):
         # Check that the data is read.
         if not tab.data_loaded:
             tab.data_loaded = True
-            progress_bar = QtGui.QProgressBar()
-            loading_bar = QtGui.QProgressBar()
+            progress_bar = QtWidgets.QProgressBar()
+            loading_bar = QtWidgets.QProgressBar()
             loading_bar.setMinimum(0)
             loading_bar.setMaximum(0)
             self.statusbar.addWidget(progress_bar, 1)

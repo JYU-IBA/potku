@@ -51,12 +51,12 @@ class TofeHistogramWidget(QtGui.QWidget):
         self.ui.saveCutsButton.clicked.connect(self.matplotlib.save_cuts)
         self.ui.loadSelectionsButton.clicked.connect(
                                                  self.matplotlib.load_selections)
-        self.connect(self.matplotlib,
-                     QtCore.SIGNAL("selectionsChanged(PyQt_PyObject)"),
-                     self.set_cut_button_enabled)
-        self.connect(self.matplotlib,
-                     QtCore.SIGNAL("saveCuts(PyQt_PyObject)"),
-                     self.__save_cuts)
+        #self.connect(self.matplotlib, QtCore.SIGNAL("selectionsChanged(PyQt_PyObject)"), self.set_cut_button_enabled)
+        self.matplotlib.selectionsChanged.connect(self.set_cut_button_enabled)
+
+        #self.connect(self.matplotlib, QtCore.SIGNAL("saveCuts(PyQt_PyObject)"), self.__save_cuts)
+        self.matplotlib.saveCuts.connect(self.__save_cuts)
+
         self.__set_shortcuts()
         self.set_cut_button_enabled(measurement.selector.selections)
         

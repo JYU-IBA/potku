@@ -367,7 +367,7 @@
    <sender>hideShowSettingsButton</sender>
    <signal>toggled(bool)</signal>
    <receiver>settingsFrame</receiver>
-   <slot>setShown(bool)</slot>
+   <slot>setVisible(bool)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>586</x>

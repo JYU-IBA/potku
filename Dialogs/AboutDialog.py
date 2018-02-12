@@ -32,7 +32,7 @@ from PyQt4 import QtGui, QtCore
 from PyQt4 import uic
 from math import sin
 
-class AboutDialog(QtGui.QDialog):
+class AboutDialog(QtWidgets.QDialog):
     '''About dialog that shows information about the program itself.
     '''
     def __init__(self):

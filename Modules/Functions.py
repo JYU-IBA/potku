@@ -57,7 +57,7 @@ def open_file_dialog(parent, default_folder, title, files):
                                                  title,
                                                  default_folder,
                                                  parent.tr(files))
-    return filename
+    return filename[0]
 
 
 def open_files_dialog(parent, default_folder, title, files):
