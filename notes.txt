@@ -1,3 +1,14 @@
+Potku 1.1:stä löydettyjä >>>>>
+
+Jos graafien kohdalla pyöräyttää hiiren rullaa, ohjelma kaatuu AttributeErroriin:
+'QWheelEvent' object has no attribute 'delta'
+Kun MatplotlibWidget.pystä vaihtaa importin backend_qt4aggista backend_qt5aggiin, rullaus ei enää kaada ohjelmaa
+muttei myöskään tee mitään.
+
+
+Potku 1.0:n ajoilta >>>>>
+>>>>>>>>>>>>>>>>>>>>>>>>>
+
 QtCore.SIGNAL -> pyqtSignal
 monet QtGui -> QtWidgets
 

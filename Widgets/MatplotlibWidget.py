@@ -29,7 +29,7 @@ __versio__ = "1.0"
 from os.path import join
 from PyQt5 import QtWidgets
 from matplotlib.figure import Figure
-from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 #from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 
 import Modules.NavigationToolBar2QTView as NavigationToolbar
