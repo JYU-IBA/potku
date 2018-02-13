@@ -25,7 +25,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Timo Konu"
 __versio__ = "1.0"
 
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtWidgets
 
 from Widgets.MatplotlibWidget import MatplotlibWidget
 

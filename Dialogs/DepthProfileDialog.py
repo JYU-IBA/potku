@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 import logging, os, sys
-from PyQt5 import QtGui, uic, QtCore, QtWidgets
+from PyQt5 import uic, QtCore, QtWidgets
 
 from Modules.CutFile import is_rbs, get_scatter_element
 from Modules.DepthFiles import DepthFiles

@@ -26,7 +26,7 @@ __author__ = "Timo Konu"
 __versio__ = "1.0"
 
 from os import path, stat
-from PyQt5 import QtGui, uic, QtWidgets
+from PyQt5 import uic, QtWidgets
 
 from Modules.Functions import coinc
 from Widgets.MatplotlibImportTimingWidget import MatplotlibImportTimingWidget

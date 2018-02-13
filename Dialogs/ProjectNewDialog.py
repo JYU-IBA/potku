@@ -29,7 +29,7 @@ __versio__ = "1.0"
 
 import logging
 import os
-from PyQt5 import QtGui, uic, QtWidgets
+from PyQt5 import uic, QtWidgets
 
 
 class ProjectNewDialog(QtWidgets.QDialog):

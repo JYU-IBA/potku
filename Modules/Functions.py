@@ -30,7 +30,7 @@ import numpy, hashlib
 from os import makedirs
 from os.path import curdir, join, exists, realpath, split, splitext
 import platform, re, subprocess, sys
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtWidgets
 from subprocess import Popen
 
 

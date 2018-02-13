@@ -28,7 +28,7 @@ __versio__ = "1.0"
 
 from matplotlib import cm
 from matplotlib.colors import LogNorm
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 
 from Dialogs.SelectionDialog import SelectionSettingsDialog
 from Dialogs.GraphSettingsDialog import TofeGraphSettingsWidget

@@ -27,7 +27,7 @@ __versio__ = "1.0"
 
 import struct, numpy
 from os.path import join, isfile, split, splitext
-from PyQt5 import QtGui, uic, QtCore, QtWidgets
+from PyQt5 import uic, QtCore, QtWidgets
 
 from Modules.Functions import open_files_dialog
 

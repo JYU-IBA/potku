@@ -29,7 +29,7 @@ from collections import OrderedDict
 import logging
 from os import unlink
 from os.path import join, isfile, split, splitext
-from PyQt5 import QtGui, uic, QtCore, QtWidgets
+from PyQt5 import uic, QtCore, QtWidgets
 import re
 from time import clock
 

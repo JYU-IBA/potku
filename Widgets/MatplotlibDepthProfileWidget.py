@@ -30,7 +30,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 import os, re
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtWidgets
 
 from Dialogs.DepthProfileIgnoreElements import DepthProfileIgnoreElements
 import Modules.DepthFiles as df

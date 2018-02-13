@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 import os, logging, sys
-from PyQt5 import QtGui, QtCore, uic, QtWidgets
+from PyQt5 import QtCore, uic, QtWidgets
 
 from Dialogs.ElementLossesDialog import ElementLossesDialog, ElementLossesWidget
 from Dialogs.EnergySpectrumDialog import EnergySpectrumParamsDialog, \

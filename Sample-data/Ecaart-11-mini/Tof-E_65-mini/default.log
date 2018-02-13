@@ -76,3 +76,7 @@ Mn.0: 436, 451, 479, 475, 419, 407, 454, 438, 492, 448
 1H.0: 5, 1, 1, 2, 2, 0, 0, 0, 1, 1
 1H.1: 2, 1, 0, 2, 1, 3, 0, 0, 1, 0
 Si.0: 1189, 1242, 1225, 1303, 1191, 1197, 1303, 1173, 1153, 1213
+2018-02-13 11:46:41 - INFO - Selection file C:/MyTemp/monisiro/Sample-data/Ecaart-11-mini\Tof-E_65-mini\Tof-E_65-mini.sel was read successfully!
+2018-02-13 11:46:41 - INFO - Backed up old tof.in file to C:\MyTemp\monisiro\external\Potku-bin\tof.in_2018-02-13_11.46.41.bak
+2018-02-13 11:46:41 - INFO - Generated tof.in with params> Beam: 35Cl; Energy: 8.515; Detector angle: 41.2; Target angle: 20.6; Toflen: 0.623; Carbon foil thickness: 3.1; Target density: 3.0; TOF calibration: 5.70569323644e-11 1.66381574853e-09; Angle calibration: 0.0 0.0; Number of depth steps: 100; Depth step for stopping: 20.0; Depth step for output: 20.0; Depths for concentration scaling: 200.0 600.0; Cross section: 3; Number of iterations: 3; Efficiency directory: C:\Users\localadmin\potku\efficiency_files
+2018-02-13 11:46:49 - ERROR - Could not create Depth Profile graph. FileNotFoundError: [Errno 2] No such file or directory: 'C:/potku/Sample-data/Ecaart-11-mini\\Tof-E_65-mini\\cuts\\Tof-E_65-mini.12C.0.cut', C:\MyTemp\monisiro\Dialogs\DepthProfileDialog.py, 306

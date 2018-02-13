@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt5 import QtGui, QtCore, uic, QtWidgets
+from PyQt5 import QtCore, uic, QtWidgets
 
 from Widgets.MatplotlibTofeHistogramWidget import MatplotlibHistogramWidget
 

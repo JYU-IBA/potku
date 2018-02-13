@@ -29,7 +29,7 @@ __author__ = "Timo Konu"
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt5 import QtGui, QtCore, uic, QtWidgets
+from PyQt5 import QtCore, uic, QtWidgets
 
 
 class DepthProfileIgnoreElements(QtWidgets.QDialog):

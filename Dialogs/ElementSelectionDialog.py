@@ -29,7 +29,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os.path import join
-from PyQt5 import QtGui, uic, QtWidgets
+from PyQt5 import uic, QtWidgets
 
 class ElementSelectionDialog(QtWidgets.QDialog):
     """ElementSelectionDialog opens a periodic table from which user can select
