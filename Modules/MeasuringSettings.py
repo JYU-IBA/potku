@@ -118,15 +118,15 @@ class MeasuringSettings:
             self.use_settings = used_settings
         
         isotope_index = dialog.isotopeComboBox.currentIndex()
-        isotope_data = dialog.isotopeComboBox.itemData(isotope_index)
-        self.element = Element(dialog.elementButton.text(), isotope_data[0])
-        self.energy = float(dialog.energyLineEdit.text())
-        self.detector_angle = float(dialog.detectorAngleLineEdit.text())
-        self.target_angle = float(dialog.targetAngleLineEdit.text())
-        self.time_of_flight_lenght = float(dialog.TOFLengthLineEdit.text())
-        self.carbon_foil_thickness = float(
-                                       dialog.carbonFoilThicknessLineEdit.text())
-        self.target_density = float(dialog.targetDensityLineEdit.text())
+        if isotope_index != -1:
+            isotope_data = dialog.isotopeComboBox.itemData(isotope_index)
+            self.element = Element(dialog.elementButton.text(), isotope_data[0])
+            self.energy = float(dialog.energyLineEdit.text())
+            self.detector_angle = float(dialog.detectorAngleLineEdit.text())
+            self.target_angle = float(dialog.targetAngleLineEdit.text())
+            self.time_of_flight_lenght = float(dialog.TOFLengthLineEdit.text())
+            self.carbon_foil_thickness = float(dialog.carbonFoilThicknessLineEdit.text())
+            self.target_density = float(dialog.targetDensityLineEdit.text())
         
         
     def load_settings(self, filepath):
