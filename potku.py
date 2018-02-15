@@ -329,7 +329,7 @@ class Potku(QtWidgets.QMainWindow):
         else:
             self.ui.hidePanelButton.setText('>')
 
-        self.ui.frame.setShown(self.panel_shown)
+        self.ui.frame.setVisible(self.panel_shown)
 
 
     def import_pelletron(self):
