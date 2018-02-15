@@ -118,6 +118,8 @@ class MeasuringSettings:
             self.use_settings = used_settings
         
         isotope_index = dialog.isotopeComboBox.currentIndex()
+
+        # Check that an isotope has been selected. Otherwise the program will crash.
         if isotope_index != -1:
             isotope_data = dialog.isotopeComboBox.itemData(isotope_index)
             self.element = Element(dialog.elementButton.text(), isotope_data[0])
@@ -203,6 +205,6 @@ class MeasuringSettings:
         if filepath[0] == '':
             return
         
-        with open(filepath[0], 'wt+') as configfile:
+        with open(filepath, 'wt+') as configfile:
             self.config.write(configfile)
         
