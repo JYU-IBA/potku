@@ -1,0 +1,13 @@
+14.8.97: Compare also the length of the element symbols to distinguish
+         between eg. Cu and C
+
+29.7.98: The bug causing wrong values for Si -> Si below 1 v0 corrected
+
+5.11.99: Output of the effective charget fraction (gamma) added.
+         Small changes in the library interface.
+
+10.11.99: Header file cleaning
+          Give 0.0 for stopping or eff. charge if E <= 0.0
+
+3.2.2000: Natural isotope concentrations included in the masses.dat file
+          (they are not yet used anywhere)

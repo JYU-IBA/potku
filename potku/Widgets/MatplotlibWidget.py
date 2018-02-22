@@ -1,0 +1,102 @@
+# coding=utf-8
+'''
+Created on 21.3.2013
+Updated on 23.5.2013
+
+Potku is a graphical user interface for analyzation and 
+visualization of measurement data collected from a ToF-ERD 
+telescope. For physics calculations Potku uses external 
+analyzation components.  
+Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
+Miika Raunio
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
+'''
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
+__versio__ = "1.0"
+
+from PyQt4 import QtGui
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
+
+
+class MatplotlibWidget(QtGui.QWidget):
+    '''Base class for matplotlib widgets
+    '''
+    def __init__(self, parent):
+        '''Inits matplotlib widget.
+        
+        Args:
+            parent: parent class object.
+        '''
+        super().__init__()
+        self.main_frame = parent
+        self.dpi = 75
+        self.show_axis_ticks = True
+        self.__create_frame()
+
+
+    def __create_frame(self):
+        self.fig = Figure((5.0, 3.0), dpi=self.dpi)
+        self.fig.patch.set_facecolor("white")
+        self.canvas = FigureCanvas(self.fig)
+        self.canvas.setParent(self.main_frame)
+        self.axes = self.fig.add_subplot(111)
+        
+        self.mpl_toolbar = NavigationToolbar(self.canvas, self.main_frame)
+        hbox = QtGui.QHBoxLayout()
+        
+        self.main_frame.ui.matplotlib_layout.addWidget(self.canvas)
+        self.main_frame.ui.matplotlib_layout.addWidget(self.mpl_toolbar)
+        self.main_frame.ui.matplotlib_layout.addLayout(hbox)
+
+
+    def fork_toolbar_buttons(self):
+        '''Remove figure options & subplot config that might not work properly.
+        '''
+        try:
+            self.mpl_toolbar.removeAction(self.mpl_toolbar.children()[21])  
+            self.mpl_toolbar.removeAction(self.mpl_toolbar.children()[17])
+        except:
+            pass  # Already removed
+    
+    
+    def remove_axes_ticks(self):
+        '''Remove ticks from axes.
+        '''
+        if not self.show_axis_ticks:
+            for tick in self.axes.yaxis.get_major_ticks():
+                tick.label1On = False
+                tick.label2On = False
+            for tick in self.axes.xaxis.get_major_ticks():
+                tick.label1On = False
+                tick.label2On = False
+                
+                
+    def delete(self):
+        '''Delete matplotlib objects.
+        '''
+        self.axes.clear()  # Might be useless with fig.clf()
+        self.canvas.close()
+        self.fig.clf()
+        self.close()
+        
+        del self.fig
+        del self.canvas
+        del self.axes
+        
+        import gc
+        gc.collect()
+

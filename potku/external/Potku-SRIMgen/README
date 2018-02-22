@@ -1,0 +1,95 @@
+genstop/extract_stopping SRIM 20?? stopping tables generator/extractor
+Copyright (C) 2013 Jaakko Julin <jaakko.julin@jyu.fi>
+See file LICENCE for a copy of the GNU General Public Licence
+
+----------------------------------------------------------------------------
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+
+----------------------------------------------------------------------------
+
+ABOUT genstop AND SRIM STOPPING DATA
+
+These instructions assume Linux/OSX with SRIM installed under wine (at default
+wine prefix) "C:\SRIM". Windows is not supported yet, sorry. Under Windows you
+have to modify genstop.c or create a dummy program "wine".
+
+See installation instructions below.
+
+The genstop program will generate a binary file which includes the maximum Z
+(default 113), number of velocity steps and the individual velocities for which
+stopping was calculated.After that a table of stopping values for every Z1 in
+every Z2 is tabulated for every individual velocity. The extract_stopping
+program will load the stopping table to memory along with a table of
+velocities.
+
+Note that the default behaviour is to create a table for Z1=1...112,
+Z2=1...112, v=(1/1000*0.05*c), ..., (0.05*c). Some of the higher Zs (Z >= 92)
+are not computed. This is a (minor) limitation of SRIM. In order for the
+stopping to be calculated there has to be at least one isotope with abundance >
+0 for the element in masses.dat!
+
+Velocities form an arithmetic sequence, but it is in the interest of the
+developers to change this behaviour in the future. The binary data file must
+therefore not be assumed to have equally spaced velocities! The program reading
+the data can assume the file contains stopping for all elements with Z < Z_max.
+The size of the actual stopping data can be determined from number of steps and
+Z_max. Data is stored as doubles, whatever that means is up to your platform.
+
+
+----------------------------------------------------------------------------
+
+INSTALLATION INSTRUCTIONS
+
+1. Compile
+
+$ make
+
+
+2. Install
+
+$ make install
+
+
+3. Copy binary from binary install directory to "SRIM/SR Module" directory
+
+$ cp ../Potku-bin/genstop "~/.wine/drive_c/SRIM/SR Module/"
+$ cd "~/.wine/drive_c/SRIM/SR Module/"
+
+
+4. Run genstop
+
+It is convinient to do this in the SR Module directory
+
+$ ./genstop
+
+Binary file "stopping.bin" should now have been written to Potku-data
+
+
+5. Test data validity
+
+Test for example by extracting stopping for helium in silicon (He Z=2, Si Z=14)
+from 100 to 4000 keV every 10 keV.  First column is velocity in m/s, second is
+the stopping in eV/(10^15 atoms).
+
+assuming binary installation path is in your PATH
+
+$ extract_stopping 4-He 28-Si 100 10 4000
+
+
+----------------------------------------------------------------------------
+
+

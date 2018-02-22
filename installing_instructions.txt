@@ -1,0 +1,96 @@
+Potku Installing Instructions
+-----------------------------
+Date: 24.5.2013
+Software Version: 1.0.0
+
+These are rough installation instructions for Potku Software.
+
+1. Installing the Required Components for Windows 7
+---------------------------------------------------
+
+The following external programs should be installed. They
+are provided in the folder potku_required_packages.
+
+1.1 Python 3.3
+ You can install Python by running the file python-3.3.0.msi
+ provided in the package.
+ You can download the latest version from
+ http://www.python.org/download/releases/3.3.0/.
+ You can install it anywhere in your computer.
+ After installing, Python 3.3 should be in the system PATH. 
+ If not, add the folder which contains python.exe 
+ to the system PATH (can be found from the environment variables).
+ 
+1.2 Numpy 1.7
+ You can install NumPy by running the file
+ numpy-MKL-1.7.0.win32-py3.3.exe provided in the package.
+ You can download the latest version from
+ http://sourceforge.net/projects/numpy/files/NumPy/1.7.0/.
+ Just follow the installation wizard instructions.
+
+1.3 Scipy 0.12
+ You can install Scipy by running the file
+ scipy-0.12.0.dev.win32-py3.3.exe provided in the package.
+ You can download the latest version from
+ http://www.scipy.org/Download.
+ Just follow the installation wizard instructions.
+ 
+1.4 Matplotlib 1.2
+ You can install Matplotlib by running the file
+ matplotlib-1.2.0.win32-py3.3.exe provided in the package.
+ You can download the latest version from
+ http://matplotlib.org/downloads.html.
+ Just follow the installation wizard instructions.
+ 
+1.5 PyQt 4.10
+ You can install PyQt by running the file
+ PyQt4-4.10-gpl-Py3.3-Qt4.8.4-x32.exe provided in the package.
+ You can download the latest version from:
+ http://www.riverbankcomputing.co.uk/software/pyqt/download
+ Just follow the installation wizard instructions.
+ 
+2. Installing the Required Components for Linux and Mac OS:
+-----------------------------------------------------------
+
+Install the following packages. The packages can be downloaded
+from the URL-addresses specified in Chapter 1.
+
+- Python 3.3	
+- Numpy 1.7	
+- Scipy 0.12	
+- MatplotLib 1.2	
+- PyQt 4.10
+
+There are some external C programs which do the calculations needed for
+the analysis. Those programs can be found from the directory 
+..\potku\external. Those programs are compiled in Windows 
+in the installation package. If you wish to run them in (and run Potku)
+Linux or Mac, they should be compiled and included in corresponding
+directories in potku/external.
+
+There's a sh-file called compile_external in the potku folder.
+Running it should install and compile the programs for Linux and Mac. 
+Note that there must be a C compiler installed to the computer.
+
+
+3. Installing and Running Potku
+-------------------------------
+ 
+1. If you haven't already downloaded the latest version of Potku,
+   download it. You should receive the Potku in zip folder.
+2. Unzip the folder and navigate to the folder in which the
+   potku.py is. 
+3. Run potku.py and the application should run. 
+4. If there's an error (and nothing happens) run runPotku.py instead.
+   This will append some folders in your PATH and the Potku should run.
+5. After running runPotku.py once, you can start using the Potku.py.
+
+After creating the first project, remember to configure proper
+project settings! No settings are provided in the package.
+
+
+
+
+
+
+

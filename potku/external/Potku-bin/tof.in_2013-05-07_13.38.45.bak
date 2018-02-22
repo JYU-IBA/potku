@@ -1,0 +1,11 @@
+Beam: 79Br
+Energy: 11.915
+Detector angle: 30.0
+Target angle: 41.3
+Toflen: 0.615
+Carbon foil thickness: 1.0
+Target density: 1.5
+TOF calibration: 5.618e-11 4.126e-09
+Depth step for stopping: 0.0
+Depth step for output: 0.0
+Depths for concentration scaling: 0.0 0.0

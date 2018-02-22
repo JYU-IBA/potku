@@ -1,0 +1,11 @@
+Beam: 63Cu
+Energy: 11.915
+Detector angle: 41.0
+Target angle: 20.5
+Toflen: 0.6
+Carbon foil thickness: 3.1
+Target density: 2.9
+TOF calibration: 5.684371488E-11 4.126879194e-9
+Depth step for stopping: 2000.0
+Depth step for output: 20.0
+Depths for concentration scaling: 100.0 500.0

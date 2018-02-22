@@ -1,0 +1,4 @@
+testlib.o: testlib.c zbl96.h
+zbl96lib.o: zbl96lib.c zbl96.h general.h
+zbl96main.o: zbl96main.c general.h zbl96.h interactive.h local.h
+zbl96stop.o: zbl96stop.c general.h local.h
