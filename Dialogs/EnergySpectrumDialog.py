@@ -121,7 +121,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.parent.energy_spectrum_widget = EnergySpectrumWidget(self.parent,
                                                                       use_cuts,
                                                                       width)
-            #if (hasattr(self.parent.energy_spectrum_widget, "matplotlib"))
+
+            # Check that matplotlib attribute exists after creation of energy spectrum widget.
+            # If it doesn't exists, that means that the widget hasn't been initialized properly
+            # and the program should show an error dialog.
             if hasattr(self.parent.energy_spectrum_widget, "matplotlib"):
                 icon = self.parent.icon_manager.get_icon("energy_spectrum_icon_16.png")
                 self.parent.add_widget(self.parent.energy_spectrum_widget, icon=icon)
@@ -144,7 +147,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 logging.getLogger(measurement_name).info(log_info + splitinfo)
                 self.close()
             else:
-                reply = QtWidgets.QMessageBox.critical(self, "Error", "Error while trying to execute binary file tof_list", QtWidgets.QMessageBox.Ok)
+                self.close()
+                reply = QtWidgets.QMessageBox.critical(self,
+                    "Error", "An error occured while trying to create energy spectrum", QtWidgets.QMessageBox.Ok)
 
 
 
