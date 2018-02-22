@@ -1,0 +1,15 @@
+Beam: 63Cu
+Energy: 10.2
+Detector angle: 41.3
+Target angle: 21.3
+Toflen: 0.623
+Carbon foil thickness: 3.1
+Target density: 1.0
+TOF calibration: 6.01093317832e-11 3.59247521421e-09
+Angle calibration: 0.0 0.0
+Number of depth steps: 100
+Depth step for stopping: 10.0
+Depth step for output: 10.0
+Depths for concentration scaling: 1.0 100.0
+Cross section: 3
+Efficiency directory: C:\Users\jaakjuli\potku\efficiency_files

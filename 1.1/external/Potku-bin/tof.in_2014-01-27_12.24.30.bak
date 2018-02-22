@@ -1,0 +1,14 @@
+Beam: 127I
+Energy: 15.0
+Detector angle: 37.5
+Target angle: 19.0
+Toflen: 0.5234
+Carbon foil thickness: 2.0
+Target density: 1.0
+TOF calibration: 2.08732111595e-10 2.09874698953e-09
+Depth step for stopping: 10.0
+Depth step for output: 10.0
+Depths for concentration scaling: 1.0 100.0
+Stopping model: 1
+Cross section: 3
+Efficiency directory: C:\Users\jaakjuli\potku\efficiency_files

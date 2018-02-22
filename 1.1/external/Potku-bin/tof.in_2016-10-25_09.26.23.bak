@@ -1,0 +1,16 @@
+Beam: 59Co
+Energy: 7.5
+Detector angle: 33.0
+Target angle: 15.0
+Toflen: 1.0
+Carbon foil thickness: 3.0
+Target density: 2.5
+TOF calibration: 9.73267789613e-10 7.57544147464e-08
+Angle calibration: 0.0 0.0
+Number of depth steps: 30
+Depth step for stopping: 50.0
+Depth step for output: 50.0
+Depths for concentration scaling: 400.0 600.0
+Cross section: 3
+Number of iterations: 3
+Efficiency directory: C:\Users\jinho\potku\efficiency_files

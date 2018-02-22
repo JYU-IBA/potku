@@ -1,0 +1,3 @@
+erd_depth.o: erd_depth.c ../Potku-include/gsto_masses.h \
+ ../Potku-include/libgsto.h units.h
+fpu.o: fpu.c

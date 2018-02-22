@@ -1,0 +1,15 @@
+Beam: 35Cl
+Energy: 8.5
+Detector angle: 41.3
+Target angle: 21.3
+Toflen: 0.623
+Carbon foil thickness: 3.1
+Target density: 1.0
+TOF calibration: 5.70569323644e-11 1.66381574853e-09
+Angle calibration: 0.0 0.0
+Number of depth steps: 0
+Depth step for stopping: 10.0
+Depth step for output: 10.0
+Depths for concentration scaling: 1.0 100.0
+Cross section: 3
+Efficiency directory: C:\Users\jaakjuli\potku\efficiency_files
