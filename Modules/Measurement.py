@@ -326,7 +326,12 @@ class Measurement:
         if flag >= 0:
             self.selector.update_axes_limits()
         return flag
-    
+
+    def move_point(self):
+        '''Move a point by dragging it with the mouse.
+        '''
+        self.se
+
     
     def undo_point(self):
         '''Undo last point in open selection.

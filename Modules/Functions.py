@@ -177,7 +177,7 @@ def tof_list(cut_file, directory, save_output=False):
                                              shell=True,
                                              startupinfo=startupinfo)
         else:
-            command = "{0} {1}".format(join(".", "tof_list"), cut_file, bin_dir)
+            command = "{0} {1}".format(join(bin_dir, "tof_list"), cut_file)
             p = subprocess.Popen(command.split(' ', 1), cwd=bin_dir,
                                  stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE,

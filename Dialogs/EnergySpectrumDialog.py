@@ -121,28 +121,31 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.parent.energy_spectrum_widget = EnergySpectrumWidget(self.parent,
                                                                       use_cuts,
                                                                       width)
-            icon = self.parent.icon_manager.get_icon("energy_spectrum_icon_16.png")
-            self.parent.add_widget(self.parent.energy_spectrum_widget, icon=icon)
+            #if (hasattr(self.parent.energy_spectrum_widget, "matplotlib"))
+            if hasattr(self.parent.energy_spectrum_widget, "matplotlib"):
+                icon = self.parent.icon_manager.get_icon("energy_spectrum_icon_16.png")
+                self.parent.add_widget(self.parent.energy_spectrum_widget, icon=icon)
             
-            measurement_name = self.parent.measurement.measurement_name
-            msg = "[{0}] Created Energy Spectrum. {1} {2}".format(
-                measurement_name,
-                "Bin width: {0}".format(width),
-                "Cut files: {0}".format(", ".join(use_cuts))
-                )
-            logging.getLogger("project").info(msg)
-            logging.getLogger(measurement_name).info(
-                "Created Energy Spectrum. Bin width: {0} Cut files: {1}".format(
+                measurement_name = self.parent.measurement.measurement_name
+                msg = "[{0}] Created Energy Spectrum. {1} {2}".format(
+                    measurement_name,
+                    "Bin width: {0}".format(width),
+                    "Cut files: {0}".format(", ".join(use_cuts))
+                    )
+                logging.getLogger("project").info(msg)
+                logging.getLogger(measurement_name).info(
+                    "Created Energy Spectrum. Bin width: {0} Cut files: {1}".format(
                                                              width,
                                                              ', '.join(use_cuts)))
-            log_info = "Energy Spectrum graph points:\n"
-            data = self.parent.energy_spectrum_widget.energy_spectrum_data
-            splitinfo = "\n".join(["{0}: {1}".format(
-                             key,
-                             ", ".join("({0};{1})".format(round(v[0], 2), v[1]) \
-                                       for v in data[key])) for key in data.keys()])
-            logging.getLogger(measurement_name).info(log_info + splitinfo)
-            self.close()
+                log_info = "Energy Spectrum graph points:\n"
+                data = self.parent.energy_spectrum_widget.energy_spectrum_data
+                splitinfo = "\n".join(["{0}: {1}".format(key,", ".join("({0};{1})".format(round(v[0], 2), v[1]) \
+                                           for v in data[key])) for key in data.keys()])
+                logging.getLogger(measurement_name).info(log_info + splitinfo)
+                self.close()
+            else:
+                reply = QtWidgets.QMessageBox.critical(self, "Error", "Error while trying to execute binary file tof_list", QtWidgets.QMessageBox.Ok)
+
 
 
     def __update_eff_files(self):
