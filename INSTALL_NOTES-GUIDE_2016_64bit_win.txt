@@ -1,0 +1,77 @@
+29.11.2016 - Potku version 1.1
+
+Subscribe to the Potku-community email-list:
+http://lists.jyu.fi/mailman/listinfo/potku
+
+
+NOTES:
+This version of Potku has been modified to include "awk.exe" file from the Gawk package "gawk-3.1.6-1-setup.exe" and the coinc.c accordingly
+(previously one needed to add the awk.exe PATH to windows PATH's to get it working)
+
+Also minor modifications (relates to different Python versions) have been done to the following files to show the legends correctly
+in the potku such as in the depth-profile window:
+'MatplotlibDepthProfileWidget.py', 'Functions.py', and 'Measurement.py'
+ALSO note a change in POTKU: MatplotlibWidget.py line 33 “NavigationToolbar2QTAgg”. This script is no more offered from matplotlib since v1.5.0. I replaced it as “NavigationToolbar2QT”
+The above modifications have been done by "Jinho" from KIST: <jinho1120@kist.re.kr>
+
+
+
+INSTALLATION of POTKU 1.1 to WINDOWS 64bit (potku needs often memory more than 1.7GB(2Gbit))  for small files 32bit potku works ok, see below
+There are many options, possibly to get this working but here are two methods
+
+----------method 1, working on clean install windows 10, win 7, most likely also in win8--------
+1. Install Anaconda3 (https://repo.continuum.io/archive/Anaconda3-4.2.0-Windows-x86_64.exe)
+2. Open command promt (start, type cmd)
+3. In command promt, Create Python-virtual enviroment, where older versions of PyQT4, scipy and numpy are working properly with Potku: 
+3.1 use following command:  conda create -n potku_pyqt4 pyqt=4.11.4 matplotlib scipy numpy
+4. copy/unzip  Potku to some folder, like simple C:\potku
+
+Running potku:
+1. open command promt as above, and open the created virtual enviroment for python:
+1.1 Use command:  activate potku_pyqt4
+2. in the command promt/virtual enviroment: Go to the potku folder, eg. c:\potku\ and run potku using command:  python runpotku.py
+3. Potku should now open with older version of python/qt4, some error (RGB..) might be listed but have no effect to actual software
+4. NOTE: potku and anaconda might need to write in their installation folders (add rights if problems)
+
+-------Method 2, should work also in clean installs of python to windows OS---
+1. Download following file: Anaconda3-4.2.0-Windows-x86_64  (pyhton 3.5.2 version with 64bit installer
+2. Install it normally with 64bit (include all)
+3. To change the PYQT version type in command promt : conda install pyqt==4.11.4      so that ananconda changes the version of PYQT in use
+4. To run potku, in commad promt, type "python runpotku.py"
+5. NOTE: potku and anaconda might need to write in their installation folders (add rights if problems)
+
+
+
+
+
+
+INSTALLATION of POTKU 1.0 to WINDOWS 32bit  (originally potku developed with python 3.3 some pyqt change is different from 1.1)
+Two ways exits, A) full installation of python32bit, or B)a single packgage/zip file that has directly modified ro work without installation
+
+
+--method A) for potku1.0 32bit window-- (python 3.4)
+
+Download following packages and istall them in this order:
+python-3.4.1.msi
+pyhon-dateutil-2.2.win32-py3.4.exe (may not be needed)
+numpy-MKL-1.8.1.win32-py3.4.exe
+pytz-2014.4.win32-py3.4.exe (may not be needed)
+pyparsing-2.0.2.win32-py3.4.exe (may not be needed)
+matplotlib-1.3.1.win32-py3.4.exe
+six-1.7.3.win32-py3.4.exe (may not be needed)
+scipy-0.14.0.win32-py3.4.exe
+PyQt4-4.10.4-gpl-Py3.4-QT4.8.6-x32.exe
+
+(add Python install folder to windows PATH)
+Copy potku and run normally from windows expolorer using python.exe  "runpotku.py"
+
+--method B) for potku1.0 32bit window-- (python 3.4)
+-
+Download whole package provided in the
+https://www.jyu.fi/fysiikka/en/research/accelerator/potku
+which includes all the necessary files mentioned in the A) method, but does not require installation
+Run potku using "runpotku.cmd"  -which "activates" the python.exe runpotku.py 
+NOTE:here the gawk (awk.exe) is included in as whole packgage (slightly different version)
+
+
+

@@ -1,2 +1,0 @@
-tof_list.o: tof_list.c ../Potku-include/libgsto.h \
- ../Potku-include/gsto_masses.h
