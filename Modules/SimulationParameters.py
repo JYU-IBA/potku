@@ -8,6 +8,7 @@ class SimulationParameters():
     def save_parameters(self, filepath=None):
         #example filepath
         filepath = "C:\\MyTemp\\testikirjoitus\\"
+        foilsname = "ilmaisinkerrokset.foils"
 
         foil_elements = ["12.011 C", "14.00 N", "28.09 Si"]
         foil_layers = [
@@ -18,12 +19,12 @@ class SimulationParameters():
         ]
 
         #form the list that will be written to the file
-        foils = []
+        foil_list = []
         for elem in foil_elements:
-            foils.append(elem)
-            foils.append("\n")
+            foil_list.append(elem)
+            foil_list.append("\n")
 
-        foils.append("\n")
+        foil_list.append("\n")
 
         for item in foil_layers:
             thickness = item.get("thickness")
@@ -32,23 +33,35 @@ class SimulationParameters():
             density = item.get("density")
             amount = item.get("amount")
 
-            foils.append(thickness + "\n")
-            foils.append(spfb + "\n")
-            foils.append(spfr + "\n")
-            foils.append(density + "\n")
+            foil_list.append(thickness + "\n")
+            foil_list.append(spfb + "\n")
+            foil_list.append(spfr + "\n")
+            foil_list.append(density + "\n")
 
             for measure in amount:
-                foils.append(measure + "\n")
+                foil_list.append(measure + "\n")
 
-            foils.append("\n")
+            foil_list.append("\n")
 
         #remove the unnecessary line break at the end of the list (now it matches the example file structure)
-        foils.pop()
+        foil_list.pop()
+
         # call for saving the detector foils
-        with open(filepath + "ilmaisinkerrokset.foils", "w") as file2:
-            for item in foils:
+        with open(filepath + foilsname, "w") as file2:
+            for item in foil_list:
                 file2.write(item)
 
+
+        detector = {"Detector type:": "TOF", "Detector angle:": "41.12", "Virtual detector size:": "2.0 5.0", "Timing detector numbers:": "1 2", "Description file for the detector foils:": foilsname}
+        foils = [
+            {"Foil type:": "circular", "Foil diameter:": "7.0", "Foil distance:": "256.0"},
+            {"Foil type:": "circular", "Foil diameter:": "9.0", "Foil distance:": "319.0"},
+            {"Foil type:": "circular", "Foil diameter:": "18.0", "Foil distance:": "924.0"},
+            {"Foil type:": "rectangular", "Foil size:": "14.0 14.0", "Foil distance:": "957.0"}
+        ]
+
+        separator1 = "=========="
+        separator2 = "----------"
 
         #save the detector parameters
         with open(filepath + "ilmaisin.JyU", "w") as file1:
