@@ -1,5 +1,5 @@
 
-class SimulationParameters():
+class SimulationParameters:
 
 
 
@@ -73,7 +73,8 @@ class SimulationParameters():
                 detector_list.append(key + " " + value + "\n")
             detector_list.append(separator2 + "\n")
 
-        # remove the unnecessary line break and separator at the end of the list (now it matches the example file structure)
+        # remove the unnecessary line break and separator at the end of the list
+        # (now it matches the example file structure)
         detector_list.pop()
 
         # save the detector parameters
@@ -125,7 +126,8 @@ class SimulationParameters():
                 file3.write(item)
 
     def save_recoil_params(self, recoilname, filepath):
-        recoil_coordinates = [["0.00", "0.070"], ["95.00", "0.070"], ["95.01", "0.00001"], ["110.00", "0.00001"], ["110.01", "0.00"], ["110.02", "0.00"]]
+        recoil_coordinates = [["0.00", "0.070"], ["95.00", "0.070"], ["95.01", "0.00001"], ["110.00", "0.00001"],
+                              ["110.01", "0.00"], ["110.02", "0.00"]]
         recoil_list = []
 
         for pair in recoil_coordinates:
@@ -139,9 +141,56 @@ class SimulationParameters():
                 file4.write(item)
 
     def save_command_params(self, commandname, targetname, detectorname, recoilname, filepath):
+        header1 = "******************* Type of the simulation *******************************"
+        header2 = "*************** General physical parameters for the simulation ***********"
+        header3 = "********** Physical parameters conserning specific simulation type *********"
+        subheader = "----------------------- ERD -simulation ------------------------------------"
+        header4 = "******************* Parameters with physical significance ******************"
+        header5 = "******************* Nonphysical parameters for simulation ***************"
+
+        arguments1 = {"Type of simulation:": "ERD"}
+        arguments2 = {"Beam ion": "35Cl", "Beam energy": "8.515 MeV"}
+        arguments3 = {"Target description file:": targetname, "Detector description file:": detectorname,
+                      "Recoiling atom:": "7Li", "Recoiling material distribution:": recoilname,
+                      "Target angle:": "20.6 deg", "Beam spot size:": "0.5 3.0 nm"}
+        arguments4 = {"Minimum angle of scattering:": "0.05 deg", "Minimum main scattering angle:": "20 deg",
+                      "Minimum energy of ions:": "1.5 MeV", "Average number of recoils per primary ion:": "10",
+                      "Recoil angle width (wide or narrow):": "narrow",
+                      "Presimulation * result file:": "Cl-10-R2_O.pre", "Number of real ions per each scaling ion:": "5"
+                      }
+        arguments5 = {"Number of ions:": "1000000", "Number of ions in the presimulation:": "100000",
+                      "Seed number of the random number generator:": "101"}
+
+        argument_list = []
+        argument_list.append(header1 + "\n")
+        arg_key, arg_value = list(arguments1.items())[0]
+        argument_list.append(arg_key + " " + arg_value + "\n")
+
+        argument_list.append(header2 + "\n")
+
+        for key, value in arguments2.items():
+            argument_list.append(key + " " + value + "\n")
+
+        argument_list.append(header3 + "\n")
+        argument_list.append(subheader + "\n")
+
+        for key, value in arguments3.items():
+            argument_list.append(key + " " + value + "\n")
+
+        argument_list.append(header4 + "\n")
+
+        for key, value in arguments4.items():
+            argument_list.append(key + " " + value + "\n")
+
+        argument_list.append(header5 + "\n")
+
+        for key, value in arguments5.items():
+            argument_list.append(key + " " + value + "\n")
+
         # call for saving the mcerd command
         with open(filepath + commandname, "w") as file5:
-            file5.write("Komentotiedosto..")
+            for item in argument_list:
+                file5.write(item)
 
     def save_parameters(self, filepath=None):
         # example filepath
