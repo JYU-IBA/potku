@@ -3,12 +3,21 @@ import logging
 
 class SimulationParameters():
 
-    def __init__(self, project, filepath):
-        self.project = project
-        self.read_parameters(filepath)
+#     def __init__(self, project, file_path):
+#         self.project = project
+#         self.read_parameters(file_path)
 
-    def read_parameters(self, filepath):
-        """ Read the simulation parameters from the MCERD input file """
+    def __init__(self, file_path):
+        self.foil_elements = []
+        self.foil_layers = []
+        self.read_parameters(file_path)
+
+    def read_parameters(self, file_path):
+        """ Read the simulation parameters from the MCERD input file
+        
+        Args:
+            file_path: An absolute file path to MCERD input file
+        """
     
         params = {
             "Type of simulation:": None,
@@ -35,56 +44,64 @@ class SimulationParameters():
             "Number of real ions per each scaling ion:": None
         }
         try:
-            with open(filepath) as file:
+            with open(file_path) as file:
                 lines = file.readlines()
             for line in lines:
                 line.lstrip()
                 for key, value in params.items():
                     if line.startswith(key):
-                        val = line.partition(':')[2].lstrip().rstrip().split()
+                        val = line.partition(':')[2].strip().split()
                         if len(val) < 3:
                             params[key] = val[0]
                         else:
                             params[key] = (val[0], val[1])
-    
-            for key, value in params.items():
-                print(value)
 
         except IOError:
-            print("The file " + filepath + " doesn't exist. ")
+            # TODO: Print to the project log 
+            print("The file " + file_path + " doesn't exist. ")
             # msg = 'The file {0} doesn'
             # logging.getLogger('project').error('')
 
         self.__read_target_description_file(params["Target description file:"])
-        self.__read_detector_description_file(params["Detector description file:"])
+        #self.__read_detector_description_file(params["Detector description file:"])
         # __read_recoiling_material_distribution(params["Recoiling material distribution:"])
 
-
-    def __read_target_description_file(self, filepath):
+    def __read_target_description_file(self, file_path):
+        """ Reads MCERD target description file.
+        
+        Args:
+            file_path: An absolute file path to the MCERD target description file
+        """
         try:
-            with open(filepath) as file:
-                lines = file.readlines()
-            numberOfLines = len(lines)
-            tmp = []
-            start = 0
-            for i in range(0,numberOfLines):
-                lines[i].lstrip()
-                # Currently we except that only one empty line separates the layers in the file
-                if lines[i] == "\n":
-                    block = list(map(str.rstrip, lines[start:i])) # map(str.rstrip, lines[start:i])
-                    tmp.append(block)
-                    i += 1
-                    start = i
-            tmp.append(lines[start:numberOfLines])
-            print(tmp)
+            with open(file_path) as file:
+                # First we read all elements to "foil_elements"
+                line = file.readline()
+                while line != "\n":
+                    self.foil_elements.append(line.strip())
+                    line = file.readline()
+                
+                while line != "":
+                    tmp = {} 
+                    amount = []
+                    tmp["thickness"] = file.readline().strip()
+                    tmp["stopping power for beam"] = file.readline().strip()
+                    tmp["stopping power for recoil"] = file.readline().strip()
+                    tmp["density"] = file.readline().strip()
+                    line = file.readline()
+                    while line != "\n" and line != "":
+                        amount.append(line.strip())
+                        line = file.readline()
+                    tmp["amount"] = amount
+                    self.foil_layers.append(tmp)
 
         except IOError:
-            print("The file " + filepath + " doesn't exist. ")
+            # TODO: Print to the project log 
+            print("The file " + file_path + " doesn't exist. ")
             # msg = 'The file {0} doesn'
             # logging.getLogger('project').error('')
         return
 
-    def __read_detector_description_file(self, filepath):
+    def __read_detector_description_file(self, file_path):
         detector_params = {
             "Detector type:": None,
             "Detector angle:": None,
@@ -97,7 +114,7 @@ class SimulationParameters():
         ]
 
         try:
-            with open(filepath) as file:
+            with open(file_path) as file:
                 lines = file.readlines()
                 for line in lines:
                     line.lstrip()
@@ -106,8 +123,8 @@ class SimulationParameters():
             print(e)
         return
 
-    #def __read_recoiling_material_distribution(self, filepath):
+    #def __read_recoiling_material_distribution(self, file_path):
     #    return
 
 # For test purposes only
-SimulationParameters().read_parameters("/home/atsejaas/Downloads/Monisiro/source/Examples/35Cl-85-LiMnO_Li")
+SimulationParameters("/home/severij/Downloads/source/Examples/35Cl-85-LiMnO_Li")
