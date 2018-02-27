@@ -125,9 +125,18 @@ class SimulationParameters():
                 file3.write(item)
 
     def save_recoil_params(self, recoilname, filepath):
+        recoil_coordinates = [["0.00", "0.070"], ["95.00", "0.070"], ["95.01", "0.00001"], ["110.00", "0.00001"], ["110.01", "0.00"], ["110.02", "0.00"]]
+        recoil_list = []
+
+        for pair in recoil_coordinates:
+            x = pair[0]
+            y = pair[1]
+            recoil_list.append(x + " " + y + "\n")
+
         # call for saving recoiling distribution
         with open(filepath + recoilname, "w") as file4:
-            file4.write("Tietoja jakaumasta..")
+            for item in recoil_list:
+                file4.write(item)
 
     def save_command_params(self, commandname, targetname, detectorname, recoilname, filepath):
         # call for saving the mcerd command
