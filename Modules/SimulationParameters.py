@@ -5,7 +5,7 @@ class SimulationParameters():
 
     def __init__(self, project, filepath):
         self.project = project
-        read_parameters()
+        self.read_parameters(filepath)
 
     def read_parameters(self, filepath):
         """ Read the simulation parameters from the MCERD input file """
@@ -55,36 +55,55 @@ class SimulationParameters():
             # msg = 'The file {0} doesn'
             # logging.getLogger('project').error('')
 
-        __read_target_description_file(params["Target description file:"])
-        __read_detector_description_file(params["Detector description file:"])
-        __read_recoiling_material_distribution(params["Recoiling material distribution:"])
+        #self.__read_target_description_file(params["Target description file:"])
+        self.__read_detector_description_file(params["Detector description file:"])
+        self.__read_recoiling_material_distribution(params["Recoiling material distribution:"])
 
 
-    def __read_target_description_file(filepath):
+    # def __read_target_description_file(filepath):
+    #     try:
+    #         with open(filepath) as file:
+    #             lines = file.readlines()
+    #         numberOfLines = len(lines)
+    #         tmp = []
+    #         start = 0
+    #         for i in range(0,numberOfLines):
+    #             #
+    #             if lines[i].lstrip() == "\n":
+    #                 block = map(rstrip, lines[start:i])
+    #                 tmp.append(block)
+    #                 i += 1
+    #                 start = i
+    #
+    #
+    #
+    #
+    #     except IOError:
+    #         print("The file ' + filepath + ' doesn't exist. ")
+    #         # msg = 'The file {0} doesn'
+    #         # logging.getLogger('project').error('')
+    #     return
+
+    def __read_detector_description_file(self, filepath):
+        detector_params = {
+            "Detector type:": None,
+            "Detector angle:": None,
+            "Virtual detector size:": None,
+            "Timing detector numbers:": None,
+            "Description file for the detector foils:": None
+        }
+        layers = [
+            {"Foil type: circular": None, "Foil diameter:": None, "Foil distance:": None}
+        ]
+
         try:
             with open(filepath) as file:
                 lines = file.readlines()
-            numberOfLines = len(lines)
-            tmp = []
-            start = 0
-            for i in range(0,numberOfLines):
-                #
-                if lines[i].lstrip() == "\n":
-                    block = map(rstrip, lines[start:i])
-                    tmp.append(block)
-                    i += 1
-                    start = i
-
-
-
-
-        except IOError:
-            print("The file ' + filepath + ' doesn't exist. ")
-            # msg = 'The file {0} doesn'
-            # logging.getLogger('project').error('')
-        return
-
-    def __read_detector_description_file(self, filepath):
+                for line in lines:
+                    line.lstrip()
+                    # here parse the line and put into detector_params accordingly
+        except IOError as e:
+            print(e)
         return
 
     def __read_recoiling_material_distribution(self, filepath):
