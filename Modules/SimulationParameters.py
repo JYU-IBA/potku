@@ -55,9 +55,12 @@ class SimulationParameters:
         foil_list.pop()
 
         # call for saving the detector foils
-        with open(filepath + foilsname, "w") as file2:
-            for item in foil_list:
-                file2.write(item)
+        try:
+            with open(filepath + foilsname, "w") as file2:
+                for item in foil_list:
+                    file2.write(item)
+        except IOError as e:
+            print(e)
 
     def save_detector_params(self, detectorname, foilsname, filepath):
         """Writes the detector parameters into a file.
@@ -95,9 +98,12 @@ class SimulationParameters:
         detector_list.pop()
 
         # save the detector parameters
-        with open(filepath + detectorname, "w") as file1:
-            for item in detector_list:
-                file1.write(item)
+        try:
+            with open(filepath + detectorname, "w") as file1:
+                for item in detector_list:
+                    file1.write(item)
+        except IOError as e:
+            print(e)
 
     def save_target_params(self, targetname, filepath):
         """Writes the target parameters into a file.
@@ -143,10 +149,14 @@ class SimulationParameters:
 
         # remove the unnecessary line break at the end of the list (now it matches the example file structure)
         target_list.pop()
+
         # call for saving target details
-        with open(filepath + targetname, "w") as file3:
-            for item in target_list:
-                file3.write(item)
+        try:
+            with open(filepath + targetname, "w") as file3:
+                for item in target_list:
+                   file3.write(item)
+        except IOError as e:
+            print(e)
 
     def save_recoil_params(self, recoilname, filepath):
         """Writes the recoil parameters into a file.
@@ -165,9 +175,12 @@ class SimulationParameters:
             recoil_list.append(x + " " + y + "\n")
 
         # call for saving recoiling distribution
-        with open(filepath + recoilname, "w") as file4:
-            for item in recoil_list:
-                file4.write(item)
+        try:
+            with open(filepath + recoilname, "w") as file4:
+                for item in recoil_list:
+                    file4.write(item)
+        except IOError as e:
+            print(e)
 
     def save_command_params(self, commandname, targetname, detectorname, recoilname, filepath):
         """Writes the command parameters into a file.
@@ -226,9 +239,12 @@ class SimulationParameters:
             argument_list.append(key + " " + value + "\n")
 
         # call for saving the mcerd command
-        with open(filepath + commandname, "w") as file5:
-            for item in argument_list:
-                file5.write(item)
+        try:
+            with open(filepath + commandname, "w") as file5:
+                for item in argument_list:
+                    file5.write(item)
+        except IOError as e:
+            print(e)
 
     def save_parameters(self, filepath=None):
         """Saves all the simulation parameters into their own files.
