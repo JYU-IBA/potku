@@ -82,9 +82,47 @@ class SimulationParameters():
                 file1.write(item)
 
     def save_target_params(self, targetname, filepath):
+        target_elements = ["6.94 Li", "16.00 O", "28.09 Si", "54.94 Mn"]
+        target_layers = [
+            {"thickness": "0.01 nm", "stopping power for beam": "ZBL", "stopping power for recoil": "ZBL",
+             "density": "0.000001 g/cm3", "amount": ["0 1.0"]},
+            {"thickness": "90 nm", "stopping power for beam": "ZBL", "stopping power for recoil": "ZBL",
+             "density": "4.0 g/cm3", "amount": ["0 0.048", "1 0.649", "3 0.303"]},
+            {"thickness": "1000 nm", "stopping power for beam": "ZBL", "stopping power for recoil": "ZBL",
+             "density": "2.32 g/cm3", "amount": ["2 1.0"]}
+        ]
+
+        # form the list that will be written to the file
+        target_list = []
+        for elem in target_elements:
+            target_list.append(elem)
+            target_list.append("\n")
+
+        target_list.append("\n")
+
+        for layer in target_layers:
+            thickness = layer.get("thickness")
+            spfb = layer.get("stopping power for beam")
+            spfr = layer.get("stopping power for recoil")
+            density = layer.get("density")
+            amount = layer.get("amount")
+
+            target_list.append(thickness + "\n")
+            target_list.append(spfb + "\n")
+            target_list.append(spfr + "\n")
+            target_list.append(density + "\n")
+
+            for measure in amount:
+                target_list.append(measure + "\n")
+
+            target_list.append("\n")
+
+        # remove the unnecessary line break at the end of the list (now it matches the example file structure)
+        target_list.pop()
         # call for saving target details
         with open(filepath + targetname, "w") as file3:
-            file3.write("Tietoja näytteestä..")
+            for item in target_list:
+                file3.write(item)
 
     def save_recoil_params(self, recoilname, filepath):
         # call for saving recoiling distribution
