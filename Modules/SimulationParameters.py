@@ -1,9 +1,19 @@
+# coding=utf-8
+'''
+Created on 26.2.2018
+Updated on 27.2.2018
+'''
+
 
 class SimulationParameters:
 
-
-
     def save_foil_params(self, foilsname, filepath):
+        """Writes the foil parameters into a file.
+
+        Args:
+            foilsname: Name of the file the parameters are written to.
+            filepath: Path to the file.
+        """
         foil_elements = ["12.011 C", "14.00 N", "28.09 Si"]
         foil_layers = [
             {"thickness": "0.1 nm", "stopping power for beam": "ZBL", "stopping power for recoil": "ZBL",
@@ -50,6 +60,13 @@ class SimulationParameters:
                 file2.write(item)
 
     def save_detector_params(self, detectorname, foilsname, filepath):
+        """Writes the detector parameters into a file.
+
+        Args:
+            detectorname: Name of the file the parameters are written to.
+            foilsname: Name of the file where the foil-specific parameters are.
+            filepath: Path to the detector file.
+        """
         detector = {"Detector type:": "TOF", "Detector angle:": "41.12", "Virtual detector size:": "2.0 5.0",
                     "Timing detector numbers:": "1 2", "Description file for the detector foils:": foilsname}
         foils = [
@@ -83,6 +100,12 @@ class SimulationParameters:
                 file1.write(item)
 
     def save_target_params(self, targetname, filepath):
+        """Writes the target parameters into a file.
+
+        Args:
+            targetname: Name of the file the parameters are written to.
+            filepath: Path to the file.
+        """
         target_elements = ["6.94 Li", "16.00 O", "28.09 Si", "54.94 Mn"]
         target_layers = [
             {"thickness": "0.01 nm", "stopping power for beam": "ZBL", "stopping power for recoil": "ZBL",
@@ -126,6 +149,12 @@ class SimulationParameters:
                 file3.write(item)
 
     def save_recoil_params(self, recoilname, filepath):
+        """Writes the recoil parameters into a file.
+
+        Args:
+            recoilname: Name of the file the parameters are written to.
+            filepath: Path to the file.
+        """
         recoil_coordinates = [["0.00", "0.070"], ["95.00", "0.070"], ["95.01", "0.00001"], ["110.00", "0.00001"],
                               ["110.01", "0.00"], ["110.02", "0.00"]]
         recoil_list = []
@@ -141,6 +170,15 @@ class SimulationParameters:
                 file4.write(item)
 
     def save_command_params(self, commandname, targetname, detectorname, recoilname, filepath):
+        """Writes the command parameters into a file.
+
+        Args:
+            commandname: Name of the file the parameters are written to.
+            targetname: Name of the file where the target-specific parameters are.
+            detectorname: Name of the file where the detector-specific parameters are.
+            recoilname: Name of the file where the recoil-specific parameters are.
+            filepath: Path to the file.
+        """
         header1 = "******************* Type of the simulation *******************************"
         header2 = "*************** General physical parameters for the simulation ***********"
         header3 = "********** Physical parameters conserning specific simulation type *********"
@@ -161,7 +199,7 @@ class SimulationParameters:
         arguments5 = {"Number of ions:": "1000000", "Number of ions in the presimulation:": "100000",
                       "Seed number of the random number generator:": "101"}
 
-        argument_list = []
+        argument_list = list()
         argument_list.append(header1 + "\n")
         arg_key, arg_value = list(arguments1.items())[0]
         argument_list.append(arg_key + " " + arg_value + "\n")
@@ -193,6 +231,11 @@ class SimulationParameters:
                 file5.write(item)
 
     def save_parameters(self, filepath=None):
+        """Saves all the simulation parameters into their own files.
+
+        Args:
+            filepath: Path to the files.
+        """
         # example filepath
         filepath = "C:\\MyTemp\\testikirjoitus\\"
         foilsname = "ilmaisinkerrokset.foils"
@@ -211,4 +254,5 @@ class SimulationParameters:
 
         self.save_command_params(commandname, targetname, detectorname, recoilname, filepath)
 
+# for testing
 SimulationParameters().save_parameters()
