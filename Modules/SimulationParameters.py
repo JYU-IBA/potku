@@ -3,9 +3,9 @@ import logging
 
 class SimulationParameters():
 
-    def __init__(self, project, filepath):
-        self.project = project
-        read_parameters()
+    # def __init__(self, project):
+    #     self.project = project
+    #     read_parameters()
 
     def read_parameters(self, filepath):
         """ Read the simulation parameters from the MCERD input file """
@@ -51,16 +51,16 @@ class SimulationParameters():
                 print(value)
 
         except IOError:
-            print("The file ' + filepath + ' doesn't exist. ")
+            print("The file " + filepath + " doesn't exist. ")
             # msg = 'The file {0} doesn'
             # logging.getLogger('project').error('')
 
-        __read_target_description_file(params["Target description file:"])
-        __read_detector_description_file(params["Detector description file:"])
-        __read_recoiling_material_distribution(params["Recoiling material distribution:"])
+        self.__read_target_description_file(params["Target description file:"])
+        # __read_detector_description_file(params["Detector description file:"])
+        # __read_recoiling_material_distribution(params["Recoiling material distribution:"])
 
 
-    def __read_target_description_file(filepath):
+    def __read_target_description_file(self, filepath):
         try:
             with open(filepath) as file:
                 lines = file.readlines()
@@ -68,26 +68,25 @@ class SimulationParameters():
             tmp = []
             start = 0
             for i in range(0,numberOfLines):
-                #
-                if lines[i].lstrip() == "\n":
-                    block = map(rstrip, lines[start:i])
+                # Currently we except that only one empty line separates the layers in the file
+                if lines[i] == "\n":
+                    block = list(map(str.rstrip, lines[start:i])) # map(str.rstrip, lines[start:i])
                     tmp.append(block)
                     i += 1
                     start = i
-
-
-
+            tmp.append(lines[start:numberOfLines])
+            print(tmp)
 
         except IOError:
-            print("The file ' + filepath + ' doesn't exist. ")
+            print("The file " + filepath + " doesn't exist. ")
             # msg = 'The file {0} doesn'
             # logging.getLogger('project').error('')
         return
 
-    def __read_detector_description_file(self, filepath):
-        return
+    #def __read_detector_description_file(self, filepath):
+    #    return
 
-    def __read_recoiling_material_distribution(self, filepath):
-        return
+    #def __read_recoiling_material_distribution(self, filepath):
+    #    return
 
-
+SimulationParameters().read_parameters("/home/atsejaas/Downloads/Monisiro/source/Examples/35Cl-85-LiMnO_Li")
