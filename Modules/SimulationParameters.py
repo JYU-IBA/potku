@@ -1,5 +1,5 @@
 
-import logging
+import os, logging
 
 class SimulationParameters():
 
@@ -8,9 +8,15 @@ class SimulationParameters():
 #         self.read_parameters(file_path)
 
     def __init__(self, file_path):
-        self.foil_elements = []
-        self.foil_layers = []
+        self.simulation = {}
+        self.target = {}
+        self.detector = {}
+        self.recoil = []
         self.read_parameters(file_path)
+        print(self.simulation)
+        print(self.target)
+        print(self.detector)
+        print(self.recoil)
 
     def read_parameters(self, file_path):
         """ Read the simulation parameters from the MCERD input file
@@ -19,7 +25,7 @@ class SimulationParameters():
             file_path: An absolute file path to MCERD input file
         """
     
-        params = {
+        self.simulation.update({
             "Type of simulation:": None,
             "Beam ion:": None,
             "Beam energy:": None,
@@ -42,19 +48,18 @@ class SimulationParameters():
             "Surface topography file:": None,
             "Side length of the surface topography image:": None,
             "Number of real ions per each scaling ion:": None
-        }
+        })
         try:
             with open(file_path) as file:
                 lines = file.readlines()
             for line in lines:
-                line.lstrip()
-                for key, value in params.items():
+                for key in self.simulation:
                     if line.startswith(key):
                         val = line.partition(':')[2].strip().split()
                         if len(val) < 3:
-                            params[key] = val[0]
+                            self.simulation[key] = val[0]
                         else:
-                            params[key] = (val[0], val[1])
+                            self.simulation[key] = (val[0], val[1])
 
         except IOError:
             # TODO: Print to the project log 
@@ -62,23 +67,30 @@ class SimulationParameters():
             # msg = 'The file {0} doesn'
             # logging.getLogger('project').error('')
 
-        self.__read_target_description_file(params["Target description file:"])
-        #self.__read_detector_description_file(params["Detector description file:"])
-        # __read_recoiling_material_distribution(params["Recoiling material distribution:"])
+        self.__read_layers(self.simulation["Target description file:"])
+        self.__read_detector_file(self.simulation["Detector description file:"])
+        self.__read_recoiling_material_distribution(self.simulation["Recoiling material distribution:"])
 
-    def __read_target_description_file(self, file_path):
-        """ Reads MCERD target description file.
+    def __read_layers(self, file_path):
+        """
+        Read MCERD target description file or a description file for detector foils.
+        Both files should have similar format.
         
         Args:
-            file_path: An absolute file path to the MCERD target description file
+            file_path: An absolute file path. Either target description file or
+            a description file for detector foils.
         """
         try:
             with open(file_path) as file:
-                # First we read all elements to "foil_elements"
+                elements = []
+                layers = []
                 line = file.readline()
+
                 while line != "\n":
-                    self.foil_elements.append(line.strip())
+                    elements.append(line.strip())
                     line = file.readline()
+
+                # Currently it's assumed that there's exactly one empty line here
                 
                 while line != "":
                     tmp = {} 
@@ -92,7 +104,21 @@ class SimulationParameters():
                         amount.append(line.strip())
                         line = file.readline()
                     tmp["amount"] = amount
-                    self.foil_layers.append(tmp)
+                    layers.append(tmp)
+                
+                try:
+                    if os.path.splitext(file_path)[1] == ".target":
+                        self.target["elements"] = elements
+                        self.target["layers"] = layers
+                    elif os.path.splitext(file_path)[1] == ".foils":
+                        self.detector["foils"]["elements"] = elements
+                        self.detector["foils"]["layers"] = layers
+                    else:
+                        raise ValueError("File extension should be either "
+                                         "'.target' or '.foils'")
+                except:
+                    # TODO: Print to the project log
+                    print("jee")
 
         except IOError:
             # TODO: Print to the project log 
@@ -101,30 +127,74 @@ class SimulationParameters():
             # logging.getLogger('project').error('')
         return
 
-    def __read_detector_description_file(self, file_path):
-        detector_params = {
+    def __read_detector_file(self, file_path):
+        self.detector.update({
             "Detector type:": None,
             "Detector angle:": None,
             "Virtual detector size:": None,
             "Timing detector numbers:": None,
             "Description file for the detector foils:": None
-        }
-        layers = [
-            {"Foil type: circular": None, "Foil diameter:": None, "Foil distance:": None}
-        ]
+        })
+        foils = ["Foil type:", "Foil diameter:", "Foil distance:"]
 
         try:
             with open(file_path) as file:
-                lines = file.readlines()
-                for line in lines:
-                    line.lstrip()
-                    # here parse the line and put into detector_params accordingly
+                line = file.readline()
+                while line != "":
+                    for key in self.detector:
+                        if line.startswith(key):
+                            val = line.partition(':')[2].strip()
+                            self.detector[key] = val
+                            break
+                    if not (None in self.detector.values()):
+                        break
+                    line = file.readline()
+
+                while line != "":
+                    for key in foils:
+                        if not line.startswith(key):
+                            line = file.readline()
+                            continue
+                    break
+
+                self.detector["foils"] = {}
+                dimensions = []
+
+                while line != "":
+                    tmp = {}
+                    for i in range(0,3):
+                        for key in foils:
+                            if line.startswith(key):
+                                val = line.partition(':')[2].strip()
+                                tmp[key] = val
+                                break
+                        line = file.readline()
+                    dimensions.append(tmp)
+                    while line != "":
+                        for key in foils:
+                            if not line.startswith(key):
+                                line = file.readline()
+                                continue
+                        break
+                self.__read_layers(self.detector["Description file for the detector foils:"])
+                self.detector["foils"]["dimensions"] = dimensions
+
         except IOError as e:
             print(e)
-        return
 
-    #def __read_recoiling_material_distribution(self, file_path):
-    #    return
+
+    def __read_recoiling_material_distribution(self, file_path):
+        try:
+            with open(file_path) as file:
+                lines = file.readlines()
+            for line in lines:
+                self.recoil.append(line.strip().split())
+
+        except IOError:
+            # TODO: Print to the project log 
+            print("The file " + file_path + " doesn't exist. ")
+            # msg = 'The file {0} doesn'
+            # logging.getLogger('project').error('')
 
 # For test purposes only
 SimulationParameters("/home/severij/Downloads/source/Examples/35Cl-85-LiMnO_Li")
