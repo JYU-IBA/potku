@@ -42,7 +42,7 @@ jonkinlainen tarkistus (jos laittaa filepath[0] ilman tarkistusta, kaatuu kun yr
 
 projectsettings-ikkunassa arvojen syöttö hyvin hämärää (esim. kenttään ei pysty syöttämään mitään ennen kuin piste
 on poistettu, jos pisteen poistaa sitä ei saa takaisin, jos piste on jo valmiiksi saa lisää pisteitä, tabilla
-liikkuminen tekee pisteen poiston vaikutukset osissa kentissä)
+liikkuminen tekee pisteen poiston vaikutukset)
 
 depthfiles.py:
 'C:/Users/localadmin/potku/projects/testi2\\sample1\\cuts\\sample1.He.0.cut' erd_depthille menevä polku windowsissa
