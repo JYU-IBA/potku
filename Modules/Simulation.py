@@ -2,8 +2,13 @@
 """
 Created on 26.2.2018
 Updated on 28.2.2018
+
+#TODO Description of Potku and copyright
+#TODO Lisence
+
+Simulation.py runs the MCERD simulation with a command file.
 """
-__author__ = ""
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __versio__ = "2.0"
 
 import os
@@ -25,6 +30,9 @@ class Simulation:
         self.command_unix = "cd " + self.bin_dir + " && ./mcerd " + command_file_path
 
     def run_simulation(self):
+        """Runs the simulation.
+
+        """
         used_os = platform.system()
         if used_os == "Windows":
             subprocess.call(self.command_win, shell=True)
@@ -35,7 +43,6 @@ class Simulation:
         else:
             print("It appears we do no support your OS.")
 
-
-# For testing
+# For testing this class alone:
 # Simulation("/home/siansiir/mcerd/source/Examples/35Cl-85-LiMnO_Li").run_simulation()
-Simulation(r"C:\MyTemp\Source\Examples\35Cl-85-LiMnO_Li").run_simulation()
+# Simulation(r"C:\MyTemp\Source\Examples\35Cl-85-LiMnO_Li").run_simulation()
