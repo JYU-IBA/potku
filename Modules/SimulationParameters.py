@@ -3,9 +3,9 @@ import logging
 
 class SimulationParameters():
 
-    def __init__(self, project, filepath):
-        self.project = project
-        self.read_parameters(filepath)
+    # def __init__(self, project, filepath):
+    #     self.project = project
+    #     self.read_parameters(filepath)
 
     def read_parameters(self, filepath):
         """ Read the simulation parameters from the MCERD input file """
@@ -76,6 +76,7 @@ class SimulationParameters():
                     i += 1
                     start = i
             tmp.append(lines[start:numberOfLines])
+            self.__target_elements = tmp[0]
             print(tmp)
 
         except IOError:
