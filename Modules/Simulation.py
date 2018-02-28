@@ -20,20 +20,22 @@ class Simulation:
             command_file_path: Full path of where simulation command file is located.
         """
         self.bin_dir = "%s%s%s" % ("external", os.sep, "Potku-bin")
-        # TODO: Windows and Mac commands
-    #    self.command_win = "cd " + self.bin_dir + " && mcerd.exe " + command_file_path
+
+        self.command_win = "cd " + self.bin_dir + " && mcerd.exe " + command_file_path
         self.command_unix = "cd " + self.bin_dir + " && ./mcerd " + command_file_path
 
     def run_simulation(self):
         used_os = platform.system()
-        if used_os == "Linux":
+        if used_os == "Windows":
+            subprocess.call(self.command_win, shell=True)
+        elif used_os == "Linux":
             subprocess.call(self.command_unix, shell=True)
-        # TODO: Windows and Mac commands
-        # elif used_os == "Windows":
-        #     subprocess.call(self.command_win, shell=True)
+        elif used_os == "Darwin":
+            subprocess.call(self.command_unix, shell=True)
         else:
             print("It appears we do no support your OS.")
 
 
 # For testing
-Simulation("/home/siansiir/mcerd/source/Examples/35Cl-85-LiMnO_Li").run_simulation()
+# Simulation("/home/siansiir/mcerd/source/Examples/35Cl-85-LiMnO_Li").run_simulation()
+Simulation(r"C:\MyTemp\Source\Examples\35Cl-85-LiMnO_Li").run_simulation()
