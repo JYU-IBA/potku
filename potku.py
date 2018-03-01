@@ -72,7 +72,7 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.actionNew_Measurement.triggered.connect(self.open_new_measurement)
         self.ui.projectSettingsButton.clicked.connect(self.open_project_settings)
         self.ui.globalSettingsButton.clicked.connect(self.open_global_settings)
-        self.ui.tab_measurements.tabCloseRequested.connect(self.remove_tab)
+        self.ui.tabs.tabCloseRequested.connect(self.remove_tab)
         self.ui.treeWidget.itemDoubleClicked.connect(self.focus_selected_tab)
         
         self.ui.projectNewButton.clicked.connect(self.make_new_project)
@@ -110,6 +110,7 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.actionNew_Simulation_2.triggered.connect(self.make_new_simulation)
         self.ui.actionImport_simulation.triggered.connect(self.import_simulation)
         self.ui.actionCreate_energy_spectrum_sim.triggered.connect(self.current_simulation_create_energy_spectrum)
+        self.ui.addNewSimulationButton.clicked.connect(self.make_new_simulation)
 
         # Set up report tool connection in UI
         self.ui.actionCreate_report.triggered.connect(self.create_report)
@@ -141,10 +142,10 @@ class Potku(QtWidgets.QMainWindow):
         bg_blue = "images/background_blue.svg"  # Cannot use os.path.join (PyQT+css)
         bg_green = "images/background_green.svg"
         style_intro = "QWidget#introduceTab {border-image: url(" + bg_blue + ");}"
-        style_mesinfo = ("QWidget#measurementInfoTab {border-image: url(" + 
+        style_mesinfo = ("QWidget#infoTab {border-image: url(" +
                          bg_green + ");}")
         self.ui.introduceTab.setStyleSheet(style_intro)
-        self.ui.measurementInfoTab.setStyleSheet(style_mesinfo)
+        self.ui.infoTab.setStyleSheet(style_mesinfo)
         self.__remove_measurement_info_tab()
         
         self.ui.setWindowIcon(self.icon_manager.get_icon("potku_icon.ico"))        
@@ -165,7 +166,7 @@ class Potku(QtWidgets.QMainWindow):
         """Opens the depth profile analyzation tool for the current open 
         measurement tab widget.
         """
-        widget = self.ui.tab_measurements.currentWidget()
+        widget = self.ui.tabs.currentWidget()
         if hasattr(widget, "measurement"):
             widget.open_depth_profile(widget)
         else:
@@ -177,7 +178,7 @@ class Potku(QtWidgets.QMainWindow):
         """Opens the element losses analyzation tool for the current open 
         measurement tab widget.
         """
-        widget = self.ui.tab_measurements.currentWidget()
+        widget = self.ui.tabs.currentWidget()
         if hasattr(widget, "measurement"):
             widget.open_element_losses(widget)
         else:
@@ -189,7 +190,7 @@ class Potku(QtWidgets.QMainWindow):
         """Opens the energy spectrum analyzation tool for the current open 
         measurement tab widget.
         """
-        widget = self.ui.tab_measurements.currentWidget()
+        widget = self.ui.tabs.currentWidget()
         if hasattr(widget, "measurement"):
             widget.open_energy_spectrum(widget)
         else:
@@ -201,7 +202,7 @@ class Potku(QtWidgets.QMainWindow):
         """Saves the current open measurement tab widget's selected cuts 
         to cut files.
         """
-        widget = self.ui.tab_measurements.currentWidget()
+        widget = self.ui.tabs.currentWidget()
         if hasattr(widget, "measurement"):
             widget.measurement_save_cuts()
         else:
@@ -213,7 +214,7 @@ class Potku(QtWidgets.QMainWindow):
         Opens the energy spectrum analyzation tool for the current open
         simulation tab widget.
         """
-        widget = self.ui.tab_measurements.currentWidget()
+        widget = self.ui.tabs.currentWidget()
         if hasattr(widget, "simulation"):
             widget.open_energy_spectrum(widget)
         else:
@@ -257,7 +258,7 @@ class Potku(QtWidgets.QMainWindow):
                 return
             
             self.project.measurements.remove_by_tab_id(tab.tab_id)
-            remove_index = self.ui.tab_measurements.indexOf(tab)
+            remove_index = self.ui.tabs.indexOf(tab)
             self.remove_tab(remove_index)  # Remove measurement from open tabs 
             
             tab.histogram.matplotlib.delete()
@@ -325,8 +326,8 @@ class Potku(QtWidgets.QMainWindow):
         
         # Check that the tab to be focused exists.
         if not self.__tab_exists(clicked_item.tab_id): 
-            self.ui.tab_measurements.addTab(tab, name)
-        self.ui.tab_measurements.setCurrentWidget(tab)
+            self.ui.tabs.addTab(tab, name)
+        self.ui.tabs.setCurrentWidget(tab)
   
 
     def hide_panel(self, enable_hide=None):
@@ -439,7 +440,7 @@ class Potku(QtWidgets.QMainWindow):
             self.settings.set_project_directory_last_open(dialog.directory)
             # Project made, close introduction tab
             self.__remove_introduction_tab()
-            self.__open_measurement_info_tab()
+            self.__open_info_tab()
             self.__set_project_buttons_enabled(True)
 
     def make_new_simulation(self):
@@ -472,7 +473,7 @@ class Potku(QtWidgets.QMainWindow):
                                     "Raw Measurement (*.asc)")
         if filename:
             try:
-                self.ui.tab_measurements.removeTab(self.ui.tab_measurements.indexOf(
+                self.ui.tabs.removeTab(self.ui.tabs.indexOf(
                                                    self.measurement_info_tab))
             except: 
                 pass  # If there is no info tab, no need to worry about.
@@ -551,7 +552,7 @@ class Potku(QtWidgets.QMainWindow):
         Args:
             tab_index: Integer representing index of the current tab
         '''
-        self.ui.tab_measurements.removeTab(tab_index)
+        self.ui.tabs.removeTab(tab_index)
     
 
     def __add_measurement_to_tree(self, measurement_name, load_data):
@@ -617,8 +618,8 @@ class Potku(QtWidgets.QMainWindow):
 
                     measurement.load_data()
                     tab.add_histogram()
-                    self.ui.tab_measurements.addTab(tab, measurement.measurement_name)
-                    self.ui.tab_measurements.setCurrentWidget(tab)
+                    self.ui.tabs.addTab(tab, measurement.measurement_name)
+                    self.ui.tabs.setCurrentWidget(tab)
 
                     loading_bar.hide()
                     self.statusbar.removeWidget(loading_bar)
@@ -648,9 +649,9 @@ class Potku(QtWidgets.QMainWindow):
 
                     simulation.load_data()
                     tab.add_simulation_depth_profile()
-                    self.ui.tab_measurements.addTab(tab,
+                    self.ui.tabs.addTab(tab,
                                                     measurement.measurement_name)
-                    self.ui.tab_measurements.setCurrentWidget(tab)
+                    self.ui.tabs.setCurrentWidget(tab)
 
                     loading_bar.hide()
                     self.statusbar.removeWidget(loading_bar)
@@ -676,7 +677,7 @@ class Potku(QtWidgets.QMainWindow):
             # TODO: Doesn't release memory
             # Clear the treewidget
             self.ui.treeWidget.clear()
-            self.ui.tab_measurements.clear()
+            self.ui.tabs.clear()
             self.project = None
             self.tab_widgets = {}
             self.tab_id = 0
@@ -691,10 +692,10 @@ class Potku(QtWidgets.QMainWindow):
         # Remove (slave) text from tree titles
         for item in items:
             tab_widget = self.tab_widgets[item.tab_id]
-            tab_measurement = tab_widget.measurement
-            tab_name = tab_measurement.measurement_name
+            tabs = tab_widget.measurement
+            tab_name = tabs.measurement_name
             if master and tab_name != master.measurement_name:
-                self.project.exclude_slave(tab_measurement)
+                self.project.exclude_slave(tabs)
                 item.setText(0, tab_name)
     
     
@@ -708,10 +709,10 @@ class Potku(QtWidgets.QMainWindow):
         # Add (slave) text from tree titles
         for item in items:
             tab_widget = self.tab_widgets[item.tab_id]
-            tab_measurement = tab_widget.measurement
-            tab_name = tab_measurement.measurement_name
+            tabs = tab_widget.measurement
+            tab_name = tabs.measurement_name
             if master and tab_name != master.measurement_name:
-                self.project.include_slave(tab_measurement)
+                self.project.include_slave(tabs)
                 item.setText(0, "{0} (slave)".format(tab_name))
         
                
@@ -746,14 +747,14 @@ class Potku(QtWidgets.QMainWindow):
             tab_widget.toggle_master_button()
         # master_tab.toggle_master_button()
         # QtGui.QTabWidget().count()
-        for i in range(self.ui.tab_measurements.count()):
-            tab = self.ui.tab_measurements.widget(i)
+        for i in range(self.ui.tabs.count()):
+            tab = self.ui.tabs.widget(i)
             tab_name = tab.measurement.measurement_name
             if tab.tab_id == master_tab.tab_id:
                 tab_name = "{0} (master)".format(tab_name)
-                self.ui.tab_measurements.setTabText(tab.tab_id, tab_name)
+                self.ui.tabs.setTabText(tab.tab_id, tab_name)
             else:
-                self.ui.tab_measurements.setTabText(tab.tab_id, tab_name)
+                self.ui.tabs.setTabText(tab.tab_id, tab_name)
     
     
     def __master_issue_commands(self):
@@ -795,8 +796,8 @@ class Potku(QtWidgets.QMainWindow):
         for i in range(root_child_count):
             item = root.child(i)
             tab = self.tab_widgets[item.tab_id]
-            tab_measurement = tab.measurement
-            tab_name = tab_measurement.measurement_name
+            tabs = tab.measurement
+            tab_name = tabs.measurement_name
             if tab_name == master_name or tab_name in nonslaves:
                 continue
             # Load measurement data if the slave is
@@ -858,20 +859,20 @@ class Potku(QtWidgets.QMainWindow):
                 QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         
         
-    def __open_measurement_info_tab(self):
+    def __open_info_tab(self):
         """Opens an info tab to the QTabWidget 'tab_measurements' that guides the 
         user to add a new measurement to the project.
         """
-        self.ui.tab_measurements.addTab(self.ui.measurementInfoTab, "Info")
+        self.ui.tabs.addTab(self.ui.infoTab, "Info")
     
 
     def __remove_introduction_tab(self):
         """Removes an info tab from the QTabWidget 'tab_measurements' that guides
         the user to create a new project.
         """
-        index = self.ui.tab_measurements.indexOf(self.ui.introduceTab)
+        index = self.ui.tabs.indexOf(self.ui.introduceTab)
         if index >= 0:
-            self.ui.tab_measurements.removeTab(index)
+            self.ui.tabs.removeTab(index)
     
     
     def __remove_master_measurement(self):
@@ -889,7 +890,7 @@ class Potku(QtWidgets.QMainWindow):
             tab_widget.toggle_master_button()
         if old_master:
             measurement_name = old_master.measurement_name
-            self.ui.tab_measurements.setTabText(old_master.tab_id, measurement_name)
+            self.ui.tabs.setTabText(old_master.tab_id, measurement_name)
             old_master_tab = self.tab_widgets[old_master.tab_id]
             old_master_tab.toggle_master_button()
         self.project.set_master()  # No master measurement
@@ -899,9 +900,9 @@ class Potku(QtWidgets.QMainWindow):
         """Removes an info tab from the QTabWidget 'tab_measurements' that guides
         the user to add a new measurement to the project.
         """
-        index = self.ui.tab_measurements.indexOf(self.ui.measurementInfoTab)
+        index = self.ui.tabs.indexOf(self.ui.infoTab)
         if index >= 0:
-            self.ui.tab_measurements.removeTab(index)
+            self.ui.tabs.removeTab(index)
         
  
     def __set_icons(self):
@@ -951,8 +952,8 @@ class Potku(QtWidgets.QMainWindow):
             True if tab is found, False if not
         '''
         # Try to find the clicked item from QTabWidget.
-        for i in range(0, self.ui.tab_measurements.count()):
-            if self.ui.tab_measurements.widget(i).tab_id == tab_id:
+        for i in range(0, self.ui.tabs.count()):
+            if self.ui.tabs.widget(i).tab_id == tab_id:
                 return True
         return False
         
