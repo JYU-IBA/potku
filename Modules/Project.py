@@ -32,13 +32,14 @@ from os import listdir, makedirs, stat
 from os.path import exists, isfile, join, split, splitext
 
 from Modules.Measurement import Measurements
+from Modules.Simulation import Simulations
 from Modules.Settings import Settings
 
 class Project:
     '''Project class to handle all measurements.
     '''
     def __init__(self, directory, name, masses, statusbar, global_settings,
-                 measurement_tabs):
+                 tabs):
         '''Inits Project class. 
         
         Args:
@@ -46,8 +47,8 @@ class Project:
             masses: A Masses class object.
             statusbar: A QtGui.QMainWindow's QStatusBar.
             global_settings: A GlobalSettings class object (of the program).
-            measurement_tabs: A dictionary of MeasurementTabWidgets of the 
-                              measurements in the project.
+            tabs: A dictionary of MeasurementTabWidgets and SimulationTabWidgets
+            of the project.
         '''
         # TODO: Get rid of statusbar.
         self.directory = directory
@@ -58,7 +59,8 @@ class Project:
         self.masses = masses
         self.statusbar = statusbar
         self.measurements = Measurements(self)
-        self.__measurement_tabs = measurement_tabs
+        self.simulations = Simulations(self)
+        self.__tabs = tabs
         self.__master_measurement = None
         self.__non_slaves = []  # List of measurements that aren't slaves. Easier
         

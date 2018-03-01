@@ -42,6 +42,7 @@ from Modules.IconManager import IconManager
 from Modules.Masses import Masses
 from Modules.Project import Project
 from Widgets.MeasurementTabWidget import MeasurementTabWidget
+from Widgets.SimulationDepthProfileWidget import SimulationDepthProfileWidget
 
 
 class Potku(QtWidgets.QMainWindow):
@@ -63,11 +64,12 @@ class Potku(QtWidgets.QMainWindow):
         
         # Holds references to all the tab widgets in "tab_measurements" 
         # (even when they are removed from the QTabWidget)
-        self.measurement_tab_widgets = {}  
+        self.tab_widgets = {}
         self.tab_id = 0  # identification for each tab
 
         # Set up connections within UI
         self.ui.actionNew_Measurement.triggered.connect(self.open_new_measurement)
+        # self.ui.actionNew_Simulation.triggered.connect(self.open_new_simulation)
         self.ui.projectSettingsButton.clicked.connect(self.open_project_settings)
         self.ui.globalSettingsButton.clicked.connect(self.open_global_settings)
         self.ui.tab_measurements.tabCloseRequested.connect(self.remove_tab)
@@ -79,7 +81,9 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.actionOpen_Project.triggered.connect(self.open_project)
         self.ui.addNewMeasurementButton.clicked.connect(self.open_new_measurement)
         self.ui.actionNew_measurement_2.triggered.connect(self.open_new_measurement)
-        self.ui.actionImport_pelletron.triggered.connect(self.import_pelletron)
+        # self.ui.addNewSimulationButton.clicked.connect(self.open_new_simulation)
+        # self.ui.actionNew_simulation_2.triggered.connect(self.open_new_simulation)
+        # self.ui.actionImport_pelletron.triggered.connect(self.import_pelletron)
         self.ui.actionBinary_data_lst.triggered.connect(self.import_binary)
         self.ui.action_manual.triggered.connect(self.__open_manual)
         
@@ -204,7 +208,7 @@ class Potku(QtWidgets.QMainWindow):
         # TODO: Memory isn't released correctly. Maybe because of matplotlib.
         # TODO: Remove 'measurement_tab_widgets' variable and add tab reference
         # to treewidgetitem.
-        selected_tabs = [self.measurement_tab_widgets[item.tab_id] for 
+        selected_tabs = [self.tab_widgets[item.tab_id] for
                          item in self.ui.treeWidget.selectedItems()]
         if selected_tabs:  # Ask user a confirmation.
             reply = QtWidgets.QMessageBox.question(self,
@@ -248,7 +252,7 @@ class Potku(QtWidgets.QMainWindow):
             tab.depth_profile_widget.matplotlib.delete()
             
             tab.mdiArea.closeAllSubWindows()
-            del self.measurement_tab_widgets[tab.tab_id]
+            del self.tab_widgets[tab.tab_id]
             tab.close() 
             tab.deleteLater()
             
@@ -269,7 +273,7 @@ class Potku(QtWidgets.QMainWindow):
         # TODO: This doesn't work. There is no list/dictionary of references to the
         # tab widgets once they are removed from the QTabWidget. 
         # tab = self.project_measurements[clicked_item.tab_id]
-        tab = self.measurement_tab_widgets[clicked_item.tab_id]
+        tab = self.tab_widgets[clicked_item.tab_id]
         name = tab.measurement.measurement_name
         
         # Check that the data is read.
@@ -332,19 +336,19 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.frame.setVisible(self.panel_shown)
 
 
-    def import_pelletron(self):
-        '''Import Pelletron's measurements into project.
-        
-        Import Pelletron's measurements from 
-        '''
-        if not self.project: 
-            return
-        import_dialog = ImportMeasurementsDialog(self.project,
-                                                 self.icon_manager,
-                                                 self.statusbar,
-                                                 self)  # For loading measurements.
-        if import_dialog.imported:
-            self.__remove_measurement_info_tab()
+    # def import_pelletron(self):
+    #     '''Import Pelletron's measurements into project.
+    #
+    #     Import Pelletron's measurements from
+    #     '''
+    #     if not self.project:
+    #         return
+    #     import_dialog = ImportMeasurementsDialog(self.project,
+    #                                              self.icon_manager,
+    #                                              self.statusbar,
+    #                                              self)  # For loading measurements.
+    #     if import_dialog.imported:
+    #         self.__remove_measurement_info_tab()
             
             
     def import_binary(self):
@@ -382,7 +386,7 @@ class Potku(QtWidgets.QMainWindow):
         count = len(measurements_in_project)
         dirtyinteger = 0
         for measurement_file in measurements_in_project:
-            self.__add_new_tab(measurement_file, progress_bar,
+            self.__add_new_tab("measurement", measurement_file, progress_bar,
                                dirtyinteger, count, load_data=load_data)
             dirtyinteger += 1
 
@@ -402,7 +406,7 @@ class Potku(QtWidgets.QMainWindow):
             self.ui.treeWidget.setHeaderLabel("Project: {0}".format(dialog.name))
             self.project = Project(dialog.directory, dialog.name, self.masses,
                                    self.statusbar, self.settings,
-                                   self.measurement_tab_widgets)
+                                   self.tab_widgets)
             self.settings.set_project_directory_last_open(dialog.directory)
             # Project made, close introduction tab
             self.__remove_introduction_tab()
@@ -442,7 +446,7 @@ class Potku(QtWidgets.QMainWindow):
             progress_bar = QtWidgets.QProgressBar()
             self.statusbar.addWidget(progress_bar, 1)
             progress_bar.show()
-            self.__add_new_tab(filename, progress_bar, load_data=True)
+            self.__add_new_tab("measurement", filename, progress_bar, load_data=True)
             self.__remove_measurement_info_tab()
             self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
@@ -460,7 +464,7 @@ class Potku(QtWidgets.QMainWindow):
             tmp_name = os.path.splitext(os.path.basename(file))[0]
             self.project = Project(folder, tmp_name, self.masses,
                                    self.statusbar, self.settings,
-                                   self.measurement_tab_widgets)
+                                   self.tab_widgets)
             self.ui.setWindowTitle("{0} - Project: {1}".format(
                                                        self.title,
                                                        self.project.get_name()))
@@ -487,7 +491,7 @@ class Potku(QtWidgets.QMainWindow):
             root_child_count = root.childCount()
             for i in range(root_child_count):
                 item = root.child(i)
-                tab_widget = self.measurement_tab_widgets[item.tab_id]
+                tab_widget = self.tab_widgets[item.tab_id]
                 tab_name = tab_widget.measurement.measurement_name
                 if master_measurement_name and \
                    item.tab_id == master_measurement.tab_id:
@@ -534,14 +538,15 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.treeWidget.addTopLevelItem(tree_item)
         
         
-    def __add_new_tab(self, filename, progress_bar=None,
+    def __add_new_tab(self, type, filename, progress_bar=None,
                       file_current=0, file_count=1, load_data=False):
-        '''Add new tab into measurement TabWidget.
+        '''Add new tab into TabWidget. TODO: Simulation included. Should be changed.
         
         Adds a new tab into program's tabWidget. Makes a new measurement for 
         said tab.
         
         Args:
+            type: Either "measurement" or "simulation"
             filename: A string representing measurement file.
             progress_bar: A QtWidgets.QProgressBar to be updated.
             file_current: An integer representing which number is currently being
@@ -553,35 +558,71 @@ class Potku(QtWidgets.QMainWindow):
         '''
         if progress_bar:
             progress_bar.setValue((100 / file_count) * file_current)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents) 
-        measurement = self.project.measurements.add_measurement_file(filename,
-                                                                     self.tab_id)
-        if measurement:  # TODO: Finish this (load_data)
-            tab = MeasurementTabWidget(self.tab_id, measurement,
-                                       self.masses, self.icon_manager)
-            #self.connect(tab, QtCore.SIGNAL("issueMaster"), self.__master_issue_commands)
-            tab.issueMaster.connect(self.__master_issue_commands)
+            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
 
-            tab.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-            self.measurement_tab_widgets[self.tab_id] = tab
-            tab.add_log()
-            tab.data_loaded = load_data
-            if load_data:
-                loading_bar = QtWidgets.QProgressBar()
-                loading_bar.setMinimum(0)
-                loading_bar.setMaximum(0)
-                self.statusbar.addWidget(loading_bar, 1)
-                loading_bar.show()
-                
-                measurement.load_data()  
-                tab.add_histogram()  
-                self.ui.tab_measurements.addTab(tab, measurement.measurement_name)
-                self.ui.tab_measurements.setCurrentWidget(tab)
-                
-                loading_bar.hide()
-                self.statusbar.removeWidget(loading_bar)
-            self.__add_measurement_to_tree(measurement.measurement_name, load_data)
-            self.tab_id += 1
+        if type == "measurement":
+
+            measurement = self.project.measurements.add_measurement_file(filename,
+                                                                         self.tab_id)
+            if measurement:  # TODO: Finish this (load_data)
+                tab = MeasurementTabWidget(self.tab_id, measurement,
+                                           self.masses, self.icon_manager)
+                #self.connect(tab, QtCore.SIGNAL("issueMaster"), self.__master_issue_commands)
+                tab.issueMaster.connect(self.__master_issue_commands)
+
+                tab.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+                self.tab_widgets[self.tab_id] = tab
+                tab.add_log()
+                tab.data_loaded = load_data
+                if load_data:
+                    loading_bar = QtWidgets.QProgressBar()
+                    loading_bar.setMinimum(0)
+                    loading_bar.setMaximum(0)
+                    self.statusbar.addWidget(loading_bar, 1)
+                    loading_bar.show()
+
+                    measurement.load_data()
+                    tab.add_histogram()
+                    self.ui.tab_measurements.addTab(tab, measurement.measurement_name)
+                    self.ui.tab_measurements.setCurrentWidget(tab)
+
+                    loading_bar.hide()
+                    self.statusbar.removeWidget(loading_bar)
+                self.__add_measurement_to_tree(measurement.measurement_name, load_data)
+                self.tab_id += 1
+
+        if type == "simulation":
+
+            simulation = self.project.simulations.add_simulation_file(filename, self.tab_id)
+
+            if simulation:  # TODO: Finish this (load_data)
+                tab = SimulationTabWidget(self.tab_id, simulation,
+                                           self.masses, self.icon_manager)
+                # self.connect(tab, QtCore.SIGNAL("issueMaster"), self.__master_issue_commands)
+                tab.issueMaster.connect(self.__master_issue_commands)
+
+                tab.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+                self.tab_widgets[self.tab_id] = tab
+                tab.add_log()
+                tab.data_loaded = load_data
+                if load_data:
+                    loading_bar = QtWidgets.QProgressBar()
+                    loading_bar.setMinimum(0)
+                    loading_bar.setMaximum(0)
+                    self.statusbar.addWidget(loading_bar, 1)
+                    loading_bar.show()
+
+                    simulation.load_data()
+                    tab.add_simulation_depth_profile()
+                    self.ui.tab_measurements.addTab(tab,
+                                                    measurement.measurement_name)
+                    self.ui.tab_measurements.setCurrentWidget(tab)
+
+                    loading_bar.hide()
+                    self.statusbar.removeWidget(loading_bar)
+                self.__add_measurement_to_tree(measurement.measurement_name,
+                                               load_data)
+                self.tab_id += 1
     
     
     def __change_tab_icon(self, tree_item, icon="folder_open.svg"):
@@ -603,7 +644,7 @@ class Potku(QtWidgets.QMainWindow):
             self.ui.treeWidget.clear()
             self.ui.tab_measurements.clear()
             self.project = None
-            self.measurement_tab_widgets = {}  
+            self.tab_widgets = {}
             self.tab_id = 0
         
         
@@ -616,7 +657,7 @@ class Potku(QtWidgets.QMainWindow):
         master = self.project.get_master()
         # Remove (slave) text from tree titles
         for item in items:
-            tab_widget = self.measurement_tab_widgets[item.tab_id]
+            tab_widget = self.tab_widgets[item.tab_id]
             tab_measurement = tab_widget.measurement
             tab_name = tab_measurement.measurement_name
             if master and tab_name != master.measurement_name:
@@ -633,7 +674,7 @@ class Potku(QtWidgets.QMainWindow):
         master = self.project.get_master()
         # Add (slave) text from tree titles
         for item in items:
-            tab_widget = self.measurement_tab_widgets[item.tab_id]
+            tab_widget = self.tab_widgets[item.tab_id]
             tab_measurement = tab_widget.measurement
             tab_name = tab_measurement.measurement_name
             if master and tab_name != master.measurement_name:
@@ -649,7 +690,7 @@ class Potku(QtWidgets.QMainWindow):
         if not items:
             return
         master_tree = items[0]
-        master_tab = self.measurement_tab_widgets[master_tree.tab_id]
+        master_tab = self.tab_widgets[master_tree.tab_id]
         self.project.set_master(master_tab.measurement)
         # old_master = self.project.get_master()
         nonslaves = self.project.get_nonslaves()
@@ -661,7 +702,7 @@ class Potku(QtWidgets.QMainWindow):
         root_child_count = root.childCount()
         for i in range(root_child_count):
             item = root.child(i)
-            tab_widget = self.measurement_tab_widgets[item.tab_id]
+            tab_widget = self.tab_widgets[item.tab_id]
             tab_name = tab_widget.measurement.measurement_name
             if item.tab_id == master_tab.tab_id:
                 item.setText(0, "{0} (master)".format(tab_name))
@@ -703,7 +744,7 @@ class Potku(QtWidgets.QMainWindow):
         progress_bar.show()
         nonslaves = self.project.get_nonslaves()
         master = self.project.get_master()
-        master_tab = self.measurement_tab_widgets[master.tab_id]
+        master_tab = self.tab_widgets[master.tab_id]
         master_name = master.measurement_name
         directory = master.directory
         progress_bar.setValue(1)
@@ -723,7 +764,7 @@ class Potku(QtWidgets.QMainWindow):
         i = 1
         for i in range(root_child_count):
             item = root.child(i)
-            tab = self.measurement_tab_widgets[item.tab_id]
+            tab = self.tab_widgets[item.tab_id]
             tab_measurement = tab.measurement
             tab_name = tab_measurement.measurement_name
             if tab_name == master_name or tab_name in nonslaves:
@@ -812,14 +853,14 @@ class Potku(QtWidgets.QMainWindow):
         root_child_count = root.childCount()
         for i in range(root_child_count):
             item = root.child(i)
-            tab_widget = self.measurement_tab_widgets[item.tab_id]
+            tab_widget = self.tab_widgets[item.tab_id]
             tab_name = tab_widget.measurement.measurement_name
             item.setText(0, tab_name)
             tab_widget.toggle_master_button()
         if old_master:
             measurement_name = old_master.measurement_name
             self.ui.tab_measurements.setTabText(old_master.tab_id, measurement_name)
-            old_master_tab = self.measurement_tab_widgets[old_master.tab_id]
+            old_master_tab = self.tab_widgets[old_master.tab_id]
             old_master_tab.toggle_master_button()
         self.project.set_master()  # No master measurement
         
@@ -889,6 +930,10 @@ class Potku(QtWidgets.QMainWindow):
             subprocess.call(('xdg-open', manual_filename))
         elif used_os == 'Darwin':
             subprocess.call(('open', manual_filename))
+
+    def simulation_depth_profile(self):
+        # dialog = ProjectNewDialog(self)
+        widget = SimulationDepthProfileWidget()
 
 
 def main():

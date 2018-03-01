@@ -5,6 +5,9 @@ Created on 26.2.2018
 Updated on 28.2.2018
 """
 
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__versio__ = "2.0"
+
 import os, logging
 
 class SimulationParameters:

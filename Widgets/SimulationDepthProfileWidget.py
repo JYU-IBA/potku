@@ -1,0 +1,130 @@
+# coding=utf-8
+'''
+Created on 18.4.2013
+Updated on 26.8.2013
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
+Miika Raunio
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
+'''
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
+__versio__ = "1.0"
+
+from os.path import join
+from PyQt5 import QtCore, uic, QtWidgets
+
+from Widgets.MatplotlibTofeHistogramWidget import MatplotlibHistogramWidget
+
+
+class SimulationDepthProfileWidget(QtWidgets.QWidget):
+    '''HistogramWidget used to draw ToF-E Histograms.
+    '''
+
+    def __init__(self):
+        '''Inits TofeHistogramWidget widget.
+
+        Args:
+            measurement: A measurement class object.
+            masses: A masses class object.
+            icon_manager: An iconmanager class object.
+        '''
+        super().__init__()
+        self.ui = uic.loadUi(join("ui_files", "ui_histogram_widget.ui"), self)
+        self.__set_shortcuts()
+        self.ui.setWindowTitle("ToF-E Histogram")
+
+    # def __init__(self, measurement, masses, icon_manager):
+    #     '''Inits TofeHistogramWidget widget.
+    #
+    #     Args:
+    #         measurement: A measurement class object.
+    #         masses: A masses class object.
+    #         icon_manager: An iconmanager class object.
+    #     '''
+    #     super().__init__()
+    #     self.ui = uic.loadUi(join("ui_files", "ui_simulation_depth_profile_widget.ui"), self)
+    #     self.measurement = measurement
+    #     self.matplotlib = MatplotlibHistogramWidget(self, measurement,
+    #                                                 masses, icon_manager)
+    #     self.ui.saveCutsButton.clicked.connect(self.matplotlib.save_cuts)
+    #     self.ui.loadSelectionsButton.clicked.connect(
+    #         self.matplotlib.load_selections)
+    #     # self.connect(self.matplotlib, QtCore.SIGNAL("selectionsChanged(PyQt_PyObject)"), self.set_cut_button_enabled)
+    #     self.matplotlib.selectionsChanged.connect(self.set_cut_button_enabled)
+    #
+    #     # self.connect(self.matplotlib, QtCore.SIGNAL("saveCuts(PyQt_PyObject)"), self.__save_cuts)
+    #     self.matplotlib.saveCuts.connect(self.__save_cuts)
+    #
+    #     self.__set_shortcuts()
+    #     self.set_cut_button_enabled(measurement.selector.selections)
+    #
+    #     count = len(self.measurement.data)
+    #     self.ui.setWindowTitle(
+    #         "ToF-E Histogram - Event count: {0}".format(count))
+
+    def set_cut_button_enabled(self, selections=None):
+        """Enables save cuts button if the given selections list's length is not 0.
+        Otherwise disable.
+
+        Args:
+            selections: list of Selection objects
+        """
+        if not selections:
+            selections = self.measurement.selector.selections
+        if len(selections) == 0:
+            self.ui.saveCutsButton.setEnabled(False)
+        else:
+            self.ui.saveCutsButton.setEnabled(True)
+            # self.measurement.project.save_selection(self.measurement)
+
+    def __save_cuts(self, unused_measurement):
+        """Connect to saving cuts. Issue it to project for every other measurement.
+        """
+        # self.measurement.project.save_cuts(self.measurement)
+
+    def __set_shortcuts(self):
+        """Set shortcuts for the ToF-E histogram.
+        """
+        # X axis
+        self.__sc_comp_x_inc = QtWidgets.QShortcut(self)
+        self.__sc_comp_x_inc.setKey(QtCore.Qt.Key_Q)
+        self.__sc_comp_x_inc.activated.connect(
+            lambda: self.matplotlib.sc_comp_inc(0))
+        self.__sc_comp_x_dec = QtWidgets.QShortcut(self)
+        self.__sc_comp_x_dec.setKey(QtCore.Qt.Key_W)
+        self.__sc_comp_x_dec.activated.connect(
+            lambda: self.matplotlib.sc_comp_dec(0))
+        # Y axis
+        self.__sc_comp_y_inc = QtWidgets.QShortcut(self)
+        self.__sc_comp_y_inc.setKey(QtCore.Qt.Key_Z)
+        self.__sc_comp_y_inc.activated.connect(
+            lambda: self.matplotlib.sc_comp_inc(1))
+        self.__sc_comp_y_dec = QtWidgets.QShortcut(self)
+        self.__sc_comp_y_dec.setKey(QtCore.Qt.Key_X)
+        self.__sc_comp_y_dec.activated.connect(
+            lambda: self.matplotlib.sc_comp_dec(1))
+        # Both axes
+        self.__sc_comp_inc = QtWidgets.QShortcut(self)
+        self.__sc_comp_inc.setKey(QtCore.Qt.Key_A)
+        self.__sc_comp_inc.activated.connect(
+            lambda: self.matplotlib.sc_comp_inc(2))
+        self.__sc_comp_dec = QtWidgets.QShortcut(self)
+        self.__sc_comp_dec.setKey(QtCore.Qt.Key_S)
+        self.__sc_comp_dec.activated.connect(
+            lambda: self.matplotlib.sc_comp_dec(2))
