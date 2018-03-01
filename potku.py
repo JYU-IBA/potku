@@ -105,13 +105,13 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
 
         # Set up simulation connections within UI
-        self.ui.actionNew_Simulation.triggered.connect(self.__make_new_simulation)
-        self.ui.actionNew_Simulation_2.triggered.connect(self.__make_new_simulation)
-        self.ui.actionImport_simulation.triggered.connect(self.__import_simulation)
-        self.ui.actionCreate_energy_spectrum_sim.triggered.connect(self.__current_simulation_create_energy_spectrum)
+        self.ui.actionNew_Simulation.triggered.connect(self.make_new_simulation)
+        self.ui.actionNew_Simulation_2.triggered.connect(self.make_new_simulation)
+        self.ui.actionImport_simulation.triggered.connect(self.import_simulation)
+        self.ui.actionCreate_energy_spectrum_sim.triggered.connect(self.current_simulation_create_energy_spectrum)
 
         # Set up report tool connection in UI
-        self.ui.actionCreate_report.triggered.connect(self.__create_report)
+        self.ui.actionCreate_report.triggered.connect(self.create_report)
         
         # Add the context menu to the treewidget.
         # PyCharm can't find reference, but they do work
@@ -152,42 +152,7 @@ class Potku(QtWidgets.QMainWindow):
         self.__set_icons()
         self.ui.showMaximized()
 
-    def __make_new_simulation(self):
-        """
-        Opens a dialog for creating a new simulation.
-        """
-        # TODO: Replace this with the actual dialog call.
-        QtWidgets.QMessageBox.critical(self, "Error", "New simulation dialog not yet implemented!",
-                                       QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-
-    def __import_simulation(self):
-        """
-        Opens a file dialog for selecting simulation to import.
-        Opens selected simulation in Potku.
-        """
-        if not self.project:
-            return
-        # TODO: What type of file should be openend? This may other method than open_file_dialog
-        filename = open_file_dialog(self, self.project.directory, "Select a simulation to load",
-                                    "Simulation (*.smthn)")
-        # TODO: create necessary tab widget etc.
-        if filename:
-            QtWidgets.QMessageBox.critical(self, "Error", "Simulation import not yet implemented!",
-                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-
-    def __current_simulation_create_energy_spectrum(self):
-        """
-        Opens the energy spectrum analyzation tool for the current open
-        simulation tab widget.
-        """
-        widget = self.ui.tab_measurements.currentWidget()
-        if hasattr(widget, "simulation"):
-            widget.open_energy_spectrum(widget)
-        else:
-            QtWidgets.QMessageBox.question(self, "Notification", "An open simulation is required to do this action.",
-                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-
-    def __create_report(self):
+    def create_report(self):
         """
         Opens a dialog for making a report.
         """
@@ -241,7 +206,18 @@ class Potku(QtWidgets.QMainWindow):
         else:
             QtWidgets.QMessageBox.question(self, "Notification", "An open measurement is required to do this action.",
                                            QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-    
+
+    def current_simulation_create_energy_spectrum(self):
+        """
+        Opens the energy spectrum analyzation tool for the current open
+        simulation tab widget.
+        """
+        widget = self.ui.tab_measurements.currentWidget()
+        if hasattr(widget, "simulation"):
+            widget.open_energy_spectrum(widget)
+        else:
+            QtWidgets.QMessageBox.question(self, "Notification", "An open simulation is required to do this action.",
+                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
     
     def delete_selections(self):
         '''Deletes the selected tree widget items.
@@ -401,6 +377,21 @@ class Potku(QtWidgets.QMainWindow):
                                            self)  # For loading measurements.
         if import_dialog.imported:
             self.__remove_measurement_info_tab()
+
+    def import_simulation(self):
+        """
+        Opens a file dialog for selecting simulation to import.
+        Opens selected simulation in Potku.
+        """
+        if not self.project:
+            return
+        # TODO: What type of file should be opened? This may other method than open_file_dialog
+        filename = open_file_dialog(self, self.project.directory, "Select a simulation to load",
+                                    "Simulation (*.smthn)")
+        # TODO: create necessary tab widget etc.
+        if filename:
+            QtWidgets.QMessageBox.critical(self, "Error", "Simulation import not yet implemented!",
+                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 
 
     def load_project_measurements(self, measurements=[]):
@@ -450,9 +441,9 @@ class Potku(QtWidgets.QMainWindow):
             self.__open_measurement_info_tab()
             self.__set_project_buttons_enabled(True)
 
-
     def make_new_simulation(self):
-        """Opens a dialog for creating a new simulation.
+        """
+        Opens a dialog for creating a new simulation.
         """
         SimulationNewDialog(self)
 
@@ -651,7 +642,6 @@ class Potku(QtWidgets.QMainWindow):
             self.project = None
             self.measurement_tab_widgets = {}  
             self.tab_id = 0
-        
         
     def __make_nonslave_measurement(self):
         """Exclude selected measurements from slave category.
