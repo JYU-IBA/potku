@@ -102,8 +102,18 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.menuImport.setEnabled(False)
         self.panel_shown = True
         self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
+
+        # Set up simulation connections within UI
+        self.ui.actionNew_Simulation.triggered.connect(self.__make_new_simulation)
+        self.ui.actionNew_Simulation_2.triggered.connect(self.__make_new_simulation)
+        self.ui.actionImport_simulation.triggered.connect(self.__import_simulation)
+        self.ui.actionCreate_energy_spectrum_sim.triggered.connect(self.__current_simulation_create_energy_spectrum)
+
+        # Set up report tool connection in UI
+        self.ui.actionCreate_report.triggered.connect(self.__create_report)
         
         # Add the context menu to the treewidget.
+        # PyCharm can't find reference, but they do work
         delete_measurement = QtWidgets.QAction("Delete", self.ui.treeWidget)
         delete_measurement.triggered.connect(self.delete_selections)
         master_measurement = QtWidgets.QAction("Make master", self.ui.treeWidget)
@@ -141,6 +151,48 @@ class Potku(QtWidgets.QMainWindow):
         self.__set_icons()
         self.ui.showMaximized()
 
+    def __make_new_simulation(self):
+        """
+        Opens a dialog for creating a new simulation.
+        """
+        # TODO: Replace this with the actual dialog call.
+        QtWidgets.QMessageBox.critical(self, "Error", "New simulation dialog not yet implemented!",
+                                       QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+
+    def __import_simulation(self):
+        """
+        Opens a file dialog for selecting simulation to import.
+        Opens selected simulation in Potku.
+        """
+        if not self.project:
+            return
+        # TODO: What type of file should be openend? This may other method than open_file_dialog
+        filename = open_file_dialog(self, self.project.directory, "Select a simulation to load",
+                                    "Simulation (*.smthn)")
+        # TODO: create necessary tab widget etc.
+        if filename:
+            QtWidgets.QMessageBox.critical(self, "Error", "Simulation import not yet implemented!",
+                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+
+    def __current_simulation_create_energy_spectrum(self):
+        """
+        Opens the energy spectrum analyzation tool for the current open
+        simulation tab widget.
+        """
+        widget = self.ui.tab_measurements.currentWidget()
+        if hasattr(widget, "simulation"):
+            widget.open_energy_spectrum(widget)
+        else:
+            QtWidgets.QMessageBox.question(self, "Notification", "An open simulation is required to do this action.",
+                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+
+    def __create_report(self):
+        """
+        Opens a dialog for making a report.
+        """
+        # TODO: Replace this with the actual dialog call.
+        QtWidgets.QMessageBox.critical(self, "Error", "Report tool not yet implemented!", QtWidgets.QMessageBox.Ok,
+                                       QtWidgets.QMessageBox.Ok)
 
     def current_measurement_create_depth_profile(self):
         """Opens the depth profile analyzation tool for the current open 
@@ -150,10 +202,8 @@ class Potku(QtWidgets.QMainWindow):
         if hasattr(widget, "measurement"):
             widget.open_depth_profile(widget)
         else:
-            QtWidgets.QMessageBox.question(self,
-              "Notification",
-              "An open measurement is required to do this action.",
-              QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(self, "Notification", "An open measurement is required to do this action.",
+                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         
         
     def current_measurement_analyze_elemental_losses(self):
@@ -164,10 +214,8 @@ class Potku(QtWidgets.QMainWindow):
         if hasattr(widget, "measurement"):
             widget.open_element_losses(widget)
         else:
-            QtWidgets.QMessageBox.question(self,
-              "Notification",
-              "An open measurement is required to do this action.",
-              QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(self, "Notification", "An open measurement is required to do this action.",
+                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         
         
     def current_measurement_create_energy_spectrum(self):
@@ -178,10 +226,8 @@ class Potku(QtWidgets.QMainWindow):
         if hasattr(widget, "measurement"):
             widget.open_energy_spectrum(widget)
         else:
-            QtWidgets.QMessageBox.question(self,
-              "Notification",
-              "An open measurement is required to do this action.",
-              QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(self, "Notification", "An open measurement is required to do this action.",
+                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
 
     def current_measurement_save_cuts(self):
@@ -192,10 +238,8 @@ class Potku(QtWidgets.QMainWindow):
         if hasattr(widget, "measurement"):
             widget.measurement_save_cuts()
         else:
-            QtWidgets.QMessageBox.question(self,
-              "Notification",
-              "An open measurement is required to do this action.",
-              QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(self, "Notification", "An open measurement is required to do this action.",
+                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
     
     
     def delete_selections(self):
@@ -207,15 +251,12 @@ class Potku(QtWidgets.QMainWindow):
         selected_tabs = [self.measurement_tab_widgets[item.tab_id] for 
                          item in self.ui.treeWidget.selectedItems()]
         if selected_tabs:  # Ask user a confirmation.
-            reply = QtWidgets.QMessageBox.question(self,
-                   "Confirmation",
-                   "Deleting selected measurements will " \
-                   + "delete all files and folders under" \
-                   + " selected measurement directories." + \
-                   "\n\nAre you sure you want to delete selected measurements?",
-                   QtWidgets.QMessageBox.Yes,
-                   QtWidgets.QMessageBox.No,
-                   QtWidgets.QMessageBox.Cancel)
+            reply = QtWidgets.QMessageBox.question(self, "Confirmation", "Deleting selected measurements will delete"
+                                                   + " all files and folders under selected measurement directories."
+                                                   + "\n\nAre you sure you want to delete selected measurements?",
+                                                   QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                                                   QtWidgets.QMessageBox.Cancel,
+                                                   QtWidgets.QMessageBox.Cancel)
             if reply == QtWidgets.QMessageBox.No or reply == QtWidgets.QMessageBox.Cancel:
                 return  # If clicked Yes, then continue normally
         
@@ -232,9 +273,8 @@ class Potku(QtWidgets.QMainWindow):
                                        measurement.measurement_file))
             except:
                 print("Error with removing files")
-                QtWidgets.QMessageBox.question(self, "Confirmation",
-                               "Problem with deleting files.",
-                               QtWidgets.QMessageBox.Ok)
+                QtWidgets.QMessageBox.question(self, "Confirmation", "Problem with deleting files.",
+                                               QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 measurement.set_loggers()
                 return
             
@@ -559,7 +599,7 @@ class Potku(QtWidgets.QMainWindow):
         if measurement:  # TODO: Finish this (load_data)
             tab = MeasurementTabWidget(self.tab_id, measurement,
                                        self.masses, self.icon_manager)
-            #self.connect(tab, QtCore.SIGNAL("issueMaster"), self.__master_issue_commands)
+            # self.connect(tab, QtCore.SIGNAL("issueMaster"), self.__master_issue_commands)
             tab.issueMaster.connect(self.__master_issue_commands)
 
             tab.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -686,14 +726,11 @@ class Potku(QtWidgets.QMainWindow):
         """Issue commands from master measurement to all slave measurements in 
         the project.
         """
-        reply = QtWidgets.QMessageBox.question(self,
-                "Confirmation",
-                "You are about to issue actions from master measurement to all " + \
-                "slave measurements in the project. This can take several " + \
-                "minutes. Please wait until notification is shown." + \
-                "\nDo you wish to continue?",
-                QtWidgets.QMessageBox.Yes,
-                QtWidgets.QMessageBox.No)
+        reply = QtWidgets.QMessageBox.question(self, "Confirmation", "You are about to issue actions from master " +
+                                               "measurement to all slave measurements in the project. This can take " +
+                                               "several minutes. Please wait until notification is shown." +
+                                               "\nDo you wish to continue?", QtWidgets.QMessageBox.Yes |
+                                               QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
         if reply == QtWidgets.QMessageBox.No:
             return
         
@@ -784,7 +821,7 @@ class Potku(QtWidgets.QMainWindow):
                 "Notification",
                 "Master measurement's actions have been issued to slaves. " + \
                 "\nElapsed time: {0}".format(time_str),
-                QtWidgets.QMessageBox.Ok)
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         
         
     def __open_measurement_info_tab(self):
@@ -846,7 +883,7 @@ class Potku(QtWidgets.QMainWindow):
                
     def __set_project_buttons_enabled(self, state=False):
         """Enables 'project settings', 'save project' and 'new measurement' buttons.
-        
+           Enables simulation related buttons.
         Args:
             state: True/False enables or disables buttons
         """
@@ -860,6 +897,14 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.actionAnalyze_elemental_losses.setEnabled(state)
         self.ui.actionCreate_energy_spectrum.setEnabled(state)
         self.ui.actionCreate_depth_profile.setEnabled(state)
+
+        # enable simulation buttons
+        self.ui.actionNew_Simulation.setEnabled(state)
+        self.ui.actionNew_Simulation_2.setEnabled(state)
+        self.ui.actionImport_simulation.setEnabled(state)
+
+        # enable simulation energy spectra button
+        self.ui.actionCreate_energy_spectrum_sim.setEnabled(state)
 
 
     def __tab_exists(self, tab_id):
@@ -881,7 +926,7 @@ class Potku(QtWidgets.QMainWindow):
     def __open_manual(self):
         '''Open user manual.
         '''
-        manual_filename = os.path.join('manual', 'Potku-manual.pdf');
+        manual_filename = os.path.join('manual', 'Potku-manual.pdf')
         used_os = platform.system()
         if used_os == 'Windows':
             os.startfile(manual_filename)

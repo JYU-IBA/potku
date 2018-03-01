@@ -555,7 +555,7 @@ Start by creating a new measurement</string>
     <addaction name="actionNew_measurement_2"/>
     <addaction name="menuImport"/>
     <addaction name="separator"/>
-    <addaction name="actionNew_simulation"/>
+    <addaction name="actionNew_Simulation_2"/>
     <addaction name="actionImport_simulation"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
@@ -742,7 +742,7 @@ Start by creating a new measurement</string>
     <string>FAST ComTec binary ... (.lst)</string>
    </property>
   </action>
-  <action name="actionNew_simulation">
+  <action name="actionNew_Simulation_2">
    <property name="enabled">
     <bool>false</bool>
    </property>
