@@ -36,6 +36,7 @@ from Dialogs.ImportMeasurementBinary import ImportDialogBinary
 from Dialogs.ImportMeasurementDialog import ImportMeasurementsDialog
 from Dialogs.MeasuringSettingsDialog import ProjectSettingsDialog
 from Dialogs.ProjectNewDialog import ProjectNewDialog
+from Dialogs.SimulationNewDialog import SimulationNewDialog
 from Modules.Functions import open_file_dialog
 from Modules.GlobalSettings import GlobalSettings
 from Modules.IconManager import IconManager
@@ -409,12 +410,17 @@ class Potku(QtWidgets.QMainWindow):
             self.__open_measurement_info_tab()
             self.__set_project_buttons_enabled(True)
 
-       
+
+    def make_new_simulation(self):
+        """Opens a dialog for creating a new simulation.
+        """
+        SimulationNewDialog(self)
+
     def open_about_dialog(self):
         '''Show Potku program about dialog.
         '''
         AboutDialog()
-    
+
     
     def open_global_settings(self):
         """Opens global settings dialog.
