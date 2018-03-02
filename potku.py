@@ -107,11 +107,11 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
 
         # Set up simulation connections within UI
-        # self.ui.actionNew_Simulation.triggered.connect(self.create_new_simulation)
-        # self.ui.actionNew_Simulation_2.triggered.connect(self.create_new_simulation)
-        # self.ui.actionImport_simulation.triggered.connect(self.import_simulation)
-        # self.ui.actionCreate_energy_spectrum_sim.triggered.connect(self.current_simulation_create_energy_spectrum)
-        # self.ui.addNewSimulationButton.clicked.connect(self.create_new_simulation)
+        self.ui.actionNew_Simulation.triggered.connect(self.create_new_simulation)
+        self.ui.actionNew_Simulation_2.triggered.connect(self.create_new_simulation)
+        self.ui.actionImport_simulation.triggered.connect(self.import_simulation)
+        self.ui.actionCreate_energy_spectrum_sim.triggered.connect(self.current_simulation_create_energy_spectrum)
+        self.ui.addNewSimulationButton.clicked.connect(self.create_new_simulation)
 
         # Set up report tool connection in UI
         self.ui.actionCreate_report.triggered.connect(self.create_report)
@@ -154,6 +154,16 @@ class Potku(QtWidgets.QMainWindow):
         # Set main window's icons to place
         self.__set_icons()
         self.ui.showMaximized()
+
+    def __initialize_top_items(self):
+        self.measurements_item = QtWidgets.QTreeWidgetItem()
+        self.simulations_item = QtWidgets.QTreeWidgetItem()
+        self.measurements_item.setText(0, "Measurements")
+        self.simulations_item.setText(0, "Simulations")
+        self.__change_tab_icon(self.measurements_item, "folder_locked.svg")
+        self.__change_tab_icon(self.simulations_item, "folder_locked.svg")
+        self.ui.treeWidget.addTopLevelItem(self.measurements_item)
+        self.ui.treeWidget.addTopLevelItem(self.simulations_item)
 
     def create_report(self):
         """
@@ -478,14 +488,7 @@ class Potku(QtWidgets.QMainWindow):
             self.ui.setWindowTitle(title)
 
             self.ui.treeWidget.setHeaderLabel("Project: {0}".format(dialog.name))
-            self.measurements_item = QtWidgets.QTreeWidgetItem()
-            self.simulations_item = QtWidgets.QTreeWidgetItem()
-            self.measurements_item.setText(0, "Measurements")
-            self.simulations_item.setText(0, "Simulations")
-            self.__change_tab_icon(self.measurements_item, "folder_locked.svg")
-            self.__change_tab_icon(self.simulations_item, "folder_locked.svg")
-            self.ui.treeWidget.addTopLevelItem(self.measurements_item)
-            self.ui.treeWidget.addTopLevelItem(self.simulations_item)
+            self.__initialize_top_items()
 
             self.project = Project(dialog.directory, dialog.name, self.masses,
                                    self.statusbar, self.settings,
@@ -541,22 +544,22 @@ class Potku(QtWidgets.QMainWindow):
         """
         dialog = SimulationNewDialog()
 
-        # if dialog.directory:
+        filename = dialog.name
+        if filename:
+            try:
+                self.ui.tabs.removeTab(self.ui.tabs.indexOf(
+                    self.measurement_info_tab))
+            except:
+                pass  # If there is no info tab, no need to worry about.
+                # print("Can't find an info tab to remove")
 
-        try:
-            self.ui.tabs.removeTab(self.ui.tabs.indexOf(
-                self.measurement_info_tab))
-        except:
-            pass  # If there is no info tab, no need to worry about.
-            # print("Can't find an info tab to remove")
-
-        progress_bar = QtWidgets.QProgressBar()
-        self.statusbar.addWidget(progress_bar, 1)
-        progress_bar.show()
-        self.__add_new_tab("simulation", filename, progress_bar, load_data=False)
-        self.__remove_info_tab()
-        self.statusbar.removeWidget(progress_bar)
-        progress_bar.hide()
+            progress_bar = QtWidgets.QProgressBar()
+            self.statusbar.addWidget(progress_bar, 1)
+            progress_bar.show()
+            self.__add_new_tab("simulation", filename, progress_bar, load_data=False)
+            self.__remove_info_tab()
+            self.statusbar.removeWidget(progress_bar)
+            progress_bar.hide()
 
 
     def open_project(self):
@@ -577,6 +580,7 @@ class Potku(QtWidgets.QMainWindow):
                                                        self.project.get_name()))
             self.ui.treeWidget.setHeaderLabel(
                                  "Project: {0}".format(self.project.get_name()))
+            self.__initialize_top_items()
             self.settings.set_project_directory_last_open(folder)
             
             self.load_project_measurements()
@@ -732,22 +736,12 @@ class Potku(QtWidgets.QMainWindow):
                 tab.add_log()
                 tab.data_loaded = load_data
                 if load_data:
-                    loading_bar = QtWidgets.QProgressBar()
-                    loading_bar.setMinimum(0)
-                    loading_bar.setMaximum(0)
-                    self.statusbar.addWidget(loading_bar, 1)
-                    loading_bar.show()
-
                     simulation.load_data()
                     tab.add_simulation_depth_profile()
-                    self.ui.tabs.addTab(tab,
-                                                    measurement.measurement_name)
+                    self.ui.tabs.addTab(tab, simulation.simulation_name)
                     self.ui.tabs.setCurrentWidget(tab)
 
-                    loading_bar.hide()
-                    self.statusbar.removeWidget(loading_bar)
-                self.__add_measurement_to_tree(measurement.measurement_name,
-                                               load_data)
+                self.__add_simulation_to_tree(simulation.simulation_name, load_data)
                 self.tab_id += 1
     
     

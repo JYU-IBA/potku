@@ -19,17 +19,28 @@ from PyQt5 import uic, QtWidgets
 class SimulationNewDialog(QtWidgets.QDialog):
     """Dialog creating a new simulation.
     """
-    def __init__(self, parent):
+    # def __init__(self, parent):
+    def __init__(self):
         """Inits a new simulation dialog.
         TODO: Right now only the Cancel button works.
         Args:
             parent: Ibasoft class object.
         """
         super().__init__()
-        self.parent = parent
+        #self.parent = parent
         
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_new_simulation.ui"), self)
 
-        self.ui.CancelButton.clicked.connect(self.close)
+        self.ui.pushCreate.clicked.connect(self.__create_simulation)
+        self.ui.pushCancel.clicked.connect(self.close)
         
         self.exec_()
+
+    def __create_simulation(self):
+        self.name = self.ui.simulationNameLineEdit.text().replace(' ', '_')
+        # TODO: Remove replace above to allow spaces in project names.
+        # TODO: Get rid of print -> message window perhaps
+        if not self.name:
+            print("Project name required!")
+            return
+        self.close()

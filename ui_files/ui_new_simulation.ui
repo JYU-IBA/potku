@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>350</width>
+    <width>380</width>
     <height>208</height>
    </rect>
   </property>
@@ -43,14 +43,14 @@
       </spacer>
      </item>
      <item>
-      <widget class="QPushButton" name="CreateButton">
+      <widget class="QPushButton" name="pushCreate">
        <property name="text">
         <string>Create</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="CancelButton">
+      <widget class="QPushButton" name="pushCancel">
        <property name="text">
         <string>Cancel</string>
        </property>
@@ -63,14 +63,14 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <item>
-        <widget class="QLabel" name="SimLabel">
+        <widget class="QLabel" name="simulationNameLabel">
          <property name="text">
           <string>Simulation name:</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QLineEdit" name="SimLineEdit">
+        <widget class="QLineEdit" name="simulationNameLineEdit">
          <property name="sizePolicy">
           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
@@ -128,9 +128,9 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>SimLineEdit</tabstop>
-  <tabstop>CreateButton</tabstop>
-  <tabstop>CancelButton</tabstop>
+  <tabstop>simulationNameLineEdit</tabstop>
+  <tabstop>pushCreate</tabstop>
+  <tabstop>pushCancel</tabstop>
  </tabstops>
  <resources/>
  <connections/>
