@@ -107,11 +107,11 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
 
         # Set up simulation connections within UI
-        self.ui.actionNew_Simulation.triggered.connect(self.make_new_simulation)
-        self.ui.actionNew_Simulation_2.triggered.connect(self.make_new_simulation)
+        self.ui.actionNew_Simulation.triggered.connect(self.create_new_simulation)
+        self.ui.actionNew_Simulation_2.triggered.connect(self.create_new_simulation)
         self.ui.actionImport_simulation.triggered.connect(self.import_simulation)
         self.ui.actionCreate_energy_spectrum_sim.triggered.connect(self.current_simulation_create_energy_spectrum)
-        self.ui.addNewSimulationButton.clicked.connect(self.make_new_simulation)
+        self.ui.addNewSimulationButton.clicked.connect(self.create_new_simulation)
 
         # Set up report tool connection in UI
         self.ui.actionCreate_report.triggered.connect(self.create_report)
@@ -147,7 +147,7 @@ class Potku(QtWidgets.QMainWindow):
                          bg_green + ");}")
         self.ui.introduceTab.setStyleSheet(style_intro)
         self.ui.infoTab.setStyleSheet(style_mesinfo)
-        self.__remove_measurement_info_tab()
+        self.__remove_info_tab()
         
         self.ui.setWindowIcon(self.icon_manager.get_icon("potku_icon.ico"))        
         
@@ -290,40 +290,54 @@ class Potku(QtWidgets.QMainWindow):
         # tab widgets once they are removed from the QTabWidget. 
         # tab = self.project_measurements[clicked_item.tab_id]
         tab = self.tab_widgets[clicked_item.tab_id]
-        name = tab.measurement.measurement_name
-        
-        # Check that the data is read.
-        if not tab.data_loaded:
-            tab.data_loaded = True
-            progress_bar = QtWidgets.QProgressBar()
-            loading_bar = QtWidgets.QProgressBar()
-            loading_bar.setMinimum(0)
-            loading_bar.setMaximum(0)
-            self.statusbar.addWidget(progress_bar, 1)
-            self.statusbar.addWidget(loading_bar, 2)
-            progress_bar.show()
-            loading_bar.show()
-            progress_bar.setValue(5)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents) 
-            
-            tab.measurement.load_data()
-            progress_bar.setValue(35)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents) 
-            
-            tab.add_histogram()
-            loading_bar.hide()
-            self.statusbar.removeWidget(loading_bar)
-            
-            progress_bar.setValue(50)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents) 
-            tab.check_previous_state_files(progress_bar)  # Load previous states.
-            self.statusbar.removeWidget(progress_bar)
-            progress_bar.hide()
-            self.__change_tab_icon(clicked_item)
-            master_mea = tab.measurement.project.get_master()
-            if master_mea and tab.measurement.measurement_name == \
-                              master_mea.measurement_name:
-                name = "{0} (master)".format(name)
+
+        if type(tab) is MeasurementTabWidget:
+            name = tab.measurement.measurement_name
+
+            # Check that the data is read.
+            if not tab.data_loaded:
+                tab.data_loaded = True
+                progress_bar = QtWidgets.QProgressBar()
+                loading_bar = QtWidgets.QProgressBar()
+                loading_bar.setMinimum(0)
+                loading_bar.setMaximum(0)
+                self.statusbar.addWidget(progress_bar, 1)
+                self.statusbar.addWidget(loading_bar, 2)
+                progress_bar.show()
+                loading_bar.show()
+                progress_bar.setValue(5)
+                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+
+                tab.measurement.load_data()
+                progress_bar.setValue(35)
+                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+
+                tab.add_histogram()
+                loading_bar.hide()
+                self.statusbar.removeWidget(loading_bar)
+
+                progress_bar.setValue(50)
+                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+                tab.check_previous_state_files(progress_bar)  # Load previous states.
+                self.statusbar.removeWidget(progress_bar)
+                progress_bar.hide()
+                self.__change_tab_icon(clicked_item)
+                master_mea = tab.measurement.project.get_master()
+                if master_mea and tab.measurement.measurement_name == \
+                                  master_mea.measurement_name:
+                    name = "{0} (master)".format(name)
+
+        elif type(tab) is SimulationTabWidget:
+            name = tab.simulation.simulation_name
+
+            # Check that the data is read.
+            if not tab.data_loaded:
+                tab.data_loaded = True
+                tab.simulation.load_data()
+                tab.add_simulation_depth_profile()
+                self.__change_tab_icon(clicked_item)
+        else:
+            raise TabError("No such tab widget")
         
         # Check that the tab to be focused exists.
         if not self.__tab_exists(clicked_item.tab_id): 
@@ -364,7 +378,7 @@ class Potku(QtWidgets.QMainWindow):
                                                  self.statusbar,
                                                  self)  # For loading measurements.
         if import_dialog.imported:
-            self.__remove_measurement_info_tab()
+            self.__remove_info_tab()
             
             
     def import_binary(self):
@@ -379,7 +393,7 @@ class Potku(QtWidgets.QMainWindow):
                                            self.statusbar,
                                            self)  # For loading measurements.
         if import_dialog.imported:
-            self.__remove_measurement_info_tab()
+            self.__remove_info_tab()
 
     def import_simulation(self):
         """
@@ -457,20 +471,22 @@ class Potku(QtWidgets.QMainWindow):
         """
         dialog = ProjectNewDialog(self)
 
-        measurements_item = QtWidgets.QTreeWidgetItem()
-        simulations_item = QtWidgets.QTreeWidgetItem()
-        measurements_item.setText(0, "Measurements")
-        simulations_item.setText(0, "Simulations")
-        self.__change_tab_icon(measurements_item, "folder_locked.svg")
-        self.__change_tab_icon(simulations_item, "folder_locked.svg")
-        self.ui.treeWidget.addTopLevelItem(measurements_item)
-        self.ui.treeWidget.addTopLevelItem(simulations_item)
         # TODO: regex check for directory. I.E. do not allow asd/asd
         if dialog.directory:
             self.__close_project()
             title = "{0} - Project: {1}".format(self.title, dialog.name)
             self.ui.setWindowTitle(title)
+
             self.ui.treeWidget.setHeaderLabel("Project: {0}".format(dialog.name))
+            measurements_item = QtWidgets.QTreeWidgetItem()
+            simulations_item = QtWidgets.QTreeWidgetItem()
+            measurements_item.setText(0, "Measurements")
+            simulations_item.setText(0, "Simulations")
+            self.__change_tab_icon(measurements_item, "folder_locked.svg")
+            self.__change_tab_icon(simulations_item, "folder_locked.svg")
+            self.ui.treeWidget.addTopLevelItem(measurements_item)
+            self.ui.treeWidget.addTopLevelItem(simulations_item)
+
             self.project = Project(dialog.directory, dialog.name, self.masses,
                                    self.statusbar, self.settings,
                                    self.tab_widgets)
@@ -480,11 +496,7 @@ class Potku(QtWidgets.QMainWindow):
             self.__open_info_tab()
             self.__set_project_buttons_enabled(True)
 
-    def make_new_simulation(self):
-        """
-        Opens a dialog for creating a new simulation.
-        """
-        SimulationNewDialog(self)
+
 
     def open_about_dialog(self):
         '''Show Potku program about dialog.
@@ -519,9 +531,32 @@ class Potku(QtWidgets.QMainWindow):
             self.statusbar.addWidget(progress_bar, 1)
             progress_bar.show()
             self.__add_new_tab("measurement", filename, progress_bar, load_data=True)
-            self.__remove_measurement_info_tab()
+            self.__remove_info_tab()
             self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
+
+    # def create_new_simulation(self):
+    #     """
+    #     Opens a dialog for creating a new simulation.
+    #     """
+    #     dialog = SimulationNewDialog()
+    #
+    #     if dialog.directory:
+    #
+    #     try:
+    #         self.ui.tabs.removeTab(self.ui.tabs.indexOf(
+    #             self.measurement_info_tab))
+    #     except:
+    #         pass  # If there is no info tab, no need to worry about.
+    #         # print("Can't find an info tab to remove")
+    #
+    #     progress_bar = QtWidgets.QProgressBar()
+    #     self.statusbar.addWidget(progress_bar, 1)
+    #     progress_bar.show()
+    #     self.__add_new_tab("simulation", filename, progress_bar, load_data=False)
+    #     self.__remove_info_tab()
+    #     self.statusbar.removeWidget(progress_bar)
+    #     progress_bar.hide()
 
 
     def open_project(self):
@@ -933,7 +968,7 @@ class Potku(QtWidgets.QMainWindow):
         self.project.set_master()  # No master measurement
         
              
-    def __remove_measurement_info_tab(self):
+    def __remove_info_tab(self):
         """Removes an info tab from the QTabWidget 'tab_measurements' that guides
         the user to add a new measurement to the project.
         """
