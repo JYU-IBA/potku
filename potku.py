@@ -107,11 +107,11 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
 
         # Set up simulation connections within UI
-        self.ui.actionNew_Simulation.triggered.connect(self.create_new_simulation)
-        self.ui.actionNew_Simulation_2.triggered.connect(self.create_new_simulation)
-        self.ui.actionImport_simulation.triggered.connect(self.import_simulation)
-        self.ui.actionCreate_energy_spectrum_sim.triggered.connect(self.current_simulation_create_energy_spectrum)
-        self.ui.addNewSimulationButton.clicked.connect(self.create_new_simulation)
+        # self.ui.actionNew_Simulation.triggered.connect(self.create_new_simulation)
+        # self.ui.actionNew_Simulation_2.triggered.connect(self.create_new_simulation)
+        # self.ui.actionImport_simulation.triggered.connect(self.import_simulation)
+        # self.ui.actionCreate_energy_spectrum_sim.triggered.connect(self.current_simulation_create_energy_spectrum)
+        # self.ui.addNewSimulationButton.clicked.connect(self.create_new_simulation)
 
         # Set up report tool connection in UI
         self.ui.actionCreate_report.triggered.connect(self.create_report)
@@ -478,14 +478,14 @@ class Potku(QtWidgets.QMainWindow):
             self.ui.setWindowTitle(title)
 
             self.ui.treeWidget.setHeaderLabel("Project: {0}".format(dialog.name))
-            measurements_item = QtWidgets.QTreeWidgetItem()
-            simulations_item = QtWidgets.QTreeWidgetItem()
-            measurements_item.setText(0, "Measurements")
-            simulations_item.setText(0, "Simulations")
-            self.__change_tab_icon(measurements_item, "folder_locked.svg")
-            self.__change_tab_icon(simulations_item, "folder_locked.svg")
-            self.ui.treeWidget.addTopLevelItem(measurements_item)
-            self.ui.treeWidget.addTopLevelItem(simulations_item)
+            self.measurements_item = QtWidgets.QTreeWidgetItem()
+            self.simulations_item = QtWidgets.QTreeWidgetItem()
+            self.measurements_item.setText(0, "Measurements")
+            self.simulations_item.setText(0, "Simulations")
+            self.__change_tab_icon(self.measurements_item, "folder_locked.svg")
+            self.__change_tab_icon(self.simulations_item, "folder_locked.svg")
+            self.ui.treeWidget.addTopLevelItem(self.measurements_item)
+            self.ui.treeWidget.addTopLevelItem(self.simulations_item)
 
             self.project = Project(dialog.directory, dialog.name, self.masses,
                                    self.statusbar, self.settings,
@@ -535,28 +535,28 @@ class Potku(QtWidgets.QMainWindow):
             self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
 
-    # def create_new_simulation(self):
-    #     """
-    #     Opens a dialog for creating a new simulation.
-    #     """
-    #     dialog = SimulationNewDialog()
-    #
-    #     if dialog.directory:
-    #
-    #     try:
-    #         self.ui.tabs.removeTab(self.ui.tabs.indexOf(
-    #             self.measurement_info_tab))
-    #     except:
-    #         pass  # If there is no info tab, no need to worry about.
-    #         # print("Can't find an info tab to remove")
-    #
-    #     progress_bar = QtWidgets.QProgressBar()
-    #     self.statusbar.addWidget(progress_bar, 1)
-    #     progress_bar.show()
-    #     self.__add_new_tab("simulation", filename, progress_bar, load_data=False)
-    #     self.__remove_info_tab()
-    #     self.statusbar.removeWidget(progress_bar)
-    #     progress_bar.hide()
+    def create_new_simulation(self):
+        """
+        Opens a dialog for creating a new simulation.
+        """
+        dialog = SimulationNewDialog()
+
+        # if dialog.directory:
+
+        try:
+            self.ui.tabs.removeTab(self.ui.tabs.indexOf(
+                self.measurement_info_tab))
+        except:
+            pass  # If there is no info tab, no need to worry about.
+            # print("Can't find an info tab to remove")
+
+        progress_bar = QtWidgets.QProgressBar()
+        self.statusbar.addWidget(progress_bar, 1)
+        progress_bar.show()
+        self.__add_new_tab("simulation", filename, progress_bar, load_data=False)
+        self.__remove_info_tab()
+        self.statusbar.removeWidget(progress_bar)
+        progress_bar.hide()
 
 
     def open_project(self):
@@ -642,7 +642,26 @@ class Potku(QtWidgets.QMainWindow):
             self.__change_tab_icon(tree_item, "folder_open.svg")
         else:
             self.__change_tab_icon(tree_item, "folder_locked.svg")
-        self.ui.treeWidget.addTopLevelItem(tree_item)
+        # self.ui.treeWidget.addTopLevelItem(tree_item)
+        self.measurements_item.addChild(tree_item)
+
+    def __add_simulation_to_tree(self, simulation_name, load_data):
+        '''Add measurement to tree where it can be opened.
+
+        Args:
+            measurement_name: A string representing measurement's name.
+            load_data: A boolean representing if measurement data is loaded.
+        '''
+        tree_item = QtWidgets.QTreeWidgetItem()
+        tree_item.setText(0, simulation_name)
+        tree_item.tab_id = self.tab_id
+        # tree_item.setIcon(0, self.icon_manager.get_icon("folder_open.svg"))
+        if load_data:
+            self.__change_tab_icon(tree_item, "folder_open.svg")
+        else:
+            self.__change_tab_icon(tree_item, "folder_locked.svg")
+        #self.ui.treeWidget.addTopLevelItem(tree_item)
+        self.simulations_item.addChild(tree_item)
         
         
     def __add_new_tab(self, type, filename, progress_bar=None,

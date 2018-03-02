@@ -88,7 +88,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
             widget.show()
         self.__set_icons()
 
-    def add_depth_profile(self):
+    def add_simulation_depth_profile(self):
         """ Adds depth profile for modifying the elements into tab if it doesn't have one already.
         """
         self.simulation_depth_profile = SimulationDepthProfileWidget(self.simulation, self.masses,
