@@ -54,7 +54,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     def __init__(self, parent, measurement_data, masses, icon_manager):
         '''Inits histogram widget
         
-        Args:
+        Args:https://www.stack.nl/~dimitri/doxygen/manual/starting.html#step2
             parent: A TofeHistogramWidget class object.
             measurement_data: A list of data points.
             icon_manager: IconManager class object.
@@ -746,7 +746,3 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         if (mode == 1 or mode == 2) and self.compression_y > 1:
             self.compression_y -= 1
         self.on_draw()
-        
-                
-             
-        

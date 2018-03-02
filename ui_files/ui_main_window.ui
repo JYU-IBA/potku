@@ -190,7 +190,7 @@
        </layout>
       </item>
       <item>
-       <widget class="QTabWidget" name="tab_measurements">
+       <widget class="QTabWidget" name="tabs">
         <property name="styleSheet">
          <string notr="true"/>
         </property>
@@ -201,7 +201,7 @@
          <enum>QTabWidget::Rounded</enum>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>1</number>
         </property>
         <property name="elideMode">
          <enum>Qt::ElideNone</enum>
@@ -229,47 +229,8 @@
           <item row="2" column="0">
            <layout class="QGridLayout" name="gridLayout_15">
             <item row="2" column="1">
-             <layout class="QGridLayout" name="gridLayout_16">
-              <item row="0" column="1">
-               <widget class="QPushButton" name="projectOpenButton">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>110</width>
-                  <height>110</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>110</width>
-                  <height>110</height>
-                 </size>
-                </property>
-                <property name="font">
-                 <font>
-                  <pointsize>10</pointsize>
-                  <weight>50</weight>
-                  <bold>false</bold>
-                 </font>
-                </property>
-                <property name="text">
-                 <string>Open an 
-existing project</string>
-                </property>
-                <property name="checkable">
-                 <bool>false</bool>
-                </property>
-                <property name="autoRepeat">
-                 <bool>false</bool>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="0">
+             <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0">
+              <item>
                <widget class="QPushButton" name="projectNewButton">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
@@ -299,6 +260,45 @@ existing project</string>
                 <property name="text">
                  <string>Create a new 
 project</string>
+                </property>
+                <property name="checkable">
+                 <bool>false</bool>
+                </property>
+                <property name="autoRepeat">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="projectOpenButton">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>110</width>
+                  <height>110</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>110</width>
+                  <height>110</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>10</pointsize>
+                  <weight>50</weight>
+                  <bold>false</bold>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Open an 
+existing project</string>
                 </property>
                 <property name="checkable">
                  <bool>false</bool>
@@ -390,7 +390,7 @@ Start using Potku</string>
           </item>
          </layout>
         </widget>
-        <widget class="QWidget" name="measurementInfoTab">
+        <widget class="QWidget" name="infoTab">
          <attribute name="title">
           <string>Info</string>
          </attribute>
@@ -398,8 +398,8 @@ Start using Potku</string>
           <item row="0" column="0">
            <layout class="QGridLayout" name="gridLayout_18">
             <item row="2" column="1">
-             <layout class="QGridLayout" name="gridLayout_19">
-              <item row="0" column="0">
+             <layout class="QHBoxLayout" name="horizontalLayout">
+              <item>
                <widget class="QPushButton" name="addNewMeasurementButton">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
@@ -435,6 +435,31 @@ measurement</string>
                 </property>
                 <property name="autoRepeat">
                  <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="addNewSimulationButton">
+                <property name="minimumSize">
+                 <size>
+                  <width>110</width>
+                  <height>110</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>110</width>
+                  <height>110</height>
+                 </size>
+                </property>
+                <property name="font">
+                 <font>
+                  <pointsize>10</pointsize>
+                 </font>
+                </property>
+                <property name="text">
+                 <string>Create a new
+simulation</string>
                 </property>
                </widget>
               </item>
@@ -499,7 +524,7 @@ measurement</string>
 
 
 
-Start by creating a new measurement</string>
+Start by loading a measurement or creating a new simulation</string>
               </property>
               <property name="wordWrap">
                <bool>true</bool>
@@ -535,7 +560,7 @@ Start by creating a new measurement</string>
      <x>0</x>
      <y>0</y>
      <width>1467</width>
-     <height>21</height>
+     <height>28</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -786,12 +811,11 @@ Start by creating a new measurement</string>
  <tabstops>
   <tabstop>projectNewButton</tabstop>
   <tabstop>projectOpenButton</tabstop>
-  <tabstop>addNewMeasurementButton</tabstop>
   <tabstop>globalSettingsButton</tabstop>
   <tabstop>projectSettingsButton</tabstop>
   <tabstop>treeWidget</tabstop>
   <tabstop>hidePanelButton</tabstop>
-  <tabstop>tab_measurements</tabstop>
+  <tabstop>tabs</tabstop>
  </tabstops>
  <resources/>
  <connections/>

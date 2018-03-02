@@ -43,7 +43,8 @@ from Modules.IconManager import IconManager
 from Modules.Masses import Masses
 from Modules.Project import Project
 from Widgets.MeasurementTabWidget import MeasurementTabWidget
-from Widgets.SimulationDepthProfileWidget import SimulationDepthProfileWidget
+from Widgets.SimulationTabWidget import SimulationTabWidget
+# from Widgets.SimulationDepthProfileWidget import SimulationDepthProfileWidget
 
 
 class Potku(QtWidgets.QMainWindow):
@@ -422,12 +423,48 @@ class Potku(QtWidgets.QMainWindow):
 
         self.statusbar.removeWidget(progress_bar)
         progress_bar.hide()
+
+    def load_project_simulations(self, simulations=[]):
+        '''Load simulation files in the project.
+
+        Args:
+            simulations: A list representing loadable simulation when importing
+                          simulation to the project.
+        '''
+        if simulations:
+            simulation_in_project = simulations
+            load_data = True
+        else:
+            simulations_in_project = self.project.get_simulation_files()
+            load_data = False
+        progress_bar = QtWidgets.QProgressBar()
+        self.statusbar.addWidget(progress_bar, 1)
+        progress_bar.show()
+
+        count = len(simulation_in_project)
+        dirtyinteger = 0
+        for simulation_file in simulation_in_project:
+            self.__add_new_tab("simulation", simulation_file, progress_bar,
+                               dirtyinteger, count, load_data=load_data)
+            dirtyinteger += 1
+
+        self.statusbar.removeWidget(progress_bar)
+        progress_bar.hide()
         
 
     def make_new_project(self):
         """Opens a dialog for creating a new project.
         """
         dialog = ProjectNewDialog(self)
+
+        measurements_item = QtWidgets.QTreeWidgetItem()
+        simulations_item = QtWidgets.QTreeWidgetItem()
+        measurements_item.setText(0, "Measurements")
+        simulations_item.setText(0, "Simulations")
+        self.__change_tab_icon(measurements_item, "folder_locked.svg")
+        self.__change_tab_icon(simulations_item, "folder_locked.svg")
+        self.ui.treeWidget.addTopLevelItem(measurements_item)
+        self.ui.treeWidget.addTopLevelItem(simulations_item)
         # TODO: regex check for directory. I.E. do not allow asd/asd
         if dialog.directory:
             self.__close_project()
