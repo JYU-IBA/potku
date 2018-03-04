@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 5.4.2013
 Updated on 15.8.2013
 
@@ -22,7 +22,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
@@ -44,11 +44,11 @@ class DepthProfileDialog(QtWidgets.QDialog):
     systerr = 0.0
     
     def __init__(self, parent):
-        '''Inits depth profile dialog
+        """Inits depth profile dialog
         
         Args:
             parent: MeasurementTabWidget
-        '''
+        """
         super().__init__()
         self.parent = parent
         self.ui = uic.loadUi(os.path.join("ui_files",
@@ -102,15 +102,15 @@ class DepthProfileDialog(QtWidgets.QDialog):
         
         
     def __accept_params(self):
-        '''Accept given parameters
-        '''
+        """Accept given parameters
+        """
         progress_bar = QtWidgets.QProgressBar()
         self.__statusbar.addWidget(progress_bar, 1) 
         progress_bar.show() 
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         try:
             use_cut = []
-            output_dir = os.path.join(self.measurement.directory, 'depthfiles')
+            output_dir = os.path.join(self.measurement.directory, "depthfiles")
             elements = []
                 
             progress_bar.setValue(10)
@@ -126,7 +126,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 item = root.child(i)
                 if item.checkState(0):
                     use_cut.append(os.path.join(item.directory, item.file_name))
-                    element = Element(item.file_name.split('.')[1])
+                    element = Element(item.file_name.split(".")[1])
                     elements.append(element)
                     DepthProfileDialog.checked_cuts[m_name].append(item.file_name)
                 child_count_2 = item.childCount()
@@ -137,7 +137,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                             name = item_child.file_name
                             dir_e = self.parent.measurement.directory_elemloss
                             use_cut.append(os.path.join(dir_e, name))
-                            element = Element(item_child.file_name.split('.')[1])
+                            element = Element(item_child.file_name.split(".")[1])
                             elements.append(element)
                             DepthProfileDialog.checked_cuts[m_name].append(
                                                             item_child.file_name)
@@ -195,8 +195,8 @@ class DepthProfileDialog(QtWidgets.QDialog):
 
         
     def __update_eff_files(self):
-        '''Update efficiency files to UI which are used.
-        '''
+        """Update efficiency files to UI which are used.
+        """
         # This is probably not the most effective way, or practical for 
         # that matter, to get all efficiency files from directory defined
         # in global settings that match the cut files of measurements.
@@ -206,7 +206,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()
         for eff in eff_files:
-            str_element, unused_ext = eff.split('.')
+            str_element, unused_ext = eff.split(".")
             element = Element(str_element)
             for i in range(child_count): 
                 item = root.child(i)
@@ -218,7 +218,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 # TODO: Does not check elemental losses for efficiency files.
                 if not hasattr(item, "file_name"):
                     continue
-                cut_element = Element(item.file_name.split('.')[1])
+                cut_element = Element(item.file_name.split(".")[1])
                 mass = cut_element.isotope.mass
                 if not mass:
                     mass = round(masses.get_standard_isotope(cut_element.name),
@@ -234,9 +234,9 @@ class DepthProfileDialog(QtWidgets.QDialog):
             
             
     def __show_important_settings(self):
-        '''Show some important setting values in the depth profile parameter
+        """Show some important setting values in the depth profile parameter
         dialog for the user.
-        '''
+        """
         settings = self.measurement.measurement_settings.get_measurement_settings()
         cs = settings.calibration_settings
         dps = settings.depth_profile_settings
@@ -253,13 +253,13 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 
             
 class DepthProfileWidget(QtWidgets.QWidget):
-    '''Depth Profile widget which is added to measurement tab.
-    '''
+    """Depth Profile widget which is added to measurement tab.
+    """
     save_file = "widget_depth_profile.save"
     
     def __init__(self, parent, output_dir, use_cuts, elements, x_units,
                  line_zero, line_scale, systematic_error):
-        '''Inits widget.
+        """Inits widget.
         
         Args:
             parent: A MeasurementTabWidget.
@@ -272,7 +272,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
             line_scale: A boolean representing if horizontal line is drawn at 
                         the defined depth scale.
             systematic_error: A double representing systematic error.
-        '''
+        """
         try:
             super().__init__()
             self.parent = parent
@@ -292,7 +292,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
             # Make the directory for depth files
             if not os.path.exists(self.output_dir):
                 os.makedirs(self.output_dir)
-            output_files = os.path.join(self.output_dir, 'depth')
+            output_files = os.path.join(self.output_dir, "depth")
             dp = DepthFiles(self.__use_cuts, output_files)
             self.measurement.generate_tof_in() #This has to be before create_depth_files()
             dp.create_depth_files()
@@ -301,7 +301,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
             rbs_list = {}
             for cut in self.__use_cuts:
                 filename = os.path.basename(cut)
-                split = filename.split('.')
+                split = filename.split(".")
                 element = Element(split[1])
                 if is_rbs(cut):
                     # This should work for regular cut and split.
@@ -351,8 +351,8 @@ class DepthProfileWidget(QtWidgets.QWidget):
 
 
     def delete(self):
-        '''Delete variables and do clean up.
-        '''
+        """Delete variables and do clean up.
+        """
         self.matplotlib.delete()
         self.matplotlib = None
         self.ui.close()
@@ -361,8 +361,8 @@ class DepthProfileWidget(QtWidgets.QWidget):
 
 
     def closeEvent(self, evnt):
-        '''Reimplemented method when closing widget.
-        '''
+        """Reimplemented method when closing widget.
+        """
         self.parent.depth_profile_widget = Null()
         file = os.path.join(self.parent.measurement.directory, self.save_file)
         try:
@@ -374,12 +374,12 @@ class DepthProfileWidget(QtWidgets.QWidget):
         
         
     def save_to_file(self):
-        '''Save object information to file.
-        '''
+        """Save object information to file.
+        """
         output_dir = self.output_dir.replace(
                          self.parent.measurement.directory + "\\", "")
         file = os.path.join(self.parent.measurement.directory, self.save_file)
-        fh = open(file, 'wt')
+        fh = open(file, "wt")
         fh.write("{0}\n".format(output_dir))
         fh.write("{0}\n".format("\t".join([str(element) \
                                            for element in self.elements])))

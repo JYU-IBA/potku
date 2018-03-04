@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 19.3.2013
 Updated on 26.8.2013
 
@@ -24,7 +24,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 
 Dialog for the measuring settings
-'''
+"""
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
@@ -44,12 +44,12 @@ from Modules.MeasuringSettings import MeasuringSettings
 class ProjectSettingsDialog(QtWidgets.QDialog):
     
     def __init__(self, masses, project):
-        '''Constructor for the program
+        """Constructor for the program
         
         Args:
             masses: Reference to Masses class object.
             project: Project class object.
-        '''
+        """
         super().__init__()
         self.ui = uic.loadUi(join("ui_files", "ui_measuring_settings.ui"), self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -144,13 +144,13 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
                  
         
     def __load_file(self, settings_type):
-        '''Opens file dialog and loads and shows selected ini file's values.
+        """Opens file dialog and loads and shows selected ini file's values.
         
         Args:
             settings_type: (string) selects which settings file type will be loaded. 
                            Can be "MEASURING_UNIT_SETTINGS", 
                            "DEPTH_PROFILE_SETTINGS" or "CALIBRATION_SETTINGS"
-        '''
+        """
         if settings_type == "MEASURING_UNIT_SETTINGS":
             settings = MeasuringSettings()
         elif settings_type == "DEPTH_PROFILE_SETTINGS":
@@ -172,8 +172,8 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
         
         
     def __save_file(self, settings_type):
-        '''Opens file dialog and sets and saves the settings to a ini file.
-        '''
+        """Opens file dialog and sets and saves the settings to a ini file.
+        """
         
         if settings_type == "MEASURING_UNIT_SETTINGS":
             settings = MeasuringSettings()
@@ -193,9 +193,9 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
         
         
     def update_and_close_settings(self):
-        '''Updates measuring settings values with the dialog's values and saves them
+        """Updates measuring settings values with the dialog's values and saves them
         to default ini file.
-        '''
+        """
         try:
             self.__update_settings()
             self.close()
@@ -204,8 +204,8 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
             pass
             
     def update_settings(self):
-        '''Update values from dialog to every setting object.
-        '''
+        """Update values from dialog to every setting object.
+        """
         try:
             self.__update_settings()
         except TypeError:
@@ -214,8 +214,8 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
         
     
     def __update_settings(self):
-        '''Update values from dialog to every setting object.
-        '''
+        """Update values from dialog to every setting object.
+        """
         # TODO: Proper checking for all setting values
         # This try-catch works for Beam Element that has not been set yet.
         try:
@@ -239,12 +239,12 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
     
     
     def __change_element(self, button):
-        '''Opens element selection dialog and loads selected element's isotopes 
+        """Opens element selection dialog and loads selected element's isotopes 
         to a combobox.
         
         Args:
             button: button whose text is changed accordingly to the made selection.
-        '''
+        """
         dialog = ElementSelectionDialog()
         if dialog.element:
             button.setText(dialog.element)

@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 21.3.2013
 Updated on 16.8.2013
 
@@ -22,7 +22,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
@@ -31,14 +31,14 @@ from PyQt5 import QtCore, uic, QtWidgets
 
 
 class TofeGraphSettingsWidget(QtWidgets.QDialog):
-    '''Graph settings dialog for the ToF-E histogram graph.
-    '''
+    """Graph settings dialog for the ToF-E histogram graph.
+    """
     def __init__(self, parent):
-        '''Inits ToF-E graph histogram graph settings dialog.
+        """Inits ToF-E graph histogram graph settings dialog.
         
         Args:
             parent: MatplotlibHistogramWidget which settings are being changed.
-        '''
+        """
         super().__init__()
         self.parent = parent
         self.ui = uic.loadUi(join("ui_files", "ui_tofe_graph_settings.ui"), self)
@@ -54,8 +54,8 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
     
     
     def accept_settings(self):
-        '''Accept changed settings and save them.
-        '''
+        """Accept changed settings and save them.
+        """
         self.parent.compression_x = self.ui.bin_x.value()
         self.parent.compression_y = self.ui.bin_y.value()
         self.parent.invert_X = self.ui.invert_x.checkState() == QtCore.Qt.Checked

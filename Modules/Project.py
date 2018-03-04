@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 11.4.2013
 Updated on 26.8.2013
 
@@ -22,7 +22,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
@@ -36,11 +36,11 @@ from Modules.Simulation import Simulations
 from Modules.Settings import Settings
 
 class Project:
-    '''Project class to handle all measurements.
-    '''
+    """Project class to handle all measurements.
+    """
     def __init__(self, directory, name, masses, statusbar, global_settings,
                  tabs):
-        '''Inits Project class. 
+        """Inits Project class. 
         
         Args:
             directory: A String representing project directory.
@@ -49,7 +49,7 @@ class Project:
             global_settings: A GlobalSettings class object (of the program).
             tabs: A dictionary of MeasurementTabWidgets and SimulationTabWidgets
             of the project.
-        '''
+        """
         # TODO: Get rid of statusbar.
         self.directory = directory
         self.project_name = name
@@ -119,11 +119,11 @@ class Project:
         
         
     def get_name(self):
-        '''Get the project's name.
+        """Get the project's name.
         
         Return:
             Returns the project's name.
-        '''
+        """
         return self.__project_information["meta"]["project_name"]
     
     
@@ -134,12 +134,21 @@ class Project:
         
         
     def get_measurements_files(self):
-        '''Get measurements files inside project folder.
-        '''
+        """Get measurements files inside project folder.
+        """
         # TODO: Possible for different formats (such as binary data .lst)
         return [f for f in listdir(self.directory) 
                 if isfile(join(self.directory, f)) and 
                 splitext(f)[1] == ".asc" and 
+                stat(join(self.directory, f)).st_size]  # Do not load empty files.
+
+    def get_simulation_files(self):
+        """Get simulation files inside project folder.
+        """
+        # TODO: Possible for different formats (such as binary data .lst)
+        return [f for f in listdir(self.directory) 
+                if isfile(join(self.directory, f)) and 
+                splitext(f)[1] == ".sim" and 
                 stat(join(self.directory, f)).st_size]  # Do not load empty files.
      
     
@@ -171,17 +180,17 @@ class Project:
     
     
     def load(self):
-        '''Load project
-        '''
+        """Load project
+        """
         self.__project_information.read(self.project_file)
-        self.__non_slaves = self.__project_information["meta"]["nonslave"].split('|')
+        self.__non_slaves = self.__project_information["meta"]["nonslave"].split("|")
     
     
     def save(self):
-        '''Save project
-        '''
+        """Save project
+        """
         # TODO: Saving properly.
-        with open(self.project_file, 'wt+') as configfile:
+        with open(self.project_file, "wt+") as configfile:
             self.__project_information.write(configfile)
     
     
@@ -239,9 +248,9 @@ class Project:
         
         
     def __set_project_logger(self):
-        '''Sets the logger which is used to log everything that doesn't happen in 
+        """Sets the logger which is used to log everything that doesn't happen in 
         measurements.
-        '''
+        """
         logger = logging.getLogger("project")
         logger.setLevel(logging.DEBUG)
         

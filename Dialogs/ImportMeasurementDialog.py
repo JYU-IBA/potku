@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 6.6.2013
 Updated on 29.8.2013
 
@@ -21,7 +21,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 __author__ = "Timo Konu"
 __versio__ = "1.0"
 
@@ -38,18 +38,18 @@ from Modules.Functions import open_files_dialog, coinc
 
 
 class ImportMeasurementsDialog(QtWidgets.QDialog):
-    '''Measurement importing class. Used to import measurement data
+    """Measurement importing class. Used to import measurement data
     from detecting unit into potku.
-    '''
+    """
     def __init__(self, project, icon_manager, statusbar, parent):
-        '''Init measurement import dialog.
+        """Init measurement import dialog.
         
         Args:
             project: A project class object.
             icon_manager: An IconManager class object.
             statusbar: A QtGui.QMainWindow's QStatusBar.
             parent: A QtGui.QMainWindow of Potku.
-        '''
+        """
         super().__init__()
         self.project = project
         self.__icon_manager = icon_manager
@@ -86,8 +86,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         
   
     def __add_file(self):
-        '''Add a file to list of files to be imported.
-        '''
+        """Add a file to list of files to be imported.
+        """
         files = open_files_dialog(self,
                                   self.project.directory,
                                   "Select an event collection to be imported",
@@ -109,13 +109,13 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             
 
     def __add_import_column(self, i, adc="0", removable=True):
-        '''Add a column to import file.
+        """Add a column to import file.
         
         Args:
             i: An integer representing the row integer.
             adc: An integer representing ADC.
             removable: A boolean representing if row can be removed.
-        '''
+        """
         self.__import_row_count += 1
         label = QtWidgets.QLabel("{0}".format(self.__import_row_count))
         remove_button = QtWidgets.QPushButton("Remove")
@@ -128,8 +128,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         
 
     def __add_timing_labels(self):
-        '''Add timing labels in code side
-        '''
+        """Add timing labels in code side
+        """
         label_adc = QtWidgets.QLabel("ADC")
         label_low = QtWidgets.QLabel("Low")
         label_high = QtWidgets.QLabel("High")
@@ -139,8 +139,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
   
     
     def __import_files(self):
-        '''Import listed files with settings defined in the dialog.
-        '''
+        """Import listed files with settings defined in the dialog.
+        """
         imported_files = []
         string_columns = []
         for i in range(self.grid_column.rowCount()):
@@ -212,17 +212,17 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             "Timing: " + str(timing),
             "Event count: " + str(self.spin_eventcount.value()))
         log_elapsed = "Importing finished {0} seconds".format(int(elapsed))
-        logging.getLogger('project').info(log)
-        logging.getLogger('project').info(log_var)
-        logging.getLogger('project').info(log_elapsed)
+        logging.getLogger("project").info(log)
+        logging.getLogger("project").info(log_var)
+        logging.getLogger("project").info(log_elapsed)
         self.imported = True
         self.parent.load_project_measurements(imported_files)
         self.close()
         
     
     def __insert_import_timings(self):
-        '''Insert column selection for import to QTableWidget.
-        '''
+        """Insert column selection for import to QTableWidget.
+        """
         if self.__initiated_columns:
             return
         self.__initiated_columns = True
@@ -233,11 +233,11 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             
 
     def __load_file_preview(self, file=None):
-        '''Load beginning of the file to preview window.
+        """Load beginning of the file to preview window.
         
         Args:
             file: A string representing full path to the file.
-        '''
+        """
         if not file:
             self.textEdit.clear()
             self.button_coinc.setEnabled(False)
@@ -254,8 +254,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
     
     
     def __load_files(self):
-        '''Loads X lines of the data for rough estimation of values.
-        '''
+        """Loads X lines of the data for rough estimation of values.
+        """
         skip_length = 10
         self.adc_occurance = {}
         for file in self.__files_added:
@@ -295,30 +295,30 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
     
     
     def __check_if_import_allowed(self):
-        '''Toggle state of import button depending on if it is allowed.
-        '''
+        """Toggle state of import button depending on if it is allowed.
+        """
         root = self.treeWidget.invisibleRootItem()
         self.button_import.setEnabled(root.childCount() > 0)
         self.group_importcolumn.setEnabled(root.childCount() > 0)
         
     
     def __close(self):
-        '''Close dialog.
-        '''
+        """Close dialog.
+        """
         self.__remove_temp_file()
         self.close()
 
 
     def __coinc_calc(self):
-        '''Calculate coincidence for selected
-        '''
+        """Calculate coincidence for selected
+        """
         item = self.treeWidget.currentItem()
         input_file = item.file
         project_dir = str(join(self.project.directory, "import_file"))
         output_file = "{0}.{1}".format(project_dir,"tmp")
 
         timing = dict()
-        timing_first = '1'
+        timing_first = "1"
         for coinc_key in self.__added_timings.keys():
             coinc_timing = self.__added_timings[coinc_key]
             if coinc_timing.is_not_trigger:
@@ -342,11 +342,11 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
     
  
     def __create_combobox(self, adc):
-        '''Create combobox for ADC.
+        """Create combobox for ADC.
         
         Args:
             adc: An integer representing ADC.        
-        '''
+        """
         adc_keys = sorted(self.adc_occurance.keys())
         combobox = QtWidgets.QComboBox()
         for key in adc_keys:
@@ -368,8 +368,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
     
     
     def __create_timing_spinbox(self):
-        '''Generate timing spinboxes from read files.
-        '''
+        """Generate timing spinboxes from read files.
+        """
         i = 1
         for adc in sorted(self.adc_occurance.keys()):
             if adc in self.__added_timings:  # Do not add multiple times
@@ -387,11 +387,11 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             
 
     def __remove_import_column_row(self, button):
-        '''Remove row from columns in import data.
+        """Remove row from columns in import data.
         
         Args:
             button: A QtWidgets.QPushButton class object which was pressed.
-        '''
+        """
         index = self.grid_column.indexOf(button)
         row, column, unused_cols, unused_rows = self.grid_column.getItemPosition(index)
         column_count = sorted(range(column + 1), reverse=True)
@@ -416,8 +416,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         
         
     def __remove_selected(self):
-        '''Remove the selected files from import list.
-        '''
+        """Remove the selected files from import list.
+        """
         root = self.treeWidget.invisibleRootItem()
         for item in self.treeWidget.selectedItems():
             (item.parent() or root).removeChild(item)
@@ -427,8 +427,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
     
     
     def __remove_temp_file(self):
-        '''Remove tempfile, if it exist, used for timing limit correction.
-        '''
+        """Remove tempfile, if it exist, used for timing limit correction.
+        """
         project_dir = str(join(self.project.directory, "import_file"))
         tmp_file = "{0}.{1}".format(project_dir, "tmp")
         try:
@@ -439,15 +439,15 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         
     
     def __select_file(self):
-        '''Item is selected in treewidget.
-        '''
+        """Item is selected in treewidget.
+        """
         item = self.treeWidget.currentItem()
         self.__load_file_preview(item.file)
 
 
     def __update_timings(self):
-        '''Update spinboxes enabled state based on selected ADC trigger.
-        '''
+        """Update spinboxes enabled state based on selected ADC trigger.
+        """
         current_adc = str(self.spin_adctrigger.value())
         for coinc_key in self.__added_timings.keys():
             coinc_timing = self.__added_timings[coinc_key]
@@ -459,16 +459,16 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
 
 
 class CoincTiming:
-    '''Coincidence timing class
-    '''
+    """Coincidence timing class
+    """
     def __init__(self, adc, low, high):
-        '''Inits coincidence timing class
+        """Inits coincidence timing class
         
         Args:
             adc: An integer representing ADC.
             low: A QtWidgets.QSpinBox representing spinbox for low value.
             high: A QtWidgets.QSpinBox representing spinbox for high value.
-        '''
+        """
         self.adc = adc
         self.low = low
         self.high = high

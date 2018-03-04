@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 12.5.2013
 Updated on 23.5.2013
 
@@ -22,7 +22,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli K�rkk�inen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
@@ -32,11 +32,11 @@ from PyQt5 import QtWidgets, QtCore, QtGui, uic
 from math import sin
 
 class AboutDialog(QtWidgets.QDialog):
-    '''About dialog that shows information about the program itself.
-    '''
+    """About dialog that shows information about the program itself.
+    """
     def __init__(self):
-        '''Inits the About Dialog.
-        '''
+        """Inits the About Dialog.
+        """
         super().__init__()
         
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_about.ui"), self)

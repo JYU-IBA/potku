@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Updated on 3.6.2013
 
 Potku is a graphical user interface for analyzation and 
@@ -21,7 +21,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 
 import sys
 import os
@@ -36,4 +36,4 @@ def runPotku():
     
 if __name__ == "__main__":
     runPotku()
-    print('This is done')
+    print("This is done")

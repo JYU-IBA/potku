@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 6.6.2013
 Updated on 12.8.2013
 
@@ -21,7 +21,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 __author__ = "Timo Konu"
 __versio__ = "1.0"
 
@@ -61,8 +61,8 @@ class ImportDialogBinary(QtWidgets.QDialog):
 
 
     def __add_file(self):
-        '''Add a file to list of files to be imported.
-        '''
+        """Add a file to list of files to be imported.
+        """
         files = open_files_dialog(self,
                                   self.__project.directory,
                                   "Select binary files to be imported",

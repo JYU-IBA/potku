@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 15.4.2013
 Updated on 3.7.2013
 
@@ -22,7 +22,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
@@ -139,12 +139,12 @@ class CalibrationDialog(QtWidgets.QDialog):
     
     
     def remove_selected_points(self):
-        '''Remove selected items from point tree widget
-        '''
+        """Remove selected items from point tree widget
+        """
         removed_something = False
         root = self.ui.pointsTreeWidget.invisibleRootItem()
         for item in self.ui.pointsTreeWidget.selectedItems():
-            if item and hasattr(item, 'point'):
+            if item and hasattr(item, "point"):
                 removed_something = True
                 self.tof_calibration.remove_point(item.point)
             (item.parent() or root).removeChild(item)
@@ -153,18 +153,18 @@ class CalibrationDialog(QtWidgets.QDialog):
             
     
     def set_calibration_point(self, tof):
-        '''Set Cut file front edge estimation to specific value.
+        """Set Cut file front edge estimation to specific value.
         
         Args:
             tof: Float representing front edge of linear fit estimation.
-        '''
+        """
         self.curveFittingWidget.matplotlib.set_calibration_point_externally(tof)
     
     
     def set_calibration_parameters_to_parent(self):
-        '''Set calibration parameters to parent dialog's calibration parameters 
+        """Set calibration parameters to parent dialog's calibration parameters 
         fields.
-        '''
+        """
         if self.parent_settings_dialog:
             self.parent_settings_dialog.ui.slopeLineEdit.setText(
                                                  self.ui.slopeLineEdit.text())
@@ -175,8 +175,8 @@ class CalibrationDialog(QtWidgets.QDialog):
     
     
     def accept_calibration(self):
-        '''Accept calibration (parameters).
-        '''
+        """Accept calibration (parameters).
+        """
         calib_ok = "Calibration parameters accepted.\nYou can now close the window."
         calib_no = "Couldn't set parameters to\nthe settings dialog."
         calib_inv = "Invalid calibration parameters."
@@ -197,8 +197,8 @@ class CalibrationDialog(QtWidgets.QDialog):
             current_item: QtWidgets.QTreeWidgetItem of CutFile which was selected.
         """
         self.__change_accept_point_label("")
-        if current_item and hasattr(current_item, 'directory') and \
-        hasattr(current_item, 'file_name'):
+        if current_item and hasattr(current_item, "directory") and \
+        hasattr(current_item, "file_name"):
             self.__set_current_cut(current_item)        
             self.__update_curve_fit()
         
@@ -227,7 +227,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         Args:
             tree_item: QtWidgets.QTreeWidgetItem
         """
-        if tree_item and hasattr(tree_item, 'point'):
+        if tree_item and hasattr(tree_item, "point"):
             tree_item.point.point_used = tree_item.checkState(0)
             self.__change_selected_points()
             self.__enable_accept_calibration_button()
@@ -262,8 +262,8 @@ class CalibrationDialog(QtWidgets.QDialog):
         
         
     def timeout(self):
-        '''Timeout eventmethod to remove label text.
-        '''
+        """Timeout eventmethod to remove label text.
+        """
         self.ui.acceptPointLabel.setText("")
         self.timer.stop()
     
@@ -295,11 +295,11 @@ class CalibrationDialog(QtWidgets.QDialog):
 
 
 class CalibrationCurveFittingWidget(QtWidgets.QWidget):
-    '''Widget class for holding MatplotlibCalibrationCurveFittingWidget.
-    '''
+    """Widget class for holding MatplotlibCalibrationCurveFittingWidget.
+    """
     def __init__(self, dialog, cut, tof_calibration,
                  settings, bin_width, column, masses):
-        '''Inits widget.
+        """Inits widget.
         
         Args:
             dialog: Parent dialog.
@@ -309,7 +309,7 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
             bin_width: Float representing histogram's bin width.
             column: Integer representing which column number is used.
             masses: Reference to Masses class object.
-        '''
+        """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_tof_curve_fitting_widget.ui"), self)
@@ -330,16 +330,16 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
         
             
 class CalibrationLinearFittingWidget(QtWidgets.QWidget):
-    '''Widget class for holding MatplotlibCalibrationLinearFittingWidget.
-    '''
+    """Widget class for holding MatplotlibCalibrationLinearFittingWidget.
+    """
     def __init__(self, dialog, tof_calibration, old_params):
-        '''Inits widget.
+        """Inits widget.
         
         Args:
             dialog: Parent dialog.
             tof_calibration: TOFCalibration class object.
             old_params: Old calibration parameters in tuple (slope, offset).
-        '''
+        """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_tof_linear_fitting_widget.ui"), self)

@@ -1,6 +1,6 @@
 
 # coding=utf-8
-'''
+"""
 Created on 11.4.2013
 Updated on 3.6.2013
 
@@ -23,7 +23,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
@@ -33,14 +33,14 @@ from PyQt5 import uic, QtWidgets
 
 
 class ProjectNewDialog(QtWidgets.QDialog):
-    '''Dialog creating a new project.
-    '''
+    """Dialog creating a new project.
+    """
     def __init__(self, parent):
-        '''Inits energy spectrum dialog.
+        """Inits energy spectrum dialog.
         
         Args:
             parent: Ibasoft class object.
-        '''
+        """
         super().__init__()
         self.parent = parent
         self.folder = None  # Temporary for browsing folder
@@ -77,7 +77,7 @@ class ProjectNewDialog(QtWidgets.QDialog):
         
     def __create_project(self):
         self.folder = self.ui.projectDirectoryLineEdit.text()
-        self.name = self.ui.projectNameLineEdit.text().replace(' ', '_')
+        self.name = self.ui.projectNameLineEdit.text().replace(" ", "_")
         # TODO: Remove replace above to allow spaces in project names.
         # This does not include the actual project folder, replace below.
         # TODO: check for valid folder needed
@@ -89,7 +89,7 @@ class ProjectNewDialog(QtWidgets.QDialog):
             print("Project name required!")
             return
         try:
-            directory = os.path.join(self.folder, self.name.replace(' ', '_'))
+            directory = os.path.join(self.folder, self.name.replace(" ", "_"))
             if not os.path.exists(directory):
                 os.makedirs(directory)
                 self.directory = directory

@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 30.4.2013
 Updated on 26.8.2013
 
@@ -22,7 +22,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
@@ -35,8 +35,8 @@ from Widgets.MatplotlibTofeHistogramWidget import MatplotlibHistogramWidget
 
 class GlobalSettingsDialog(QtWidgets.QDialog):
     def __init__(self, masses, settings):
-        '''Constructor for the program
-        '''
+        """Constructor for the program
+        """
         super().__init__()
         self.masses = masses
         self.settings = settings
@@ -60,8 +60,8 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         
     
     def __set_values(self):
-        '''Set settings values to dialog.
-        '''
+        """Set settings values to dialog.
+        """
         self.ui.projectPathLineEdit.setText(self.settings.get_project_directory())
         self.ui.lineEdit_eff_directory.setText(
                                        self.settings.get_efficiency_directory())
@@ -125,8 +125,8 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     
     
     def __accept_changes(self):
-        '''Accept changed settings and save.
-        '''
+        """Accept changed settings and save.
+        """
         self.settings.set_project_directory(self.ui.projectPathLineEdit.text())
         self.settings.set_efficiency_directory(
                                            self.ui.lineEdit_eff_directory.text())
@@ -178,8 +178,8 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         
         
     def __change_project_directory(self):
-        '''Change default project directory.
-        '''
+        """Change default project directory.
+        """
         folder = QtWidgets.QFileDialog.getExistingDirectory(self,
             "Select default project directory",
             directory=self.ui.projectPathLineEdit.text())
@@ -188,8 +188,8 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
             
     
     def __change_efficiency_directory(self):
-        '''Change efficiency file directory.
-        '''
+        """Change efficiency file directory.
+        """
         folder = QtWidgets.QFileDialog.getExistingDirectory(self,
             "Select efficiency file directory",
             directory=self.ui.lineEdit_eff_directory.text())
@@ -198,11 +198,11 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         
         
     def __change_element_color(self, button):
-        '''Change color of element button.
+        """Change color of element button.
         
         Args:
             button: QPushButton
-        '''
+        """
         dialog = QtWidgets.QColorDialog(self)
         self.color = dialog.getColor(QtGui.QColor(button.color),
                                      self,
@@ -213,12 +213,12 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     
     
     def __set_button_color(self, button, color_name):
-        '''Change button text color.
+        """Change button text color.
         
         Args:
             button: QPushButton
             color_name: String representing color.
-        '''
+        """
         text_color = "black"
         color = QtGui.QColor(color_name)
         luminance = 0.2126 * color.red() + 0.7152 * color.green()
@@ -231,8 +231,8 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         button.setStyleSheet("background-color: {0}; color: {1};".format(
                                                      color.name(), text_color))
     def __set_cross_sections(self):
-        '''Set cross sections to UI.
-        '''
+        """Set cross sections to UI.
+        """
         flag = self.settings.get_cross_sections()
         self.ui.radio_cross_1.setChecked(flag == 1)
         self.ui.radio_cross_2.setChecked(flag == 2)

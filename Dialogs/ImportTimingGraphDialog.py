@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 6.6.2013
 Updated on 29.8.2013
 
@@ -21,7 +21,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 __author__ = "Timo Konu"
 __versio__ = "1.0"
 
@@ -33,12 +33,12 @@ from Widgets.MatplotlibImportTimingWidget import MatplotlibImportTimingWidget
 
 
 class ImportTimingGraphDialog(QtWidgets.QDialog):
-    '''Timing graph class for importing measurements.
-    '''
+    """Timing graph class for importing measurements.
+    """
     def __init__(self, parent, input_file, output_file, adc_timing_spin,
                  icon_manager, skip_lines, trigger, adc_count, timing,
                  coinc_count):
-        '''Inits timing graph dialog for measurement import.
+        """Inits timing graph dialog for measurement import.
         
         Args:
             parent: An ImportMeasurementsDialog class object.
@@ -52,7 +52,7 @@ class ImportTimingGraphDialog(QtWidgets.QDialog):
             timing: A dictionary of tuples for each ADC.
             coinc_count: An integer representing number of coincidences to be 
                          captured from input_file.
-        '''
+        """
         super().__init__()
         self.parent = parent
         self.img_dir = self.parent.project.directory

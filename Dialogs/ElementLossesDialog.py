@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 27.3.2013
 Updated on 26.8.2013
 
@@ -22,7 +22,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
@@ -154,13 +154,13 @@ class ElementLossesDialog(QtWidgets.QDialog):
 
         
 class ElementLossesWidget(QtWidgets.QWidget):
-    '''Element losses widget which is added to measurement tab.
-    '''
+    """Element losses widget which is added to measurement tab.
+    """
     save_file = "widget_elemental_losses.save"
     
     def __init__(self, parent, reference_cut_file, checked_cuts,
                  partition_count, y_scale):
-        '''Inits widget.
+        """Inits widget.
         
         Args:
             parent: MeasurementTabWidget
@@ -169,7 +169,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
             partition_count: Integer representing how many splits cut files 
                              are divided to.
             y_scale: Integer flag representing how Y axis is scaled.
-        '''
+        """
         try:
             super().__init__()
             self.parent = parent
@@ -210,7 +210,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
             rbs_list = {}
             for cut in self.checked_cuts:
                 filename = os.path.basename(cut)
-                split = filename.split('.')
+                split = filename.split(".")
                 if is_rbs(cut):
                     # This should work for regular cut and split.
                     key = "{0}.{1}.{2}".format(split[1], split[2], split[3])
@@ -243,8 +243,8 @@ class ElementLossesWidget(QtWidgets.QWidget):
 
         
     def delete(self):
-        '''Delete variables and do clean up.
-        '''
+        """Delete variables and do clean up.
+        """
         self.losses = None
         self.progress_bar = None
         self.matplotlib.delete()
@@ -271,8 +271,8 @@ class ElementLossesWidget(QtWidgets.QWidget):
 
     
     def closeEvent(self, evnt):
-        '''Reimplemented method when closing widget.
-        '''
+        """Reimplemented method when closing widget.
+        """
         self.parent.elemental_losses_widget = Null()
         file = os.path.join(self.parent.measurement.directory, self.save_file)
         try:
@@ -284,15 +284,15 @@ class ElementLossesWidget(QtWidgets.QWidget):
         
     
     def save_to_file(self):
-        '''Save object information to file.
-        '''
+        """Save object information to file.
+        """
         reference = self.reference_cut_file.replace(
                 self.parent.measurement.directory + "\\", "")
         files = "\t".join([tmp.replace(self.parent.measurement.directory + "\\",
                                        "") 
                            for tmp in self.checked_cuts])
         file = os.path.join(self.parent.measurement.directory, self.save_file)
-        fh = open(file, 'wt')
+        fh = open(file, "wt")
         fh.write("{0}\n".format(reference))
         fh.write("{0}\n".format(files))
         fh.write("{0}\n".format(self.partition_count))

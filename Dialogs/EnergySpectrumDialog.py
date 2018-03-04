@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 25.3.2013
 Updated on 15.8.2013
 
@@ -22,7 +22,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
@@ -40,11 +40,11 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     checked_cuts = {}
     bin_width = 0.1
     def __init__(self, parent):
-        '''Inits energy spectrum dialog.
+        """Inits energy spectrum dialog.
         
         Args:
             parent: MeasurementTabWidget
-        '''
+        """
         super().__init__()
         self.parent = parent
         self.measurement = self.parent.measurement
@@ -89,8 +89,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
 
     def __accept_params(self):
-        '''Accept given parameters and cut files.
-        '''
+        """Accept given parameters and cut files.
+        """
         width = self.ui.histogramTicksDoubleSpinBox.value()
         use_cuts = []
         root = self.ui.treeWidget.invisibleRootItem()
@@ -139,7 +139,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 logging.getLogger(measurement_name).info(
                     "Created Energy Spectrum. Bin width: {0} Cut files: {1}".format(
                                                              width,
-                                                             ', '.join(use_cuts)))
+                                                             ", ".join(use_cuts)))
                 log_info = "Energy Spectrum graph points:\n"
                 data = self.parent.energy_spectrum_widget.energy_spectrum_data
                 splitinfo = "\n".join(["{0}: {1}".format(key,", ".join("({0};{1})".format(round(v[0], 2), v[1]) \
@@ -154,8 +154,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
 
     def __update_eff_files(self):
-        '''Update efficiency files to UI which are used.
-        '''
+        """Update efficiency files to UI which are used.
+        """
         # This is probably not the most effective way, or practical for 
         # that matter, to get all efficiency files from directory defined
         # in global settings that match the cut files of measurements.
@@ -165,7 +165,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()
         for eff in eff_files:
-            str_element, unused_ext = eff.split('.')
+            str_element, unused_ext = eff.split(".")
             element = Element(str_element)
             for i in range(child_count): 
                 item = root.child(i)
@@ -173,7 +173,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 # selected so user knows exactly what files are used instead
                 # of what files match all the cut files.
                 # if not item.checkState(0): continue
-                cut_element = Element(item.file_name.split('.')[1])
+                cut_element = Element(item.file_name.split(".")[1])
                 mass = cut_element.isotope.mass
                 if not mass:
                     mass = round(masses.get_standard_isotope(cut_element.name),
@@ -191,18 +191,18 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
 
 class EnergySpectrumWidget(QtWidgets.QWidget):
-    '''Energy spectrum widget which is added to measurement tab.
-    '''
+    """Energy spectrum widget which is added to measurement tab.
+    """
     save_file = "widget_energy_spectrum.save"
     
     def __init__(self, parent, use_cuts, width):
-        '''Inits widget.
+        """Inits widget.
         
         Args:
             parent: A MeasurementTabWidget.
             use_cuts: A string list representing Cut files.
             width: A float representing Energy Spectrum histogram's bin width.
-        '''
+        """
         try:
             super().__init__()
             self.parent = parent
@@ -238,7 +238,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             rbs_list = {}
             for cut in self.use_cuts:
                 filename = os.path.basename(cut)
-                split = filename.split('.')
+                split = filename.split(".")
                 if is_rbs(cut):
                     # This should work for regular cut and split.
                     key = "{0}.{1}.{2}".format(split[1], split[2], split[3])
@@ -268,8 +268,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
         
     
     def delete(self):
-        '''Delete variables and do clean up.
-        '''
+        """Delete variables and do clean up.
+        """
         self.energy_spectrum = None
         self.progress_bar = None
         self.matplotlib.delete()
@@ -280,8 +280,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
 
 
     def closeEvent(self, evnt):
-        '''Reimplemented method when closing widget.
-        '''
+        """Reimplemented method when closing widget.
+        """
         self.parent.energy_spectrum_widget = Null()
         file = os.path.join(self.parent.measurement.directory, self.save_file)
         try:
@@ -293,13 +293,13 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
         
         
     def save_to_file(self):
-        '''Save object information to file.
-        '''
+        """Save object information to file.
+        """
         files = "\t".join([tmp.replace(self.parent.measurement.directory + "\\",
                                        "") 
                            for tmp in self.use_cuts])
         file = os.path.join(self.parent.measurement.directory, self.save_file)
-        fh = open(file, 'wt')
+        fh = open(file, "wt")
         fh.write("{0}\n".format(files))
         fh.write("{0}".format(self.width))
         fh.close()

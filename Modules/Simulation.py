@@ -55,6 +55,7 @@ class Simulations:
         Return:
             Returns new simulation or None if it wasn't added
         '''
+        print(simulation_file)
         simulation = None
         simulation_filename = os.path.split(simulation_file)[1]
         simulation_name = os.path.splitext(simulation_filename)
@@ -128,9 +129,9 @@ class Simulation:
         # self.set_loggers()
 
         # The settings that come from the project
-        # self.__project_settings = self.project.settings
+        self.__project_settings = self.project.settings
         # The settings that are individually set for this measurement
-        # self.simulation_settings = Settings(self.directory, self.__project_settings)
+        self.simulation_settings = Settings(self.directory, self.__project_settings)
 
         # Main window's statusbar TODO: Remove GUI stuff.
         self.statusbar = self.project.statusbar

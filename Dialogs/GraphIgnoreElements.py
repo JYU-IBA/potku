@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 27.8.2013
 Updated on 27.8.2013
 
@@ -24,7 +24,7 @@ along with this program (file named 'LICENCE').
 
 MatplotlibDepthProfileWidget handles the drawing and operation of the 
 depth profile graph.
-'''
+"""
 __author__ = "Timo Konu"
 __versio__ = "1.0"
 
@@ -34,12 +34,12 @@ from PyQt5 import QtCore, uic, QtWidgets
 
 class GraphIgnoreElements(QtWidgets.QDialog):
     def __init__(self, elements, ignored):
-        '''Init the dialog.
+        """Init the dialog.
         
         Args:
             elements: A list of elements in Depth Profile.
             ignored: A list of elements ignored previously for ratio calculation.
-        '''
+        """
         super().__init__()
         self.__elements = elements
         self.ignored_elements = ignored
@@ -51,8 +51,8 @@ class GraphIgnoreElements(QtWidgets.QDialog):
         
     
     def __set_values(self):
-        '''Set elements to tree widget.
-        '''
+        """Set elements to tree widget.
+        """
         for element in self.__elements:
             item = QtWidgets.QTreeWidgetItem([str(element)])
             item.element = str(element)
@@ -64,8 +64,8 @@ class GraphIgnoreElements(QtWidgets.QDialog):
     
     
     def __ok_button(self):
-        '''Accept selected elements to be used in ratio calculation.
-        '''
+        """Accept selected elements to be used in ratio calculation.
+        """
         self.ignored_elements.clear()
         root = self.tree_elements.invisibleRootItem()
         child_count = root.childCount()

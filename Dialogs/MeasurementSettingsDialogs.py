@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 17.4.2013
 Updated on 26.8.2013
 
@@ -22,7 +22,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
@@ -38,12 +38,12 @@ from Dialogs.CalibrationDialog import CalibrationDialog
 
 class MeasurementUnitSettings(QtWidgets.QDialog):
     def __init__(self, measurement_settings, masses):
-        '''Constructor for the program
+        """Constructor for the program
         
         Args:
             measurement_settings: Settings class object
             masses: Reference to Masses class object.
-        '''
+        """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
                               "ui_measurement_measuring_unit_settings.ui"), self)
@@ -116,8 +116,8 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
 
         
     def __load_file(self):
-        '''Opens file dialog and loads and shows selected ini file's values.
-        '''
+        """Opens file dialog and loads and shows selected ini file's values.
+        """
         filename = open_file_dialog(self, self.default_folder,
                                     "Load measuring unit settings file",
                                     "Settings file (*.ini)")
@@ -131,8 +131,8 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
         
         
     def __save_file(self):
-        '''Opens file dialog and sets and saves the settings to a ini file.
-        '''
+        """Opens file dialog and sets and saves the settings to a ini file.
+        """
         filename = save_file_dialog(self, self.default_folder,
                                     "Save measuring unit settings file",
                                     "Settings file (*.ini)")
@@ -143,8 +143,8 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
         
         
     def update_and_close_settings(self):
-        '''Updates measuring settings values with the dialog's values and saves them to default ini file.
-        '''
+        """Updates measuring settings values with the dialog's values and saves them to default ini file.
+        """
         try:
             if self.ui.useProjectSettingsValuesCheckBox.isChecked():
                 use_settings = "PROJECT"
@@ -168,11 +168,11 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
             
             
     def __change_element(self, button):
-        '''Opens element selection dialog and loads selected element's isotopes to a combobox.
+        """Opens element selection dialog and loads selected element's isotopes to a combobox.
         
         Args:
             button: button whose text is changed accordingly to the made selection.
-        '''
+        """
         dialog = ElementSelectionDialog()
         if dialog.element != None:
             button.setText(dialog.element)
@@ -190,11 +190,11 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
 
 class CalibrationSettings(QtWidgets.QDialog):
     def __init__(self, measurement):
-        '''Constructor for the program
+        """Constructor for the program
         
         Args:
             measurement: Measurement class object.
-        '''
+        """
         super().__init__()
         self.default_folder = os.path.curdir
         self.measurement = measurement
@@ -254,8 +254,8 @@ class CalibrationSettings(QtWidgets.QDialog):
         
         
     def __load_file(self):
-        '''Opens file dialog and loads and shows selected ini file's values.
-        '''
+        """Opens file dialog and loads and shows selected ini file's values.
+        """
         filename = open_file_dialog(self, self.default_folder,
                                     "Load calibration settings file",
                                     "Settings file (*.ini)")
@@ -266,8 +266,8 @@ class CalibrationSettings(QtWidgets.QDialog):
         
         
     def __save_file(self):
-        '''Opens file dialog and sets and saves the settings to a ini file.
-        '''
+        """Opens file dialog and sets and saves the settings to a ini file.
+        """
         filename = save_file_dialog(self, self.default_folder,
                                     "Save calibration settings file",
                                     "Settings file (*.ini)")
@@ -278,9 +278,9 @@ class CalibrationSettings(QtWidgets.QDialog):
         
         
     def update_and_close_settings(self):
-        '''Updates measuring settings values with the dialog's values and saves
+        """Updates measuring settings values with the dialog's values and saves
         them to default ini file.
-        '''
+        """
         try:
             if self.ui.useProjectSettingsValuesCheckBox.isChecked():
                 use_settings = "PROJECT"
@@ -306,17 +306,17 @@ class CalibrationSettings(QtWidgets.QDialog):
 
 class DepthProfileSettings(QtWidgets.QDialog):
     def __init__(self, measurement_settings):
-        '''Constructor for the program
+        """Constructor for the program
         
         Args:
             measurement_settings:    
-        '''
+        """
         super().__init__()
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
 
         self.default_folder = os.path.curdir
-        self.ui = uic.loadUi('ui_files/ui_measurement_depth_profile_settings.ui', self)
+        self.ui = uic.loadUi("ui_files/ui_measurement_depth_profile_settings.ui", self)
         
         self.__measurement_settings = measurement_settings
         self.project_settings = measurement_settings.project_settings.\
@@ -360,8 +360,8 @@ class DepthProfileSettings(QtWidgets.QDialog):
         
         
     def __load_file(self):
-        '''Opens file dialog and loads and shows selected ini file's values.
-        '''
+        """Opens file dialog and loads and shows selected ini file's values.
+        """
         filename = open_file_dialog(self, self.default_folder,
                                     "Load calibration settings file",
                                     "Settings file (*.ini)")
@@ -372,8 +372,8 @@ class DepthProfileSettings(QtWidgets.QDialog):
         
         
     def __save_file(self):
-        '''Opens file dialog and sets and saves the settings to a ini file.
-        '''
+        """Opens file dialog and sets and saves the settings to a ini file.
+        """
         filename = save_file_dialog(self, self.default_folder,
                                     "Save calibration settings file",
                                     "Settings file (*.ini)")
@@ -384,8 +384,8 @@ class DepthProfileSettings(QtWidgets.QDialog):
         
         
     def update_and_close_settings(self):
-        '''Updates measuring settings values with the dialog's values and saves them to default ini file.
-        '''
+        """Updates measuring settings values with the dialog's values and saves them to default ini file.
+        """
         try:
             if self.ui.useProjectSettingsValuesCheckBox.isChecked():
                 use_settings = "PROJECT"

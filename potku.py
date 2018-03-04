@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 21.3.2013
 Updated on 27.8.2013
 
@@ -22,7 +22,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
@@ -48,12 +48,12 @@ from Widgets.SimulationTabWidget import SimulationTabWidget
 
 
 class Potku(QtWidgets.QMainWindow):
-    '''Potku is main window class.
-    '''
+    """Potku is main window class.
+    """
     
     def __init__(self):
-        '''Init main window for Potku.
-        '''
+        """Init main window for Potku.
+        """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_main_window.ui"), self)
         self.title = self.ui.windowTitle()
@@ -233,8 +233,8 @@ class Potku(QtWidgets.QMainWindow):
                                            QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
     
     def delete_selections(self):
-        '''Deletes the selected tree widget items.
-        '''
+        """Deletes the selected tree widget items.
+        """
         # TODO: Memory isn't released correctly. Maybe because of matplotlib.
         # TODO: Remove 'measurement_tab_widgets' variable and add tab reference
         # to treewidgetitem.
@@ -290,12 +290,12 @@ class Potku(QtWidgets.QMainWindow):
             
 
     def focus_selected_tab(self, clicked_item):
-        '''Focus to selected tab (in tree widget) and if it isn't open, open it.
+        """Focus to selected tab (in tree widget) and if it isn't open, open it.
         
         Args:
             clicked_item: TreeWidgetItem with tab_id attribute (int) that connects
             the item to the corresponding MeasurementTabWidget
-        '''
+        """
         # TODO: This doesn't work. There is no list/dictionary of references to the
         # tab widgets once they are removed from the QTabWidget. 
         # tab = self.project_measurements[clicked_item.tab_id]
@@ -369,18 +369,18 @@ class Potku(QtWidgets.QMainWindow):
         else:
             self.panel_shown = not self.panel_shown    
         if self.panel_shown:
-            self.ui.hidePanelButton.setText('<')
+            self.ui.hidePanelButton.setText("<")
         else:
-            self.ui.hidePanelButton.setText('>')
+            self.ui.hidePanelButton.setText(">")
 
         self.ui.frame.setVisible(self.panel_shown)
 
 
     def import_pelletron(self):
-        '''Import Pelletron's measurements into project.
+        """Import Pelletron's measurements into project.
         
         Import Pelletron's measurements from 
-        '''
+        """
         if not self.project: 
             return
         import_dialog = ImportMeasurementsDialog(self.project,
@@ -392,10 +392,10 @@ class Potku(QtWidgets.QMainWindow):
             
             
     def import_binary(self):
-        '''Import binary measurements into project.
+        """Import binary measurements into project.
         
         Import binary measurements from 
-        '''
+        """
         if not self.project: 
             return
         import_dialog = ImportDialogBinary(self.project,
@@ -422,12 +422,12 @@ class Potku(QtWidgets.QMainWindow):
 
 
     def load_project_measurements(self, measurements=[]):
-        '''Load measurement files in the project.
+        """Load measurement files in the project.
         
         Args:
             measurements: A list representing loadable measurements when importing
                           measurements to the project.
-        '''
+        """
         if measurements:
             measurements_in_project = measurements
             load_data = True
@@ -449,14 +449,14 @@ class Potku(QtWidgets.QMainWindow):
         progress_bar.hide()
 
     def load_project_simulations(self, simulations=[]):
-        '''Load simulation files in the project.
+        """Load simulation files in the project.
 
         Args:
             simulations: A list representing loadable simulation when importing
                           simulation to the project.
-        '''
+        """
         if simulations:
-            simulation_in_project = simulations
+            simulations_in_project = simulations
             load_data = True
         else:
             simulations_in_project = self.project.get_simulation_files()
@@ -465,9 +465,9 @@ class Potku(QtWidgets.QMainWindow):
         self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
 
-        count = len(simulation_in_project)
+        count = len(simulations_in_project)
         dirtyinteger = 0
-        for simulation_file in simulation_in_project:
+        for simulation_file in simulations_in_project:
             self.__add_new_tab("simulation", simulation_file, progress_bar,
                                dirtyinteger, count, load_data=load_data)
             dirtyinteger += 1
@@ -502,8 +502,8 @@ class Potku(QtWidgets.QMainWindow):
 
 
     def open_about_dialog(self):
-        '''Show Potku program about dialog.
-        '''
+        """Show Potku program about dialog.
+        """
         AboutDialog()
     
     
@@ -514,9 +514,9 @@ class Potku(QtWidgets.QMainWindow):
         
     
     def open_new_measurement(self):
-        '''Opens file an open dialog and if filename is given opens new measurement 
+        """Opens file an open dialog and if filename is given opens new measurement 
         from it.
-        '''
+        """
         if not self.project: 
             return
         filename = open_file_dialog(self,
@@ -563,8 +563,8 @@ class Potku(QtWidgets.QMainWindow):
 
 
     def open_project(self):
-        '''Shows a dialog to open a project.
-        '''
+        """Shows a dialog to open a project.
+        """
         file = open_file_dialog(self,
                                 self.settings.get_project_directory_last_open(),
                                 "Open an existing project", "Project file (*.proj)")
@@ -584,6 +584,7 @@ class Potku(QtWidgets.QMainWindow):
             self.settings.set_project_directory_last_open(folder)
             
             self.load_project_measurements()
+            self.load_project_simulations()
             self.__remove_introduction_tab()
             self.__set_project_buttons_enabled(True)
             
@@ -599,9 +600,12 @@ class Potku(QtWidgets.QMainWindow):
                         self.project.set_master(measurement)
                         break
             root = self.treeWidget.invisibleRootItem()
-            root_child_count = root.childCount()
-            for i in range(root_child_count):
-                item = root.child(i)
+            # root_child_count = root.childCount()
+            measurement_items = root.child(0)
+            simulation_items = root.child(1)
+
+            for i in range(measurement_items.childCount()):
+                item = measurement_items.child(i)
                 tab_widget = self.tab_widgets[item.tab_id]
                 tab_name = tab_widget.measurement.measurement_name
                 if master_measurement_name and \
@@ -612,8 +616,12 @@ class Potku(QtWidgets.QMainWindow):
                     item.setText(0, tab_name)
                 else:
                     item.setText(0, "{0} (slave)".format(tab_name))
-                
-                       
+
+            for i in range(simulation_items.childCount()):
+                item = root.child(i)
+                tab_widget = self.tab_widgets[item.tab_id]
+                tab_name = tab_widget.simulation.simulation_name
+                item.setText(0, tab_name)
                 
 
     def open_project_settings(self):
@@ -623,21 +631,21 @@ class Potku(QtWidgets.QMainWindow):
           
 
     def remove_tab(self, tab_index):
-        '''Remove tab which's close button has been pressed.
+        """Remove tab which's close button has been pressed.
         
         Args:
             tab_index: Integer representing index of the current tab
-        '''
+        """
         self.ui.tabs.removeTab(tab_index)
     
 
     def __add_measurement_to_tree(self, measurement_name, load_data):
-        '''Add measurement to tree where it can be opened.
+        """Add measurement to tree where it can be opened.
         
         Args:
             measurement_name: A string representing measurement's name.
             load_data: A boolean representing if measurement data is loaded.
-        '''
+        """
         tree_item = QtWidgets.QTreeWidgetItem()
         tree_item.setText(0, measurement_name)
         tree_item.tab_id = self.tab_id
@@ -650,12 +658,12 @@ class Potku(QtWidgets.QMainWindow):
         self.measurements_item.addChild(tree_item)
 
     def __add_simulation_to_tree(self, simulation_name, load_data):
-        '''Add measurement to tree where it can be opened.
+        """Add measurement to tree where it can be opened.
 
         Args:
             measurement_name: A string representing measurement's name.
             load_data: A boolean representing if measurement data is loaded.
-        '''
+        """
         tree_item = QtWidgets.QTreeWidgetItem()
         tree_item.setText(0, simulation_name)
         tree_item.tab_id = self.tab_id
@@ -670,7 +678,7 @@ class Potku(QtWidgets.QMainWindow):
         
     def __add_new_tab(self, type, filename, progress_bar=None,
                       file_current=0, file_count=1, load_data=False):
-        '''Add new tab into TabWidget. TODO: Simulation included. Should be changed.
+        """Add new tab into TabWidget. TODO: Simulation included. Should be changed.
         
         Adds a new tab into program's tabWidget. Makes a new measurement for 
         said tab.
@@ -685,7 +693,7 @@ class Potku(QtWidgets.QMainWindow):
             load_data: A boolean representing whether to load data or not. This is
                        to save time when loading a project and we do not want to
                        load every measurement.
-        '''
+        """
         if progress_bar:
             progress_bar.setValue((100 / file_count) * file_current)
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
@@ -746,12 +754,12 @@ class Potku(QtWidgets.QMainWindow):
     
     
     def __change_tab_icon(self, tree_item, icon="folder_open.svg"):
-        '''Change tab icon in QTreeWidgetItem.
+        """Change tab icon in QTreeWidgetItem.
         
         Args:
             tree_item: A QtWidgets.QTreeWidgetItem class object.
             icon: A string representing the icon name.
-        '''
+        """
         tree_item.setIcon(0, self.icon_manager.get_icon(icon))
     
     
@@ -1028,14 +1036,14 @@ class Potku(QtWidgets.QMainWindow):
 
 
     def __tab_exists(self, tab_id):
-        '''Check if there is an open tab with the tab_id (identifier).
+        """Check if there is an open tab with the tab_id (identifier).
         
         Args:
             tab_id: Identifier (int) for the MeasurementTabWidget
             
         Returns:
             True if tab is found, False if not
-        '''
+        """
         # Try to find the clicked item from QTabWidget.
         for i in range(0, self.ui.tabs.count()):
             if self.ui.tabs.widget(i).tab_id == tab_id:
@@ -1044,16 +1052,16 @@ class Potku(QtWidgets.QMainWindow):
         
         
     def __open_manual(self):
-        '''Open user manual.
-        '''
-        manual_filename = os.path.join('manual', 'Potku-manual.pdf')
+        """Open user manual.
+        """
+        manual_filename = os.path.join("manual", "Potku-manual.pdf")
         used_os = platform.system()
-        if used_os == 'Windows':
+        if used_os == "Windows":
             os.startfile(manual_filename)
-        elif used_os == 'Linux':
-            subprocess.call(('xdg-open', manual_filename))
-        elif used_os == 'Darwin':
-            subprocess.call(('open', manual_filename))
+        elif used_os == "Linux":
+            subprocess.call(("xdg-open", manual_filename))
+        elif used_os == "Darwin":
+            subprocess.call(("open", manual_filename))
 
 
 def main():
