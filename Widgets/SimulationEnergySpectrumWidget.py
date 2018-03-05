@@ -3,10 +3,13 @@
 Created on 5.3.2018
 Updated on 5.3.2018
 '''
+from Widgets.MatplotlibEnergySpectrumWidget import MatplotlibEnergySpectrumWidget
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
 from PyQt5 import QtWidgets, uic
 import sys, logging, os
+from Widgets.MatplotlibEnergySpectrumWidget import MatplotlibEnergySpectrumWidget
 
 
 class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
@@ -21,6 +24,8 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
             self.ui.setWindowTitle(title)
             # This causes an exception, since there is no proper file read into the parent's simulation parameter
             # self.simulation = self.parent.simulation
+
+            self.ui.saveSimuEnergySpectraButton.clicked.connect(self.save_spectra)
         except:
             import traceback
             msg = "Could not create Energy Spectrum graph. "
@@ -30,10 +35,14 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
                                  err_file,
                                  str(sys.exc_info()[2].tb_lineno)])
             msg += str_err
-            logging.getLogger(self.simulation.simulation_name).error(msg)
+            # logging.getLogger(self.simulation.simulation_name).error(msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
         finally:
             if self.progress_bar:
                 self.measurement.statusbar.removeWidget(self.progress_bar)
                 self.progress_bar.hide()
+
+    def save_spectra(self):
+        QtWidgets.QMessageBox.critical(self, "Error", "Not implemented",
+                                       QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
