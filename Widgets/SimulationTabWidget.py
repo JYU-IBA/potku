@@ -393,23 +393,23 @@ class SimulationTabWidget(QtWidgets.QWidget):
     def __set_icons(self):
         """Adds icons to UI elements.
         """
-        self.icon_manager.set_icon(self.ui.measuringUnitSettingsButton,
-                                   "measuring_unit_settings.svg")
-        self.icon_manager.set_icon(self.ui.calibrationSettingsButton,
-                                   "calibration_settings.svg")
-        self.icon_manager.set_icon(self.ui.depthProfileSettingsButton, "gear.svg")
-        self.icon_manager.set_icon(self.ui.makeSelectionsButton,
-                                   "amarok_edit.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.saveCutsButton,
-                                   "save_all.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.analyzeElementLossesButton,
-                                   "elemental_losses_icon.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.energySpectrumButton,
-                                   "energy_spectrum_icon.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.createDepthProfileButton,
-                                   "depth_profile.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.hideShowSettingsButton,
-                                   "show_icon.svg", size=(30, 30))
+        # self.icon_manager.set_icon(self.ui.measuringUnitSettingsButton,
+        #                            "measuring_unit_settings.svg")
+        # self.icon_manager.set_icon(self.ui.calibrationSettingsButton,
+        #                            "calibration_settings.svg")
+        # self.icon_manager.set_icon(self.ui.depthProfileSettingsButton, "gear.svg")
+        # self.icon_manager.set_icon(self.ui.makeSelectionsButton,
+        #                            "amarok_edit.svg", size=(30, 30))
+        # self.icon_manager.set_icon(self.ui.saveCutsButton,
+        #                            "save_all.svg", size=(30, 30))
+        # self.icon_manager.set_icon(self.ui.analyzeElementLossesButton,
+        #                            "elemental_losses_icon.svg", size=(30, 30))
+        # self.icon_manager.set_icon(self.ui.energySpectrumButton,
+        #                            "energy_spectrum_icon.svg", size=(30, 30))
+        # self.icon_manager.set_icon(self.ui.createDepthProfileButton,
+        #                            "depth_profile.svg", size=(30, 30))
+        # self.icon_manager.set_icon(self.ui.hideShowSettingsButton,
+        #                            "show_icon.svg", size=(30, 30))
 
 
 
