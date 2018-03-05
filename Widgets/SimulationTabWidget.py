@@ -9,15 +9,14 @@ import os, logging, sys
 from PyQt5 import QtCore, uic, QtWidgets
 
 from Dialogs.ElementLossesDialog import ElementLossesDialog, ElementLossesWidget
-from Dialogs.EnergySpectrumDialog import EnergySpectrumParamsDialog, \
-    EnergySpectrumWidget
+from Dialogs.EnergySpectrumDialog import EnergySpectrumParamsDialog, EnergySpectrumWidget
 from Dialogs.DepthProfileDialog import DepthProfileDialog, DepthProfileWidget
 from Modules.Element import Element
 from Modules.Null import Null
 from Modules.UiLogHandlers import customLogHandler
 from Widgets.LogWidget import LogWidget
 from Widgets.SimulationDepthProfileWidget import SimulationDepthProfileWidget
-
+from Widgets.SimulationEnergySpectrumWidget import SimulationEnergySpectrumWidget
 
 class SimulationTabWidget(QtWidgets.QWidget):
     """Tab widget where simulation stuff is added.
@@ -53,7 +52,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
 
         # Set up settings and energy spectra connections within the tab UI
         self.ui.detectorSettingsButton.clicked.connect(self.open_detector_settings)
-        self.ui.energySpectrumButton.clicked.connect(self.create_energy_spectrum)
+        self.ui.energySpectrumButton.clicked.connect(lambda: self.create_energy_spectrum(self))
 
     def add_widget(self, widget, minimized=None, has_close_button=True, icon=None):
         """ Adds a new widget to current simulation tab.
@@ -160,9 +159,10 @@ class SimulationTabWidget(QtWidgets.QWidget):
         # Mac requires event processing to show progress bar and its
         # process.
 
-    def create_energy_spectrum(self):
+    def create_energy_spectrum(self, parent):
         # TODO: open simulation energy spectra
-        return
+        self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self)
+        self.add_widget(self.energy_spectrum_widget)
             
     def del_widget(self, widget):
         '''Delete a widget from current (measurement) tab.
