@@ -12,14 +12,10 @@ from Dialogs.ElementLossesDialog import ElementLossesDialog, ElementLossesWidget
 from Dialogs.EnergySpectrumDialog import EnergySpectrumParamsDialog, \
     EnergySpectrumWidget
 from Dialogs.DepthProfileDialog import DepthProfileDialog, DepthProfileWidget
-from Dialogs.MeasurementSettingsDialogs import CalibrationSettings
-from Dialogs.MeasurementSettingsDialogs import DepthProfileSettings
-from Dialogs.MeasurementSettingsDialogs import MeasurementUnitSettings
 from Modules.Element import Element
 from Modules.Null import Null
 from Modules.UiLogHandlers import customLogHandler
 from Widgets.LogWidget import LogWidget
-from Widgets.TofeHistogramWidget import TofeHistogramWidget
 from Widgets.SimulationDepthProfileWidget import SimulationDepthProfileWidget
 
 
@@ -55,6 +51,9 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.panel_shown = True
         self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
 
+        # Set up settings and energy spectra connections within the tab UI
+        self.ui.detectorSettingsButton.clicked.connect(self.open_detector_settings)
+        self.ui.energySpectrumButton.clicked.connect(self.create_energy_spectrum)
 
     def add_widget(self, widget, minimized=None, has_close_button=True, icon=None):
         """ Adds a new widget to current simulation tab.
@@ -119,7 +118,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.__read_log_file(log_default, 1)
         self.__read_log_file(log_error, 0)
     
-    
     def add_UI_logger(self, log_widget):
         """ Adds handlers to simulation logger so the logger can log the events to
         the user interface too.
@@ -135,7 +133,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
                                                 defaultformat,
                                                 log_widget)
         logger.addHandler(widgetlogger_default)
-        
     
     def check_previous_state_files(self, progress_bar=Null(), directory=None):
         '''Check if saved state for Elemental Losses, Energy Spectrum or Depth 
@@ -162,7 +159,10 @@ class SimulationTabWidget(QtWidgets.QWidget):
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-            
+
+    def create_energy_spectrum(self):
+        # TODO: open simulation energy spectra
+        return
             
     def del_widget(self, widget):
         '''Delete a widget from current (measurement) tab.
@@ -176,7 +176,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
         except:
             # If window was manually closed, do nothing.
             pass
-        
     
     def hide_panel(self, enable_hide=None):
         """Sets the frame (including all the tool buttons) visible.
@@ -196,7 +195,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
             self.ui.hidePanelButton.setText('<')
 
         self.ui.frame.setVisible(self.panel_shown)
-    
     
     def make_depth_profile(self, directory, name):
         """Make depth profile from loaded lines from saved file.
@@ -242,7 +240,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
         except:  # We do not need duplicate error logs, log in widget instead
             print(sys.exc_info())  # TODO: Remove this.
 
-
     def make_elemental_losses(self, directory, name):
         """Make elemental losses from loaded lines from saved file.
 
@@ -276,7 +273,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
             self.add_widget(self.elemental_losses_widget, icon=icon)
         except:  # We do not need duplicate error logs, log in widget instead
             print(sys.exc_info())  # TODO: Remove this.
-
 
     def make_energy_spectrum(self, directory, name):
         """Make energy spectrum from loaded lines from saved file.
@@ -316,7 +312,10 @@ class SimulationTabWidget(QtWidgets.QWidget):
     #     if self.energy_spectrum_widget != previous and \
     #         type(self.energy_spectrum_widget) != Null:
     #         self.energy_spectrum_widget.save_to_file()
-    
+
+    def open_detector_settings(self):
+        QtWidgets.QMessageBox.critical(self, "Error", "Detector or other settings dialogs not yet implemented!",
+                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
     
     def __confirm_filepath(self, filepath, name, m_name):
         """Confirm whether filepath exist and changes it accordingly.
@@ -379,8 +378,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
                         self.log.add_error(line.strip())                          
                     else:
                         self.log.add_text(line.strip())  
-    
-    
+
     def __rreplace(self, s, old, new, occurrence):
         """Replace from last occurrence.
         
@@ -393,23 +391,23 @@ class SimulationTabWidget(QtWidgets.QWidget):
     def __set_icons(self):
         """Adds icons to UI elements.
         """
-        self.icon_manager.set_icon(self.ui.measuringUnitSettingsButton,
-                                   "measuring_unit_settings.svg")
-        self.icon_manager.set_icon(self.ui.calibrationSettingsButton,
-                                   "calibration_settings.svg")
-        self.icon_manager.set_icon(self.ui.depthProfileSettingsButton, "gear.svg")
-        self.icon_manager.set_icon(self.ui.makeSelectionsButton,
-                                   "amarok_edit.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.saveCutsButton,
-                                   "save_all.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.analyzeElementLossesButton,
-                                   "elemental_losses_icon.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.energySpectrumButton,
-                                   "energy_spectrum_icon.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.createDepthProfileButton,
-                                   "depth_profile.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.hideShowSettingsButton,
-                                   "show_icon.svg", size=(30, 30))
+        # self.icon_manager.set_icon(self.ui.measuringUnitSettingsButton,
+        #                            "measuring_unit_settings.svg")
+        # self.icon_manager.set_icon(self.ui.calibrationSettingsButton,
+        #                            "calibration_settings.svg")
+        # self.icon_manager.set_icon(self.ui.depthProfileSettingsButton, "gear.svg")
+        # self.icon_manager.set_icon(self.ui.makeSelectionsButton,
+        #                            "amarok_edit.svg", size=(30, 30))
+        # self.icon_manager.set_icon(self.ui.saveCutsButton,
+        #                            "save_all.svg", size=(30, 30))
+        # self.icon_manager.set_icon(self.ui.analyzeElementLossesButton,
+        #                            "elemental_losses_icon.svg", size=(30, 30))
+        # self.icon_manager.set_icon(self.ui.energySpectrumButton,
+        #                            "energy_spectrum_icon.svg", size=(30, 30))
+        # self.icon_manager.set_icon(self.ui.createDepthProfileButton,
+        #                            "depth_profile.svg", size=(30, 30))
+        # self.icon_manager.set_icon(self.ui.hideShowSettingsButton,
+        #                            "show_icon.svg", size=(30, 30))
 
 
 
