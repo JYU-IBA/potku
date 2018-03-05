@@ -1058,12 +1058,16 @@ class Potku(QtWidgets.QMainWindow):
         """
         manual_filename = os.path.join("manual", "Potku-manual.pdf")
         used_os = platform.system()
-        if used_os == "Windows":
-            os.startfile(manual_filename)
-        elif used_os == "Linux":
-            subprocess.call(("xdg-open", manual_filename))
-        elif used_os == "Darwin":
-            subprocess.call(("open", manual_filename))
+        try:
+            if used_os == "Windows":
+                os.startfile(manual_filename)
+            elif used_os == "Linux":
+                subprocess.call(("xdg-open", manual_filename))
+            elif used_os == "Darwin":
+                subprocess.call(("open", manual_filename))
+        except FileNotFoundError:
+            QtWidgets.QMessageBox.question(self, "Not found", "There is no manual to be found!",
+                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
 
 def main():
