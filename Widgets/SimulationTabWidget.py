@@ -34,8 +34,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         """
         super().__init__()
         self.tab_id = tab_id
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_simulation_tab.ui"), self)
+        self.ui = uic.loadUi(os.path.join("ui_files", "ui_simulation_tab.ui"), self)
         self.simulation = simulation
         self.masses = masses
         self.icon_manager = icon_manager
@@ -160,7 +159,10 @@ class SimulationTabWidget(QtWidgets.QWidget):
         # process.
 
     def create_energy_spectrum(self, parent):
-        # TODO: open simulation energy spectra
+        """ Create energy spectrum widget and add it to the view.
+        Args:
+            parent: Parent of the energy spectrum widget.
+        """
         self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self)
         self.add_widget(self.energy_spectrum_widget)
             
@@ -314,6 +316,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
     #         self.energy_spectrum_widget.save_to_file()
 
     def open_detector_settings(self):
+        """ Open the detector settings dialog.
+        """
         QtWidgets.QMessageBox.critical(self, "Error", "Detector or other settings dialogs not yet implemented!",
                                            QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
     

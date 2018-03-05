@@ -10,8 +10,14 @@ import sys, logging, os
 
 
 class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
+    """ Simulation energy spectrum widget which is added to the simulation tab.
+    """
 
     def __init__(self, parent):
+        """ Initialize the energy spectrum widget.
+        Args:
+            parent: Parent of the energy spectrum widget (SimulationTabWidget)
+        """
         try:
             super().__init__()
             self.ui = uic.loadUi(os.path.join("ui_files", "ui_energy_spectrum_simu.ui"), self)
@@ -39,5 +45,7 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
                 self.progress_bar.hide()
 
     def save_spectra(self):
+        """ Save the create denergy spectra.
+        """
         QtWidgets.QMessageBox.critical(self, "Error", "Not implemented",
                                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
