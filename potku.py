@@ -747,7 +747,7 @@ class Potku(QtWidgets.QMainWindow):
                 tab.data_loaded = load_data
                 if load_data:
                     simulation.load_data()
-                    # tab.add_simulation_depth_profile()
+                    tab.add_simulation_depth_profile()
                     self.ui.tabs.addTab(tab, simulation.simulation_name)
                     self.ui.tabs.setCurrentWidget(tab)
 
