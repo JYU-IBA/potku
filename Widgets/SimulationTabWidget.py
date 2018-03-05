@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 1.3.2018
-Updated on 1.3.2018
+Updated on 5.3.2018
 '''
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
@@ -103,30 +103,30 @@ class SimulationTabWidget(QtWidgets.QWidget):
         # self.__set_cut_button_enabled(self.measurement.selector.selections)
     
     def add_log(self):        
-        """Add the simulation log to simulation tab widget.
+        """ Add the simulation log to simulation tab widget.
         
         Checks also if there's already some logging for this measurement and appends 
         the text field of the user interface with this log.
         """
         # TODO: Perhaps add a simulation log.
-        # self.log = LogWidget()
-        # self.add_widget(self.log, minimized=True, has_close_button=False)
-        # self.add_UI_logger(self.log)
+        self.log = LogWidget()
+        self.add_widget(self.log, minimized=True, has_close_button=False)
+        self.add_UI_logger(self.log)
         
         # Checks for log file and appends it to the field.
-        # log_default = os.path.join(self.measurement.directory, 'default.log')
-        # log_error = os.path.join(self.measurement.directory, 'errors.log')
-        # self.__read_log_file(log_default, 1)
-        # self.__read_log_file(log_error, 0)
+        log_default = os.path.join(self.simulation.directory, 'default.log')
+        log_error = os.path.join(self.simulation.directory, 'errors.log')
+        self.__read_log_file(log_default, 1)
+        self.__read_log_file(log_error, 0)
     
     
     def add_UI_logger(self, log_widget):
-        '''Adds handlers to simulation logger so the logger can log the events to
+        """ Adds handlers to simulation logger so the logger can log the events to
         the user interface too.
         
         log_widget specifies which ui element will handle the logging. That should 
         be the one which is added to this SimulationTabWidget.
-        '''
+        """
         logger = logging.getLogger(self.simulation.simulation_name)
         defaultformat = logging.Formatter(
                                   '%(asctime)s - %(levelname)s - %(message)s',
@@ -241,11 +241,11 @@ class SimulationTabWidget(QtWidgets.QWidget):
             self.add_widget(self.depth_profile_widget, icon=icon)
         except:  # We do not need duplicate error logs, log in widget instead
             print(sys.exc_info())  # TODO: Remove this.
-        
-        
+
+
     def make_elemental_losses(self, directory, name):
         """Make elemental losses from loaded lines from saved file.
-        
+
         Args:
             directory: A string representing directory.
             name: A string representing measurement's name.
@@ -276,11 +276,11 @@ class SimulationTabWidget(QtWidgets.QWidget):
             self.add_widget(self.elemental_losses_widget, icon=icon)
         except:  # We do not need duplicate error logs, log in widget instead
             print(sys.exc_info())  # TODO: Remove this.
-    
-    
+
+
     def make_energy_spectrum(self, directory, name):
         """Make energy spectrum from loaded lines from saved file.
-        
+
         Args:
             directory: A string representing directory.
             name: A string representing measurement's name.
@@ -319,13 +319,13 @@ class SimulationTabWidget(QtWidgets.QWidget):
     
     
     def __confirm_filepath(self, filepath, name, m_name):
-        '''Confirm whether filepath exist and changes it accordingly.
+        """Confirm whether filepath exist and changes it accordingly.
         
         Args:
             filepath: A string representing a filepath.
             name: A string representing origin measurement's name.
             m_name: A string representing measurement's name where graph is created.
-        '''
+        """
         if type(filepath) == str:
             # Replace two for measurement and cut file's name. Not all, in case 
             # the project or directories above it have same name.
@@ -347,17 +347,13 @@ class SimulationTabWidget(QtWidgets.QWidget):
                 except:
                     newfiles.append(os.path.join(self.simulation.directory, file))
             return newfiles
-        
-        
-
-
 
     def __load_file(self, file):
-        '''Load file
+        """Load file
         
         Args:
             file: A string representing full filepath to the file.
-        '''
+        """
         lines = []
         try:
             with open(file, "rt") as fp:
@@ -366,16 +362,16 @@ class SimulationTabWidget(QtWidgets.QWidget):
         except:
             pass
         return lines
-        
+
     def __read_log_file(self, file, state=1):
-        '''Read the log file into the log window.
+        """Read the log file into the log window.
         
         Args:
             file: A string representing log file.
             state: An integer (0, 1) representing what sort of log we read.
                    0 = error
                    1 = text (default)
-        '''
+        """
         if os.path.exists(file):
             with open(file) as log_file:
                 for line in log_file:
@@ -393,18 +389,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         """
         li = s.rsplit(old, occurrence)
         return new.join(li)
-    
-    
-    def __set_cut_button_enabled(self, selections):
-        """Enables save cuts button if the given selections list's lenght is not 0.
-        Otherwise disable.
-        
-        Args:
-            selections: list of Selection objects
-        """
-        self.ui.saveCutsButton.setEnabled(len(selections))
-            
-            
+
     def __set_icons(self):
         """Adds icons to UI elements.
         """
