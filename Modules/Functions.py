@@ -389,5 +389,3 @@ def md5_for_file(f, block_size=2 ** 20):
         md5.update(data.encode('utf8'))
     return md5.digest()
 
-
-

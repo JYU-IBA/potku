@@ -30,6 +30,7 @@ from os.path import join
 from PyQt5 import QtCore, uic, QtWidgets
 
 from Widgets.MatplotlibTofeHistogramWidget import MatplotlibHistogramWidget
+from Dialogs.SimulationElementSelectionDialog import SimulationElementSelectionDialog
 
 
 class SimulationDepthProfileWidget(QtWidgets.QWidget):
@@ -45,9 +46,10 @@ class SimulationDepthProfileWidget(QtWidgets.QWidget):
             icon_manager: An iconmanager class object.
         '''
         super().__init__()
-        self.ui = uic.loadUi(join("ui_files", "ui_histogram_widget.ui"), self)
+        self.ui = uic.loadUi(join("ui_files", "ui_simulation_depth_profile_widget.ui"), self)
+        self.ui.addElementButton.clicked.connect(self.__select_element)
         self.__set_shortcuts()
-        self.ui.setWindowTitle("ToF-E Histogram")
+        self.ui.setWindowTitle("Simulation depth profile")
 
     # def __init__(self, measurement, masses, icon_manager):
     #     '''Inits TofeHistogramWidget widget.
@@ -77,6 +79,15 @@ class SimulationDepthProfileWidget(QtWidgets.QWidget):
     #     count = len(self.measurement.data)
     #     self.ui.setWindowTitle(
     #         "ToF-E Histogram - Event count: {0}".format(count))
+
+    def __select_element(self):
+        dialog = SimulationElementSelectionDialog()
+
+        if dialog.directory:
+            self.__close_project()
+            title = "{0} - Project: {1}".format(self.title, dialog.name)
+            self.ui.setWindowTitle(title)
+
 
     def set_cut_button_enabled(self, selections=None):
         """Enables save cuts button if the given selections list's length is not 0.

@@ -82,6 +82,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         """
         #self.simulation_depth_profile = SimulationDepthProfileWidget(self.simulation, self.masses, self.icon_manager)
         self.simulation_depth_profile = SimulationDepthProfileWidget()
+        self.add_widget(self.simulation_depth_profile, has_close_button=False)
         # TODO: Do all the necessary operations so that the widget can be used.
         # self.simulation.set_axes(self.simulation_depth_profile.matplotlib.axes)
         # self.ui.makeSelectionsButton.clicked.connect(
