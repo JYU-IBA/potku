@@ -19,8 +19,7 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
             self.progress_bar = None
             title = str(self.ui.windowTitle())
             self.ui.setWindowTitle(title)
-            # This causes an exception, since there is no proper file read into the parent's simulation parameter
-            # self.simulation = self.parent.simulation
+            self.simulation = parent.simulation
         except:
             import traceback
             msg = "Could not create Energy Spectrum graph. "
