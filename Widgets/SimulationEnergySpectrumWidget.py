@@ -20,6 +20,7 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
             title = str(self.ui.windowTitle())
             self.ui.setWindowTitle(title)
             self.simulation = parent.simulation
+            self.ui.saveSimuEnergySpectraButton.clicked.connect(self.save_spectra)
         except:
             import traceback
             msg = "Could not create Energy Spectrum graph. "
@@ -36,3 +37,7 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
             if self.progress_bar:
                 self.measurement.statusbar.removeWidget(self.progress_bar)
                 self.progress_bar.hide()
+
+    def save_spectra(self):
+        QtWidgets.QMessageBox.critical(self, "Error", "Not implemented",
+                                       QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
