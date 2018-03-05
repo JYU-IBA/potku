@@ -20,7 +20,7 @@
    <enum>Qt::ActionsContextMenu</enum>
   </property>
   <property name="windowTitle">
-   <string>ToF-E Histogram</string>
+   <string>Simulated Energy Spectrum</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
