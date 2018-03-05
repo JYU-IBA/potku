@@ -544,22 +544,24 @@ class Potku(QtWidgets.QMainWindow):
         """
         dialog = SimulationNewDialog()
 
-        filename = dialog.name
-        if filename:
-            try:
-                self.ui.tabs.removeTab(self.ui.tabs.indexOf(
-                    self.measurement_info_tab))
-            except:
-                pass  # If there is no info tab, no need to worry about.
-                # print("Can't find an info tab to remove")
+        # filename = dialog.name
+        # if filename:
+        #     try:
+        #         self.ui.tabs.removeTab(self.ui.tabs.indexOf(
+        #             self.measurement_info_tab))
+        #     except:
+        #         pass  # If there is no info tab, no need to worry about.
+        #         # print("Can't find an info tab to remove")
+        #
+        progress_bar = QtWidgets.QProgressBar()
+        self.statusbar.addWidget(progress_bar, 1)
+        progress_bar.show()
 
-            progress_bar = QtWidgets.QProgressBar()
-            self.statusbar.addWidget(progress_bar, 1)
-            progress_bar.show()
-            self.__add_new_tab("simulation", filename, progress_bar, load_data=False)
-            self.__remove_info_tab()
-            self.statusbar.removeWidget(progress_bar)
-            progress_bar.hide()
+            #self.__add_new_tab("simulation", filename, progress_bar, load_data=False)
+        self.__add_new_tab("simulation", "tiedosto", progress_bar, load_data=False)
+        self.__remove_info_tab()
+        self.statusbar.removeWidget(progress_bar)
+        progress_bar.hide()
 
 
     def open_project(self):
@@ -745,7 +747,7 @@ class Potku(QtWidgets.QMainWindow):
                 tab.data_loaded = load_data
                 if load_data:
                     simulation.load_data()
-                    tab.add_simulation_depth_profile()
+                    # tab.add_simulation_depth_profile()
                     self.ui.tabs.addTab(tab, simulation.simulation_name)
                     self.ui.tabs.setCurrentWidget(tab)
 

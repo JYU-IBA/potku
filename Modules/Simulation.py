@@ -14,7 +14,10 @@ __versio__ = "2.0"
 import os
 import platform
 import subprocess
-# import logging
+import logging
+import sys
+from Modules.Functions import md5_for_file
+from Modules.Settings import Settings
 
 class Simulations:
     '''Simulations class handles multiple simulations.
@@ -74,18 +77,18 @@ class Simulations:
                 shutil.copyfile(simulation_file, new_file)
                 file_directory, file_name = os.path.split(new_file)
 
-                log = "Added new measurement {0} to the project.".format(
+                log = "Added new simulation {0} to the project.".format(
                     file_name)
                 logging.getLogger('project').info(log)
             keys = self.simulations.keys()
             for key in keys:
-                if self.simulations[key].measurement_file == file_name:
+                if self.simulations[key].simulation_file == file_name:
                     return simulation  # measurement = None
             simulation = Simulation(new_file, self.project, tab_id)
             # measurement.load_data()
             self.simulations[tab_id] = simulation
         except:
-            log = "Something went wrong while adding a new measurement."
+            log = "Something went wrong while adding a new simulation."
             logging.getLogger("project").critical(log)
             print(sys.exc_info())  # TODO: Remove this.
         return simulation
@@ -120,6 +123,7 @@ class Simulation:
         self.simulation_file = simulation_name  # With extension
         self.simulation_name = os.path.splitext(simulation_name)[0]
 
+        self.project = project
         self.directory = os.path.join(simulation_folder, self.simulation_name)
 
         self.data = []
@@ -141,10 +145,10 @@ class Simulation:
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
 
-        self.bin_dir = "%s%s%s" % ("external", os.sep, "Potku-bin")
-
-        self.command_win = "cd " + self.bin_dir + " && mcerd.exe " + command_file_path
-        self.command_unix = "cd " + self.bin_dir + " && ./mcerd " + command_file_path
+        # self.bin_dir = "%s%s%s" % ("external", os.sep, "Potku-bin")
+        #
+        # self.command_win = "cd " + self.bin_dir + " && mcerd.exe " + command_file_path
+        # self.command_unix = "cd " + self.bin_dir + " && ./mcerd " + command_file_path
 
     def run_simulation(self):
         """Runs the simulation.
@@ -180,6 +184,43 @@ class Simulation:
             os.makedirs(directory)
             # log = "Created a directory {0}.".format(directory)
             # logging.getLogger("project").info(log)
+
+    def load_data(self):
+        '''Loads measurement data from filepath
+        '''
+        # import cProfile, pstats
+        # pr = cProfile.Profile()
+        # pr.enable()
+        n=0
+        try:
+            extension = os.path.splitext(self.simulation_file)[1]
+            extension = extension.lower()
+            if extension == ".asc":
+                with open("{0}{1}".format(self.directory, extension)) as fp:
+                    for line in fp:
+                        n += 1 #Event number
+                        # TODO: Figure good way to split into columns. REGEX too slow.
+                        split = line.split()
+                        split_len = len(split)
+                        if split_len == 2:  # At least two columns
+                            self.data.append([int(split[0]), int(split[1]), n])
+                        if split_len == 3:
+                            self.data.append([int(split[0]), int(split[1]), int(split[2]), n])
+        except IOError as e:
+            error_log = "Error while loading the {0} {1}. {2}".format(
+                        "measurement date for the measurement",
+                        self.measurement_name,
+                        "The error was:")
+            error_log_2 = "I/O error ({0}): {1}".format(e.errno, e.strerror)
+            logging.getLogger('project').error(error_log)
+            logging.getLogger('project').error(error_log_2)
+        except Exception as e:
+            error_log = "Unexpected error: [{0}] {1}".format(e.errno, e.strerror)
+            logging.getLogger('project').error(error_log)
+        # pr.disable()
+        # ps = pstats.Stats(pr)
+        # ps.sort_stats("time")
+        # ps.print_stats(10)
 
 # For testing this class alone:
 # Simulation("/home/siansiir/mcerd/source/Examples/35Cl-85-LiMnO_Li").run_simulation()

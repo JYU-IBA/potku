@@ -50,19 +50,11 @@ class SimulationTabWidget(QtWidgets.QWidget):
         
         # Hide the simulation specific settings buttons
         self.ui.settingsFrame.setVisible(False)
-
-        self.ui.energySpectrumButton.clicked.connect(
-             lambda: self.open_energy_spectrum(self))
-        self.ui.detectorSettingsButton.clicked.connect(
-             self.open_measuring_unit_settings)
-        self.ui.command_master.clicked.connect(self.__master_issue_commands)
         
         self.data_loaded = False
         self.panel_shown = True
         self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
-        
-        # Enable master button
-        self.toggle_master_button()
+
 
     def add_widget(self, widget, minimized=None, has_close_button=True, icon=None):
         """ Adds a new widget to current simulation tab.
@@ -91,8 +83,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
     def add_simulation_depth_profile(self):
         """ Adds depth profile for modifying the elements into tab if it doesn't have one already.
         """
-        self.simulation_depth_profile = SimulationDepthProfileWidget(self.simulation, self.masses,
-                                                            self.icon_manager)
+        #self.simulation_depth_profile = SimulationDepthProfileWidget(self.simulation, self.masses, self.icon_manager)
+        self.simulation_depth_profile = SimulationDepthProfileWidget()
         # TODO: Do all the necessary operations so that the widget can be used.
         # self.simulation.set_axes(self.simulation_depth_profile.matplotlib.axes)
         # self.ui.makeSelectionsButton.clicked.connect(
@@ -129,13 +121,13 @@ class SimulationTabWidget(QtWidgets.QWidget):
     
     
     def add_UI_logger(self, log_widget):
-        '''Adds handlers to measurement logger so the logger can log the events to 
+        '''Adds handlers to simulation logger so the logger can log the events to
         the user interface too.
         
         log_widget specifies which ui element will handle the logging. That should 
-        be the one which is added to this MeasurementTabWidget.
+        be the one which is added to this SimulationTabWidget.
         '''
-        logger = logging.getLogger(self.measurement.measurement_name)
+        logger = logging.getLogger(self.simulation.simulation_name)
         defaultformat = logging.Formatter(
                                   '%(asctime)s - %(levelname)s - %(message)s',
                                   datefmt='%Y-%m-%d %H:%M:%S')
@@ -154,18 +146,18 @@ class SimulationTabWidget(QtWidgets.QWidget):
                           graph can be shown.
         '''
         if not directory:
-            directory = self.measurement.directory
-        self.make_elemental_losses(directory, self.measurement.measurement_name)
+            directory = self.simulation.directory
+        self.make_elemental_losses(directory, self.simulation.simulation_name)
         progress_bar.setValue(66)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-        self.make_energy_spectrum(directory, self.measurement.measurement_name)
+        self.make_energy_spectrum(directory, self.simulation.simulation_name)
         progress_bar.setValue(82)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-        self.make_depth_profile(directory, self.measurement.measurement_name)
+        self.make_depth_profile(directory, self.simulation.simulation_name)
         progress_bar.setValue(98)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
@@ -217,7 +209,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         lines = self.__load_file(file)
         if not lines:
             return
-        m_name = self.measurement.measurement_name
+        m_name = self.simulation.simulation_name
         try:
             output_dir = self.__confirm_filepath(lines[0].strip(), name, m_name)
             use_cuts = self.__confirm_filepath(
@@ -262,7 +254,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         lines = self.__load_file(file)
         if not lines:
             return
-        m_name = self.measurement.measurement_name
+        m_name = self.simulation.simulation_name
         try:
             reference_cut = self.__confirm_filepath(lines[0].strip(), name, m_name)
             checked_cuts = self.__confirm_filepath(
@@ -297,7 +289,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         lines = self.__load_file(file)
         if not lines:
             return
-        m_name = self.measurement.measurement_name
+        m_name = self.simulation.simulation_name
         try:
             use_cuts = self.__confirm_filepath(
                                    lines[0].strip().split("\t"), name, m_name)
@@ -312,80 +304,18 @@ class SimulationTabWidget(QtWidgets.QWidget):
             self.add_widget(self.energy_spectrum_widget, icon=icon)
         except:  # We do not need duplicate error logs, log in widget instead
             print(sys.exc_info())  # TODO: Remove this.
-        
-        
-    def measurement_save_cuts(self):
-        '''Save measurement selections to cut files.
-        '''
-        self.measurement.save_cuts()
-        # Do for all slaves if master.
-        self.measurement.project.save_cuts(self.measurement)          
-        
 
-    def open_measuring_unit_settings(self):
-        '''Opens measurement settings dialog.
-        '''
-        MeasurementUnitSettings(self.measurement.measurement_settings, self.measurement.project.masses)
-        
-        
-    def open_depth_profile_settings(self):
-        '''Opens depth profile settings dialog.
-        '''
-        DepthProfileSettings(self.measurement.measurement_settings)
-    
-    
-    def open_calibration_settings(self):
-        '''Opens calibration settings dialog.
-        '''
-        CalibrationSettings(self.measurement)
-    
-    
-    def open_depth_profile(self, parent):
-        '''Opens depth profile dialog.
-        
-        Args:
-            parent: MeasurementTabWidget
-        '''
-        previous = self.depth_profile_widget
-        DepthProfileDialog(parent)
-        if self.depth_profile_widget != previous and \
-            type(self.depth_profile_widget) != Null:
-            self.depth_profile_widget.save_to_file()
-    
-    
-    def open_energy_spectrum(self, parent):
-        """Opens energy spectrum dialog.
-        
-        Args:
-            parent: MeasurementTabWidget
-        """
-        previous = self.energy_spectrum_widget
-        EnergySpectrumParamsDialog(parent)
-        if self.energy_spectrum_widget != previous and \
-            type(self.energy_spectrum_widget) != Null:
-            self.energy_spectrum_widget.save_to_file()
-     
-    
-    def open_element_losses(self, parent):
-        """Opens element losses dialog.
-        
-        Args:
-            parent: MeasurementTabWidget
-        """
-        previous = self.elemental_losses_widget
-        ElementLossesDialog(parent)
-        if self.elemental_losses_widget != previous and \
-            type(self.elemental_losses_widget) != Null:
-            self.elemental_losses_widget.save_to_file()
-    
-    
-    def toggle_master_button(self):
-        """Toggle enabled state of the master measurement button in the
-        measurementtabwidget.
-        """
-        measurement_name = self.measurement.measurement_name
-        master_name = self.measurement.project.has_master()
-        self.ui.command_master.setEnabled(measurement_name == master_name)
+    # def open_energy_spectrum(self, parent):
+    #     """Opens energy spectrum dialog.
+    #
+    #     Args:
+    #         parent: MeasurementTabWidget
+    #     """
+    #     previous = self.energy_spectrum_widget
+    #     EnergySpectrumParamsDialog(parent)
+    #     if self.energy_spectrum_widget != previous and \
+    #         type(self.energy_spectrum_widget) != Null:
+    #         self.energy_spectrum_widget.save_to_file()
     
     
     def __confirm_filepath(self, filepath, name, m_name):
@@ -405,7 +335,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
                     pass
                 return filepath
             except:
-                return os.path.join(self.measurement.directory, filepath)
+                return os.path.join(self.simulation.directory, filepath)
         elif type(filepath) == list:
             newfiles = []
             for file in filepath:
@@ -415,7 +345,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
                         pass
                     newfiles.append(file)
                 except:
-                    newfiles.append(os.path.join(self.measurement.directory, file))
+                    newfiles.append(os.path.join(self.simulation.directory, file))
             return newfiles
         
         
@@ -436,18 +366,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
         except:
             pass
         return lines
-
-
-    def __master_issue_commands(self):
-        """Signal that master measurement's command has been issued
-        to all slave measurements in the project.
-        """
-        meas_name = self.measurement.measurement_name
-        master_name = self.measurement.project.has_master()
-        if meas_name == master_name:
-            #self.emit(QtCore.SIGNAL("issueMaster"))
-            self.issueMaster.emit()
-        
         
     def __read_log_file(self, file, state=1):
         '''Read the log file into the log window.
@@ -507,8 +425,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
                                    "depth_profile.svg", size=(30, 30))
         self.icon_manager.set_icon(self.ui.hideShowSettingsButton,
                                    "show_icon.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.command_master,
-                                   "editcut.svg", size=(30, 30))
 
 
 
