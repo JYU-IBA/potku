@@ -37,7 +37,7 @@ class SimulationDepthProfileWidget(QtWidgets.QWidget):
     '''HistogramWidget used to draw ToF-E Histograms.
     '''
 
-    def __init__(self):
+    def __init__(self, project):
         '''Inits TofeHistogramWidget widget.
 
         Args:
@@ -46,6 +46,7 @@ class SimulationDepthProfileWidget(QtWidgets.QWidget):
             icon_manager: An iconmanager class object.
         '''
         super().__init__()
+        self.project = project
         self.ui = uic.loadUi(join("ui_files", "ui_simulation_depth_profile_widget.ui"), self)
         self.ui.addElementButton.clicked.connect(self.__select_element)
         self.__set_shortcuts()
@@ -81,12 +82,12 @@ class SimulationDepthProfileWidget(QtWidgets.QWidget):
     #         "ToF-E Histogram - Event count: {0}".format(count))
 
     def __select_element(self):
-        dialog = SimulationElementSelectionDialog()
+        dialog = SimulationElementSelectionDialog(self.project)
 
-        if dialog.directory:
-            self.__close_project()
-            title = "{0} - Project: {1}".format(self.title, dialog.name)
-            self.ui.setWindowTitle(title)
+        # if dialog.directory:
+        #     self.__close_project()
+        #     title = "{0} - Project: {1}".format(self.title, dialog.name)
+        #     self.ui.setWindowTitle(title)
 
 
     def set_cut_button_enabled(self, selections=None):

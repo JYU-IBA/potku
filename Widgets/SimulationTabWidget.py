@@ -23,7 +23,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
     """
     issueMaster = QtCore.pyqtSignal()
 
-    def __init__(self, tab_id, simulation, masses, icon_manager):
+    def __init__(self, project, tab_id, simulation, masses, icon_manager):
         """ Init simulation tab class.
         
         Args:
@@ -33,6 +33,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
             icon_manager: An iconmanager class object.
         """
         super().__init__()
+        self.project = project
         self.tab_id = tab_id
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_simulation_tab.ui"), self)
         self.simulation = simulation
@@ -81,7 +82,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         """ Adds depth profile for modifying the elements into tab if it doesn't have one already.
         """
         #self.simulation_depth_profile = SimulationDepthProfileWidget(self.simulation, self.masses, self.icon_manager)
-        self.simulation_depth_profile = SimulationDepthProfileWidget()
+        self.simulation_depth_profile = SimulationDepthProfileWidget(self.project)
         self.add_widget(self.simulation_depth_profile, has_close_button=False)
         # TODO: Do all the necessary operations so that the widget can be used.
         # self.simulation.set_axes(self.simulation_depth_profile.matplotlib.axes)

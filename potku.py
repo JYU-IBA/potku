@@ -736,7 +736,7 @@ class Potku(QtWidgets.QMainWindow):
             simulation = self.project.simulations.add_simulation_file(filename, self.tab_id)
 
             if simulation:  # TODO: Finish this (load_data)
-                tab = SimulationTabWidget(self.tab_id, simulation,
+                tab = SimulationTabWidget(self.project, self.tab_id, simulation,
                                            self.masses, self.icon_manager)
                 # self.connect(tab, QtCore.SIGNAL("issueMaster"), self.__master_issue_commands)
                 tab.issueMaster.connect(self.__master_issue_commands)
