@@ -1,0 +1,87 @@
+\hypertarget{classModules_1_1UiLogHandlers_1_1customLogHandler}{\section{Modules.\-Ui\-Log\-Handlers.\-custom\-Log\-Handler Class Reference}
+\label{classModules_1_1UiLogHandlers_1_1customLogHandler}\index{Modules.\-Ui\-Log\-Handlers.\-custom\-Log\-Handler@{Modules.\-Ui\-Log\-Handlers.\-custom\-Log\-Handler}}
+}
+Inheritance diagram for Modules.\-Ui\-Log\-Handlers.\-custom\-Log\-Handler\-:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classModules_1_1UiLogHandlers_1_1customLogHandler}
+\end{center}
+\end{figure}
+\subsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+def \hyperlink{classModules_1_1UiLogHandlers_1_1customLogHandler_a516257c4da93f2937b47b38175e0fb0a}{\-\_\-\-\_\-init\-\_\-\-\_\-}
+\item 
+def \hyperlink{classModules_1_1UiLogHandlers_1_1customLogHandler_a333736c77b55367a1cbdc3150495bd87}{flush}
+\item 
+def \hyperlink{classModules_1_1UiLogHandlers_1_1customLogHandler_a9d276c9ecd8c566ad0bc10d5c516b793}{emit}
+\end{DoxyCompactItemize}
+\subsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\hypertarget{classModules_1_1UiLogHandlers_1_1customLogHandler_ab27011149cb953ba96d20bf97f9386dd}{{\bfseries log\-\_\-dialog}}\label{classModules_1_1UiLogHandlers_1_1customLogHandler_ab27011149cb953ba96d20bf97f9386dd}
+
+\item 
+\hypertarget{classModules_1_1UiLogHandlers_1_1customLogHandler_a6a5f60d2b7d13fe2381ce8bb101f1cda}{{\bfseries formatter}}\label{classModules_1_1UiLogHandlers_1_1customLogHandler_a6a5f60d2b7d13fe2381ce8bb101f1cda}
+
+\item 
+\hypertarget{classModules_1_1UiLogHandlers_1_1customLogHandler_a7d601145580a3a6daf9acbfcc2e5646a}{{\bfseries level}}\label{classModules_1_1UiLogHandlers_1_1customLogHandler_a7d601145580a3a6daf9acbfcc2e5646a}
+
+\end{DoxyCompactItemize}
+
+
+\subsection{Detailed Description}
+\begin{DoxyVerb}Customloghandler, that handles log messages and emits them to the given 
+LogWidget's log field. 
+\end{DoxyVerb}
+ 
+
+\subsection{Constructor \& Destructor Documentation}
+\hypertarget{classModules_1_1UiLogHandlers_1_1customLogHandler_a516257c4da93f2937b47b38175e0fb0a}{\index{Modules\-::\-Ui\-Log\-Handlers\-::custom\-Log\-Handler@{Modules\-::\-Ui\-Log\-Handlers\-::custom\-Log\-Handler}!\-\_\-\-\_\-init\-\_\-\-\_\-@{\-\_\-\-\_\-init\-\_\-\-\_\-}}
+\index{\-\_\-\-\_\-init\-\_\-\-\_\-@{\-\_\-\-\_\-init\-\_\-\-\_\-}!Modules::UiLogHandlers::customLogHandler@{Modules\-::\-Ui\-Log\-Handlers\-::custom\-Log\-Handler}}
+\subsubsection[{\-\_\-\-\_\-init\-\_\-\-\_\-}]{\setlength{\rightskip}{0pt plus 5cm}def Modules.\-Ui\-Log\-Handlers.\-custom\-Log\-Handler.\-\_\-\-\_\-init\-\_\-\-\_\- (
+\begin{DoxyParamCaption}
+\item[{}]{self, }
+\item[{}]{level, }
+\item[{}]{formatter, }
+\item[{}]{log\-\_\-dialog}
+\end{DoxyParamCaption}
+)}}\label{classModules_1_1UiLogHandlers_1_1customLogHandler_a516257c4da93f2937b47b38175e0fb0a}
+\begin{DoxyVerb}Initializes the handler.
+
+Args:
+    level: The logging level set to this handler.
+    formatter: The formatter set to this handler.
+    log_dialog: The log dialog, which can add the message to the interface.
+\end{DoxyVerb}
+ 
+
+\subsection{Member Function Documentation}
+\hypertarget{classModules_1_1UiLogHandlers_1_1customLogHandler_a9d276c9ecd8c566ad0bc10d5c516b793}{\index{Modules\-::\-Ui\-Log\-Handlers\-::custom\-Log\-Handler@{Modules\-::\-Ui\-Log\-Handlers\-::custom\-Log\-Handler}!emit@{emit}}
+\index{emit@{emit}!Modules::UiLogHandlers::customLogHandler@{Modules\-::\-Ui\-Log\-Handlers\-::custom\-Log\-Handler}}
+\subsubsection[{emit}]{\setlength{\rightskip}{0pt plus 5cm}def Modules.\-Ui\-Log\-Handlers.\-custom\-Log\-Handler.\-emit (
+\begin{DoxyParamCaption}
+\item[{}]{self, }
+\item[{}]{record}
+\end{DoxyParamCaption}
+)}}\label{classModules_1_1UiLogHandlers_1_1customLogHandler_a9d276c9ecd8c566ad0bc10d5c516b793}
+\begin{DoxyVerb}Emits the log message to the destination, which is set when the handler 
+is initialized.
+
+Args:
+    record: The record which will be emitted.
+\end{DoxyVerb}
+ \hypertarget{classModules_1_1UiLogHandlers_1_1customLogHandler_a333736c77b55367a1cbdc3150495bd87}{\index{Modules\-::\-Ui\-Log\-Handlers\-::custom\-Log\-Handler@{Modules\-::\-Ui\-Log\-Handlers\-::custom\-Log\-Handler}!flush@{flush}}
+\index{flush@{flush}!Modules::UiLogHandlers::customLogHandler@{Modules\-::\-Ui\-Log\-Handlers\-::custom\-Log\-Handler}}
+\subsubsection[{flush}]{\setlength{\rightskip}{0pt plus 5cm}def Modules.\-Ui\-Log\-Handlers.\-custom\-Log\-Handler.\-flush (
+\begin{DoxyParamCaption}
+\item[{}]{self}
+\end{DoxyParamCaption}
+)}}\label{classModules_1_1UiLogHandlers_1_1customLogHandler_a333736c77b55367a1cbdc3150495bd87}
+\begin{DoxyVerb}Does nothing here, has to be here because this is inherited.
+\end{DoxyVerb}
+ 
+
+The documentation for this class was generated from the following file\-:\begin{DoxyCompactItemize}
+\item 
+Modules/Ui\-Log\-Handlers.\-py\end{DoxyCompactItemize}
