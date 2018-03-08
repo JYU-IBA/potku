@@ -112,12 +112,11 @@ class Simulations:
 class Simulation:
     """Simulation class handles the simulation data."""
 
-    def __init__(self, command_file, project, tab_id):
+    def __init__(self, project, tab_id):
         """Inits Simulation.
 
         Args:
             project: Project class object.
-            command_file_path: Full path of where simulation command file is located.
         """
 
         simulation_folder, simulation_name = os.path.split(command_file)
@@ -145,25 +144,6 @@ class Simulation:
 
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
-
-        # self.bin_dir = "%s%s%s" % ("external", os.sep, "Potku-bin")
-        #
-        # self.command_win = "cd " + self.bin_dir + " && mcerd.exe " + command_file_path
-        # self.command_unix = "cd " + self.bin_dir + " && ./mcerd " + command_file_path
-
-    def run_simulation(self):
-        """Runs the simulation.
-
-        """
-        used_os = platform.system()
-        if used_os == "Windows":
-            subprocess.call(self.command_win, shell=True)
-        elif used_os == "Linux":
-            subprocess.call(self.command_unix, shell=True)
-        elif used_os == "Darwin":
-            subprocess.call(self.command_unix, shell=True)
-        else:
-            print("It appears we do no support your OS.")
 
     def remove_by_tab_id(self, tab_id):
         '''Removes simulation from tabs by tab id
@@ -223,6 +203,67 @@ class Simulation:
         # ps.sort_stats("time")
         # ps.print_stats(10)
 
-# For testing this class alone:
-# Simulation("/home/siansiir/mcerd/source/Examples/35Cl-85-LiMnO_Li").run_simulation()
-# Simulation(r"C:\MyTemp\Source\Examples\35Cl-85-LiMnO_Li").run_simulation()
+
+class CallMCERD(object):
+    """Handles calling the external program MCERD to run the simulation."""
+
+    def __init__(self, command_file_path):
+        """Inits CallMCERD.
+
+        Args:
+            command_file_path: Full path of where simulation command file is located.
+        """
+        # TODO When the directory structure for simulation settings has been decided, update this
+        self.bin_dir = "%s%s%s" % ("external", os.sep, "Potku-bin")
+
+        self.command_win = "cd " + self.bin_dir + " && mcerd.exe " + command_file_path
+        self.command_unix = "cd " + self.bin_dir + " && ./mcerd " + command_file_path
+
+    def run_simulation(self):
+        """Runs the simulation.
+
+        """
+        used_os = platform.system()
+        if used_os == "Windows":
+            subprocess.call(self.command_win, shell=True)
+        elif used_os == "Linux":
+            subprocess.call(self.command_unix, shell=True)
+        elif used_os == "Darwin":
+            subprocess.call(self.command_unix, shell=True)
+        else:
+            print("It appears we do no support your OS.")
+
+
+class CallGetEspe(object):
+    """Handles calling the external program get_espe to generate energy spectra coordinates."""
+
+    def __init__(self, command_file_path):
+        """Inits CallGetEspe.
+
+        Args:
+            command_file_path: Full path of where simulation command file is located.
+        """
+        # TODO When the directory structure for simulation settings has been decided, update this
+        self.bin_dir = "%s%s%s" % ("external", os.sep, "Potku-bin")
+        # TODO get_espe takes its parameters as command line arguments
+        self.command_win = "cd " + self.bin_dir + " && get_espe.exe " + command_file_path
+        self.command_unix = "cd " + self.bin_dir + " && ./get_espe " + command_file_path
+
+    def run_get_espe(self):
+        """Runs get_espe. It generates an energy spectrum coordinate file from the result of MCERD.
+
+        """
+        used_os = platform.system()
+        if used_os == "Windows":
+            subprocess.call(self.command_win, shell=True)
+        elif used_os == "Linux":
+            subprocess.call(self.command_unix, shell=True)
+        elif used_os == "Darwin":
+            subprocess.call(self.command_unix, shell=True)
+        else:
+            print("It appears we do no support your OS.")
+
+# For testing the CallMCERD class alone:
+# CallMCERD("/home/siansiir/mcerd/source/Examples/35Cl-85-LiMnO_Li").run_simulation()
+# MCERD tries to read the input files from the path specified in the command file
+# CallMCERD(r"..\Examples\35Cl-85-LiMnO_Li").run_simulation()
