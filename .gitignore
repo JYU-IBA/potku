@@ -2,3 +2,6 @@
 /.settings
 /__pycache__
 /venv
+external/Potku-bin/mcerd
+external/Potku-bin/mcerd.exe
+external/Potku-bin/get_espe.exe
