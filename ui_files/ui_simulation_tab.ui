@@ -205,12 +205,12 @@
                  </layout>
                 </item>
                 <item>
-                 <widget class="QCommandLinkButton" name="energySpectrumButton">
+                 <widget class="QCommandLinkButton" name="mcSimulationButton">
                   <property name="text">
-                   <string>Energy Spectra</string>
+                   <string>Monte Carlo Simulation</string>
                   </property>
                   <property name="description">
-                   <string>Draw energy spectra graph of the selected elements.</string>
+                   <string>Run the Monte Carlo simulation and draw energy spectra graph of the selected elements.</string>
                   </property>
                  </widget>
                 </item>
@@ -246,7 +246,7 @@
   <tabstop>hidePanelButton</tabstop>
   <tabstop>hideShowSettingsButton</tabstop>
   <tabstop>detectorSettingsButton</tabstop>
-  <tabstop>energySpectrumButton</tabstop>
+  <tabstop>mcSimulationButton</tabstop>
   <tabstop>scrollArea</tabstop>
  </tabstops>
  <resources/>

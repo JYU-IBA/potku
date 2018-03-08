@@ -52,7 +52,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
 
         # Set up settings and energy spectra connections within the tab UI
         self.ui.detectorSettingsButton.clicked.connect(self.open_detector_settings)
-        self.ui.energySpectrumButton.clicked.connect(lambda: self.create_energy_spectrum(self))
+        self.ui.mcSimulationButton.clicked.connect(lambda: self.start_mcsimulation(self))
 
     def add_widget(self, widget, minimized=None, has_close_button=True, icon=None):
         """ Adds a new widget to current simulation tab.
@@ -160,8 +160,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
         # Mac requires event processing to show progress bar and its
         # process.
 
-    def create_energy_spectrum(self, parent):
-        """ Create energy spectrum widget and add it to the view.
+    def start_mcsimulation(self, parent):
+        """ Start the Monte Catrlo simulation and draw energy spectrum based on it.
         Args:
             parent: Parent of the energy spectrum widget.
         """
