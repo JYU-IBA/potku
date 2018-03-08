@@ -6,6 +6,7 @@ Updated on 8.3.2018
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 from matplotlib import cm
 from matplotlib.colors import LogNorm
+import matplotlib.lines as lines
 from PyQt5 import QtCore, QtWidgets
 
 from Dialogs.SelectionDialog import SelectionSettingsDialog
@@ -31,18 +32,17 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
                   4: "selection select tool"
                   }
 
-    def __init__(self, parent, measurement_data, masses, icon_manager):
-        '''Inits histogram widget
+    def __init__(self, parent, simulation_data, masses, icon_manager):
+        '''Inits target and recoiling atoms widget.
 
-        Args:https://www.stack.nl/~dimitri/doxygen/manual/starting.html#step2
-            parent: A TofeHistogramWidget class object.
-            measurement_data: A list of data points.
-            icon_manager: IconManager class object.
+        Args:
+            parent: A SimulationDepthProfileWidget class object.
             masses: A masses class object.
             icon_manager: An iconmanager class object.
         '''
+        simulation_data.data = [[10.5, 100], [4.5, 4.5]]
         super().__init__(parent)
-        self.canvas.manager.set_title("ToF-E Histogram")
+        self.canvas.manager.set_title("Depth Profile")
         self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
         self.__masses = masses
@@ -53,9 +53,9 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
         self.__fork_toolbar_buttons()
 
-        self.measurement = measurement_data
-        self.__x_data = [x[0] for x in self.measurement.data]
-        self.__y_data = [x[1] for x in self.measurement.data]
+        self.simulation = simulation_data
+        self.__x_data = [x[0] for x in self.simulation.data]
+        self.__y_data = [x[1] for x in self.simulation.data]
 
         # Variables
         self.__inverted_Y = False
@@ -65,11 +65,11 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.__range_mode_automated = False
 
         # Get settings from global settings
-        self.__global_settings = self.main_frame.measurement.project.global_settings
+        self.__global_settings = self.main_frame.simulation.project.global_settings
         self.invert_Y = self.__global_settings.get_tofe_invert_y()
         self.invert_X = self.__global_settings.get_tofe_invert_x()
         self.transpose_axes = self.__global_settings.get_tofe_transposed()
-        self.measurement.color_scheme = self.__global_settings.get_tofe_color()
+        self.simulation.color_scheme = self.__global_settings.get_tofe_color()
         self.compression_x = self.__global_settings.get_tofe_compression_x()
         self.compression_y = self.__global_settings.get_tofe_compression_y()
         self.axes_range_mode = self.__global_settings.get_tofe_bin_range_mode()
@@ -92,132 +92,138 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
     def on_draw(self):
         '''Draw method for matplotlib.
         '''
-        # Values for zoom
-        x_min, x_max = self.axes.get_xlim()
-        y_min, y_max = self.axes.get_ylim()
 
-        x_data = self.__x_data
-        y_data = self.__y_data
+        line1 = [(0.0, 1.0), (4.0, 1.0)]
+        (line1_xs, line1_ys) = zip(*line1)
 
-        # Transpose
-        if self.transpose_axes:
-            x_data, y_data = y_data, x_data  # Always transpose data if checked.
-            if not self.__transposed:
-                self.__transposed = True
-                self.measurement.selector.transpose(True)
-                # Switch axes names
-                self.name_x_axis, self.name_y_axis = (self.name_y_axis,
-                                                      self.name_x_axis)
-                # Switch min & max values
-                x_min, x_max, y_min, y_max = y_min, y_max, x_min, x_max
-                # Switch inverts
-                self.invert_X, self.invert_Y = self.invert_Y, self.invert_X
-        if not self.transpose_axes and self.__transposed:
-            self.__transposed = False
-            self.measurement.selector.transpose(False)
-            # Switch axes names
-            self.name_x_axis, self.name_y_axis = self.name_y_axis, self.name_x_axis
-            # Switch min & max values
-            x_min, x_max, y_min, y_max = y_min, y_max, x_min, x_max
-            # Switch inverts
-            self.invert_X, self.invert_Y = self.invert_Y, self.invert_X
+        self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="blue"))
 
-        self.axes.clear()  # Clear old stuff
-
-        # Check values for graph
-        axes_range = None
-        bin_counts = (
-        (self.__x_data_max - self.__x_data_min) / self.compression_x,
-        (self.__y_data_max - self.__y_data_min) / self.compression_y)
-        if self.axes_range_mode == 1:
-            axes_range = list(self.axes_range)
-            axes_range[0] = self.__fix_axes_range(axes_range[0],
-                                                  self.compression_x)
-            axes_range[1] = self.__fix_axes_range(axes_range[1],
-                                                  self.compression_y)
-            x_length = axes_range[0][1] - axes_range[0][0]
-            y_length = axes_range[1][1] - axes_range[1][0]
-            bin_counts = (x_length / self.compression_x,
-                          y_length / self.compression_y)
-
-        # If bin count too high -> it will crash the program
-        if bin_counts[0] > 3500:
-            old_count = bin_counts[0]
-            bin_counts = (3500, bin_counts[1])
-            # TODO: Better location for message?
-            print(
-                "[WARNING] {0}: X axis bin count ({2}) above 3500. {1}".format(
-                    self.measurement.measurement_name,
-                    "Limiting to prevent crash.",
-                    old_count))
-        if bin_counts[1] > 3500:
-            old_count = bin_counts[1]
-            bin_counts = (bin_counts[0], 3500)
-            print(
-                "[WARNING] {0}: Y axis bin count ({2}) above 3500. {1}".format(
-                    self.measurement.measurement_name,
-                    "Limiting to prevent crash.",
-                    old_count))
-
-        use_color_scheme = self.measurement.color_scheme
-        color_scheme = MatplotlibSimulationDepthProfileWidget.color_scheme[use_color_scheme]
-        colormap = cm.get_cmap(color_scheme)
-        self.axes.hist2d(x_data,
-                         y_data,
-                         bins=bin_counts,
-                         norm=LogNorm(),
-                         range=axes_range,
-                         cmap=colormap)
-
-        self.__on_draw_legend()
-
-        if (x_max > 0.09 and x_max < 1.01):  # This works..
-            x_min, x_max = self.axes.get_xlim()
-        if (y_max > 0.09 and y_max < 1.01):  # or self.axes_range_mode
-            y_min, y_max = self.axes.get_ylim()
-
-        # Change zoom limits if compression factor was changed (or new graph).
-        if (not self.__range_mode_automated and self.axes_range_mode == 0) \
-                or self.axes_range_mode == 1:
-            # self.__range_mode_automated and self.axes_range_mode == 1
-            tx_min, tx_max = self.axes.get_xlim()
-            ty_min, ty_max = self.axes.get_ylim()
-            # If user has zoomed the graph, change the home position to new max.
-            # Else reset the graph to new ranges and clear zoom levels.
-            if self.mpl_toolbar._views:
-                self.mpl_toolbar._views[0][0] = (tx_min, tx_max, ty_min, ty_max)
-            else:
-                x_min, x_max = tx_min, tx_max
-                y_min, y_max = ty_min, ty_max
-                self.mpl_toolbar.update()
-        self.__range_mode_automated = self.axes_range_mode == 0
-        # print(self.axes.get_xlim())
-        # Set limits accordingly
-        self.axes.set_ylim([y_min, y_max])
-        self.axes.set_xlim([x_min, x_max])
-
-        self.measurement.draw_selection()
-
-        # Invert axis
-        if self.invert_Y and not self.__inverted_Y:
-            self.axes.set_ylim(self.axes.get_ylim()[::-1])
-            self.__inverted_Y = True
-        elif not self.invert_Y and self.__inverted_Y:
-            self.axes.set_ylim(self.axes.get_ylim()[::-1])
-            self.__inverted_Y = False
-        if self.invert_X and not self.__inverted_X:
-            self.axes.set_xlim(self.axes.get_xlim()[::-1])
-            self.__inverted_X = True
-        elif not self.invert_X and self.__inverted_X:
-            self.axes.set_xlim(self.axes.get_xlim()[::-1])
-            self.__inverted_X = False
-        # [::-1] is elegant reverse. Slice sequence with step of -1.
-        # http://stackoverflow.com/questions/3705670/
-        # best-way-to-create-a-reversed-list-in-python
-
-        # self.axes.set_title('ToF Histogram\n\n')
-        self.axes.set_ylabel(self.name_y_axis.title())
-        self.axes.set_xlabel(self.name_x_axis.title())
+        # # Values for zoom
+        # x_min, x_max = self.axes.get_xlim()
+        # y_min, y_max = self.axes.get_ylim()
+        #
+        # x_data = self.__x_data
+        # y_data = self.__y_data
+        #
+        # # Transpose
+        # if self.transpose_axes:
+        #     x_data, y_data = y_data, x_data  # Always transpose data if checked.
+        #     if not self.__transposed:
+        #         self.__transposed = True
+        #         # self.measurement.selector.transpose(True)
+        #         # Switch axes names
+        #         self.name_x_axis, self.name_y_axis = (self.name_y_axis,
+        #                                               self.name_x_axis)
+        #         # Switch min & max values
+        #         x_min, x_max, y_min, y_max = y_min, y_max, x_min, x_max
+        #         # Switch inverts
+        #         self.invert_X, self.invert_Y = self.invert_Y, self.invert_X
+        # if not self.transpose_axes and self.__transposed:
+        #     self.__transposed = False
+        #     # self.measurement.selector.transpose(False)
+        #     # Switch axes names
+        #     self.name_x_axis, self.name_y_axis = self.name_y_axis, self.name_x_axis
+        #     # Switch min & max values
+        #     x_min, x_max, y_min, y_max = y_min, y_max, x_min, x_max
+        #     # Switch inverts
+        #     self.invert_X, self.invert_Y = self.invert_Y, self.invert_X
+        #
+        # self.axes.clear()  # Clear old stuff
+        #
+        # # Check values for graph
+        # axes_range = None
+        # bin_counts = (
+        # (self.__x_data_max - self.__x_data_min) / self.compression_x,
+        # (self.__y_data_max - self.__y_data_min) / self.compression_y)
+        # if self.axes_range_mode == 1:
+        #     axes_range = list(self.axes_range)
+        #     axes_range[0] = self.__fix_axes_range(axes_range[0],
+        #                                           self.compression_x)
+        #     axes_range[1] = self.__fix_axes_range(axes_range[1],
+        #                                           self.compression_y)
+        #     x_length = axes_range[0][1] - axes_range[0][0]
+        #     y_length = axes_range[1][1] - axes_range[1][0]
+        #     bin_counts = (x_length / self.compression_x,
+        #                   y_length / self.compression_y)
+        #
+        # # If bin count too high -> it will crash the program
+        # if bin_counts[0] > 3500:
+        #     old_count = bin_counts[0]
+        #     bin_counts = (3500, bin_counts[1])
+        #     # TODO: Better location for message?
+        #     print(
+        #         "[WARNING] {0}: X axis bin count ({2}) above 3500. {1}".format(
+        #             self.simulation.simulation_name,
+        #             "Limiting to prevent crash.",
+        #             old_count))
+        # if bin_counts[1] > 3500:
+        #     old_count = bin_counts[1]
+        #     bin_counts = (bin_counts[0], 3500)
+        #     print(
+        #         "[WARNING] {0}: Y axis bin count ({2}) above 3500. {1}".format(
+        #             self.simulation.simulation_name,
+        #             "Limiting to prevent crash.",
+        #             old_count))
+        #
+        # use_color_scheme = self.simulation.color_scheme
+        # color_scheme = MatplotlibSimulationDepthProfileWidget.color_scheme[use_color_scheme]
+        # colormap = cm.get_cmap(color_scheme)
+        # self.axes.hist2d(x_data,
+        #                  y_data,
+        #                  bins=bin_counts,
+        #                  norm=LogNorm(),
+        #                  range=axes_range,
+        #                  cmap=colormap)
+        #
+        # self.__on_draw_legend()
+        #
+        # if x_max > 0.09 and x_max < 1.01:  # This works..
+        #     x_min, x_max = self.axes.get_xlim()
+        # if y_max > 0.09 and y_max < 1.01:  # or self.axes_range_mode
+        #     y_min, y_max = self.axes.get_ylim()
+        #
+        # # Change zoom limits if compression factor was changed (or new graph).
+        # if (not self.__range_mode_automated and self.axes_range_mode == 0) \
+        #         or self.axes_range_mode == 1:
+        #     # self.__range_mode_automated and self.axes_range_mode == 1
+        #     tx_min, tx_max = self.axes.get_xlim()
+        #     ty_min, ty_max = self.axes.get_ylim()
+        #     # If user has zoomed the graph, change the home position to new max.
+        #     # Else reset the graph to new ranges and clear zoom levels.
+        #     if self.mpl_toolbar._views:
+        #         self.mpl_toolbar._views[0][0] = (tx_min, tx_max, ty_min, ty_max)
+        #     else:
+        #         x_min, x_max = tx_min, tx_max
+        #         y_min, y_max = ty_min, ty_max
+        #         self.mpl_toolbar.update()
+        # self.__range_mode_automated = self.axes_range_mode == 0
+        # # print(self.axes.get_xlim())
+        # # Set limits accordingly
+        # self.axes.set_ylim([y_min, y_max])
+        # self.axes.set_xlim([x_min, x_max])
+        #
+        # self.measurement.draw_selection()
+        #
+        # # Invert axis
+        # if self.invert_Y and not self.__inverted_Y:
+        #     self.axes.set_ylim(self.axes.get_ylim()[::-1])
+        #     self.__inverted_Y = True
+        # elif not self.invert_Y and self.__inverted_Y:
+        #     self.axes.set_ylim(self.axes.get_ylim()[::-1])
+        #     self.__inverted_Y = False
+        # if self.invert_X and not self.__inverted_X:
+        #     self.axes.set_xlim(self.axes.get_xlim()[::-1])
+        #     self.__inverted_X = True
+        # elif not self.invert_X and self.__inverted_X:
+        #     self.axes.set_xlim(self.axes.get_xlim()[::-1])
+        #     self.__inverted_X = False
+        # # [::-1] is elegant reverse. Slice sequence with step of -1.
+        # # http://stackoverflow.com/questions/3705670/
+        # # best-way-to-create-a-reversed-list-in-python
+        #
+        # # self.axes.set_title('ToF Histogram\n\n')
+        # self.axes.set_ylabel(self.name_y_axis.title())
+        # self.axes.set_xlabel(self.name_x_axis.title())
 
         # Remove axis ticks and draw
         self.remove_axes_ticks()

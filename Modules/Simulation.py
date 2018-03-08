@@ -18,6 +18,7 @@ import logging
 import sys
 from Modules.Functions import md5_for_file
 from Modules.Settings import Settings
+import shutil
 
 class Simulations:
     '''Simulations class handles multiple simulations.

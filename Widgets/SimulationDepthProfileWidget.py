@@ -8,7 +8,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinik
 from os.path import join
 from PyQt5 import QtCore, uic, QtWidgets
 
-from Widgets.MatplotlibTofeHistogramWidget import MatplotlibHistogramWidget
+from Widgets.MatplotlibSimulationDepthProfileWidget import MatplotlibSimulationDepthProfileWidget
 from Dialogs.SimulationElementSelectionDialog import SimulationElementSelectionDialog
 
 
@@ -16,20 +16,24 @@ class SimulationDepthProfileWidget(QtWidgets.QWidget):
     '''HistogramWidget used to draw ToF-E Histograms.
     '''
 
-    def __init__(self, project):
+    def __init__(self, simulation, masses, icon_manager):
         '''Inits TofeHistogramWidget widget.
 
         Args:
-            measurement: A measurement class object.
+            project: ??
             masses: A masses class object.
             icon_manager: An iconmanager class object.
         '''
         super().__init__()
-        self.project = project
-        self.ui = uic.loadUi(join("ui_files", "ui_simulation_depth_profile_widget.ui"), self)
+        self.simulation = simulation
+        self.ui = uic.loadUi(join("ui_files", "ui_simulation_depth_profile_widget_new.ui"), self)
+
+        self.matplotlib = MatplotlibSimulationDepthProfileWidget(self, simulation, masses, icon_manager)
+
         self.ui.addElementButton.clicked.connect(self.__select_element)
         self.__set_shortcuts()
         self.ui.setWindowTitle("Simulation depth profile")
+
 
     # def __init__(self, measurement, masses, icon_manager):
     #     '''Inits TofeHistogramWidget widget.
@@ -61,7 +65,8 @@ class SimulationDepthProfileWidget(QtWidgets.QWidget):
     #         "ToF-E Histogram - Event count: {0}".format(count))
 
     def __select_element(self):
-        dialog = SimulationElementSelectionDialog(self.project)
+        return
+        # dialog = SimulationElementSelectionDialog(self.project)
 
         # if dialog.directory:
         #     self.__close_project()
