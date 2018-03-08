@@ -6,11 +6,11 @@ Toflen: 0.623
 Carbon foil thickness: 3.1
 Target density: 3.0
 TOF calibration: 5.70569323644e-11 1.66381574853e-09
-Angle calibration: 12.0 51.0
+Angle calibration: 0.0 0.0
 Number of depth steps: 100
 Depth step for stopping: 20.0
 Depth step for output: 20.0
 Depths for concentration scaling: 200.0 600.0
-Cross section: 3
+Cross section: 1
 Number of iterations: 3
-Efficiency directory: /home/atsejaas/potku/efficiency_files
+Efficiency directory: C:/Users/localadmin/potku/efficiency_files
