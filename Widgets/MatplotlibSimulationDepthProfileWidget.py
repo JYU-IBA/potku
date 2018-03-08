@@ -1,5 +1,9 @@
 # coding=utf-8
-
+'''
+Created on 1.3.2018
+Updated on 8.3.2018
+'''
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 from matplotlib import cm
 from matplotlib.colors import LogNorm
 from PyQt5 import QtCore, QtWidgets
