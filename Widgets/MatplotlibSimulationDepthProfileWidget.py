@@ -102,71 +102,12 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
 
         self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="green", marker='o'))
 
-        # # Values for zoom
-        # x_min, x_max = self.axes.get_xlim()
-        # y_min, y_max = self.axes.get_ylim()
-        #
+        # Values for zoom
+        x_min, x_max = self.axes.get_xlim()
+        y_min, y_max = self.axes.get_ylim()
+
         # x_data = self.__x_data
         # y_data = self.__y_data
-        #
-        # # Transpose
-        # if self.transpose_axes:
-        #     x_data, y_data = y_data, x_data  # Always transpose data if checked.
-        #     if not self.__transposed:
-        #         self.__transposed = True
-        #         # self.measurement.selector.transpose(True)
-        #         # Switch axes names
-        #         self.name_x_axis, self.name_y_axis = (self.name_y_axis,
-        #                                               self.name_x_axis)
-        #         # Switch min & max values
-        #         x_min, x_max, y_min, y_max = y_min, y_max, x_min, x_max
-        #         # Switch inverts
-        #         self.invert_X, self.invert_Y = self.invert_Y, self.invert_X
-        # if not self.transpose_axes and self.__transposed:
-        #     self.__transposed = False
-        #     # self.measurement.selector.transpose(False)
-        #     # Switch axes names
-        #     self.name_x_axis, self.name_y_axis = self.name_y_axis, self.name_x_axis
-        #     # Switch min & max values
-        #     x_min, x_max, y_min, y_max = y_min, y_max, x_min, x_max
-        #     # Switch inverts
-        #     self.invert_X, self.invert_Y = self.invert_Y, self.invert_X
-        #
-        #
-        # # Check values for graph
-        # axes_range = None
-        # bin_counts = (
-        # (self.__x_data_max - self.__x_data_min) / self.compression_x,
-        # (self.__y_data_max - self.__y_data_min) / self.compression_y)
-        # if self.axes_range_mode == 1:
-        #     axes_range = list(self.axes_range)
-        #     axes_range[0] = self.__fix_axes_range(axes_range[0],
-        #                                           self.compression_x)
-        #     axes_range[1] = self.__fix_axes_range(axes_range[1],
-        #                                           self.compression_y)
-        #     x_length = axes_range[0][1] - axes_range[0][0]
-        #     y_length = axes_range[1][1] - axes_range[1][0]
-        #     bin_counts = (x_length / self.compression_x,
-        #                   y_length / self.compression_y)
-        #
-        # # If bin count too high -> it will crash the program
-        # if bin_counts[0] > 3500:
-        #     old_count = bin_counts[0]
-        #     bin_counts = (3500, bin_counts[1])
-        #     # TODO: Better location for message?
-        #     print(
-        #         "[WARNING] {0}: X axis bin count ({2}) above 3500. {1}".format(
-        #             self.simulation.simulation_name,
-        #             "Limiting to prevent crash.",
-        #             old_count))
-        # if bin_counts[1] > 3500:
-        #     old_count = bin_counts[1]
-        #     bin_counts = (bin_counts[0], 3500)
-        #     print(
-        #         "[WARNING] {0}: Y axis bin count ({2}) above 3500. {1}".format(
-        #             self.simulation.simulation_name,
-        #             "Limiting to prevent crash.",
-        #             old_count))
         #
         # use_color_scheme = self.simulation.color_scheme
         # color_scheme = MatplotlibSimulationDepthProfileWidget.color_scheme[use_color_scheme]
@@ -223,10 +164,10 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # # [::-1] is elegant reverse. Slice sequence with step of -1.
         # # http://stackoverflow.com/questions/3705670/
         # # best-way-to-create-a-reversed-list-in-python
-        #
-        # # self.axes.set_title('ToF Histogram\n\n')
-        # self.axes.set_ylabel(self.name_y_axis.title())
-        # self.axes.set_xlabel(self.name_x_axis.title())
+
+        # self.axes.set_title('ToF Histogram\n\n')
+        self.axes.set_ylabel(self.name_y_axis.title())
+        self.axes.set_xlabel(self.name_x_axis.title())
 
         # Remove axis ticks and draw
         self.remove_axes_ticks()
@@ -268,68 +209,6 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             self.axes.xaxis.tick_bottom()
             self.axes.xaxis.set_label_position("bottom")
 
-    def __on_draw_legend(self):
-        self.axes.legend_ = None
-        if not self.measurement.selector.selections:
-            return
-        if not self.__inited__:  # Do this only once.
-            self.fig.tight_layout(pad=0.5)
-            box = self.axes.get_position()
-            self.axes.set_position([box.x0,
-                                    box.y0,
-                                    box.width * 0.9,
-                                    box.height])
-            self.__inited__ = True
-        selection_legend = {}
-
-        # Get selections for legend
-        for sel in self.measurement.selector.selections:
-            rbs_string = ""
-            if sel.type == "ERD":
-                element_object = sel.element
-            elif sel.type == "RBS":
-                element_object = sel.element_scatter
-                rbs_string = "*"
-            sel.points.set_marker(None)  # Remove markers for legend.
-            dirtyinteger = 0
-            key_string = "{0}{1}".format(element_object, dirtyinteger)
-            while key_string in selection_legend.keys():
-                dirtyinteger += 1
-                key_string = "{0}{1}".format(element_object,
-                                             dirtyinteger)
-
-            element, isotope = element_object.get_element_and_isotope()
-            label = r"$^{" + str(isotope) + "}$" + element + rbs_string
-            mass = str(isotope)
-            if not mass:
-                mass = self.__masses.get_standard_isotope(element)
-            else:
-                mass = float(mass)
-            selection_legend[key_string] = (label, mass, sel.points)
-
-        # Sort legend text
-        sel_text = []
-        sel_points = []
-        # keys = sorted(selection_legend.keys())
-        items = sorted(selection_legend.items(), key=lambda x: x[1][1])
-        for item in items:
-            # [0] is the key of the item.
-            sel_text.append(item[1][0])
-            sel_points.append(item[1][2])
-
-        leg = self.axes.legend(sel_points,
-                               sel_text,
-                               loc=3,
-                               bbox_to_anchor=(1, 0),
-                               borderaxespad=0,
-                               prop={'size': 12})
-        for handle in leg.legendHandles:
-            handle.set_linewidth(3.0)
-
-        # Set the markers back to original.
-        for sel in self.measurement.selector.selections:
-            sel.points.set_marker(sel.LINE_MARKER)
-
     def __toggle_tool_drag(self):
         if self.__button_drag.isChecked():
             self.mpl_toolbar.mode_tool = 1
@@ -338,8 +217,6 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             # self.elementSelectionButton.setChecked(False)
         # self.elementSelectUndoButton.setEnabled(False)
         self.elementSelectionSelectButton.setChecked(False)
-        # self.measurement.purge_selection()
-        # self.measurement.reset_select()
         self.canvas.draw_idle()
 
     def __toggle_tool_zoom(self):
@@ -350,8 +227,6 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             # self.elementSelectionButton.setChecked(False)
         # self.elementSelectUndoButton.setEnabled(False)
         self.elementSelectionSelectButton.setChecked(False)
-        # self.measurement.purge_selection()
-        # self.measurement.reset_select()
         self.canvas.draw_idle()
 
     def __toggle_drag_zoom(self):
@@ -374,13 +249,14 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
 
         # Make own buttons
         self.mpl_toolbar.addSeparator()
-        self.elementSelectionButton = QtWidgets.QToolButton(self)
-        self.elementSelectionButton.clicked.connect(
-            self.enable_element_selection)
-        self.elementSelectionButton.setCheckable(True)
-        self.__icon_manager.set_icon(self.elementSelectionButton, "select.png")
-        self.elementSelectionButton.setToolTip("Select element area")
-        self.mpl_toolbar.addWidget(self.elementSelectionButton)
+
+        # self.elementSelectionButton = QtWidgets.QToolButton(self)
+        # self.elementSelectionButton.clicked.connect(
+        #     self.enable_element_selection)
+        # self.elementSelectionButton.setCheckable(True)
+        # self.__icon_manager.set_icon(self.elementSelectionButton, "select.png")
+        # self.elementSelectionButton.setToolTip("Select element area")
+        # self.mpl_toolbar.addWidget(self.elementSelectionButton)
 
         # Selection undo button
         self.elementSelectUndoButton = QtWidgets.QToolButton(self)
@@ -392,16 +268,16 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.elementSelectUndoButton)
         self.mpl_toolbar.addSeparator()
 
-        # Element Selection selecting tool
-        self.elementSelectionSelectButton = QtWidgets.QToolButton(self)
-        self.elementSelectionSelectButton.clicked.connect(
-            self.enable_selection_select)
-        self.elementSelectionSelectButton.setCheckable(True)
-        self.elementSelectionSelectButton.setEnabled(False)
-        self.__icon_manager.set_icon(self.elementSelectionSelectButton,
-                                     "selectcursor.png")
-        self.elementSelectionSelectButton.setToolTip("Select element selection")
-        self.mpl_toolbar.addWidget(self.elementSelectionSelectButton)
+        # # Element Selection selecting tool
+        # self.elementSelectionSelectButton = QtWidgets.QToolButton(self)
+        # self.elementSelectionSelectButton.clicked.connect(
+        #     self.enable_selection_select)
+        # self.elementSelectionSelectButton.setCheckable(True)
+        # self.elementSelectionSelectButton.setEnabled(False)
+        # self.__icon_manager.set_icon(self.elementSelectionSelectButton,
+        #                              "selectcursor.png")
+        # self.elementSelectionSelectButton.setToolTip("Select element selection")
+        # self.mpl_toolbar.addWidget(self.elementSelectionSelectButton)
 
         # Selection delete button
         self.elementSelectDeleteButton = QtWidgets.QToolButton(self)
@@ -412,14 +288,14 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.elementSelectDeleteButton)
         self.mpl_toolbar.addSeparator()
 
-        # Selection delete all -button
-        self.elementSelectionDeleteButton = QtWidgets.QToolButton(self)
-        self.elementSelectionDeleteButton.clicked.connect(
-            self.remove_all_selections)
-        self.__icon_manager.set_icon(self.elementSelectionDeleteButton,
-                                     "delall.png")
-        self.elementSelectionDeleteButton.setToolTip("Delete all selections")
-        self.mpl_toolbar.addWidget(self.elementSelectionDeleteButton)
+        # # Selection delete all -button
+        # self.elementSelectionDeleteButton = QtWidgets.QToolButton(self)
+        # self.elementSelectionDeleteButton.clicked.connect(
+        #     self.remove_all_selections)
+        # self.__icon_manager.set_icon(self.elementSelectionDeleteButton,
+        #                              "delall.png")
+        # self.elementSelectionDeleteButton.setToolTip("Delete all selections")
+        # self.mpl_toolbar.addWidget(self.elementSelectionDeleteButton)
 
     def on_click(self, event):
         """ On click event above graph.
@@ -507,123 +383,84 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             self.canvas.draw_idle()
             # self.__on_draw_legend()
 
-    def __emit_selections_changed(self):
-        """Emits a 'selectionsChanged' signal with the selections list as a parameter. 
-        """
-        # self.emit(QtCore.SIGNAL("selectionsChanged(PyQt_PyObject)"), self.measurement.selector.selections)
-        self.selectionsChanged.emit(self.measurement.selector.selections)
-
-    def __emit_save_cuts(self):
-        """Emits a 'selectionsChanged' signal with the selections list as a parameter. 
-        """
-        # self.emit(QtCore.SIGNAL("saveCuts(PyQt_PyObject)"), self.measurement)
-        self.saveCuts.emit(self.measurement.selector.selections)
-
-    def __context_menu(self, event, cursorlocation):
-        menu = QtWidgets.QMenu(self)
-
-        Action = QtWidgets.QAction(self.tr("Graph Settings..."), self)
-        Action.triggered.connect(self.graph_settings_dialog)
-        menu.addAction(Action)
-
-        if self.measurement.selection_select(cursorlocation,
-                                             highlight=False) == 1:
-            Action = QtWidgets.QAction(self.tr("Selection settings..."), self)
-            Action.triggered.connect(self.selection_settings_dialog)
-            menu.addAction(Action)
-
-        menu.addSeparator()
-        Action = QtWidgets.QAction(self.tr("Load selections..."), self)
-        Action.triggered.connect(self.load_selections)
-        menu.addAction(Action)
-
-        Action = QtWidgets.QAction(self.tr("Save cuts"), self)
-        Action.triggered.connect(self.save_cuts)
-        menu.addAction(Action)
-        if len(self.measurement.selector.selections) == 0:
-            Action.setEnabled(False)
-
-        coords = self.canvas.geometry().getCoords()
-        point = QtCore.QPoint(event.x, coords[3] - event.y - coords[1])
-        # coords[1] from spacing
-        menu.exec_(self.canvas.mapToGlobal(point))
+    # def __context_menu(self, event, cursorlocation):
+    #     menu = QtWidgets.QMenu(self)
+    #
+    #     Action = QtWidgets.QAction(self.tr("Graph Settings..."), self)
+    #     Action.triggered.connect(self.graph_settings_dialog)
+    #     menu.addAction(Action)
+    #
+    #     if self.measurement.selection_select(cursorlocation,
+    #                                          highlight=False) == 1:
+    #         Action = QtWidgets.QAction(self.tr("Selection settings..."), self)
+    #         Action.triggered.connect(self.selection_settings_dialog)
+    #         menu.addAction(Action)
+    #
+    #     menu.addSeparator()
+    #     Action = QtWidgets.QAction(self.tr("Load selections..."), self)
+    #     Action.triggered.connect(self.load_selections)
+    #     menu.addAction(Action)
+    #
+    #     Action = QtWidgets.QAction(self.tr("Save cuts"), self)
+    #     Action.triggered.connect(self.save_cuts)
+    #     menu.addAction(Action)
+    #     if len(self.measurement.selector.selections) == 0:
+    #         Action.setEnabled(False)
+    #
+    #     coords = self.canvas.geometry().getCoords()
+    #     point = QtCore.QPoint(event.x, coords[3] - event.y - coords[1])
+    #     # coords[1] from spacing
+    #     menu.exec_(self.canvas.mapToGlobal(point))
 
     def graph_settings_dialog(self):
         '''Show graph settings dialog.
         '''
         TofeGraphSettingsWidget(self)
 
-    def selection_settings_dialog(self):
-        '''Show selection settings dialog.
-        '''
-        selection = self.measurement.selector.get_selected()
-        SelectionSettingsDialog(selection)
-        self.measurement.selector.auto_save()
-        self.on_draw()
-        self.__emit_selections_changed()
+    # def enable_element_selection(self):
+    #     '''Enable element selection.
+    #     '''
+    #     self.elementSelectUndoButton.setEnabled(
+    #         self.elementSelectionButton.isChecked())
+    #     if self.elementSelectionButton.isChecked():  # if button is enabled
+    #         # One cannot choose selection while selecting
+    #         self.elementSelectionSelectButton.setChecked(False)
+    #         self.__toggle_drag_zoom()
+    #         self.mpl_toolbar.mode_tool = 3
+    #         str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
+    #         self.__tool_label.setText(str_tool)
+    #         self.mpl_toolbar.mode = str_tool
+    #     else:
+    #         self.__tool_label.setText("")
+    #         self.mpl_toolbar.mode_tool = 0
+    #         self.mpl_toolbar.mode = ""
+    #         self.measurement.purge_selection()  # Remove hanging selection points
+    #         self.measurement.reset_select()
+    #         self.canvas.draw_idle()
+    #         self.__on_draw_legend()
 
-    def load_selections(self):
-        '''Show dialog to load selections.
-        '''
-        filename = open_file_dialog(self, self.measurement.directory,
-                                    "Load Element Selection",
-                                    "Selection file (*.sel)")
-        if filename:
-            self.measurement.load_selection(filename)
-            self.on_draw()
-            self.elementSelectionSelectButton.setEnabled(True)
-        self.__emit_selections_changed()
-
-    def save_cuts(self):
-        '''Save measurement cuts.
-        '''
-        self.measurement.save_cuts()
-        self.__emit_save_cuts()
-
-    def enable_element_selection(self):
-        '''Enable element selection.
-        '''
-        self.elementSelectUndoButton.setEnabled(
-            self.elementSelectionButton.isChecked())
-        if self.elementSelectionButton.isChecked():  # if button is enabled
-            # One cannot choose selection while selecting
-            self.elementSelectionSelectButton.setChecked(False)
-            self.__toggle_drag_zoom()
-            self.mpl_toolbar.mode_tool = 3
-            str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
-            self.__tool_label.setText(str_tool)
-            self.mpl_toolbar.mode = str_tool
-        else:
-            self.__tool_label.setText("")
-            self.mpl_toolbar.mode_tool = 0
-            self.mpl_toolbar.mode = ""
-            self.measurement.purge_selection()  # Remove hanging selection points
-            self.measurement.reset_select()
-            self.canvas.draw_idle()
-            self.__on_draw_legend()
-
-    def enable_selection_select(self):
-        '''Enable selection selecting tool.
-        '''
-        if self.elementSelectionSelectButton.isChecked():
-            self.measurement.purge_selection()
-            self.canvas.draw_idle()
-            # One cannot make new selection while choosing selection
-            self.elementSelectionButton.setChecked(False)
-            self.elementSelectUndoButton.setEnabled(False)
-            self.__toggle_drag_zoom()
-            self.mpl_toolbar.mode_tool = 4
-            str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
-            self.__tool_label.setText(str_tool)
-            self.mpl_toolbar.mode = str_tool
-        else:
-            self.elementSelectDeleteButton.setEnabled(False)
-            self.__tool_label.setText("")
-            self.mpl_toolbar.mode_tool = 0
-            self.mpl_toolbar.mode = ""
-            self.measurement.reset_select()
-            self.__on_draw_legend()
-            self.canvas.draw_idle()
+    # def enable_selection_select(self):
+    #     '''Enable selection selecting tool.
+    #     '''
+    #     if self.elementSelectionSelectButton.isChecked():
+    #         self.measurement.purge_selection()
+    #         self.canvas.draw_idle()
+    #         # One cannot make new selection while choosing selection
+    #         self.elementSelectionButton.setChecked(False)
+    #         self.elementSelectUndoButton.setEnabled(False)
+    #         self.__toggle_drag_zoom()
+    #         self.mpl_toolbar.mode_tool = 4
+    #         str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
+    #         self.__tool_label.setText(str_tool)
+    #         self.mpl_toolbar.mode = str_tool
+    #     else:
+    #         self.elementSelectDeleteButton.setEnabled(False)
+    #         self.__tool_label.setText("")
+    #         self.mpl_toolbar.mode_tool = 0
+    #         self.mpl_toolbar.mode = ""
+    #         self.measurement.reset_select()
+    #         self.__on_draw_legend()
+    #         self.canvas.draw_idle()
 
     def remove_selected(self):
         '''Remove selected selection.
@@ -636,19 +473,19 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.canvas.draw_idle()
         self.__emit_selections_changed()
 
-    def remove_all_selections(self):
-        '''Remove all selections.
-        '''
-        reply = QtWidgets.QMessageBox.question(self,
-                                               "Delete all selections",
-                                               "Do you want to delete all selections?\nThis cannot be reversed.",
-                                               QtWidgets.QMessageBox.Yes,
-                                               QtWidgets.QMessageBox.No)
-        if reply == QtWidgets.QMessageBox.Yes:
-            self.measurement.remove_all()
-            self.__on_draw_legend()
-            self.canvas.draw_idle()
-        self.__emit_selections_changed()
+    # def remove_all_selections(self):
+    #     '''Remove all selections.
+    #     '''
+    #     reply = QtWidgets.QMessageBox.question(self,
+    #                                            "Delete all selections",
+    #                                            "Do you want to delete all selections?\nThis cannot be reversed.",
+    #                                            QtWidgets.QMessageBox.Yes,
+    #                                            QtWidgets.QMessageBox.No)
+    #     if reply == QtWidgets.QMessageBox.Yes:
+    #         self.measurement.remove_all()
+    #         self.__on_draw_legend()
+    #         self.canvas.draw_idle()
+    #     self.__emit_selections_changed()
 
     def undo_point(self):
         '''Undo last point in open selection.
