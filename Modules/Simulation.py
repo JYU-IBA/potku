@@ -112,7 +112,7 @@ class Simulations:
 class Simulation:
     """Simulation class handles the simulation data."""
 
-    def __init__(self, project, tab_id):
+    def __init__(self, command_file, project, tab_id):
         """Inits Simulation.
 
         Args:
