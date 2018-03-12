@@ -37,6 +37,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
 
         Args:
             parent: A SimulationDepthProfileWidget class object.
+            simulation_data: Data of the simulation that needs to be drawn.
             masses: A masses class object.
             icon_manager: An iconmanager class object.
         '''
@@ -92,11 +93,11 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
     def on_draw(self):
         '''Draw method for matplotlib.
         '''
-
+        self.axes.clear()  # Clear old stuff
         line1 = [(0.0, 1.0), (4.0, 1.0)]
-        (line1_xs, line1_ys) = zip(*line1)
+        line1_xs, line1_ys = zip(*line1) # Divide the coordinate data into x and y data
 
-        self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="blue"))
+        self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="green"))
 
         # # Values for zoom
         # x_min, x_max = self.axes.get_xlim()
@@ -128,7 +129,6 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         #     # Switch inverts
         #     self.invert_X, self.invert_Y = self.invert_Y, self.invert_X
         #
-        # self.axes.clear()  # Clear old stuff
         #
         # # Check values for graph
         # axes_range = None
@@ -228,6 +228,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # Remove axis ticks and draw
         self.remove_axes_ticks()
         self.canvas.draw()
+        self.axes.plot()
 
     def __fix_axes_range(self, axes_range, compression):
         """Fixes axes' range to be divisible by compression.
