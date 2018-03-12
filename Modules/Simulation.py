@@ -21,27 +21,27 @@ from Modules.Settings import Settings
 import shutil
 
 class Simulations:
-    '''Simulations class handles multiple simulations.
-    '''
+    """Simulations class handles multiple simulations.
+    """
 
     def __init__(self, project):
-        '''Inits simulations class.
+        """Inits simulations class.
 
         Args:
             project: Project class object.
-        '''
+        """
         self.project = project
         self.simulations = {}  # Dictionary<Simulation>
         # self.measuring_unit_settings = None
         # self.default_settings = None
 
     def is_empty(self):
-        '''Check if there are any simulations.
+        """Check if there are any simulations.
 
         Return:
             Returns True if there are no simulations currently in the
             simulations object.
-        '''
+        """
         return len(self.simulations) == 0
 
     def get_key_value(self, key):
@@ -50,7 +50,7 @@ class Simulations:
         return self.simulations[key]
 
     def add_simulation_file(self, simulation_file, tab_id):
-        '''Add a new file to simulations.
+        """Add a new file to simulations.
 
         Args:
             simulation_file: String representing file containing simulation data.
@@ -58,7 +58,7 @@ class Simulations:
 
         Return:
             Returns new simulation or None if it wasn't added
-        '''
+        """
         print(simulation_file)
         simulation = None
         simulation_filename = os.path.split(simulation_file)[1]
@@ -80,7 +80,7 @@ class Simulations:
 
                 log = "Added new simulation {0} to the project.".format(
                     file_name)
-                logging.getLogger('project').info(log)
+                logging.getLogger("project").info(log)
             keys = self.simulations.keys()
             for key in keys:
                 if self.simulations[key].simulation_file == file_name:
@@ -95,11 +95,11 @@ class Simulations:
         return simulation
 
     def remove_by_tab_id(self, tab_id):
-        '''Removes simulation from simulations by tab id
+        """Removes simulation from simulations by tab id
 
         Args:
             tab_id: Integer representing tab identifier.
-        '''
+        """
 
         def remove_key(d, key):
             r = dict(d)
@@ -146,11 +146,11 @@ class Simulation:
         self.color_scheme = "Default color"
 
     def remove_by_tab_id(self, tab_id):
-        '''Removes simulation from tabs by tab id
+        """Removes simulation from tabs by tab id
 
         Args:
             tab_id: Integer representing tab identifier.
-        '''
+        """
 
         def remove_key(d, key):
             r = dict(d)
@@ -167,8 +167,8 @@ class Simulation:
             # logging.getLogger("project").info(log)
 
     def load_data(self):
-        '''Loads measurement data from filepath
-        '''
+        """Loads measurement data from filepath
+        """
         # import cProfile, pstats
         # pr = cProfile.Profile()
         # pr.enable()
@@ -193,11 +193,11 @@ class Simulation:
                         self.measurement_name,
                         "The error was:")
             error_log_2 = "I/O error ({0}): {1}".format(e.errno, e.strerror)
-            logging.getLogger('project').error(error_log)
-            logging.getLogger('project').error(error_log_2)
+            logging.getLogger("project").error(error_log)
+            logging.getLogger("project").error(error_log_2)
         except Exception as e:
             error_log = "Unexpected error: [{0}] {1}".format(e.errno, e.strerror)
-            logging.getLogger('project').error(error_log)
+            logging.getLogger("project").error(error_log)
         # pr.disable()
         # ps = pstats.Stats(pr)
         # ps.sort_stats("time")
@@ -243,15 +243,54 @@ class CallGetEspe(object):
         Args:
             command_file_path: Full path of where simulation command file is located.
         """
+
+        # Options for get_espe, here only temporarily:
+        #
+        # get_espe - Calculate an energy spectrum from simulated ERD data
+        #
+        # Options:
+        #         -real    only real events are handled
+        #         -ch      channel width in the output (MeV)
+        #         -depth   depth range of the events (nm, two values)
+        #         -dist    file name for depth distribution
+        #         -m2      average mass of the secondary particles (u)
+        #         -avemass use average mass for calculating energy from TOF
+        #         -scale   scale the total intensity to value
+        #         -err     give statistics in the third column
+        #         -detsize limit in the size of the detector foil (mm)
+        #         -erange  energy range in the output spectrum (MeV)
+        #         -timeres time resolution of the TOF-detector (ps, FWHM)
+        #         -eres    energy resolution (keV, FWHM) of the SSD, (energy signal used!)
+        #         -toflen  time-of-flight length (m)
+        #         -beam    mass number and the chemical symbol of the primary ion
+        #         -dose    dose of the beam (particle-┬╡C)
+        #         -energy  beam energy (MeV)
+        #         -theta   scattering angle (deg)
+        #         -tangle  angle between target surface and beam (deg)
+        #         -solid   solid angle of the detector (msr)
+        #         -density surface atomic density of the first 10 nm layer (at/cm^2)
+
         # TODO When the directory structure for simulation settings has been decided, update this
-        self.bin_dir = "%s%s%s" % ("external", os.sep, "Potku-bin")
-        # TODO get_espe takes its parameters as command line arguments
-        self.command_win = "cd " + self.bin_dir + " && get_espe.exe " + command_file_path
-        self.command_unix = "cd " + self.bin_dir + " && ./get_espe " + command_file_path
+        self.bin_dir = "%s%s%s" % ("external", os.sep, "Examples")
+        # TODO Read the parameters from the program
+
+        # Example parameters:
+        input_file = "35Cl-85-LiMnO_Li.*.erd"
+        params = {"-beam 35Cl", "-energy 8.515", "-theta 41.12", "-tangle 20.6", "-timeres 250.0",
+                  "-toflen 0.623", "-solid 0.2", "-dose 8.1e12", "-avemass",
+                  "-density 4.98e16", "-dist recoiling.LiMnO_Li", "-ch 0.02"}
+        params_string = " ".join(params)
+        output_file = "LiMnO_Li.simu"
+
+        self.command_win = "cd " + self.bin_dir + " && type " + input_file + \
+                           " | ..\Potku-bin\get_espe " + params_string + \
+                           " > " + output_file
+        self.command_unix = "cd " + self.bin_dir + " && cat " + input_file + \
+                            " | ../Potku-bin/get_espe " + params_string + \
+                            " > " + output_file
 
     def run_get_espe(self):
         """Runs get_espe. It generates an energy spectrum coordinate file from the result of MCERD.
-
         """
         used_os = platform.system()
         if used_os == "Windows":
@@ -263,7 +302,12 @@ class CallGetEspe(object):
         else:
             print("It appears we do no support your OS.")
 
-# For testing the CallMCERD class alone:
+
+# For testing the CallMCERD class:
 # CallMCERD("/home/siansiir/mcerd/source/Examples/35Cl-85-LiMnO_Li").run_simulation()
 # MCERD tries to read the input files from the path specified in the command file
 # CallMCERD(r"..\Examples\35Cl-85-LiMnO_Li").run_simulation()
+
+# For testing the CallGetEspe class:
+# test_espe = CallGetEspe("")
+# test_espe.run_get_espe()
