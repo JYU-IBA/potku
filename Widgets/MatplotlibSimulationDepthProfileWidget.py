@@ -4,6 +4,7 @@ Created on 1.3.2018
 Updated on 8.3.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+
 from matplotlib import cm
 from matplotlib.colors import LogNorm
 import matplotlib.lines as lines
@@ -33,15 +34,15 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
                   }
 
     def __init__(self, parent, simulation_data, masses, icon_manager):
-        '''Inits target and recoiling atoms widget.
+        """Inits target and recoiling atoms widget.
 
         Args:
             parent: A SimulationDepthProfileWidget class object.
-            simulation_data: Data of the simulation that needs to be drawn.
+            simulation_data: Data of the simulation that needs to be drawn (elements).
             masses: A masses class object.
             icon_manager: An iconmanager class object.
-        '''
-        simulation_data.data = [[10.5, 100], [4.5, 4.5]]
+        """
+        simulation_data.data = [[[0.00, 1.00], [100.00, 1.00]]]
         super().__init__(parent)
         self.canvas.manager.set_title("Depth Profile")
         self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
@@ -52,11 +53,13 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
         self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
+
+        # This customizes the toolbar buttons
         self.__fork_toolbar_buttons()
 
         self.simulation = simulation_data
-        self.__x_data = [x[0] for x in self.simulation.data]
-        self.__y_data = [x[1] for x in self.simulation.data]
+        self.__x_data = [x[0] for x in self.simulation.data[0]]
+        self.__y_data = [x[1] for x in self.simulation.data[0]]
 
         # Variables
         self.__inverted_Y = False
@@ -91,13 +94,13 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.on_draw()
 
     def on_draw(self):
-        '''Draw method for matplotlib.
-        '''
+        """Draw method for matplotlib.
+        """
         self.axes.clear()  # Clear old stuff
-        line1 = [(0.0, 1.0), (4.0, 1.0)]
+        line1 = self.simulation.data[0]
         line1_xs, line1_ys = zip(*line1) # Divide the coordinate data into x and y data
 
-        self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="green"))
+        self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="green", marker='o'))
 
         # # Values for zoom
         # x_min, x_max = self.axes.get_xlim()
@@ -419,18 +422,18 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.elementSelectionDeleteButton)
 
     def on_click(self, event):
-        '''On click event above graph.
+        """ On click event above graph.
 
         Args:
             event: A MPL MouseEvent
-        '''
+        """
         # Only inside the actual graph axes, else do nothing.
         if event.inaxes != self.axes:
             return
         # Allow dragging and zooming while selection is on but ignore clicks.
-        if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
-            return
-        cursorlocation = [int(event.xdata), int(event.ydata)]
+        # if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
+        #     return
+        # cursorlocation = [int(event.xdata), int(event.ydata)]
         # TODO: Possible switch to QtCore's mouseclicks
         # buttond = {QtCore.Qt.LeftButton  : 1,
         #       QtCore.Qt.MidButton   : 2,
@@ -450,36 +453,59 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         #    print("POSITIONS:")
         #    for item in self.mpl_toolbar._positions:
         #        print("\t{0}".format(item))
-        if event.button == 1:  # Left click
-            if self.elementSelectionSelectButton.isChecked():
-                if self.measurement.selection_select(cursorlocation) == 1:
-                    # self.elementSelectDeleteButton.setChecked(True)
-                    self.elementSelectDeleteButton.setEnabled(True)
-                    self.canvas.draw_idle()
-                    self.__on_draw_legend()
-            if self.elementSelectionButton.isChecked():  # If selection is enabled
-                if self.measurement.add_point(cursorlocation, self.canvas) == 1:
-                    self.__on_draw_legend()
-                    self.__emit_selections_changed()
-                self.canvas.draw_idle()  # Draw selection points
-        if event.button == 3:  # Right click
-            # Return if matplotlib tools are in use.
-            if self.__button_drag.isChecked():
-                return
-            if self.__button_zoom.isChecked():
-                return
 
-            # If selection is enabled
-            if self.elementSelectionButton.isChecked():
-                if self.measurement.end_open_selection(self.canvas):
-                    self.elementSelectionSelectButton.setEnabled(True)
-                    self.canvas.draw_idle()
-                    self.__on_draw_legend()
-                    self.__emit_selections_changed()
-                return  # We don't want menu to be shown also
-            self.__context_menu(event, cursorlocation)
+        # TODO: Adding a new point should happen when there is a double click? Add the functionality.
+        if event.button == 1:  # Left click
+            x = round(event.xdata, 4)
+            y = round(event.ydata, 4)
+            point = [x, y]
+
+            for index, p in enumerate(self.simulation.data[0]):
+                if p[0] > x:
+                    # TODO: the decimal should be affected by zoom e.g. the closer the zoom, the more precise the y
+                    if p[1] != round(y, 2):
+                        return
+                    else:
+                        point[1] = p[1]
+                        self.simulation.data[0].insert(index, point)
+                        break
+
+            self.axes.clear()  # Clear old stuff, this might cause trouble if you only want to claer one line?
+            line1 = self.simulation.data[0]
+
+            line1_xs, line1_ys = zip(*line1)  # Divide the coordinate data into x and y data
+            self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="green", marker='o'))
+            self.axes.plot()
+            
+            # if self.elementSelectionSelectButton.isChecked():
+            #     if self.measurement.selection_select(cursorlocation) == 1:
+            #         # self.elementSelectDeleteButton.setChecked(True)
+            #         self.elementSelectDeleteButton.setEnabled(True)
+            #         self.canvas.draw_idle()
+            #         self.__on_draw_legend()
+            # if self.elementSelectionButton.isChecked():  # If selection is enabled
+            #     if self.measurement.add_point(cursorlocation, self.canvas) == 1:
+            #         self.__on_draw_legend()
+            #         self.__emit_selections_changed()
+            #     self.canvas.draw_idle()  # Draw selection points
+        # if event.button == 3:  # Right click
+        #     # Return if matplotlib tools are in use.
+        #     if self.__button_drag.isChecked():
+        #         return
+        #     if self.__button_zoom.isChecked():
+        #         return
+
+            # # If selection is enabled
+            # if self.elementSelectionButton.isChecked():
+            #     if self.measurement.end_open_selection(self.canvas):
+            #         self.elementSelectionSelectButton.setEnabled(True)
+            #         self.canvas.draw_idle()
+            #         self.__on_draw_legend()
+            #         self.__emit_selections_changed()
+            #     return  # We don't want menu to be shown also
+            # self.__context_menu(event, cursorlocation)
             self.canvas.draw_idle()
-            self.__on_draw_legend()
+            # self.__on_draw_legend()
 
     def __emit_selections_changed(self):
         """Emits a 'selectionsChanged' signal with the selections list as a parameter. 
