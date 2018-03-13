@@ -14,6 +14,7 @@ from Dialogs.SelectionDialog import SelectionSettingsDialog
 from Dialogs.GraphSettingsDialog import TofeGraphSettingsWidget
 from Modules.Functions import open_file_dialog
 from Widgets.MatplotlibWidget import MatplotlibWidget
+from Modules.Point import Point
 
 
 class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
@@ -42,6 +43,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             masses: A masses class object.
             icon_manager: An iconmanager class object.
         """
+        self.list_points = [] # Maybe make this a simulation attribute
         simulation_data.data = [[[0.00, 1.00], [100.00, 1.00]]]
         super().__init__(parent)
         self.canvas.manager.set_title("Depth Profile")
@@ -99,8 +101,10 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.axes.clear()  # Clear old stuff
         line1 = self.simulation.data[0]
         line1_xs, line1_ys = zip(*line1) # Divide the coordinate data into x and y data
+        self.list_points.append(Point(self, line1_xs[0], line1_ys[0], 1))
+        self.list_points.append(Point(self, line1_xs[1], line1_ys[1], 1))
 
-        self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="green", marker='o'))
+        #self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="green", marker='o'))
 
         # Values for zoom
         x_min, x_max = self.axes.get_xlim()

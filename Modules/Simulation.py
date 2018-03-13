@@ -231,7 +231,7 @@ class CallMCERD(object):
         elif used_os == "Darwin":
             subprocess.call(self.command_unix, shell=True)
         else:
-            print("It appears we do no support your OS.")
+            print("It appears we do not support your OS.")
 
 
 class CallGetEspe(object):
@@ -300,7 +300,7 @@ class CallGetEspe(object):
         elif used_os == "Darwin":
             subprocess.call(self.command_unix, shell=True)
         else:
-            print("It appears we do no support your OS.")
+            print("It appears we do not support your OS.")
 
 
 # For testing the CallMCERD class:
