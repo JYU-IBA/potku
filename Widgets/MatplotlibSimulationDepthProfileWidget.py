@@ -216,7 +216,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             self.mpl_toolbar.mode_tool = 0
             # self.elementSelectionButton.setChecked(False)
         # self.elementSelectUndoButton.setEnabled(False)
-        self.elementSelectionSelectButton.setChecked(False)
+        # self.elementSelectionSelectButton.setChecked(False)
         self.canvas.draw_idle()
 
     def __toggle_tool_zoom(self):
@@ -226,7 +226,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             self.mpl_toolbar.mode_tool = 0
             # self.elementSelectionButton.setChecked(False)
         # self.elementSelectUndoButton.setEnabled(False)
-        self.elementSelectionSelectButton.setChecked(False)
+        # self.elementSelectionSelectButton.setChecked(False)
         self.canvas.draw_idle()
 
     def __toggle_drag_zoom(self):
@@ -472,20 +472,6 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.__on_draw_legend()
         self.canvas.draw_idle()
         self.__emit_selections_changed()
-
-    # def remove_all_selections(self):
-    #     '''Remove all selections.
-    #     '''
-    #     reply = QtWidgets.QMessageBox.question(self,
-    #                                            "Delete all selections",
-    #                                            "Do you want to delete all selections?\nThis cannot be reversed.",
-    #                                            QtWidgets.QMessageBox.Yes,
-    #                                            QtWidgets.QMessageBox.No)
-    #     if reply == QtWidgets.QMessageBox.Yes:
-    #         self.measurement.remove_all()
-    #         self.__on_draw_legend()
-    #         self.canvas.draw_idle()
-    #     self.__emit_selections_changed()
 
     def undo_point(self):
         '''Undo last point in open selection.
