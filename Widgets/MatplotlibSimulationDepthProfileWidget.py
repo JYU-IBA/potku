@@ -15,6 +15,7 @@ from Dialogs.GraphSettingsDialog import TofeGraphSettingsWidget
 from Modules.Functions import open_file_dialog
 from Widgets.MatplotlibWidget import MatplotlibWidget
 from Modules.Point import Point
+from matplotlib.backend_bases import MouseEvent
 
 
 class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
@@ -53,11 +54,13 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
 
         self.list_points = []
         self.simulation = simulation_data
-        self.elements = { "He": [(0.00, 1.00), (100.00, 1.00)] }
-        self._points_being_dragged = None
+        self.elements = { "He": [[0.00, 1.00], [100.00, 1.00]] }
+        self.dragging_point = None  # Just one point right now
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
+        self.canvas.mpl_connect('button_release_event', self.on_release)
+        self.canvas.mpl_connect('motion_notify_event', self.on_motion)
         # self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
 
         # This customizes the toolbar buttons
@@ -106,11 +109,11 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.axes.clear()  # Clear old stuff
         line1 = self.elements["He"]
         line1_xs, line1_ys = zip(*line1) # Divide the coordinate data into x and y data
-        self.list_points.append(Point(self, line1_xs[0], line1_ys[0], 1))
-        self.list_points.append(Point(self, line1_xs[1], line1_ys[1], 1))
+        # self.list_points.append(Point(self, line1_xs[0], line1_ys[0], 1))
+        # self.list_points.append(Point(self, line1_xs[1], line1_ys[1], 1))
 
-        #self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="green", marker='o'))
-
+        # self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="green", marker='o'))
+        # self.axes.plot(10, 0.5, linewidth=2, color="green", marker='o', markersize=10)
         # Values for zoom
         x_min, x_max = self.axes.get_xlim()
         y_min, y_max = self.axes.get_ylim()
@@ -122,7 +125,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # Remove axis ticks and draw
         self.remove_axes_ticks()
         self.canvas.draw()
-        self.axes.plot()
+        self.update_plot()
 
     def __fix_axes_range(self, axes_range, compression):
         """Fixes axes' range to be divisible by compression.
@@ -219,6 +222,17 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.elementSelectDeleteButton)
         self.mpl_toolbar.addSeparator()
 
+    def find_clicked_point(self, x, y):
+        """ If an existing point is clicked, return it.
+        Args:
+            x: x coordinate of click
+            y: y coordinate of click
+        """
+        for p in self.elements["He"]:
+            if abs(p[0] - x) < 0.5 and abs(p[1] - y) < 0.5:
+                return p
+        return None
+
     def on_click(self, event):
         """ On click event above graph.
 
@@ -232,25 +246,76 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         if event.button == 1:  # Left click
             x = round(event.xdata, 4)
             y = round(event.ydata, 4)
-            point = (x, y)
-
-            for index, p in enumerate(self.elements["He"]):
-                if p[0] > x:
-                    if p[1] != round(y, 2):
-                        return
-                    else:
-                        point[1] = p[1]
-                        self.elements["He"].insert(index, point)
-                        break
+            clicked_point = self.find_clicked_point(x, y)
+            if clicked_point:
+                self.dragging_point = clicked_point
+            else:
+                self.add_point(x, y)
 
             self.axes.clear()  # Clear old stuff, this might cause trouble if you only want to claer one line?
-            line1 = self.elements["He"]
 
-            line1_xs, line1_ys = zip(*line1)  # Divide the coordinate data into x and y data
-            self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="green", marker='o'))
-            self.axes.plot()
+            self.update_plot()
 
-            self.canvas.draw_idle()
+    def add_point(self, x, y=None):
+        if isinstance(x, MouseEvent):
+            x, y = int(x.xdata), int(x.ydata)
+        point = [x, y]
+        for index, p in enumerate(self.elements["He"]):
+            if p[0] > x:
+                # if p[1] != round(y, 3):
+                #     pass
+                # else:
+                point[1] = p[1]
+                self.elements["He"].insert(index, point)
+                # for e in self.elements["He"]:
+                #     print(e)
+                return point
+
+    def update_plot(self):
+        # if not self.list_points:
+        #     return
+        # Add new plot
+        self.axes.clear()
+        line1 = self.elements["He"]
+
+        line1_xs, line1_ys = zip(*line1)  # Divide the coordinate data into x and y data
+
+        self.axes.plot(line1_xs, line1_ys, "b", marker="o", markersize=7)
+        # Update current plot
+        # self._figure.canvas.draw()
+        self.canvas.draw_idle()
+
+    def on_motion(self, event):
+        u""" callback method for mouse motion event
+        :type event: MouseEvent
+        """
+        # if not isinstance(event, MouseEvent):
+        #     return
+        # x = round(event.xdata, 4)
+        # y = round(event.ydata, 4)
+        # if not self.dragging_point:
+        #     return
+        # self.dragging_point[0] = x
+        # self.dragging_point[1] = y
+        if not self.dragging_point:
+            return
+        self.remove_point(self.dragging_point)
+        self.dragging_point = self.add_point(event)
+        self.update_plot()
+
+    def remove_point(self, x):
+        if x in self.elements["He"]:
+            self.elements["He"].remove(x)
+
+    def on_release(self, event):
+        u""" callback method for mouse release event
+        :type event: MouseEvent
+        """
+        if event.button == 1 and event.inaxes in [self.axes] and self.dragging_point:
+            self.add_point(event)
+            self.dragging_point = None
+            self.update_plot()
+
 
     def graph_settings_dialog(self):
         '''Show graph settings dialog.
