@@ -16,6 +16,7 @@ from Modules.Functions import open_file_dialog
 from Widgets.MatplotlibWidget import MatplotlibWidget
 from Modules.Point import Point
 from matplotlib.backend_bases import MouseEvent
+import math
 
 
 class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
@@ -54,7 +55,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
 
         self.list_points = []
         self.simulation = simulation_data
-        self.elements = { "He": [[0.00, 1.00], [100.00, 1.00]] }
+        self.elements = { "He": [[0.00, 50.00], [50.00, 50.00]] }
         self.dragging_point = None  # Just one point right now
 
         # Connections and setup
@@ -64,7 +65,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
 
         # This customizes the toolbar buttons
-        self.__fork_toolbar_buttons()
+        # self.__fork_toolbar_buttons()
 
         # Put all x-coordinates to one list and all y-coordinates to one list.
         # There are needed later when we calculates the range of the axes.
@@ -79,29 +80,27 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # self.__y_data = [x[1] for x in self.simulation.data[0]]
 
         # Get settings from global settings
-        self.__global_settings = self.main_frame.simulation.project.global_settings
-        self.invert_Y = self.__global_settings.get_tofe_invert_y()
-        self.invert_X = self.__global_settings.get_tofe_invert_x()
-        self.transpose_axes = self.__global_settings.get_tofe_transposed()
-        self.simulation.color_scheme = self.__global_settings.get_tofe_color()
-        self.compression_x = self.__global_settings.get_tofe_compression_x()
-        self.compression_y = self.__global_settings.get_tofe_compression_y()
-        self.axes_range_mode = self.__global_settings.get_tofe_bin_range_mode()
-        x_range = self.__global_settings.get_tofe_bin_range_x()
-        y_range = self.__global_settings.get_tofe_bin_range_y()
-        self.axes_range = [x_range, y_range]
-
-        self.__x_data_min, self.__x_data_max = self.__fix_axes_range(
-            (min(self.__x_data), max(self.__x_data)),
-            self.compression_x)
-        self.__y_data_min, self.__y_data_max = self.__fix_axes_range(
-            (min(self.__y_data), max(self.__y_data)),
-            self.compression_y)
+        # self.__global_settings = self.main_frame.simulation.project.global_settings
+        # self.invert_Y = self.__global_settings.get_tofe_invert_y()
+        # self.invert_X = self.__global_settings.get_tofe_invert_x()
+        # self.transpose_axes = self.__global_settings.get_tofe_transposed()
+        # self.simulation.color_scheme = self.__global_settings.get_tofe_color()
+        # self.compression_x = self.__global_settings.get_tofe_compression_x()
+        # self.compression_y = self.__global_settings.get_tofe_compression_y()
+        # self.axes_range_mode = self.__global_settings.get_tofe_bin_range_mode()
+        # x_range = self.__global_settings.get_tofe_bin_range_x()
+        # y_range = self.__global_settings.get_tofe_bin_range_y()
+        # self.axes_range = [x_range, y_range]
+        #
+        # self.__x_data_min, self.__x_data_max = self.__fix_axes_range(
+        #     (min(self.__x_data), max(self.__x_data)),
+        #     self.compression_x)
+        # self.__y_data_min, self.__y_data_max = self.__fix_axes_range(
+        #     (min(self.__y_data), max(self.__y_data)),
+        #     self.compression_y)
 
         self.name_y_axis = "Concentration?"
         self.name_x_axis = "Depth"
-        self.axes.set_ylim(100)
-        self.axes.set_xlim(100)
 
         self.on_draw()
 
@@ -230,8 +229,17 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             x: x coordinate of click
             y: y coordinate of click
         """
+        # xlim = self.axes.get_xlim()
+        # xrange = xlim[1] - xlim[0]
+        # ylim = self.axes.get_ylim()
+        # yrange = ylim[1]-ylim[0]
+
+        # Display coordinates (relative to the screen)
+        x_y_disp = self.axes.transData.transform((x, y))
         for p in self.elements["He"]:
-            if abs(p[0] - x) < 0.5 and abs(p[1] - y) < 0.5:
+            elem_x_y_disp = self.axes.transData.transform((p[0], p[1]))
+            if self.distance(elem_x_y_disp[0], elem_x_y_disp[1], x_y_disp[0], x_y_disp[1]) < 20:
+                # if abs(elem_x_y_disp[0] - x_y_disp[0]) < 100 and abs(elem_x_y_disp[1] - x_y_disp[1]) < 100:
                 return p
         return None
 
@@ -246,61 +254,94 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             return
 
         if event.button == 1:  # Left click
-            x = round(event.xdata, 4)
-            y = round(event.ydata, 4)
+            x = event.xdata
+            y = event.ydata
             clicked_point = self.find_clicked_point(x, y)
-            if clicked_point:
+            if clicked_point: # Dragging a point
                 self.dragging_point = clicked_point
-            else:
+                self.remove_point(clicked_point)
+            else: # Adding a point
                 self.add_point_on_click(x, y)
-
-            self.axes.clear()  # Clear old stuff, this might cause trouble if you only want to claer one line?
 
             self.update_plot()
 
+    def distance(self, x1, y1, x2, y2):
+        """ Calculates the distance between two points. """
+        dist = math.hypot(x2 - x1, y2 - y1)
+        return dist
+
+    def point_on_line(self, xa, ya, xadd, yadd, xb, yb):
+        """ Checks if a point is on the line connecting
+        two other points. """
+        distance_a_add = self.distance(xa, ya, xadd, yadd)
+        distance_b_add = self.distance(xb, yb, xadd, yadd)
+        distance_a_b = self.distance(xa, ya, xb, yb)
+        threshold = 3
+        on_line = distance_a_add + distance_b_add - distance_a_b < threshold
+        return on_line
+
     def add_point_on_click(self, x, y=None):
+        """ Adds a point to the list when clicked close enough to a line. """
         point = [x, y]
-        for index, p in enumerate(self.elements["He"]):
-            if p[0] > x:
-                if p[1] != round(y, 3):
-                 return
-            else:
-                point[1] = p[1]
-                self.elements["He"].insert(index, point)
-                # for e in self.elements["He"]:
-                #     print(e)
-                return point
+        elems = self.elements["He"]
+        for i in range(len(elems)):
+            if elems[i][0] > x:
+                xa, ya = elems[i-1][0], elems[i-1][1]
+                xb, yb = elems[i][0], elems[i][1]
+                if not self.point_on_line(xa, ya, x, y, xb, yb):
+                    return None
+                else:
+                    elems.insert(i, point)
+                    return point
+        # if p[0] > x: # Fix this, now you can't add a point to the end of list
+        #     if p[1] != round(y, 3):
+        #         return
+        # else:
+        #     point[1] = p[1]
+        #     self.elements["He"].insert(index, point)
+        #     # for e in self.elements["He"]:
+        #     #     print(e)
+        #     return point
 
     def add_point_on_motion(self, x, y=None):
         """ Adds a point to the list when it is moved.
         """
         # TODO: Maybe there could be an index as a parameter, so we know the place of the point immediately?
         if isinstance(x, MouseEvent):
-            x, y = round(x.xdata, 4), round(x.ydata, 4)
+            x, y = x.xdata, x.ydata
         point = [x, y]
+        # If the x coord of the point to be added is less than the x coord of
+        # any of the existing points, this loop catches it
         for index, p in enumerate(self.elements["He"]):
             if p[0] > x:
-                # point[1] = p[1]
                 self.elements["He"].insert(index, point)
                 return point
+        # Otherwise the point is added to the end of the list
+        self.elements["He"].append(point)
+        return point
 
     def update_plot(self):
+        """ Clears the graph and replots every point. """
         # if not self.list_points:
         #     return
         # Add new plot
-        self.axes.clear()
+        self.axes.clear()  # Clear old stuff, this might cause trouble if you only want to clear one line?
+
         line1 = self.elements["He"]
-
         line1_xs, line1_ys = zip(*line1)  # Divide the coordinate data into x and y data
-
         self.axes.plot(line1_xs, line1_ys, "b", marker="o", markersize=7)
-        # Update current plot
-        # self._figure.canvas.draw()
+
         self.canvas.draw_idle()
 
+        # TODO: These set fixed axis ranges, which probably isn't correct
+        self.axes.set_ylim(-10, 110)
+        self.axes.set_xlim(-10, 110)
+
     def on_motion(self, event):
-        u""" callback method for mouse motion event
-        :type event: MouseEvent
+        """ callback method for mouse motion event
+
+        Args:
+            event: A MPL MouseEvent
         """
         # if not isinstance(event, MouseEvent):
         #     return
@@ -316,35 +357,38 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.dragging_point = self.add_point_on_motion(event)
         self.update_plot()
 
-    def remove_point(self, x):
-        if x in self.elements["He"]:
-            self.elements["He"].remove(x)
+    def remove_point(self, point):
+        """ Removes a point from the list. """
+        if point in self.elements["He"]:
+            self.elements["He"].remove(point)
 
     def on_release(self, event):
-        u""" callback method for mouse release event
-        :type event: MouseEvent
+        """ callback method for mouse release event
+
+        Args:
+            event: A MPL MouseEvent
         """
         if event.button == 1 and event.inaxes in [self.axes] and self.dragging_point:
             self.add_point_on_motion(event)
             self.dragging_point = None
             self.update_plot()
 
-
-    def graph_settings_dialog(self):
-        '''Show graph settings dialog.
-        '''
-        TofeGraphSettingsWidget(self)
-
-    def remove_selected(self):
-        '''Remove selected selection.
-        '''
-        self.elementSelectDeleteButton.setEnabled(False)
-        self.__on_draw_legend()
-        self.canvas.draw_idle()
-        self.__emit_selections_changed()
-
-    def undo_point(self):
-        '''Undo last point in open selection.
-        '''
-        # self.measurement.undo_point()
-        self.canvas.draw_idle()
+    #
+    # def graph_settings_dialog(self):
+    #     '''Show graph settings dialog.
+    #     '''
+    #     TofeGraphSettingsWidget(self)
+    #
+    # def remove_selected(self):
+    #     '''Remove selected selection.
+    #     '''
+    #     self.elementSelectDeleteButton.setEnabled(False)
+    #     self.__on_draw_legend()
+    #     self.canvas.draw_idle()
+    #     self.__emit_selections_changed()
+    #
+    # def undo_point(self):
+    #     '''Undo last point in open selection.
+    #     '''
+    #     # self.measurement.undo_point()
+    #     self.canvas.draw_idle()
