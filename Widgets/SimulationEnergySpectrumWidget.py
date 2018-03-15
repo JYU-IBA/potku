@@ -14,7 +14,7 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
     """ Simulation energy spectrum widget which is added to the simulation tab.
     """
 
-    def __init__(self, parent):
+    def __init__(self, parent, data):
         """ Initialize the energy spectrum widget.
         Args:
             parent: Parent of the energy spectrum widget (SimulationTabWidget)
@@ -30,7 +30,8 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
             self.ui.setWindowTitle(title)
             self.simulation = parent.simulation
             self.ui.saveSimuEnergySpectraButton.clicked.connect(self.save_spectra)
-            self.energy_spectrum_data = {}
+            self.energy_spectrum_data = data
+
 
             # Graph in matplotlib widget and add to window
             self.matplotlib = MatplotlibSimulationEnergySpectrumWidget(
@@ -54,7 +55,7 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
                 self.progress_bar.hide()
 
     def save_spectra(self):
-        """ Save the create denergy spectra.
+        """ Save the created energy spectra.
         """
         QtWidgets.QMessageBox.critical(self, "Error", "Not implemented",
                                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)

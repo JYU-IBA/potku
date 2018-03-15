@@ -21,9 +21,6 @@ class MatplotlibSimulationEnergySpectrumWidget(MatplotlibWidget):
         Args:
             parent: EnergySpectrumWidget class object.
             histed_files: List of calculated energy spectrum files.
-            rbs_list: A dictionary of RBS selection elements containing 
-                      scatter elements.
-            legend: Boolean representing whether to draw legend or not.
         '''
         super().__init__(parent)
         super().fork_toolbar_buttons()
