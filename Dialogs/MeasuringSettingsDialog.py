@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 26.8.2013
+Updated on 15.3.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -105,7 +105,7 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
         self.ui.applyButton.clicked.connect(self.update_settings)
         self.ui.cancelButton.clicked.connect(self.close)
         self.ui.elementButton.clicked.connect(
-                           lambda: self.__change_element(self.ui.elementButton))
+                           lambda: self.__change_element(self.ui.elementButton, self.ui.isotopeComboBox))
         self.ui.executeCalibrationButton.clicked.connect(
                            self.__open_calibration_dialog)
         self.ui.executeCalibrationButton.setEnabled(
@@ -135,20 +135,26 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
         self.ui.depthsForConcentrationScalingLineEdit_2.setValidator(
                                                                  double_validator)
 
-        # new stuff
+        # add simulation settings view to the settings view
         self.simulation_settings = SimulationSettingsWidget()
         self.ui.tabs.removeTab(1)
         self.ui.tabs.addTab(self.simulation_settings, "Simulation Settings")
 
+        self.simulation_settings.ui.beamIonButton.setText("Select")
+        self.simulation_settings.ui.beamIonButton.clicked.connect(
+            lambda: self.__change_element(self.simulation_settings.ui.beamIonButton,
+                                          self.simulation_settings.ui.isotopeComboBox))
+
+        self.simulation_settings.ui.typeOfSimulationComboBox.addItem("ERD")
+        self.simulation_settings.ui.typeOfSimulationComboBox.addItem("RBS")
+
         self.exec_()
-        
-        
+
     def __open_calibration_dialog(self):
         measurements = [self.project.measurements.get_key_value(key) 
                         for key in self.project.measurements.measurements.keys()]
         CalibrationDialog(measurements, self.settings, self.masses, self)
-                 
-        
+
     def __load_file(self, settings_type):
         """Opens file dialog and loads and shows selected ini file's values.
         
@@ -176,7 +182,6 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
                                           str(settings.element.isotope))
             settings.show(self)
         
-        
     def __save_file(self, settings_type):
         """Opens file dialog and sets and saves the settings to a ini file.
         """
@@ -197,7 +202,6 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
             settings.set_settings(self)
             settings.save_settings(filename)
         
-        
     def update_and_close_settings(self):
         """Updates measuring settings values with the dialog's values and saves them
         to default ini file.
@@ -217,7 +221,6 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
         except TypeError:
             # Message is already displayed within private method.
             pass
-        
     
     def __update_settings(self):
         """Update values from dialog to every setting object.
@@ -236,15 +239,12 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
             self.calibration_settings.save_settings()
             self.depth_profile_settings.save_settings()
         except TypeError:
-            QtWidgets.QMessageBox.question(self,
-                "Warning",
-                "Some of the setting values have not been set.\n" + \
-                "Please input setting values to save them.",
-                QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(self, "Warning", "Some of the setting values have not been set.\n" +
+                                           "Please input setting values to save them.", QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
             raise TypeError
     
-    
-    def __change_element(self, button):
+    def __change_element(self, button, comboBox):
         """Opens element selection dialog and loads selected element's isotopes 
         to a combobox.
         
@@ -256,9 +256,8 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
             button.setText(dialog.element)
             # Enabled settings once element is selected
             self.__enabled_element_information()  
-        self.masses.load_isotopes(dialog.element, self.isotopeComboBox,
+        self.masses.load_isotopes(dialog.element, comboBox,
                                   self.measuring_unit_settings.element.isotope)
-
         
     def __enabled_element_information(self):
         self.ui.isotopeComboBox.setEnabled(True)
