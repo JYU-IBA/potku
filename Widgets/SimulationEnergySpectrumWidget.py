@@ -27,6 +27,8 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
             self.ui.setWindowTitle(title)
             self.simulation = parent.simulation
             self.ui.saveSimuEnergySpectraButton.clicked.connect(self.save_spectra)
+            self.energy_spectrum_data = {}
+            #self.on_draw()
         except:
             import traceback
             msg = "Could not create Energy Spectrum graph. "
@@ -49,3 +51,35 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
         """
         QtWidgets.QMessageBox.critical(self, "Error", "Not implemented",
                                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+
+    def on_draw(self):
+        '''Draw method for matplotlib.
+        '''
+        # Values for zoom
+        x_min, x_max = self.axes.get_xlim()
+        y_min, y_max = self.axes.get_ylim()
+
+        self.axes.clear()  # Clear old stuff
+
+        self.axes.set_ylabel("Yield (counts)")
+        self.axes.set_xlabel("Energy (MeV)")
+
+        x = tuple(float(pair[0]) for pair in self.energy_spectrum_data)
+        y = tuple(float(pair[1]) for pair in self.energy_spectrum_data)
+
+        self.axes.plot(x, y)
+
+        if x_max > 0.09 and x_max < 1.01:  # This works...
+            x_max = self.axes.get_xlim()[1]
+        if y_max > 0.09 and y_max < 1.01:
+            y_max = self.axes.get_ylim()[1]
+
+        # Set limits accordingly
+        self.axes.set_ylim([y_min, y_max])
+        self.axes.set_xlim([x_min, x_max])
+
+        # Remove axis ticks
+        self.remove_axes_ticks()
+
+        # Draw magic
+        self.canvas.draw()
