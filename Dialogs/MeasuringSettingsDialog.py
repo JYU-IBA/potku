@@ -39,6 +39,7 @@ from Modules.Functions import open_file_dialog
 from Modules.Functions import save_file_dialog
 from Modules.InputValidator import InputValidator
 from Modules.MeasuringSettings import MeasuringSettings
+from Widgets.SimulationSettingsWidget import SimulationSettingsWidget
 
 
 class ProjectSettingsDialog(QtWidgets.QDialog):
@@ -133,6 +134,11 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
                                                                  double_validator)
         self.ui.depthsForConcentrationScalingLineEdit_2.setValidator(
                                                                  double_validator)
+
+        # new stuff
+        self.simulation_settings = SimulationSettingsWidget()
+        self.ui.tabs.removeTab(1)
+        self.ui.tabs.addTab(self.simulation_settings, "Simulation Settings")
 
         self.exec_()
         
