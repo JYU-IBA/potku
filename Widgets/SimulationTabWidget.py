@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 1.3.2018
-Updated on 5.3.2018
+Updated on 15.3.2018
 '''
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
@@ -285,25 +285,25 @@ class SimulationTabWidget(QtWidgets.QWidget):
             directory: A string representing directory.
             name: A string representing measurement's name.
         """
-        file = os.path.join(directory, EnergySpectrumWidget.save_file)
-        lines = self.__load_file(file)
-        if not lines:
-            return
-        m_name = self.simulation.simulation_name
-        try:
-            use_cuts = self.__confirm_filepath(
-                                   lines[0].strip().split("\t"), name, m_name)
-            cut_names = [os.path.basename(cut) for cut in use_cuts]
-            width = float(lines[1].strip())
-            EnergySpectrumParamsDialog.bin_width = width
-            EnergySpectrumParamsDialog.checked_cuts[m_name] = cut_names
-            self.energy_spectrum_widget = EnergySpectrumWidget(self,
-                                                               use_cuts,
-                                                               width)
-            icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
-            self.add_widget(self.energy_spectrum_widget, icon=icon)
-        except:  # We do not need duplicate error logs, log in widget instead
-            print(sys.exc_info())  # TODO: Remove this.
+        # file = os.path.join(directory, SimulationEnergySpectrumWidget.save_file)
+        # lines = self.__load_file(file)
+        # if not lines:
+        #     return
+        # m_name = self.simulation.simulation_name
+        # try:
+        #     use_cuts = self.__confirm_filepath(
+        #                            lines[0].strip().split("\t"), name, m_name)
+        #     cut_names = [os.path.basename(cut) for cut in use_cuts]
+        #     width = float(lines[1].strip())
+        #     EnergySpectrumParamsDialog.bin_width = width
+        #     EnergySpectrumParamsDialog.checked_cuts[m_name] = cut_names
+        #     self.energy_spectrum_widget = EnergySpectrumWidget(self,
+        #                                                        use_cuts,
+        #                                                        width)
+        #     icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
+        #     self.add_widget(self.energy_spectrum_widget, icon=icon)
+        # except:  # We do not need duplicate error logs, log in widget instead
+        #     print(sys.exc_info())  # TODO: Remove this.
 
     # def open_energy_spectrum(self, parent):
     #     """Opens energy spectrum dialog.
