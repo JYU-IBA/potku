@@ -100,6 +100,8 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
 
         self.name_y_axis = "Concentration?"
         self.name_x_axis = "Depth"
+        self.axes.set_ylim(100)
+        self.axes.set_xlim(100)
 
         self.on_draw()
 
@@ -250,25 +252,36 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             if clicked_point:
                 self.dragging_point = clicked_point
             else:
-                self.add_point(x, y)
+                self.add_point_on_click(x, y)
 
             self.axes.clear()  # Clear old stuff, this might cause trouble if you only want to claer one line?
 
             self.update_plot()
 
-    def add_point(self, x, y=None):
-        if isinstance(x, MouseEvent):
-            x, y = int(x.xdata), int(x.ydata)
+    def add_point_on_click(self, x, y=None):
         point = [x, y]
         for index, p in enumerate(self.elements["He"]):
             if p[0] > x:
-                # if p[1] != round(y, 3):
-                #     pass
-                # else:
+                if p[1] != round(y, 3):
+                 return
+            else:
                 point[1] = p[1]
                 self.elements["He"].insert(index, point)
                 # for e in self.elements["He"]:
                 #     print(e)
+                return point
+
+    def add_point_on_motion(self, x, y=None):
+        """ Adds a point to the list when it is moved.
+        """
+        # TODO: Maybe there could be an index as a parameter, so we know the place of the point immediately?
+        if isinstance(x, MouseEvent):
+            x, y = round(x.xdata, 4), round(x.ydata, 4)
+        point = [x, y]
+        for index, p in enumerate(self.elements["He"]):
+            if p[0] > x:
+                # point[1] = p[1]
+                self.elements["He"].insert(index, point)
                 return point
 
     def update_plot(self):
@@ -300,7 +313,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         if not self.dragging_point:
             return
         self.remove_point(self.dragging_point)
-        self.dragging_point = self.add_point(event)
+        self.dragging_point = self.add_point_on_motion(event)
         self.update_plot()
 
     def remove_point(self, x):
@@ -312,7 +325,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         :type event: MouseEvent
         """
         if event.button == 1 and event.inaxes in [self.axes] and self.dragging_point:
-            self.add_point(event)
+            self.add_point_on_motion(event)
             self.dragging_point = None
             self.update_plot()
 
