@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 1.3.2018
-Updated on 5.3.2018
+Updated on 15.3.2018
 '''
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
@@ -9,7 +9,6 @@ import os, logging, sys
 from PyQt5 import QtCore, uic, QtWidgets
 
 from Dialogs.ElementLossesDialog import ElementLossesDialog, ElementLossesWidget
-from Dialogs.EnergySpectrumDialog import EnergySpectrumParamsDialog, EnergySpectrumWidget
 from Dialogs.DepthProfileDialog import DepthProfileDialog, DepthProfileWidget
 from Modules.Element import Element
 from Modules.Null import Null
@@ -17,6 +16,7 @@ from Modules.UiLogHandlers import customLogHandler
 from Widgets.LogWidget import LogWidget
 from Widgets.SimulationDepthProfileWidget import SimulationDepthProfileWidget
 from Widgets.SimulationEnergySpectrumWidget import SimulationEnergySpectrumWidget
+from Modules.Functions import read_espe_file
 
 class SimulationTabWidget(QtWidgets.QWidget):
     """Tab widget where simulation stuff is added.
@@ -165,7 +165,9 @@ class SimulationTabWidget(QtWidgets.QWidget):
         Args:
             parent: Parent of the energy spectrum widget.
         """
-        self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self)
+        # self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self)
+        # self.make_energy_spectrum(directory, self.simulation.simulation_name)
+        self.make_energy_spectrum('/home/siansiir/PycharmProjects/potku/Sample-data', 'LiMnO_O.simu')
         self.add_widget(self.energy_spectrum_widget)
             
     def del_widget(self, widget):
@@ -285,21 +287,10 @@ class SimulationTabWidget(QtWidgets.QWidget):
             directory: A string representing directory.
             name: A string representing measurement's name.
         """
-        file = os.path.join(directory, EnergySpectrumWidget.save_file)
-        lines = self.__load_file(file)
-        if not lines:
-            return
-        m_name = self.simulation.simulation_name
         try:
-            use_cuts = self.__confirm_filepath(
-                                   lines[0].strip().split("\t"), name, m_name)
-            cut_names = [os.path.basename(cut) for cut in use_cuts]
-            width = float(lines[1].strip())
-            EnergySpectrumParamsDialog.bin_width = width
-            EnergySpectrumParamsDialog.checked_cuts[m_name] = cut_names
-            self.energy_spectrum_widget = EnergySpectrumWidget(self,
-                                                               use_cuts,
-                                                               width)
+            #data = read_espe_file(directory, name)
+            data = {}
+            self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self, data)
             icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
             self.add_widget(self.energy_spectrum_widget, icon=icon)
         except:  # We do not need duplicate error logs, log in widget instead
@@ -352,21 +343,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
                 except:
                     newfiles.append(os.path.join(self.simulation.directory, file))
             return newfiles
-
-    def __load_file(self, file):
-        """Load file
-        
-        Args:
-            file: A string representing full filepath to the file.
-        """
-        lines = []
-        try:
-            with open(file, "rt") as fp:
-                for line in fp:
-                    lines.append(line)
-        except:
-            pass
-        return lines
 
     def __read_log_file(self, file, state=1):
         """Read the log file into the log window.
