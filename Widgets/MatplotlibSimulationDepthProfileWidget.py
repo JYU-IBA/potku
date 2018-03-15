@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 8.3.2018
+Updated on 13.3.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
@@ -15,6 +15,8 @@ from Dialogs.GraphSettingsDialog import TofeGraphSettingsWidget
 from Modules.Functions import open_file_dialog
 from Widgets.MatplotlibWidget import MatplotlibWidget
 from Modules.Point import Point
+from matplotlib.backend_bases import MouseEvent
+import math
 
 
 class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
@@ -43,8 +45,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             masses: A masses class object.
             icon_manager: An iconmanager class object.
         """
-        self.list_points = [] # Maybe make this a simulation attribute
-        simulation_data.data = [[[0.00, 1.00], [100.00, 1.00]]]
+
         super().__init__(parent)
         self.canvas.manager.set_title("Depth Profile")
         self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
@@ -52,46 +53,54 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.__masses = masses
         self.__icon_manager = icon_manager
 
+        self.list_points = []
+        self.simulation = simulation_data
+        self.elements = { "He": [[0.00, 50.00], [50.00, 50.00]] }
+        self.dragging_point = None  # Just one point right now
+
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
-        self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
+        self.canvas.mpl_connect('button_release_event', self.on_release)
+        self.canvas.mpl_connect('motion_notify_event', self.on_motion)
+        # self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
 
         # This customizes the toolbar buttons
-        self.__fork_toolbar_buttons()
+        # self.__fork_toolbar_buttons()
 
-        self.simulation = simulation_data
-        self.__x_data = [x[0] for x in self.simulation.data[0]]
-        self.__y_data = [x[1] for x in self.simulation.data[0]]
+        # Put all x-coordinates to one list and all y-coordinates to one list.
+        # There are needed later when we calculates the range of the axes.
+        self.__x_data = []
+        self.__y_data = []
+        for points in self.elements.values():
+            for point in points:
+                self.__x_data.append(point[0])
+                self.__y_data.append(point[1])
 
-        # Variables
-        self.__inverted_Y = False
-        self.__inverted_X = False
-        self.__transposed = False
-        self.__inited__ = False
-        self.__range_mode_automated = False
+        # self.__x_data = [x[0] for x in self.simulation.data[0]]
+        # self.__y_data = [x[1] for x in self.simulation.data[0]]
 
         # Get settings from global settings
-        self.__global_settings = self.main_frame.simulation.project.global_settings
-        self.invert_Y = self.__global_settings.get_tofe_invert_y()
-        self.invert_X = self.__global_settings.get_tofe_invert_x()
-        self.transpose_axes = self.__global_settings.get_tofe_transposed()
-        self.simulation.color_scheme = self.__global_settings.get_tofe_color()
-        self.compression_x = self.__global_settings.get_tofe_compression_x()
-        self.compression_y = self.__global_settings.get_tofe_compression_y()
-        self.axes_range_mode = self.__global_settings.get_tofe_bin_range_mode()
-        x_range = self.__global_settings.get_tofe_bin_range_x()
-        y_range = self.__global_settings.get_tofe_bin_range_y()
-        self.axes_range = [x_range, y_range]
+        # self.__global_settings = self.main_frame.simulation.project.global_settings
+        # self.invert_Y = self.__global_settings.get_tofe_invert_y()
+        # self.invert_X = self.__global_settings.get_tofe_invert_x()
+        # self.transpose_axes = self.__global_settings.get_tofe_transposed()
+        # self.simulation.color_scheme = self.__global_settings.get_tofe_color()
+        # self.compression_x = self.__global_settings.get_tofe_compression_x()
+        # self.compression_y = self.__global_settings.get_tofe_compression_y()
+        # self.axes_range_mode = self.__global_settings.get_tofe_bin_range_mode()
+        # x_range = self.__global_settings.get_tofe_bin_range_x()
+        # y_range = self.__global_settings.get_tofe_bin_range_y()
+        # self.axes_range = [x_range, y_range]
+        #
+        # self.__x_data_min, self.__x_data_max = self.__fix_axes_range(
+        #     (min(self.__x_data), max(self.__x_data)),
+        #     self.compression_x)
+        # self.__y_data_min, self.__y_data_max = self.__fix_axes_range(
+        #     (min(self.__y_data), max(self.__y_data)),
+        #     self.compression_y)
 
-        self.__x_data_min, self.__x_data_max = self.__fix_axes_range(
-            (min(self.__x_data), max(self.__x_data)),
-            self.compression_x)
-        self.__y_data_min, self.__y_data_max = self.__fix_axes_range(
-            (min(self.__y_data), max(self.__y_data)),
-            self.compression_y)
-
-        self.name_y_axis = "Energy (Ch)"
-        self.name_x_axis = "time of flight (Ch)"
+        self.name_y_axis = "Concentration?"
+        self.name_x_axis = "Depth"
 
         self.on_draw()
 
@@ -99,75 +108,16 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         """Draw method for matplotlib.
         """
         self.axes.clear()  # Clear old stuff
-        line1 = self.simulation.data[0]
+        line1 = self.elements["He"]
         line1_xs, line1_ys = zip(*line1) # Divide the coordinate data into x and y data
-        self.list_points.append(Point(self, line1_xs[0], line1_ys[0], 1))
-        self.list_points.append(Point(self, line1_xs[1], line1_ys[1], 1))
+        # self.list_points.append(Point(self, line1_xs[0], line1_ys[0], 1))
+        # self.list_points.append(Point(self, line1_xs[1], line1_ys[1], 1))
 
-        #self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="green", marker='o'))
-
+        # self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="green", marker='o'))
+        # self.axes.plot(10, 0.5, linewidth=2, color="green", marker='o', markersize=10)
         # Values for zoom
         x_min, x_max = self.axes.get_xlim()
         y_min, y_max = self.axes.get_ylim()
-
-        # x_data = self.__x_data
-        # y_data = self.__y_data
-        #
-        # use_color_scheme = self.simulation.color_scheme
-        # color_scheme = MatplotlibSimulationDepthProfileWidget.color_scheme[use_color_scheme]
-        # colormap = cm.get_cmap(color_scheme)
-        # self.axes.hist2d(x_data,
-        #                  y_data,
-        #                  bins=bin_counts,
-        #                  norm=LogNorm(),
-        #                  range=axes_range,
-        #                  cmap=colormap)
-        #
-        # self.__on_draw_legend()
-        #
-        # if x_max > 0.09 and x_max < 1.01:  # This works..
-        #     x_min, x_max = self.axes.get_xlim()
-        # if y_max > 0.09 and y_max < 1.01:  # or self.axes_range_mode
-        #     y_min, y_max = self.axes.get_ylim()
-        #
-        # # Change zoom limits if compression factor was changed (or new graph).
-        # if (not self.__range_mode_automated and self.axes_range_mode == 0) \
-        #         or self.axes_range_mode == 1:
-        #     # self.__range_mode_automated and self.axes_range_mode == 1
-        #     tx_min, tx_max = self.axes.get_xlim()
-        #     ty_min, ty_max = self.axes.get_ylim()
-        #     # If user has zoomed the graph, change the home position to new max.
-        #     # Else reset the graph to new ranges and clear zoom levels.
-        #     if self.mpl_toolbar._views:
-        #         self.mpl_toolbar._views[0][0] = (tx_min, tx_max, ty_min, ty_max)
-        #     else:
-        #         x_min, x_max = tx_min, tx_max
-        #         y_min, y_max = ty_min, ty_max
-        #         self.mpl_toolbar.update()
-        # self.__range_mode_automated = self.axes_range_mode == 0
-        # # print(self.axes.get_xlim())
-        # # Set limits accordingly
-        # self.axes.set_ylim([y_min, y_max])
-        # self.axes.set_xlim([x_min, x_max])
-        #
-        # self.measurement.draw_selection()
-        #
-        # # Invert axis
-        # if self.invert_Y and not self.__inverted_Y:
-        #     self.axes.set_ylim(self.axes.get_ylim()[::-1])
-        #     self.__inverted_Y = True
-        # elif not self.invert_Y and self.__inverted_Y:
-        #     self.axes.set_ylim(self.axes.get_ylim()[::-1])
-        #     self.__inverted_Y = False
-        # if self.invert_X and not self.__inverted_X:
-        #     self.axes.set_xlim(self.axes.get_xlim()[::-1])
-        #     self.__inverted_X = True
-        # elif not self.invert_X and self.__inverted_X:
-        #     self.axes.set_xlim(self.axes.get_xlim()[::-1])
-        #     self.__inverted_X = False
-        # # [::-1] is elegant reverse. Slice sequence with step of -1.
-        # # http://stackoverflow.com/questions/3705670/
-        # # best-way-to-create-a-reversed-list-in-python
 
         # self.axes.set_title('ToF Histogram\n\n')
         self.axes.set_ylabel(self.name_y_axis.title())
@@ -176,7 +126,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # Remove axis ticks and draw
         self.remove_axes_ticks()
         self.canvas.draw()
-        self.axes.plot()
+        self.update_plot()
 
     def __fix_axes_range(self, axes_range, compression):
         """Fixes axes' range to be divisible by compression.
@@ -254,14 +204,6 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # Make own buttons
         self.mpl_toolbar.addSeparator()
 
-        # self.elementSelectionButton = QtWidgets.QToolButton(self)
-        # self.elementSelectionButton.clicked.connect(
-        #     self.enable_element_selection)
-        # self.elementSelectionButton.setCheckable(True)
-        # self.__icon_manager.set_icon(self.elementSelectionButton, "select.png")
-        # self.elementSelectionButton.setToolTip("Select element area")
-        # self.mpl_toolbar.addWidget(self.elementSelectionButton)
-
         # Selection undo button
         self.elementSelectUndoButton = QtWidgets.QToolButton(self)
         self.elementSelectUndoButton.clicked.connect(self.undo_point)
@@ -272,17 +214,6 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.elementSelectUndoButton)
         self.mpl_toolbar.addSeparator()
 
-        # # Element Selection selecting tool
-        # self.elementSelectionSelectButton = QtWidgets.QToolButton(self)
-        # self.elementSelectionSelectButton.clicked.connect(
-        #     self.enable_selection_select)
-        # self.elementSelectionSelectButton.setCheckable(True)
-        # self.elementSelectionSelectButton.setEnabled(False)
-        # self.__icon_manager.set_icon(self.elementSelectionSelectButton,
-        #                              "selectcursor.png")
-        # self.elementSelectionSelectButton.setToolTip("Select element selection")
-        # self.mpl_toolbar.addWidget(self.elementSelectionSelectButton)
-
         # Selection delete button
         self.elementSelectDeleteButton = QtWidgets.QToolButton(self)
         self.elementSelectDeleteButton.setEnabled(False)
@@ -292,14 +223,25 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.elementSelectDeleteButton)
         self.mpl_toolbar.addSeparator()
 
-        # # Selection delete all -button
-        # self.elementSelectionDeleteButton = QtWidgets.QToolButton(self)
-        # self.elementSelectionDeleteButton.clicked.connect(
-        #     self.remove_all_selections)
-        # self.__icon_manager.set_icon(self.elementSelectionDeleteButton,
-        #                              "delall.png")
-        # self.elementSelectionDeleteButton.setToolTip("Delete all selections")
-        # self.mpl_toolbar.addWidget(self.elementSelectionDeleteButton)
+    def find_clicked_point(self, x, y):
+        """ If an existing point is clicked, return it.
+        Args:
+            x: x coordinate of click
+            y: y coordinate of click
+        """
+        # xlim = self.axes.get_xlim()
+        # xrange = xlim[1] - xlim[0]
+        # ylim = self.axes.get_ylim()
+        # yrange = ylim[1]-ylim[0]
+
+        # Display coordinates (relative to the screen)
+        x_y_disp = self.axes.transData.transform((x, y))
+        for p in self.elements["He"]:
+            elem_x_y_disp = self.axes.transData.transform((p[0], p[1]))
+            if self.distance(elem_x_y_disp[0], elem_x_y_disp[1], x_y_disp[0], x_y_disp[1]) < 20:
+                # if abs(elem_x_y_disp[0] - x_y_disp[0]) < 100 and abs(elem_x_y_disp[1] - x_y_disp[1]) < 100:
+                return p
+        return None
 
     def on_click(self, event):
         """ On click event above graph.
@@ -310,264 +252,143 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # Only inside the actual graph axes, else do nothing.
         if event.inaxes != self.axes:
             return
-        # Allow dragging and zooming while selection is on but ignore clicks.
-        # if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
-        #     return
-        # cursorlocation = [int(event.xdata), int(event.ydata)]
-        # TODO: Possible switch to QtCore's mouseclicks
-        # buttond = {QtCore.Qt.LeftButton  : 1,
-        #       QtCore.Qt.MidButton   : 2,
-        #       QtCore.Qt.RightButton : 3,
-        #       # QtCore.Qt.XButton1 : None,
-        #       # QtCore.Qt.XButton2 : None,
-        #       }
-        # However, QtCore.Qt.RightButton is actually middle button (wheel) on 
-        # windows. So we'll use the numbers instead since they actually work
-        # cross-platform just fine.
-        # [DEBUG] Middle mouse button to debug current zoom levels or position.
-        # if event.button == 2:
-        #    print()
-        #    print("VIEWS:")
-        #    for item in self.mpl_toolbar._views:
-        #        print("\t{0}".format(item))
-        #    print("POSITIONS:")
-        #    for item in self.mpl_toolbar._positions:
-        #        print("\t{0}".format(item))
 
-        # TODO: Adding a new point should happen when there is a double click? Add the functionality.
         if event.button == 1:  # Left click
-            x = round(event.xdata, 4)
-            y = round(event.ydata, 4)
-            point = [x, y]
+            x = event.xdata
+            y = event.ydata
+            clicked_point = self.find_clicked_point(x, y)
+            if clicked_point: # Dragging a point
+                self.dragging_point = clicked_point
+                self.remove_point(clicked_point)
+            else: # Adding a point
+                self.add_point_on_click(x, y)
 
-            for index, p in enumerate(self.simulation.data[0]):
-                if p[0] > x:
-                    # TODO: the decimal should be affected by zoom e.g. the closer the zoom, the more precise the y
-                    if p[1] != round(y, 2):
-                        return
-                    else:
-                        point[1] = p[1]
-                        self.simulation.data[0].insert(index, point)
-                        break
+            self.update_plot()
 
-            self.axes.clear()  # Clear old stuff, this might cause trouble if you only want to claer one line?
-            line1 = self.simulation.data[0]
+    def distance(self, x1, y1, x2, y2):
+        """ Calculates the distance between two points. """
+        dist = math.hypot(x2 - x1, y2 - y1)
+        return dist
 
-            line1_xs, line1_ys = zip(*line1)  # Divide the coordinate data into x and y data
-            self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="green", marker='o'))
-            self.axes.plot()
-            
-            # if self.elementSelectionSelectButton.isChecked():
-            #     if self.measurement.selection_select(cursorlocation) == 1:
-            #         # self.elementSelectDeleteButton.setChecked(True)
-            #         self.elementSelectDeleteButton.setEnabled(True)
-            #         self.canvas.draw_idle()
-            #         self.__on_draw_legend()
-            # if self.elementSelectionButton.isChecked():  # If selection is enabled
-            #     if self.measurement.add_point(cursorlocation, self.canvas) == 1:
-            #         self.__on_draw_legend()
-            #         self.__emit_selections_changed()
-            #     self.canvas.draw_idle()  # Draw selection points
-        # if event.button == 3:  # Right click
-        #     # Return if matplotlib tools are in use.
-        #     if self.__button_drag.isChecked():
+    def point_on_line(self, xa, ya, xadd, yadd, xb, yb):
+        """ Checks if a point is on the line connecting
+        two other points. """
+        distance_a_add = self.distance(xa, ya, xadd, yadd)
+        distance_b_add = self.distance(xb, yb, xadd, yadd)
+        distance_a_b = self.distance(xa, ya, xb, yb)
+        threshold = 3
+        on_line = distance_a_add + distance_b_add - distance_a_b < threshold
+        return on_line
+
+    def add_point_on_click(self, x, y=None):
+        """ Adds a point to the list when clicked close enough to a line. """
+        point = [x, y]
+        elems = self.elements["He"]
+        for i in range(len(elems)):
+            if elems[i][0] > x:
+                xa, ya = elems[i-1][0], elems[i-1][1]
+                xb, yb = elems[i][0], elems[i][1]
+                if not self.point_on_line(xa, ya, x, y, xb, yb):
+                    return None
+                else:
+                    elems.insert(i, point)
+                    return point
+        # if p[0] > x: # Fix this, now you can't add a point to the end of list
+        #     if p[1] != round(y, 3):
         #         return
-        #     if self.__button_zoom.isChecked():
-        #         return
+        # else:
+        #     point[1] = p[1]
+        #     self.elements["He"].insert(index, point)
+        #     # for e in self.elements["He"]:
+        #     #     print(e)
+        #     return point
 
-            # # If selection is enabled
-            # if self.elementSelectionButton.isChecked():
-            #     if self.measurement.end_open_selection(self.canvas):
-            #         self.elementSelectionSelectButton.setEnabled(True)
-            #         self.canvas.draw_idle()
-            #         self.__on_draw_legend()
-            #         self.__emit_selections_changed()
-            #     return  # We don't want menu to be shown also
-            # self.__context_menu(event, cursorlocation)
-            self.canvas.draw_idle()
-            # self.__on_draw_legend()
+    def add_point_on_motion(self, x, y=None):
+        """ Adds a point to the list when it is moved.
+        """
+        # TODO: Maybe there could be an index as a parameter, so we know the place of the point immediately?
+        if isinstance(x, MouseEvent):
+            x, y = x.xdata, x.ydata
+        point = [x, y]
+        # If the x coord of the point to be added is less than the x coord of
+        # any of the existing points, this loop catches it
+        for index, p in enumerate(self.elements["He"]):
+            if p[0] > x:
+                self.elements["He"].insert(index, point)
+                return point
+        # Otherwise the point is added to the end of the list
+        self.elements["He"].append(point)
+        return point
 
-    # def __context_menu(self, event, cursorlocation):
-    #     menu = QtWidgets.QMenu(self)
-    #
-    #     Action = QtWidgets.QAction(self.tr("Graph Settings..."), self)
-    #     Action.triggered.connect(self.graph_settings_dialog)
-    #     menu.addAction(Action)
-    #
-    #     if self.measurement.selection_select(cursorlocation,
-    #                                          highlight=False) == 1:
-    #         Action = QtWidgets.QAction(self.tr("Selection settings..."), self)
-    #         Action.triggered.connect(self.selection_settings_dialog)
-    #         menu.addAction(Action)
-    #
-    #     menu.addSeparator()
-    #     Action = QtWidgets.QAction(self.tr("Load selections..."), self)
-    #     Action.triggered.connect(self.load_selections)
-    #     menu.addAction(Action)
-    #
-    #     Action = QtWidgets.QAction(self.tr("Save cuts"), self)
-    #     Action.triggered.connect(self.save_cuts)
-    #     menu.addAction(Action)
-    #     if len(self.measurement.selector.selections) == 0:
-    #         Action.setEnabled(False)
-    #
-    #     coords = self.canvas.geometry().getCoords()
-    #     point = QtCore.QPoint(event.x, coords[3] - event.y - coords[1])
-    #     # coords[1] from spacing
-    #     menu.exec_(self.canvas.mapToGlobal(point))
+    def update_plot(self):
+        """ Clears the graph and replots every point. """
+        # if not self.list_points:
+        #     return
+        # Add new plot
+        self.axes.clear()  # Clear old stuff, this might cause trouble if you only want to clear one line?
 
-    def graph_settings_dialog(self):
-        '''Show graph settings dialog.
-        '''
-        TofeGraphSettingsWidget(self)
+        line1 = self.elements["He"]
+        line1_xs, line1_ys = zip(*line1)  # Divide the coordinate data into x and y data
+        self.axes.plot(line1_xs, line1_ys, "b", marker="o", markersize=7)
 
-    # def enable_element_selection(self):
-    #     '''Enable element selection.
-    #     '''
-    #     self.elementSelectUndoButton.setEnabled(
-    #         self.elementSelectionButton.isChecked())
-    #     if self.elementSelectionButton.isChecked():  # if button is enabled
-    #         # One cannot choose selection while selecting
-    #         self.elementSelectionSelectButton.setChecked(False)
-    #         self.__toggle_drag_zoom()
-    #         self.mpl_toolbar.mode_tool = 3
-    #         str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
-    #         self.__tool_label.setText(str_tool)
-    #         self.mpl_toolbar.mode = str_tool
-    #     else:
-    #         self.__tool_label.setText("")
-    #         self.mpl_toolbar.mode_tool = 0
-    #         self.mpl_toolbar.mode = ""
-    #         self.measurement.purge_selection()  # Remove hanging selection points
-    #         self.measurement.reset_select()
-    #         self.canvas.draw_idle()
-    #         self.__on_draw_legend()
-
-    # def enable_selection_select(self):
-    #     '''Enable selection selecting tool.
-    #     '''
-    #     if self.elementSelectionSelectButton.isChecked():
-    #         self.measurement.purge_selection()
-    #         self.canvas.draw_idle()
-    #         # One cannot make new selection while choosing selection
-    #         self.elementSelectionButton.setChecked(False)
-    #         self.elementSelectUndoButton.setEnabled(False)
-    #         self.__toggle_drag_zoom()
-    #         self.mpl_toolbar.mode_tool = 4
-    #         str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
-    #         self.__tool_label.setText(str_tool)
-    #         self.mpl_toolbar.mode = str_tool
-    #     else:
-    #         self.elementSelectDeleteButton.setEnabled(False)
-    #         self.__tool_label.setText("")
-    #         self.mpl_toolbar.mode_tool = 0
-    #         self.mpl_toolbar.mode = ""
-    #         self.measurement.reset_select()
-    #         self.__on_draw_legend()
-    #         self.canvas.draw_idle()
-
-    def remove_selected(self):
-        '''Remove selected selection.
-        '''
-        self.measurement.remove_selected()
-        self.measurement.reset_select()  # Nothing is now selected, reset colors
-        self.measurement.selector.auto_save()
-        self.elementSelectDeleteButton.setEnabled(False)
-        self.__on_draw_legend()
-        self.canvas.draw_idle()
-        self.__emit_selections_changed()
-
-    def undo_point(self):
-        '''Undo last point in open selection.
-        '''
-        self.measurement.undo_point()
         self.canvas.draw_idle()
 
-    def show_yourself(self, ui):
-        '''Show ToF-E histogram settings in ui.
+        # TODO: These set fixed axis ranges, which probably isn't correct
+        self.axes.set_ylim(-10, 110)
+        self.axes.set_xlim(-10, 110)
 
-        Args:
-            ui: A TofeGraphSettingsWidget's .ui file variable.
-        '''
-        # Populate colorbox
-        dirtyinteger = 0
-        colors = sorted(MatplotlibSimulationDepthProfileWidget.color_scheme.items())
-        for k, unused_v in colors:  # Get keys from color scheme
-            ui.colorbox.addItem(k)
-            if k == self.measurement.color_scheme:
-                ui.colorbox.setCurrentIndex(dirtyinteger)
-            dirtyinteger += 1
-
-        # Get values
-        ui.bin_x.setValue(self.compression_x)
-        ui.bin_y.setValue(self.compression_y)
-        ui.invert_x.setChecked(self.invert_X)
-        ui.invert_y.setChecked(self.invert_Y)
-        ui.axes_ticks.setChecked(self.show_axis_ticks)
-        ui.transposeAxesCheckBox.setChecked(self.transpose_axes)
-        ui.radio_range_auto.setChecked(self.axes_range_mode == 0)
-        ui.radio_range_manual.setChecked(self.axes_range_mode == 1)
-        ui.spin_range_x_min.setValue(self.axes_range[0][0])
-        ui.spin_range_x_max.setValue(self.axes_range[0][1])
-        ui.spin_range_y_min.setValue(self.axes_range[1][0])
-        ui.spin_range_y_max.setValue(self.axes_range[1][1])
-
-    def __on_motion(self, event):
-        '''Function to handle hovering over matplotlib's graph. 
+    def on_motion(self, event):
+        """ callback method for mouse motion event
 
         Args:
             event: A MPL MouseEvent
-        '''
-        event.button = -1  # Fix for printing.
-        if event.inaxes != self.axes:
+        """
+        # if not isinstance(event, MouseEvent):
+        #     return
+        # x = round(event.xdata, 4)
+        # y = round(event.ydata, 4)
+        # if not self.dragging_point:
+        #     return
+        # self.dragging_point[0] = x
+        # self.dragging_point[1] = y
+        if not self.dragging_point:
             return
-        if event.xdata == None and event.ydata == None:
-            return
+        self.remove_point(self.dragging_point)
+        self.dragging_point = self.add_point_on_motion(event)
+        self.update_plot()
 
-        in_selection = False
-        points = 0
-        point = [int(event.xdata), int(event.ydata)]
-        if self.measurement.selector.axes_limits.is_inside(point):
-            for selection in self.measurement.selector.selections:
-                if selection.point_inside(point):
-                    points = selection.get_event_count()
-                    in_selection = True
-                    break
-        if in_selection:
-            if self.mpl_toolbar.mode_tool:
-                str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
-                str_text = str_tool + "; points in selection: {0}".format(
-                    points)
-            else:
-                str_text = "points in selection: {0}".format(points)
-            self.mpl_toolbar.mode = str_text
-        else:
-            if self.mpl_toolbar.mode_tool:
-                self.mpl_toolbar.mode = self.tool_modes[
-                    self.mpl_toolbar.mode_tool]
-            else:
-                self.mpl_toolbar.mode = ""
+    def remove_point(self, point):
+        """ Removes a point from the list. """
+        if point in self.elements["He"]:
+            self.elements["He"].remove(point)
 
-    def sc_comp_inc(self, mode):
-        """Shortcut to increase compression factor.
+    def on_release(self, event):
+        """ callback method for mouse release event
 
         Args:
-            mode: An integer representing axis or axes to change.
+            event: A MPL MouseEvent
         """
-        if (mode == 0 or mode == 2) and self.compression_x < 3000:
-            self.compression_x += 1
-        if (mode == 1 or mode == 2) and self.compression_y < 3000:
-            self.compression_y += 1
-        self.on_draw()
+        if event.button == 1 and event.inaxes in [self.axes] and self.dragging_point:
+            self.add_point_on_motion(event)
+            self.dragging_point = None
+            self.update_plot()
 
-    def sc_comp_dec(self, mode):
-        """Shortcut to decrease compression factor.
-
-        Args:
-            mode: An integer representing axis or axes to change.
-        """
-        if (mode == 0 or mode == 2) and self.compression_x > 1:
-            self.compression_x -= 1
-        if (mode == 1 or mode == 2) and self.compression_y > 1:
-            self.compression_y -= 1
-        self.on_draw()
+    #
+    # def graph_settings_dialog(self):
+    #     '''Show graph settings dialog.
+    #     '''
+    #     TofeGraphSettingsWidget(self)
+    #
+    # def remove_selected(self):
+    #     '''Remove selected selection.
+    #     '''
+    #     self.elementSelectDeleteButton.setEnabled(False)
+    #     self.__on_draw_legend()
+    #     self.canvas.draw_idle()
+    #     self.__emit_selections_changed()
+    #
+    # def undo_point(self):
+    #     '''Undo last point in open selection.
+    #     '''
+    #     # self.measurement.undo_point()
+    #     self.canvas.draw_idle()
