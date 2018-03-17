@@ -163,6 +163,13 @@ def read_espe_file(directory, espe_file):
     if not lines:
         # TODO Handle exception when file can not be read.
         return
+    data = []
+    for line in lines:
+        data_point = line.strip().split()
+        data.append(data_point)
+    return data
+
+
 
 
 # TODO This function is copied from MeasurementTabWidget.

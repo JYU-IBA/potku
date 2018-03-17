@@ -170,7 +170,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         # self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self)
         # self.make_energy_spectrum(directory, self.simulation.simulation_name)
 
-        directory = '/home/sinikka/'
+        directory = 'Sample-data/'
         espe_file = 'LiMnO_O.simu'
         self.make_energy_spectrum(directory, espe_file)
         self.add_widget(self.energy_spectrum_widget)
