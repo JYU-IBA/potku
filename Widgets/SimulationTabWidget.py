@@ -6,11 +6,13 @@ Updated on 15.3.2018
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
 import os, logging, sys
+from os.path import join
 from PyQt5 import QtCore, uic, QtWidgets
 
 from Dialogs.ElementLossesDialog import ElementLossesDialog, ElementLossesWidget
 from Dialogs.DepthProfileDialog import DepthProfileDialog, DepthProfileWidget
 from Modules.Element import Element
+from Modules.Functions import load_file
 from Modules.Null import Null
 from Modules.UiLogHandlers import customLogHandler
 from Widgets.LogWidget import LogWidget
@@ -161,13 +163,16 @@ class SimulationTabWidget(QtWidgets.QWidget):
         # process.
 
     def start_mcsimulation(self, parent):
-        """ Start the Monte Catrlo simulation and draw energy spectrum based on it.
+        """ Start the Monte Carlo simulation and draw energy spectrum based on it.
         Args:
             parent: Parent of the energy spectrum widget.
         """
         # self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self)
         # self.make_energy_spectrum(directory, self.simulation.simulation_name)
-        self.make_energy_spectrum('/home/siansiir/PycharmProjects/potku/Sample-data', 'LiMnO_O.simu')
+
+        directory = '/home/sinikka/'
+        espe_file = 'LiMnO_O.simu'
+        self.make_energy_spectrum(directory, espe_file)
         self.add_widget(self.energy_spectrum_widget)
             
     def del_widget(self, widget):
@@ -288,11 +293,9 @@ class SimulationTabWidget(QtWidgets.QWidget):
             name: A string representing measurement's name.
         """
         try:
-            #data = read_espe_file(directory, name)
-            data = {}
+            data = read_espe_file(directory, name)
             self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self, data)
             icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
-            self.add_widget(self.energy_spectrum_widget, icon=icon)
         except:  # We do not need duplicate error logs, log in widget instead
             print(sys.exc_info())  # TODO: Remove this.
 

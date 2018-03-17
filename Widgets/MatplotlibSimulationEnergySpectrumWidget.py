@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 15.3.2018
-Updated on 15.3.2018
+Updated on 17.3.2018
 '''
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
@@ -15,17 +15,17 @@ from Widgets.MatplotlibWidget import MatplotlibWidget
 class MatplotlibSimulationEnergySpectrumWidget(MatplotlibWidget):
     '''Energy spectrum widget
     '''
-    def __init__(self, parent, histed_files):
+    def __init__(self, parent, data):
         '''Inits Energy Spectrum widget.
         
         Args:
             parent: EnergySpectrumWidget class object.
-            histed_files: List of calculated energy spectrum files.
+            data: Energy spectrum data.
         '''
         super().__init__(parent)
         super().fork_toolbar_buttons()
         # self.draw_legend = legend
-        self.histed_files = histed_files
+        self.energy_spectrum_data = data
         # self.__rbs_list = rbs_list
         self.__icon_manager = parent.icon_manager
         self.__masses = parent.parent.masses
