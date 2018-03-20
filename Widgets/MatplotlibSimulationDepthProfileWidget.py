@@ -20,6 +20,7 @@ import math
 import numpy as np
 from numpy.random import rand
 from matplotlib.lines import Line2D
+import bisect
 
 
 class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
@@ -59,15 +60,19 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.list_points = []
         self.simulation = simulation_data
         self.elements = { "He": [[0.00, 50.00], [50.00, 50.00]] }
-        self.xs = 50 * rand(20)
-        self.ys = 50 * rand(20)
+        self.xs = (100 * rand(20)).tolist()
+        self.ys = (100 * rand(20)).tolist()
+        self.xs.sort()
+        self.ys.sort()
+        self.xys = zip(self.xs, self.ys)
+        # self.xys = sorted(self.xys, key=lambda x: x[0])
         self.selected_x = 0
         self.selected_y = 0
 
         self.lines = None
         self.points = None
         self.selected = None
-        self.dragging_point = None
+        self.drag_i = None
         self.lastind = 0
 
         # Connections and setup
@@ -75,7 +80,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.canvas.mpl_connect('button_release_event', self.on_release)
         self.canvas.mpl_connect('motion_notify_event', self.on_motion)
         # self.canvas.mpl_connect('pick_event', self.onpick2)
-        self.canvas.mpl_connect('pick_event', self.onpick1)
+        # self.canvas.mpl_connect('pick_event', self.onpick1)
 
 
         # This customizes the toolbar buttons
@@ -143,8 +148,8 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.selected, = self.axes.plot(self.selected_x, self.selected_y, 'o', ms=12, alpha=0.4,
                                         color='yellow', visible=False)
 
-        self.axes.set_xlim(-10, 110)
-        self.axes.set_ylim(-10, 110)
+        # self.axes.set_xlim(-10, 110)
+        # self.axes.set_ylim(-10, 110)
         self.axes.autoscale(enable=False)
 
         # Remove axis ticks and draw
@@ -276,28 +281,60 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # Only inside the actual graph axes, else do nothing.
         if event.inaxes != self.axes:
             return
-
-        # if event.button == 1:
-        #     x = event.xdata
-        #     y = event.ydata
-        #     contains, info = self.points.contains(event)
-        #     if contains:
-        #         i = info['ind'][0]
-        #         self.dragging_point = info
-        #         self.remove_point(self.points[i])
-        #     else: # Adding a point
-        #         self.add_point_on_click(x, y)
-        if event.button == 1:  # Left click
+        contains, info = self.points.contains(event)
+        if contains:
+            # TODO: leftmost point can't be dragged
+            i = info['ind'][0]
+            self.lastind = i
+            self.update_plot()
+            self.drag_i = i
+        else:
             x = event.xdata
             y = event.ydata
-            clicked_point = self.find_clicked_point(x, y)
-            if clicked_point: # Dragging a point
-                self.dragging_point = clicked_point
-                self.remove_point(clicked_point)
-            else: # Adding a point
-                self.add_point_on_click(x, y)
+            self.add_point_on_click(x, y)
+            return
 
-            self.update_plot()
+        # if event.artist != self.points:
+        #     return
+
+        # N = len(event.ind)
+        # if not N:
+        # #     return
+        #
+        #
+        # print(self.xs[event.ind], self.ys[event.ind])
+        # # the click locations
+        # x = event.mouseevent.xdata
+        # y = event.mouseevent.ydata
+        #
+        # distances = np.hypot(x - self.xs[event.ind], y - self.ys[event.ind])
+        # indmin = distances.argmin()
+        # dataind = event.ind[indmin]
+        #
+        # self.lastind = dataind
+        # self.update_plot()
+        #
+        # # if event.button == 1:
+        # #     x = event.xdata
+        # #     y = event.ydata
+        # #     contains, info = self.points.contains(event)
+        # #     if contains:
+        # #         i = info['ind'][0]
+        # #         self.dragging_point = info
+        # #         self.remove_point(self.points[i])
+        # #     else: # Adding a point
+        # #         self.add_point_on_click(x, y)
+        # if event.button == 1:  # Left click
+        #     x = event.xdata
+        #     y = event.ydata
+        #     clicked_point = self.find_clicked_point(x, y)
+        #     if clicked_point: # Dragging a point
+        #         self.dragging_point = clicked_point
+        #         self.remove_point(clicked_point)
+        #     else: # Adding a point
+        #         self.add_point_on_click(x, y)
+        #
+        #     self.update_plot()
 
     def distance(self, x1, y1, x2, y2):
         """ Calculates the distance between two points. """
@@ -316,17 +353,22 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
 
     def add_point_on_click(self, x, y=None):
         """ Adds a point to the list when clicked close enough to a line. """
-        point = [x, y]
-        elems = self.elements["He"]
-        for i in range(len(elems)):
-            if elems[i][0] > x:
-                xa, ya = elems[i-1][0], elems[i-1][1]
-                xb, yb = elems[i][0], elems[i][1]
-                if not self.point_on_line(xa, ya, x, y, xb, yb):
-                    return None
-                else:
-                    elems.insert(i, point)
-                    return point
+        i = bisect.bisect(self.xs, x)
+        self.xs.insert(i, x)
+        self.ys.insert(i, y)
+
+        self.update_plot()
+        # point = [x, y]
+        # elems = self.elements["He"]
+        # for i in range(len(elems)):
+        #     if elems[i][0] > x:
+        #         xa, ya = elems[i-1][0], elems[i-1][1]
+        #         xb, yb = elems[i][0], elems[i][1]
+        #         if not self.point_on_line(xa, ya, x, y, xb, yb):
+        #             return None
+        #         else:
+        #             elems.insert(i, point)
+        #             return point
         # if p[0] > x: # Fix this, now you can't add a point to the end of list
         #     if p[1] != round(y, 3):
         #         return
@@ -371,6 +413,9 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             return
 
         dataind = self.lastind
+
+        self.points.set_data(self.xs, self.ys)
+        self.lines.set_data(self.xs, self.ys)
 
         self.selected.set_visible(True)
         self.selected.set_data(self.xs[dataind], self.ys[dataind])
@@ -454,11 +499,18 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         #     return
         # self.dragging_point[0] = x
         # self.dragging_point[1] = y
-        if not self.dragging_point:
+        # if not self.dragging_point:
+        #     return
+        # self.remove_point(self.dragging_point)
+        # self.dragging_point = self.add_point_on_motion(event)
+        # self.update_plot()
+        if not self.drag_i:
             return
-        self.remove_point(self.dragging_point)
-        self.dragging_point = self.add_point_on_motion(event)
-        self.update_plot()
+        # TODO: Sorting
+        if self.xs[self.drag_i - 1] < event.xdata < self.xs[self.drag_i + 1]:
+            self.xs[self.drag_i] = event.xdata
+            self.ys[self.drag_i] = event.ydata
+            self.update_plot()
 
     def remove_point(self, point):
         """ Removes a point from the list. """
@@ -471,9 +523,8 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
-        if event.button == 1 and event.inaxes in [self.axes] and self.dragging_point:
-            self.add_point_on_motion(event)
-            self.dragging_point = None
+        if event.button == 1 and event.inaxes in [self.axes] and self.drag_i:
+            self.drag_i = None
             self.update_plot()
 
     #
