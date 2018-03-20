@@ -17,6 +17,9 @@ from Widgets.MatplotlibWidget import MatplotlibWidget
 from Modules.Point import Point
 from matplotlib.backend_bases import MouseEvent
 import math
+import numpy as np
+from numpy.random import rand
+from matplotlib.lines import Line2D
 
 
 class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
@@ -56,13 +59,24 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.list_points = []
         self.simulation = simulation_data
         self.elements = { "He": [[0.00, 50.00], [50.00, 50.00]] }
-        self.dragging_point = None  # Just one point right now
+        self.xs = 50 * rand(20)
+        self.ys = 50 * rand(20)
+        self.selected_x = 0
+        self.selected_y = 0
+
+        self.lines = None
+        self.points = None
+        self.selected = None
+        self.dragging_point = None
+        self.lastind = 0
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
         self.canvas.mpl_connect('button_release_event', self.on_release)
         self.canvas.mpl_connect('motion_notify_event', self.on_motion)
-        # self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
+        # self.canvas.mpl_connect('pick_event', self.onpick2)
+        self.canvas.mpl_connect('pick_event', self.onpick1)
+
 
         # This customizes the toolbar buttons
         # self.__fork_toolbar_buttons()
@@ -122,6 +136,16 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # self.axes.set_title('ToF Histogram\n\n')
         self.axes.set_ylabel(self.name_y_axis.title())
         self.axes.set_xlabel(self.name_x_axis.title())
+
+        self.lines, = self.axes.plot(self.xs, self.ys, "b")
+        self.points, = self.axes.plot(self.xs, self.ys, "b", marker="o", markersize=7, picker=5,
+                                      linestyle="None")
+        self.selected, = self.axes.plot(self.selected_x, self.selected_y, 'o', ms=12, alpha=0.4,
+                                        color='yellow', visible=False)
+
+        self.axes.set_xlim(-10, 110)
+        self.axes.set_ylim(-10, 110)
+        self.axes.autoscale(enable=False)
 
         # Remove axis ticks and draw
         self.remove_axes_ticks()
@@ -253,6 +277,16 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         if event.inaxes != self.axes:
             return
 
+        # if event.button == 1:
+        #     x = event.xdata
+        #     y = event.ydata
+        #     contains, info = self.points.contains(event)
+        #     if contains:
+        #         i = info['ind'][0]
+        #         self.dragging_point = info
+        #         self.remove_point(self.points[i])
+        #     else: # Adding a point
+        #         self.add_point_on_click(x, y)
         if event.button == 1:  # Left click
             x = event.xdata
             y = event.ydata
@@ -325,17 +359,86 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # if not self.list_points:
         #     return
         # Add new plot
-        self.axes.clear()  # Clear old stuff, this might cause trouble if you only want to clear one line?
+        #self.axes.clear()  # Clear old stuff, this might cause trouble if you only want to clear one line?
+        #
+        # line1 = self.elements["He"]
+        # line1_xs, line1_ys = zip(*line1)  # Divide the coordinate data into x and y data
+        # #self.axes.plot(line1_xs, line1_ys, "b", marker="o", markersize=7, picker=self.line_picker)
+        #
+        # self.canvas.draw_idle()
 
-        line1 = self.elements["He"]
-        line1_xs, line1_ys = zip(*line1)  # Divide the coordinate data into x and y data
-        self.axes.plot(line1_xs, line1_ys, "b", marker="o", markersize=7)
+        if self.lastind is None:
+            return
 
-        self.canvas.draw_idle()
+        dataind = self.lastind
 
-        # TODO: These set fixed axis ranges, which probably isn't correct
-        self.axes.set_ylim(-10, 110)
-        self.axes.set_xlim(-10, 110)
+        self.selected.set_visible(True)
+        self.selected.set_data(self.xs[dataind], self.ys[dataind])
+
+        self.fig.canvas.draw()
+
+        # # TODO: These set fixed axis ranges, which probably isn't correct
+        # self.axes.set_ylim(-10, 110)
+        # self.axes.set_xlim(-10, 110)
+
+    def line_picker(self, line, mouseevent):
+        """
+        find the points within a certain distance from the mouseclick in
+        data coords and attach some extra attributes, pickx and picky
+        which are the data points that were picked
+        """
+        if mouseevent.xdata is None:
+            return False, dict()
+        xdata = line.get_xdata()
+        ydata = line.get_ydata()
+        maxd = self.fig.dpi / 72. * 5
+        d = np.sqrt((xdata - mouseevent.xdata)**2. + (ydata - mouseevent.ydata)**2.)
+
+        ind = np.nonzero(np.less_equal(d, maxd))
+        if len(ind):
+            pickx = np.take(xdata, ind)
+            picky = np.take(ydata, ind)
+            props = dict(ind=ind, pickx=pickx, picky=picky)
+            return True, props
+        else:
+            return False, dict()
+
+    def onpick2(self, event):
+        print('onpick2 line:', event.pickx, event.picky)
+        self.selected_x = event.pickx
+        self.selected_y = event.picky
+
+    def onpick1(self, event):
+        if event.artist != self.points:
+            return True
+
+        N = len(event.ind)
+        if not N:
+            return True
+
+        print(self.xs[event.ind], self.ys[event.ind])
+        # the click locations
+        x = event.mouseevent.xdata
+        y = event.mouseevent.ydata
+
+        distances = np.hypot(x - self.xs[event.ind], y - self.ys[event.ind])
+        indmin = distances.argmin()
+        dataind = event.ind[indmin]
+
+        self.lastind = dataind
+        self.update_plot()
+        #
+        # if isinstance(event.artist, Line2D):
+        #     thisline = event.artist
+        #     xdata = thisline.get_xdata()
+        #     ydata = thisline.get_ydata()
+        #     ind = event.ind
+        #     self.selected_x = np.take(xdata, ind)
+        #     self.selected_y = np.take(ydata, ind)
+        #     self.selected.set_data(self.selected_x, self.selected_y)
+        #     print('onpick1 line:', np.take(xdata, ind), np.take(ydata, ind))
+        #     self.update_plot()
+
 
     def on_motion(self, event):
         """ callback method for mouse motion event
