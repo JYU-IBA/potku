@@ -12,7 +12,6 @@ from PyQt5 import QtCore, uic, QtWidgets
 from Dialogs.ElementLossesDialog import ElementLossesDialog, ElementLossesWidget
 from Dialogs.DepthProfileDialog import DepthProfileDialog, DepthProfileWidget
 from Modules.Element import Element
-from Modules.Functions import load_file
 from Modules.Null import Null
 from Modules.UiLogHandlers import customLogHandler
 from Widgets.LogWidget import LogWidget
@@ -41,9 +40,10 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.simulation = simulation
         self.masses = masses
         self.icon_manager = icon_manager
-        
+
         self.simulation_depth_profile = Null()
         self.energy_spectrum_widget = Null()
+        self.log = Null()
         
         # Hide the simulation specific settings buttons
         self.ui.settingsFrame.setVisible(False)
@@ -83,26 +83,10 @@ class SimulationTabWidget(QtWidgets.QWidget):
     def add_simulation_depth_profile(self):
         """ Adds depth profile for modifying the elements into tab if it doesn't have one already.
         """
-        #self.simulation_depth_profile = SimulationDepthProfileWidget(self.simulation, self.masses, self.icon_manager)
         self.simulation_depth_profile = SimulationDepthProfileWidget(self.simulation, self.masses, self.icon_manager)
         self.add_widget(self.simulation_depth_profile, has_close_button=False)
         # TODO: Do all the necessary operations so that the widget can be used.
-        # self.simulation.set_axes(self.simulation_depth_profile.matplotlib.axes)
-        # self.ui.makeSelectionsButton.clicked.connect(
-        #    lambda: self.simulation_depth_profile.matplotlib.elementSelectionButton.setChecked(True))
-        # self.simulation_depth_profile.matplotlib.selectionsChanged.connect(self.__set_cut_button_enabled)
 
-        # Draw after giving axes -> selections set properly
-        # self.simulation_depth_profile.matplotlib.on_draw()
-        # if not self.measurement.selector.is_empty():
-        #    self.simulation_depth_profile.matplotlib.elementSelectionSelectButton.setEnabled(True)
-        # self.add_widget(self.simulation_depth_profile, has_close_button=False)
-        # self.simulation_depth_profile.set_cut_button_enabled()
-                
-        # Check if there are selections in the measurement and enable save cut 
-        # button. 
-        # self.__set_cut_button_enabled(self.measurement.selector.selections)
-    
     def add_log(self):        
         """ Add the simulation log to simulation tab widget.
         
@@ -167,9 +151,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
         Args:
             parent: Parent of the energy spectrum widget.
         """
-        # self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self)
-        # self.make_energy_spectrum(directory, self.simulation.simulation_name)
-
         directory = 'Sample-data/'
         espe_file = 'LiMnO_O.simu'
         self.make_energy_spectrum(directory, espe_file)
@@ -196,7 +177,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
                          If not given, sets the frame visible or hidden 
                          depending its previous state.
         """
-        if enable_hide != None:
+        if enable_hide is not None:
             self.panel_shown = enable_hide
         else:
             self.panel_shown = not self.panel_shown    
@@ -207,84 +188,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
 
         self.ui.frame.setVisible(self.panel_shown)
     
-    def make_depth_profile(self, directory, name):
-        """Make depth profile from loaded lines from saved file.
-        
-        Args:
-            directory: A string representing directory.
-            name: A string representing measurement's name.
-        """
-        file = os.path.join(directory, DepthProfileWidget.save_file)
-        lines = self.__load_file(file)
-        if not lines:
-            return
-        m_name = self.simulation.simulation_name
-        try:
-            output_dir = self.__confirm_filepath(lines[0].strip(), name, m_name)
-            use_cuts = self.__confirm_filepath(
-                                   lines[2].strip().split("\t"), name, m_name)
-            cut_names = [os.path.basename(cut) for cut in use_cuts]
-            elements_string = lines[1].strip().split("\t")
-            elements = [Element(element) for element in elements_string]
-            x_unit = lines[3].strip()
-            line_zero = False
-            line_scale = False
-            if len(lines) == 7:  # "Backwards compatibility"
-                line_zero = lines[4].strip() == "True"
-                line_scale = lines[5].strip() == "True"
-                systerr = float(lines[6].strip())
-            DepthProfileDialog.x_unit = x_unit
-            DepthProfileDialog.checked_cuts[m_name] = cut_names
-            DepthProfileDialog.line_zero = line_zero
-            DepthProfileDialog.line_scale = line_scale
-            DepthProfileDialog.systerr = systerr
-            self.depth_profile_widget = DepthProfileWidget(self,
-                                                           output_dir,
-                                                           use_cuts,
-                                                           elements,
-                                                           x_unit,
-                                                           line_zero,
-                                                           line_scale,
-                                                           systerr)
-            icon = self.icon_manager.get_icon("depth_profile_icon_2_16.png")
-            self.add_widget(self.depth_profile_widget, icon=icon)
-        except:  # We do not need duplicate error logs, log in widget instead
-            print(sys.exc_info())  # TODO: Remove this.
-
-    def make_elemental_losses(self, directory, name):
-        """Make elemental losses from loaded lines from saved file.
-
-        Args:
-            directory: A string representing directory.
-            name: A string representing measurement's name.
-        """
-        file = os.path.join(directory, ElementLossesWidget.save_file)
-        lines = self.__load_file(file)
-        if not lines:
-            return
-        m_name = self.simulation.simulation_name
-        try:
-            reference_cut = self.__confirm_filepath(lines[0].strip(), name, m_name)
-            checked_cuts = self.__confirm_filepath(
-                                        lines[1].strip().split("\t"), name, m_name)
-            cut_names = [os.path.basename(cut) for cut in checked_cuts]
-            split_count = int(lines[2])
-            y_scale = int(lines[3])
-            ElementLossesDialog.reference_cut[m_name] = \
-                                                os.path.basename(reference_cut)
-            ElementLossesDialog.checked_cuts[m_name] = cut_names
-            ElementLossesDialog.split_count = split_count
-            ElementLossesDialog.y_scale = y_scale
-            self.elemental_losses_widget = ElementLossesWidget(self,
-                                                               reference_cut,
-                                                               checked_cuts,
-                                                               split_count,
-                                                               y_scale)
-            icon = self.icon_manager.get_icon("elemental_losses_icon_16.png")
-            self.add_widget(self.elemental_losses_widget, icon=icon)
-        except:  # We do not need duplicate error logs, log in widget instead
-            print(sys.exc_info())  # TODO: Remove this.
-
     def make_energy_spectrum(self, directory, name):
         """Make energy spectrum from loaded lines from saved file.
 
@@ -299,54 +202,12 @@ class SimulationTabWidget(QtWidgets.QWidget):
         except:  # We do not need duplicate error logs, log in widget instead
             print(sys.exc_info())  # TODO: Remove this.
 
-    # def open_energy_spectrum(self, parent):
-    #     """Opens energy spectrum dialog.
-    #
-    #     Args:
-    #         parent: MeasurementTabWidget
-    #     """
-    #     previous = self.energy_spectrum_widget
-    #     EnergySpectrumParamsDialog(parent)
-    #     if self.energy_spectrum_widget != previous and \
-    #         type(self.energy_spectrum_widget) != Null:
-    #         self.energy_spectrum_widget.save_to_file()
-
     def open_detector_settings(self):
         """ Open the detector settings dialog.
         """
         QtWidgets.QMessageBox.critical(self, "Error", "Detector or other settings dialogs not yet implemented!",
                                            QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
     
-    def __confirm_filepath(self, filepath, name, m_name):
-        """Confirm whether filepath exist and changes it accordingly.
-        
-        Args:
-            filepath: A string representing a filepath.
-            name: A string representing origin measurement's name.
-            m_name: A string representing measurement's name where graph is created.
-        """
-        if type(filepath) == str:
-            # Replace two for measurement and cut file's name. Not all, in case 
-            # the project or directories above it have same name.
-            filepath = self.__rreplace(filepath, name, m_name, 2)
-            try:
-                with open(filepath):
-                    pass
-                return filepath
-            except:
-                return os.path.join(self.simulation.directory, filepath)
-        elif type(filepath) == list:
-            newfiles = []
-            for file in filepath:
-                file = self.__rreplace(file, name, m_name, 2)
-                try:
-                    with open(file):
-                        pass
-                    newfiles.append(file)
-                except:
-                    newfiles.append(os.path.join(self.simulation.directory, file))
-            return newfiles
-
     def __read_log_file(self, file, state=1):
         """Read the log file into the log window.
         
@@ -364,35 +225,9 @@ class SimulationTabWidget(QtWidgets.QWidget):
                     else:
                         self.log.add_text(line.strip())  
 
-    def __rreplace(self, s, old, new, occurrence):
-        """Replace from last occurrence.
-        
-        http://stackoverflow.com/questions/2556108/how-to-replace-the-last-
-        occurence-of-an-expression-in-a-string
-        """
-        li = s.rsplit(old, occurrence)
-        return new.join(li)
-
     def __set_icons(self):
         """Adds icons to UI elements.
         """
-        # self.icon_manager.set_icon(self.ui.measuringUnitSettingsButton,
-        #                            "measuring_unit_settings.svg")
-        # self.icon_manager.set_icon(self.ui.calibrationSettingsButton,
-        #                            "calibration_settings.svg")
-        # self.icon_manager.set_icon(self.ui.depthProfileSettingsButton, "gear.svg")
-        # self.icon_manager.set_icon(self.ui.makeSelectionsButton,
-        #                            "amarok_edit.svg", size=(30, 30))
-        # self.icon_manager.set_icon(self.ui.saveCutsButton,
-        #                            "save_all.svg", size=(30, 30))
-        # self.icon_manager.set_icon(self.ui.analyzeElementLossesButton,
-        #                            "elemental_losses_icon.svg", size=(30, 30))
-        # self.icon_manager.set_icon(self.ui.energySpectrumButton,
-        #                            "energy_spectrum_icon.svg", size=(30, 30))
-        # self.icon_manager.set_icon(self.ui.createDepthProfileButton,
-        #                            "depth_profile.svg", size=(30, 30))
-        # self.icon_manager.set_icon(self.ui.hideShowSettingsButton,
-        #                            "show_icon.svg", size=(30, 30))
-
+        # TODO Add icons.
 
 

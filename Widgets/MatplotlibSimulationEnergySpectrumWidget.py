@@ -49,25 +49,12 @@ class MatplotlibSimulationEnergySpectrumWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.__button_toggle_log)
         
         self.__button_ignores = QtWidgets.QToolButton(self)
-        self.__button_ignores.clicked.connect(self.__ignore_elements_from_graph)
         self.__button_ignores.setToolTip("Select elements which are included in" + \
                                          " the graph.")
         self.__icon_manager.set_icon(self.__button_ignores, "gear.svg")
         self.mpl_toolbar.addWidget(self.__button_ignores)
         
         self.on_draw()
-
-
-    def __sortt(self, key):
-        cut_file = key.split('.')
-        element_object = Element(cut_file[0].strip())
-        element, isotope = element_object.get_element_and_isotope()
-        mass = str(isotope)
-        if not mass:
-            mass = self.__masses.get_standard_isotope(element)
-        else:
-            mass = float(mass)
-        return mass
 
     def on_draw(self):
         '''Draw method for matplotlib.
@@ -106,17 +93,3 @@ class MatplotlibSimulationEnergySpectrumWidget(MatplotlibWidget):
         '''
         self.__log_scale = self.__button_toggle_log.isChecked()
         self.on_draw()
-        
-        
-    def __ignore_elements_from_graph(self):
-        '''Ignore elements from elements ratio calculation.
-        '''
-        elements = [item[0] for item in sorted(self.histed_files.items(),
-                                           key=lambda x: self.__sortt(x[0]))]
-        dialog = GraphIgnoreElements(elements, self.__ignore_elements)
-        self.__ignore_elements = dialog.ignored_elements
-        self.on_draw()
-        
-        
-        
-        

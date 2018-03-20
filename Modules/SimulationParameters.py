@@ -33,15 +33,6 @@ class SimulationParameters:
     """
 
     def __init__(self, file_path):
-        self.read_parameters(file_path)
-
-    def read_parameters(self, file_path):
-        """ Read the MCERD command file
-
-        Args:
-            file_path: An absolute file path to MCERD command file
-        """
-
         # Initialize few simulation parameters. The key values are used later on
         # for checking if a line starts with that specific key. These are
         # the same as in MCERDs read_input.h header file.
@@ -69,7 +60,14 @@ class SimulationParameters:
             "Side length of the surface topography image:": None,
             "Number of real ions per each scaling ion:": None
         }
+        self.read_parameters(file_path)
 
+    def read_parameters(self, file_path):
+        """ Read the MCERD command file
+
+        Args:
+            file_path: An absolute file path to MCERD command file
+        """
         try:
             with open(file_path) as file:
                 lines = file.readlines()  # Read all lines of the file to list
@@ -314,7 +312,7 @@ class SimulationParameters:
         # call for saving the detector foils
         try:
             with open(self.simulation["detector"]["Description file for the "
-                    "detector foils:"], "w") as file:
+                      "detector foils:"], "w") as file:
                 for item in foil_list:
                     file.write(item)
         except IOError as e:

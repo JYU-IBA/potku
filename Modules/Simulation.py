@@ -145,21 +145,6 @@ class Simulation:
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
 
-    def remove_by_tab_id(self, tab_id):
-        """Removes simulation from tabs by tab id
-
-        Args:
-            tab_id: Integer representing tab identifier.
-        """
-
-        def remove_key(d, key):
-            r = dict(d)
-            del r[key]
-            return r
-
-        self.simulations = remove_key(self.simulations, tab_id)
-
-
     def __make_directories(self, directory):
         if not os.path.exists(directory):
             os.makedirs(directory)
@@ -302,12 +287,3 @@ class CallGetEspe(object):
         else:
             print("It appears we do not support your OS.")
 
-
-# For testing the CallMCERD class:
-# CallMCERD("/home/siansiir/mcerd/source/Examples/35Cl-85-LiMnO_Li").run_simulation()
-# MCERD tries to read the input files from the path specified in the command file
-# CallMCERD(r"..\Examples\35Cl-85-LiMnO_Li").run_simulation()
-
-# For testing the CallGetEspe class:
-# test_espe = CallGetEspe("")
-# test_espe.run_get_espe()

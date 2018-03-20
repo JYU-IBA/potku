@@ -32,7 +32,6 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
             self.ui.saveSimuEnergySpectraButton.clicked.connect(self.save_spectra)
             self.energy_spectrum_data = data
 
-
             # Graph in matplotlib widget and add to window
             self.matplotlib = MatplotlibSimulationEnergySpectrumWidget(
                 self,

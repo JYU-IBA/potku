@@ -62,7 +62,6 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.canvas.mpl_connect('button_press_event', self.on_click)
         self.canvas.mpl_connect('button_release_event', self.on_release)
         self.canvas.mpl_connect('motion_notify_event', self.on_motion)
-        # self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
 
         # This customizes the toolbar buttons
         # self.__fork_toolbar_buttons()
@@ -76,29 +75,6 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
                 self.__x_data.append(point[0])
                 self.__y_data.append(point[1])
 
-        # self.__x_data = [x[0] for x in self.simulation.data[0]]
-        # self.__y_data = [x[1] for x in self.simulation.data[0]]
-
-        # Get settings from global settings
-        # self.__global_settings = self.main_frame.simulation.project.global_settings
-        # self.invert_Y = self.__global_settings.get_tofe_invert_y()
-        # self.invert_X = self.__global_settings.get_tofe_invert_x()
-        # self.transpose_axes = self.__global_settings.get_tofe_transposed()
-        # self.simulation.color_scheme = self.__global_settings.get_tofe_color()
-        # self.compression_x = self.__global_settings.get_tofe_compression_x()
-        # self.compression_y = self.__global_settings.get_tofe_compression_y()
-        # self.axes_range_mode = self.__global_settings.get_tofe_bin_range_mode()
-        # x_range = self.__global_settings.get_tofe_bin_range_x()
-        # y_range = self.__global_settings.get_tofe_bin_range_y()
-        # self.axes_range = [x_range, y_range]
-        #
-        # self.__x_data_min, self.__x_data_max = self.__fix_axes_range(
-        #     (min(self.__x_data), max(self.__x_data)),
-        #     self.compression_x)
-        # self.__y_data_min, self.__y_data_max = self.__fix_axes_range(
-        #     (min(self.__y_data), max(self.__y_data)),
-        #     self.compression_y)
-
         self.name_y_axis = "Concentration?"
         self.name_x_axis = "Depth"
 
@@ -110,16 +86,11 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.axes.clear()  # Clear old stuff
         line1 = self.elements["He"]
         line1_xs, line1_ys = zip(*line1) # Divide the coordinate data into x and y data
-        # self.list_points.append(Point(self, line1_xs[0], line1_ys[0], 1))
-        # self.list_points.append(Point(self, line1_xs[1], line1_ys[1], 1))
 
-        # self.axes.add_line(lines.Line2D(line1_xs, line1_ys, linewidth=2, color="green", marker='o'))
-        # self.axes.plot(10, 0.5, linewidth=2, color="green", marker='o', markersize=10)
         # Values for zoom
         x_min, x_max = self.axes.get_xlim()
         y_min, y_max = self.axes.get_ylim()
 
-        # self.axes.set_title('ToF Histogram\n\n')
         self.axes.set_ylabel(self.name_y_axis.title())
         self.axes.set_xlabel(self.name_x_axis.title())
 
@@ -127,41 +98,6 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.remove_axes_ticks()
         self.canvas.draw()
         self.update_plot()
-
-    def __fix_axes_range(self, axes_range, compression):
-        """Fixes axes' range to be divisible by compression.
-        """
-        rmin, rmax = axes_range
-        mod = (rmax - rmin) % compression
-        if mod == 0:  # Everything is fine, return.
-            return axes_range
-        # More data > less data
-        rmax += compression - mod
-        return rmin, rmax
-
-    def __set_y_axis_on_right(self, yes):
-        if yes:
-            # self.axes.spines['left'].set_color('none')
-            self.axes.spines['right'].set_color('black')
-            self.axes.yaxis.tick_right()
-            self.axes.yaxis.set_label_position("right")
-        else:
-            self.axes.spines['left'].set_color('black')
-            # self.axes.spines['right'].set_color('none')
-            self.axes.yaxis.tick_left()
-            self.axes.yaxis.set_label_position("left")
-
-    def __set_x_axis_on_top(self, yes):
-        if yes:
-            # self.axes.spines['bottom'].set_color('none')
-            self.axes.spines['top'].set_color('black')
-            self.axes.xaxis.tick_top()
-            self.axes.xaxis.set_label_position("top")
-        else:
-            self.axes.spines['bottom'].set_color('black')
-            # self.axes.spines['top'].set_color('none')
-            self.axes.xaxis.tick_bottom()
-            self.axes.xaxis.set_label_position("bottom")
 
     def __toggle_tool_drag(self):
         if self.__button_drag.isChecked():
@@ -229,17 +165,11 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             x: x coordinate of click
             y: y coordinate of click
         """
-        # xlim = self.axes.get_xlim()
-        # xrange = xlim[1] - xlim[0]
-        # ylim = self.axes.get_ylim()
-        # yrange = ylim[1]-ylim[0]
-
         # Display coordinates (relative to the screen)
         x_y_disp = self.axes.transData.transform((x, y))
         for p in self.elements["He"]:
             elem_x_y_disp = self.axes.transData.transform((p[0], p[1]))
             if self.distance(elem_x_y_disp[0], elem_x_y_disp[1], x_y_disp[0], x_y_disp[1]) < 20:
-                # if abs(elem_x_y_disp[0] - x_y_disp[0]) < 100 and abs(elem_x_y_disp[1] - x_y_disp[1]) < 100:
                 return p
         return None
 
@@ -293,15 +223,6 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
                 else:
                     elems.insert(i, point)
                     return point
-        # if p[0] > x: # Fix this, now you can't add a point to the end of list
-        #     if p[1] != round(y, 3):
-        #         return
-        # else:
-        #     point[1] = p[1]
-        #     self.elements["He"].insert(index, point)
-        #     # for e in self.elements["He"]:
-        #     #     print(e)
-        #     return point
 
     def add_point_on_motion(self, x, y=None):
         """ Adds a point to the list when it is moved.
@@ -338,19 +259,11 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.axes.set_xlim(-10, 110)
 
     def on_motion(self, event):
-        """ callback method for mouse motion event
+        """ Callback method for mouse motion event
 
         Args:
             event: A MPL MouseEvent
         """
-        # if not isinstance(event, MouseEvent):
-        #     return
-        # x = round(event.xdata, 4)
-        # y = round(event.ydata, 4)
-        # if not self.dragging_point:
-        #     return
-        # self.dragging_point[0] = x
-        # self.dragging_point[1] = y
         if not self.dragging_point:
             return
         self.remove_point(self.dragging_point)
@@ -363,7 +276,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             self.elements["He"].remove(point)
 
     def on_release(self, event):
-        """ callback method for mouse release event
+        """ Callback method for mouse release event
 
         Args:
             event: A MPL MouseEvent
@@ -372,23 +285,3 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             self.add_point_on_motion(event)
             self.dragging_point = None
             self.update_plot()
-
-    #
-    # def graph_settings_dialog(self):
-    #     '''Show graph settings dialog.
-    #     '''
-    #     TofeGraphSettingsWidget(self)
-    #
-    # def remove_selected(self):
-    #     '''Remove selected selection.
-    #     '''
-    #     self.elementSelectDeleteButton.setEnabled(False)
-    #     self.__on_draw_legend()
-    #     self.canvas.draw_idle()
-    #     self.__emit_selections_changed()
-    #
-    # def undo_point(self):
-    #     '''Undo last point in open selection.
-    #     '''
-    #     # self.measurement.undo_point()
-    #     self.canvas.draw_idle()
