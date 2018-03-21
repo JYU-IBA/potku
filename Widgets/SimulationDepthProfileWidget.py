@@ -97,30 +97,30 @@ class SimulationDepthProfileWidget(QtWidgets.QWidget):
     def __set_shortcuts(self):
         """Set shortcuts for the ToF-E histogram.
         """
-        # X axis
-        self.__sc_comp_x_inc = QtWidgets.QShortcut(self)
-        self.__sc_comp_x_inc.setKey(QtCore.Qt.Key_Q)
-        self.__sc_comp_x_inc.activated.connect(
-            lambda: self.matplotlib.sc_comp_inc(0))
-        self.__sc_comp_x_dec = QtWidgets.QShortcut(self)
-        self.__sc_comp_x_dec.setKey(QtCore.Qt.Key_W)
-        self.__sc_comp_x_dec.activated.connect(
-            lambda: self.matplotlib.sc_comp_dec(0))
-        # Y axis
-        self.__sc_comp_y_inc = QtWidgets.QShortcut(self)
-        self.__sc_comp_y_inc.setKey(QtCore.Qt.Key_Z)
-        self.__sc_comp_y_inc.activated.connect(
-            lambda: self.matplotlib.sc_comp_inc(1))
-        self.__sc_comp_y_dec = QtWidgets.QShortcut(self)
-        self.__sc_comp_y_dec.setKey(QtCore.Qt.Key_X)
-        self.__sc_comp_y_dec.activated.connect(
-            lambda: self.matplotlib.sc_comp_dec(1))
-        # Both axes
-        self.__sc_comp_inc = QtWidgets.QShortcut(self)
-        self.__sc_comp_inc.setKey(QtCore.Qt.Key_A)
-        self.__sc_comp_inc.activated.connect(
-            lambda: self.matplotlib.sc_comp_inc(2))
-        self.__sc_comp_dec = QtWidgets.QShortcut(self)
-        self.__sc_comp_dec.setKey(QtCore.Qt.Key_S)
-        self.__sc_comp_dec.activated.connect(
-            lambda: self.matplotlib.sc_comp_dec(2))
+        # # X axis
+        # self.__sc_comp_x_inc = QtWidgets.QShortcut(self)
+        # self.__sc_comp_x_inc.setKey(QtCore.Qt.Key_Q)
+        # self.__sc_comp_x_inc.activated.connect(
+        #     lambda: self.matplotlib.sc_comp_inc(0))
+        # self.__sc_comp_x_dec = QtWidgets.QShortcut(self)
+        # self.__sc_comp_x_dec.setKey(QtCore.Qt.Key_W)
+        # self.__sc_comp_x_dec.activated.connect(
+        #     lambda: self.matplotlib.sc_comp_dec(0))
+        # # Y axis
+        # self.__sc_comp_y_inc = QtWidgets.QShortcut(self)
+        # self.__sc_comp_y_inc.setKey(QtCore.Qt.Key_Z)
+        # self.__sc_comp_y_inc.activated.connect(
+        #     lambda: self.matplotlib.sc_comp_inc(1))
+        # self.__sc_comp_y_dec = QtWidgets.QShortcut(self)
+        # self.__sc_comp_y_dec.setKey(QtCore.Qt.Key_X)
+        # self.__sc_comp_y_dec.activated.connect(
+        #     lambda: self.matplotlib.sc_comp_dec(1))
+        # # Both axes
+        # self.__sc_comp_inc = QtWidgets.QShortcut(self)
+        # self.__sc_comp_inc.setKey(QtCore.Qt.Key_A)
+        # self.__sc_comp_inc.activated.connect(
+        #     lambda: self.matplotlib.sc_comp_inc(2))
+        # self.__sc_comp_dec = QtWidgets.QShortcut(self)
+        # self.__sc_comp_dec.setKey(QtCore.Qt.Key_S)
+        # self.__sc_comp_dec.activated.connect(
+        #     lambda: self.matplotlib.sc_comp_dec(2))
