@@ -38,8 +38,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
     tool_modes = {0: "",
                   1: "pan/zoom",  # Matplotlib's drag
                   2: "zoom rect",  # Matplotlib's zoom
-                  3: "selection tool",
-                  4: "selection select tool"
+                  3: "rectangle selection tool"
                   }
 
     def __init__(self, parent, simulation_data, masses, icon_manager):
@@ -65,7 +64,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.xs = (100 * rand(20)).tolist()
         self.ys = (100 * rand(20)).tolist()
         self.xs.sort()
-        self.xys = zip(self.xs, self.ys)
+        self.xys = list(zip(self.xs, self.ys))
         # self.xys = sorted(self.xys, key=lambda x: x[0])
         self.selected_x = 0
         self.selected_y = 0
@@ -77,14 +76,14 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.lastind = 0
         self.text = None
 
-        self.selector = RectangleSelector(self.axes, self.onselect, drawtype='box', useblit=True)
-        self.selector.set_active(False)
+        self.rectangle_selector = RectangleSelector(self.axes, self.onselect, drawtype='box', useblit=True)
+        self.rectangle_selector.set_active(False)
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
         self.canvas.mpl_connect('button_release_event', self.on_release)
         self.canvas.mpl_connect('motion_notify_event', self.on_motion)
-        self.canvas.mpl_connect('key_press_event', self.toggle_selector)
+        self.canvas.mpl_connect('key_press_event', self.toggle_rectangle_selector)
 
         # self.buttonshortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+O"), self)
         # # self.buttonshortcut.setKey(QtCore.Qt.Key_Q)
@@ -96,7 +95,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
 
 
         # This customizes the toolbar buttons
-        # self.__fork_toolbar_buttons()
+        self.__fork_toolbar_buttons()
 
         # Put all x-coordinates to one list and all y-coordinates to one list.
         # There are needed later when we calculates the range of the axes.
@@ -151,14 +150,14 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.lines, = self.axes.plot(self.xs, self.ys, color="blue")
         self.points, = self.axes.plot(self.xs, self.ys, color="blue", marker="o", markersize=10, picker=5,
                                       linestyle="None")
-        self.selected, = self.axes.plot(0, 0, marker="o", markersize=10,
+        self.selected, = self.axes.plot(0, 0, marker="o", markersize=10, linestyle="None",
                                         color='yellow', visible=False)
 
         # self.axes.set_xlim(-10, 110)
         # self.axes.set_ylim(-10, 110)
         self.axes.autoscale(enable=False)
-        self.text = self.fig.text(0.1, 0.9, "Mode: Point editing",
-                                  transform=self.fig.transFigure, va="top", ha="left")
+        # self.text = self.fig.text(0.1, 0.9, "Mode: Point editing",
+        #                           transform=self.fig.transFigure, va="top", ha="left")
 
         # Remove axis ticks and draw
         self.remove_axes_ticks()
@@ -240,24 +239,32 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # Make own buttons
         self.mpl_toolbar.addSeparator()
 
-        # Selection undo button
-        self.elementSelectUndoButton = QtWidgets.QToolButton(self)
-        self.elementSelectUndoButton.clicked.connect(self.undo_point)
-        self.__icon_manager.set_icon(self.elementSelectUndoButton, "undo.png")
-        self.elementSelectUndoButton.setToolTip(
-            "Undo last point in open selection")
-        self.elementSelectUndoButton.setEnabled(False)
-        self.mpl_toolbar.addWidget(self.elementSelectUndoButton)
-        self.mpl_toolbar.addSeparator()
-
-        # Selection delete button
-        self.elementSelectDeleteButton = QtWidgets.QToolButton(self)
-        self.elementSelectDeleteButton.setEnabled(False)
-        self.elementSelectDeleteButton.clicked.connect(self.remove_selected)
-        self.__icon_manager.set_icon(self.elementSelectDeleteButton, "del.png")
-        self.elementSelectDeleteButton.setToolTip("Delete selected selection")
-        self.mpl_toolbar.addWidget(self.elementSelectDeleteButton)
-        self.mpl_toolbar.addSeparator()
+        self.rectangle_select_button = QtWidgets.QToolButton(self)
+        self.rectangle_select_button.clicked.connect(self.toggle_rectangle_selector)
+        self.rectangle_select_button.setCheckable(True)
+        # Temporary icon
+        self.__icon_manager.set_icon(self.rectangle_select_button, "depth_profile_lim_all.svg")
+        self.rectangle_select_button.setToolTip("Rectangle select")
+        self.mpl_toolbar.addWidget(self.rectangle_select_button)
+        #
+        # # Selection undo button
+        # self.elementSelectUndoButton = QtWidgets.QToolButton(self)
+        # self.elementSelectUndoButton.clicked.connect(self.undo_point)
+        # self.__icon_manager.set_icon(self.elementSelectUndoButton, "undo.png")
+        # self.elementSelectUndoButton.setToolTip(
+        #     "Undo last point in open selection")
+        # self.elementSelectUndoButton.setEnabled(False)
+        # self.mpl_toolbar.addWidget(self.elementSelectUndoButton)
+        # self.mpl_toolbar.addSeparator()
+        #
+        # # Selection delete button
+        # self.elementSelectDeleteButton = QtWidgets.QToolButton(self)
+        # self.elementSelectDeleteButton.setEnabled(False)
+        # self.elementSelectDeleteButton.clicked.connect(self.remove_selected)
+        # self.__icon_manager.set_icon(self.elementSelectDeleteButton, "del.png")
+        # self.elementSelectDeleteButton.setToolTip("Delete selected selection")
+        # self.mpl_toolbar.addWidget(self.elementSelectDeleteButton)
+        # self.mpl_toolbar.addSeparator()
 
     # def find_clicked_point(self, x, y):
     #     """ If an existing point is clicked, return it.
@@ -288,7 +295,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # TODO: Implement a separate selection mode for moving multiple points or a line
         # TODO: Check that e.g. zoom tool isn't on
         # Only inside the actual graph axes, else do nothing.
-        if self.selector.active:
+        if self.rectangle_selector.active:
             return
         if event.inaxes != self.axes:
             return
@@ -313,22 +320,22 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
 
         self.update_plot()
 
-    def add_point_on_motion(self, x, y=None):
-        """ Adds a point to the list when it is moved.
-        """
-        # TODO: Maybe there could be an index as a parameter, so we know the place of the point immediately?
-        if isinstance(x, MouseEvent):
-            x, y = x.xdata, x.ydata
-        point = [x, y]
-        # If the x coord of the point to be added is less than the x coord of
-        # any of the existing points, this loop catches it
-        for index, p in enumerate(self.elements["He"]):
-            if p[0] > x:
-                self.elements["He"].insert(index, point)
-                return point
-        # Otherwise the point is added to the end of the list
-        self.elements["He"].append(point)
-        return point
+    # def add_point_on_motion(self, x, y=None):
+    #     """ Adds a point to the list when it is moved.
+    #     """
+    #     # TODO: Maybe there could be an index as a parameter, so we know the place of the point immediately?
+    #     if isinstance(x, MouseEvent):
+    #         x, y = x.xdata, x.ydata
+    #     point = [x, y]
+    #     # If the x coord of the point to be added is less than the x coord of
+    #     # any of the existing points, this loop catches it
+    #     for index, p in enumerate(self.elements["He"]):
+    #         if p[0] > x:
+    #             self.elements["He"].insert(index, point)
+    #             return point
+    #     # Otherwise the point is added to the end of the list
+    #     self.elements["He"].append(point)
+    #     return point
 
     def update_plot(self):
         """ Updates point data and redraws the plot. """
@@ -435,7 +442,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # self.remove_point(self.dragging_point)
         # self.dragging_point = self.add_point_on_motion(event)
         # self.update_plot()
-        if self.selector.active:
+        if self.rectangle_selector.active:
             return
         if event.inaxes != self.axes:
             return
@@ -470,48 +477,62 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
-        if self.selector.active:
+        if self.rectangle_selector.active:
             return
         # TODO: If no point is selected, don't update plot
-        # TODO: If rectangle selector is active, select points under it
         if event.button == 1:
             self.drag_i = None
             self.update_plot()
 
     def onselect(self, eclick, erelease):
-        pass
-        # 'eclick and erelease are matplotlib events at press and release'
-        # print(' startposition : (%f, %f)' % (eclick.xdata, eclick.ydata))
-        # print(' endposition   : (%f, %f)' % (erelease.xdata, erelease.ydata))
-        # print(' used button   : ', eclick.button)
-
-    def toggle_selector(self, event):
-        if event.key in ['S', 's'] and self.selector.active:
-            self.selector.set_active(False)
-            self.text.set_text("Mode: Point editing")
+        'eclick and erelease are matplotlib events at press and release'
+        extents = self.rectangle_selector.extents
+        xmin = extents[0]
+        xmax = extents[1]
+        ymin = extents[2]
+        ymax = extents[3]
+        selected_xs = []
+        selected_ys = []
+        for xy in self.xys:
+            if xmin <= xy[0] <= xmax and ymin <= xy[1] < ymax:
+                selected_xs.append(xy[0])
+                selected_ys.append(xy[1])
+        if selected_xs and selected_ys:
+            self.selected.set_data(selected_xs, selected_ys)
+            self.selected.set_visible(True)
             self.fig.canvas.draw()
-        elif event.key in ['S', 's'] and not self.selector.active:
-            self.selector.set_active(True)
+        else:
             self.selected.set_visible(False)
-            self.text.set_text("Mode: Rectangle select")
             self.fig.canvas.draw()
 
-    #
-    # def graph_settings_dialog(self):
-    #     '''Show graph settings dialog.
-    #     '''
-    #     TofeGraphSettingsWidget(self)
-    #
-    # def remove_selected(self):
-    #     '''Remove selected selection.
-    #     '''
-    #     self.elementSelectDeleteButton.setEnabled(False)
-    #     self.__on_draw_legend()
-    #     self.canvas.draw_idle()
-    #     self.__emit_selections_changed()
-    #
-    # def undo_point(self):
-    #     '''Undo last point in open selection.
-    #     '''
-    #     # self.measurement.undo_point()
-    #     self.canvas.draw_idle()
+    # def toggle_selector_old(self, event):
+    #     if event.key in ['S', 's'] and self.selector.active:
+    #         self.selector.set_active(False)
+    #         self.fig.canvas.draw()
+    #     elif event.key in ['S', 's'] and not self.selector.active:
+    #         self.selector.set_active(True)
+    #         self.selected.set_visible(False)
+    #         self.text.set_text("Mode: Rectangle select")
+    #         self.fig.canvas.draw()
+
+    def toggle_rectangle_selector(self):
+        '''Enable rectangle selection.
+        '''
+        if self.rectangle_selector.active:
+            self.rectangle_selector.set_active(False)
+        else:
+            self.rectangle_selector.set_active(True)
+            self.selected.set_visible(False)
+
+        if self.rectangle_select_button.isChecked():  # if button is enabled
+            # One cannot choose selection while selecting
+            self.__toggle_drag_zoom()
+            self.mpl_toolbar.mode_tool = 3
+            str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
+            self.__tool_label.setText(str_tool)
+            self.mpl_toolbar.mode = str_tool
+        else:
+            self.__tool_label.setText("")
+            self.mpl_toolbar.mode_tool = 0
+            self.mpl_toolbar.mode = ""
+            self.canvas.draw_idle()
