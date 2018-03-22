@@ -19,6 +19,7 @@ from Widgets.LogWidget import LogWidget
 from Widgets.SimulationDepthProfileWidget import SimulationDepthProfileWidget
 from Widgets.SimulationEnergySpectrumWidget import SimulationEnergySpectrumWidget
 from Modules.Functions import read_espe_file
+from Modules.Simulation import CallMCERD, CallGetEspe
 
 class SimulationTabWidget(QtWidgets.QWidget):
     """Tab widget where simulation stuff is added.
@@ -170,9 +171,17 @@ class SimulationTabWidget(QtWidgets.QWidget):
         # self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self)
         # self.make_energy_spectrum(directory, self.simulation.simulation_name)
 
-        directory = 'Sample-data/'
-        espe_file = 'LiMnO_O.simu'
-        self.make_energy_spectrum(directory, espe_file)
+        # directory = 'Sample-data/'
+
+        mcerd_path = os.path.join(self.project.directory, "35Cl-85-LiMnO_Li")
+        self.simulation.callMCERD = CallMCERD(mcerd_path)
+        # self.simulation.callMCERD.run_simulation()
+
+        self.simulation.call_get_espe = CallGetEspe(self.project.directory)
+        self.simulation.call_get_espe.run_get_espe()
+
+        espe_file = 'LiMnO_Li.simu'
+        self.make_energy_spectrum(self.project.directory, espe_file)
         self.add_widget(self.energy_spectrum_widget)
             
     def del_widget(self, widget):

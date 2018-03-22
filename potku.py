@@ -63,6 +63,7 @@ class Potku(QtWidgets.QMainWindow):
         self.settings = GlobalSettings()
         self.project = None
         self.masses = Masses(os.path.join("external", "Potku-data", "masses.dat"))
+        self.potku_bin_dir = os.getcwd()
         
         # Holds references to all the tab widgets in "tab_measurements" 
         # (even when they are removed from the QTabWidget)

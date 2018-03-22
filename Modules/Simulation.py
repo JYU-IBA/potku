@@ -19,6 +19,7 @@ import sys
 from Modules.Functions import md5_for_file
 from Modules.Settings import Settings
 import shutil
+from Modules.Null import Null
 
 class Simulations:
     """Simulations class handles multiple simulations.
@@ -144,6 +145,10 @@ class Simulation:
 
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
+
+        self.callMCERD = Null()
+        self.call_get_espe = Null()
+
 
     def remove_by_tab_id(self, tab_id):
         """Removes simulation from tabs by tab id
@@ -271,22 +276,24 @@ class CallGetEspe(object):
         #         -density surface atomic density of the first 10 nm layer (at/cm^2)
 
         # TODO When the directory structure for simulation settings has been decided, update this
-        self.bin_dir = "%s%s%s" % ("external", os.sep, "Examples")
+        self.bin_dir = command_file_path
+        # self.bin_dir = "%s%s%s" % ("external", os.sep, "Examples")
         # TODO Read the parameters from the program
 
         # Example parameters:
         input_file = "35Cl-85-LiMnO_Li.*.erd"
         params = {"-beam 35Cl", "-energy 8.515", "-theta 41.12", "-tangle 20.6", "-timeres 250.0",
                   "-toflen 0.623", "-solid 0.2", "-dose 8.1e12", "-avemass",
-                  "-density 4.98e16", "-dist recoiling.LiMnO_Li", "-ch 0.02"}
+                  "-density 4.98e16", "-dist recoiling.LiMnO_Li", "-ch 0.02"}  # recoiling file needs to be a parameter
         params_string = " ".join(params)
         output_file = "LiMnO_Li.simu"
 
+        # TODO: No cd-ing, do this with absolute paths
         self.command_win = "cd " + self.bin_dir + " && type " + input_file + \
-                           " | ..\Potku-bin\get_espe " + params_string + \
+                           " | " + os.getcwd() + "\external\Potku-bin\get_espe " + params_string + \
                            " > " + output_file
         self.command_unix = "cd " + self.bin_dir + " && cat " + input_file + \
-                            " | ../Potku-bin/get_espe " + params_string + \
+                            " | " + os.getcwd() + "/external/Potku-bin/get_espe " + params_string + \
                             " > " + output_file
 
     def run_get_espe(self):
@@ -304,7 +311,7 @@ class CallGetEspe(object):
 
 
 # For testing the CallMCERD class:
-# CallMCERD("/home/siansiir/mcerd/source/Examples/35Cl-85-LiMnO_Li").run_simulation()
+# CallMCERD(r"C:\Users\localadmin\potku\projects\testi7\35Cl-85-LiMnO_Li").run_simulation()
 # MCERD tries to read the input files from the path specified in the command file
 # CallMCERD(r"..\Examples\35Cl-85-LiMnO_Li").run_simulation()
 
