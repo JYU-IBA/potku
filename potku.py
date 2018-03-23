@@ -30,20 +30,20 @@ import gc, os, shutil, sys, platform, subprocess
 from datetime import datetime, timedelta
 from PyQt5 import QtWidgets, QtCore, uic
 
-from Dialogs.AboutDialog import AboutDialog
-from Dialogs.GlobalSettingsDialog import GlobalSettingsDialog
-from Dialogs.ImportMeasurementBinary import ImportDialogBinary
-from Dialogs.ImportMeasurementDialog import ImportMeasurementsDialog
-from Dialogs.MeasuringSettingsDialog import ProjectSettingsDialog
-from Dialogs.ProjectNewDialog import ProjectNewDialog
-from Dialogs.SimulationNewDialog import SimulationNewDialog
-from Modules.Functions import open_file_dialog
-from Modules.GlobalSettings import GlobalSettings
-from Modules.IconManager import IconManager
-from Modules.Masses import Masses
-from Modules.Project import Project
-from Widgets.MeasurementTabWidget import MeasurementTabWidget
-from Widgets.SimulationTabWidget import SimulationTabWidget
+from dialogs.about import AboutDialog
+from dialogs.global_settings import GlobalSettingsDialog
+from dialogs.measurement.import_binary import ImportDialogBinary
+from dialogs.measurement.import_measurement import ImportMeasurementsDialog
+from dialogs.measurement.measuring_settings import ProjectSettingsDialog
+from dialogs.new_project import ProjectNewDialog
+from dialogs.simulation.new_simulation import SimulationNewDialog
+from modules.general_functions import open_file_dialog
+from modules.global_settings import GlobalSettings
+from modules.icon_manager import IconManager
+from modules.masses import Masses
+from modules.project import Project
+from widgets.measurement.tab import MeasurementTabWidget
+from widgets.simulation.tab import SimulationTabWidget
 # from Widgets.SimulationDepthProfileWidget import SimulationDepthProfileWidget
 
 
@@ -63,6 +63,7 @@ class Potku(QtWidgets.QMainWindow):
         self.settings = GlobalSettings()
         self.project = None
         self.masses = Masses(os.path.join("external", "Potku-data", "masses.dat"))
+        self.potku_bin_dir = os.getcwd()
         
         # Holds references to all the tab widgets in "tab_measurements" 
         # (even when they are removed from the QTabWidget)
