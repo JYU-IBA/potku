@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 23.3.2018
+Updated on 26.3.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -45,7 +45,7 @@ from modules.masses import Masses
 from modules.project import Project
 from widgets.measurement.tab import MeasurementTabWidget
 from widgets.simulation.tab import SimulationTabWidget
-# from Widgets.SimulationDepthProfileWidget import SimulationDepthProfileWidget
+# from widgets.SimulationDepthProfileWidget import SimulationDepthProfileWidget
 
 
 class Potku(QtWidgets.QMainWindow):

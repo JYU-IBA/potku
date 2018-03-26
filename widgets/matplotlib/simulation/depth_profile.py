@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 13.3.2018
+Updated on 26.3.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
@@ -10,11 +10,10 @@ from matplotlib.colors import LogNorm
 import matplotlib.lines as lines
 from PyQt5 import QtCore, QtWidgets, QtGui
 
-from Dialogs.SelectionDialog import SelectionSettingsDialog
-from Dialogs.GraphSettingsDialog import TofeGraphSettingsWidget
-from Modules.Functions import open_file_dialog
-from Widgets.MatplotlibWidget import MatplotlibWidget
-from Modules.Point import Point
+from dialogs.measurement.selection import SelectionSettingsDialog
+from dialogs.graph_settings import TofeGraphSettingsWidget
+from modules.general_functions import open_file_dialog
+from widgets.matplotlib.base import MatplotlibWidget
 from matplotlib.backend_bases import MouseEvent
 import math
 import numpy as np
