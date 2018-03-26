@@ -66,14 +66,12 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.xs.sort()
         self.xys = list(zip(self.xs, self.ys))
         # self.xys = sorted(self.xys, key=lambda x: x[0])
-        self.selected_x = 0
-        self.selected_y = 0
 
         self.lines = None
         self.points = None
         self.selected = None
         self.drag_i = None
-        self.lastind = 0
+        self.lastind = -1
         self.text = None
 
         self.rectangle_selector = RectangleSelector(self.axes, self.onselect, drawtype='box', useblit=True)
@@ -292,6 +290,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
+        # TODO: Implement removing points
         # TODO: Implement a separate selection mode for moving multiple points or a line
         # TODO: Check that e.g. zoom tool isn't on
         # Only inside the actual graph axes, else do nothing.
@@ -358,8 +357,10 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.points.set_data(self.xs, self.ys)
         self.lines.set_data(self.xs, self.ys)
 
-        self.selected.set_visible(True)
-        self.selected.set_data(self.xs[dataind], self.ys[dataind])
+        # TODO: Make a separate variable for selected point coordinates. If it's empty, hide the plot.
+        if self.lastind != -1:
+            self.selected.set_visible(True)
+            self.selected.set_data(self.xs[dataind], self.ys[dataind])
         # self.text.set_text('selected: %d' % dataind)
 
         self.fig.canvas.draw()
@@ -466,10 +467,10 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.ys[self.drag_i] = event.ydata
         self.update_plot()
 
-    def remove_point(self, point):
-        """ Removes a point from the list. """
-        if point in self.elements["He"]:
-            self.elements["He"].remove(point)
+    # def remove_point(self, point):
+    #     """ Removes a point from the list. """
+    #     if point in self.elements["He"]:
+    #         self.elements["He"].remove(point)
 
     def on_release(self, event):
         """ callback method for mouse release event
