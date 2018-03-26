@@ -170,10 +170,10 @@ class SimulationTabWidget(QtWidgets.QWidget):
         """
         mcerd_path = os.path.join(self.project.directory, "35Cl-85-LiMnO_Li")
         self.simulation.callMCERD = CallMCERD(mcerd_path)
-        # self.simulation.callMCERD.run_simulation()
+        self.simulation.callMCERD.run_simulation()
 
         self.simulation.call_get_espe = CallGetEspe(self.project.directory)
-        # self.simulation.call_get_espe.run_get_espe()
+        self.simulation.call_get_espe.run_get_espe()
 
         self.make_energy_spectrum(self.project.directory, self.simulation.call_get_espe.output_file)
         self.add_widget(self.energy_spectrum_widget)

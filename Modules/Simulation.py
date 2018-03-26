@@ -212,17 +212,17 @@ class Simulation:
 class CallMCERD(object):
     """Handles calling the external program MCERD to run the simulation."""
 
-    def __init__(self, command_file_path):
+    def __init__(self, command_file):
         """Inits CallMCERD.
 
         Args:
-            command_file_path: Full path of where simulation command file is located.
+            command_file: Full path to the command file.
         """
         # TODO When the directory structure for simulation settings has been decided, update this
-        self.bin_dir = "%s%s%s" % ("external", os.sep, "Potku-bin")
+        # self.bin_dir = "%s%s%s" % ("external", os.sep, "Potku-bin")
 
-        self.command_win = "cd " + self.bin_dir + " && mcerd.exe " + command_file_path
-        self.command_unix = "cd " + self.bin_dir + " && ./mcerd " + command_file_path
+        self.command_win = "external\Potku-bin\mcerd.exe " + command_file
+        self.command_unix = "external/Potku-bin/mcerd " + command_file
 
     def run_simulation(self):
         """Runs the simulation.
@@ -282,10 +282,10 @@ class CallGetEspe(object):
 
         # Example parameters:
         input_file = "35Cl-85-LiMnO_Li.*.erd"
-        params = {"-beam 35Cl", "-energy 8.515", "-theta 41.12", "-tangle 20.6", "-timeres 250.0",
+        params = ["-beam 35Cl", "-energy 8.515", "-theta 41.12", "-tangle 20.6", "-timeres 250.0",
                   "-toflen 0.623", "-solid 0.2", "-dose 8.1e12", "-avemass",
                   "-density 4.98e16", "-dist " + command_file_path + os.sep +
-                  "recoiling.LiMnO_Li", "-ch 0.02"}  # recoiling file needs to be a parameter
+                  "recoiling.LiMnO_Li", "-ch 0.02"]  # recoiling file needs to be a parameter
         params_string = " ".join(params)
         self.output_file = "LiMnO_Li.simu"
 
