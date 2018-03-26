@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 1.3.2018
-Updated on 15.3.2018
+Updated on 26.3.2018
 '''
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
@@ -43,9 +43,9 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.masses = masses
         self.icon_manager = icon_manager
 
-        self.simulation_depth_profile = Null()
-        self.energy_spectrum_widget = Null()
-        self.log = Null()
+        self.simulation_depth_profile = None
+        self.energy_spectrum_widget = None
+        self.log = None
 
         # Hide the simulation specific settings buttons
         self.ui.settingsFrame.setVisible(False)
@@ -153,23 +153,14 @@ class SimulationTabWidget(QtWidgets.QWidget):
         Args:
             parent: Parent of the energy spectrum widget.
         """
-        # self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self)
-        # self.make_energy_spectrum(directory, self.simulation.simulation_name)
-
-        # directory = 'Sample-data/'
-
         mcerd_path = os.path.join(self.project.directory, "35Cl-85-LiMnO_Li")
         self.simulation.callMCERD = CallMCERD(mcerd_path)
-        # self.simulation.callMCERD.run_simulation()
+        self.simulation.callMCERD.run_simulation()
 
         self.simulation.call_get_espe = CallGetEspe(self.project.directory)
         self.simulation.call_get_espe.run_get_espe()
 
-        espe_file = 'LiMnO_Li.simu'
-        self.make_energy_spectrum(self.project.directory, espe_file)
-        directory = 'Sample-data/'
-        espe_file = 'LiMnO_O.simu'
-        self.make_energy_spectrum(directory, espe_file)
+        self.make_energy_spectrum(self.project.directory, self.simulation.call_get_espe.output_file)
         self.add_widget(self.energy_spectrum_widget)
             
     def del_widget(self, widget):
@@ -361,6 +352,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
     def __set_icons(self):
         """Adds icons to UI elements.
         """
-        # TODO Add icons.
+        # TODO: Add icons.
 
 

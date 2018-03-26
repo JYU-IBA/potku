@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 23.3.2018
+Updated on 26.3.2018
 
 #TODO Description of Potku and copyright
 #TODO Lisence
@@ -167,20 +167,11 @@ class Simulations:
 class Simulation:
     """Simulation class handles the simulation data."""
 
-#     def __init__(self, directory):
-#         """Initializes the simulation.
-#
-#         Args:
-#             directory: The directory of the simulation.
-#         """
-
     def __init__(self, command_file, project, tab_id):
         """Inits Simulation.
         Args:
             project: Project class object.
         """
-
-        # self._directory = directory
 
         simulation_folder, simulation_name = os.path.split(command_file)
         self.simulation_file = simulation_name  # With extension
@@ -207,6 +198,10 @@ class Simulation:
 
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
+
+        self.callMCERD = None
+        self.call_get_espe = None
+
 
     def remove_by_tab_id(self, tab_id):
         """Removes simulation from tabs by tab id
@@ -296,17 +291,17 @@ class Simulation:
 class CallMCERD(object):
     """Handles calling the external program MCERD to run the simulation."""
 
-    def __init__(self, command_file_path):
+    def __init__(self, command_file):
         """Inits CallMCERD.
 
         Args:
-            command_file_path: Full path of where simulation command file is located.
+            command_file: Full path to the command file.
         """
         # TODO When the directory structure for simulation settings has been decided, update this
-        self.bin_dir = "%s%s%s" % ("external", os.sep, "Potku-bin")
+        # self.bin_dir = "%s%s%s" % ("external", os.sep, "Potku-bin")
 
-        self.command_win = "cd " + self.bin_dir + " && mcerd.exe " + command_file_path
-        self.command_unix = "cd " + self.bin_dir + " && ./mcerd " + command_file_path
+        self.command_win = "external\Potku-bin\mcerd.exe " + command_file
+        self.command_unix = "external/Potku-bin/mcerd " + command_file
 
     def run_simulation(self):
         """Runs the simulation.
@@ -320,7 +315,6 @@ class CallMCERD(object):
             subprocess.call(self.command_unix, shell=True)
         else:
             print("It appears we do not support your OS.")
-
 
 
 class CallGetEspe(object):
@@ -360,23 +354,22 @@ class CallGetEspe(object):
         #         -density surface atomic density of the first 10 nm layer (at/cm^2)
 
         # TODO When the directory structure for simulation settings has been decided, update this
-        self.bin_dir = "%s%s%s" % ("external", os.sep, "Examples")
+        # self.bin_dir = "%s%s%s" % ("external", os.sep, "Examples")
         # TODO Read the parameters from the program
 
         # Example parameters:
         input_file = "35Cl-85-LiMnO_Li.*.erd"
-        params = {"-beam 35Cl", "-energy 8.515", "-theta 41.12", "-tangle 20.6", "-timeres 250.0",
+        params = ["-beam 35Cl", "-energy 8.515", "-theta 41.12", "-tangle 20.6", "-timeres 250.0",
                   "-toflen 0.623", "-solid 0.2", "-dose 8.1e12", "-avemass",
-                  "-density 4.98e16", "-dist recoiling.LiMnO_Li", "-ch 0.02"}
+                  "-density 4.98e16", "-dist " + command_file_path + os.sep +
+                  "recoiling.LiMnO_Li", "-ch 0.02"]  # recoiling file needs to be a parameter
         params_string = " ".join(params)
-        output_file = "LiMnO_Li.simu"
+        self.output_file = "LiMnO_Li.simu"
 
-        self.command_win = "cd " + self.bin_dir + " && type " + input_file + \
-                           " | ..\Potku-bin\get_espe " + params_string + \
-                           " > " + output_file
-        self.command_unix = "cd " + self.bin_dir + " && cat " + input_file + \
-                            " | ../Potku-bin/get_espe " + params_string + \
-                            " > " + output_file
+        self.command_win = "type " + command_file_path + os.sep + input_file + " | " + "external\Potku-bin\get_espe " \
+                           + params_string + " > " + command_file_path + os.sep + self.output_file
+        self.command_unix = "cat " + command_file_path + os.sep + input_file + " | " + "external/Potku-bin/get_espe" \
+                            + params_string + " > " + command_file_path + os.sep + self.output_file
 
     def run_get_espe(self):
         """Runs get_espe. It generates an energy spectrum coordinate file from the result of MCERD.

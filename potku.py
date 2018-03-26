@@ -575,8 +575,10 @@ class Potku(QtWidgets.QMainWindow):
         if file:
             self.__close_project()
             folder = os.path.split(file)[0]
+            folders = folder.split("/")
+            fd_with_correct_sep = os.sep.join(folders)
             tmp_name = os.path.splitext(os.path.basename(file))[0]
-            self.project = Project(folder, tmp_name, self.masses,
+            self.project = Project(fd_with_correct_sep, tmp_name, self.masses,
                                    self.statusbar, self.settings,
                                    self.tab_widgets)
             self.ui.setWindowTitle("{0} - Project: {1}".format(

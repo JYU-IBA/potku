@@ -27,7 +27,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
 __versio__ = "1.0"
 
 from os import makedirs, path, listdir
-import configparser, re
+import configparser, re, os
 
 
 class GlobalSettings:
@@ -252,7 +252,9 @@ class GlobalSettings:
             directory: String representing folder where projects will be saved
             by default.
         '''
-        self.__config["default"]["project_directory"] = directory
+        folders = directory.split("/")
+        os_dir = os.sep.join(folders)
+        self.__config["default"]["project_directory"] = os_dir
         self.save_config()
         
     
@@ -268,7 +270,9 @@ class GlobalSettings:
         Args:
             directory: String representing project folder.
         '''
-        self.__config["default"]["project_directory_last_open"] = directory
+        folders = directory.split("/")
+        os_dir = os.sep.join(folders)
+        self.__config["default"]["project_directory"] = os_dir
         self.save_config()
         
          
@@ -285,7 +289,9 @@ class GlobalSettings:
             directory: A string representing folder where efficiency files are 
                        saved in.
         '''
-        self.__config["default"]["efficiency_directory"] = directory
+        folders = directory.split("/")
+        os_dir = os.sep.join(folders)
+        self.__config["default"]["project_directory"] = os_dir
         
     
     def get_efficiencies(self):
