@@ -284,17 +284,16 @@ class CallGetEspe(object):
         input_file = "35Cl-85-LiMnO_Li.*.erd"
         params = {"-beam 35Cl", "-energy 8.515", "-theta 41.12", "-tangle 20.6", "-timeres 250.0",
                   "-toflen 0.623", "-solid 0.2", "-dose 8.1e12", "-avemass",
-                  "-density 4.98e16", "-dist recoiling.LiMnO_Li", "-ch 0.02"}  # recoiling file needs to be a parameter
+                  "-density 4.98e16", "-dist " + command_file_path + os.sep +
+                  "recoiling.LiMnO_Li", "-ch 0.02"}  # recoiling file needs to be a parameter
         params_string = " ".join(params)
-        output_file = "LiMnO_Li.simu"
+        self.output_file = "LiMnO_Li.simu"
 
-        # TODO: No cd-ing, do this with absolute paths
-        self.command_win = "cd " + self.bin_dir + " && type " + input_file + \
-                           " | " + os.getcwd() + "\external\Potku-bin\get_espe " + params_string + \
-                           " > " + output_file
-        self.command_unix = "cd " + self.bin_dir + " && cat " + input_file + \
-                            " | " + os.getcwd() + "/external/Potku-bin/get_espe " + params_string + \
-                            " > " + output_file
+        # TODO: This doesn't work in Windows because the comand_file_path has slashes, not dashes
+        self.command_win = "type " + command_file_path + os.sep + input_file + " | " + "external\Potku-bin\get_espe " \
+                           + params_string + " > " + command_file_path + os.sep + self.output_file
+        self.command_unix = "cat " + command_file_path + os.sep + input_file + " | " + "external/Potku-bin/get_espe" \
+                            + params_string + " > " + command_file_path + os.sep + self.output_file
 
     def run_get_espe(self):
         """Runs get_espe. It generates an energy spectrum coordinate file from the result of MCERD.

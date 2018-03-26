@@ -168,20 +168,14 @@ class SimulationTabWidget(QtWidgets.QWidget):
         Args:
             parent: Parent of the energy spectrum widget.
         """
-        # self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self)
-        # self.make_energy_spectrum(directory, self.simulation.simulation_name)
-
-        # directory = 'Sample-data/'
-
         mcerd_path = os.path.join(self.project.directory, "35Cl-85-LiMnO_Li")
         self.simulation.callMCERD = CallMCERD(mcerd_path)
         # self.simulation.callMCERD.run_simulation()
 
         self.simulation.call_get_espe = CallGetEspe(self.project.directory)
-        self.simulation.call_get_espe.run_get_espe()
+        # self.simulation.call_get_espe.run_get_espe()
 
-        espe_file = 'LiMnO_Li.simu'
-        self.make_energy_spectrum(self.project.directory, espe_file)
+        self.make_energy_spectrum(self.project.directory, self.simulation.call_get_espe.output_file)
         self.add_widget(self.energy_spectrum_widget)
             
     def del_widget(self, widget):
