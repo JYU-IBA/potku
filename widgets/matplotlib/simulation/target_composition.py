@@ -6,7 +6,6 @@ Updated on 26.3.2018
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
 from PyQt5 import QtCore, QtWidgets
-import matplotlib.pyplot as pyplot
 import matplotlib.patches as patches
 
 from widgets.matplotlib.base import MatplotlibWidget
