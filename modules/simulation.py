@@ -21,6 +21,7 @@ from modules.settings import Settings
 import shutil
 # from Modules.Null import Null
 # from errno import EEXIST
+import signal
 
 class Simulations:
     """Simulations class handles multiple simulations.
@@ -303,18 +304,35 @@ class CallMCERD(object):
         self.command_win = "external\Potku-bin\mcerd.exe " + command_file
         self.command_unix = "external/Potku-bin/mcerd " + command_file
 
+        self._executing_mcerd_process = None
+
     def run_simulation(self):
         """Runs the simulation.
         """
         used_os = platform.system()
         if used_os == "Windows":
-            subprocess.call(self.command_win, shell=True)
+            self._executing_mcerd_process = subprocess.Popen(self.command_win, shell=True)
         elif used_os == "Linux":
-            subprocess.call(self.command_unix, shell=True)
+            # From Python docs:
+            # The preexec_fn parameter is not safe to use in the presence of threads in your application.
+            # The child process could deadlock before exec is called. If you must use it, keep it trivial!
+            # Minimize the number of libraries you call into.
+
+            # So this may be only temporary, since there will most likely be threads later on.
+            self._executing_mcerd_process = subprocess.Popen(self.command_unix, shell=True, preexec_fn=os.setsid())
+            os.killpg(os.getpgid(self._executing_mcerd_process.pid), signal.SIGTERM)
         elif used_os == "Darwin":
             subprocess.call(self.command_unix, shell=True)
         else:
             print("It appears we do not support your OS.")
+
+    def stop_simulation(self):
+        """
+        Stop the current simulation.
+        """
+        cmd = "TASKKILL /F /PID " + str(self._executing_mcerd_process.pid) + " /T"
+        subprocess.Popen(cmd)
+        self._executing_mcerd_process = None
 
 
 class CallGetEspe(object):
