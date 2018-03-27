@@ -11,29 +11,48 @@ import matplotlib.lines as lines
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 from widgets.matplotlib.base import MatplotlibWidget
-import bisect
 from matplotlib.widgets import RectangleSelector
 import numpy.random
+
+
+class Point:
+    def __init__(self, xy):
+        self._x = xy[0]
+        self._y = xy[1]
+
+    def __lt__(self, other):
+        return self.get_x() < other.get_x()
+
+    def get_coordinates(self):
+        return self._x, self._y
+
+    def get_x(self):
+        return self._x
+
+    def get_y(self):
+        return self._y
+
+    def set_coordinates(self, xy):
+        self._x = xy[0]
+        self._y = xy[1]
 
 
 class Element:
     def __init__(self, name, points):
         self._name = name
-        self._points = sorted(points, key=lambda x: x[0])
+        self._points = sorted(points)
         # sorted_points = sorted(list(zip(xs, ys)), key=lambda x: x[0])
-        self._xs = [point[0] for point in self._points]
-        self._ys = [point[1] for point in self._points]
 
     def _sort_points(self):
-        self._points.sort(key=lambda x: x[0])
-        self._xs = [point[0] for point in self._points]
-        self._ys = [point[1] for point in self._points]
+        self._points.sort()
+        self._xs = [point.get_x() for point in self._points]
+        self._ys = [point.get_y() for point in self._points]
 
     def get_xs(self):
-        return self._xs
+        return [point.get_x() for point in self._points]
 
     def get_ys(self):
-        return self._ys
+        return [point.get_y() for point in self._points]
 
     def get_name(self):
         return self.name
@@ -53,27 +72,35 @@ class Element:
     def set_point(self, i, point):
         self._points[i] = point
         self._sort_points()
-        print("Poi: {0}".format(self._points[i]))
 
     def set_points(self, points):
-        self._points = sorted(points, key=lambda x: x[0])
+        self._points = sorted(points)
 
     def add_point(self, point):
         self._points.append(point)
         self._sort_points()
 
-    def remove_point(self, i):
+    def remove_point_i(self, i):
         del self._points[i]
-        del self._xs[i]
-        del self._ys[i]
 
 
 # xs = (100 * numpy.random.rand(20)).tolist()
 # ys = (100 * numpy.random.rand(20)).tolist()
-# elements = [ElementCoordinates("He", xs, ys)]
-# print(list(elements[0].get_points()))
-# elements[0].add_point(25, 10)
-# print(list(elements[0].get_points()))
+# xys = list(zip(xs, ys))
+# points = []
+# for xy in xys:
+#     points.append(Point(xy))
+# elements = [Element("He", points)]
+# coords = []
+# for point in elements[0].get_points():
+#     coords.append(point.get_point())
+# print(coords)
+# elements[0].add_point((25, 10))
+# coords2 = []
+# for point in elements[0].get_points():
+#     coords2.append(point.get_point())
+# print(coords2)
+# print(elements[0].get_xs())
 
 class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
     """Matplotlib simulation depth profile widget. Using this widget, the user
@@ -110,19 +137,22 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
 
         # self.list_points = []
         # self.elements = { "He": [[0.00, 50.00], [50.00, 50.00]] }
+        # self.xs.sort()
+        # self.xys = sorted(self.xys, key=lambda x: x[0])
         self.xs = (100 * numpy.random.rand(20)).tolist()
         self.ys = (100 * numpy.random.rand(20)).tolist()
-        # self.xs.sort()
         self.xys = list(zip(self.xs, self.ys))
-        # self.xys = sorted(self.xys, key=lambda x: x[0])
+        self.points = []
+        for xy in self.xys:
+            self.points.append(Point(xy))
 
-        self.elements = [Element("He", self.xys)]
+        self.elements = [Element("He", self.points)]
 
         self.lines = None
-        self.points = None
+        self.markers = None
         self.selected = None
         self.drag_i = None
-        # self.selected_points = []
+        self.selected_points = []
         self.lastind = -1
         self.text = None
 
@@ -198,15 +228,15 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.axes.set_xlabel(self.name_x_axis.title())
 
         self.lines, = self.axes.plot(self.elements[0].get_xs(), self.elements[0].get_ys(), color="blue")
-        self.points, = self.axes.plot(self.elements[0].get_xs(), self.elements[0].get_ys(), color="blue", marker="o", markersize=10, picker=5,
-                                      linestyle="None")
+        self.markers, = self.axes.plot(self.elements[0].get_xs(), self.elements[0].get_ys(), color="blue", marker="o", markersize=10, picker=5,
+                                       linestyle="None")
         self.selected, = self.axes.plot(0, 0, marker="o", markersize=10, linestyle="None",
                                         color='yellow', visible=False)
 
         # self.axes.set_xlim(-10, 110)
         # self.axes.set_ylim(-10, 110)
         self.axes.autoscale(enable=False)
-        # self.text = self.fig.text(0.1, 0.9, "Mode: Point editing",
+        # self.text = self.fig.text(0.1, 0.9, "Selected point coordinates:",
         #                           transform=self.fig.transFigure, va="top", ha="left")
 
         # Remove axis ticks and draw
@@ -278,7 +308,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.__button_zoom.setChecked(False)
 
     def __fork_toolbar_buttons(self):
-        super().fork_toolbar_buttons()
+        # super().fork_toolbar_buttons()
         self.mpl_toolbar.mode_tool = 0
         self.__tool_label = self.mpl_toolbar.children()[24]
         self.__button_drag = self.mpl_toolbar.children()[12]
@@ -353,30 +383,33 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         if event.inaxes != self.axes:
             return
         if event.button == 1:  # Left click
-            contains, info = self.points.contains(event)
+            contains, info = self.markers.contains(event)
             if contains:
                 i = info['ind'][0]
-                # self.selected_points.append(self.elements[0].get_point(i))
-                self.lastind = i
+                self.selected_points = [self.elements[0].get_point(i)]
+                # self.lastind = i
                 self.update_plot()
                 self.drag_i = i
             else:
+                self.selected_points.clear()
+                self.update_plot()
                 line_contains, line_info = self.lines.contains(event)
                 if line_contains:
                     x = event.xdata
                     y = event.ydata
                     self.add_point_on_click((x, y))
         if event.button == 3:  # Right click
-            contains, info = self.points.contains(event)
+            contains, info = self.markers.contains(event)
             if contains:
                 i = info['ind'][0]
-                self.elements[0].remove_point(i)
-                self.update_plot()
+                self.remove_point(i)
 
 
     def add_point_on_click(self, point):
         """ Adds a point to the list when clicked close enough to a line. """
-        self.elements[0].add_point(point)
+        new_point = Point(point)
+        self.elements[0].add_point(new_point)
+        self.selected_points = [new_point]
         # i = bisect.bisect(self.xs, x)
         # self.xs.insert(i, x)
         # self.ys.insert(i, y)
@@ -413,27 +446,31 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         #
         # self.canvas.draw_idle()
 
-        if self.lastind is None:
-            return
+        # if self.lastind is None:
+        #     return
+        #
+        # dataind = self.lastind
 
-        dataind = self.lastind
-
-        self.points.set_data(self.elements[0].get_xs(), self.elements[0].get_ys())
+        self.markers.set_data(self.elements[0].get_xs(), self.elements[0].get_ys())
         self.lines.set_data(self.elements[0].get_xs(), self.elements[0].get_ys())
 
         # TODO: Make a separate variable for selected point coordinates. If it's empty, hide the plot.
-        if self.lastind != -1:
-            self.selected.set_visible(True)
-            self.selected.set_data(self.elements[0].get_point(dataind)[0], self.elements[0].get_point(dataind)[1])
-        # if self.selected_points:
+        # if self.lastind != -1:
         #     self.selected.set_visible(True)
-        #     selected_xs = []
-        #     selected_ys = []
-        #     for xy in self.selected_points:
-        #         selected_xs.append(xy[0])
-        #         selected_ys.append(xy[1])
-        #     self.selected.set_data(selected_xs, selected_ys)
-        # self.text.set_text('selected: %d' % dataind)
+        #     self.selected.set_data(self.elements[0].get_point(dataind).get_x(),
+        #                            self.elements[0].get_point(dataind).get_y())
+        if self.selected_points:
+            self.selected.set_visible(True)
+            selected_xs = []
+            selected_ys = []
+            for point in self.selected_points:
+                selected_xs.append(point.get_x())
+                selected_ys.append(point.get_y())
+            self.selected.set_data(selected_xs, selected_ys)
+            # self.text.set_text('selected: %d %d' % (self.selected_points[0].get_coordinates()[0],
+            #                                     self.selected_points[0].get_coordinates()[1]))
+        else:
+            self.selected.set_visible(False)
 
         self.fig.canvas.draw()
 
@@ -515,7 +552,8 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         # self.remove_point(self.dragging_point)
         # self.dragging_point = self.add_point_on_motion(event)
         # self.update_plot()
-        if self.rectangle_selector.active:
+        if self.rectangle_selector.active or self.mpl_toolbar.children()[12].isChecked() \
+                or self.mpl_toolbar.children()[14].isChecked():
             return
         if event.inaxes != self.axes:
             return
@@ -524,24 +562,29 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         if self.drag_i == 0:
             if len(self.elements[0].get_points()) == 1:
                 self.update_location(event)
-            elif event.xdata < self.elements[0].get_point(self.drag_i + 1)[0]:
+            elif event.xdata < self.elements[0].get_point(self.drag_i + 1).get_x():
                 self.update_location(event)
         elif self.drag_i == len(self.elements[0].get_points()) - 1:
             if len(self.elements[0].get_points()) == 1:
                 self.update_location(event)
-            elif event.xdata > self.elements[0].get_point(self.drag_i + 1)[0]:
+            elif event.xdata > self.elements[0].get_point(self.drag_i - 1).get_x():
                 self.update_location(event)
-        elif self.elements[0].get_point(self.drag_i - 1)[0] < event.xdata < self.elements[0].get_point(self.drag_i + 1)[0]:
+        elif self.elements[0].get_point(self.drag_i - 1).get_x() \
+                < event.xdata < self.elements[0].get_point(self.drag_i + 1).get_x():
                 self.update_location(event)
 
     def update_location(self, event):
-        self.elements[0].set_point(self.drag_i, (event.xdata, event.ydata))
+        self.elements[0].get_point(self.drag_i).set_coordinates((event.xdata, event.ydata))
+        # print(self.drag_i)
+        # print(self.elements[0].get_point(self.drag_i).get_coordinates())
         self.update_plot()
 
-    # def remove_point(self, point):
-    #     """ Removes a point from the list. """
-    #     if point in self.elements["He"]:
-    #         self.elements["He"].remove(point)
+    def remove_point(self, i):
+        """ Removes a point from the list. """
+        pass
+        # self.elements[0].remove_point_i(i)
+        # self.selected_points.remove(self.elements[0].get_point(i))
+        # self.update_plot()
 
     def on_release(self, event):
         """ callback method for mouse release event
@@ -549,7 +592,8 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
-        if self.rectangle_selector.active:
+        if self.rectangle_selector.active or self.mpl_toolbar.children()[12].isChecked() \
+                or self.mpl_toolbar.children()[14].isChecked():
             return
         # TODO: If no point is selected, don't update plot
         if event.button == 1:
@@ -565,10 +609,10 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         ymax = extents[3]
         selected_xs = []
         selected_ys = []
-        for xy in self.elements[0].get_points():
-            if xmin <= xy[0] <= xmax and ymin <= xy[1] < ymax:
-                selected_xs.append(xy[0])
-                selected_ys.append(xy[1])
+        for point in self.elements[0].get_points():
+            if xmin <= point.get_x() <= xmax and ymin <= point.get_y() < ymax:
+                selected_xs.append(point.get_x())
+                selected_ys.append(point.get_y())
         if selected_xs and selected_ys:
             self.selected.set_data(selected_xs, selected_ys)
             self.selected.set_visible(True)
