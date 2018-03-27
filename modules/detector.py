@@ -2,7 +2,7 @@
 # TODO: Add licence information
 """
 Created on 23.3.2018
-Updated on 24.3.2018
+Updated on 27.3.2018
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
@@ -17,17 +17,14 @@ from modules.layer import Layer
 
 class Detector:
 
-    def __init__(self, directory, name, angle, foils):
+    def __init__(self, name, angle, foils):
         """Initialize a detector.
 
         Args:
-            directory: The directory where the detector settings file is saved.
             angle: Detector angle.
             foils: Detector foils.
 
         """
-
-        self.__directory = directory
         self.name = name
         self.angle = angle
         self.foils = foils
@@ -44,8 +41,7 @@ class Detector:
         obj = json.load(open(file_path))
 
         # Below we do conversion from dictionary to Detector object
-        directory = os.path.dirname(file_path)
-        name = obj["name"]
+        name = os.path.splitext(os.path.split(file_path)[1])[0]
         angle = obj["angle"]
         foils = []
 
@@ -70,20 +66,20 @@ class Detector:
             else:
                 raise json.JSONDecodeError
 
-        return cls(directory, name, angle, foils)
+        return cls(name, angle, foils)
 
 
 
 class ToFDetector(Detector):
 
-    def __init__(self, directory, name, angle, foils):
+    def __init__(self, name, angle, foils):
         """Initialize a Time-of-Flight detector.
 
         Args:
             angle: Detector angle
 
         """
-        Detector.__init__(directory, name, angle, foils)
+        Detector.__init__(name, angle, foils)
 
 
 
