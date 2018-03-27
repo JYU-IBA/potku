@@ -17,6 +17,8 @@ from modules.layer import Layer
 
 class Detector:
 
+    __slots__ = "name", "angle", "foils"
+
     def __init__(self, name, angle, foils):
         """Initialize a detector.
 

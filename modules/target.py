@@ -16,6 +16,8 @@ from modules.layer import Layer
 
 class Target:
 
+    __slots__ = "name", "angle", "layers"
+
     def __init__(self, name, angle, layers):
         """Initialize a target.
 
