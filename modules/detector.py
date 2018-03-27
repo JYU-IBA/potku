@@ -11,6 +11,7 @@ __versio__ = "2.0"
 
 import json
 import os
+from types import SimpleNamespace as Namespace
 
 from modules.foil import CircularFoil, RectangularFoil
 from modules.layer import Layer
@@ -41,41 +42,7 @@ class Detector:
                        parameters.
         """
 
-        def __object_hook(obj):
-            """This function is needed for converting the parsed dictionary
-            to Detector object.
-
-            Args:
-                obj: A JSON object (has been parsed, so this is a dictionary).
-            """
-            directory = os.path.dirname(file_path)
-            name = obj["name"]
-            angle = obj["angle"]
-            foils = []
-
-            for foil in obj["foils"]:
-                distance = foil["distance"]
-                layers = []
-
-                for layer in foil["layers"]:
-                    layers.append(Layer(layer["elements"],
-                                        layer["thickness"],
-                                        layer["ion_stopping"],
-                                        layer["recoil_stopping"],
-                                        layer["density"]))
-
-                if foil["type"] == "circular":
-                    foils.append(
-                        CircularFoil(foil["diameter"], distance, layers))
-                elif foil["type"] == "rectangular":
-                    foils.append(
-                        RectangularFoil(foil["size"], distance, layers))
-                else:
-                    raise json.JSONDecodeError
-
-            return Detector(directory, name, angle, foils)
-
-        return json.load(file_path, object_hook=__object_hook)
+        return json.load(open(file_path), object_hook=lambda d: Namespace(**d))
 
 
 
