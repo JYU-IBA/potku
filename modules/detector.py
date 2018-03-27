@@ -11,7 +11,6 @@ __versio__ = "2.0"
 
 import json
 import os
-from types import SimpleNamespace as Namespace
 
 from modules.foil import CircularFoil, RectangularFoil
 from modules.layer import Layer
@@ -29,9 +28,9 @@ class Detector:
         """
 
         self.__directory = directory
-        self.__name = name
-        self.__angle = angle
-        self.__foils = foils
+        self.name = name
+        self.angle = angle
+        self.foils = foils
 
     @classmethod
     def fromJSON(cls, file_path):
@@ -42,7 +41,36 @@ class Detector:
                        parameters.
         """
 
-        return json.load(open(file_path), object_hook=lambda d: Namespace(**d))
+        obj = json.load(open(file_path))
+
+        # Below we do conversion from dictionary to Detector object
+        directory = os.path.dirname(file_path)
+        name = obj["name"]
+        angle = obj["angle"]
+        foils = []
+
+        for foil in obj["foils"]:
+
+            distance = foil["distance"]
+            layers = []
+
+            for layer in foil["layers"]:
+                layers.append(Layer(layer["elements"],
+                                    layer["thickness"],
+                                    layer["ion_stopping"],
+                                    layer["recoil_stopping"],
+                                    layer["density"]))
+
+            if foil["type"] == "circular":
+                foils.append(
+                    CircularFoil(foil["diameter"], distance, layers))
+            elif foil["type"] == "rectangular":
+                foils.append(
+                    RectangularFoil(foil["size"], distance, layers))
+            else:
+                raise json.JSONDecodeError
+
+        return cls(directory, name, angle, foils)
 
 
 
