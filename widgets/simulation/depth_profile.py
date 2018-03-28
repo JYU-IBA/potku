@@ -8,7 +8,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinik
 from os.path import join
 from PyQt5 import QtCore, uic, QtWidgets
 
-from widgets.matplotlib.simulation.recoil_atom_distribution import MatplotlibSimulationDepthProfileWidget
+from widgets.matplotlib.simulation.depth_profile import MatplotlibSimulationDepthProfileWidget
 from widgets.matplotlib.simulation.target_composition import MatplotlibTargetCompositionWidget
 from dialogs.simulation.element_selection import SimulationElementSelectionDialog
 
@@ -17,7 +17,7 @@ class SimulationDepthProfileWidget(QtWidgets.QWidget):
     '''HistogramWidget used to draw ToF-E Histograms.
     '''
 
-    def __init__(self, icon_manager):
+    def __init__(self, simulation, masses, icon_manager):
         '''Inits TofeHistogramWidget widget.
 
         Args:
@@ -26,12 +26,20 @@ class SimulationDepthProfileWidget(QtWidgets.QWidget):
             icon_manager: An iconmanager class object.
         '''
         super().__init__()
+        self.simulation = simulation
+        self.ui = uic.loadUi(join("ui_files", "ui_simulation_depth_profile_widget_new.ui"), self)
         self.ui.addLayerButton.clicked.connect(self.add_layer)
         self.ui.removeLayerButton.clicked.connect(self.remove_layer)
         self.ui.recoilRadioButton.clicked.connect(lambda: self.ui.stackedWidget.setCurrentIndex(0))
         self.ui.targetRadioButton.clicked.connect(lambda: self.ui.stackedWidget.setCurrentIndex(1))
 
+        self.targetWidget = MatplotlibTargetCompositionWidget(self, icon_manager)
+        self.matplotlib = MatplotlibSimulationDepthProfileWidget(self, simulation, masses, icon_manager)
+        self.ui.stackedWidget.addWidget(self.matplotlib)
+        self.ui.stackedWidget.addWidget(self.targetWidget)
+
         self.ui.setWindowTitle("Simulation depth profile")
+        self.set_shortcuts()
 
     def add_layer(self):
         """Adds a layer in the target composition.
@@ -43,3 +51,14 @@ class SimulationDepthProfileWidget(QtWidgets.QWidget):
         """
         QtWidgets.QMessageBox.critical(self, "Error", "Not implemented",
                                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+
+    def set_shortcuts(self):
+        # Toggle rectangle selector
+        self.rec_sel = QtWidgets.QShortcut(self)
+        self.rec_sel.setKey(QtCore.Qt.Key_R)
+        self.rec_sel.activated.connect(lambda: self.matplotlib.toggle_rectangle_selector())
+        # Delete selected point(s)
+        self.del_points = QtWidgets.QShortcut(self)
+        self.del_points.setKey(QtCore.Qt.Key_Delete)
+        self.del_points.activated.connect(lambda: self.matplotlib.remove_points())
+
