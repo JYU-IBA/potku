@@ -219,9 +219,6 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
 
         self.on_draw()
 
-    def tulostele(self, string):
-        print(string)
-
     def on_draw(self):
         """Draw method for matplotlib.
         """
@@ -251,40 +248,40 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.remove_axes_ticks()
         self.canvas.draw()
 
-    def __fix_axes_range(self, axes_range, compression):
-        """Fixes axes' range to be divisible by compression.
-        """
-        rmin, rmax = axes_range
-        mod = (rmax - rmin) % compression
-        if mod == 0:  # Everything is fine, return.
-            return axes_range
-        # More data > less data
-        rmax += compression - mod
-        return rmin, rmax
-
-    def __set_y_axis_on_right(self, yes):
-        if yes:
-            # self.axes.spines['left'].set_color('none')
-            self.axes.spines['right'].set_color('black')
-            self.axes.yaxis.tick_right()
-            self.axes.yaxis.set_label_position("right")
-        else:
-            self.axes.spines['left'].set_color('black')
-            # self.axes.spines['right'].set_color('none')
-            self.axes.yaxis.tick_left()
-            self.axes.yaxis.set_label_position("left")
-
-    def __set_x_axis_on_top(self, yes):
-        if yes:
-            # self.axes.spines['bottom'].set_color('none')
-            self.axes.spines['top'].set_color('black')
-            self.axes.xaxis.tick_top()
-            self.axes.xaxis.set_label_position("top")
-        else:
-            self.axes.spines['bottom'].set_color('black')
-            # self.axes.spines['top'].set_color('none')
-            self.axes.xaxis.tick_bottom()
-            self.axes.xaxis.set_label_position("bottom")
+    # def __fix_axes_range(self, axes_range, compression):
+    #     """Fixes axes' range to be divisible by compression.
+    #     """
+    #     rmin, rmax = axes_range
+    #     mod = (rmax - rmin) % compression
+    #     if mod == 0:  # Everything is fine, return.
+    #         return axes_range
+    #     # More data > less data
+    #     rmax += compression - mod
+    #     return rmin, rmax
+    #
+    # def __set_y_axis_on_right(self, yes):
+    #     if yes:
+    #         # self.axes.spines['left'].set_color('none')
+    #         self.axes.spines['right'].set_color('black')
+    #         self.axes.yaxis.tick_right()
+    #         self.axes.yaxis.set_label_position("right")
+    #     else:
+    #         self.axes.spines['left'].set_color('black')
+    #         # self.axes.spines['right'].set_color('none')
+    #         self.axes.yaxis.tick_left()
+    #         self.axes.yaxis.set_label_position("left")
+    #
+    # def __set_x_axis_on_top(self, yes):
+    #     if yes:
+    #         # self.axes.spines['bottom'].set_color('none')
+    #         self.axes.spines['top'].set_color('black')
+    #         self.axes.xaxis.tick_top()
+    #         self.axes.xaxis.set_label_position("top")
+    #     else:
+    #         self.axes.spines['bottom'].set_color('black')
+    #         # self.axes.spines['top'].set_color('none')
+    #         self.axes.xaxis.tick_bottom()
+    #         self.axes.xaxis.set_label_position("bottom")
 
     def __toggle_tool_drag(self):
         if self.__button_drag.isChecked():
@@ -292,6 +289,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         else:
             self.mpl_toolbar.mode_tool = 0
             # self.elementSelectionButton.setChecked(False)
+        self.rectangle_select_button.setChecked(False)
         self.rectangle_selector.set_active(False)
         # self.elementSelectionSelectButton.setChecked(False)
         self.canvas.draw_idle()
@@ -304,6 +302,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
             # self.elementSelectionButton.setChecked(False)
         # self.elementSelectUndoButton.setEnabled(False)
         # self.elementSelectionSelectButton.setChecked(False)
+        self.rectangle_select_button.setChecked(False)
         self.rectangle_selector.set_active(False)
         self.canvas.draw_idle()
 
@@ -613,47 +612,25 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
                 sel_xs.append(point.get_x())
                 sel_ys.append(point.get_y())
                 sel_points.append(point)
-        if sel_points:
-            self.selected_points = sel_points
-            self.update_plot()
-
-    # def toggle_selector_old(self, event):
-    #     if event.key in ['S', 's'] and self.selector.active:
-    #         self.selector.set_active(False)
-    #         self.fig.canvas.draw()
-    #     elif event.key in ['S', 's'] and not self.selector.active:
-    #         self.selector.set_active(True)
-    #         self.selected.set_visible(False)
-    #         self.text.set_text("Mode: Rectangle select")
-    #         self.fig.canvas.draw()
-
-    def handle_key_press(self, event):
-        if event.key == "r":
-            self.toggle_rectangle_selector()
-        elif event.key == "a":
-            print("Painoit a:ta")
-
+        self.selected_points = sel_points
+        self.update_plot()
 
     def toggle_rectangle_selector(self):
         '''Enable rectangle selection.
         '''
         if self.rectangle_selector.active:
+            self.__tool_label.setText("")
+            self.mpl_toolbar.mode_tool = 0
+            self.mpl_toolbar.mode = ""
             self.rectangle_selector.set_active(False)
             self.rectangle_select_button.setChecked(False)
+            self.canvas.draw_idle()
         else:
-            self.rectangle_selector.set_active(True)
-            self.rectangle_select_button.setChecked(True)
-            self.selected.set_visible(False)
-
-        if self.rectangle_select_button.isChecked():  # if button is enabled
-            # One cannot choose selection while selecting
             self.__toggle_drag_zoom()
             self.mpl_toolbar.mode_tool = 3
             str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
             self.__tool_label.setText(str_tool)
             self.mpl_toolbar.mode = str_tool
-        else:
-            self.__tool_label.setText("")
-            self.mpl_toolbar.mode_tool = 0
-            self.mpl_toolbar.mode = ""
+            self.rectangle_selector.set_active(True)
+            self.rectangle_select_button.setChecked(True)
             self.canvas.draw_idle()
