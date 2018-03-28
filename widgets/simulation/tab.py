@@ -1,24 +1,23 @@
 # coding=utf-8
 '''
 Created on 1.3.2018
-Updated on 26.3.2018
+Updated on 28.3.2018
 '''
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
+             "\n Sinikka Siironen"
 
 import os, logging, sys
-from os.path import join
 from PyQt5 import QtCore, uic, QtWidgets
 
 from dialogs.measurement.element_losses import ElementLossesDialog, ElementLossesWidget
 from dialogs.measurement.depth_profile import DepthProfileDialog, DepthProfileWidget
+from widgets.simulation.target import TargetWidget
 from modules.element import Element
-from modules.general_functions import load_file
 from modules.general_functions import read_espe_file
 from modules.null import Null
 from modules.ui_log_handlers import customLogHandler
 from modules.simulation import CallMCERD, CallGetEspe
 from widgets.log import LogWidget
-from widgets.simulation.depth_profile import SimulationDepthProfileWidget
 from widgets.simulation.energy_spectrum import SimulationEnergySpectrumWidget
 
 class SimulationTabWidget(QtWidgets.QWidget):
@@ -85,7 +84,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
     def add_simulation_depth_profile(self):
         """ Adds depth profile for modifying the elements into tab if it doesn't have one already.
         """
-        self.simulation_depth_profile = SimulationDepthProfileWidget(self.simulation, self.masses, self.icon_manager)
+        self.simulation_depth_profile = TargetWidget(self.icon_manager)
         self.add_widget(self.simulation_depth_profile, has_close_button=False)
         # TODO: Do all the necessary operations so that the widget can be used.
 

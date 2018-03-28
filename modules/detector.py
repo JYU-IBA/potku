@@ -32,7 +32,7 @@ class Detector:
         self.foils = foils
 
     @classmethod
-    def fromJSON(cls, file_path):
+    def from_file(cls, file_path):
         """Initialize Detector from a JSON file.
 
         Args:
@@ -53,7 +53,7 @@ class Detector:
             layers = []
 
             for layer in foil["layers"]:
-                layers.append(Layer(layer["elements"],
+                layers.append(Layer(tuple(layer["elements"]),
                                     layer["thickness"],
                                     layer["ion_stopping"],
                                     layer["recoil_stopping"],

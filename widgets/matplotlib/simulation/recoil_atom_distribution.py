@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 26.3.2018
+Updated on 28.3.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
@@ -102,7 +102,7 @@ class Element:
 # print(coords2)
 # print(elements[0].get_xs())
 
-class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
+class RecoilAtomDistributionWidget(MatplotlibWidget):
     """Matplotlib simulation depth profile widget. Using this widget, the user
     can edit the depth profile of the target for the simulation.
     """
@@ -118,7 +118,7 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
                   3: "rectangle selection tool"
                   }
 
-    def __init__(self, parent, simulation_data, masses, icon_manager):
+    def __init__(self, parent, icon_manager):
         """Inits target and recoiling atoms widget.
 
         Args:
@@ -132,7 +132,6 @@ class MatplotlibSimulationDepthProfileWidget(MatplotlibWidget):
         self.canvas.manager.set_title("Depth Profile")
         self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
-        self.__masses = masses
         self.__icon_manager = icon_manager
 
         # self.list_points = []

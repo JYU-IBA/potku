@@ -57,13 +57,20 @@ class MatplotlibWidget(QtWidgets.QWidget):
         self.canvas.manager = MockManager(self.main_frame)
         self.canvas.setParent(self.main_frame)
         self.axes = self.fig.add_subplot(111)
-        
-        self.mpl_toolbar = NavigationToolbar.NavigationToolBar2QTView(self.canvas, self.main_frame)
-        hbox = QtWidgets.QHBoxLayout()
-        
-        self.main_frame.ui.matplotlib_layout.addWidget(self.canvas)
-        self.main_frame.ui.matplotlib_layout.addWidget(self.mpl_toolbar)
-        self.main_frame.ui.matplotlib_layout.addLayout(hbox)
+
+        self.mpl_toolbar = NavigationToolbar.NavigationToolBar2QTView(
+            self.canvas, self.main_frame)
+
+        if hasattr(self.main_frame.ui, "matplotlib_layout"):
+            self.main_frame.ui.matplotlib_layout.addWidget(self.canvas)
+            self.main_frame.ui.matplotlib_layout.addWidget(self.mpl_toolbar)
+        if hasattr(self.main_frame.ui, "stackedWidget"):
+            frame = QtWidgets.QWidget()
+            layout = QtWidgets.QVBoxLayout()
+            layout.addWidget(self.canvas)
+            layout.addWidget(self.mpl_toolbar)
+            frame.setLayout(layout)
+            self.main_frame.ui.stackedWidget.addWidget(frame)
 
 
     def fork_toolbar_buttons(self):

@@ -31,7 +31,7 @@ class Target:
         self.layers = layers
 
     @classmethod
-    def fromJSON(cls, file_path):
+    def from_file(cls, file_path):
         """Initialize target from a JSON file.
 
         Args:
@@ -54,3 +54,5 @@ class Target:
                                 layer["density"]))
 
         return cls(name, angle, layers)
+
+    # def add_layer(self):

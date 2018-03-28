@@ -1,17 +1,17 @@
 # coding=utf-8
 """
 Created on 26.3.2018
-Updated on 26.3.2018
+Updated on 28.3.2018
 """
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
+             "\n Sinikka Siironen"
 
 from PyQt5 import QtCore, QtWidgets
 import matplotlib.patches as patches
 
 from widgets.matplotlib.base import MatplotlibWidget
 
-
-class MatplotlibTargetCompositionWidget(MatplotlibWidget):
+class TargetCompositionWidget(MatplotlibWidget):
     """Matplotlib target composition widget. Using this widget, the user
     can edit target composition for the simulation.
     """
@@ -23,7 +23,6 @@ class MatplotlibTargetCompositionWidget(MatplotlibWidget):
             parent: A SimulationDepthProfileWidget class object.
             icon_manager: An iconmanager class object.
         """
-
         super().__init__(parent)
         self.canvas.manager.set_title("Target Composition")
         self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)

@@ -16,7 +16,7 @@ class Layer:
     __slots__ = "elements", "thickness", "ion_stopping", "recoil_stopping",\
                 "density"
 
-    def __init__(self, elements, thickness, ion_stopping, recoil_stopping,
+    def __init__(self, name, elements, thickness, ion_stopping, recoil_stopping,
                  density):
         """Initializes a target or foil layer.
 
@@ -29,6 +29,7 @@ class Layer:
             density:         Layer density.
         """
 
+        self.name = name
         self.elements = elements
         self.thickness = thickness
         self.ion_stopping = ion_stopping
