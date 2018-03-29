@@ -55,7 +55,7 @@ class ImportTimingGraphDialog(QtWidgets.QDialog):
         """
         super().__init__()
         self.parent = parent
-        self.img_dir = self.parent.project.directory
+        self.img_dir = self.parent.request.directory
         self.__input_file = input_file
         self.__output_file = output_file
         self.timing_low = adc_timing_spin[0]
@@ -66,10 +66,8 @@ class ImportTimingGraphDialog(QtWidgets.QDialog):
               tablesize=10, trigger=trigger, adc_count=adc_count, timing=timing,
               nevents=coinc_count, temporary=True)
         if not stat(self.__output_file).st_size:
-            unused_reply = QtWidgets.QMessageBox.question(self,
-                "Empty File",
-                "No coincidence events were found.",
-                QtWidgets.QMessageBox.Ok)
+            unused_reply = QtWidgets.QMessageBox.question(self, "Empty File", "No coincidence events were found.",
+                                                          QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             self.close()  # Just in case.
         else:
             self.matplotlib = MatplotlibImportTimingWidget(self,

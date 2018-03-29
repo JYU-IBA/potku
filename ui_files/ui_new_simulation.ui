@@ -90,7 +90,7 @@
           </size>
          </property>
          <property name="toolTip">
-          <string>Name of the project.</string>
+          <string>Name of the request.</string>
          </property>
         </widget>
        </item>

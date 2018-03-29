@@ -42,22 +42,22 @@ from modules.measuring_settings import MeasuringSettings
 from widgets.simulation.settings import SimulationSettingsWidget
 
 
-class ProjectSettingsDialog(QtWidgets.QDialog):
+class RequestSettingsDialog(QtWidgets.QDialog):
     
-    def __init__(self, masses, project):
+    def __init__(self, masses, request):
         """Constructor for the program
         
         Args:
             masses: Reference to Masses class object.
-            project: Project class object.
+            request: Request class object.
         """
         super().__init__()
         self.ui = uic.loadUi(join("ui_files", "ui_measuring_settings.ui"), self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.masses = masses
         
-        self.project = project
-        self.settings = project.settings
+        self.request = request
+        self.settings = request.settings
         
         # Creates object that loads and holds all the measuring data
         self.measuring_unit_settings = self.settings.measuring_unit_settings
@@ -109,7 +109,7 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
         self.ui.executeCalibrationButton.clicked.connect(
                            self.__open_calibration_dialog)
         self.ui.executeCalibrationButton.setEnabled(
-                           not self.project.measurements.is_empty())
+                           not self.request.measurements.is_empty())
         double_validator = InputValidator()
         positive_double_validator = InputValidator(bottom=0)
         
@@ -151,8 +151,8 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
         self.exec_()
 
     def __open_calibration_dialog(self):
-        measurements = [self.project.measurements.get_key_value(key) 
-                        for key in self.project.measurements.measurements.keys()]
+        measurements = [self.request.measurements.get_key_value(key)
+                        for key in self.request.measurements.measurements.keys()]
         CalibrationDialog(measurements, self.settings, self.masses, self)
 
     def __load_file(self, settings_type):
@@ -172,7 +172,7 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
         else:
             return
         
-        filename = open_file_dialog(self, self.project.directory,
+        filename = open_file_dialog(self, self.request.directory,
                                     "Open settings file", "Settings file (*.ini)")
         if filename:
             settings.load_settings(filename)
@@ -195,7 +195,7 @@ class ProjectSettingsDialog(QtWidgets.QDialog):
         else:
             return
         
-        filename = save_file_dialog(self, self.project.directory,
+        filename = save_file_dialog(self, self.request.directory,
                                     "Open measuring unit settings file",
                                     "Settings file (*.ini)")
         if filename:

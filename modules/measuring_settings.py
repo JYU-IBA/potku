@@ -32,7 +32,7 @@ import configparser, os
 from modules.element import Element
 
 class MeasuringSettings:
-    """MeasuringSettings holds the all project specific measurement unit parameters.
+    """MeasuringSettings holds the all request specific measurement unit parameters.
     """
     def __init__(self, settings_filepath=None):
         """Inits MeasuringSettings.
@@ -43,8 +43,8 @@ class MeasuringSettings:
         self.measuring_unit_settings_filename = "measuring_unit_settings.ini"
         self.config = configparser.ConfigParser()
         # This is used to determine if opened measurement 
-        # uses its own settings ('MEASUREMENT') or project's 
-        # settings ('PROJECT') 
+        # uses its own settings ('MEASUREMENT') or request's
+        # settings ('REQUEST')
         self.use_settings = ""         
         
         self.element = Element()
@@ -84,10 +84,10 @@ class MeasuringSettings:
             MeasuringSettings parameters.
         """
         try:
-            if self.use_settings == "PROJECT":
-                dialog.ui.useProjectSettingsValuesCheckBox.setChecked(True)
+            if self.use_settings == "REQUEST":
+                dialog.ui.useRequestSettingsValuesCheckBox.setChecked(True)
             elif self.use_settings == "MEASUREMENT":
-                dialog.ui.useProjectSettingsValuesCheckBox.setChecked(False)
+                dialog.ui.useRequestSettingsValuesCheckBox.setChecked(False)
         except:
             print("Can't find the checkbox in the dialog")
         if self.element.name:

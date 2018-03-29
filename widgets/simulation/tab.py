@@ -25,7 +25,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
     """
     issueMaster = QtCore.pyqtSignal()
 
-    def __init__(self, project, tab_id, simulation, masses, icon_manager):
+    def __init__(self, request, tab_id, simulation, masses, icon_manager):
         """ Init simulation tab class.
         
         Args:
@@ -35,7 +35,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
             icon_manager: An iconmanager class object.
         """
         super().__init__()
-        self.project = project
+        self.request = request
         self.tab_id = tab_id
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_simulation_tab.ui"), self)
         self.simulation = simulation
@@ -152,14 +152,14 @@ class SimulationTabWidget(QtWidgets.QWidget):
         Args:
             parent: Parent of the energy spectrum widget.
         """
-        mcerd_path = os.path.join(self.project.directory, "35Cl-85-LiMnO_Li")
+        mcerd_path = os.path.join(self.request.directory, "35Cl-85-LiMnO_Li")
         self.simulation.callMCERD = CallMCERD(mcerd_path)
         self.simulation.callMCERD.run_simulation()
 
-        self.simulation.call_get_espe = CallGetEspe(self.project.directory)
+        self.simulation.call_get_espe = CallGetEspe(self.request.directory)
         self.simulation.call_get_espe.run_get_espe()
 
-        self.make_energy_spectrum(self.project.directory, self.simulation.call_get_espe.output_file)
+        self.make_energy_spectrum(self.request.directory, self.simulation.call_get_espe.output_file)
         self.add_widget(self.energy_spectrum_widget)
             
     def del_widget(self, widget):
@@ -302,7 +302,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         """
         if type(filepath) == str:
             # Replace two for measurement and cut file's name. Not all, in case 
-            # the project or directories above it have same name.
+            # the request or directories above it have same name.
             filepath = self.__rreplace(filepath, name, m_name, 2)
             try:
                 with open(filepath):

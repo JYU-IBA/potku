@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ProjectSimulationSettings</class>
- <widget class="QWidget" name="ProjectSimulationSettings">
+ <class>RequestSimulationSettings</class>
+ <widget class="QWidget" name="RequestSimulationSettings">
   <property name="enabled">
    <bool>true</bool>
   </property>
@@ -26,7 +26,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>ProjectSimulationSettings</string>
+   <string>RequestSimulationSettings</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>

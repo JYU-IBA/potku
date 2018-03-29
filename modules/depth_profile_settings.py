@@ -32,7 +32,7 @@ import configparser
 import os
 
 class DepthProfileSettings:
-    """DepthProfileSettings holds the all project specific measurement unit parameters.
+    """DepthProfileSettings holds the all request specific measurement unit parameters.
     """
     def __init__(self, settings_filepath=None):
         """Inits DepthProfileSettings.
@@ -44,8 +44,8 @@ class DepthProfileSettings:
         self.config = configparser.ConfigParser()
         
         # This is used to determine if opened measurement 
-        # uses its own settings ('MEASUREMENT') or project's 
-        # settings ('PROJECT') 
+        # uses its own settings ('MEASUREMENT') or request's 
+        # settings ('REQUEST')
         self.use_settings = ""   
         self.number_of_depth_steps = 0
         self.depth_step_for_stopping = 0

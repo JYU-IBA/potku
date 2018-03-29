@@ -358,13 +358,13 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         '''
         self.measurement.save_cuts()
         # Do for all slaves if master.
-        self.measurement.project.save_cuts(self.measurement)          
+        self.measurement.request.save_cuts(self.measurement)
         
 
     def open_measuring_unit_settings(self):
         '''Opens measurement settings dialog.
         '''
-        MeasurementUnitSettings(self.measurement.measurement_settings, self.measurement.project.masses)
+        MeasurementUnitSettings(self.measurement.measurement_settings, self.measurement.request.masses)
         
         
     def open_depth_profile_settings(self):
@@ -423,7 +423,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         measurementtabwidget.
         """
         measurement_name = self.measurement.measurement_name
-        master_name = self.measurement.project.has_master()
+        master_name = self.measurement.request.has_master()
         self.ui.command_master.setEnabled(measurement_name == master_name)
     
     
@@ -437,7 +437,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         '''
         if type(filepath) == str:
             # Replace two for measurement and cut file's name. Not all, in case 
-            # the project or directories above it have same name.
+            # the request or directories above it have same name.
             filepath = self.__rreplace(filepath, name, m_name, 2)
             try:
                 with open(filepath):
@@ -479,10 +479,10 @@ class MeasurementTabWidget(QtWidgets.QWidget):
 
     def __master_issue_commands(self):
         """Signal that master measurement's command has been issued
-        to all slave measurements in the project.
+        to all slave measurements in the request.
         """
         meas_name = self.measurement.measurement_name
-        master_name = self.measurement.project.has_master()
+        master_name = self.measurement.request.has_master()
         if meas_name == master_name:
             #self.emit(QtCore.SIGNAL("issueMaster"))
             self.issueMaster.emit()

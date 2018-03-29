@@ -53,8 +53,8 @@ class CalibrationDialog(QtWidgets.QDialog):
         super().__init__()
         self.measurements = measurements
         # TODO: Settings should be loaded from the measurement depending on is the 
-        # calibration dialog opened from the project settings (measurement's 
-        # project settings is loaded) or the measurement specific settings
+        # calibration dialog opened from the request settings (measurement's
+        # request settings is loaded) or the measurement specific settings
         # (measurement's measurement settings is loaded). This has to be done for
         # better architecture.
         self.settings = settings 
@@ -314,8 +314,8 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_tof_curve_fitting_widget.ui"), self)
         # NOTE: One of these should always be there. Could probably use "else"
-        if hasattr(dialog.parent_settings_dialog, "project"):
-            self.img_dir = dialog.parent_settings_dialog.project.directory
+        if hasattr(dialog.parent_settings_dialog, "request"):
+            self.img_dir = dialog.parent_settings_dialog.request.directory
         elif hasattr(dialog.parent_settings_dialog, "measurement"):
             self.img_dir = dialog.parent_settings_dialog.measurement.directory
         self.matplotlib = MatplotlibCalibrationCurveFittingWidget(self,
@@ -344,12 +344,10 @@ class CalibrationLinearFittingWidget(QtWidgets.QWidget):
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_tof_linear_fitting_widget.ui"), self)
         # NOTE: One of these should always be there. Could probably use "else"
-        if hasattr(dialog.parent_settings_dialog, "project"):
-            self.img_dir = dialog.parent_settings_dialog.project.directory
+        if hasattr(dialog.parent_settings_dialog, "request"):
+            self.img_dir = dialog.parent_settings_dialog.request.directory
         elif hasattr(dialog.parent_settings_dialog, "measurement"):
             self.img_dir = dialog.parent_settings_dialog.measurement.directory
-        self.matplotlib = MatplotlibCalibrationLinearFittingWidget(self,
-                                                           tof_calibration,
-                                                           dialog=dialog,
-                                                           old_params=old_params)
+        self.matplotlib = MatplotlibCalibrationLinearFittingWidget(self, tof_calibration, dialog=dialog,
+                                                                   old_params=old_params)
     
