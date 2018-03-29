@@ -48,10 +48,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         super().__init__()
         self.parent = parent
         self.measurement = self.parent.measurement
-        self.__global_settings = self.measurement.project.global_settings
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_energy_spectrum_params.ui"),
-                             self)
+        self.__global_settings = self.measurement.request.global_settings
+        self.ui = uic.loadUi(os.path.join("ui_files", "ui_energy_spectrum_params.ui"), self)
         
         # Connect buttons
         self.ui.pushButton_OK.clicked.connect(self.__accept_params) 
@@ -74,14 +72,13 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             QtWidgets.QMessageBox.question(self,
               "Warning",
               "Settings have not been set. Please set settings before continuing.",
-              QtWidgets.QMessageBox.Ok)
+              QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         else:
             if not self.measurement.measurement_settings.has_been_set():
-                reply = QtWidgets.QMessageBox.question(self,
-                       "Warning",
-                       "Not all settings have been set. Do you want to continue?",
-                       QtWidgets.QMessageBox.Yes,
-                       QtWidgets.QMessageBox.No)
+                reply = QtWidgets.QMessageBox.question(self, "Warning",
+                                                       "Not all settings have been set. Do you want to continue?",
+                                                       QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                                       QtWidgets.QMessageBox.No)
                 if reply == QtWidgets.QMessageBox.No:
                     self.close()
                     return
@@ -135,7 +132,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     "Bin width: {0}".format(width),
                     "Cut files: {0}".format(", ".join(use_cuts))
                     )
-                logging.getLogger("project").info(msg)
+                logging.getLogger("request").info(msg)
                 logging.getLogger(measurement_name).info(
                     "Created Energy Spectrum. Bin width: {0} Cut files: {1}".format(
                                                              width,
@@ -148,8 +145,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 self.close()
             else:
                 self.close()
-                reply = QtWidgets.QMessageBox.critical(self,
-                    "Error", "An error occured while trying to create energy spectrum", QtWidgets.QMessageBox.Ok)
+                reply = QtWidgets.QMessageBox.critical(self, "Error",
+                                                       "An error occured while trying to create energy spectrum",
+                                                       QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
 
 
@@ -160,7 +158,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # that matter, to get all efficiency files from directory defined
         # in global settings that match the cut files of measurements.
         eff_files = self.__global_settings.get_efficiencies()
-        masses = self.measurement.project.masses
+        masses = self.measurement.request.masses
         eff_files_used = []
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()

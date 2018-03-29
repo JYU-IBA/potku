@@ -194,7 +194,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # self.__y_data = [x[1] for x in self.simulation.data[0]]
 
         # Get settings from global settings
-        # self.__global_settings = self.main_frame.simulation.project.global_settings
+        # self.__global_settings = self.main_frame.simulation.request.global_settings
         # self.invert_Y = self.__global_settings.get_tofe_invert_y()
         # self.invert_X = self.__global_settings.get_tofe_invert_x()
         # self.transpose_axes = self.__global_settings.get_tofe_transposed()

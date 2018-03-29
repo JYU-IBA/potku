@@ -31,16 +31,16 @@ from modules.calibration_parameters import CalibrationParameters
 from modules.depth_profile_settings import DepthProfileSettings
 
 class Settings:
-    '''Settings class to handle settings of project and measurement.
+    '''Settings class to handle settings of request and measurement.
     '''
-    def __init__(self, directory=None, project_settings=None):
+    def __init__(self, directory=None, request_settings=None):
         '''Inits Settings class.
         
         Args:
             directory: String representing directory for settings.
-            project_settings: Settings class object of project.
+            request_settings: Settings class object of request.
         '''
-        self.project_settings = project_settings 
+        self.request_settings = request_settings 
         self.measuring_unit_settings = MeasuringSettings(directory)
         self.calibration_settings = CalibrationParameters(directory)
         self.depth_profile_settings = DepthProfileSettings(directory)
@@ -49,8 +49,8 @@ class Settings:
     def get_measurement_settings(self):
         """Get the measurement specific settings.
         
-        Get currently used settings by measurement. If measurement uses project
-        settings (by default), it will return project's settings instead.
+        Get currently used settings by measurement. If measurement uses request
+        settings (by default), it will return request's settings instead.
         
         Returns:
             Settings object that has all the references to settings that a 
@@ -58,18 +58,18 @@ class Settings:
         """
         if self.measuring_unit_settings.use_settings == "MEASUREMENT":
             use_measuring = self.measuring_unit_settings
-        else:  # If there is "" or "PROJECT"
-            use_measuring = self.project_settings.measuring_unit_settings
+        else:  # If there is "" or "REQUEST"
+            use_measuring = self.request_settings.measuring_unit_settings
             
         if self.calibration_settings.use_settings == "MEASUREMENT":
             use_calibration = self.calibration_settings
         else:
-            use_calibration = self.project_settings.calibration_settings    
+            use_calibration = self.request_settings.calibration_settings    
             
         if self.depth_profile_settings.use_settings == "MEASUREMENT":
             use_depth = self.depth_profile_settings
         else:
-            use_depth = self.project_settings.depth_profile_settings
+            use_depth = self.request_settings.depth_profile_settings
             
         settings = Settings()  # TODO: Use setters instead of directly modifying.
         settings.measuring_unit_settings = use_measuring
@@ -87,7 +87,7 @@ class Settings:
         '''
         zero_equality_large = 0.01
         zero_equality_small = 0.000000000000001  # For calibration, e-15
-        if self.project_settings:
+        if self.request_settings:
             settings = self.get_measurement_settings()
         else:
             settings = self

@@ -39,9 +39,9 @@ class SimulationNewDialog(QtWidgets.QDialog):
 
     def __create_simulation(self):
         self.name = self.ui.simulationNameLineEdit.text().replace(" ", "_")
-        # TODO: Remove replace above to allow spaces in project names.
+        # TODO: Remove replace above to allow spaces in request names.
         # TODO: Get rid of print -> message window perhaps
         if not self.name:
-            print("Project name required!")
+            print("Request name required!")
             return
         self.close()

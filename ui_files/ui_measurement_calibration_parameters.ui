@@ -241,7 +241,7 @@
     </item>
    </layout>
   </widget>
-  <widget class="QCheckBox" name="useProjectSettingsValuesCheckBox">
+  <widget class="QCheckBox" name="useRequestSettingsValuesCheckBox">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -251,7 +251,7 @@
     </rect>
    </property>
    <property name="text">
-    <string>Use Project Setting Values (default)</string>
+    <string>Use Request Setting Values (default)</string>
    </property>
    <property name="checked">
     <bool>true</bool>
@@ -285,7 +285,7 @@
   </widget>
  </widget>
  <tabstops>
-  <tabstop>useProjectSettingsValuesCheckBox</tabstop>
+  <tabstop>useRequestSettingsValuesCheckBox</tabstop>
   <tabstop>OKButton</tabstop>
   <tabstop>cancelButton</tabstop>
   <tabstop>loadCalibrationParametersButton</tabstop>
@@ -297,7 +297,7 @@
  <resources/>
  <connections>
   <connection>
-   <sender>useProjectSettingsValuesCheckBox</sender>
+   <sender>useRequestSettingsValuesCheckBox</sender>
    <signal>toggled(bool)</signal>
    <receiver>groupBox_5</receiver>
    <slot>setDisabled(bool)</slot>

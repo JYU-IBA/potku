@@ -35,11 +35,11 @@ from modules.general_functions import open_files_dialog
 class ImportDialogBinary(QtWidgets.QDialog):
     """Binary measurement importing class.
     """
-    def __init__(self, project, icon_manager, statusbar, parent):
+    def __init__(self, request, icon_manager, statusbar, parent):
         """Init binary measurement import dialog.
         """
         super().__init__()
-        self.__project = project
+        self.__request = request
         self.__icon_manager = icon_manager
         self.__statusbar = statusbar
         self.__parent = parent
@@ -64,7 +64,7 @@ class ImportDialogBinary(QtWidgets.QDialog):
         """Add a file to list of files to be imported.
         """
         files = open_files_dialog(self,
-                                  self.__project.directory,
+                                  self.__request.directory,
                                   "Select binary files to be imported",
                                   "Binary format (*.lst)")
         for file in files:
@@ -126,13 +126,13 @@ class ImportDialogBinary(QtWidgets.QDialog):
             item = root.child(i)
             input_file = item.file
             output_file = "{0}.{1}".format(
-               join(self.__project.directory, item.name), "asc")
+               join(self.__request.directory, item.name), "asc")
             n = 2
             while True:  # Allow import of same named files.
                 if not isfile(output_file):
                     break
                 output_file = "{0}-{2}.{1}".format(
-                   join(self.__project.directory, item.name),
+                   join(self.__request.directory, item.name),
                    "asc", n)
                 n += 1
             imported_files.append(output_file)
@@ -140,7 +140,7 @@ class ImportDialogBinary(QtWidgets.QDialog):
         self.__statusbar.removeWidget(progress_bar)
         progress_bar.hide()
         self.imported = True
-        self.__parent.load_project_measurements(imported_files)
+        self.__parent.load_request_measurements(imported_files)
         self.close()
         
         

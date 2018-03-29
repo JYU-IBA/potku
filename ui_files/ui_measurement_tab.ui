@@ -316,7 +316,7 @@
                    <string>Master Measurement</string>
                   </property>
                   <property name="description">
-                   <string>Issue actions from master measurement to slave measurements of the project</string>
+                   <string>Issue actions from master measurement to slave measurements of the request</string>
                   </property>
                  </widget>
                 </item>

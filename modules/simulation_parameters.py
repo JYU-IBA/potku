@@ -98,10 +98,10 @@ class SimulationParameters:
 
         # If we cannot read the command file, we except an IOError
         except IOError:
-            # TODO: Print to the project log
+            # TODO: Print to the request log
             print("Cannot read file " + file_path)
             # msg = 'The file {0} doesn'
-            # logging.getLogger('project').error('')
+            # logging.getLogger('request').error('')
 
     def read_layers(self, file_path):
         """
@@ -160,11 +160,11 @@ class SimulationParameters:
                         raise ValueError("File extension should be either "
                                          "'.target' or '.foils'")
                 except:
-                    # TODO: Print to the project log
+                    # TODO: Print to the request log
                     print("Invalid file name")
 
         except IOError:
-            # TODO: Print to the project log
+            # TODO: Print to the request log
             print("The file " + file_path + " doesn't exist. ")
 
     def read_detector_file(self, file_path):
@@ -268,10 +268,10 @@ class SimulationParameters:
                 self.simulation["recoil"].append(line.strip().split())
 
         except IOError:
-            # TODO: Print to the project log
+            # TODO: Print to the request log
             print("Cannot read file" + file_path)
             # msg = 'The file {0} doesn'
-            # logging.getLogger('project').error('')
+            # logging.getLogger('request').error('')
 
     def save_foil_params(self):
         """Writes the foil parameters into a file.

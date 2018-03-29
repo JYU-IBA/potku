@@ -85,7 +85,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__range_mode_automated = False
         
         # Get settings from global settings
-        self.__global_settings = self.main_frame.measurement.project.global_settings
+        self.__global_settings = self.main_frame.measurement.request.global_settings
         self.invert_Y = self.__global_settings.get_tofe_invert_y()
         self.invert_X = self.__global_settings.get_tofe_invert_x()
         self.transpose_axes = self.__global_settings.get_tofe_transposed()

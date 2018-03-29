@@ -52,23 +52,23 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
         
         self.__measurement_settings = measurement_settings
         
-        proj_settings = measurement_settings.project_settings
-        self.project_settings = proj_settings.measuring_unit_settings
+        proj_settings = measurement_settings.request_settings
+        self.request_settings = proj_settings.measuring_unit_settings
         
         self.default_folder = os.path.curdir  # TODO: DO NOT USE CURRENT DIRECTORY!
         
         # Get the settings from the measurement
         self.settings = measurement_settings.measuring_unit_settings
-        # Choose which settings' parameters are shown. The project settings' or the 
+        # Choose which settings' parameters are shown. The request settings' or the
         # measurement settings' parameters 
-        if self.settings.use_settings == "PROJECT" or self.settings.use_settings == "":
-            self.ui.useProjectSettingsValuesCheckBox.setChecked(True)
-            self.project_settings.show(self)  # Show the project's settings
-            self.masses.load_isotopes(self.project_settings.element.name,
+        if self.settings.use_settings == "REQUEST" or self.settings.use_settings == "":
+            self.ui.useRequestSettingsValuesCheckBox.setChecked(True)
+            self.request_settings.show(self)  # Show the request's settings
+            self.masses.load_isotopes(self.request_settings.element.name,
                                       self.ui.isotopeComboBox,
-                                      str(self.project_settings.element.isotope))
+                                      str(self.request_settings.element.isotope))
         elif self.settings.use_settings == "MEASUREMENT":
-            self.ui.useProjectSettingsValuesCheckBox.setChecked(False)
+            self.ui.useRequestSettingsValuesCheckBox.setChecked(False)
             self.settings.show(self)  # Show the measurement's settings
             self.masses.load_isotopes(self.settings.element.name,
                                       self.ui.isotopeComboBox,
@@ -89,7 +89,7 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
         self.ui.cancelButton.clicked.connect(self.close)
         self.ui.elementButton.clicked.connect(
                           lambda: self.__change_element(self.ui.elementButton))
-        self.ui.useProjectSettingsValuesCheckBox.clicked.connect(
+        self.ui.useRequestSettingsValuesCheckBox.clicked.connect(
                                                          self.__change_settings)
         
         positive_double_validator = InputValidator(bottom=0)
@@ -109,10 +109,10 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
     
     
     def __change_settings(self):
-        """Shows project settings' parameters in dialog if checkbox is checked.
+        """Shows request settings' parameters in dialog if checkbox is checked.
         """
-        if self.ui.useProjectSettingsValuesCheckBox.isChecked():
-            self.project_settings.show(self)
+        if self.ui.useRequestSettingsValuesCheckBox.isChecked():
+            self.request_settings.show(self)
 
         
     def __load_file(self):
@@ -146,8 +146,8 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
         """Updates measuring settings values with the dialog's values and saves them to default ini file.
         """
         try:
-            if self.ui.useProjectSettingsValuesCheckBox.isChecked():
-                use_settings = "PROJECT"
+            if self.ui.useRequestSettingsValuesCheckBox.isChecked():
+                use_settings = "REQUEST"
             else:
                 use_settings = "MEASUREMENT"
             
@@ -198,27 +198,26 @@ class CalibrationSettings(QtWidgets.QDialog):
         super().__init__()
         self.default_folder = os.path.curdir
         self.measurement = measurement
-        self.masses = self.measurement.project.masses
+        self.masses = self.measurement.request.masses
         
         self.ui = uic.loadUi(os.path.join("ui_files",
                               "ui_measurement_calibration_parameters.ui"), self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         
         self.__measurement_settings = self.measurement.measurement_settings
-        self.project_settings = self.__measurement_settings.project_settings.\
-            calibration_settings
+        self.request_settings = self.__measurement_settings.request_settings.calibration_settings
         
         # Get the settings from the measurement
         self.settings = self.measurement.measurement_settings.calibration_settings
         
-        # Choose which settings' parameters are shown. The project settings' or the 
+        # Choose which settings' parameters are shown. The request settings' or the
         # measurement settings' parameters 
         use_settings = self.settings.use_settings
-        if use_settings == "PROJECT" or use_settings == "":
-            self.ui.useProjectSettingsValuesCheckBox.setChecked(True)
-            self.project_settings.show(self)  # Show the project's settings
+        if use_settings == "REQUEST" or use_settings == "":
+            self.ui.useRequestSettingsValuesCheckBox.setChecked(True)
+            self.request_settings.show(self)  # Show the request's settings
         elif use_settings == "MEASUREMENT":
-            self.ui.useProjectSettingsValuesCheckBox.setChecked(False)
+            self.ui.useRequestSettingsValuesCheckBox.setChecked(False)
             self.settings.show(self)  # Show the measurement's settings
         
 
@@ -226,7 +225,7 @@ class CalibrationSettings(QtWidgets.QDialog):
         self.saveCalibrationParametersButton.clicked.connect(self.__save_file)
         self.ui.OKButton.clicked.connect(self.update_and_close_settings)
         self.ui.cancelButton.clicked.connect(self.close)
-        self.ui.useProjectSettingsValuesCheckBox.clicked.connect(
+        self.ui.useRequestSettingsValuesCheckBox.clicked.connect(
                                                          self.__change_settings)
         self.ui.executeCalibrationButton.clicked.connect(self.__open_calibration)
         
@@ -247,10 +246,10 @@ class CalibrationSettings(QtWidgets.QDialog):
     
     
     def __change_settings(self):
-        """Shows project settings' parameters in dialog if checkbox is checked.
+        """Shows request settings' parameters in dialog if checkbox is checked.
         """
-        if self.ui.useProjectSettingsValuesCheckBox.isChecked():
-            self.project_settings.show(self)
+        if self.ui.useRequestSettingsValuesCheckBox.isChecked():
+            self.request_settings.show(self)
         
         
     def __load_file(self):
@@ -282,8 +281,8 @@ class CalibrationSettings(QtWidgets.QDialog):
         them to default ini file.
         """
         try:
-            if self.ui.useProjectSettingsValuesCheckBox.isChecked():
-                use_settings = "PROJECT"
+            if self.ui.useRequestSettingsValuesCheckBox.isChecked():
+                use_settings = "REQUEST"
             else:
                 use_settings = "MEASUREMENT"
             
@@ -296,11 +295,9 @@ class CalibrationSettings(QtWidgets.QDialog):
             self.settings.save_settings()
             self.close()
         except TypeError:
-            QtWidgets.QMessageBox.question(self,
-                "Warning",
-                "Some of the setting values have not been set.\n" + \
-                "Please input setting values to save them.",
-                QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(self, "Warning", "Some of the setting values have not been set.\n" +
+                                           "Please input setting values to save them.", QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
 
 
 
@@ -314,32 +311,29 @@ class DepthProfileSettings(QtWidgets.QDialog):
         super().__init__()
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
-
         self.default_folder = os.path.curdir
         self.ui = uic.loadUi("ui_files/ui_measurement_depth_profile_settings.ui", self)
         
         self.__measurement_settings = measurement_settings
-        self.project_settings = measurement_settings.project_settings.\
-            depth_profile_settings
+        self.request_settings = measurement_settings.request_settings.depth_profile_settings
         
         # Get the settings from the measurement
         self.settings = measurement_settings.depth_profile_settings
         
-        # Choose which settings' parameters are shown. The project settings' or the 
+        # Choose which settings' parameters are shown. The request settings' or the
         # measurement settings' parameters 
-        if self.settings.use_settings == "PROJECT" or self.settings.use_settings == "":
-            self.ui.useProjectSettingsValuesCheckBox.setChecked(True)
-            self.project_settings.show(self)  # Show the project's settings
+        if self.settings.use_settings == "REQUEST" or self.settings.use_settings == "":
+            self.ui.useRequestSettingsValuesCheckBox.setChecked(True)
+            self.request_settings.show(self)  # Show the request's settings
         elif self.settings.use_settings == "MEASUREMENT":
-            self.ui.useProjectSettingsValuesCheckBox.setChecked(False)
+            self.ui.useRequestSettingsValuesCheckBox.setChecked(False)
             self.settings.show(self)  # Show the measurement's settings
-        
 
         self.ui.loadDepthProfileSettingsButton.clicked.connect(self.__load_file)
         self.ui.saveDepthProfileSettingsButton.clicked.connect(self.__save_file)
         self.ui.OKButton.clicked.connect(self.update_and_close_settings)
         self.ui.cancelButton.clicked.connect(self.close)
-        self.ui.useProjectSettingsValuesCheckBox.clicked.connect(self.__change_settings)
+        self.ui.useRequestSettingsValuesCheckBox.clicked.connect(self.__change_settings)
         
         double_validator = InputValidator()
         
@@ -353,10 +347,10 @@ class DepthProfileSettings(QtWidgets.QDialog):
     
     
     def __change_settings(self):
-        """Shows project settings' parameters in dialog if checkbox is checked.
+        """Shows request settings' parameters in dialog if checkbox is checked.
         """
-        if self.ui.useProjectSettingsValuesCheckBox.isChecked():
-            self.project_settings.show(self)
+        if self.ui.useRequestSettingsValuesCheckBox.isChecked():
+            self.request_settings.show(self)
         
         
     def __load_file(self):
@@ -387,8 +381,8 @@ class DepthProfileSettings(QtWidgets.QDialog):
         """Updates measuring settings values with the dialog's values and saves them to default ini file.
         """
         try:
-            if self.ui.useProjectSettingsValuesCheckBox.isChecked():
-                use_settings = "PROJECT"
+            if self.ui.useRequestSettingsValuesCheckBox.isChecked():
+                use_settings = "REQUEST"
             else:
                 use_settings = "MEASUREMENT"
             
@@ -401,11 +395,9 @@ class DepthProfileSettings(QtWidgets.QDialog):
             self.settings.save_settings()
             self.close()
         except TypeError:
-            QtWidgets.QMessageBox.question(self,
-                "Warning",
-                "Some of the setting values have not been set.\n" + \
-                "Please input setting values to save them.",
-                QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(self, "Warning", "Some of the setting values have not been set.\n" +
+                                           "Please input setting values to save them.", QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
 
 
 
