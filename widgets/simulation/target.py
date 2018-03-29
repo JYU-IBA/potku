@@ -37,7 +37,7 @@ class TargetWidget(QtWidgets.QWidget):
         #self.ui.stackedWidget.children()[2].setLayout(QtWidgets.QHBoxLayout)
 
         TargetCompositionWidget(self, icon_manager)
-        RecoilAtomDistributionWidget(self, icon_manager)
+        self.recoil_widget = RecoilAtomDistributionWidget(self, icon_manager)
 
         self.ui.targetRadioButton.clicked.connect(lambda: self.ui.stackedWidget.setCurrentIndex(0))
         self.ui.recoilRadioButton.clicked.connect(lambda: self.ui.stackedWidget.setCurrentIndex(1))
@@ -62,11 +62,11 @@ class TargetWidget(QtWidgets.QWidget):
 
     def set_shortcuts(self):
         # Toggle rectangle selector
-        self.rec_sel = QtWidgets.QShortcut(self)
-        self.rec_sel.setKey(QtCore.Qt.Key_R)
-        self.rec_sel.activated.connect(
-            lambda: self.matplotlib.toggle_rectangle_selector())
+        # self.rec_sel = QtWidgets.QShortcut(self)
+        # self.rec_sel.setKey(QtCore.Qt.Key_R)
+        # self.rec_sel.activated.connect(
+        #     lambda: self.matplotlib.toggle_rectangle_selector())
         # Delete selected point(s)
         self.del_points = QtWidgets.QShortcut(self)
         self.del_points.setKey(QtCore.Qt.Key_Delete)
-        self.del_points.activated.connect(lambda: self.matplotlib.remove_points())
+        self.del_points.activated.connect(lambda: self.recoil_widget.remove_points())

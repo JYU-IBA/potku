@@ -11,7 +11,7 @@ import matplotlib.lines as lines
 from PyQt5 import QtCore, QtWidgets, QtGui
 
 from widgets.matplotlib.base import MatplotlibWidget
-from matplotlib.widgets import RectangleSelector
+from matplotlib.widgets import RectangleSelector, TextBox
 import numpy.random
 
 
@@ -237,6 +237,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.selected, = self.axes.plot(0, 0, marker="o", markersize=10, linestyle="None",
                                         color='yellow', visible=False)
 
+        # self.text_axes = self.fig.add_axes([0.8, 0.05, 0.1, 0.075])
+        # self.text_box = TextBox(self.text_axes, 'Coordinates', initial="Testi")
+
         # self.axes.set_xlim(-10, 110)
         # self.axes.set_ylim(-10, 110)
         self.axes.autoscale(enable=False)
@@ -326,6 +329,21 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Make own buttons
         self.mpl_toolbar.addSeparator()
 
+        # Point x coordinate text box
+        self.x_coordinate_box = QtWidgets.QLineEdit(self)
+        self.x_coordinate_box.setToolTip("X coordinate of point")
+        # self.x_coordinate_box.setAlignment(
+        #         QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+        # self.mpl_toolbar.insert(self.mpl_toolbar._actions["pan"], self.x_coordinate_box)
+        self.x_coordinate_box.setFixedWidth(40)
+        self.mpl_toolbar.addWidget(self.x_coordinate_box)
+
+        # Point y coordinate text box
+        self.y_coordinate_box = QtWidgets.QLineEdit(self)
+        self.y_coordinate_box.setToolTip("Y coordinate of point")
+        self.y_coordinate_box.setFixedWidth(40)
+        self.mpl_toolbar.addWidget(self.y_coordinate_box)
+
         # Rectangle selector button
         self.rectangle_select_button = QtWidgets.QToolButton(self)
         self.rectangle_select_button.clicked.connect(self.toggle_rectangle_selector)
@@ -342,6 +360,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.__icon_manager.set_icon(self.point_remove_button, "del.png")
         self.point_remove_button.setToolTip("Remove selected points")
         self.mpl_toolbar.addWidget(self.point_remove_button)
+
 
 
     # def find_clicked_point(self, x, y):
