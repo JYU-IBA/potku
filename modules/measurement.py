@@ -66,11 +66,12 @@ class Measurements:
         return self.measurements[key]
     
     
-    def add_measurement_file(self, measurement_file, tab_id):
+    def add_measurement_file(self, sample_path, measurement_file, tab_id):
         '''Add a new file to measurements.
         
         Args:
-            measurement_filepath: String representing file containing measurement 
+            sample_path: Path to the sample under which the measurement is put.
+            measurement_file: String representing file containing measurement
                                   data.
             tab_id: Integer representing identifier for measurement's tab.
         
@@ -80,7 +81,7 @@ class Measurements:
         measurement = None
         measurement_filename = os.path.split(measurement_file)[1]
         measurement_name = os.path.splitext(measurement_filename)
-        new_file = os.path.join(self.request.directory, measurement_filename)
+        new_file = os.path.join(sample_path, measurement_filename)  # TODO: change directory to sample dir
         # print("-------------------------------------------------")
         # print(measurement_file)
         # print(os.path.split(measurement_file))
@@ -109,6 +110,7 @@ class Measurements:
             measurement = Measurement(new_file, self.request, tab_id)
             # measurement.load_data()
             self.measurements[tab_id] = measurement
+            self.request.samples.measurements[tab_id] = measurement
         except:
             log = "Something went wrong while adding a new measurement."
             logging.getLogger("request").critical(log)

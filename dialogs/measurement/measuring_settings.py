@@ -109,7 +109,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.ui.executeCalibrationButton.clicked.connect(
                            self.__open_calibration_dialog)
         self.ui.executeCalibrationButton.setEnabled(
-                           not self.request.measurements.is_empty())
+                           not self.request.samples.measurements.is_empty())
         double_validator = InputValidator()
         positive_double_validator = InputValidator(bottom=0)
         
@@ -151,8 +151,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.exec_()
 
     def __open_calibration_dialog(self):
-        measurements = [self.request.measurements.get_key_value(key)
-                        for key in self.request.measurements.measurements.keys()]
+        measurements = [self.request.samples.measurements.get_key_value(key)
+                        for key in self.request.samples.measurements.measurements.keys()]
         CalibrationDialog(measurements, self.settings, self.masses, self)
 
     def __load_file(self, settings_type):

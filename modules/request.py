@@ -30,6 +30,7 @@ import configparser, logging
 from datetime import datetime
 from os import listdir, makedirs, stat
 from os.path import exists, isfile, join, split, splitext
+from modules.sample import Samples
 
 from modules.measurement import Measurements
 from modules.simulation import Simulations
@@ -58,7 +59,8 @@ class Request:
         self.global_settings = global_settings
         self.masses = masses
         self.statusbar = statusbar
-        self.measurements = Measurements(self)
+        self.samples = Samples(self)
+        # self.measurements = Measurements(self)
         self.simulations = Simulations(self)
         self.__tabs = tabs
         self.__master_measurement = None
@@ -131,16 +133,6 @@ class Request:
         """Get master measurement of the request.
         """
         return self.__master_measurement
-        
-        
-    def get_measurements_files(self):
-        """Get measurements files inside request folder.
-        """
-        # TODO: Possible for different formats (such as binary data .lst)
-        return [f for f in listdir(self.directory) 
-                if isfile(join(self.directory, f)) and 
-                splitext(f)[1] == ".asc" and 
-                stat(join(self.directory, f)).st_size]  # Do not load empty files.
 
     def get_simulation_files(self):
         """Get simulation files inside request folder.
