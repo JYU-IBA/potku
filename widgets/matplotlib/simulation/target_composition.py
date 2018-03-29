@@ -29,6 +29,8 @@ class TargetCompositionWidget(MatplotlibWidget):
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
         self.__icon_manager = icon_manager
 
+        self.__fork_toolbar_buttons()
+
         self.name_y_axis = "Concentration"
         self.name_x_axis = "Depth"
 
@@ -86,3 +88,23 @@ class TargetCompositionWidget(MatplotlibWidget):
             self.mpl_toolbar.zoom()
         self.__button_drag.setChecked(False)
         self.__button_zoom.setChecked(False)
+
+    def __fork_toolbar_buttons(self):
+        # super().fork_toolbar_buttons()
+        self.mpl_toolbar.mode_tool = 0
+        self.__tool_label = self.mpl_toolbar.children()[24]
+        self.__button_drag = self.mpl_toolbar.children()[12]
+        self.__button_zoom = self.mpl_toolbar.children()[14]
+        self.__button_drag.clicked.connect(self.__toggle_tool_drag)
+        self.__button_zoom.clicked.connect(self.__toggle_tool_zoom)
+
+        # Make own buttons
+        self.mpl_toolbar.addSeparator()
+
+        # Point removal button
+        # Button for adding a new layer
+        self.__button_add_layer = QtWidgets.QToolButton(self)
+        # self.__button_add_layer.clicked.connect() # self.__add_layer())
+        self.__icon_manager.set_icon(self.__button_add_layer, "del.png")
+        # TODO: Icon
+        self.mpl_toolbar.addWidget(self.__button_add_layer)
