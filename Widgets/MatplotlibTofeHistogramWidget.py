@@ -48,6 +48,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                    3 : "selection tool",
                    4 : "selection select tool"
                   }
+
     
     def __init__(self, parent, measurement_data, masses, icon_manager):
         '''Inits histogram widget
@@ -507,8 +508,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         """Emits a 'selectionsChanged' signal with the selections list as a parameter. 
         """
         self.emit(QtCore.SIGNAL("saveCuts(PyQt_PyObject)"), self.measurement)
-    
-    
+
     def __context_menu(self, event, cursorlocation):
             menu = QtGui.QMenu(self)
             
