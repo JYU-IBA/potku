@@ -32,7 +32,7 @@ import configparser
 import os
 
 class CalibrationParameters:
-    """MeasuringSettings holds the all project specific measurement unit parameters.
+    """MeasuringSettings holds the all request specific measurement unit parameters.
     """
     def __init__(self, settings_filepath=None):
         """Inits MeasuringSettings.
@@ -44,8 +44,8 @@ class CalibrationParameters:
         self.config = configparser.ConfigParser()
         
         # This is used to determine if opened measurement 
-        # uses its own settings ('MEASUREMENT') or project's 
-        # settings ('PROJECT') 
+        # uses its own settings ('MEASUREMENT') or request's 
+        # settings ('REQUEST')
         self.use_settings = ""      
         self.slope = 0
         self.offset = 0

@@ -40,14 +40,14 @@ class GlobalSettings:
         self.__config_file = path.join(self.__config_directory, "potku.ini")
         self.__config = configparser.ConfigParser()
         
-        self.__project_directory = path.join(self.__config_directory, "projects")
+        self.__request_directory = path.join(self.__config_directory, "requests")
         self.__efficiency_directory = path.join(self.__config_directory,
                                               "efficiency_files")
         self.__make_directories(self.__config_directory)  
-        self.__make_directories(self.__project_directory)
+        self.__make_directories(self.__request_directory)
         self.__make_directories(self.__efficiency_directory)
         
-        self.__project_directory_last_open = self.__project_directory
+        self.__request_directory_last_open = self.__request_directory
         self.__element_colors = {"H" : "#b4903c",
                               "He" : "red",
                               "Li" : "red",
@@ -195,10 +195,10 @@ class GlobalSettings:
         self.__config.add_section("import_timing")
         self.__config.add_section("depth_profile")
         self.__config.add_section("tof-e_graph")
-        self.__config.set("default", "project_directory", self.__project_directory)
+        self.__config.set("default", "request_directory", self.__request_directory)
         self.__config.set("default",
-                          "project_directory_last_open",
-                          self.__project_directory_last_open)
+                          "request_directory_last_open",
+                          self.__request_directory_last_open)
         keys = self.__element_colors.keys()
         for key in keys:
             self.__config.set("colors", key, self.__element_colors[key])
@@ -239,40 +239,40 @@ class GlobalSettings:
             self.__config.write(configfile)
         
            
-    def get_project_directory(self):
-        '''Get default project directory.
+    def get_request_directory(self):
+        '''Get default request directory.
         '''
-        return self.__config["default"]["project_directory"]
+        return self.__config["default"]["request_directory"]
     
     
-    def set_project_directory(self, directory):
-        '''Save default project directory.
+    def set_request_directory(self, directory):
+        '''Save default request directory.
         
         Args:
-            directory: String representing folder where projects will be saved
+            directory: String representing folder where requests will be saved
             by default.
         '''
         folders = directory.split("/")
         os_dir = os.sep.join(folders)
-        self.__config["default"]["project_directory"] = os_dir
+        self.__config["default"]["request_directory"] = os_dir
         self.save_config()
         
     
-    def get_project_directory_last_open(self):
-        '''Get directory where last project was opened.
+    def get_request_directory_last_open(self):
+        '''Get directory where last request was opened.
         '''
-        return self.__config["default"]["project_directory_last_open"]
+        return self.__config["default"]["request_directory_last_open"]
     
     
-    def set_project_directory_last_open(self, directory):
-        '''Save last opened project directory.
+    def set_request_directory_last_open(self, directory):
+        '''Save last opened request directory.
         
         Args:
-            directory: String representing project folder.
+            directory: String representing request folder.
         '''
         folders = directory.split("/")
         os_dir = os.sep.join(folders)
-        self.__config["default"]["project_directory"] = os_dir
+        self.__config["default"]["request_directory"] = os_dir
         self.save_config()
         
          
@@ -291,7 +291,7 @@ class GlobalSettings:
         '''
         folders = directory.split("/")
         os_dir = os.sep.join(folders)
-        self.__config["default"]["project_directory"] = os_dir
+        self.__config["default"]["request_directory"] = os_dir
         
     
     def get_efficiencies(self):

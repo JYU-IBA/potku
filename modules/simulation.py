@@ -26,14 +26,14 @@ class Simulations:
     """Simulations class handles multiple simulations.
     """
 
-    def __init__(self, project):
+    def __init__(self, request):
         """Inits simulations class.
         Args:
-            project: Project class object.
+            request: Request class object.
         """
         # self._directory = os.path.join(sample_directory, "Simulations")
         # self.simulations = []
-        self.project = project
+        self.request = request
         self.simulations = {}  # Dictionary<Simulation>
         # self.measuring_unit_settings = None
         # self.default_settings = None
@@ -66,34 +66,34 @@ class Simulations:
         simulation = None
         simulation_filename = os.path.split(simulation_file)[1]
         simulation_name = os.path.splitext(simulation_filename)
-        new_file = os.path.join(self.project.directory, simulation_filename)
+        new_file = os.path.join(self.request.directory, simulation_filename)
 
         file_directory, file_name = os.path.split(simulation_file)
         try:
-            if file_directory != self.project.directory and file_directory:
+            if file_directory != self.request.directory and file_directory:
                 dirtyinteger = 2  # Begin from 2, since 0 and 1 would be confusing.
                 while os.path.exists(new_file):
                     file_name = "{0}_{1}{2}".format(simulation_name[0],
                                                     dirtyinteger,
                                                     simulation_name[1])
-                    new_file = os.path.join(self.project.directory, file_name)
+                    new_file = os.path.join(self.request.directory, file_name)
                     dirtyinteger += 1
                 shutil.copyfile(simulation_file, new_file)
                 file_directory, file_name = os.path.split(new_file)
 
-                log = "Added new simulation {0} to the project.".format(
+                log = "Added new simulation {0} to the request.".format(
                     file_name)
-                logging.getLogger("project").info(log)
+                logging.getLogger("request").info(log)
             keys = self.simulations.keys()
             for key in keys:
                 if self.simulations[key].simulation_file == file_name:
                     return simulation  # measurement = None
-            simulation = Simulation(new_file, self.project, tab_id)
+            simulation = Simulation(new_file, self.request, tab_id)
             # measurement.load_data()
             self.simulations[tab_id] = simulation
         except:
             log = "Something went wrong while adding a new simulation."
-            logging.getLogger("project").critical(log)
+            logging.getLogger("request").critical(log)
             print(sys.exc_info())  # TODO: Remove this.
         return simulation
 
@@ -128,7 +128,7 @@ class Simulations:
 #             self.simulations.append(simulation)
 #
 #     def new_simulation(self, simulation_name):
-#         """Adds a new simulation to project.
+#         """Adds a new simulation to request.
 #
 #         Args:
 #             simulation_name: Name of the simulation
@@ -147,7 +147,7 @@ class Simulations:
 #             os.makedirs(simulation_directory)
 #         except:
 #             log_msg = "Failed creating directory for simulation" + simulation_name
-#             logging.getLogger("project").critical(log_msg)
+#             logging.getLogger("request").critical(log_msg)
 #             # TODO: Inform user also with a pop up window.
 #             return
 #
@@ -155,11 +155,11 @@ class Simulations:
 #         # list of simulations.
 #         try:
 #             self.simulations.append(Simulation(simulation_directory))
-#             log_msg =  "Added simulation " + simulation_name + " to the project."
-#             logging.getLogger("project").info(log_msg)
+#             log_msg =  "Added simulation " + simulation_name + " to the request."
+#             logging.getLogger("request").info(log_msg)
 #         except:
 #             log_msg = "Something went wrong while adding simulation" + simulation_name
-#             logging.getLogger("project").critical(log_msg)
+#             logging.getLogger("request").critical(log_msg)
 #             # TODO: Inform user also with a pop up window.
 #
 #     # TODO: Function for removing simulation
@@ -167,17 +167,17 @@ class Simulations:
 class Simulation:
     """Simulation class handles the simulation data."""
 
-    def __init__(self, command_file, project, tab_id):
+    def __init__(self, command_file, request, tab_id):
         """Inits Simulation.
         Args:
-            project: Project class object.
+            request: Request class object.
         """
 
         simulation_folder, simulation_name = os.path.split(command_file)
         self.simulation_file = simulation_name  # With extension
         self.simulation_name = os.path.splitext(simulation_name)[0]
 
-        self.project = project
+        self.request = request
         self.directory = os.path.join(simulation_folder, self.simulation_name)
 
         self.data = []
@@ -186,15 +186,15 @@ class Simulation:
         self.__make_directories(self.directory)
         # self.set_loggers()
 
-        # The settings that come from the project
-        self.__project_settings = self.project.settings
+        # The settings that come from the request
+        self.__request_settings = self.request.settings
         # The settings that are individually set for this measurement
-        self.simulation_settings = Settings(self.directory, self.__project_settings)
+        self.simulation_settings = Settings(self.directory, self.__request_settings)
 
         # Main window's statusbar TODO: Remove GUI stuff.
-        self.statusbar = self.project.statusbar
+        self.statusbar = self.request.statusbar
 
-        element_colors = self.project.global_settings.get_element_colors()
+        element_colors = self.request.global_settings.get_element_colors()
 
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
@@ -222,7 +222,7 @@ class Simulation:
         if not os.path.exists(directory):
             os.makedirs(directory)
             # log = "Created a directory {0}.".format(directory)
-            # logging.getLogger("project").info(log)
+            # logging.getLogger("request").info(log)
 
     def load_data(self):
         """Loads measurement data from filepath
@@ -251,11 +251,11 @@ class Simulation:
                         self.measurement_name,
                         "The error was:")
             error_log_2 = "I/O error ({0}): {1}".format(e.errno, e.strerror)
-            logging.getLogger("project").error(error_log)
-            logging.getLogger("project").error(error_log_2)
+            logging.getLogger("request").error(error_log)
+            logging.getLogger("request").error(error_log_2)
         except Exception as e:
             error_log = "Unexpected error: [{0}] {1}".format(e.errno, e.strerror)
-            logging.getLogger("project").error(error_log)
+            logging.getLogger("request").error(error_log)
         # pr.disable()
         # ps = pstats.Stats(pr)
         # ps.sort_stats("time")
@@ -263,7 +263,7 @@ class Simulation:
 
 #     def load_settings(self):
 #         """Loads simulation settings from file path. If, for example, no settings
-#         file is found for target, then project settings are used.
+#         file is found for target, then request settings are used.
 #         """
 #
 #
@@ -279,7 +279,7 @@ class Simulation:
 #         self.command_win = "cd " + self.bin_dir + " && type " + input_file + \
 #                            " | " + os.getcwd() + "\external\Potku-bin\get_espe " + params_string + \
 #                            " > " + output_file
-#         input_file = project.directory +"35Cl-85-LiMnO_Li.*.erd"
+#         input_file = request.directory +"35Cl-85-LiMnO_Li.*.erd"
 #         self.command_win = BIN_DIR + "get_espe " + params
 #
 #         self.command_unix = "cd " + self.bin_dir + " && cat " + input_file + \
@@ -386,7 +386,7 @@ class CallGetEspe(object):
 
 
 # For testing the CallMCERD class:
-# CallMCERD(r"C:\Users\localadmin\potku\projects\testi7\35Cl-85-LiMnO_Li").run_simulation()
+# CallMCERD(r"C:\Users\localadmin\potku\requests\testi7\35Cl-85-LiMnO_Li").run_simulation()
 # MCERD tries to read the input files from the path specified in the command file
 # CallMCERD(r"..\Examples\35Cl-85-LiMnO_Li").run_simulation()
 

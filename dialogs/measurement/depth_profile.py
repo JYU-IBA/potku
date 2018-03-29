@@ -55,7 +55,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                                           "ui_depth_profile_params.ui"), self)
         self.measurement = parent.measurement
         self.__statusbar = parent.measurement.statusbar
-        self.__global_settings = self.measurement.project.global_settings
+        self.__global_settings = self.measurement.request.global_settings
         
         # Connect buttons
         self.ui.OKButton.clicked.connect(self.__accept_params)
@@ -201,7 +201,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         # that matter, to get all efficiency files from directory defined
         # in global settings that match the cut files of measurements.
         eff_files = self.__global_settings.get_efficiencies()
-        masses = self.measurement.project.masses
+        masses = self.measurement.request.masses
         eff_files_used = []
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()
@@ -315,7 +315,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
                             found_scatter = True
                             break
                         index += 1
-                    # When loading project, the scatter element is already 
+                    # When loading request, the scatter element is already
                     # replaced. This is essentially done only when creating 
                     # a new Depth Profile graph.
                     if found_scatter:

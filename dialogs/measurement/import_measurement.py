@@ -41,17 +41,17 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
     """Measurement importing class. Used to import measurement data
     from detecting unit into potku.
     """
-    def __init__(self, project, icon_manager, statusbar, parent):
+    def __init__(self, request, icon_manager, statusbar, parent):
         """Init measurement import dialog.
         
         Args:
-            project: A project class object.
+            request: A request class object.
             icon_manager: An IconManager class object.
             statusbar: A QtGui.QMainWindow's QStatusBar.
             parent: A QtGui.QMainWindow of Potku.
         """
         super().__init__()
-        self.project = project
+        self.request = request
         self.__icon_manager = icon_manager
         self.statusbar = statusbar
         self.parent = parent
@@ -89,7 +89,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         """Add a file to list of files to be imported.
         """
         files = open_files_dialog(self,
-                                  self.project.directory,
+                                  self.request.directory,
                                   "Select an event collection to be imported",
                                   "Event collection (*.evnt)")
         for file in files:
@@ -181,13 +181,13 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             # process.
             item = root.child(i)
             filename_list.append(item.filename)
-            project_dir=str(join(self.project.directory, item.name))
-            output_file = "{0}.{1}".format(project_dir, "asc")
+            request_dir = str(join(self.request.directory, item.name))
+            output_file = "{0}.{1}".format(request_dir, "asc")
             n = 2
             while True:  # Allow import of same named files.
                 if not isfile(output_file):
                     break
-                output_file = "{0}-{2}.{1}".format(project_dir, "asc", n)
+                output_file = "{0}-{2}.{1}".format(request_dir, "asc", n)
                 n += 1
             imported_files.append(output_file)
             coinc(item.file,
@@ -204,7 +204,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         self.statusbar.removeWidget(progress_bar)
         progress_bar.hide()
         elapsed = clock() - start_time
-        log = "Imported measurements to project: {0}".format(filenames)
+        log = "Imported measurements to request: {0}".format(filenames)
         log_var = "Variables used: {0} {1} {2} {3} {4}".format(
             "Skip lines: " + str(self.spin_skiplines.value()),
             "ADC trigger: " + str(self.spin_adctrigger.value()),
@@ -212,11 +212,11 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             "Timing: " + str(timing),
             "Event count: " + str(self.spin_eventcount.value()))
         log_elapsed = "Importing finished {0} seconds".format(int(elapsed))
-        logging.getLogger("project").info(log)
-        logging.getLogger("project").info(log_var)
-        logging.getLogger("project").info(log_elapsed)
+        logging.getLogger("request").info(log)
+        logging.getLogger("request").info(log_var)
+        logging.getLogger("request").info(log_elapsed)
         self.imported = True
-        self.parent.load_project_measurements(imported_files)
+        self.parent.load_request_measurements(imported_files)
         self.close()
         
     
@@ -314,8 +314,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         """
         item = self.treeWidget.currentItem()
         input_file = item.file
-        project_dir = str(join(self.project.directory, "import_file"))
-        output_file = "{0}.{1}".format(project_dir,"tmp")
+        request_dir = str(join(self.request.directory, "import_file"))
+        output_file = "{0}.{1}".format(request_dir,"tmp")
 
         timing = dict()
         timing_first = "1"
@@ -429,8 +429,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
     def __remove_temp_file(self):
         """Remove tempfile, if it exist, used for timing limit correction.
         """
-        project_dir = str(join(self.project.directory, "import_file"))
-        tmp_file = "{0}.{1}".format(project_dir, "tmp")
+        request_dir = str(join(self.request.directory, "import_file"))
+        tmp_file = "{0}.{1}".format(request_dir, "tmp")
         try:
             if isfile(tmp_file):
                 unlink(tmp_file)

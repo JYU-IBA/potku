@@ -86,7 +86,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QCommandLinkButton" name="projectSettingsButton">
+              <widget class="QCommandLinkButton" name="requestSettingsButton">
                <property name="enabled">
                 <bool>false</bool>
                </property>
@@ -103,7 +103,7 @@
                 </size>
                </property>
                <property name="text">
-                <string>Project Settings...</string>
+                <string>Request Settings...</string>
                </property>
                <property name="description">
                 <string/>
@@ -231,7 +231,7 @@
             <item row="2" column="1">
              <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0">
               <item>
-               <widget class="QPushButton" name="projectNewButton">
+               <widget class="QPushButton" name="requestNewButton">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
                   <horstretch>0</horstretch>
@@ -258,8 +258,8 @@
                  </font>
                 </property>
                 <property name="text">
-                 <string>Create a new 
-project</string>
+                 <string>Create a new
+ request</string>
                 </property>
                 <property name="checkable">
                  <bool>false</bool>
@@ -270,7 +270,7 @@ project</string>
                </widget>
               </item>
               <item>
-               <widget class="QPushButton" name="projectOpenButton">
+               <widget class="QPushButton" name="requestOpenButton">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
                   <horstretch>0</horstretch>
@@ -297,8 +297,8 @@ project</string>
                  </font>
                 </property>
                 <property name="text">
-                 <string>Open an 
-existing project</string>
+                 <string>Open an existing
+  request</string>
                 </property>
                 <property name="checkable">
                  <bool>false</bool>
@@ -574,8 +574,8 @@ Start by loading a measurement or creating a new simulation</string>
      <addaction name="actionImport_pelletron"/>
      <addaction name="actionBinary_data_lst"/>
     </widget>
-    <addaction name="actionNew_Project_2"/>
-    <addaction name="actionOpen_Project_2"/>
+    <addaction name="actionNew_Request_2"/>
+    <addaction name="actionOpen_Request_2"/>
     <addaction name="separator"/>
     <addaction name="actionNew_measurement_2"/>
     <addaction name="menuImport"/>
@@ -598,7 +598,7 @@ Start by loading a measurement or creating a new simulation</string>
     <addaction name="actionCreate_report"/>
     <addaction name="separator"/>
     <addaction name="actionGlobal_Settings"/>
-    <addaction name="actionProject_Settings"/>
+    <addaction name="actionRequest_Settings"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -622,30 +622,30 @@ Start by loading a measurement or creating a new simulation</string>
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
-   <addaction name="actionNew_Project"/>
-   <addaction name="actionOpen_Project"/>
+   <addaction name="actionNew_Request"/>
+   <addaction name="actionOpen_Request"/>
    <addaction name="separator"/>
    <addaction name="actionNew_Measurement"/>
    <addaction name="separator"/>
    <addaction name="actionNew_Simulation"/>
    <addaction name="separator"/>
   </widget>
-  <action name="actionNew_Project">
+  <action name="actionNew_Request">
    <property name="text">
-    <string>New Project</string>
+    <string>New Request</string>
    </property>
   </action>
-  <action name="actionOpen_Project">
+  <action name="actionOpen_Request">
    <property name="text">
-    <string>Open Project</string>
+    <string>Open Request</string>
    </property>
   </action>
-  <action name="actionSave_Project">
+  <action name="actionSave_Request">
    <property name="enabled">
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Save Project</string>
+    <string>Save Request</string>
    </property>
   </action>
   <action name="actionNew_Measurement">
@@ -656,19 +656,19 @@ Start by loading a measurement or creating a new simulation</string>
     <string>New Measurement</string>
    </property>
   </action>
-  <action name="actionNew_Project_2">
+  <action name="actionNew_Request_2">
    <property name="text">
-    <string>New project</string>
+    <string>New request</string>
    </property>
   </action>
-  <action name="actionOpen_Project_2">
+  <action name="actionOpen_Request_2">
    <property name="text">
-    <string>Open project</string>
+    <string>Open request</string>
    </property>
   </action>
-  <action name="actionSave_Project_2">
+  <action name="actionSave_Request_2">
    <property name="text">
-    <string>Save project</string>
+    <string>Save request</string>
    </property>
   </action>
   <action name="actionNew_measurement">
@@ -676,9 +676,9 @@ Start by loading a measurement or creating a new simulation</string>
     <string>New measurement</string>
    </property>
   </action>
-  <action name="actionClose_project">
+  <action name="actionClose_request">
    <property name="text">
-    <string>Close project</string>
+    <string>Close request</string>
    </property>
   </action>
   <action name="actionNew_measurement_2">
@@ -739,12 +739,12 @@ Start by loading a measurement or creating a new simulation</string>
     <string>Create depth profile...</string>
    </property>
   </action>
-  <action name="actionProject_Settings">
+  <action name="actionRequest_Settings">
    <property name="enabled">
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Project Settings...</string>
+    <string>Request Settings...</string>
    </property>
   </action>
   <action name="actionGlobal_Settings">
@@ -809,10 +809,10 @@ Start by loading a measurement or creating a new simulation</string>
   </action>
  </widget>
  <tabstops>
-  <tabstop>projectNewButton</tabstop>
-  <tabstop>projectOpenButton</tabstop>
+  <tabstop>requestNewButton</tabstop>
+  <tabstop>requestOpenButton</tabstop>
   <tabstop>globalSettingsButton</tabstop>
-  <tabstop>projectSettingsButton</tabstop>
+  <tabstop>requestSettingsButton</tabstop>
   <tabstop>treeWidget</tabstop>
   <tabstop>hidePanelButton</tabstop>
   <tabstop>tabs</tabstop>

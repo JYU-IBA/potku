@@ -35,14 +35,14 @@ from dialogs.about import AboutDialog
 from dialogs.global_settings import GlobalSettingsDialog
 from dialogs.measurement.import_binary import ImportDialogBinary
 from dialogs.measurement.import_measurement import ImportMeasurementsDialog
-from dialogs.measurement.measuring_settings import ProjectSettingsDialog
-from dialogs.new_project import ProjectNewDialog
+from dialogs.measurement.measuring_settings import RequestSettingsDialog
+from dialogs.new_request import RequestNewDialog
 from dialogs.simulation.new_simulation import SimulationNewDialog
 from modules.general_functions import open_file_dialog
 from modules.global_settings import GlobalSettings
 from modules.icon_manager import IconManager
 from modules.masses import Masses
-from modules.project import Project
+from modules.request import Request
 from widgets.measurement.tab import MeasurementTabWidget
 from widgets.simulation.tab import SimulationTabWidget
 # from Widgets.SimulationDepthProfileWidget import SimulationDepthProfileWidget
@@ -62,7 +62,7 @@ class Potku(QtWidgets.QMainWindow):
         
         self.icon_manager = IconManager()
         self.settings = GlobalSettings()
-        self.project = None
+        self.request = None
         self.masses = Masses(os.path.join("external", "Potku-data", "masses.dat"))
         self.potku_bin_dir = os.getcwd()
         
@@ -73,15 +73,15 @@ class Potku(QtWidgets.QMainWindow):
 
         # Set up connections within UI
         self.ui.actionNew_Measurement.triggered.connect(self.open_new_measurement)
-        self.ui.projectSettingsButton.clicked.connect(self.open_project_settings)
+        self.ui.requestSettingsButton.clicked.connect(self.open_request_settings)
         self.ui.globalSettingsButton.clicked.connect(self.open_global_settings)
         self.ui.tabs.tabCloseRequested.connect(self.remove_tab)
         self.ui.treeWidget.itemDoubleClicked.connect(self.focus_selected_tab)
         
-        self.ui.projectNewButton.clicked.connect(self.make_new_project)
-        self.ui.projectOpenButton.clicked.connect(self.open_project)
-        self.ui.actionNew_Project.triggered.connect(self.make_new_project)
-        self.ui.actionOpen_Project.triggered.connect(self.open_project)
+        self.ui.requestNewButton.clicked.connect(self.make_new_request)
+        self.ui.requestOpenButton.clicked.connect(self.open_request)
+        self.ui.actionNew_Request.triggered.connect(self.make_new_request)
+        self.ui.actionOpen_Request.triggered.connect(self.open_request)
         self.ui.addNewMeasurementButton.clicked.connect(self.open_new_measurement)
         self.ui.actionNew_measurement_2.triggered.connect(self.open_new_measurement)
         self.ui.actionImport_pelletron.triggered.connect(self.import_pelletron)
@@ -97,11 +97,11 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.actionCreate_depth_profile.triggered.connect(
                                 self.current_measurement_create_depth_profile)
         self.ui.actionGlobal_Settings.triggered.connect(self.open_global_settings)
-        self.ui.actionProject_Settings.triggered.connect(self.open_project_settings)
+        self.ui.actionRequest_Settings.triggered.connect(self.open_request_settings)
         self.ui.actionAbout.triggered.connect(self.open_about_dialog)
         
-        self.ui.actionNew_Project_2.triggered.connect(self.make_new_project)
-        self.ui.actionOpen_Project_2.triggered.connect(self.open_project)
+        self.ui.actionNew_Request_2.triggered.connect(self.make_new_request)
+        self.ui.actionOpen_Request_2.triggered.connect(self.open_request)
         self.ui.actionExit.triggered.connect(self.close)
         
         self.ui.menuImport.setEnabled(False)
@@ -253,7 +253,7 @@ class Potku(QtWidgets.QMainWindow):
                 return  # If clicked Yes, then continue normally
         
         for tab in selected_tabs:
-            measurement = self.project.measurements.get_key_value(tab.tab_id)
+            measurement = self.request.measurements.get_key_value(tab.tab_id)
             try:
                 # Close and remove logs
                 measurement.remove_and_close_log(measurement.defaultlog)
@@ -261,7 +261,7 @@ class Potku(QtWidgets.QMainWindow):
                 
                 # Remove measurement's directory tree
                 shutil.rmtree(measurement.directory)
-                os.remove(os.path.join(self.project.directory,
+                os.remove(os.path.join(self.request.directory,
                                        measurement.measurement_file))
             except:
                 print("Error with removing files")
@@ -270,7 +270,7 @@ class Potku(QtWidgets.QMainWindow):
                 measurement.set_loggers()
                 return
             
-            self.project.measurements.remove_by_tab_id(tab.tab_id)
+            self.request.measurements.remove_by_tab_id(tab.tab_id)
             remove_index = self.ui.tabs.indexOf(tab)
             self.remove_tab(remove_index)  # Remove measurement from open tabs 
             
@@ -300,7 +300,7 @@ class Potku(QtWidgets.QMainWindow):
         """
         # TODO: This doesn't work. There is no list/dictionary of references to the
         # tab widgets once they are removed from the QTabWidget. 
-        # tab = self.project_measurements[clicked_item.tab_id]
+        # tab = self.request_measurements[clicked_item.tab_id]
         tab = self.tab_widgets[clicked_item.tab_id]
 
         if type(tab) is MeasurementTabWidget:
@@ -334,7 +334,7 @@ class Potku(QtWidgets.QMainWindow):
                 self.statusbar.removeWidget(progress_bar)
                 progress_bar.hide()
                 self.__change_tab_icon(clicked_item)
-                master_mea = tab.measurement.project.get_master()
+                master_mea = tab.measurement.request.get_master()
                 if master_mea and tab.measurement.measurement_name == \
                                   master_mea.measurement_name:
                     name = "{0} (master)".format(name)
@@ -359,7 +359,7 @@ class Potku(QtWidgets.QMainWindow):
 
     def hide_panel(self, enable_hide=None):
         """Sets the frame (including measurement navigation view, global 
-        settings and project settings buttons) visible.
+        settings and request settings buttons) visible.
         
         Args:
             enable_hide: If True, sets the frame visible and vice versa. 
@@ -379,13 +379,13 @@ class Potku(QtWidgets.QMainWindow):
 
 
     def import_pelletron(self):
-        """Import Pelletron's measurements into project.
+        """Import Pelletron's measurements into request.
         
         Import Pelletron's measurements from 
         """
-        if not self.project: 
+        if not self.request:
             return
-        import_dialog = ImportMeasurementsDialog(self.project,
+        import_dialog = ImportMeasurementsDialog(self.request,
                                                  self.icon_manager,
                                                  self.statusbar,
                                                  self)  # For loading measurements.
@@ -394,13 +394,13 @@ class Potku(QtWidgets.QMainWindow):
             
             
     def import_binary(self):
-        """Import binary measurements into project.
+        """Import binary measurements into request.
         
         Import binary measurements from 
         """
-        if not self.project: 
+        if not self.request:
             return
-        import_dialog = ImportDialogBinary(self.project,
+        import_dialog = ImportDialogBinary(self.request,
                                            self.icon_manager,
                                            self.statusbar,
                                            self)  # For loading measurements.
@@ -412,10 +412,10 @@ class Potku(QtWidgets.QMainWindow):
         Opens a file dialog for selecting simulation to import.
         Opens selected simulation in Potku.
         """
-        if not self.project:
+        if not self.request:
             return
         # TODO: What type of file should be opened? This may other method than open_file_dialog
-        filename = open_file_dialog(self, self.project.directory, "Select a simulation to load",
+        filename = open_file_dialog(self, self.request.directory, "Select a simulation to load",
                                     "Simulation (*.smthn)")
         # TODO: create necessary tab widget etc.
         if filename:
@@ -423,26 +423,26 @@ class Potku(QtWidgets.QMainWindow):
                                            QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
 
-    def load_project_measurements(self, measurements=[]):
-        """Load measurement files in the project.
+    def load_request_measurements(self, measurements=[]):
+        """Load measurement files in the request.
         
         Args:
             measurements: A list representing loadable measurements when importing
-                          measurements to the project.
+                          measurements to the request.
         """
         if measurements:
-            measurements_in_project = measurements
+            measurements_in_request = measurements
             load_data = True
         else:
-            measurements_in_project = self.project.get_measurements_files()
+            measurements_in_request = self.request.get_measurements_files()
             load_data = False
         progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
         
-        count = len(measurements_in_project)
+        count = len(measurements_in_request)
         dirtyinteger = 0
-        for measurement_file in measurements_in_project:
+        for measurement_file in measurements_in_request:
             self.__add_new_tab("measurement", measurement_file, progress_bar,
                                dirtyinteger, count, load_data=load_data)
             dirtyinteger += 1
@@ -450,26 +450,26 @@ class Potku(QtWidgets.QMainWindow):
         self.statusbar.removeWidget(progress_bar)
         progress_bar.hide()
 
-    def load_project_simulations(self, simulations=[]):
-        """Load simulation files in the project.
+    def load_request_simulations(self, simulations=[]):
+        """Load simulation files in the request.
 
         Args:
             simulations: A list representing loadable simulation when importing
-                          simulation to the project.
+                          simulation to the request.
         """
         if simulations:
-            simulations_in_project = simulations
+            simulations_in_request = simulations
             load_data = True
         else:
-            simulations_in_project = self.project.get_simulation_files()
+            simulations_in_request = self.request.get_simulation_files()
             load_data = False
         progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
 
-        count = len(simulations_in_project)
+        count = len(simulations_in_request)
         dirtyinteger = 0
-        for simulation_file in simulations_in_project:
+        for simulation_file in simulations_in_request:
             self.__add_new_tab("simulation", simulation_file, progress_bar,
                                dirtyinteger, count, load_data=load_data)
             dirtyinteger += 1
@@ -478,28 +478,28 @@ class Potku(QtWidgets.QMainWindow):
         progress_bar.hide()
         
 
-    def make_new_project(self):
-        """Opens a dialog for creating a new project.
+    def make_new_request(self):
+        """Opens a dialog for creating a new request.
         """
-        dialog = ProjectNewDialog(self)
+        dialog = RequestNewDialog(self)
 
         # TODO: regex check for directory. I.E. do not allow asd/asd
         if dialog.directory:
-            self.__close_project()
-            title = "{0} - Project: {1}".format(self.title, dialog.name)
+            self.__close_request()
+            title = "{0} - Request: {1}".format(self.title, dialog.name)
             self.ui.setWindowTitle(title)
 
-            self.ui.treeWidget.setHeaderLabel("Project: {0}".format(dialog.name))
+            self.ui.treeWidget.setHeaderLabel("Request: {0}".format(dialog.name))
             self.__initialize_top_items()
 
-            self.project = Project(dialog.directory, dialog.name, self.masses,
+            self.request = Request(dialog.directory, dialog.name, self.masses,
                                    self.statusbar, self.settings,
                                    self.tab_widgets)
-            self.settings.set_project_directory_last_open(dialog.directory)
-            # Project made, close introduction tab
+            self.settings.set_request_directory_last_open(dialog.directory)
+            # Request made, close introduction tab
             self.__remove_introduction_tab()
             self.__open_info_tab()
-            self.__set_project_buttons_enabled(True)
+            self.__set_request_buttons_enabled(True)
 
 
 
@@ -519,10 +519,10 @@ class Potku(QtWidgets.QMainWindow):
         """Opens file an open dialog and if filename is given opens new measurement 
         from it.
         """
-        if not self.project: 
+        if not self.request:
             return
         filename = open_file_dialog(self,
-                                    self.project.directory,
+                                    self.request.directory,
                                     "Select a measurement to load",
                                     "Raw Measurement (*.asc)")
         if filename:
@@ -566,44 +566,44 @@ class Potku(QtWidgets.QMainWindow):
         progress_bar.hide()
 
 
-    def open_project(self):
-        """Shows a dialog to open a project.
+    def open_request(self):
+        """Shows a dialog to open a request.
         """
         file = open_file_dialog(self,
-                                self.settings.get_project_directory_last_open(),
-                                "Open an existing project", "Project file (*.proj)")
+                                self.settings.get_request_directory_last_open(),
+                                "Open an existing request", "Request file (*.proj)")
         if file:
-            self.__close_project()
+            self.__close_request()
             folder = os.path.split(file)[0]
             folders = folder.split("/")
             fd_with_correct_sep = os.sep.join(folders)
             tmp_name = os.path.splitext(os.path.basename(file))[0]
-            self.project = Project(fd_with_correct_sep, tmp_name, self.masses,
+            self.request = Request(fd_with_correct_sep, tmp_name, self.masses,
                                    self.statusbar, self.settings,
                                    self.tab_widgets)
-            self.ui.setWindowTitle("{0} - Project: {1}".format(
+            self.ui.setWindowTitle("{0} - Request: {1}".format(
                                                        self.title,
-                                                       self.project.get_name()))
+                                                       self.request.get_name()))
             self.ui.treeWidget.setHeaderLabel(
-                                 "Project: {0}".format(self.project.get_name()))
+                                 "Request: {0}".format(self.request.get_name()))
             self.__initialize_top_items()
-            self.settings.set_project_directory_last_open(folder)
+            self.settings.set_request_directory_last_open(folder)
             
-            self.load_project_measurements()
-            self.load_project_simulations()
+            self.load_request_measurements()
+            self.load_request_simulations()
             self.__remove_introduction_tab()
-            self.__set_project_buttons_enabled(True)
+            self.__set_request_buttons_enabled(True)
             
-            master_measurement_name = self.project.has_master()
-            nonslaves = self.project.get_nonslaves()
+            master_measurement_name = self.request.has_master()
+            nonslaves = self.request.get_nonslaves()
             if master_measurement_name:
                 master_measurement = None
-                keys = self.project.measurements.measurements.keys()
+                keys = self.request.measurements.measurements.keys()
                 for key in keys:
-                    measurement = self.project.measurements.measurements[key]
+                    measurement = self.request.measurements.measurements[key]
                     if measurement.measurement_name == master_measurement_name:
                         master_measurement = measurement
-                        self.project.set_master(measurement)
+                        self.request.set_master(measurement)
                         break
             root = self.treeWidget.invisibleRootItem()
             # root_child_count = root.childCount()
@@ -630,10 +630,10 @@ class Potku(QtWidgets.QMainWindow):
                 item.setText(0, tab_name)
                 
 
-    def open_project_settings(self):
-        """Opens project settings dialog.
+    def open_request_settings(self):
+        """Opens request settings dialog.
         """
-        ProjectSettingsDialog(self.masses, self.project)
+        RequestSettingsDialog(self.masses, self.request)
           
 
     def remove_tab(self, tab_index):
@@ -697,7 +697,7 @@ class Potku(QtWidgets.QMainWindow):
                           read. (for GUI)
             file_count: An integer representing how many files will be loaded.
             load_data: A boolean representing whether to load data or not. This is
-                       to save time when loading a project and we do not want to
+                       to save time when loading a request and we do not want to
                        load every measurement.
         """
         if progress_bar:
@@ -706,7 +706,7 @@ class Potku(QtWidgets.QMainWindow):
 
         if type == "measurement":
 
-            measurement = self.project.measurements.add_measurement_file(filename,
+            measurement = self.request.measurements.add_measurement_file(filename,
                                                                          self.tab_id)
             if measurement:  # TODO: Finish this (load_data)
                 tab = MeasurementTabWidget(self.tab_id, measurement,
@@ -737,11 +737,11 @@ class Potku(QtWidgets.QMainWindow):
 
         if type == "simulation":
 
-            simulation = self.project.simulations.add_simulation_file(filename, self.tab_id)
+            simulation = self.request.simulations.add_simulation_file(filename, self.tab_id)
 
             if simulation:  # TODO: Finish this (load_data)
-                tab = SimulationTabWidget(self.project, self.tab_id, simulation,
-                                           self.masses, self.icon_manager)
+                tab = SimulationTabWidget(self.request, self.tab_id, simulation,
+                                          self.masses, self.icon_manager)
                 # self.connect(tab, QtCore.SIGNAL("issueMaster"), self.__master_issue_commands)
                 tab.issueMaster.connect(self.__master_issue_commands)
 
@@ -769,15 +769,15 @@ class Potku(QtWidgets.QMainWindow):
         tree_item.setIcon(0, self.icon_manager.get_icon(icon))
     
     
-    def __close_project(self):
-        """Closes the project for opening a new one.
+    def __close_request(self):
+        """Closes the request for opening a new one.
         """
-        if self.project:
+        if self.request:
             # TODO: Doesn't release memory
             # Clear the treewidget
             self.ui.treeWidget.clear()
             self.ui.tabs.clear()
-            self.project = None
+            self.request = None
             self.tab_widgets = {}
             self.tab_id = 0
 
@@ -787,14 +787,14 @@ class Potku(QtWidgets.QMainWindow):
         items = self.ui.treeWidget.selectedItems()
         if not items:
             return
-        master = self.project.get_master()
+        master = self.request.get_master()
         # Remove (slave) text from tree titles
         for item in items:
             tab_widget = self.tab_widgets[item.tab_id]
             tabs = tab_widget.measurement
             tab_name = tabs.measurement_name
             if master and tab_name != master.measurement_name:
-                self.project.exclude_slave(tabs)
+                self.request.exclude_slave(tabs)
                 item.setText(0, tab_name)
     
     
@@ -804,14 +804,14 @@ class Potku(QtWidgets.QMainWindow):
         items = self.ui.treeWidget.selectedItems()
         if not items:
             return
-        master = self.project.get_master()
+        master = self.request.get_master()
         # Add (slave) text from tree titles
         for item in items:
             tab_widget = self.tab_widgets[item.tab_id]
             tabs = tab_widget.measurement
             tab_name = tabs.measurement_name
             if master and tab_name != master.measurement_name:
-                self.project.include_slave(tabs)
+                self.request.include_slave(tabs)
                 item.setText(0, "{0} (slave)".format(tab_name))
         
                
@@ -824,9 +824,9 @@ class Potku(QtWidgets.QMainWindow):
             return
         master_tree = items[0]
         master_tab = self.tab_widgets[master_tree.tab_id]
-        self.project.set_master(master_tab.measurement)
-        # old_master = self.project.get_master()
-        nonslaves = self.project.get_nonslaves()
+        self.request.set_master(master_tab.measurement)
+        # old_master = self.request.get_master()
+        nonslaves = self.request.get_nonslaves()
         
         # if old_master:
         #    old_master_name = old_master.measurement_name
@@ -858,10 +858,10 @@ class Potku(QtWidgets.QMainWindow):
     
     def __master_issue_commands(self):
         """Issue commands from master measurement to all slave measurements in 
-        the project.
+        the request.
         """
         reply = QtWidgets.QMessageBox.question(self, "Confirmation", "You are about to issue actions from master " +
-                                               "measurement to all slave measurements in the project. This can take " +
+                                               "measurement to all slave measurements in the request. This can take " +
                                                "several minutes. Please wait until notification is shown." +
                                                "\nDo you wish to continue?", QtWidgets.QMessageBox.Yes |
                                                QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.Yes)
@@ -872,8 +872,8 @@ class Potku(QtWidgets.QMainWindow):
         progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
-        nonslaves = self.project.get_nonslaves()
-        master = self.project.get_master()
+        nonslaves = self.request.get_nonslaves()
+        master = self.request.get_master()
         master_tab = self.tab_widgets[master.tab_id]
         master_name = master.measurement_name
         directory = master.directory
@@ -881,11 +881,11 @@ class Potku(QtWidgets.QMainWindow):
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents) 
         # Load selections and save cut files
         # TODO: Make a check for these if identical already -> don't redo.
-        self.project.save_selection(master)
+        self.request.save_selection(master)
         progress_bar.setValue(10)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents) 
         
-        self.project.save_cuts(master)
+        self.request.save_cuts(master)
         progress_bar.setValue(25)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents) 
         
@@ -960,14 +960,14 @@ class Potku(QtWidgets.QMainWindow):
         
     def __open_info_tab(self):
         """Opens an info tab to the QTabWidget 'tab_measurements' that guides the 
-        user to add a new measurement to the project.
+        user to add a new measurement to the request.
         """
         self.ui.tabs.addTab(self.ui.infoTab, "Info")
     
 
     def __remove_introduction_tab(self):
         """Removes an info tab from the QTabWidget 'tab_measurements' that guides
-        the user to create a new project.
+        the user to create a new request.
         """
         index = self.ui.tabs.indexOf(self.ui.introduceTab)
         if index >= 0:
@@ -977,8 +977,8 @@ class Potku(QtWidgets.QMainWindow):
     def __remove_master_measurement(self):
         """Remove master measurement
         """
-        old_master = self.project.get_master()
-        self.project.set_master()  # No master measurement
+        old_master = self.request.get_master()
+        self.request.set_master()  # No master measurement
         root = self.treeWidget.invisibleRootItem()
         root_child_count = root.childCount()
         for i in range(root_child_count):
@@ -992,12 +992,12 @@ class Potku(QtWidgets.QMainWindow):
             self.ui.tabs.setTabText(old_master.tab_id, measurement_name)
             old_master_tab = self.tab_widgets[old_master.tab_id]
             old_master_tab.toggle_master_button()
-        self.project.set_master()  # No master measurement
+        self.request.set_master()  # No master measurement
         
              
     def __remove_info_tab(self):
         """Removes an info tab from the QTabWidget 'tab_measurements' that guides
-        the user to add a new measurement to the project.
+        the user to add a new measurement to the request.
         """
         index = self.ui.tabs.indexOf(self.ui.infoTab)
         if index >= 0:
@@ -1007,26 +1007,26 @@ class Potku(QtWidgets.QMainWindow):
     def __set_icons(self):
         """Adds icons to the main window.
         """
-        self.icon_manager.set_icon(self.ui.projectSettingsButton, "gear.svg")
+        self.icon_manager.set_icon(self.ui.requestSettingsButton, "gear.svg")
         self.icon_manager.set_icon(self.ui.globalSettingsButton, "gear.svg")
-        self.icon_manager.set_icon(self.ui.actionNew_Project, "file.svg")
-        self.icon_manager.set_icon(self.ui.actionOpen_Project, "folder_open.svg")
-        self.icon_manager.set_icon(self.ui.actionSave_Project, "amarok_save.svg")
+        self.icon_manager.set_icon(self.ui.actionNew_Request, "file.svg")
+        self.icon_manager.set_icon(self.ui.actionOpen_Request, "folder_open.svg")
+        self.icon_manager.set_icon(self.ui.actionSave_Request, "amarok_save.svg")
         self.icon_manager.set_icon(self.ui.actionNew_Measurement, "log.svg")
         
                
-    def __set_project_buttons_enabled(self, state=False):
-        """Enables 'project settings', 'save project' and 'new measurement' buttons.
+    def __set_request_buttons_enabled(self, state=False):
+        """Enables 'request settings', 'save request' and 'new measurement' buttons.
            Enables simulation related buttons.
         Args:
             state: True/False enables or disables buttons
         """
-        self.ui.projectSettingsButton.setEnabled(state)
-        self.ui.actionSave_Project.setEnabled(state)
+        self.ui.requestSettingsButton.setEnabled(state)
+        self.ui.actionSave_Request.setEnabled(state)
         self.ui.actionNew_Measurement.setEnabled(state)
         self.ui.actionNew_measurement_2.setEnabled(state)
         self.ui.menuImport.setEnabled(state)
-        self.ui.actionProject_Settings.setEnabled(state)
+        self.ui.actionRequest_Settings.setEnabled(state)
         # TODO: Should these only be enabled when there is measurement open?
         self.ui.actionAnalyze_elemental_losses.setEnabled(state)
         self.ui.actionCreate_energy_spectrum.setEnabled(state)

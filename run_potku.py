@@ -29,12 +29,12 @@ import os
 import potku
 
 
-def runPotku():
+def run_potku():
     sys.path.append(os.path.dirname(os.path.abspath(__file__)))
     print(sys.path)
     potku.main()
 
 
 if __name__ == "__main__":
-    runPotku()
+    run_potku()
     print("This is done")

@@ -38,13 +38,13 @@ from modules.settings import Settings
 class Measurements:
     '''Measurements class handles multiple measurements.
     '''
-    def __init__(self, project):
+    def __init__(self, request):
         '''Inits measurements class.
         
         Args:
-            project: Project class object.
+            request: Request class object.
         '''
-        self.project = project
+        self.request = request
         self.measurements = {}  # Dictionary<Measurement>
         self.measuring_unit_settings = None
         self.default_settings = None
@@ -80,38 +80,38 @@ class Measurements:
         measurement = None
         measurement_filename = os.path.split(measurement_file)[1]
         measurement_name = os.path.splitext(measurement_filename)
-        new_file = os.path.join(self.project.directory, measurement_filename)
+        new_file = os.path.join(self.request.directory, measurement_filename)
         # print("-------------------------------------------------")
         # print(measurement_file)
         # print(os.path.split(measurement_file))
-        # print(self.project.directory)
+        # print(self.request.directory)
         # print(new_file)
         # print()
         file_directory, file_name = os.path.split(measurement_file)
         try:
-            if file_directory != self.project.directory and file_directory:
+            if file_directory != self.request.directory and file_directory:
                 dirtyinteger = 2  # Begin from 2, since 0 and 1 would be confusing.
                 while os.path.exists(new_file):
                     file_name = "{0}_{1}{2}".format(measurement_name[0],
                                                     dirtyinteger,
                                                     measurement_name[1])
-                    new_file = os.path.join(self.project.directory, file_name)
+                    new_file = os.path.join(self.request.directory, file_name)
                     dirtyinteger += 1
                 shutil.copyfile(measurement_file, new_file)
                 file_directory, file_name = os.path.split(new_file)
                 
-                log = "Added new measurement {0} to the project.".format(file_name)
-                logging.getLogger('project').info(log)
+                log = "Added new measurement {0} to the request.".format(file_name)
+                logging.getLogger('request').info(log)
             keys = self.measurements.keys()
             for key in keys:
                 if self.measurements[key].measurement_file == file_name:
                     return measurement  # measurement = None
-            measurement = Measurement(new_file, self.project, tab_id)
+            measurement = Measurement(new_file, self.request, tab_id)
             # measurement.load_data()
             self.measurements[tab_id] = measurement
         except:
             log = "Something went wrong while adding a new measurement."
-            logging.getLogger("project").critical(log)
+            logging.getLogger("request").critical(log)
             print(sys.exc_info())  # TODO: Remove this.
         return measurement
         
@@ -134,12 +134,12 @@ class Measurements:
 class Measurement:
     '''Measurement class to handle one measurement data.
     '''
-    def __init__(self, measurement_file, project, tab_id):
+    def __init__(self, measurement_file, request, tab_id):
         '''Inits measurement.
         
         Args:
             measurement_file: String representing path to measurement file.
-            project: Project class object.
+            request: Request class object.
             tab_id: Integer representing tab identifier for measurement.
         '''
         measurement_folder, measurement_name = os.path.split(measurement_file)
@@ -150,7 +150,7 @@ class Measurement:
         self.directory_cuts = os.path.join(self.directory, "cuts")
         self.directory_elemloss = os.path.join(self.directory_cuts, "elemloss")
         
-        self.project = project  # To which project be belong to
+        self.request = request  # To which request be belong to
         self.data = []
         self.tab_id = tab_id
 
@@ -160,18 +160,18 @@ class Measurement:
                 
         self.set_loggers()
         
-        # The settings that come from the project
-        self.__project_settings = self.project.settings  
+        # The settings that come from the request
+        self.__request_settings = self.request.settings
         # The settings that are individually set for this measurement
         self.measurement_settings = Settings(self.directory,
-                                             self.__project_settings)  
+                                             self.__request_settings)
         
         # Main window's statusbar TODO: Remove GUI stuff.
-        self.statusbar = self.project.statusbar
+        self.statusbar = self.request.statusbar
         
-        element_colors = self.project.global_settings.get_element_colors()
+        element_colors = self.request.global_settings.get_element_colors()
         self.selector = Selector(self.directory, self.measurement_name,
-                                 self.project.masses, element_colors,
+                                 self.request.masses, element_colors,
                                  settings=self.measurement_settings)
         
         # Which color scheme is selected by default
@@ -182,7 +182,7 @@ class Measurement:
         if not os.path.exists(directory):
             os.makedirs(directory)
             log = "Created a directory {0}.".format(directory)
-            logging.getLogger("project").info(log) 
+            logging.getLogger("request").info(log)
     
     
     def load_data(self):
@@ -213,11 +213,11 @@ class Measurement:
                         self.measurement_name,
                         "The error was:")
             error_log_2 = "I/O error ({0}): {1}".format(e.errno, e.strerror)
-            logging.getLogger('project').error(error_log)
-            logging.getLogger('project').error(error_log_2)
+            logging.getLogger('request').error(error_log)
+            logging.getLogger('request').error(error_log_2)
         except Exception as e:
             error_log = "Unexpected error: [{0}] {1}".format(e.errno, e.strerror)
-            logging.getLogger('project').error(error_log)
+            logging.getLogger('request').error(error_log)
         # pr.disable()
         # ps = pstats.Stats(pr)
         # ps.sort_stats("time")
@@ -252,21 +252,21 @@ class Measurement:
                                       '%(asctime)s - %(levelname)s - %(message)s',
                                       datefmt='%Y-%m-%d %H:%M:%S')
         
-        projectlog = logging.FileHandler(os.path.join(self.project.directory,
-                                                      'project.log'))
-        projectlogformat = logging.Formatter(
+        requestlog = logging.FileHandler(os.path.join(self.request.directory,
+                                                      'request.log'))
+        requestlogformat = logging.Formatter(
              '%(asctime)s - %(levelname)s - [Measurement : %(name)s] - %(message)s',
              datefmt='%Y-%m-%d %H:%M:%S')
         
         # Set the formatters to the logs.
-        projectlog.setFormatter(projectlogformat)
+        requestlog.setFormatter(requestlogformat)
         self.defaultlog.setFormatter(defaultformat)
         self.errorlog.setFormatter(defaultformat)
         
         # Add handlers to this measurement's logger.        
         logger.addHandler(self.defaultlog)
         logger.addHandler(self.errorlog)
-        logger.addHandler(projectlog)
+        logger.addHandler(requestlog)
         
         
     def remove_and_close_log(self, log_filehandler):
@@ -305,7 +305,7 @@ class Measurement:
                 self.load_selection(selection_file)
         except:
             # TODO: Is it necessary to inform user with this?
-            log_msg = "There was no old selection file to add to this project."
+            log_msg = "There was no old selection file to add to this request."
             logging.getLogger(self.measurement_name).info(log_msg)
     
     
@@ -575,7 +575,7 @@ class Measurement:
         
         # Get settings 
         use_settings = self.measurement_settings.get_measurement_settings()
-        global_settings = self.project.global_settings
+        global_settings = self.request.global_settings
         
         # Measurement settings
         str_beam = "Beam: {0}\n".format(

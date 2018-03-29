@@ -13,6 +13,7 @@ __versio__ = "2.0"
 import logging
 import os
 from PyQt5 import uic, QtWidgets
+from modules.layer import Layer
 
 
 class LayerPropertiesDialog(QtWidgets.QDialog):
@@ -32,7 +33,37 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_layer_dialog.ui"),
                              self)
 
-        # self.ui.pushCreate.clicked.connect(self.__create_simulation)
-        # self.ui.pushCancel.clicked.connect(self.close)
+        self.ui.addElementButton.clicked.connect(self.__add_element)
+        self.ui.okButton.clicked.connect(self.__add_layer)
+        self.ui.cancelButton.clicked.connect(self.close)
 
         self.exec_()
+
+    def __add_layer(self):
+        name = self.ui.nameEdit.text()
+        # elements =
+        thickness = self.ui.thicknessEdit.text()
+        density = self.ui.densityEdit.text()
+        ion_stopping = self.ui.ionStoppingComboBox.currentText()
+        recoil_stopping = self.ui.recoilStoppingComboBox.currentText()
+        print(name)
+        print(thickness)
+        print(density)
+        print(ion_stopping)
+        print(recoil_stopping)
+        self.close()
+        # Layer(name, elements, )
+
+    def __add_element(self):
+        layout = QtWidgets.QHBoxLayout()
+        element = QtWidgets.QPushButton("Si")
+        isotope = QtWidgets.QComboBox()
+        amount = QtWidgets.QLineEdit("50")
+        layout.addWidget(element)
+        layout.addWidget(isotope)
+        layout.addWidget(amount)
+        # widget.addWidget(nappi)
+        self.ui.scrollAreaWidgetContents.layout().addLayout(layout)
+        print("toimii")
+
+

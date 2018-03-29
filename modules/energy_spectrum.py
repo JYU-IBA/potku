@@ -48,7 +48,7 @@ class EnergySpectrum:
             progress_bar: QtWidgets.QProgressBar for GUI (Null class object otherwise).
         '''
         self.__measurement = measurement
-        self.__global_settings = self.__measurement.project.global_settings
+        self.__global_settings = self.__measurement.request.global_settings
         self.__cut_files = cut_files
         self.__spectrum_width = spectrum_width
         self.__progress_bar = progress_bar

@@ -31,9 +31,9 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
-        <widget class="QCheckBox" name="useProjectSettingsValuesCheckBox">
+        <widget class="QCheckBox" name="useRequestSettingsValuesCheckBox">
          <property name="text">
-          <string>Use Project Setting Values (default)</string>
+          <string>Use Request Setting Values (default)</string>
          </property>
          <property name="checked">
           <bool>true</bool>
@@ -336,7 +336,7 @@
   </layout>
  </widget>
  <tabstops>
-  <tabstop>useProjectSettingsValuesCheckBox</tabstop>
+  <tabstop>useRequestSettingsValuesCheckBox</tabstop>
   <tabstop>OKButton</tabstop>
   <tabstop>cancelButton</tabstop>
   <tabstop>loadDepthProfileSettingsButton</tabstop>
@@ -349,7 +349,7 @@
  <resources/>
  <connections>
   <connection>
-   <sender>useProjectSettingsValuesCheckBox</sender>
+   <sender>useRequestSettingsValuesCheckBox</sender>
    <signal>toggled(bool)</signal>
    <receiver>depthProfileSettingsGroupBox</receiver>
    <slot>setDisabled(bool)</slot>

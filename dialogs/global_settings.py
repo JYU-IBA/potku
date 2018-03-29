@@ -47,8 +47,8 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         # Connect UI buttons
         self.ui.OKButton.clicked.connect(self.__accept_changes)
         self.ui.cancelButton.clicked.connect(self.close)
-        self.ui.loadProjectPathButton.clicked.connect(
-                                                  self.__change_project_directory)
+        self.ui.loadRequestPathButton.clicked.connect(
+                                                  self.__change_request_directory)
         self.ui.loadEffPathButton.clicked.connect(
                                               self.__change_efficiency_directory)
         buttons = self.ui.findChild(QtWidgets.QButtonGroup, "elementButtons")
@@ -62,7 +62,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     def __set_values(self):
         """Set settings values to dialog.
         """
-        self.ui.projectPathLineEdit.setText(self.settings.get_project_directory())
+        self.ui.requestPathLineEdit.setText(self.settings.get_request_directory())
         self.ui.lineEdit_eff_directory.setText(
                                        self.settings.get_efficiency_directory())
         for button in self.ui.groupBox_3.findChildren(QtWidgets.QPushButton):
@@ -127,7 +127,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     def __accept_changes(self):
         """Accept changed settings and save.
         """
-        self.settings.set_project_directory(self.ui.projectPathLineEdit.text())
+        self.settings.set_request_directory(self.ui.requestPathLineEdit.text())
         self.settings.set_efficiency_directory(
                                            self.ui.lineEdit_eff_directory.text())
         for button in self.ui.groupBox_3.findChildren(QtWidgets.QPushButton):
@@ -176,23 +176,19 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.settings.save_config()
         self.close()
         
-        
-    def __change_project_directory(self):
-        """Change default project directory.
+    def __change_request_directory(self):
+        """Change default request directory.
         """
-        folder = QtWidgets.QFileDialog.getExistingDirectory(self,
-            "Select default project directory",
-            directory=self.ui.projectPathLineEdit.text())
+        folder = QtWidgets.QFileDialog.getExistingDirectory(self, "Select default request directory",
+                                                            directory=self.ui.requestPathLineEdit.text())
         if folder:
-            self.ui.projectPathLineEdit.setText(folder)
-            
+            self.ui.requestPathLineEdit.setText(folder)
     
     def __change_efficiency_directory(self):
         """Change efficiency file directory.
         """
-        folder = QtWidgets.QFileDialog.getExistingDirectory(self,
-            "Select efficiency file directory",
-            directory=self.ui.lineEdit_eff_directory.text())
+        folder = QtWidgets.QFileDialog.getExistingDirectory(self, "Select efficiency file directory", 
+                                                            directory=self.ui.lineEdit_eff_directory.text())
         if folder:
             self.ui.lineEdit_eff_directory.setText(folder)
         

@@ -11,6 +11,7 @@ import matplotlib.patches as patches
 
 from dialogs.simulation.layer_properties import LayerPropertiesDialog
 from widgets.matplotlib.base import MatplotlibWidget
+from modules.layer import Layer
 
 class TargetCompositionWidget(MatplotlibWidget):
     """Matplotlib target composition widget. Using this widget, the user
@@ -103,10 +104,10 @@ class TargetCompositionWidget(MatplotlibWidget):
         self.mpl_toolbar.addSeparator()
 
         # Button for adding a new layer
-        self.__button_add_layer = QtWidgets.QToolButton(self)
-        self.__button_add_layer.clicked.connect(self.__add_layer)
-        self.__icon_manager.set_icon(self.__button_add_layer, "del.png") # TODO: Change icon!
-        self.mpl_toolbar.addWidget(self.__button_add_layer)
+        self.button_add_layer = QtWidgets.QToolButton(self)
+        self.button_add_layer.clicked.connect(lambda: self.add_layer())
+        self.__icon_manager.set_icon(self.button_add_layer, "del.png") # TODO: Change icon!
+        self.mpl_toolbar.addWidget(self.button_add_layer)
 
-    def __add_layer(self):
+    def add_layer(self):
         dialog = LayerPropertiesDialog()

@@ -38,11 +38,11 @@ class SimulationElementSelectionDialog(QtWidgets.QDialog):
     measurement (in matplotlib graph).
     """
 
-    def __init__(self, project):
+    def __init__(self, request):
         """Inits simulation elemenet selection dialog.
         """
         super().__init__()
-        self.element_colormap = project.global_settings.get_element_colors()
+        self.element_colormap = request.global_settings.get_element_colors()
         self.ui = uic.loadUi(join("ui_files", "ui_simulation_element_selection_dialog.ui"), self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
