@@ -15,7 +15,7 @@ import os
 from PyQt5 import uic, QtWidgets
 
 
-class SimulationNewDialog(QtWidgets.QDialog):
+class LayerPropertiesDialog(QtWidgets.QDialog):
     """Dialog creating a new simulation.
     """
 
@@ -32,16 +32,7 @@ class SimulationNewDialog(QtWidgets.QDialog):
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_layer_dialog.ui"),
                              self)
 
-        self.ui.pushCreate.clicked.connect(self.__create_simulation)
-        self.ui.pushCancel.clicked.connect(self.close)
+        # self.ui.pushCreate.clicked.connect(self.__create_simulation)
+        # self.ui.pushCancel.clicked.connect(self.close)
 
         self.exec_()
-
-    def __create_simulation(self):
-        self.name = self.ui.simulationNameLineEdit.text().replace(" ", "_")
-        # TODO: Remove replace above to allow spaces in project names.
-        # TODO: Get rid of print -> message window perhaps
-        if not self.name:
-            print("Project name required!")
-            return
-        self.close()
