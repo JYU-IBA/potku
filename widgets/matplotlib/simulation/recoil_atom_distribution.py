@@ -482,6 +482,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     x = event.xdata
                     y = event.ydata
                     self.add_point_on_click((x, y))
+                    i = line_info['ind'][0]
+                    self.drag_i = i + 1
         # elif event.button == 3:  # Right click
         #     contains, info = self.markers.contains(event)
         #     if contains:
