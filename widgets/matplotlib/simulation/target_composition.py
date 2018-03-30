@@ -9,7 +9,9 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 from PyQt5 import QtCore, QtWidgets
 import matplotlib.patches as patches
 
+from dialogs.simulation.layer_properties import LayerPropertiesDialog
 from widgets.matplotlib.base import MatplotlibWidget
+from modules.layer import Layer
 
 class TargetCompositionWidget(MatplotlibWidget):
     """Matplotlib target composition widget. Using this widget, the user
@@ -48,16 +50,16 @@ class TargetCompositionWidget(MatplotlibWidget):
         self.remove_axes_ticks()
         self.canvas.draw()
 
-    def add_layer(self):
-        """Adds a layer in the target composition.
-        """
-        layer = patches.Rectangle(
-                (0.0, 0.0),  # (x,y)
-                0.3,  # width
-                1.0,  # height
-            )
-        self.axes.add_patch(layer)
-        self.canvas.draw_idle()
+    # def add_layer(self):
+    #     """Adds a layer in the target composition.
+    #     """
+    #     layer = patches.Rectangle(
+    #             (0.0, 0.0),  # (x,y)
+    #             0.3,  # width
+    #             1.0,  # height
+    #         )
+    #     self.axes.add_patch(layer)
+    #     self.canvas.draw_idle()
 
 
     def __toggle_tool_drag(self):
@@ -101,10 +103,11 @@ class TargetCompositionWidget(MatplotlibWidget):
         # Make own buttons
         self.mpl_toolbar.addSeparator()
 
-        # Point removal button
         # Button for adding a new layer
-        self.__button_add_layer = QtWidgets.QToolButton(self)
-        # self.__button_add_layer.clicked.connect() # self.__add_layer())
-        self.__icon_manager.set_icon(self.__button_add_layer, "del.png")
-        # TODO: Icon
-        self.mpl_toolbar.addWidget(self.__button_add_layer)
+        self.button_add_layer = QtWidgets.QToolButton(self)
+        self.button_add_layer.clicked.connect(lambda: self.add_layer())
+        self.__icon_manager.set_icon(self.button_add_layer, "del.png") # TODO: Change icon!
+        self.mpl_toolbar.addWidget(self.button_add_layer)
+
+    def add_layer(self):
+        dialog = LayerPropertiesDialog()

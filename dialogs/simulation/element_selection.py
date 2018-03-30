@@ -29,8 +29,7 @@ __versio__ = "2.0"
 from os.path import join
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
 
-from dialogs.measurement.element_selection import ElementSelectionDialog
-from modules.element import Element
+from dialogs.element_selection import ElementSelectionDialog
 
 
 class SimulationElementSelectionDialog(QtWidgets.QDialog):
