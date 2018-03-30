@@ -29,7 +29,6 @@ __versio__ = "1.0"
 from modules.general_functions import hist, carbon_stopping
 from modules.general_functions import convert_mev_to_joule, convert_amu_to_kg
 from scipy import cos, sin, sqrt, pi
-
 import scipy.optimize as optimize
 from scipy.special import erf
 from numpy import array, linspace

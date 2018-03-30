@@ -423,25 +423,42 @@ class Potku(QtWidgets.QMainWindow):
             measurements: A list representing loadable measurements when importing
                           measurements to the request.
         """
+        # TODO: fix this for import_binary.py and import_measurement.py
         if measurements:
-            measurements_in_request_samples = measurements
+            samples_with_measurements = measurements
             load_data = True
         else:
-            measurements_in_request_samples = self.request.samples.get_measurements_files()
+            # a dict with the sample path as a key, and measurements in the value as a list
+            samples_with_measurements = self.request.samples.get_samples_and_measurements()
             load_data = False
         progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
         
-        count = len(measurements_in_request_samples)
+        count = len(samples_with_measurements)
         dirtyinteger = 0
-        for measurement_file in measurements_in_request_samples:
-            self.__add_new_tab("measurement", measurement_file, progress_bar,
-                               dirtyinteger, count, load_data=load_data)
-            dirtyinteger += 1
+        # This should be done for each sample
+        for sample_path, measurements in samples_with_measurements.items():
+            for measurement_file in measurements:
+                self.__add_new_tab("measurement", sample_path, measurement_file, progress_bar,
+                                   dirtyinteger, count, load_data=load_data)
+                dirtyinteger += 1
 
         self.statusbar.removeWidget(progress_bar)
         progress_bar.hide()
+
+    def load_request_samples(self):
+        """"Load sample files in the request.
+
+        Args:
+            samples: A list representing loadable sample when importing
+                          sample to the request.
+        """
+        sample_paths_in_request = self.request.get_samples_files()
+        for sample_path in sample_paths_in_request:
+            self.request.samples.add_sample_file(sample_path)
+        # TODO: update widget tree with the uploaded samples
+
 
     def load_request_simulations(self, simulations=[]):
         """Load simulation files in the request.
@@ -580,7 +597,8 @@ class Potku(QtWidgets.QMainWindow):
                                  "Request: {0}".format(self.request.get_name()))
             self.__initialize_top_items()
             self.settings.set_request_directory_last_open(folder)
-            
+
+            self.load_request_samples()
             self.load_request_measurements()
             self.load_request_simulations()
             self.__remove_introduction_tab()
@@ -1047,7 +1065,6 @@ class Potku(QtWidgets.QMainWindow):
         except FileNotFoundError:
             QtWidgets.QMessageBox.question(self, "Not found", "There is no manual to be found!",
                                            QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-
 def main():
     """Main function
     """
