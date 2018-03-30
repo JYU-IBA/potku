@@ -23,24 +23,26 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         """Inits a layer dialog.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_layer_dialog.ui"),
-                                          self)
+        self.__ui = uic.loadUi(os.path.join("ui_files", "ui_layer_dialog.ui"),
+                               self)
+
 
         # Some border of widgets might be displaying red, because information
         # is missing. Remove the red border by reseting the style sheets, for
         # example when user changes the text in line edit.
-        self.ui.nameEdit.textChanged.connect(self.ui.nameEdit.setStyleSheet)
-        self.ui.thicknessEdit.textChanged.connect(
-            self.ui.thicknessEdit.setStyleSheet)
-        self.ui.densityEdit.textChanged.connect(
-            self.ui.densityEdit.setStyleSheet)
+        self.__ui.nameEdit.textChanged.connect(
+            lambda: self.__ui.nameEdit.setStyleSheet(""))
+        self.__ui.thicknessEdit.textChanged.connect(
+            lambda: self.__ui.thicknessEdit.setStyleSheet(""))
+        self.__ui.densityEdit.textChanged.connect(
+            lambda: self.__ui.densityEdit.setStyleSheet(""))
 
         # Connect buttons to events
-        self.ui.addElementButton.clicked.connect(self.__add_element_layout)
-        self.ui.okButton.clicked.connect(self.__add_layer)
-        self.ui.cancelButton.clicked.connect(self.close)
+        self.__ui.addElementButton.clicked.connect(self.__add_element_layout)
+        self.__ui.okButton.clicked.connect(self.__add_layer)
+        self.__ui.cancelButton.clicked.connect(self.close)
 
-        self.__elements = []
+        self.__element_layouts = []
 
         self.exec_()
 
@@ -62,28 +64,28 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         sum = 0
 
         # Check if 'nameEdit' is empty.
-        if not self.ui.nameEdit.text():
-            self.ui.nameEdit.setStyleSheet(failed_style)
+        if not self.__ui.nameEdit.text():
+            self.__ui.nameEdit.setStyleSheet(failed_style)
             empty_fields.append("Name")
 
         # Check if 'scrollArea' is empty (no elements).
-        if self.ui.scrollAreaWidgetContents.layout().isEmpty():
-            self.ui.scrollArea.setStyleSheet(failed_style)
+        if self.__ui.scrollAreaWidgetContents.layout().isEmpty():
+            self.__ui.scrollArea.setStyleSheet(failed_style)
             empty_fields.append("Elements")
 
         # Check if 'thicknessEdit' is empty.
-        if not self.ui.thicknessEdit.text():
-            self.ui.thicknessEdit.setStyleSheet(failed_style)
+        if not self.__ui.thicknessEdit.text():
+            self.__ui.thicknessEdit.setStyleSheet(failed_style)
             empty_fields.append("Thickness")
 
         # Check if 'densityEdit' is empty.
-        if not self.ui.densityEdit.text():
-            self.ui.densityEdit.setStyleSheet(failed_style)
+        if not self.__ui.densityEdit.text():
+            self.__ui.densityEdit.setStyleSheet(failed_style)
             empty_fields.append("Density")
 
         # Check that the element specific settings are okay.
         one_or_more_empty = False
-        for child in self.ui.scrollAreaWidgetContents.children():
+        for child in self.__ui.scrollAreaWidgetContents.children():
             if type(child) is QtWidgets.QPushButton:
                 if child.text() == "Select":
                     child.setStyleSheet(failed_style)
@@ -109,31 +111,40 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             return False
         return True # If everything is ok, return true.
 
+        # TODO: Check if negative or zero values are given.
+
     def __accept_settings(self):
         """Function for accepting the current settings and closing the dialog
         window.
         """
-        name = self.ui.nameEdit.text()
-        thickness = self.ui.thicknessEdit.text()
-        density = self.ui.densityEdit.text()
-        ion_stopping = self.ui.ionStoppingComboBox.currentText()
-        recoil_stopping = self.ui.recoilStoppingComboBox.currentText()
-        children = self.ui.scrollAreaWidgetContents.children()
+        name = self.__ui.nameEdit.text()
+        thickness = self.__ui.thicknessEdit.text()
+        density = self.__ui.densityEdit.text()
+        ion_stopping = self.__ui.ionStoppingComboBox.currentText()
+        recoil_stopping = self.__ui.recoilStoppingComboBox.currentText()
+        elements = []
+        children = self.__ui.scrollAreaWidgetContents.children()
+
+
+        # TODO: Explain the following. Maybe better implementation?
         i = 1
         while (i < len(children)):
             element = []
             element.append(children[i].text())
             i += 1
-            element.append(int(" ".split(children[i].currentText())[0]))
+            element.append(int(children[i].currentText().split(" ")[0]))
+            # TODO: Some elements don't have isotope values. Figure out why.
             i += 1
             element.append(float(children[i].text()) / 100)
-            i += 3
+            elements.append(element)
+            i += 2
 
         # TODO: Create a new Layer object
         # Layer(...)
         self.close()
 
     def __missing_information_message(self, empty_fields):
+        # TODO: Add docstring.
         fields = ""
         for field in empty_fields:
             fields += "  • " + field + "\n"
@@ -144,16 +155,19 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def __sum_unequals_100_message(self, sum):
+        # TODO: Add docstring.
         QtWidgets.QMessageBox.critical(self.parent(),
             "Sum of elements doesn't equal 100%",
             "Sum of elements doesn't equal 100%. Currently the sum equals " +
             str(sum) + "%.", QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def __add_element_layout(self):
-        self.ui.scrollArea.setStyleSheet("")
-        self.__elements.append(ElementLayout(self.ui.scrollAreaWidgetContents))
+        # TODO: Add docstring.
+        self.__ui.scrollArea.setStyleSheet("")
+        self.__element_layouts.append(ElementLayout(self.__ui.scrollAreaWidgetContents))
 
 class ElementLayout(QtWidgets.QHBoxLayout):
+    # TODO: Add docstring and more comments.
 
     def __init__(self, parent):
 
@@ -171,7 +185,7 @@ class ElementLayout(QtWidgets.QHBoxLayout):
         self.amount = QtWidgets.QLineEdit()
         self.amount.setFixedWidth(76)
         self.amount.setEnabled(False)
-        self.amount.textChanged.connect(self.amount.setStyleSheet)
+        self.amount.textChanged.connect(lambda: self.amount.setStyleSheet(""))
 
         self.delete_button = QtWidgets.QPushButton("X")
         self.delete_button.setFixedWidth(28)
@@ -188,6 +202,7 @@ class ElementLayout(QtWidgets.QHBoxLayout):
         parent.layout().addLayout(self)
 
     def __delete_element_layout(self):
+        # TODO: Add docstring.
         self.element.deleteLater()
         self.isotope.deleteLater()
         self.amount.deleteLater()
@@ -195,6 +210,7 @@ class ElementLayout(QtWidgets.QHBoxLayout):
         self.deleteLater()
 
     def __select_element(self, button):
+        # TODO: Add docstring.
         dialog = ElementSelectionDialog()
 
         if dialog.element:
@@ -205,8 +221,7 @@ class ElementLayout(QtWidgets.QHBoxLayout):
             self.amount.setEnabled(True)
 
     def __load_isotopes(self):
+        # TODO: Change the path.
         masses = Masses("/home/severij/Code/potku/external/Potku-data/masses.dat")
-        # standard_mass = masses.get_standard_isotope(self.element)
-        # standard_mass_label
         masses.load_isotopes(self.element.text(), self.isotope, None)
 
