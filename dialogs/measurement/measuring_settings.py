@@ -32,7 +32,7 @@ from os.path import join
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
 
 from dialogs.measurement.calibration import CalibrationDialog
-from dialogs.measurement.element_selection import ElementSelectionDialog
+from dialogs.element_selection import ElementSelectionDialog
 from modules.calibration_parameters import CalibrationParameters
 from modules.depth_profile_settings import DepthProfileSettings
 from modules.general_functions import open_file_dialog

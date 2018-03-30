@@ -33,7 +33,7 @@ from modules.calibration_parameters import CalibrationParameters
 from modules.general_functions import open_file_dialog, save_file_dialog
 from modules.measuring_settings import MeasuringSettings
 from modules.input_validator import InputValidator
-from dialogs.measurement.element_selection import ElementSelectionDialog
+from dialogs.element_selection import ElementSelectionDialog
 from dialogs.measurement.calibration import CalibrationDialog
 
 class MeasurementUnitSettings(QtWidgets.QDialog):
