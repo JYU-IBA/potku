@@ -1,13 +1,14 @@
 # coding=utf-8
 """
 Created on 30.3.2018
-Edited on 30.3.2018
+Edited on 31.3.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
 import os
 from modules.measurement import Measurements
+from modules.simulation import Simulations
 
 
 class Samples:
@@ -24,6 +25,7 @@ class Samples:
         """
         self.request = request
         self.measurements = Measurements(self.request)
+        self.simulations = Simulations(self.request)
         self.samples = []
 
     def add_sample_file(self, sample_path):
@@ -47,6 +49,18 @@ class Samples:
         for sample in self.samples:
             all_samples_and_measurements[sample.path] = sample.get_measurements_files()
         return all_samples_and_measurements
+
+    def get_samples_and_simulations(self):
+        """
+        Collects all the samples' paths and the simulation files under them into a dict.
+
+        Return:
+            A dictionary containing samples and their simulations.
+        """
+        all_samples_and_simulations = {}
+        for sample in self.samples:
+            all_samples_and_simulations[sample.path] = sample.get_simulation_files()
+        return all_samples_and_simulations
 
 
 class Sample:
@@ -79,4 +93,15 @@ class Sample:
         return [f for f in os.listdir(self.path)
                 if os.path.isfile(os.path.join(self.path, f)) and
                 os.path.splitext(f)[1] == ".asc" and
+                os.stat(os.path.join(self.path, f)).st_size]  # Do not load empty files.
+
+    def get_simulation_files(self):
+        """Get simulation files inside request folder.
+
+        Return:
+            A list of simulation file names.
+        """
+        return [f for f in os.listdir(self.path)
+                if os.path.isfile(os.path.join(self.path, f)) and
+                os.path.splitext(f)[1] == ".sim" and
                 os.stat(os.path.join(self.path, f)).st_size]  # Do not load empty files.

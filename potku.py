@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 29.3.2018
+Updated on 31.3.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -25,9 +25,14 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+__version__ = "1.0"
 
-import gc, os, shutil, sys, platform, subprocess
+import gc
+import os
+import shutil
+import sys
+import platform
+import subprocess
 from datetime import datetime, timedelta
 from PyQt5 import QtWidgets, QtCore, uic
 
@@ -362,7 +367,7 @@ class Potku(QtWidgets.QMainWindow):
             If not given, sets the frame visible or hidden depending its 
             previous state.
         """
-        if enable_hide != None:
+        if enable_hide is not None:
             self.panel_shown = enable_hide
         else:
             self.panel_shown = not self.panel_shown    
@@ -437,7 +442,6 @@ class Potku(QtWidgets.QMainWindow):
         
         count = len(samples_with_measurements)
         dirtyinteger = 0
-        # This should be done for each sample
         for sample_path, measurements in samples_with_measurements.items():
             for measurement_file in measurements:
                 self.__add_new_tab("measurement", measurement_file, sample_path, progress_bar,
@@ -449,16 +453,11 @@ class Potku(QtWidgets.QMainWindow):
 
     def load_request_samples(self):
         """"Load sample files in the request.
-
-        Args:
-            samples: A list representing loadable sample when importing
-                          sample to the request.
         """
         sample_paths_in_request = self.request.get_samples_files()
         for sample_path in sample_paths_in_request:
             self.request.samples.add_sample_file(sample_path)
         # TODO: update widget tree with the uploaded samples
-
 
     def load_request_simulations(self, simulations=[]):
         """Load simulation files in the request.
@@ -468,21 +467,22 @@ class Potku(QtWidgets.QMainWindow):
                           simulation to the request.
         """
         if simulations:
-            simulations_in_request = simulations
+            samples_with_measurements = simulations
             load_data = True
         else:
-            simulations_in_request = self.request.get_simulation_files()
+            samples_with_measurements = self.request.samples.get_samples_and_simulations()
             load_data = False
         progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
 
-        count = len(simulations_in_request)
+        count = len(samples_with_measurements)
         dirtyinteger = 0
-        for simulation_file in simulations_in_request:
-            self.__add_new_tab("simulation", simulation_file, progress_bar,
-                               dirtyinteger, count, load_data=load_data)
-            dirtyinteger += 1
+        for sample_path, simulations in samples_with_measurements.items():
+            for simulation_file in simulations:
+                self.__add_new_tab("simulation", simulation_file, sample_path, progress_bar,
+                                   dirtyinteger, count, load_data=load_data)
+                dirtyinteger += 1
 
         self.statusbar.removeWidget(progress_bar)
         progress_bar.hide()
@@ -490,7 +490,7 @@ class Potku(QtWidgets.QMainWindow):
     def make_new_request(self):
         """Opens a dialog for creating a new request.
         """
-        dialog = RequestNewDialog(self)  # The directory for request is already cretaed after this
+        dialog = RequestNewDialog(self)  # The directory for request is already created after this
 
         # TODO: regex check for directory. I.E. do not allow asd/asd
         if dialog.directory:
@@ -541,6 +541,7 @@ class Potku(QtWidgets.QMainWindow):
             self.statusbar.addWidget(progress_bar, 1)
             progress_bar.show()
 
+            # TODO: The sample should be asked from the user.
             name = "Sample"
             sample_path = os.path.join(self.request.directory, name)
             self.request.samples.add_sample_file(sample_path)
@@ -569,8 +570,13 @@ class Potku(QtWidgets.QMainWindow):
         self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
 
-            #self.__add_new_tab("simulation", filename, progress_bar, load_data=False)
-        self.__add_new_tab("simulation", "tiedosto", progress_bar, load_data=False)
+        # self.__add_new_tab("simulation", filename, progress_bar, load_data=False)
+        # self.__add_new_tab("simulation", "tiedosto", progress_bar, load_data=False)
+        name = "Sample1"
+        sample_path = os.path.join(self.request.directory, name)
+        self.request.samples.add_sample_file(sample_path)
+
+        self.__add_new_tab("simulation", "tiedosto", sample_path, progress_bar, load_data=False)
         self.__remove_info_tab()
         self.statusbar.removeWidget(progress_bar)
         progress_bar.hide()
@@ -685,10 +691,10 @@ class Potku(QtWidgets.QMainWindow):
             self.__change_tab_icon(tree_item, "folder_open.svg")
         else:
             self.__change_tab_icon(tree_item, "folder_locked.svg")
-        #self.ui.treeWidget.addTopLevelItem(tree_item)
+        # self.ui.treeWidget.addTopLevelItem(tree_item)
         self.simulations_item.addChild(tree_item)
 
-    def __add_new_tab(self, type, filename, sample_path="", progress_bar=None,
+    def __add_new_tab(self, tab_type, filename, sample_path, progress_bar=None,
                       file_current=0, file_count=1, load_data=False):
         """Add new tab into TabWidget. TODO: Simulation included. Should be changed.
         
@@ -696,7 +702,7 @@ class Potku(QtWidgets.QMainWindow):
         said tab.
         
         Args:
-            type: Either "measurement" or "simulation".
+            tab_type: Either "measurement" or "simulation".
             filename: A string representing measurement file.
             sample_path: Path of the sample under which the measurement or simulation is put.
             progress_bar: A QtWidgets.QProgressBar to be updated.
@@ -711,13 +717,11 @@ class Potku(QtWidgets.QMainWindow):
             progress_bar.setValue((100 / file_count) * file_current)
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
 
-        if type == "measurement":
-            measurement = self.request.samples.measurements.add_measurement_file(sample_path, filename,
-                                                                         self.tab_id)
+        if tab_type == "measurement":
+            measurement = self.request.samples.measurements.add_measurement_file(sample_path, filename, self.tab_id)
             if measurement:  # TODO: Finish this (load_data)
                 tab = MeasurementTabWidget(self.tab_id, measurement,
                                            self.masses, self.icon_manager)
-                #self.connect(tab, QtCore.SIGNAL("issueMaster"), self.__master_issue_commands)
                 tab.issueMaster.connect(self.__master_issue_commands)
 
                 tab.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -741,16 +745,13 @@ class Potku(QtWidgets.QMainWindow):
                 self.__add_measurement_to_tree(measurement.measurement_name, load_data)
                 self.tab_id += 1
 
-        if type == "simulation":
+        if tab_type == "simulation":
 
-            simulation = self.request.simulations.add_simulation_file(filename, self.tab_id)
+            simulation = self.request.samples.simulations.add_simulation_file(sample_path, filename, self.tab_id)
 
             if simulation:  # TODO: Finish this (load_data)
                 tab = SimulationTabWidget(self.request, self.tab_id, simulation,
                                           self.masses, self.icon_manager)
-                # self.connect(tab, QtCore.SIGNAL("issueMaster"), self.__master_issue_commands)
-                tab.issueMaster.connect(self.__master_issue_commands)
-
                 tab.setAttribute(QtCore.Qt.WA_DeleteOnClose)
                 self.tab_widgets[self.tab_id] = tab
                 tab.add_log()
@@ -921,8 +922,8 @@ class Potku(QtWidgets.QMainWindow):
                 tree_item = None
                 root = self.treeWidget.invisibleRootItem()
                 root_child_count = root.childCount()
-                for i in range(root_child_count):
-                    item = root.child(i)
+                for j in range(root_child_count):
+                    item = root.child(j)
                     if item.tab_id == tab.tab_id:
                         tree_item = item
                         break
@@ -952,11 +953,9 @@ class Potku(QtWidgets.QMainWindow):
         time_end = datetime.now()
         time_duration = (time_end - time_start).seconds
         time_str = timedelta(seconds=time_duration)
-        QtWidgets.QMessageBox.question(self,
-                "Notification",
-                "Master measurement's actions have been issued to slaves. " + \
-                "\nElapsed time: {0}".format(time_str),
-                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+        QtWidgets.QMessageBox.question(self, "Notification", "Master measurement's actions have been issued to slaves. "
+                                       + "\nElapsed time: {0}".format(time_str), QtWidgets.QMessageBox.Ok,
+                                       QtWidgets.QMessageBox.Ok)
 
     def __open_info_tab(self):
         """Opens an info tab to the QTabWidget 'tab_measurements' that guides the 
@@ -1065,6 +1064,8 @@ class Potku(QtWidgets.QMainWindow):
         except FileNotFoundError:
             QtWidgets.QMessageBox.question(self, "Not found", "There is no manual to be found!",
                                            QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+
+
 def main():
     """Main function
     """

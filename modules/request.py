@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 30.3.2018
+Updated on 31.3.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -26,7 +26,8 @@ along with this program (file named 'LICENCE').
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-import configparser, logging
+import configparser
+import logging
 from datetime import datetime
 import os
 from modules.sample import Samples
@@ -59,7 +60,7 @@ class Request:
         self.statusbar = statusbar
         self.samples = Samples(self)
         # self.measurements = Measurements(self)
-        self.simulations = Simulations(self)
+        # self.simulations = Simulations(self)
         self.__tabs = tabs
         self.__master_measurement = None
         self.__non_slaves = []  # List of measurements that aren't slaves. Easier
@@ -138,15 +139,6 @@ class Request:
             if os.path.isdir(os.path.join(self.directory, item)) and item.startswith("Sample"):
                 samples.append(os.path.join(self.directory, item))
         return samples
-
-    def get_simulation_files(self):
-        """Get simulation files inside request folder.
-        """
-        # TODO: Possible for different formats (such as binary data .lst)
-        return [f for f in os.listdir(self.directory)
-                if os.path.isfile(os.path.join(self.directory, f)) and
-                os.path.splitext(f)[1] == ".sim" and
-                os.stat(os.path.join(self.directory, f)).st_size]  # Do not load empty files.
 
     def get_measurement_tabs(self, exclude_id=-1):
         """Get measurement tabs of a request.

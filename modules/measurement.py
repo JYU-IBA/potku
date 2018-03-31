@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 26.8.2013
+Updated on 31.3.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -79,12 +79,7 @@ class Measurements:
         measurement_filename = os.path.split(measurement_file)[1]
         measurement_name = os.path.splitext(measurement_filename)
         new_file = os.path.join(sample_path, measurement_filename)
-        # print("-------------------------------------------------")
-        # print(measurement_file)
-        # print(os.path.split(measurement_file))
-        # print(self.request.directory)
-        # print(new_file)
-        # print()
+
         file_directory, file_name = os.path.split(measurement_file)
         try:
             if file_directory != self.request.directory and file_directory:
@@ -93,7 +88,7 @@ class Measurements:
                     file_name = "{0}_{1}{2}".format(measurement_name[0],
                                                     dirtyinteger,
                                                     measurement_name[1])
-                    new_file = os.path.join(self.request.directory, file_name)
+                    new_file = os.path.join(sample_path, file_name)
                     dirtyinteger += 1
                 shutil.copyfile(measurement_file, new_file)
                 file_directory, file_name = os.path.split(new_file)
@@ -105,9 +100,7 @@ class Measurements:
                 if self.measurements[key].measurement_file == file_name:
                     return measurement  # measurement = None
             measurement = Measurement(new_file, self.request, tab_id)
-            # measurement.load_data()
             self.measurements[tab_id] = measurement
-            # self.request.samples.measurements.measurements[tab_id] = measurement
         except:
             log = "Something went wrong while adding a new measurement."
             logging.getLogger("request").critical(log)

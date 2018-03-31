@@ -1,31 +1,28 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 26.3.2018
+Updated on 31.3.2018
 
 #TODO Description of Potku and copyright
-#TODO Lisence
+#TODO Licence
 
 Simulation.py runs the MCERD simulation with a command file.
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
-__versio__ = "2.0"
+__version__ = "2.0"
 
 import os
 import platform
 import subprocess
 import logging
 import sys
-from modules.general_functions import md5_for_file
 from modules.settings import Settings
 import shutil
-# from Modules.Null import Null
-# from errno import EEXIST
+
 
 class Simulations:
     """Simulations class handles multiple simulations.
     """
-
     def __init__(self, request):
         """Inits simulations class.
         Args:
@@ -52,21 +49,21 @@ class Simulations:
             return None
         return self.simulations[key]
 
-    def add_simulation_file(self, simulation_file, tab_id):
+    def add_simulation_file(self, sample_path, simulation_file, tab_id):
         """Add a new file to simulations.
 
         Args:
+            sample_path: Path to the sample under which the simulation is put.
             simulation_file: String representing file containing simulation data.
             tab_id: Integer representing identifier for simulation's tab.
 
         Return:
             Returns new simulation or None if it wasn't added
         """
-        print(simulation_file)
         simulation = None
         simulation_filename = os.path.split(simulation_file)[1]
         simulation_name = os.path.splitext(simulation_filename)
-        new_file = os.path.join(self.request.directory, simulation_filename)
+        new_file = os.path.join(sample_path, simulation_filename)
 
         file_directory, file_name = os.path.split(simulation_file)
         try:
@@ -76,20 +73,18 @@ class Simulations:
                     file_name = "{0}_{1}{2}".format(simulation_name[0],
                                                     dirtyinteger,
                                                     simulation_name[1])
-                    new_file = os.path.join(self.request.directory, file_name)
+                    new_file = os.path.join(sample_path, file_name)
                     dirtyinteger += 1
                 shutil.copyfile(simulation_file, new_file)
                 file_directory, file_name = os.path.split(new_file)
 
-                log = "Added new simulation {0} to the request.".format(
-                    file_name)
+                log = "Added new simulation {0} to the request.".format(file_name)
                 logging.getLogger("request").info(log)
             keys = self.simulations.keys()
             for key in keys:
                 if self.simulations[key].simulation_file == file_name:
                     return simulation  # measurement = None
             simulation = Simulation(new_file, self.request, tab_id)
-            # measurement.load_data()
             self.simulations[tab_id] = simulation
         except:
             log = "Something went wrong while adding a new simulation."
@@ -164,6 +159,7 @@ class Simulations:
 #
 #     # TODO: Function for removing simulation
 
+
 class Simulation:
     """Simulation class handles the simulation data."""
 
@@ -202,7 +198,6 @@ class Simulation:
         self.callMCERD = None
         self.call_get_espe = None
 
-
     def remove_by_tab_id(self, tab_id):
         """Removes simulation from tabs by tab id
 
@@ -217,13 +212,13 @@ class Simulation:
 
         self.simulations = remove_key(self.simulations, tab_id)
 
-
     def __make_directories(self, directory):
         if not os.path.exists(directory):
             os.makedirs(directory)
             # log = "Created a directory {0}.".format(directory)
             # logging.getLogger("request").info(log)
 
+    # TODO: Fix this according to simulation (now copied from measurement).
     def load_data(self):
         """Loads measurement data from filepath
         """
@@ -237,7 +232,7 @@ class Simulation:
             if extension == ".asc":
                 with open("{0}{1}".format(self.directory, extension)) as fp:
                     for line in fp:
-                        n += 1 #Event number
+                        n += 1  # Event number
                         # TODO: Figure good way to split into columns. REGEX too slow.
                         split = line.split()
                         split_len = len(split)
@@ -287,7 +282,6 @@ class Simulation:
 #                             " > " + output_file
 
 
-
 class CallMCERD(object):
     """Handles calling the external program MCERD to run the simulation."""
 
@@ -319,7 +313,6 @@ class CallMCERD(object):
 
 class CallGetEspe(object):
     """Handles calling the external program get_espe to generate energy spectra coordinates."""
-
     def __init__(self, command_file_path):
         """Inits CallGetEspe.
 
