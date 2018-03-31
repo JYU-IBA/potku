@@ -440,7 +440,7 @@ class Potku(QtWidgets.QMainWindow):
         # This should be done for each sample
         for sample_path, measurements in samples_with_measurements.items():
             for measurement_file in measurements:
-                self.__add_new_tab("measurement", sample_path, measurement_file, progress_bar,
+                self.__add_new_tab("measurement", measurement_file, sample_path, progress_bar,
                                    dirtyinteger, count, load_data=load_data)
                 dirtyinteger += 1
 
@@ -545,7 +545,7 @@ class Potku(QtWidgets.QMainWindow):
             sample_path = os.path.join(self.request.directory, name)
             self.request.samples.add_sample_file(sample_path)
 
-            self.__add_new_tab("measurement", sample_path, filename, progress_bar, load_data=True)
+            self.__add_new_tab("measurement", filename, sample_path, progress_bar, load_data=True)
             self.__remove_info_tab()
             self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
@@ -688,7 +688,7 @@ class Potku(QtWidgets.QMainWindow):
         #self.ui.treeWidget.addTopLevelItem(tree_item)
         self.simulations_item.addChild(tree_item)
 
-    def __add_new_tab(self, type, sample_path, filename, progress_bar=None,
+    def __add_new_tab(self, type, filename, sample_path="", progress_bar=None,
                       file_current=0, file_count=1, load_data=False):
         """Add new tab into TabWidget. TODO: Simulation included. Should be changed.
         
@@ -697,8 +697,8 @@ class Potku(QtWidgets.QMainWindow):
         
         Args:
             type: Either "measurement" or "simulation".
-            sample_path: Path of the sample under which the measurement or simulation is put.
             filename: A string representing measurement file.
+            sample_path: Path of the sample under which the measurement or simulation is put.
             progress_bar: A QtWidgets.QProgressBar to be updated.
             file_current: An integer representing which number is currently being
                           read. (for GUI)
