@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 31.3.2018
+Updated on 1.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -23,16 +23,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio " \
+             "\n Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import configparser
 import logging
 from datetime import datetime
 import os
 from modules.sample import Samples
-from modules.simulation import Simulations
 from modules.settings import Settings
+from modules.detector import Detector
 
 
 class Request:
@@ -59,8 +60,8 @@ class Request:
         self.masses = masses
         self.statusbar = statusbar
         self.samples = Samples(self)
-        # self.measurements = Measurements(self)
-        # self.simulations = Simulations(self)
+        # TODO: Make a better initialisation for this detector
+        self.detector = Detector(self.directory, "Detector", 40, [])
         self.__tabs = tabs
         self.__master_measurement = None
         self.__non_slaves = []  # List of measurements that aren't slaves. Easier

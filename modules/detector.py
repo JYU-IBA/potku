@@ -2,12 +2,11 @@
 # TODO: Add licence information
 """
 Created on 23.3.2018
-Updated on 27.3.2018
+Updated on 1.4.2018
 """
 
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen"
-__versio__ = "2.0"
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import json
 import os
@@ -15,21 +14,38 @@ import os
 from modules.foil import CircularFoil, RectangularFoil
 from modules.layer import Layer
 
+
 class Detector:
 
-    __slots__ = "name", "angle", "foils"
+    # request maybe only temporary parameter
+    __slots__ = "request_path", "name", "angle", "foils"
 
-    def __init__(self, name, angle, foils):
+    def __init__(self, request_path, name, angle, foils):
         """Initialize a detector.
 
         Args:
+            request_path: Request in which the detector belongs to.
+            name: Name of the detector.
             angle: Detector angle.
             foils: Detector foils.
 
         """
+        self.request_path = request_path  # With this we get the path of the folder where the .json file needs to go.
         self.name = name
         self.angle = angle
         self.foils = foils
+
+        # This is here only for testing that when creating a request and detector, a file is created that should contain
+        # some information about the detector, if there is not one yet.
+        # TODO: This needs to be more specific.
+        # TODO: In the future, when opening a request, this should check whether there is a .json file in the directory
+        file_name = os.path.join(self.request_path, self.name) + ".json"
+        try:
+            file = open(file_name, "r")
+            print(file.readlines())
+        except IOError:
+            file = open(file_name, "w")
+            file.write("This is a detector.")
 
     @classmethod
     def from_file(cls, file_path):
@@ -68,8 +84,7 @@ class Detector:
             else:
                 raise json.JSONDecodeError
 
-        return cls(name, angle, foils)
-
+        return cls(file_path, name, angle, foils)
 
 
 class ToFDetector(Detector):
@@ -82,7 +97,6 @@ class ToFDetector(Detector):
 
         """
         Detector.__init__(name, angle, foils)
-
 
 
 # TODO: Add other detector types (GAS, SSD).
