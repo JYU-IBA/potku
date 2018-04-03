@@ -5,18 +5,16 @@ Updated on 28.3.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
-from matplotlib import cm
-from matplotlib.colors import LogNorm
-import matplotlib.lines as lines
-from PyQt5 import QtCore, QtWidgets, QtGui
+import numpy.random
+from PyQt5 import QtCore, QtWidgets
+from matplotlib.widgets import RectangleSelector
 
 from widgets.matplotlib.base import MatplotlibWidget
-from matplotlib.widgets import RectangleSelector, TextBox
-import numpy.random
 
 
 class Point:
     def __init__(self, xy):
+        # TODO: Precision
         self._x = xy[0]
         self._y = xy[1]
 
@@ -357,6 +355,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         # TODO: Change locale to use dots instead of commas as decimal points
         # TODO: Set sensible minimum and maximum values
+        # TODO: New buttons aren't displayed in the overflow menu
         # Point x coordinate text box
         self.x_coordinate_box = QtWidgets.QDoubleSpinBox(self)
         self.x_coordinate_box.setToolTip("X coordinate of selected point")
@@ -651,29 +650,45 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             return
         # TODO: Refactor
 
-        x = self.x_coordinate_box.value()
-        leftmost_sel_point = self.selected_points[0]
-        left_neighbor = self.elements[0].get_left_neighbor(leftmost_sel_point)
-        right_neighbor = self.elements[0].get_right_neighbor(leftmost_sel_point)
+        leftmost_drag_point = self.dragged_points[0]
+        left_neighbor = self.elements[0].get_left_neighbor(leftmost_drag_point)
+        right_neighbor = self.elements[0].get_right_neighbor(leftmost_drag_point)
 
         # Can't move past neighbors. If tried, sets x coordinate to 0.01 from neighbor's x coordinate.
         if left_neighbor is None:
-            if x < right_neighbor.get_x():
-                self.update_location(event)
+            if event.xdata < right_neighbor.get_x():
+                leftmost_drag_point.set_x(event.xdata)
             # else:
             #     leftmost_sel_point.set_x(right_neighbor.get_x() - 0.01)
         elif right_neighbor is None:
-            if x > left_neighbor.get_x():
+            if event.xdata > left_neighbor.get_x():
                 self.update_location(event)
             # else:
             #     leftmost_sel_point.set_x(left_neighbor.get_x() + 0.01)
-        elif left_neighbor.get_x() < x < right_neighbor.get_x():
+        elif left_neighbor.get_x() < event.xdata < right_neighbor.get_x():
             self.update_location(event)
         # elif left_neighbor.get_x() >= x:
         #     leftmost_sel_point.set_x(left_neighbor.get_x() + 0.01)
         # elif right_neighbor.get_x() <= x:
         #     leftmost_sel_point.set_x(right_neighbor.get_x() + 0.01)
         self.update_plot()
+
+        # if left_neighbor is None:
+        #     if event.xdata < right_neighbor.get_x():
+        #         leftmost_drag_point.set_x(event.xdata)
+        #     else:
+        #         leftmost_drag_point.set_x(right_neighbor.get_x() - 0.01)
+        # elif right_neighbor is None:
+        #     if event.xdata > left_neighbor.get_x():
+        #         leftmost_drag_point.set_x(event.xdata)
+        #     else:
+        #         leftmost_drag_point.set_x(left_neighbor.get_x() + 0.01)
+        # elif left_neighbor.get_x() < event.xdata < right_neighbor.get_x():
+        #     leftmost_drag_point.set_x(event.xdata)
+        # elif left_neighbor.get_x() >= event.xdata:
+        #     leftmost_drag_point.set_x(left_neighbor.get_x() + 0.01)
+        # elif right_neighbor.get_x() <= event.xdata:
+        #     leftmost_drag_point.set_x(right_neighbor.get_x() + 0.01)
 
         # if self.drag_i == 0:
         #     if len(self.elements[0].get_points()) == 1:
