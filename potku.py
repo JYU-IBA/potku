@@ -541,9 +541,8 @@ class Potku(QtWidgets.QMainWindow):
             self.statusbar.addWidget(progress_bar, 1)
             progress_bar.show()
 
-            # TODO: The sample should be asked from the user.
-            name = "Sample"
-            sample_path = os.path.join(self.request.directory, name)
+            name_prefix = "Sample_"
+            sample_path = os.path.join(self.request.directory, name_prefix + self.request.get_running_int())
             self.request.samples.add_sample_file(sample_path)
 
             self.__add_new_tab("measurement", filename, sample_path, progress_bar, load_data=True)
@@ -572,8 +571,8 @@ class Potku(QtWidgets.QMainWindow):
 
         # self.__add_new_tab("simulation", filename, progress_bar, load_data=False)
         # self.__add_new_tab("simulation", "tiedosto", progress_bar, load_data=False)
-        name = "Sample1"
-        sample_path = os.path.join(self.request.directory, name)
+        name_prefix = "Sample_"
+        sample_path = os.path.join(self.request.directory, name_prefix, self.request.get_running_int())
         self.request.samples.add_sample_file(sample_path)
 
         self.__add_new_tab("simulation", "tiedosto", sample_path, progress_bar, load_data=False)

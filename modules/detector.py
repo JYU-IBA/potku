@@ -2,7 +2,7 @@
 # TODO: Add licence information
 """
 Created on 23.3.2018
-Updated on 1.4.2018
+Updated on 4.4.2018
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
@@ -18,19 +18,19 @@ from modules.layer import Layer
 class Detector:
 
     # request maybe only temporary parameter
-    __slots__ = "request_path", "name", "angle", "foils"
+    __slots__ = "path", "name", "angle", "foils", "efficiencies", "efficiencies_path"
 
-    def __init__(self, request_path, name, angle, foils):
+    def __init__(self, path, name, angle, foils):
         """Initialize a detector.
 
         Args:
-            request_path: Request in which the detector belongs to.
+            path: Request in which the detector belongs to.
             name: Name of the detector.
             angle: Detector angle.
             foils: Detector foils.
 
         """
-        self.request_path = request_path  # With this we get the path of the folder where the .json file needs to go.
+        self.path = path  # With this we get the path of the folder where the .json file needs to go.
         self.name = name
         self.angle = angle
         self.foils = foils
@@ -39,13 +39,19 @@ class Detector:
         # some information about the detector, if there is not one yet.
         # TODO: This needs to be more specific.
         # TODO: In the future, when opening a request, this should check whether there is a .json file in the directory
-        file_name = os.path.join(self.request_path, self.name) + ".json"
+        file_name = os.path.join(self.path, self.name) + ".detector"
         try:
             file = open(file_name, "r")
             print(file.readlines())
         except IOError:
             file = open(file_name, "w")
-            file.write("This is a detector.")
+            file.write("This is a detector in json format.")
+
+        self.efficiencies = []
+        self.efficiencies_path = os.path.join(self.path, "Efficiency_files")
+
+        if not os.path.exists(self.efficiencies_path):
+            os.makedirs(self.efficiencies_path)
 
     @classmethod
     def from_file(cls, file_path):

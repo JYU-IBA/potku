@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 1.4.2018
+Updated on 4.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -34,6 +34,7 @@ import os
 from modules.sample import Samples
 from modules.settings import Settings
 from modules.detector import Detector
+import re
 
 
 class Request:
@@ -60,15 +61,26 @@ class Request:
         self.masses = masses
         self.statusbar = statusbar
         self.samples = Samples(self)
-        # TODO: Make a better initialisation for this detector
-        self.detector = Detector(self.directory, "Detector", 40, [])
+
         self.__tabs = tabs
         self.__master_measurement = None
         self.__non_slaves = []  # List of measurements that aren't slaves. Easier
-        
+        # This is used to number all the samples e.g. Sample-01, Sample-02.optional_name,...
+        # TODO: when loading an existing request, make sure to change this to what is the biggest number in samples.
+        self._running_int = 1
+
         # Check folder exists and make request file there.
         if not os.path.exists(directory):
             os.makedirs(directory)
+
+        # TODO: Make a better initialisation for this detector
+        self.default_folder = os.path.join(self.directory, "Default")
+        if not os.path.exists(self.default_folder):
+            os.makedirs(self.default_folder)  # Create a Default folder
+
+        self.default_detector_folder = os.path.join(self.default_folder, "Detector")
+
+        self.detector = Detector(self.default_folder, "Detector", 40, [])
             
         self.__set_request_logger()
         
@@ -137,9 +149,24 @@ class Request:
         """
         samples = []
         for item in os.listdir(self.directory):
-            if os.path.isdir(os.path.join(self.directory, item)) and item.startswith("Sample"):
+            if os.path.isdir(os.path.join(self.directory, item)) and item.startswith("Sample-"):
                 samples.append(os.path.join(self.directory, item))
+                # It is presumed that the sample numbers are of format '01', '02',...,'10', '11',...
+                match_object = re.search("\d", item)
+                if match_object:
+                    number_str = item[match_object.start()]
+                    if  number_str == "0":
+                        self._running_int = item[match_object.start() + 1]
+                    else:
+                        self._running_int = item[match_object.start():match_object.start() + 2]
         return samples
+
+    def get_running_int(self):
+        formated_number_str = str(self._running_int).zfill(2)
+        return formated_number_str
+
+    def increase_running_int_by_1(self):
+        self._running_int += 1
 
     def get_measurement_tabs(self, exclude_id=-1):
         """Get measurement tabs of a request.

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 30.3.2018
-Edited on 31.3.2018
+Edited on 4.4.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
@@ -28,15 +28,17 @@ class Samples:
         self.simulations = Simulations(self.request)
         self.samples = []
 
-    def add_sample_file(self, sample_path):
+    def add_sample_file(self, sample_path, name):
         """
         Create and add a Sample to the samples.
 
         Args:
             sample_path: The path of the sample to be added to the samples.
+            name: Optional name for the sample.
         """
-        sample = Sample(sample_path, self.request)
+        sample = Sample(sample_path, self.request, name)
         self.samples.append(sample)
+        self.request.increase_running_int_by_1()
 
     def get_samples_and_measurements(self):
         """
@@ -68,13 +70,14 @@ class Sample:
     Class for a sample.
     """
 
-    def __init__(self, path, request):
+    def __init__(self, path, request, name=""):
         """
         Initialize the Sample.
 
         Args:
             path: Path of the sample
             request: Which request the sample belongs to.
+            name: Optional name for the sample.
         """
         self.path = path
         self.measurements = Measurements(request)

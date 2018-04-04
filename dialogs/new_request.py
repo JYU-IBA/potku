@@ -2,7 +2,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 3.6.2013
+Updated on 4.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -24,8 +24,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio" \
+             "\n Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import logging
 import os
@@ -89,7 +90,8 @@ class RequestNewDialog(QtWidgets.QDialog):
             print("Request name required!")
             return
         try:
-            directory = os.path.join(self.folder, self.name.replace(" ", "_"))
+            # Adding .Potku gives all requests the same ending.
+            directory = os.path.join(self.folder, self.name.replace(" ", "_")) + ".Potku"
             if not os.path.exists(directory):
                 os.makedirs(directory)
                 self.directory = directory
