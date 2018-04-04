@@ -648,7 +648,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             return
         if not self.dragged_points:
             return
-        # TODO: Refactor
 
         leftmost_drag_point = self.dragged_points[0]
         left_neighbor = self.elements[0].get_left_neighbor(leftmost_drag_point)
