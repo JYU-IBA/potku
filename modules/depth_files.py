@@ -46,8 +46,10 @@ class DepthFiles(object):
         self.bin_dir = '%s%s%s' % ('external', os.sep, 'Potku-bin')
         self.command_win = 'cd ' + self.bin_dir + ' && tof_list.exe ' \
             + filepaths_str + ' | erd_depth.exe ' + outputpath + ' tof.in'
-        self.command_unix = 'cd ' + self.bin_dir + ' && ./tof_list ' \
-            + filepaths_str + ' | ./erd_depth ' + outputpath + ' tof.in'
+        self.command_linux = 'cd ' + self.bin_dir + ' && ./tof_list_linux ' \
+            + filepaths_str + ' | ./erd_depth_linux ' + outputpath + ' tof.in'
+        self.command_mac = 'cd ' + self.bin_dir + ' && ./tof_list_mac ' \
+            + filepaths_str + ' | ./erd_depth_mac ' + outputpath + ' tof.in'
    
    
     def create_depth_files(self):
@@ -57,9 +59,9 @@ class DepthFiles(object):
         if used_os == 'Windows':
             subprocess.call(self.command_win, shell=True)
         elif used_os == 'Linux':
-            subprocess.call(self.command_unix, shell=True)
+            subprocess.call(self.command_linux, shell=True)
         elif used_os == 'Darwin':
-            subprocess.call(self.command_unix, shell=True)
+            subprocess.call(self.command_mac, shell=True)
         else:
             print('It appears we do no support your OS.')
             
