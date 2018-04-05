@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 30.3.2018
-Edited on 4.4.2018
+Edited on 5.4.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
@@ -28,7 +28,7 @@ class Samples:
         self.simulations = Simulations(self.request)
         self.samples = []
 
-    def add_sample_file(self, sample_path, name):
+    def add_sample_file(self, sample_path, name=""):
         """
         Create and add a Sample to the samples.
 
@@ -38,7 +38,7 @@ class Samples:
         """
         sample = Sample(sample_path, self.request, name)
         self.samples.append(sample)
-        self.request.increase_running_int_by_1()
+        # self.request.increase_running_int_by_1()
 
     def get_samples_and_measurements(self):
         """
@@ -70,7 +70,7 @@ class Sample:
     Class for a sample.
     """
 
-    def __init__(self, path, request, name=""):
+    def __init__(self, path, request, name):
         """
         Initialize the Sample.
 

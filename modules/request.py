@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 4.4.2018
+Updated on 5.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -67,7 +67,7 @@ class Request:
         self.__non_slaves = []  # List of measurements that aren't slaves. Easier
         # This is used to number all the samples e.g. Sample-01, Sample-02.optional_name,...
         # TODO: when loading an existing request, make sure to change this to what is the biggest number in samples.
-        self._running_int = 1
+        self._running_int = 1  # TODO: This should maybe be saved into .request file?
 
         # Check folder exists and make request file there.
         if not os.path.exists(directory):
@@ -87,7 +87,10 @@ class Request:
         # Request file containing necessary information of the request.
         # If it exists, we assume old request is loaded.
         self.__request_information = configparser.ConfigParser()
-        self.request_file = os.path.join(directory, "{0}.proj".format(tmp_dirname))
+
+        # tmp_dirname has extra .potku in it, need to remove it for the .request file name
+        stripped_tmp_dirname = tmp_dirname.replace(".potku", "")
+        self.request_file = os.path.join(directory, "{0}.request".format(stripped_tmp_dirname))
         
         # Defaults
         self.__request_information.add_section("meta")
@@ -149,16 +152,16 @@ class Request:
         """
         samples = []
         for item in os.listdir(self.directory):
-            if os.path.isdir(os.path.join(self.directory, item)) and item.startswith("Sample-"):
+            if os.path.isdir(os.path.join(self.directory, item)) and item.startswith("Sample_"):
                 samples.append(os.path.join(self.directory, item))
                 # It is presumed that the sample numbers are of format '01', '02',...,'10', '11',...
                 match_object = re.search("\d", item)
                 if match_object:
                     number_str = item[match_object.start()]
                     if  number_str == "0":
-                        self._running_int = item[match_object.start() + 1]
+                        self._running_int = int(item[match_object.start() + 1])
                     else:
-                        self._running_int = item[match_object.start():match_object.start() + 2]
+                        self._running_int = int(item[match_object.start():match_object.start() + 2])
         return samples
 
     def get_running_int(self):
@@ -166,7 +169,7 @@ class Request:
         return formated_number_str
 
     def increase_running_int_by_1(self):
-        self._running_int += 1
+        self._running_int = self._running_int + 1
 
     def get_measurement_tabs(self, exclude_id=-1):
         """Get measurement tabs of a request.

@@ -2,7 +2,7 @@
 # TODO: Add licence information
 """
 Created on 23.3.2018
-Updated on 4.4.2018
+Updated on 5.4.2018
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
@@ -95,14 +95,14 @@ class Detector:
 
 class ToFDetector(Detector):
 
-    def __init__(self, name, angle, foils):
+    def __init__(self, path, name, angle, foils):
         """Initialize a Time-of-Flight detector.
 
         Args:
             angle: Detector angle
 
         """
-        Detector.__init__(name, angle, foils)
+        Detector.__init__(self, path, name, angle, foils)
 
 
 # TODO: Add other detector types (GAS, SSD).

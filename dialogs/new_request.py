@@ -2,7 +2,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 4.4.2018
+Updated on 5.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -91,7 +91,7 @@ class RequestNewDialog(QtWidgets.QDialog):
             return
         try:
             # Adding .Potku gives all requests the same ending.
-            directory = os.path.join(self.folder, self.name.replace(" ", "_")) + ".Potku"
+            directory = os.path.join(self.folder, self.name.replace(" ", "_")) + ".potku"
             if not os.path.exists(directory):
                 os.makedirs(directory)
                 self.directory = directory

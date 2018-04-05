@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 31.3.2018
+Updated on 5.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -457,6 +457,7 @@ class Potku(QtWidgets.QMainWindow):
         sample_paths_in_request = self.request.get_samples_files()
         for sample_path in sample_paths_in_request:
             self.request.samples.add_sample_file(sample_path)
+        self.request.increase_running_int_by_1()
         # TODO: update widget tree with the uploaded samples
 
     def load_request_simulations(self, simulations=[]):
@@ -544,6 +545,7 @@ class Potku(QtWidgets.QMainWindow):
             name_prefix = "Sample_"
             sample_path = os.path.join(self.request.directory, name_prefix + self.request.get_running_int())
             self.request.samples.add_sample_file(sample_path)
+            self.request.increase_running_int_by_1()
 
             self.__add_new_tab("measurement", filename, sample_path, progress_bar, load_data=True)
             self.__remove_info_tab()
@@ -572,7 +574,7 @@ class Potku(QtWidgets.QMainWindow):
         # self.__add_new_tab("simulation", filename, progress_bar, load_data=False)
         # self.__add_new_tab("simulation", "tiedosto", progress_bar, load_data=False)
         name_prefix = "Sample_"
-        sample_path = os.path.join(self.request.directory, name_prefix, self.request.get_running_int())
+        sample_path = os.path.join(self.request.directory, name_prefix + self.request.get_running_int())
         self.request.samples.add_sample_file(sample_path)
 
         self.__add_new_tab("simulation", "tiedosto", sample_path, progress_bar, load_data=False)
@@ -585,7 +587,7 @@ class Potku(QtWidgets.QMainWindow):
         """
         file = open_file_dialog(self,
                                 self.settings.get_request_directory_last_open(),
-                                "Open an existing request", "Request file (*.proj)")
+                                "Open an existing request", "Request file (*.request)")
         if file:
             self.__close_request()
             folder = os.path.split(file)[0]
