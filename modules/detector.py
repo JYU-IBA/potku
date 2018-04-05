@@ -21,9 +21,11 @@ from modules.calibration_parameters import CalibrationParameters
 class Detector:
 
     __slots__ = "name", "angle", "foils"
-    Detector_Type = Enum("ToF")
 
-    def __init__(self, name="", description="", date=datetime.date.today(), detector_type=Detector_Type.ToF, foils=[]):
+    class DetectorType(Enum):
+        ToF = 1
+
+    def __init__(self, request, name="", description="", date=datetime.date.today(), detector_type=DetectorType.ToF, foils=[]):
         """Initialize a detector.
 
         Args:
@@ -32,11 +34,11 @@ class Detector:
 
         """
         self.name = name
-        self.description = description
-        self.date = date
-        self.detector_type = detector_type
-        self.calibration = CalibrationParameters()
-        self.foils = foils
+#        self.description = description
+#        self.date = date
+#        self.detector_type = detector_type
+#        self.calibration = CalibrationParameters()
+#        self.foils = foils
 
     @classmethod
     def from_file(cls, file_path):
