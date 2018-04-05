@@ -38,7 +38,6 @@ class Detector:
         # This is here only for testing that when creating a request and detector, a file is created that should contain
         # some information about the detector, if there is not one yet.
         # TODO: This needs to be more specific.
-        # TODO: In the future, when opening a request, this should check whether there is a .json file in the directory
         file_name = os.path.join(self.path, self.name) + ".detector"
         try:
             file = open(file_name, "r")

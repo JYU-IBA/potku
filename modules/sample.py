@@ -24,9 +24,11 @@ class Samples:
             request: Which request the samples belong to.
         """
         self.request = request
+        self.samples = []
+
+        # These attributes are needed for handling tabs
         self.measurements = Measurements(self.request)
         self.simulations = Simulations(self.request)
-        self.samples = []
 
     def add_sample_file(self, sample_path, name=""):
         """
@@ -38,30 +40,30 @@ class Samples:
         """
         sample = Sample(sample_path, self.request, name)
         self.samples.append(sample)
-        # self.request.increase_running_int_by_1()
+        return sample
 
     def get_samples_and_measurements(self):
         """
-        Collects all the samples' paths and the measurement files under them into a dict.
+        Collects all the samples and the measurement files under them into a dictionary.
 
         Return:
             A dictionary containing samples and their measurements.
         """
         all_samples_and_measurements = {}
         for sample in self.samples:
-            all_samples_and_measurements[sample.path] = sample.get_measurements_files()
+            all_samples_and_measurements[sample] = sample.get_measurements_files()
         return all_samples_and_measurements
 
     def get_samples_and_simulations(self):
         """
-        Collects all the samples' paths and the simulation files under them into a dict.
+        Collects all the samples and the simulation files under them into a dictionary.
 
         Return:
             A dictionary containing samples and their simulations.
         """
         all_samples_and_simulations = {}
         for sample in self.samples:
-            all_samples_and_simulations[sample.path] = sample.get_simulation_files()
+            all_samples_and_simulations[sample] = sample.get_simulation_files()
         return all_samples_and_simulations
 
 
@@ -81,6 +83,7 @@ class Sample:
         """
         self.path = path
         self.measurements = Measurements(request)
+        self.simulations = Simulations(request)
 
         if not os.path.exists(self.path):
             os.makedirs(self.path)

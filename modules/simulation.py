@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 31.3.2018
+Updated on 5.4.2018
 
 #TODO Description of Potku and copyright
 #TODO Licence
@@ -49,11 +49,11 @@ class Simulations:
             return None
         return self.simulations[key]
 
-    def add_simulation_file(self, sample_path, simulation_file, tab_id):
+    def add_simulation_file(self, sample, simulation_file, tab_id):
         """Add a new file to simulations.
 
         Args:
-            sample_path: Path to the sample under which the simulation is put.
+            sample: The sample under which the simulation is put.
             simulation_file: String representing file containing simulation data.
             tab_id: Integer representing identifier for simulation's tab.
 
@@ -63,7 +63,7 @@ class Simulations:
         simulation = None
         simulation_filename = os.path.split(simulation_file)[1]
         simulation_name = os.path.splitext(simulation_filename)
-        new_file = os.path.join(sample_path, simulation_filename)
+        new_file = os.path.join(sample.path, simulation_filename)
 
         file_directory, file_name = os.path.split(simulation_file)
         try:
@@ -73,19 +73,20 @@ class Simulations:
                     file_name = "{0}_{1}{2}".format(simulation_name[0],
                                                     dirtyinteger,
                                                     simulation_name[1])
-                    new_file = os.path.join(sample_path, file_name)
+                    new_file = os.path.join(sample.path, file_name)
                     dirtyinteger += 1
                 shutil.copyfile(simulation_file, new_file)
                 file_directory, file_name = os.path.split(new_file)
 
                 log = "Added new simulation {0} to the request.".format(file_name)
                 logging.getLogger("request").info(log)
-            keys = self.simulations.keys()
+            keys = sample.simulations.simulations.keys()
             for key in keys:
-                if self.simulations[key].simulation_file == file_name:
+                if sample.simulations.simulations[key].simulation_file == file_name:
                     return simulation  # measurement = None
             simulation = Simulation(new_file, self.request, tab_id)
-            self.simulations[tab_id] = simulation
+            sample.simulations.simulations[tab_id] = simulation
+            self.request.samples.simulations.simulations[tab_id] = simulation
         except:
             log = "Something went wrong while adding a new simulation."
             logging.getLogger("request").critical(log)

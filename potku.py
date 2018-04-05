@@ -433,7 +433,7 @@ class Potku(QtWidgets.QMainWindow):
             samples_with_measurements = measurements
             load_data = True
         else:
-            # a dict with the sample path as a key, and measurements in the value as a list
+            # a dict with the sample as a key, and measurements in the value as a list
             samples_with_measurements = self.request.samples.get_samples_and_measurements()
             load_data = False
         progress_bar = QtWidgets.QProgressBar()
@@ -442,9 +442,9 @@ class Potku(QtWidgets.QMainWindow):
         
         count = len(samples_with_measurements)
         dirtyinteger = 0
-        for sample_path, measurements in samples_with_measurements.items():
+        for sample, measurements in samples_with_measurements.items():
             for measurement_file in measurements:
-                self.__add_new_tab("measurement", measurement_file, sample_path, progress_bar,
+                self.__add_new_tab("measurement", measurement_file, sample, progress_bar,
                                    dirtyinteger, count, load_data=load_data)
                 dirtyinteger += 1
 
@@ -479,9 +479,9 @@ class Potku(QtWidgets.QMainWindow):
 
         count = len(samples_with_measurements)
         dirtyinteger = 0
-        for sample_path, simulations in samples_with_measurements.items():
+        for sample, simulations in samples_with_measurements.items():
             for simulation_file in simulations:
-                self.__add_new_tab("simulation", simulation_file, sample_path, progress_bar,
+                self.__add_new_tab("simulation", simulation_file, sample, progress_bar,
                                    dirtyinteger, count, load_data=load_data)
                 dirtyinteger += 1
 
@@ -544,10 +544,10 @@ class Potku(QtWidgets.QMainWindow):
 
             name_prefix = "Sample_"
             sample_path = os.path.join(self.request.directory, name_prefix + self.request.get_running_int())
-            self.request.samples.add_sample_file(sample_path)
+            new_sample = self.request.samples.add_sample_file(sample_path)
             self.request.increase_running_int_by_1()
 
-            self.__add_new_tab("measurement", filename, sample_path, progress_bar, load_data=True)
+            self.__add_new_tab("measurement", filename, new_sample, progress_bar, load_data=True)
             self.__remove_info_tab()
             self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
@@ -575,9 +575,9 @@ class Potku(QtWidgets.QMainWindow):
         # self.__add_new_tab("simulation", "tiedosto", progress_bar, load_data=False)
         name_prefix = "Sample_"
         sample_path = os.path.join(self.request.directory, name_prefix + self.request.get_running_int())
-        self.request.samples.add_sample_file(sample_path)
+        new_sample = self.request.samples.add_sample_file(sample_path)
 
-        self.__add_new_tab("simulation", "tiedosto", sample_path, progress_bar, load_data=False)
+        self.__add_new_tab("simulation", "tiedosto", new_sample, progress_bar, load_data=False)
         self.__remove_info_tab()
         self.statusbar.removeWidget(progress_bar)
         progress_bar.hide()
@@ -695,7 +695,7 @@ class Potku(QtWidgets.QMainWindow):
         # self.ui.treeWidget.addTopLevelItem(tree_item)
         self.simulations_item.addChild(tree_item)
 
-    def __add_new_tab(self, tab_type, filename, sample_path, progress_bar=None,
+    def __add_new_tab(self, tab_type, filename, sample, progress_bar=None,
                       file_current=0, file_count=1, load_data=False):
         """Add new tab into TabWidget. TODO: Simulation included. Should be changed.
         
@@ -705,7 +705,7 @@ class Potku(QtWidgets.QMainWindow):
         Args:
             tab_type: Either "measurement" or "simulation".
             filename: A string representing measurement file.
-            sample_path: Path of the sample under which the measurement or simulation is put.
+            sample: The sample under which the measurement or simulation is put.
             progress_bar: A QtWidgets.QProgressBar to be updated.
             file_current: An integer representing which number is currently being
                           read. (for GUI)
@@ -719,7 +719,10 @@ class Potku(QtWidgets.QMainWindow):
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
 
         if tab_type == "measurement":
-            measurement = self.request.samples.measurements.add_measurement_file(sample_path, filename, self.tab_id)
+            # TODO: create measurement folder structure
+
+
+            measurement = self.request.samples.measurements.add_measurement_file(sample, filename, self.tab_id)
             if measurement:  # TODO: Finish this (load_data)
                 tab = MeasurementTabWidget(self.tab_id, measurement,
                                            self.masses, self.icon_manager)
@@ -748,7 +751,7 @@ class Potku(QtWidgets.QMainWindow):
 
         if tab_type == "simulation":
 
-            simulation = self.request.samples.simulations.add_simulation_file(sample_path, filename, self.tab_id)
+            simulation = self.request.samples.simulations.add_simulation_file(sample, filename, self.tab_id)
 
             if simulation:  # TODO: Finish this (load_data)
                 tab = SimulationTabWidget(self.request, self.tab_id, simulation,

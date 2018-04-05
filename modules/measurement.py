@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 31.3.2018
+Updated on 5.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -45,7 +45,7 @@ class Measurements:
             request: Request class object.
         """
         self.request = request
-        self.measurements = {}  # Dictionary<Measurement> Do we need this?
+        self.measurements = {}  # Dictionary<Measurement>
         self.measuring_unit_settings = None
         self.default_settings = None
 
@@ -63,11 +63,11 @@ class Measurements:
             return None
         return self.measurements[key]
 
-    def add_measurement_file(self, sample_path, measurement_file, tab_id):
+    def add_measurement_file(self, sample, measurement_file, tab_id):
         """Add a new file to measurements.
         
         Args:
-            sample_path: Path to the sample under which the measurement is put.
+            sample: The sample under which the measurement is put.
             measurement_file: String representing file containing measurement
                                   data.
             tab_id: Integer representing identifier for measurement's tab.
@@ -78,29 +78,36 @@ class Measurements:
         measurement = None
         measurement_filename = os.path.split(measurement_file)[1]
         measurement_name = os.path.splitext(measurement_filename)
-        new_file = os.path.join(sample_path, measurement_filename)
 
+        measurement_folder = os.path.join(sample.path, measurement_name[0])
+
+        new_measurement_file = os.path.join(measurement_folder, "Data", measurement_filename)
+        # new_measurement_file should go to request/sample/measurement/data/file_name
+
+        # file_directory is empty, if this is called while loading a measurement
         file_directory, file_name = os.path.split(measurement_file)
         try:
-            if file_directory != self.request.directory and file_directory:
-                dirtyinteger = 2  # Begin from 2, since 0 and 1 would be confusing.
-                while os.path.exists(new_file):
-                    file_name = "{0}_{1}{2}".format(measurement_name[0],
-                                                    dirtyinteger,
-                                                    measurement_name[1])
-                    new_file = os.path.join(sample_path, file_name)
-                    dirtyinteger += 1
-                shutil.copyfile(measurement_file, new_file)
-                file_directory, file_name = os.path.split(new_file)
-                
-                log = "Added new measurement {0} to the request.".format(file_name)
-                logging.getLogger('request').info(log)
-            keys = self.measurements.keys()
+            # if file_directory != self.request.directory and file_directory:
+            #     dirtyinteger = 2  # Begin from 2, since 0 and 1 would be confusing.
+            #     while os.path.exists(new_measurement_file):
+            #         file_name = "{0}_{1}{2}".format(measurement_name[0],
+            #                                         dirtyinteger,
+            #                                         measurement_name[1])
+            #         new_measurement_file = os.path.join(measurement_folder, "Data", file_name)
+            #         dirtyinteger += 1
+            #     # shutil.copyfile(measurement_file, new_measurement_file) Measurement can do the copying
+            #     file_directory, file_name = os.path.split(new_measurement_file)
+            #
+            #     log = "Added new measurement {0} to the request.".format(file_name)
+            #     logging.getLogger('request').info(log)
+            keys = sample.measurements.measurements.keys()
             for key in keys:
-                if self.measurements[key].measurement_file == file_name:
+                if sample.measurements.measurements[key].measurement_file == file_name:
                     return measurement  # measurement = None
-            measurement = Measurement(new_file, self.request, tab_id)
-            self.measurements[tab_id] = measurement
+            measurement = Measurement(measurement_folder, new_measurement_file, self.request, tab_id)
+            # measurement.copy_file_into_measurement(measurement_file)
+            sample.measurements.measurements[tab_id] = measurement
+            self.request.samples.measurements.measurements[tab_id] = measurement
         except:
             log = "Something went wrong while adding a new measurement."
             logging.getLogger("request").critical(log)
@@ -123,7 +130,7 @@ class Measurements:
 class Measurement:
     """Measurement class to handle one measurement data.
     """
-    def __init__(self, measurement_file, request, tab_id):
+    def __init__(self, measurement_folder, measurement_file, request, tab_id):
         """Inits measurement.
 
         Args:
@@ -131,13 +138,17 @@ class Measurement:
             request: Request class object.
             tab_id: Integer representing tab identifier for measurement.
         """
-        measurement_folder, measurement_name = os.path.split(measurement_file)
+        measurement_data_folder, measurement_name = os.path.split(measurement_file)
         self.measurement_file = measurement_name  # With extension
         self.measurement_name = os.path.splitext(measurement_name)[0]
 
         self.directory = os.path.join(measurement_folder, self.measurement_name)
-        self.directory_cuts = os.path.join(self.directory, "cuts")
+        self.directory_cuts = os.path.join(self.directory, measurement_data_folder, "Cuts")
         self.directory_elemloss = os.path.join(self.directory_cuts, "elemloss")
+
+        self.directory_composition_changes = os.path.join(measurement_folder, "Composition_changes")
+        self.directory_depth_profiles = os.path.join(measurement_folder, "Depth_profiles")
+        self.directory_energy_spectra = os.path.join(measurement_folder, "Energy spectra")
 
         self.request = request  # To which request be belong to
         self.data = []
@@ -145,7 +156,7 @@ class Measurement:
 
         self.__make_directories(self.directory)
         self.__make_directories(self.directory_cuts)
-        self.__make_directories(self.directory_elemloss)
+        self.__make_directories(self.directory_elemloss)  # TODO: change the measurement folder structure
 
         self.set_loggers()
 

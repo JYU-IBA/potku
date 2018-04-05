@@ -66,20 +66,18 @@ class Request:
         self.__master_measurement = None
         self.__non_slaves = []  # List of measurements that aren't slaves. Easier
         # This is used to number all the samples e.g. Sample-01, Sample-02.optional_name,...
-        # TODO: when loading an existing request, make sure to change this to what is the biggest number in samples.
         self._running_int = 1  # TODO: This should maybe be saved into .request file?
 
         # Check folder exists and make request file there.
         if not os.path.exists(directory):
             os.makedirs(directory)
 
-        # TODO: Make a better initialisation for this detector
         self.default_folder = os.path.join(self.directory, "Default")
         if not os.path.exists(self.default_folder):
             os.makedirs(self.default_folder)  # Create a Default folder
 
         self.default_detector_folder = os.path.join(self.default_folder, "Detector")
-
+        # TODO: Make a better initialisation for this detector
         self.detector = Detector(self.default_folder, "Detector", 40, [])
             
         self.__set_request_logger()
