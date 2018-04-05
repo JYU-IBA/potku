@@ -313,14 +313,8 @@ class CallMCERD(object):
         if used_os == "Windows":
             self._executing_mcerd_process = subprocess.Popen(self.command_win, shell=True)
         elif used_os == "Linux":
-            # From Python docs:
-            # The preexec_fn parameter is not safe to use in the presence of threads in your application.
-            # The child process could deadlock before exec is called. If you must use it, keep it trivial!
-            # Minimize the number of libraries you call into.
+            self._executing_mcerd_process = subprocess.Popen("exec " + self.command_unix, shell=True)
 
-            # So this may be only temporary, since there will most likely be threads later on.
-            self._executing_mcerd_process = subprocess.Popen(self.command_unix, shell=True, preexec_fn=os.setsid())
-            os.killpg(os.getpgid(self._executing_mcerd_process.pid), signal.SIGTERM)
         elif used_os == "Darwin":
             subprocess.call(self.command_unix, shell=True)
         else:
@@ -328,11 +322,18 @@ class CallMCERD(object):
 
     def stop_simulation(self):
         """
-        Stop the current simulation.
+        Stops the current simulation.
         """
-        cmd = "TASKKILL /F /PID " + str(self._executing_mcerd_process.pid) + " /T"
-        subprocess.Popen(cmd)
-        self._executing_mcerd_process = None
+        used_os = platform.system()
+        if used_os == "Windows":
+            cmd = "TASKKILL /F /PID " + str(self._executing_mcerd_process.pid) + " /T"
+            subprocess.Popen(cmd)
+            self._executing_mcerd_process = None
+        elif used_os == "Linux":
+            self._executing_mcerd_process.kill()
+            self._executing_mcerd_process = None
+        else:
+            print("It appears we do not support your OS.")
 
 
 class CallGetEspe(object):
@@ -386,7 +387,7 @@ class CallGetEspe(object):
 
         self.command_win = "type " + command_file_path + os.sep + input_file + " | " + "external\Potku-bin\get_espe " \
                            + params_string + " > " + command_file_path + os.sep + self.output_file
-        self.command_unix = "cat " + command_file_path + os.sep + input_file + " | " + "external/Potku-bin/get_espe" \
+        self.command_unix = "cat " + command_file_path + os.sep + input_file + " | " + "external/Potku-bin/get_espe " \
                             + params_string + " > " + command_file_path + os.sep + self.output_file
 
     def run_get_espe(self):
@@ -396,6 +397,7 @@ class CallGetEspe(object):
         if used_os == "Windows":
             subprocess.call(self.command_win, shell=True)
         elif used_os == "Linux":
+            print("Calling " + self.command_unix)
             subprocess.call(self.command_unix, shell=True)
         elif used_os == "Darwin":
             subprocess.call(self.command_unix, shell=True)
