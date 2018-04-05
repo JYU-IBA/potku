@@ -99,10 +99,10 @@ class CalibrationDialog(QtWidgets.QDialog):
                                                     masses)
         
         old_params = None
-        if parent_settings_dialog:  # Get old parameters from the parent dialog
+        if parent_settings_dialog.detector_settings:  # Get old parameters from the parent dialog
             try:
-                f1 = float(self.parent_settings_dialog.ui.slopeLineEdit.text())
-                f2 = float(self.parent_settings_dialog.ui.offsetLineEdit.text())
+                f1 = float(self.parent_settings_dialog.detector_settings.ui.slopeLineEdit.text())
+                f2 = float(self.parent_settings_dialog.detector_settings.ui.offsetLineEdit.text())
                 old_params = f1, f2
             except:
                 m = "Can't get old calibration parameters from the settings dialog."
@@ -165,10 +165,10 @@ class CalibrationDialog(QtWidgets.QDialog):
         """Set calibration parameters to parent dialog's calibration parameters 
         fields.
         """
-        if self.parent_settings_dialog:
-            self.parent_settings_dialog.ui.slopeLineEdit.setText(
+        if self.parent_settings_dialog.detector_settings:
+            self.parent_settings_dialog.detector_settings.ui.slopeLineEdit.setText(
                                                  self.ui.slopeLineEdit.text())
-            self.parent_settings_dialog.ui.offsetLineEdit.setText(
+            self.parent_settings_dialog.detector_settings.ui.offsetLineEdit.setText(
                                                  self.ui.offsetLineEdit.text())
             return True
         return False

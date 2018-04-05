@@ -70,7 +70,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                       self.ui.isotopeComboBox,
                                       str(self.measuring_unit_settings.element.isotope))
         else:
-            self.ui.elementButton.setText("Select")
+            self.ui.beamIonButton.setText("Select")
             self.ui.isotopeComboBox.setEnabled(False)
 
         # self.masses.load_isotopes(self.measuring_unit_settings.element.name,
@@ -79,7 +79,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         
         # Tells the object to show its data in the given measuring unit widget
         self.measuring_unit_settings.show(self)
-        self.calibration_settings.show(self)
         self.depth_profile_settings.show(self)
         
         # Adds settings descriptive picture for the parameters 
@@ -97,20 +96,12 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                lambda: self.__load_file("DEPTH_PROFILE_SETTINGS"))
         self.ui.saveDepthProfileSettingsButton.clicked.connect(
                                lambda: self.__save_file("DEPTH_PROFILE_SETTINGS"))
-        self.ui.loadCalibrationParametersButton.clicked.connect(
-                               lambda: self.__load_file("CALIBRATION_SETTINGS"))
-        self.ui.saveCalibrationParametersButton.clicked.connect(
-                               lambda: self.__save_file("CALIBRATION_SETTINGS"))
-        
+
         self.ui.OKButton.clicked.connect(self.update_and_close_settings)
         self.ui.applyButton.clicked.connect(self.update_settings)
         self.ui.cancelButton.clicked.connect(self.close)
-        self.ui.elementButton.clicked.connect(
-                           lambda: self.__change_element(self.ui.elementButton, self.ui.isotopeComboBox))
-        self.ui.executeCalibrationButton.clicked.connect(
-                           self.__open_calibration_dialog)
-        self.ui.executeCalibrationButton.setEnabled(
-                           not self.request.measurements.is_empty())
+        self.ui.beamIonButton.clicked.connect(
+                           lambda: self.__change_element(self.ui.beamIonButton, self.ui.isotopeComboBox))
         double_validator = InputValidator()
         positive_double_validator = InputValidator(bottom=0)
         
@@ -125,9 +116,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.ui.carbonFoilThicknessLineEdit.setValidator(positive_double_validator)
         self.ui.targetDensityLineEdit.setValidator(positive_double_validator)
         
-        self.ui.slopeLineEdit.setValidator(double_validator)
-        self.ui.offsetLineEdit.setValidator(double_validator)
-        
         self.ui.depthStepForStoppingLineEdit.setValidator(double_validator)
         self.ui.depthStepForOutputLineEdit.setValidator(double_validator)
         
@@ -140,7 +128,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.simulation_settings = SimulationSettingsWidget()
         self.ui.tabs.addTab(self.simulation_settings, "Simulation Settings")
 
-        self.simulation_settings.ui.beamIonButton.clicked.connect(
+        self.ui.beamIonButton.clicked.connect(
             lambda: self.__change_element(self.simulation_settings.ui.beamIonButton,
                                           self.simulation_settings.ui.isotopeComboBox))
 
@@ -150,6 +138,18 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # add detector settings view to the settings view
         self.detector_settings = DetectorSettingsWidget()
         self.ui.tabs.addTab(self.detector_settings, "Detector Settings")
+        self.calibration_settings.show(self.detector_settings)
+        self.detector_settings.ui.loadCalibrationParametersButton.clicked.connect(
+            lambda: self.__load_file("CALIBRATION_SETTINGS"))
+        self.detector_settings.ui.saveCalibrationParametersButton.clicked.connect(
+            lambda: self.__save_file("CALIBRATION_SETTINGS"))
+        self.detector_settings.ui.executeCalibrationButton.clicked.connect(
+            self.__open_calibration_dialog)
+        self.detector_settings.ui.executeCalibrationButton.setEnabled(
+            not self.request.measurements.is_empty())
+        self.detector_settings.ui.slopeLineEdit.setValidator(double_validator)
+        self.detector_settings.ui.offsetLineEdit.setValidator(double_validator)
+
 
         self.exec_()
 
@@ -166,29 +166,30 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                            Can be "MEASURING_UNIT_SETTINGS", 
                            "DEPTH_PROFILE_SETTINGS" or "CALIBRATION_SETTINGS"
         """
-        if settings_type == "MEASURING_UNIT_SETTINGS":
-            settings = MeasuringSettings()
-        elif settings_type == "DEPTH_PROFILE_SETTINGS":
-            settings = DepthProfileSettings()
-        elif settings_type == "CALIBRATION_SETTINGS":
-            settings = CalibrationParameters()
-        else:
-            return
-        
         filename = open_file_dialog(self, self.request.directory,
                                     "Open settings file", "Settings file (*.ini)")
-        if filename:
+
+        if settings_type == "MEASURING_UNIT_SETTINGS":
+            settings = MeasuringSettings()
             settings.load_settings(filename)
-            if settings_type == "MEASURING_UNIT_SETTINGS":
-                self.masses.load_isotopes(settings.element.name,
-                                          self.isotopeComboBox,
-                                          str(settings.element.isotope))
+            self.masses.load_isotopes(settings.element.name,
+                                      self.isotopeComboBox,
+                                      str(settings.element.isotope))
             settings.show(self)
-        
+        elif settings_type == "DEPTH_PROFILE_SETTINGS":
+            settings = DepthProfileSettings()
+            settings.show(self)
+        elif settings_type == "CALIBRATION_SETTINGS":
+            settings = CalibrationParameters()
+            settings.show(self.detector_settings)
+        else:
+            return
+
+
     def __save_file(self, settings_type):
         """Opens file dialog and sets and saves the settings to a ini file.
         """
-        
+
         if settings_type == "MEASURING_UNIT_SETTINGS":
             settings = MeasuringSettings()
         elif settings_type == "DEPTH_PROFILE_SETTINGS":
@@ -197,14 +198,20 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             settings = CalibrationParameters()
         else:
             return
-        
+
         filename = save_file_dialog(self, self.request.directory,
                                     "Open measuring unit settings file",
                                     "Settings file (*.ini)")
+
         if filename:
-            settings.set_settings(self)
-            settings.save_settings(filename)
-        
+            if settings_type == "CALIBRATION_SETTINGS":
+                settings.set_settings(self.detector_settings)
+                settings.save_settings(filename)
+            else:
+                settings.set_settings(self)
+                settings.save_settings(filename)
+
+
     def update_and_close_settings(self):
         """Updates measuring settings values with the dialog's values and saves them
         to default ini file.

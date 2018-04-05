@@ -108,7 +108,7 @@ def save_file_dialog(parent, default_folder, title, files):
     filename = QtWidgets.QFileDialog.getSaveFileName(parent,
                                                  title,
                                                  default_folder,
-                                                 parent.tr(files))
+                                                 parent.tr(files))[0]
     return filename
 
 
