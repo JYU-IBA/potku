@@ -25,6 +25,8 @@ along with this program (file named 'LICENCE').
 
 Dialog for the request settings
 """
+from modules.detector import DetectorType
+
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
@@ -238,8 +240,12 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # TODO: Proper checking for all setting values
         # This try-catch works for Beam Element that has not been set yet.
         try:
+            self.request.detector.name = self.detector_settings.nameLineEdit.text()
+            self.request.detector.description = self.detector_settings.descriptionLineEdit.text()
+            self.request.detector.detector_type = DetectorType(self.detector_settings.typeComboBox.currentIndex())
+
             self.measuring_unit_settings.set_settings(self)
-            self.calibration_settings.set_settings(self)
+            self.calibration_settings.set_settings(self.detector_settings)
             self.depth_profile_settings.set_settings(self)
             
             if not self.settings.has_been_set():

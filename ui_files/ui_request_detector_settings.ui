@@ -42,7 +42,7 @@
         </font>
        </property>
        <property name="title">
-        <string>Detector settings</string>
+        <string>Detector Settings</string>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
@@ -107,7 +107,7 @@
                 </spacer>
                </item>
                <item>
-                <widget class="QComboBox" name="comboBox">
+                <widget class="QComboBox" name="typeComboBox">
                  <item>
                   <property name="text">
                    <string>ToF</string>
@@ -140,7 +140,7 @@
                 </spacer>
                </item>
                <item>
-                <widget class="QLineEdit" name="energyLineEdit_2">
+                <widget class="QLineEdit" name="descriptionLineEdit">
                  <property name="minimumSize">
                   <size>
                    <width>300</width>
@@ -180,18 +180,9 @@
                 </spacer>
                </item>
                <item>
-                <widget class="QLineEdit" name="energyLineEdit_4">
-                 <property name="minimumSize">
-                  <size>
-                   <width>300</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>100</width>
-                   <height>16777215</height>
-                  </size>
+                <widget class="QLabel" name="dateLabel">
+                 <property name="text">
+                  <string>TextLabel</string>
                  </property>
                 </widget>
                </item>
@@ -220,7 +211,7 @@
                 </spacer>
                </item>
                <item>
-                <widget class="QLineEdit" name="energyLineEdit_3">
+                <widget class="QLineEdit" name="nameLineEdit">
                  <property name="minimumSize">
                   <size>
                    <width>300</width>

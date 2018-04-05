@@ -18,14 +18,15 @@ from modules.foil import CircularFoil, RectangularFoil
 from modules.layer import Layer
 from modules.calibration_parameters import CalibrationParameters
 
+class DetectorType(Enum):
+    ToF = 0
+
 class Detector:
 
-    __slots__ = "name", "angle", "foils"
+    __slots__ = "request", "name", "description", "date", "detector_type", "calibration", "foils"
 
-    class DetectorType(Enum):
-        ToF = 1
-
-    def __init__(self, request, name="", description="", date=datetime.date.today(), detector_type=DetectorType.ToF, foils=[]):
+    def __init__(self, request, name="", description="", date=datetime.date.today(), detector_type=DetectorType.ToF,
+                 foils=[]):
         """Initialize a detector.
 
         Args:
@@ -33,12 +34,13 @@ class Detector:
             foils: Detector foils.
 
         """
+        self.request = request
         self.name = name
-#        self.description = description
-#        self.date = date
-#        self.detector_type = detector_type
-#        self.calibration = CalibrationParameters()
-#        self.foils = foils
+        self.description = description
+        self.date = date
+        self.detector_type = detector_type
+        self.calibration = CalibrationParameters()
+        self.foils = foils
 
     @classmethod
     def from_file(cls, file_path):
