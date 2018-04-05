@@ -35,7 +35,7 @@ from dialogs.about import AboutDialog
 from dialogs.global_settings import GlobalSettingsDialog
 from dialogs.measurement.import_binary import ImportDialogBinary
 from dialogs.measurement.import_measurement import ImportMeasurementsDialog
-from dialogs.measurement.measuring_settings import RequestSettingsDialog
+from dialogs.request_settings import RequestSettingsDialog
 from dialogs.new_request import RequestNewDialog
 from dialogs.simulation.new_simulation import SimulationNewDialog
 from modules.general_functions import open_file_dialog

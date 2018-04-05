@@ -34,6 +34,7 @@ from os.path import exists, isfile, join, split, splitext
 from modules.measurement import Measurements
 from modules.simulation import Simulations
 from modules.settings import Settings
+from modules.detector import Detector
 
 class Request:
     """Request class to handle all measurements.
@@ -60,6 +61,7 @@ class Request:
         self.statusbar = statusbar
         self.measurements = Measurements(self)
         self.simulations = Simulations(self)
+        self.detector = Detector(self)
         self.__tabs = tabs
         self.__master_measurement = None
         self.__non_slaves = []  # List of measurements that aren't slaves. Easier

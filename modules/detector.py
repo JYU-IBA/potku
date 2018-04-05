@@ -4,6 +4,7 @@
 Created on 23.3.2018
 Updated on 27.3.2018
 """
+from enum import Enum
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
@@ -11,15 +12,18 @@ __versio__ = "2.0"
 
 import json
 import os
+import datetime
 
 from modules.foil import CircularFoil, RectangularFoil
 from modules.layer import Layer
+from modules.calibration_parameters import CalibrationParameters
 
 class Detector:
 
     __slots__ = "name", "angle", "foils"
+    Detector_Type = Enum("ToF")
 
-    def __init__(self, name, angle, foils):
+    def __init__(self, name="", description="", date=datetime.date.today(), detector_type=Detector_Type.ToF, foils=[]):
         """Initialize a detector.
 
         Args:
@@ -28,7 +32,10 @@ class Detector:
 
         """
         self.name = name
-        self.angle = angle
+        self.description = description
+        self.date = date
+        self.detector_type = detector_type
+        self.calibration = CalibrationParameters()
         self.foils = foils
 
     @classmethod
@@ -39,7 +46,6 @@ class Detector:
             file_path: A file path to JSON file containing the detector
                        parameters.
         """
-
         obj = json.load(open(file_path))
 
         # Below we do conversion from dictionary to Detector object
