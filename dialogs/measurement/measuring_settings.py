@@ -28,7 +28,7 @@ Dialog for the measuring settings
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-from os.path import join
+import os
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
 
 from dialogs.measurement.calibration import CalibrationDialog
@@ -40,6 +40,7 @@ from modules.general_functions import save_file_dialog
 from modules.input_validator import InputValidator
 from modules.measuring_settings import MeasuringSettings
 from widgets.simulation.settings import SimulationSettingsWidget
+from widgets.detector_settings import DetectorSettingsWidget
 
 
 class RequestSettingsDialog(QtWidgets.QDialog):
@@ -52,7 +53,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             request: Request class object.
         """
         super().__init__()
-        self.ui = uic.loadUi(join("ui_files", "ui_measuring_settings.ui"), self)
+        self.ui = uic.loadUi(os.path.join("ui_files", "ui_measuring_settings.ui"), self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.masses = masses
         
@@ -84,7 +85,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # Adds settings descriptive picture for the parameters 
         self.ui.picture.setScaledContents(True)
         
-        pixmap = QtGui.QPixmap(join("images", "hardwaresetup.png"))
+        pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
         self.ui.picture.setPixmap(pixmap)
 
         # Connect buttons.
@@ -137,16 +138,18 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # add simulation settings view to the settings view
         self.simulation_settings = SimulationSettingsWidget()
-        self.ui.tabs.removeTab(1)
         self.ui.tabs.addTab(self.simulation_settings, "Simulation Settings")
 
-        self.simulation_settings.ui.beamIonButton.setText("Select")
         self.simulation_settings.ui.beamIonButton.clicked.connect(
             lambda: self.__change_element(self.simulation_settings.ui.beamIonButton,
                                           self.simulation_settings.ui.isotopeComboBox))
 
         self.simulation_settings.ui.typeOfSimulationComboBox.addItem("ERD")
         self.simulation_settings.ui.typeOfSimulationComboBox.addItem("RBS")
+
+        # add detector settings view to the settings view
+        self.detector_settings = DetectorSettingsWidget()
+        self.ui.tabs.addTab(self.detector_settings, "Detector Settings")
 
         self.exec_()
 

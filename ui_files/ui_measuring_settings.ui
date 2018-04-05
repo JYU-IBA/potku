@@ -37,13 +37,13 @@
       <attribute name="title">
        <string>Measurement Settings</string>
       </attribute>
-      <widget class="QWidget" name="">
+      <widget class="QWidget" name="layoutWidget">
        <property name="geometry">
         <rect>
          <x>0</x>
          <y>0</y>
          <width>823</width>
-         <height>731</height>
+         <height>829</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -975,11 +975,6 @@
         </item>
        </layout>
       </widget>
-     </widget>
-     <widget class="QWidget" name="simulation_tab">
-      <attribute name="title">
-       <string>Simulation Settings</string>
-      </attribute>
      </widget>
     </widget>
    </item>
