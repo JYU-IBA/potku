@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 5.4.2018
+Updated on 6.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -24,8 +24,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
-__version__ = "1.0"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
+             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import gc
 import os
@@ -455,9 +456,10 @@ class Potku(QtWidgets.QMainWindow):
         """"Load sample files in the request.
         """
         sample_paths_in_request = self.request.get_samples_files()
-        for sample_path in sample_paths_in_request:
-            self.request.samples.add_sample_file(sample_path)
-        self.request.increase_running_int_by_1()
+        if sample_paths_in_request:
+            for sample_path in sample_paths_in_request:
+                self.request.samples.add_sample_file(sample_path)
+            self.request.increase_running_int_by_1()
         # TODO: update widget tree with the uploaded samples
 
     def load_request_simulations(self, simulations=[]):
@@ -567,20 +569,22 @@ class Potku(QtWidgets.QMainWindow):
         #         pass  # If there is no info tab, no need to worry about.
         #         # print("Can't find an info tab to remove")
         #
-        progress_bar = QtWidgets.QProgressBar()
-        self.statusbar.addWidget(progress_bar, 1)
-        progress_bar.show()
+        simulation_name = dialog.name
+        if simulation_name:
+            progress_bar = QtWidgets.QProgressBar()
+            self.statusbar.addWidget(progress_bar, 1)
+            progress_bar.show()
 
-        # self.__add_new_tab("simulation", filename, progress_bar, load_data=False)
-        # self.__add_new_tab("simulation", "tiedosto", progress_bar, load_data=False)
-        name_prefix = "Sample_"
-        sample_path = os.path.join(self.request.directory, name_prefix + self.request.get_running_int())
-        new_sample = self.request.samples.add_sample_file(sample_path)
+            # self.__add_new_tab("simulation", filename, progress_bar, load_data=False)
+            # self.__add_new_tab("simulation", "tiedosto", progress_bar, load_data=False)
+            name_prefix = "Sample_"
+            sample_path = os.path.join(self.request.directory, name_prefix + self.request.get_running_int())
+            new_sample = self.request.samples.add_sample_file(sample_path)
 
-        self.__add_new_tab("simulation", "tiedosto", new_sample, progress_bar, load_data=False)
-        self.__remove_info_tab()
-        self.statusbar.removeWidget(progress_bar)
-        progress_bar.hide()
+            self.__add_new_tab("simulation", dialog.name, new_sample, progress_bar, load_data=False)
+            self.__remove_info_tab()
+            self.statusbar.removeWidget(progress_bar)
+            progress_bar.hide()
 
     def open_request(self):
         """Shows a dialog to open a request.
@@ -723,6 +727,7 @@ class Potku(QtWidgets.QMainWindow):
 
 
             measurement = self.request.samples.measurements.add_measurement_file(sample, filename, self.tab_id)
+            sample.increase_running_int_measurement_by_1()
             if measurement:  # TODO: Finish this (load_data)
                 tab = MeasurementTabWidget(self.tab_id, measurement,
                                            self.masses, self.icon_manager)

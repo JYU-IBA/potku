@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 5.4.2018
+Updated on 6.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -23,8 +23,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
+             "Severi Jää"
+__version__ = "1.0"
 
 import logging, os, shutil, sys, time, hashlib
 from PyQt5 import QtCore, QtWidgets
@@ -79,7 +80,11 @@ class Measurements:
         measurement_filename = os.path.split(measurement_file)[1]
         measurement_name = os.path.splitext(measurement_filename)
 
-        measurement_folder = os.path.join(sample.path, measurement_name[0])
+        # TODO: measurement folder should have the running numbering
+        name_prefix = "Measurement_"
+        measurement_folder = os.path.join(sample.path, name_prefix + sample.get_running_int_measurement() + "-"
+                                          + measurement_name[0])
+        sample.increase_running_int_measurement_by_1()
 
         new_measurement_file = os.path.join(measurement_folder, "Data", measurement_filename)
         # new_measurement_file should go to request/sample/measurement/data/file_name
@@ -105,7 +110,8 @@ class Measurements:
                 if sample.measurements.measurements[key].measurement_file == file_name:
                     return measurement  # measurement = None
             measurement = Measurement(measurement_folder, new_measurement_file, self.request, tab_id)
-            # measurement.copy_file_into_measurement(measurement_file)
+            if file_directory != measurement.directory_data and file_directory:
+                measurement.copy_file_into_measurement(measurement_file)
             sample.measurements.measurements[tab_id] = measurement
             self.request.samples.measurements.measurements[tab_id] = measurement
         except:
@@ -142,13 +148,14 @@ class Measurement:
         self.measurement_file = measurement_name  # With extension
         self.measurement_name = os.path.splitext(measurement_name)[0]
 
-        self.directory = os.path.join(measurement_folder, self.measurement_name)
+        self.directory = measurement_folder
         self.directory_cuts = os.path.join(self.directory, measurement_data_folder, "Cuts")
-        self.directory_elemloss = os.path.join(self.directory_cuts, "elemloss")
+        self.directory_elemloss = os.path.join(self.directory_cuts, "Elemloss")
 
         self.directory_composition_changes = os.path.join(measurement_folder, "Composition_changes")
         self.directory_depth_profiles = os.path.join(measurement_folder, "Depth_profiles")
         self.directory_energy_spectra = os.path.join(measurement_folder, "Energy spectra")
+        self.directory_data = measurement_data_folder
 
         self.request = request  # To which request be belong to
         self.data = []
@@ -157,6 +164,9 @@ class Measurement:
         self.__make_directories(self.directory)
         self.__make_directories(self.directory_cuts)
         self.__make_directories(self.directory_elemloss)  # TODO: change the measurement folder structure
+        self.__make_directories(self.directory_composition_changes)
+        self.__make_directories(self.directory_depth_profiles)
+        self.__make_directories(self.directory_energy_spectra)
 
         self.set_loggers()
 
@@ -170,7 +180,7 @@ class Measurement:
         self.statusbar = self.request.statusbar
 
         element_colors = self.request.global_settings.get_element_colors()
-        self.selector = Selector(self.directory, self.measurement_name,
+        self.selector = Selector(self.directory_data, self.measurement_name,
                                  self.request.masses, element_colors,
                                  settings=self.measurement_settings)
 
@@ -185,6 +195,17 @@ class Measurement:
             log = "Created a directory {0}.".format(directory)
             logging.getLogger("request").info(log)
 
+    def copy_file_into_measurement(self, file_path):
+        """
+         Copies the given file into the measurement's data folder
+
+        Args:
+            file_path: The file that needs to be copied.
+        """
+        file_name = os.path.basename(file_path)
+        new_path = os.path.join(self.directory_data, file_name)
+        shutil.copyfile(file_path, new_path)
+
     def load_data(self):
         """Loads measurement data from filepath
         """
@@ -196,7 +217,8 @@ class Measurement:
             extension = os.path.splitext(self.measurement_file)[1]
             extension = extension.lower()
             if extension == ".asc":
-                with open("{0}{1}".format(self.directory, extension)) as fp:
+                file_to_open = os.path.join(self.directory_data, self.measurement_name + extension)
+                with open(file_to_open, "r") as fp:
                     for line in fp:
                         n += 1  # Event number
                         # TODO: Figure good way to split into columns. REGEX too slow.
@@ -295,8 +317,8 @@ class Measurement:
         """ Use old selection file_path if exists.
         """
         try:
-            selection_file = os.path.join(self.directory,
-                                          "{0}.sel".format(self.measurement_name))
+            selection_file = os.path.join(self.directory_data,
+                                          "{0}.selections".format(self.measurement_name))
             with open(selection_file): 
                 self.load_selection(selection_file)
         except:
@@ -451,7 +473,7 @@ class Measurement:
         for points in points_in_selection:
             if points:  # If not empty selection -> save
                 selection = self.selector.get_at(dirtyinteger)
-                cut_file = CutFile(self.directory)
+                cut_file = CutFile(self.directory_cuts)
                 cut_file.set_info(selection, points)
                 cut_file.save()
             dirtyinteger += 1

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 5.4.2018
+Updated on 6.4.2018
 
 #TODO Description of Potku and copyright
 #TODO Licence
@@ -49,41 +49,41 @@ class Simulations:
             return None
         return self.simulations[key]
 
-    def add_simulation_file(self, sample, simulation_file, tab_id):
+    def add_simulation_file(self, sample, simulation_name, tab_id):
         """Add a new file to simulations.
 
         Args:
             sample: The sample under which the simulation is put.
-            simulation_file: String representing file containing simulation data.
+            simulation_name: String representing file containing simulation data.
             tab_id: Integer representing identifier for simulation's tab.
 
         Return:
             Returns new simulation or None if it wasn't added
         """
         simulation = None
-        simulation_filename = os.path.split(simulation_file)[1]
+        simulation_filename = os.path.split(simulation_name)[1]
         simulation_name = os.path.splitext(simulation_filename)
         new_file = os.path.join(sample.path, simulation_filename)
 
-        file_directory, file_name = os.path.split(simulation_file)
+        file_directory, file_name = os.path.split(simulation_name)
         try:
-            if file_directory != self.request.directory and file_directory:
-                dirtyinteger = 2  # Begin from 2, since 0 and 1 would be confusing.
-                while os.path.exists(new_file):
-                    file_name = "{0}_{1}{2}".format(simulation_name[0],
-                                                    dirtyinteger,
-                                                    simulation_name[1])
-                    new_file = os.path.join(sample.path, file_name)
-                    dirtyinteger += 1
-                shutil.copyfile(simulation_file, new_file)
-                file_directory, file_name = os.path.split(new_file)
-
-                log = "Added new simulation {0} to the request.".format(file_name)
-                logging.getLogger("request").info(log)
+            # if file_directory != self.request.directory and file_directory:
+            #     dirtyinteger = 2  # Begin from 2, since 0 and 1 would be confusing.
+            #     while os.path.exists(new_file):
+            #         file_name = "{0}_{1}{2}".format(simulation_name[0],
+            #                                         dirtyinteger,
+            #                                         simulation_name[1])
+            #         new_file = os.path.join(sample.path, file_name)
+            #         dirtyinteger += 1
+            #     shutil.copyfile(simulation_name, new_file)
+            #     file_directory, file_name = os.path.split(new_file)
+            #
+            #     log = "Added new simulation {0} to the request.".format(file_name)
+            #     logging.getLogger("request").info(log)
             keys = sample.simulations.simulations.keys()
             for key in keys:
                 if sample.simulations.simulations[key].simulation_file == file_name:
-                    return simulation  # measurement = None
+                    return simulation  # sismulation = None
             simulation = Simulation(new_file, self.request, tab_id)
             sample.simulations.simulations[tab_id] = simulation
             self.request.samples.simulations.simulations[tab_id] = simulation

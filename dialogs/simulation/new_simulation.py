@@ -1,14 +1,14 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 28.2.2018
+Updated on 6.4.2018
 
 #TODO Description of Potku and copyright
 #TODO Licence
 
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
-__versio__ = "2.0"
+__version__ = "2.0"
 
 
 import logging
@@ -27,12 +27,13 @@ class SimulationNewDialog(QtWidgets.QDialog):
             parent: Ibasoft class object.
         """
         super().__init__()
-        #self.parent = parent
+        # self.parent = parent
         
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_new_simulation.ui"), self)
 
         self.ui.pushCreate.clicked.connect(self.__create_simulation)
         self.ui.pushCancel.clicked.connect(self.close)
+        self.name = None
         
         self.exec_()
 

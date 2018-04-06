@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 5.4.2018
+Updated on 6.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -23,7 +23,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio " \
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
              "\n Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
@@ -229,9 +229,9 @@ class Request:
         Args:
             measurement: A measurement class object that issued save cuts.
         """
-        directory = measurement.directory
+        directory = measurement.directory_data
         name = measurement.measurement_name
-        selection_file = "{0}.sel".format(os.path.join(directory, name))
+        selection_file = "{0}.selections".format(os.path.join(directory, name))
         if name == self.has_master():
             nonslaves = self.get_nonslaves()
             tabs = self.get_measurement_tabs(measurement.tab_id)
