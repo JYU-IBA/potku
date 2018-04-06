@@ -13,7 +13,14 @@ from widgets.matplotlib.base import MatplotlibWidget
 
 
 class Point:
+    """A 2D point with x and y coordinates."""
     def __init__(self, xy):
+        """Inits point.
+
+        Args:
+            xy: The x and y coordinates of the point. An ordered data structure whose first element
+                is the x coordinate and second element the y coordinate.
+        """
         # TODO: Precision
         self._x = xy[0]
         self._y = xy[1]
@@ -42,26 +49,39 @@ class Point:
 
 
 class Element:
+    """An element that has a list of points. The points are kept in ascending order by their
+    x coordinate.
+    """
     def __init__(self, name, points):
+        """Inits element.
+
+        Args:
+            name: Name of the element. Usually the symbol of the element.
+            points: List of Point class objects.
+        """
         self._name = name
         self._points = sorted(points)
         # sorted_points = sorted(list(zip(xs, ys)), key=lambda x: x[0])
 
     def _sort_points(self):
+        """Sorts the points in ascending order by their x coordinate."""
         self._points.sort()
         self._xs = [point.get_x() for point in self._points]
         self._ys = [point.get_y() for point in self._points]
 
     def get_xs(self):
+        """Returns a list of the x coordinates of the points."""
         return [point.get_x() for point in self._points]
 
     def get_ys(self):
+        """Returns a list of the y coordinates of the points."""
         return [point.get_y() for point in self._points]
 
     def get_name(self):
         return self.name
 
     def get_point_by_i(self, i):
+        """Returns the i:th point."""
         return self._points[i]
 
     def get_points(self):
@@ -73,24 +93,28 @@ class Element:
     # def set_ys(self, ys):
     #     self._ys = ys
 
-    def set_point(self, i, point):
-        self._points[i] = point
-        self._sort_points()
+    # def set_point(self, i, point):
+    #     self._points[i] = point
+    #     self._sort_points()
 
     def set_points(self, points):
         self._points = sorted(points)
 
     def add_point(self, point):
+        """Adds a point and maintains order."""
         self._points.append(point)
         self._sort_points()
 
     def remove_point_i(self, i):
+        """Removes the i:th point."""
         del self._points[i]
 
     def remove_point(self, point):
+        """Removes the given point."""
         self._points.remove(point)
 
     def get_left_neighbor(self, point):
+        """Returns the point whose x coordinate is closest to but less than the given point's."""
         ind = self._points.index(point)
         if ind == 0:
             return None
@@ -98,6 +122,7 @@ class Element:
             return self._points[ind - 1]
 
     def get_right_neighbor(self, point):
+        """Returns the point whose x coordinate is closest to but greater than the given point's."""
         ind = self._points.index(point)
         if ind == len(self._points) - 1:
             return None
@@ -129,8 +154,8 @@ class Element:
 #     print("Ei löydy")
 
 class RecoilAtomDistributionWidget(MatplotlibWidget):
-    """Matplotlib simulation depth profile widget. Using this widget, the user
-    can edit the depth profile of the target for the simulation.
+    """Matplotlib simulation recoil atom distribution widget. Using this widget, the user
+    can edit the recoil atom distribution for the simulation.
     """
     selectionsChanged = QtCore.pyqtSignal("PyQt_PyObject")
     saveCuts = QtCore.pyqtSignal("PyQt_PyObject")
@@ -145,17 +170,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                   }
 
     def __init__(self, parent, icon_manager):
-        """Inits target and recoiling atoms widget.
+        """Inits recoil atom distribution widget.
 
         Args:
-            parent: A SimulationDepthProfileWidget class object.
-            simulation_data: Data of the simulation that needs to be drawn (elements).
-            masses: A masses class object.
-            icon_manager: An iconmanager class object.
+            parent: A TargetWidget class object.
+            icon_manager: An IconManager class object.
         """
 
         super().__init__(parent)
-        self.canvas.manager.set_title("Depth Profile")
+        self.canvas.manager.set_title("Recoil Atom Distribution")
         self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
         self.__icon_manager = icon_manager
@@ -164,6 +187,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # self.elements = { "He": [[0.00, 50.00], [50.00, 50.00]] }
         # self.xs.sort()
         # self.xys = sorted(self.xys, key=lambda x: x[0])
+
+        # Placeholder points
         self.xs = (99.99 * numpy.random.rand(20)).tolist()
         self.ys = (99.99 * numpy.random.rand(20)).tolist()
         self.xys = list(zip(self.xs, self.ys))
@@ -171,18 +196,22 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         for xy in self.xys:
             self.points.append(Point(xy))
 
-        # Minimum number of points is 2
+        # Minimum number of points for each element is 2
         self.elements = [Element("He", self.points)]
 
-        self.lines = None
+        # Markers representing points
         self.markers = None
+        # Lines connecting markers
+        self.lines = None
+        # Markers representing selected points
         self.markers_selected = None
+        # Points that are being dragged
         self.dragged_points = []
+        # Points that have been selected
         self.selected_points = []
-        self.lastind = -1
-        self.text = None
 
-        self.rectangle_selector = RectangleSelector(self.axes, self.onselect, drawtype='box', useblit=True)
+        # Rectangle selection tool
+        self.rectangle_selector = RectangleSelector(self.axes, self.on_rectangle_select, drawtype='box', useblit=True)
         self.rectangle_selector.set_active(False)
 
         # Connections and setup
@@ -255,9 +284,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.set_ylabel(self.name_y_axis.title())
         self.axes.set_xlabel(self.name_x_axis.title())
 
-        self.lines, = self.axes.plot(self.elements[0].get_xs(), self.elements[0].get_ys(), color="blue")
-        self.markers, = self.axes.plot(self.elements[0].get_xs(), self.elements[0].get_ys(), color="blue", marker="o", markersize=10, picker=5,
-                                       linestyle="None")
+        self.lines, = self.axes.plot(self.elements[0].get_xs(), self.elements[0].get_ys(),
+                                     color="blue")
+        self.markers, = self.axes.plot(self.elements[0].get_xs(), self.elements[0].get_ys(),
+                                       color="blue", marker="o", markersize=10, linestyle="None")
         self.markers_selected, = self.axes.plot(0, 0, marker="o", markersize=10, linestyle="None",
                                                 color='yellow', visible=False)
 
@@ -356,7 +386,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # TODO: Change locale to use dots instead of commas as decimal points
         # TODO: Set sensible minimum and maximum values
         # TODO: New buttons aren't displayed in the overflow menu
-        # Point x coordinate text box
+        # Point x coordinate spinbox
         self.x_coordinate_box = QtWidgets.QDoubleSpinBox(self)
         self.x_coordinate_box.setToolTip("X coordinate of selected point")
         self.x_coordinate_box.setSingleStep(0.1)
@@ -371,7 +401,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.x_coordinate_box)
         self.x_coordinate_box.setEnabled(False)
 
-        # Point y coordinate text box
+        # Point y coordinate spinbox
         self.y_coordinate_box = QtWidgets.QDoubleSpinBox(self)
         self.y_coordinate_box.setToolTip("Y coordinate of selected point")
         self.y_coordinate_box.setSingleStep(0.1)
@@ -400,6 +430,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.point_remove_button)
 
     def set_selected_point_x(self):
+        """Sets the selected point's x coordinate to the value of the x spinbox."""
         x = self.x_coordinate_box.value()
         leftmost_sel_point = self.selected_points[0]
         left_neighbor = self.elements[0].get_left_neighbor(leftmost_sel_point)
@@ -425,6 +456,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.update_plot()
 
     def set_selected_point_y(self):
+        """Sets the selected point's y coordinate to the value of the y spinbox."""
         y = self.y_coordinate_box.value()
         leftmost_sel_point = self.selected_points[0]
         leftmost_sel_point.set_y(y)
@@ -466,22 +498,22 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if event.inaxes != self.axes:
             return
         if event.button == 1:  # Left click
-            contains, info = self.markers.contains(event)
-            if contains:
-                i = info['ind'][0]
+            marker_contains, marker_info = self.markers.contains(event)
+            if marker_contains:  # If clicked a point
+                i = marker_info['ind'][0]  # The clicked point's index
                 self.selected_points = [self.elements[0].get_point_by_i(i)]
-                # self.lastind = i
                 self.dragged_points = [self.elements[0].get_point_by_i(i)]
                 self.update_plot()
             else:
                 self.selected_points.clear()
                 self.update_plot()
                 line_contains, line_info = self.lines.contains(event)
-                if line_contains:
+                if line_contains: # If clicked a line
                     x = event.xdata
                     y = event.ydata
                     self.add_point_on_click((x, y))
                     i = line_info['ind'][0]
+                    # Drag the newly added point
                     self.dragged_points = [self.elements[0].get_point_by_i(i+1)]
         # elif event.button == 3:  # Right click
         #     contains, info = self.markers.contains(event)
@@ -489,9 +521,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         #         i = info['ind'][0]
         #         self.remove_point(i)
 
-
     def add_point_on_click(self, point):
-        """ Adds a point to the list when clicked close enough to a line. """
+        """Adds a point when clicked close enough to a line."""
         new_point = Point(point)
         self.elements[0].add_point(new_point)
         self.selected_points = [new_point]
@@ -518,7 +549,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     #     return point
 
     def update_plot(self):
-        """ Updates point data and redraws the plot. """
+        """ Updates marker and line data and redraws the plot. """
         # if not self.list_points:
         #     return
         # Add new plot
@@ -542,7 +573,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         #     self.selected.set_visible(True)
         #     self.selected.set_data(self.elements[0].get_point(dataind).get_x(),
         #                            self.elements[0].get_point(dataind).get_y())
-        if self.selected_points:
+
+        if self.selected_points:  # If there are selected points
             self.markers_selected.set_visible(True)
             selected_xs = []
             selected_ys = []
@@ -623,7 +655,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
 
     def on_motion(self, event):
-        """ callback method for mouse motion event
+        """Callback method for mouse motion event. Moves points that are being dragged.
 
         Args:
             event: A MPL MouseEvent
@@ -641,11 +673,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # self.remove_point(self.dragging_point)
         # self.dragging_point = self.add_point_on_motion(event)
         # self.update_plot()
+
+        # Don't do anything if rectangle selector, drag tool or zoom tool is active.
         if self.rectangle_selector.active or self.__button_drag.isChecked() \
                 or self.__button_zoom.isChecked():
             return
+        # Only inside the actual graph axes, else do nothing.
         if event.inaxes != self.axes:
             return
+        # Only if there are points being dragged.
         if not self.dragged_points:
             return
 
@@ -653,7 +689,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         left_neighbor = self.elements[0].get_left_neighbor(leftmost_drag_point)
         right_neighbor = self.elements[0].get_right_neighbor(leftmost_drag_point)
 
-        # # Can't move past neighbors. If tried, sets x coordinate to 0.01 from neighbor's x coordinate.
         # if left_neighbor is None:
         #     if event.xdata < right_neighbor.get_x():
         #         leftmost_drag_point.set_x(event.xdata)
@@ -671,6 +706,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # # elif right_neighbor.get_x() <= x:
         # #     leftmost_sel_point.set_x(right_neighbor.get_x() + 0.01)
 
+        # Can't move past neighbors. If tried, sets x coordinate to 0.01 from neighbor's x coordinate.
         if left_neighbor is None:
             if event.xdata < right_neighbor.get_x():
                 leftmost_drag_point.set_coordinates((event.xdata, event.ydata))
@@ -705,6 +741,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         #         self.update_location(event)
 
     def update_location(self, event):
+        """Updates the location of points that are being dragged."""
         for point in self.dragged_points:
             point.set_coordinates((event.xdata, event.ydata))
         # print(self.drag_i)
@@ -712,6 +749,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.update_plot()
 
     def remove_points(self):
+        """Removes all selected points, but not if there would be less than two points left."""
         if len(self.elements[0].get_points()) - len(self.selected_points) < 2:
             # TODO: Add an error message text label
             print("There must always be at least two points")
@@ -722,7 +760,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.update_plot()
 
     def on_release(self, event):
-        """ callback method for mouse release event
+        """Callback method for mouse release event. Stops dragging.
 
         Args:
             event: A MPL MouseEvent
@@ -734,13 +772,19 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.dragged_points.clear()
             self.update_plot()
 
-    def onselect(self, eclick, erelease):
-        'eclick and erelease are matplotlib events at press and release'
-        extents = self.rectangle_selector.extents
+    def on_rectangle_select(self, eclick, erelease):
+        """Rectangle selector selection handler.
+
+        Args:
+            eclick: A MPL event for the click starting rectangle selection.
+            erelease: A MPL event for the releasing the mouse button during rectangle selection.
+        """
+        extents = self.rectangle_selector.extents  # The dimensions of the rectangle
         xmin = extents[0]
         xmax = extents[1]
         ymin = extents[2]
         ymax = extents[3]
+        # Selects the points under the rectangle
         sel_xs = []
         sel_ys = []
         sel_points = []
@@ -753,7 +797,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.update_plot()
 
     def toggle_rectangle_selector(self):
-        '''Enable rectangle selection.
+        '''Toggle rectangle selector.
         '''
         if self.rectangle_selector.active:
             self.__tool_label.setText("")
