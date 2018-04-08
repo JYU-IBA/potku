@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 6.4.2018
+Updated on 8.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -25,7 +25,7 @@ along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
              "Severi Jää"
-__version__ = "1.0"
+__version__ = "2.0"
 
 import logging, os, shutil, sys, time, hashlib
 from PyQt5 import QtCore, QtWidgets
@@ -80,7 +80,6 @@ class Measurements:
         measurement_filename = os.path.split(measurement_file)[1]
         measurement_name = os.path.splitext(measurement_filename)
 
-        # TODO: measurement folder should have the running numbering
         name_prefix = "Measurement_"
         measurement_folder = os.path.join(sample.path, name_prefix + sample.get_running_int_measurement() + "-"
                                           + measurement_name[0])

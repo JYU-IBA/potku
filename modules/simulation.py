@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 6.4.2018
+Updated on 8.4.2018
 
 #TODO Description of Potku and copyright
 #TODO Licence
@@ -54,18 +54,17 @@ class Simulations:
 
         Args:
             sample: The sample under which the simulation is put.
-            simulation_name: String representing file containing simulation data.
+            simulation_name: Name of the simulation (not a path)
             tab_id: Integer representing identifier for simulation's tab.
 
         Return:
             Returns new simulation or None if it wasn't added
         """
         simulation = None
-        simulation_filename = os.path.split(simulation_name)[1]
-        simulation_name = os.path.splitext(simulation_filename)
-        new_file = os.path.join(sample.path, simulation_filename)
-
-        file_directory, file_name = os.path.split(simulation_name)
+        name_prefix = "MC_simulation_"
+        simulation_folder = os.path.join(sample.path, name_prefix + sample.get_running_int_simulation() + "-"
+                                         + simulation_name)
+        sample.increase_running_int_simulation_by_1()
         try:
             # if file_directory != self.request.directory and file_directory:
             #     dirtyinteger = 2  # Begin from 2, since 0 and 1 would be confusing.
@@ -82,9 +81,9 @@ class Simulations:
             #     logging.getLogger("request").info(log)
             keys = sample.simulations.simulations.keys()
             for key in keys:
-                if sample.simulations.simulations[key].simulation_file == file_name:
+                if sample.simulations.simulations[key].simulation_folder == simulation_name:
                     return simulation  # sismulation = None
-            simulation = Simulation(new_file, self.request, tab_id)
+            simulation = Simulation(simulation_folder, self.request, tab_id)
             sample.simulations.simulations[tab_id] = simulation
             self.request.samples.simulations.simulations[tab_id] = simulation
         except:
@@ -164,18 +163,20 @@ class Simulations:
 class Simulation:
     """Simulation class handles the simulation data."""
 
-    def __init__(self, command_file, request, tab_id):
+    def __init__(self, simulation_folder, request, tab_id):
         """Inits Simulation.
         Args:
+            simulation_folder: The path of the simulation folder
             request: Request class object.
         """
 
-        simulation_folder, simulation_name = os.path.split(command_file)
-        self.simulation_file = simulation_name  # With extension
-        self.simulation_name = os.path.splitext(simulation_name)[0]
+        sim_folder, simulation_name = os.path.split(simulation_folder)
+        self.simulation_folder = simulation_name
+        name_start_index = simulation_folder.index('-')
+        self.simulation_name = simulation_folder[name_start_index + 1:]
 
         self.request = request
-        self.directory = os.path.join(simulation_folder, self.simulation_name)
+        self.directory = simulation_folder
 
         self.data = []
         self.tab_id = tab_id
@@ -228,7 +229,7 @@ class Simulation:
         # pr.enable()
         n=0
         try:
-            extension = os.path.splitext(self.simulation_file)[1]
+            extension = os.path.splitext(self.simulation_folder)[1]
             extension = extension.lower()
             if extension == ".asc":
                 with open("{0}{1}".format(self.directory, extension)) as fp:
