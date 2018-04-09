@@ -26,6 +26,8 @@ along with this program (file named 'LICENCE').
 Dialog for the request settings
 """
 from modules.detector import DetectorType
+from modules.element import Element
+from modules.measurement import MeasurementProfile
 from modules.simulation import SimulationMode, SimulationType
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
@@ -112,8 +114,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.ui.energyLineEdit.setValidator(positive_double_validator)
         
         double_angle_validator = InputValidator(0, 90, 10)
-        self.ui.detectorAngleLineEdit.setValidator(double_angle_validator)
-        self.ui.targetAngleLineEdit.setValidator(double_angle_validator)
+        self.ui.detectorThetaLineEdit.setValidator(double_angle_validator)
+        self.ui.targetThetaLineEdit.setValidator(double_angle_validator)
         
         self.ui.TOFLengthLineEdit.setValidator(positive_double_validator)
         self.ui.carbonFoilThicknessLineEdit.setValidator(positive_double_validator)
@@ -241,6 +243,28 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # TODO: Proper checking for all setting values
         # This try-catch works for Beam Element that has not been set yet.
         try:
+            # Measurement settings
+            isotope_index = self.isotopeComboBox.currentIndex()
+            if isotope_index != -1:
+                isotope_data = self.isotopeComboBox.itemData(isotope_index)
+                self.request.default_measurement.element = Element(self.beamIonButton.text(), isotope_data[0])
+                self.request.default_measurement.name = self.nameLineEdit.text()
+                self.request.default_measurement.description = self.descriptionLineEdit.text()
+                self.request.default_measurement.energy = self.energyLineEdit.text()
+                self.request.default_measurement.charge = self.chargeLineEdit.text()
+                self.request.default_measurement.spot_size = [self.spotSizeXLineEdit.text(),
+                                                              self.spotSizeYLineEdit.text()]
+                self.request.default_measurement.divergence = self.divergenceLineEdit.text()
+                self.request.default_measurement.profile = MeasurementProfile(self.profileComboBox.currentIndex())
+                self.request.default_measurement.energy_dist = self.energyDistLineEdit.text()
+                self.request.default_measurement.fluence = self.fluenceLineEdit.text()
+                self.request.default_measurement.current = self.currentLineEdit.text()
+                self.request.default_measurement.time = self.timeLineEdit.text()
+                self.request.default_measurement.detector_theta = self.detectorThetaLineEdit.text()
+                self.request.default_measurement.detector_fii = self.detectorFiiLineEdit.text()
+                self.request.default_measurement.target_theta = self.targetThetaLineEdit.text()
+                self.request.default_measurement.target_fii = self.targetFiiLineEdit.text()
+
             # Detector settings
             self.request.detector.name = self.detector_settings_widget.nameLineEdit.text()
             self.request.detector.description = self.detector_settings_widget.descriptionLineEdit.text()
@@ -264,7 +288,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.no_of_recoils = self.simulation_settings_widget.noOfRecoilsLineEdit.text()
             self.request.default_simulation.no_of_scaling = self.simulation_settings_widget.noOfScalingLineEdit.text()
 
-            self.measuring_unit_settings.set_settings(self)
             self.depth_profile_settings.set_settings(self)
             
             if not self.settings.has_been_set():
