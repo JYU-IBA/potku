@@ -127,21 +127,21 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                                  double_validator)
 
         # Add detector settings view to the settings view
-        self.detector_settings = DetectorSettingsWidget()
-        self.ui.tabs.addTab(self.detector_settings, "Detector Settings")
+        self.detector_settings_widget = DetectorSettingsWidget()
+        self.ui.tabs.addTab(self.detector_settings_widget, "Detector Settings")
 
-        self.calibration_settings.show(self.detector_settings)
+        self.calibration_settings.show(self.detector_settings_widget)
 
-        self.detector_settings.ui.loadCalibrationParametersButton.clicked.connect(
+        self.detector_settings_widget.ui.loadCalibrationParametersButton.clicked.connect(
             lambda: self.__load_file("CALIBRATION_SETTINGS"))
-        self.detector_settings.ui.saveCalibrationParametersButton.clicked.connect(
+        self.detector_settings_widget.ui.saveCalibrationParametersButton.clicked.connect(
             lambda: self.__save_file("CALIBRATION_SETTINGS"))
-        self.detector_settings.ui.executeCalibrationButton.clicked.connect(
+        self.detector_settings_widget.ui.executeCalibrationButton.clicked.connect(
             self.__open_calibration_dialog)
-        self.detector_settings.ui.executeCalibrationButton.setEnabled(
+        self.detector_settings_widget.ui.executeCalibrationButton.setEnabled(
             not self.request.measurements.is_empty())
-        self.detector_settings.ui.slopeLineEdit.setValidator(double_validator)
-        self.detector_settings.ui.offsetLineEdit.setValidator(double_validator)
+        self.detector_settings_widget.ui.slopeLineEdit.setValidator(double_validator)
+        self.detector_settings_widget.ui.offsetLineEdit.setValidator(double_validator)
 
         # Add simulation settings view to the settings view
         self.simulation_settings = SimulationSettingsWidget()
@@ -183,7 +183,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             settings.show(self)
         elif settings_type == "CALIBRATION_SETTINGS":
             settings = CalibrationParameters()
-            settings.show(self.detector_settings)
+            settings.show(self.detector_settings_widget)
         else:
             return
 
@@ -207,7 +207,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         if filename:
             if settings_type == "CALIBRATION_SETTINGS":
-                settings.set_settings(self.detector_settings)
+                settings.set_settings(self.detector_settings_widget)
                 settings.save_settings(filename)
             else:
                 settings.set_settings(self)
@@ -240,12 +240,14 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # TODO: Proper checking for all setting values
         # This try-catch works for Beam Element that has not been set yet.
         try:
-            self.request.detector.name = self.detector_settings.nameLineEdit.text()
-            self.request.detector.description = self.detector_settings.descriptionLineEdit.text()
-            self.request.detector.detector_type = DetectorType(self.detector_settings.typeComboBox.currentIndex())
+            # Detector settings
+            self.request.detector.name = self.detector_settings_widget.nameLineEdit.text()
+            self.request.detector.description = self.detector_settings_widget.descriptionLineEdit.text()
+            self.request.detector.detector_type = DetectorType(self.detector_settings_widget.typeComboBox.currentIndex())
+            self.calibration_settings.set_settings(self.detector_settings_widget)
+            self.request.detector.calibration = self.calibration_settings
 
             self.measuring_unit_settings.set_settings(self)
-            self.calibration_settings.set_settings(self.detector_settings)
             self.depth_profile_settings.set_settings(self)
             
             if not self.settings.has_been_set():
