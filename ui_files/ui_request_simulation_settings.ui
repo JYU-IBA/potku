@@ -109,7 +109,7 @@
                   </spacer>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="energyLineEdit_3">
+                  <widget class="QLineEdit" name="nameLineEdit">
                    <property name="minimumSize">
                     <size>
                      <width>300</width>
@@ -149,7 +149,7 @@
                   </spacer>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="energyLineEdit_4">
+                  <widget class="QLineEdit" name="descriptionLineEdit">
                    <property name="minimumSize">
                     <size>
                      <width>300</width>
@@ -189,18 +189,9 @@
                   </spacer>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="energyLineEdit_2">
-                   <property name="minimumSize">
-                    <size>
-                     <width>300</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>100</width>
-                     <height>16777215</height>
-                    </size>
+                  <widget class="QLabel" name="dateLabel">
+                   <property name="text">
+                    <string>TextLabel</string>
                    </property>
                   </widget>
                  </item>
@@ -261,7 +252,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="targetAngleEdit">
+                  <widget class="QLineEdit" name="scatterLineEdit">
                    <property name="minimumSize">
                     <size>
                      <width>70</width>
@@ -288,7 +279,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="targetAngleEdit_2">
+                  <widget class="QLineEdit" name="mainScatterLineEdit">
                    <property name="minimumSize">
                     <size>
                      <width>70</width>
@@ -315,7 +306,7 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="targetAngleEdit_4">
+                  <widget class="QLineEdit" name="energyLineEdit">
                    <property name="minimumSize">
                     <size>
                      <width>70</width>
@@ -375,7 +366,7 @@
                 </spacer>
                </item>
                <item>
-                <widget class="QComboBox" name="recoilAngleWidthComboBox">
+                <widget class="QComboBox" name="modeComboBox">
                  <property name="minimumSize">
                   <size>
                    <width>120</width>
@@ -412,7 +403,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QLineEdit" name="numberOfIonsEdit">
+                <widget class="QLineEdit" name="noOfIonsLineEdit">
                  <property name="minimumSize">
                   <size>
                    <width>70</width>
@@ -439,7 +430,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QLineEdit" name="numberOfPresimuIonsEdit">
+                <widget class="QLineEdit" name="noOfPreionsLineEdit">
                  <property name="minimumSize">
                   <size>
                    <width>70</width>
@@ -466,7 +457,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QLineEdit" name="seedEdit">
+                <widget class="QLineEdit" name="seedLineEdit">
                  <property name="minimumSize">
                   <size>
                    <width>70</width>
@@ -493,7 +484,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QLineEdit" name="averageNumberOfRecoilsEdit">
+                <widget class="QLineEdit" name="noOfRecoilsLineEdit">
                  <property name="minimumSize">
                   <size>
                    <width>70</width>
@@ -520,7 +511,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QLineEdit" name="numberOfRealIonsEdit">
+                <widget class="QLineEdit" name="noOfScalingLineEdit">
                  <property name="minimumSize">
                   <size>
                    <width>70</width>
@@ -543,8 +534,6 @@
          </layout>
         </item>
        </layout>
-       <zorder>horizontalSpacer_4</zorder>
-       <zorder>horizontalLayoutWidget</zorder>
       </widget>
      </item>
     </layout>

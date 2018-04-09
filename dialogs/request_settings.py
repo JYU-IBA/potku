@@ -26,6 +26,7 @@ along with this program (file named 'LICENCE').
 Dialog for the request settings
 """
 from modules.detector import DetectorType
+from modules.simulation import SimulationMode, SimulationType
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
@@ -82,8 +83,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # Tells the object to show its data in the given measuring unit widget
         self.measuring_unit_settings.show(self)
         self.depth_profile_settings.show(self)
-        
-        # Adds settings descriptive picture for the parameters 
+
+        # Adds settings descriptive picture for the parameters
         self.ui.picture.setScaledContents(True)
         
         pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
@@ -144,14 +145,14 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.detector_settings_widget.ui.offsetLineEdit.setValidator(double_validator)
 
         # Add simulation settings view to the settings view
-        self.simulation_settings = SimulationSettingsWidget()
-        self.ui.tabs.addTab(self.simulation_settings, "Simulation Settings")
+        self.simulation_settings_widget = SimulationSettingsWidget()
+        self.ui.tabs.addTab(self.simulation_settings_widget, "Simulation Settings")
 
         self.ui.beamIonButton.clicked.connect(
-            lambda: self.__change_element(self.simulation_settings.ui.beamIonButton,
-                                          self.simulation_settings.ui.isotopeComboBox))
-        self.simulation_settings.ui.typeOfSimulationComboBox.addItem("ERD")
-        self.simulation_settings.ui.typeOfSimulationComboBox.addItem("RBS")
+            lambda: self.__change_element(self.simulation_settings_widget.ui.beamIonButton,
+                                          self.simulation_settings_widget.ui.isotopeComboBox))
+        self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem("ERD")
+        self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem("RBS")
 
         self.exec_()
 
@@ -246,6 +247,22 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.detector.detector_type = DetectorType(self.detector_settings_widget.typeComboBox.currentIndex())
             self.calibration_settings.set_settings(self.detector_settings_widget)
             self.request.detector.calibration = self.calibration_settings
+
+            # Simulation settings
+            self.request.default_simulation.name = self.simulation_settings_widget.nameLineEdit.text()
+            self.request.default_simulation.description = self.simulation_settings_widget.descriptionLineEdit.text()
+            self.request.default_simulation.mode = SimulationMode(self.simulation_settings_widget.modeComboBox
+                                                                  .currentIndex())
+            self.request.default_simulation.simulation_type = SimulationType(self.simulation_settings_widget
+                                                                             .typeOfSimulationComboBox.currentIndex())
+            self.request.default_simulation.scatter = self.simulation_settings_widget.scatterLineEdit.text()
+            self.request.default_simulation.main_scatter = self.simulation_settings_widget.mainScatterLineEdit.text()
+            self.request.default_simulation.energy = self.simulation_settings_widget.energyLineEdit.text()
+            self.request.default_simulation.no_of_ions = self.simulation_settings_widget.noOfIonsLineEdit.text()
+            self.request.default_simulation.no_of_preions = self.simulation_settings_widget.noOfPreionsLineEdit.text()
+            self.request.default_simulation.seed = self.simulation_settings_widget.seedLineEdit.text()
+            self.request.default_simulation.no_of_recoils = self.simulation_settings_widget.noOfRecoilsLineEdit.text()
+            self.request.default_simulation.no_of_scaling = self.simulation_settings_widget.noOfScalingLineEdit.text()
 
             self.measuring_unit_settings.set_settings(self)
             self.depth_profile_settings.set_settings(self)
