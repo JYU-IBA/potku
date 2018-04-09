@@ -4,6 +4,7 @@
 Created on 23.3.2018
 Updated on 27.3.2018
 """
+from enum import Enum
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
@@ -11,24 +12,41 @@ __versio__ = "2.0"
 
 import json
 import os
+import datetime
 
 from modules.foil import CircularFoil, RectangularFoil
 from modules.layer import Layer
+from modules.calibration_parameters import CalibrationParameters
+
+
+class DetectorType(Enum):
+    ToF = 0
+
 
 class Detector:
 
-    __slots__ = "name", "angle", "foils"
+    __slots__ = "request", "name", "description", "date", "detector_type", "calibration", "foils"
 
-    def __init__(self, name, angle, foils):
+    def __init__(self, request, name="", description="", date=datetime.date.today(), detector_type=DetectorType.ToF,
+                 calibration=CalibrationParameters(), foils=[]):
         """Initialize a detector.
 
         Args:
-            angle: Detector angle.
+            request: Request in which this detector is used.
+            name: Detector name.
+            description: Detector description.
+            date: Date of modification of detector file.
+            detector_type: Type of detector.
+            calibration: Calibration parameters for detector.
             foils: Detector foils.
 
         """
+        self.request = request
         self.name = name
-        self.angle = angle
+        self.description = description
+        self.date = date
+        self.detector_type = detector_type
+        self.calibration = calibration
         self.foils = foils
 
     @classmethod
@@ -39,7 +57,6 @@ class Detector:
             file_path: A file path to JSON file containing the detector
                        parameters.
         """
-
         obj = json.load(open(file_path))
 
         # Below we do conversion from dictionary to Detector object

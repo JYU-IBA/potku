@@ -108,7 +108,7 @@ def save_file_dialog(parent, default_folder, title, files):
     filename = QtWidgets.QFileDialog.getSaveFileName(parent,
                                                  title,
                                                  default_folder,
-                                                 parent.tr(files))
+                                                 parent.tr(files))[0]
     return filename
 
 
@@ -216,8 +216,16 @@ def tof_list(cut_file, directory, save_output=False):
                                              cwd=bin_dir,
                                              shell=True,
                                              startupinfo=startupinfo)
+        elif platform.system() == 'Linux':
+            command = "{0} {1}".format(join(bin_dir, "tof_list_linux"), cut_file)
+            p = subprocess.Popen(command.split(' ', 1), cwd=bin_dir,
+                                 stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.PIPE)
+            stdout, unused_stderr = p.communicate()
+
         else:
-            command = "{0} {1}".format(join(bin_dir, "tof_list"), cut_file)
+            command = "{0} {1}".format(join(bin_dir, "tof_list_mac"), cut_file)
             p = subprocess.Popen(command.split(' ', 1), cwd=bin_dir,
                                  stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE,

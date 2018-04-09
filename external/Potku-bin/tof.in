@@ -11,6 +11,6 @@ Number of depth steps: 100
 Depth step for stopping: 20.0
 Depth step for output: 20.0
 Depths for concentration scaling: 200.0 600.0
-Cross section: 1
+Cross section: 3
 Number of iterations: 3
-Efficiency directory: C:/Users/localadmin/potku/efficiency_files
+Efficiency directory: /Users/monisiro/potku/efficiency_files

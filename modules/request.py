@@ -28,13 +28,12 @@ __versio__ = "1.0"
 
 import configparser, logging
 from datetime import datetime
-from os import listdir, makedirs, stat
-from os.path import exists, isfile, join, split, splitext
-from modules.sample import Samples
+from os import path, listdir, makedirs, stat
 
 from modules.measurement import Measurements
 from modules.simulation import Simulations
 from modules.settings import Settings
+from modules.detector import Detector
 
 class Request:
     """Request class to handle all measurements.
@@ -54,20 +53,20 @@ class Request:
         # TODO: Get rid of statusbar.
         self.directory = directory
         self.request_name = name
-        unused_directory, tmp_dirname = split(self.directory)
+        unused_directory, tmp_dirname = path.split(self.directory)
         self.settings = Settings(self.directory)
         self.global_settings = global_settings
         self.masses = masses
         self.statusbar = statusbar
-        self.samples = Samples(self)
-        # self.measurements = Measurements(self)
+        self.measurements = Measurements(self)
         self.simulations = Simulations(self)
+        self.detector = Detector(self)
         self.__tabs = tabs
         self.__master_measurement = None
         self.__non_slaves = []  # List of measurements that aren't slaves. Easier
         
         # Check folder exists and make request file there.
-        if not exists(directory):
+        if not path.exists(directory):
             makedirs(directory)
             
         self.__set_request_logger()
@@ -75,7 +74,7 @@ class Request:
         # Request file containing necessary information of the request.
         # If it exists, we assume old request is loaded.
         self.__request_information = configparser.ConfigParser()
-        self.request_file = join(directory, "{0}.proj".format(tmp_dirname))
+        self.request_file = path.join(directory, "{0}.proj".format(tmp_dirname))
         
         # Defaults
         self.__request_information.add_section("meta")
@@ -84,7 +83,7 @@ class Request:
         self.__request_information["meta"]["created"] = str(datetime.now())
         self.__request_information["meta"]["master"] = ""
         self.__request_information["meta"]["nonslave"] = ""
-        if not exists(self.request_file):
+        if not path.exists(self.request_file):
             self.save()
         else:
             self.load()
@@ -133,15 +132,25 @@ class Request:
         """Get master measurement of the request.
         """
         return self.__master_measurement
+        
+        
+    def get_measurements_files(self):
+        """Get measurements files inside request folder.
+        """
+        # TODO: Possible for different formats (such as binary data .lst)
+        return [f for f in listdir(self.directory) 
+                if path.isfile(path.join(self.directory, f)) and
+                path.splitext(f)[1] == ".asc" and
+                stat(path.join(self.directory, f)).st_size]  # Do not load empty files.
 
     def get_simulation_files(self):
         """Get simulation files inside request folder.
         """
         # TODO: Possible for different formats (such as binary data .lst)
         return [f for f in listdir(self.directory) 
-                if isfile(join(self.directory, f)) and 
-                splitext(f)[1] == ".sim" and 
-                stat(join(self.directory, f)).st_size]  # Do not load empty files.
+                if path.isfile(path.join(self.directory, f)) and
+                path.splitext(f)[1] == ".sim" and
+                stat(path.join(self.directory, f)).st_size]  # Do not load empty files.
      
     
     def get_measurement_tabs(self, exclude_id= -1):
@@ -212,7 +221,7 @@ class Request:
         """
         directory = measurement.directory
         name = measurement.measurement_name
-        selection_file = "{0}.sel".format(join(directory, name))
+        selection_file = "{0}.sel".format(path.join(directory, name))
         if name == self.has_master():
             nonslaves = self.get_nonslaves()
             tabs = self.get_measurement_tabs(measurement.tab_id)
@@ -248,7 +257,7 @@ class Request:
         
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s",
                                       datefmt="%Y-%m-%d %H:%M:%S")    
-        requestlog = logging.FileHandler(join(self.directory, "request.log"))
+        requestlog = logging.FileHandler(path.join(self.directory, "request.log"))
         requestlog.setLevel(logging.INFO)   
         requestlog.setFormatter(formatter)
         

@@ -91,10 +91,10 @@ class MeasuringSettings:
         except:
             print("Can't find the checkbox in the dialog")
         if self.element.name:
-            dialog.elementButton.setText(self.element.name)
+            dialog.beamIonButton.setText(self.element.name)
             dialog.isotopeComboBox.setEnabled(True)
         else:
-            dialog.elementButton.setText("Select")
+            dialog.beamIonButton.setText("Select")
             dialog.isotopeComboBox.setEnabled(False)
         dialog.energyLineEdit.setText(str(self.energy))
         dialog.detectorAngleLineEdit.setText(str(self.detector_angle))
@@ -122,7 +122,7 @@ class MeasuringSettings:
         # Check that an isotope has been selected. Otherwise the program will crash.
         if isotope_index != -1:
             isotope_data = dialog.isotopeComboBox.itemData(isotope_index)
-            self.element = Element(dialog.elementButton.text(), isotope_data[0])
+            self.element = Element(dialog.beamIonButton.text(), isotope_data[0])
             self.energy = float(dialog.energyLineEdit.text())
             self.detector_angle = float(dialog.detectorAngleLineEdit.text())
             self.target_angle = float(dialog.targetAngleLineEdit.text())

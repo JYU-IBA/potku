@@ -5,18 +5,16 @@ Updated on 28.3.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
-from matplotlib import cm
-from matplotlib.colors import LogNorm
-import matplotlib.lines as lines
-from PyQt5 import QtCore, QtWidgets, QtGui
+import numpy.random
+from PyQt5 import QtCore, QtWidgets
+from matplotlib.widgets import RectangleSelector
 
 from widgets.matplotlib.base import MatplotlibWidget
-from matplotlib.widgets import RectangleSelector, TextBox
-import numpy.random
 
 
 class Point:
     def __init__(self, xy):
+        # TODO: Precision
         self._x = xy[0]
         self._y = xy[1]
 
@@ -31,6 +29,12 @@ class Point:
 
     def get_y(self):
         return self._y
+
+    def set_x(self, x):
+        self._x = x
+
+    def set_y(self, y):
+        self._y = y
 
     def set_coordinates(self, xy):
         self._x = xy[0]
@@ -57,7 +61,7 @@ class Element:
     def get_name(self):
         return self.name
 
-    def get_point_i(self, i):
+    def get_point_by_i(self, i):
         return self._points[i]
 
     def get_points(self):
@@ -86,24 +90,43 @@ class Element:
     def remove_point(self, point):
         self._points.remove(point)
 
+    def get_left_neighbor(self, point):
+        ind = self._points.index(point)
+        if ind == 0:
+            return None
+        else:
+            return self._points[ind - 1]
+
+    def get_right_neighbor(self, point):
+        ind = self._points.index(point)
+        if ind == len(self._points) - 1:
+            return None
+        else:
+            return self._points[ind + 1]
+
 
 # xs = (100 * numpy.random.rand(20)).tolist()
 # ys = (100 * numpy.random.rand(20)).tolist()
 # xys = list(zip(xs, ys))
 # points = []
+# p = Point((0, 0))
+# points.append(p)
 # for xy in xys:
 #     points.append(Point(xy))
 # elements = [Element("He", points)]
 # coords = []
 # for point in elements[0].get_points():
-#     coords.append(point.get_point())
+#     coords.append(point.get_coordinates())
 # print(coords)
-# elements[0].add_point((25, 10))
+# elements[0].add_point(Point((25, 10)))
 # coords2 = []
 # for point in elements[0].get_points():
-#     coords2.append(point.get_point())
+#     coords2.append(point.get_coordinates())
 # print(coords2)
-# print(elements[0].get_xs())
+# try:
+#     print(elements[0].get_right_neighbor(p).get_coordinates())
+# except:
+#     print("Ei löydy")
 
 class RecoilAtomDistributionWidget(MatplotlibWidget):
     """Matplotlib simulation depth profile widget. Using this widget, the user
@@ -141,19 +164,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # self.elements = { "He": [[0.00, 50.00], [50.00, 50.00]] }
         # self.xs.sort()
         # self.xys = sorted(self.xys, key=lambda x: x[0])
-        self.xs = (100 * numpy.random.rand(20)).tolist()
-        self.ys = (100 * numpy.random.rand(20)).tolist()
+        self.xs = (99.99 * numpy.random.rand(20)).tolist()
+        self.ys = (99.99 * numpy.random.rand(20)).tolist()
         self.xys = list(zip(self.xs, self.ys))
         self.points = []
         for xy in self.xys:
             self.points.append(Point(xy))
 
+        # Minimum number of points is 2
         self.elements = [Element("He", self.points)]
 
         self.lines = None
         self.markers = None
-        self.selected = None
-        self.drag_i = None
+        self.markers_selected = None
+        self.dragged_points = []
         self.selected_points = []
         self.lastind = -1
         self.text = None
@@ -234,8 +258,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.lines, = self.axes.plot(self.elements[0].get_xs(), self.elements[0].get_ys(), color="blue")
         self.markers, = self.axes.plot(self.elements[0].get_xs(), self.elements[0].get_ys(), color="blue", marker="o", markersize=10, picker=5,
                                        linestyle="None")
-        self.selected, = self.axes.plot(0, 0, marker="o", markersize=10, linestyle="None",
-                                        color='yellow', visible=False)
+        self.markers_selected, = self.axes.plot(0, 0, marker="o", markersize=10, linestyle="None",
+                                                color='yellow', visible=False)
 
         # self.text_axes = self.fig.add_axes([0.8, 0.05, 0.1, 0.075])
         # self.text_box = TextBox(self.text_axes, 'Coordinates', initial="Testi")
@@ -329,20 +353,34 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Make own buttons
         self.mpl_toolbar.addSeparator()
 
+        # TODO: Change locale to use dots instead of commas as decimal points
+        # TODO: Set sensible minimum and maximum values
+        # TODO: New buttons aren't displayed in the overflow menu
         # Point x coordinate text box
-        self.x_coordinate_box = QtWidgets.QLineEdit(self)
-        self.x_coordinate_box.setToolTip("X coordinate of point")
+        self.x_coordinate_box = QtWidgets.QDoubleSpinBox(self)
+        self.x_coordinate_box.setToolTip("X coordinate of selected point")
+        self.x_coordinate_box.setSingleStep(0.1)
+        self.x_coordinate_box.setDecimals(2)
+        self.x_coordinate_box.setKeyboardTracking(False)
+        self.x_coordinate_box.valueChanged.connect(self.set_selected_point_x)
+        # self.x_coordinate_box.setLocale()
         # self.x_coordinate_box.setAlignment(
         #         QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         # self.mpl_toolbar.insert(self.mpl_toolbar._actions["pan"], self.x_coordinate_box)
-        self.x_coordinate_box.setFixedWidth(40)
+        # self.x_coordinate_box.setFixedWidth(40)
         self.mpl_toolbar.addWidget(self.x_coordinate_box)
+        self.x_coordinate_box.setEnabled(False)
 
         # Point y coordinate text box
-        self.y_coordinate_box = QtWidgets.QLineEdit(self)
-        self.y_coordinate_box.setToolTip("Y coordinate of point")
-        self.y_coordinate_box.setFixedWidth(40)
+        self.y_coordinate_box = QtWidgets.QDoubleSpinBox(self)
+        self.y_coordinate_box.setToolTip("Y coordinate of selected point")
+        self.y_coordinate_box.setSingleStep(0.1)
+        self.y_coordinate_box.setDecimals(4)
+        self.y_coordinate_box.setKeyboardTracking(False)
+        self.y_coordinate_box.valueChanged.connect(self.set_selected_point_y)
+        # self.y_coordinate_box.setFixedWidth(40)
         self.mpl_toolbar.addWidget(self.y_coordinate_box)
+        self.y_coordinate_box.setEnabled(False)
 
         # Rectangle selector button
         self.rectangle_select_button = QtWidgets.QToolButton(self)
@@ -361,6 +399,36 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.point_remove_button.setToolTip("Remove selected points")
         self.mpl_toolbar.addWidget(self.point_remove_button)
 
+    def set_selected_point_x(self):
+        x = self.x_coordinate_box.value()
+        leftmost_sel_point = self.selected_points[0]
+        left_neighbor = self.elements[0].get_left_neighbor(leftmost_sel_point)
+        right_neighbor = self.elements[0].get_right_neighbor(leftmost_sel_point)
+
+        # Can't move past neighbors. If tried, sets x coordinate to 0.01 from neighbor's x coordinate.
+        if left_neighbor is None:
+            if x < right_neighbor.get_x():
+                leftmost_sel_point.set_x(x)
+            else:
+                leftmost_sel_point.set_x(right_neighbor.get_x() - 0.01)
+        elif right_neighbor is None:
+            if x > left_neighbor.get_x():
+                leftmost_sel_point.set_x(x)
+            else:
+                leftmost_sel_point.set_x(left_neighbor.get_x() + 0.01)
+        elif left_neighbor.get_x() < x < right_neighbor.get_x():
+                leftmost_sel_point.set_x(x)
+        elif left_neighbor.get_x() >= x:
+            leftmost_sel_point.set_x(left_neighbor.get_x() + 0.01)
+        elif right_neighbor.get_x() <= x:
+            leftmost_sel_point.set_x(right_neighbor.get_x() - 0.01)
+        self.update_plot()
+
+    def set_selected_point_y(self):
+        y = self.y_coordinate_box.value()
+        leftmost_sel_point = self.selected_points[0]
+        leftmost_sel_point.set_y(y)
+        self.update_plot()
 
 
     # def find_clicked_point(self, x, y):
@@ -389,10 +457,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
-        # TODO: Implement a separate selection mode for moving multiple points or a line
+        # TODO: Implement moving multiple points
         # Don't do anything if rectangle selector, drag tool or zoom tool is active.
-        if self.rectangle_selector.active or self.mpl_toolbar.children()[12].isChecked() \
-                or self.mpl_toolbar.children()[14].isChecked():
+        if self.rectangle_selector.active or self.__button_drag.isChecked() \
+                or self.__button_zoom.isChecked():
             return
         # Only inside the actual graph axes, else do nothing.
         if event.inaxes != self.axes:
@@ -401,10 +469,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             contains, info = self.markers.contains(event)
             if contains:
                 i = info['ind'][0]
-                self.selected_points = [self.elements[0].get_point_i(i)]
+                self.selected_points = [self.elements[0].get_point_by_i(i)]
                 # self.lastind = i
+                self.dragged_points = [self.elements[0].get_point_by_i(i)]
                 self.update_plot()
-                self.drag_i = i
             else:
                 self.selected_points.clear()
                 self.update_plot()
@@ -413,6 +481,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     x = event.xdata
                     y = event.ydata
                     self.add_point_on_click((x, y))
+                    i = line_info['ind'][0]
+                    self.dragged_points = [self.elements[0].get_point_by_i(i+1)]
         # elif event.button == 3:  # Right click
         #     contains, info = self.markers.contains(event)
         #     if contains:
@@ -473,17 +543,23 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         #     self.selected.set_data(self.elements[0].get_point(dataind).get_x(),
         #                            self.elements[0].get_point(dataind).get_y())
         if self.selected_points:
-            self.selected.set_visible(True)
+            self.markers_selected.set_visible(True)
             selected_xs = []
             selected_ys = []
             for point in self.selected_points:
                 selected_xs.append(point.get_x())
                 selected_ys.append(point.get_y())
-            self.selected.set_data(selected_xs, selected_ys)
+            self.markers_selected.set_data(selected_xs, selected_ys)
+            self.x_coordinate_box.setEnabled(True)
+            self.x_coordinate_box.setValue(self.selected_points[0].get_x())
+            self.y_coordinate_box.setEnabled(True)
+            self.y_coordinate_box.setValue(self.selected_points[0].get_y())
             # self.text.set_text('selected: %d %d' % (self.selected_points[0].get_coordinates()[0],
             #                                     self.selected_points[0].get_coordinates()[1]))
         else:
-            self.selected.set_visible(False)
+            self.markers_selected.set_visible(False)
+            self.x_coordinate_box.setEnabled(False)
+            self.y_coordinate_box.setEnabled(False)
 
         self.fig.canvas.draw()
 
@@ -565,29 +641,72 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # self.remove_point(self.dragging_point)
         # self.dragging_point = self.add_point_on_motion(event)
         # self.update_plot()
-        if self.rectangle_selector.active or self.mpl_toolbar.children()[12].isChecked() \
-                or self.mpl_toolbar.children()[14].isChecked():
+        if self.rectangle_selector.active or self.__button_drag.isChecked() \
+                or self.__button_zoom.isChecked():
             return
         if event.inaxes != self.axes:
             return
-        if self.drag_i is None:
+        if not self.dragged_points:
             return
-        if self.drag_i == 0:
-            if len(self.elements[0].get_points()) == 1:
-                self.update_location(event)
-            elif event.xdata < self.elements[0].get_point_i(self.drag_i + 1).get_x():
-                self.update_location(event)
-        elif self.drag_i == len(self.elements[0].get_points()) - 1:
-            if len(self.elements[0].get_points()) == 1:
-                self.update_location(event)
-            elif event.xdata > self.elements[0].get_point_i(self.drag_i - 1).get_x():
-                self.update_location(event)
-        elif self.elements[0].get_point_i(self.drag_i - 1).get_x() \
-                < event.xdata < self.elements[0].get_point_i(self.drag_i + 1).get_x():
-                self.update_location(event)
+
+        leftmost_drag_point = self.dragged_points[0]
+        left_neighbor = self.elements[0].get_left_neighbor(leftmost_drag_point)
+        right_neighbor = self.elements[0].get_right_neighbor(leftmost_drag_point)
+
+        # # Can't move past neighbors. If tried, sets x coordinate to 0.01 from neighbor's x coordinate.
+        # if left_neighbor is None:
+        #     if event.xdata < right_neighbor.get_x():
+        #         leftmost_drag_point.set_x(event.xdata)
+        # #     else:
+        # #         leftmost_drag_point.set_x(right_neighbor.get_x() - 0.01)
+        # elif right_neighbor is None:
+        #     if event.xdata > left_neighbor.get_x():
+        #         self.update_location(event)
+        #     # else:
+        #     #     leftmost_sel_point.set_x(left_neighbor.get_x() + 0.01)
+        # elif left_neighbor.get_x() < event.xdata < right_neighbor.get_x():
+        #     self.update_location(event)
+        # # elif left_neighbor.get_x() >= x:
+        # #     leftmost_sel_point.set_x(left_neighbor.get_x() + 0.01)
+        # # elif right_neighbor.get_x() <= x:
+        # #     leftmost_sel_point.set_x(right_neighbor.get_x() + 0.01)
+
+        if left_neighbor is None:
+            if event.xdata < right_neighbor.get_x():
+                leftmost_drag_point.set_coordinates((event.xdata, event.ydata))
+            else:
+                leftmost_drag_point.set_coordinates((right_neighbor.get_x() - 0.01, event.ydata))
+        elif right_neighbor is None:
+            if event.xdata > left_neighbor.get_x():
+                leftmost_drag_point.set_coordinates((event.xdata, event.ydata))
+            else:
+                leftmost_drag_point.set_coordinates((left_neighbor.get_x() + 0.01, event.ydata))
+        elif left_neighbor.get_x() < event.xdata < right_neighbor.get_x():
+            leftmost_drag_point.set_coordinates((event.xdata, event.ydata))
+        elif left_neighbor.get_x() >= event.xdata:
+            leftmost_drag_point.set_coordinates((left_neighbor.get_x() + 0.01, event.ydata))
+        elif right_neighbor.get_x() <= event.xdata:
+            leftmost_drag_point.set_coordinates((right_neighbor.get_x() - 0.01, event.ydata))
+
+        self.update_plot()
+
+        # if self.drag_i == 0:
+        #     if len(self.elements[0].get_points()) == 1:
+        #         self.update_location(event)
+        #     elif event.xdata < self.elements[0].get_point_by_i(self.drag_i + 1).get_x():
+        #         self.update_location(event)
+        # elif self.drag_i == len(self.elements[0].get_points()) - 1:
+        #     if len(self.elements[0].get_points()) == 1:
+        #         self.update_location(event)
+        #     elif event.xdata > self.elements[0].get_point_by_i(self.drag_i - 1).get_x():
+        #         self.update_location(event)
+        # elif self.elements[0].get_point_by_i(self.drag_i - 1).get_x() \
+        #         < event.xdata < self.elements[0].get_point_by_i(self.drag_i + 1).get_x():
+        #         self.update_location(event)
 
     def update_location(self, event):
-        self.elements[0].get_point_i(self.drag_i).set_coordinates((event.xdata, event.ydata))
+        for point in self.dragged_points:
+            point.set_coordinates((event.xdata, event.ydata))
         # print(self.drag_i)
         # print(self.elements[0].get_point(self.drag_i).get_coordinates())
         self.update_plot()
@@ -612,7 +731,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 or self.mpl_toolbar.children()[14].isChecked():
             return
         if event.button == 1:
-            self.drag_i = None
+            self.dragged_points.clear()
             self.update_plot()
 
     def onselect(self, eclick, erelease):

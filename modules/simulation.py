@@ -88,7 +88,10 @@ class Simulations:
             for key in keys:
                 if self.simulations[key].simulation_file == file_name:
                     return simulation  # measurement = None
-            simulation = Simulation(new_file, self.request, tab_id)
+            simulation = Simulation(self.request)
+            simulation.add_command_file(new_file)
+#            simulation.simulation_name = file_name
+            simulation.tab_id = tab_id
             # measurement.load_data()
             self.simulations[tab_id] = simulation
         except:
@@ -167,29 +170,19 @@ class Simulations:
 class Simulation:
     """Simulation class handles the simulation data."""
 
-    def __init__(self, command_file, request, tab_id):
+    def __init__(self, request):
         """Inits Simulation.
         Args:
             request: Request class object.
         """
-
-        simulation_folder, simulation_name = os.path.split(command_file)
-        self.simulation_file = simulation_name  # With extension
-        self.simulation_name = os.path.splitext(simulation_name)[0]
-
         self.request = request
-        self.directory = os.path.join(simulation_folder, self.simulation_name)
-
         self.data = []
-        self.tab_id = tab_id
-
-        self.__make_directories(self.directory)
-        # self.set_loggers()
+        self.simulation_file = None
+        self.simulation_name = None
+        self.directory = None
 
         # The settings that come from the request
         self.__request_settings = self.request.settings
-        # The settings that are individually set for this measurement
-        self.simulation_settings = Settings(self.directory, self.__request_settings)
 
         # Main window's statusbar TODO: Remove GUI stuff.
         self.statusbar = self.request.statusbar
@@ -202,6 +195,25 @@ class Simulation:
         self.callMCERD = None
         self.call_get_espe = None
 
+    def add_command_file(self, command_file):
+        """ Adds command file to Simulation object.
+
+        Args:
+            command_file: Command file to add.
+        """
+        simulation_folder, simulation_name = os.path.split(command_file)
+        self.simulation_file = simulation_name  # With extension
+        self.simulation_name = os.path.splitext(simulation_name)[0]
+        self.create_directory(simulation_folder)
+
+    def create_directory(self, simulation_folder):
+        """ Creates folder structure for the simulation.
+
+        Args:
+            simulation_folder: Path of the simulation folder.
+        """
+        self.directory = os.path.join(simulation_folder, self.simulation_name)
+        self.__make_directories(self.directory)
 
     def remove_by_tab_id(self, tab_id):
         """Removes simulation from tabs by tab id
