@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 12.8.2013
+Updated on 31.3.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -23,10 +23,11 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Timo Konu"
-__versio__ = "1.0"
+__version__ = "1.0"
 
-import struct, numpy
-from os.path import join, isfile, split, splitext
+import struct
+import numpy
+import os
 from PyQt5 import uic, QtCore, QtWidgets
 
 from modules.general_functions import open_files_dialog
@@ -44,7 +45,7 @@ class ImportDialogBinary(QtWidgets.QDialog):
         self.__statusbar = statusbar
         self.__parent = parent
         self.__global_settings = self.__parent.settings
-        uic.loadUi(join("ui_files", "ui_import_dialog_binary.ui"), self)
+        uic.loadUi(os.path.join("ui_files", "ui_import_dialog_binary.ui"), self)
         self.imported = False
         self.__files_added = {}  # Dictionary of files to be imported.
         
@@ -59,7 +60,6 @@ class ImportDialogBinary(QtWidgets.QDialog):
         
         self.exec_()
 
-
     def __add_file(self):
         """Add a file to list of files to be imported.
         """
@@ -70,8 +70,8 @@ class ImportDialogBinary(QtWidgets.QDialog):
         for file in files:
             if file in self.__files_added:
                 continue
-            directoty, filename = split(file)
-            name, unused_ext = splitext(filename)
+            directoty, filename = os.path.split(file)
+            name, unused_ext = os.path.splitext(filename)
             item = QtWidgets.QTreeWidgetItem([name])
             item.file = file
             item.name = name
@@ -80,15 +80,13 @@ class ImportDialogBinary(QtWidgets.QDialog):
             self.__files_added[file] = file
             self.treeWidget.addTopLevelItem(item)
         self.__check_if_import_allowed()
-    
-    
+
     def __check_if_import_allowed(self):
         """Toggle state of import button depending on if it is allowed.
         """
         root = self.treeWidget.invisibleRootItem()
         self.button_import.setEnabled(root.childCount() > 0)
-        
-        
+
     def __convert_file(self, input_file, output_file):
         """Convert binary file into ascii file.
         
@@ -110,40 +108,44 @@ class ImportDialogBinary(QtWidgets.QDialog):
         numpy_array = numpy.array(data)
         numpy.savetxt(output_file, numpy_array, delimiter=" ", fmt="%d %d")  
         
-        
+    # TODO: This part needs to be tested (sample was added).
     def __import_files(self):
         """Import binary files.
         """
-        imported_files = []
+        imported_files = {}
         progress_bar = QtWidgets.QProgressBar()
         self.__statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
         
         root = self.treeWidget.invisibleRootItem()
         root_child_count = root.childCount()
+
+        sample_count = 0
         for i in range(root_child_count):
             progress_bar.setValue(i / root_child_count)
             item = root.child(i)
             input_file = item.file
-            output_file = "{0}.{1}".format(
-               join(self.__request.directory, item.name), "asc")
+
+            sample_path = os.path.join(self.__request.directory, "Sample_" + str(sample_count))
+            sample_count += 1
+            self.request.samples.add_sample_file(sample_path)
+            measurement_path = os.path.join(sample_path, item.name)
+
+            output_file = "{0}.{1}".format(measurement_path, "asc")
             n = 2
             while True:  # Allow import of same named files.
-                if not isfile(output_file):
+                if not os.path.isfile(output_file):
                     break
-                output_file = "{0}-{2}.{1}".format(
-                   join(self.__request.directory, item.name),
-                   "asc", n)
+                output_file = "{0}-{2}.{1}".format(measurement_path, "asc", n)
                 n += 1
-            imported_files.append(output_file)
+            imported_files[sample_path] = output_file
             self.__convert_file(input_file, output_file)
         self.__statusbar.removeWidget(progress_bar)
         progress_bar.hide()
         self.imported = True
         self.__parent.load_request_measurements(imported_files)
         self.close()
-        
-        
+
     def __remove_selected(self):
         """Remove the selected files from import list.
         """

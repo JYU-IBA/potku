@@ -1,7 +1,7 @@
 # coding=utf-8
-'''
+"""
 Created on 21.4.2013
-Updated on 15.8.2013
+Updated on 9.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -22,11 +22,15 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+"""
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
+             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
-import logging, os, sys, numpy
+import logging
+import os
+import sys
+import numpy
 from PyQt5 import QtCore
 
 from modules.element import Element
@@ -35,10 +39,10 @@ from modules.null import Null
 
 
 class EnergySpectrum:
-    '''
-    '''
+    """ Class for energy spectrum.
+    """
     def __init__(self, measurement, cut_files, spectrum_width, progress_bar=Null()):
-        '''Inits energy spectrum
+        """Inits energy spectrum
         
         Args:
             measurement: A Measurement class object for which Energy Spectrum
@@ -46,23 +50,21 @@ class EnergySpectrum:
             cut_files: String list of cut files.
             spectrum_width: Float representing energy spectrum graph width.
             progress_bar: QtWidgets.QProgressBar for GUI (Null class object otherwise).
-        '''
+        """
         self.__measurement = measurement
         self.__global_settings = self.__measurement.request.global_settings
         self.__cut_files = cut_files
         self.__spectrum_width = spectrum_width
         self.__progress_bar = progress_bar
-        self.__directory_es = os.path.join(self.__measurement.directory,
-                                        "energy_spectrum")
+        self.__directory_es = measurement.directory_energy_spectra
         # tof_list files here just in case progress bar might happen to 'disappear'.
         self.__tof_listed_files = self.__load_cuts()
-        
-    
+
     def calculate_spectrum(self):
-        '''Calculate energy spectrum data from cut files.
+        """Calculate energy spectrum data from cut files.
         
         Returns list of cut files 
-        '''
+        """
         histed_files = {}
         keys = self.__tof_listed_files.keys()
         for key in keys:
@@ -76,27 +78,23 @@ class EnergySpectrum:
             for key in keys:
                 file = self.__measurement.measurement_file
                 histed = histed_files[key]
-                filename = os.path.join(self.__directory_es,
-                                "{0}.{1}.hist".format(os.path.splitext(file)[0],
-                                                      key))
+                filename = os.path.join(self.__directory_es, "{0}.{1}.hist".format(os.path.splitext(file)[0], key))
                 numpy_array = numpy.array(histed,
                                           dtype=[('float', float), ('int', int)])
                 numpy.savetxt(filename, numpy_array, delimiter=" ", fmt="%5.5f %6d")
         return histed_files
-        
-        
+
     def __load_cuts(self):
-        '''Loads cut files through tof_list into list.
+        """Loads cut files through tof_list into list.
         
         Return:
             Returns list of cut files' tof_list results.
-        '''
+        """
         try:
             cut_dict = {}
             save_output = self.__global_settings.is_es_output_saved()
             count = len(self.__cut_files)
             dirtyinteger = 0
-            
             
             if not os.path.exists(self.__directory_es):
                 os.makedirs(self.__directory_es)
@@ -120,13 +118,8 @@ class EnergySpectrum:
             import traceback
             msg = "Could not calculate Energy Spectrum. "
             err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
-            str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + \
-                          traceback._some_str(sys.exc_info()[1]),
-                          err_file,
-                          str(sys.exc_info()[2].tb_lineno)])
+            str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + traceback._some_str(sys.exc_info()[1]), err_file,
+                                str(sys.exc_info()[2].tb_lineno)])
             msg += str_err
             logging.getLogger(self.__measurement.measurement_name).error(msg)
         return cut_dict
-    
-        
-    

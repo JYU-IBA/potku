@@ -2,13 +2,12 @@
 # TODO: Add licence information
 """
 Created on 23.3.2018
-Updated on 27.3.2018
+Updated on 9.4.2018
 """
 from enum import Enum
 
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen"
-__versio__ = "2.0"
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import json
 import os
@@ -25,9 +24,10 @@ class DetectorType(Enum):
 
 class Detector:
 
-    __slots__ = "request", "name", "description", "date", "detector_type", "calibration", "foils"
+    # request maybe only temporary parameter
+    __slots__ = "request", "description", "path", "name", "date", "angle", "detector_type", "foils", "calibration", "efficiencies", "efficiencies_path"
 
-    def __init__(self, request, name="", description="", date=datetime.date.today(), detector_type=DetectorType.ToF,
+    def __init__(self, request, path, name="", description="", date=datetime.date.today(), detector_type=DetectorType.ToF,
                  calibration=CalibrationParameters(), foils=[]):
         """Initialize a detector.
 
@@ -42,12 +42,30 @@ class Detector:
 
         """
         self.request = request
+        self.path = path  # With this we get the path of the folder where the .json file needs to go.
         self.name = name
         self.description = description
         self.date = date
         self.detector_type = detector_type
         self.calibration = calibration
         self.foils = foils
+
+        # This is here only for testing that when creating a request and detector, a file is created that should contain
+        # some information about the detector, if there is not one yet.
+        # TODO: This needs to be more specific.
+        file_name = os.path.join(self.path, self.name) + ".detector"
+        try:
+            file = open(file_name, "r")
+            print(file.readlines())
+        except IOError:
+            file = open(file_name, "w")
+            file.write("This is a detector in json format.")
+
+        self.efficiencies = []
+        self.efficiencies_path = os.path.join(self.path, "Efficiency_files")
+
+        if not os.path.exists(self.efficiencies_path):
+            os.makedirs(self.efficiencies_path)
 
     @classmethod
     def from_file(cls, file_path):
@@ -85,21 +103,19 @@ class Detector:
             else:
                 raise json.JSONDecodeError
 
-        return cls(name, angle, foils)
-
+        return cls(file_path, name, angle, foils)
 
 
 class ToFDetector(Detector):
 
-    def __init__(self, name, angle, foils):
+    def __init__(self, path, name, angle, foils):
         """Initialize a Time-of-Flight detector.
 
         Args:
             angle: Detector angle
 
         """
-        Detector.__init__(name, angle, foils)
-
+        Detector.__init__(self, path, name, angle, foils)
 
 
 # TODO: Add other detector types (GAS, SSD).
