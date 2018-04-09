@@ -31,7 +31,7 @@ from datetime import datetime
 from os import path, listdir, makedirs, stat
 
 from modules.measurement import Measurements
-from modules.simulation import Simulations
+from modules.simulation import Simulations, Simulation
 from modules.settings import Settings
 from modules.detector import Detector
 
@@ -61,6 +61,7 @@ class Request:
         self.measurements = Measurements(self)
         self.simulations = Simulations(self)
         self.detector = Detector(self)
+        self.default_simulation = Simulation(self)
         self.__tabs = tabs
         self.__master_measurement = None
         self.__non_slaves = []  # List of measurements that aren't slaves. Easier

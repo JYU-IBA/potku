@@ -8,6 +8,7 @@ Updated on 26.3.2018
 
 Simulation.py runs the MCERD simulation with a command file.
 """
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __versio__ = "2.0"
 
@@ -16,11 +17,10 @@ import platform
 import subprocess
 import logging
 import sys
-from modules.general_functions import md5_for_file
-from modules.settings import Settings
 import shutil
-# from Modules.Null import Null
-# from errno import EEXIST
+import datetime
+from enum import Enum
+
 
 class Simulations:
     """Simulations class handles multiple simulations.
@@ -167,27 +167,55 @@ class Simulations:
 #
 #     # TODO: Function for removing simulation
 
+
+class SimulationType(Enum):
+    ERD = 0
+    RBS = 1
+
+
+class SimulationMode(Enum):
+    narrow = 0
+    wide = 1
+
+
 class Simulation:
     """Simulation class handles the simulation data."""
 
-    def __init__(self, request):
+    __slots__ = "request", "name", "description", "date", "simulation_type", "scatter", "main_scatter", "energy", \
+                "mode", "no_of_ions", "no_of_preions", "seed", "no_of_recoils", "no_of_scaling", \
+                "data", "simulation_file", "directory", "__request_settings", "statusbar", "color_scheme", "callMCERD", "call_get_espe"
+
+    def __init__(self, request, name="", description="", date=datetime.date.today(), simulation_type=None, scatter=0.05,
+                 main_scatter=20, energy=1.0, mode=SimulationMode.narrow, no_of_ions=1000000, no_of_preions=100000,
+                 seed=101, no_of_recoils=10, no_of_scaling=5):
         """Inits Simulation.
         Args:
             request: Request class object.
         """
         self.request = request
+        self.name = name
+        self.description = description
+        self.date = date
+        self.simulation_type = simulation_type
+        self.scatter = scatter
+        self.main_scatter = main_scatter
+        self.energy = energy
+        self.mode = mode
+        self.no_of_ions = no_of_ions
+        self.no_of_preions = no_of_preions
+        self.seed = seed
+        self.no_of_recoils = no_of_recoils
+        self.no_of_scaling = no_of_scaling
+
         self.data = []
         self.simulation_file = None
-        self.simulation_name = None
         self.directory = None
 
         # The settings that come from the request
         self.__request_settings = self.request.settings
 
-        # Main window's statusbar TODO: Remove GUI stuff.
+        # Main window's status bar TODO: Remove GUI stuff.
         self.statusbar = self.request.statusbar
-
-        element_colors = self.request.global_settings.get_element_colors()
 
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
@@ -201,9 +229,9 @@ class Simulation:
         Args:
             command_file: Command file to add.
         """
-        simulation_folder, simulation_name = os.path.split(command_file)
-        self.simulation_file = simulation_name  # With extension
-        self.simulation_name = os.path.splitext(simulation_name)[0]
+        simulation_folder, name = os.path.split(command_file)
+        self.simulation_file = name  # With extension
+        self.name = os.path.splitext(name)[0]
         self.create_directory(simulation_folder)
 
     def create_directory(self, simulation_folder):
