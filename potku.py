@@ -736,7 +736,6 @@ class Potku(QtWidgets.QMainWindow):
                 self.tab_id += 1
 
         if type == "simulation":
-
             simulation = self.request.simulations.add_simulation_file(filename, self.tab_id)
 
             if simulation:  # TODO: Finish this (load_data)
@@ -747,7 +746,7 @@ class Potku(QtWidgets.QMainWindow):
 
                 tab.setAttribute(QtCore.Qt.WA_DeleteOnClose)
                 self.tab_widgets[self.tab_id] = tab
-                tab.add_log()
+#                tab.add_log()
                 tab.data_loaded = load_data
                 if load_data:
                     simulation.load_data()
