@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 8.4.2018
+Updated on 9.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -24,7 +24,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
-             "Severi Jää"
+             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
 import logging, os, shutil, sys, time, hashlib
@@ -149,7 +149,6 @@ class Measurement:
 
         self.directory = measurement_folder
         self.directory_cuts = os.path.join(self.directory, measurement_data_folder, "Cuts")
-        self.directory_elemloss = os.path.join(self.directory_cuts, "Elemloss")
 
         self.directory_composition_changes = os.path.join(measurement_folder, "Composition_changes")
         self.directory_depth_profiles = os.path.join(measurement_folder, "Depth_profiles")
@@ -162,7 +161,6 @@ class Measurement:
 
         self.__make_directories(self.directory)
         self.__make_directories(self.directory_cuts)
-        self.__make_directories(self.directory_elemloss)  # TODO: change the measurement folder structure
         self.__make_directories(self.directory_composition_changes)
         self.__make_directories(self.directory_depth_profiles)
         self.__make_directories(self.directory_energy_spectra)
@@ -489,9 +487,9 @@ class Measurement:
 
     def __remove_old_cut_files(self):
         self.__unlink_files(self.directory_cuts)
-        if not os.path.exists(self.directory_elemloss):
-            os.makedirs(self.directory_elemloss)
-        self.__unlink_files(self.directory_elemloss)
+        if not os.path.exists(self.directory_composition_changes):
+            os.makedirs(self.directory_composition_changes)
+        self.__unlink_files(self.directory_composition_changes)
 
     def __unlink_files(self, directory):
         for the_file in os.listdir(directory):
@@ -511,8 +509,8 @@ class Measurement:
         """
         cuts = [f for f in os.listdir(self.directory_cuts) 
                 if os.path.isfile(os.path.join(self.directory_cuts, f))]
-        elemloss = [f for f in os.listdir(self.directory_elemloss) 
-                    if os.path.isfile(os.path.join(self.directory_elemloss, f))]
+        elemloss = [f for f in os.listdir(self.directory_composition_changes)
+                    if os.path.isfile(os.path.join(self.directory_composition_changes, f))]
         return cuts, elemloss
 
     def fill_cuts_treewidget(self, treewidget, use_elemloss=False, checked_files=[]):
@@ -538,7 +536,7 @@ class Measurement:
             elem_root = QtWidgets.QTreeWidgetItem(["Elemental Losses"])
             for elemloss in cuts_elemloss:
                 item = QtWidgets.QTreeWidgetItem([elemloss])
-                item.directory = self.directory_elemloss
+                item.directory = self.directory_composition_changes
                 item.file_name = elemloss
                 if item.file_name in checked_files:
                     item.setCheckState(0, QtCore.Qt.Checked)

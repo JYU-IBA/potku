@@ -25,10 +25,11 @@ class DetectorType(Enum):
 class Detector:
 
     # request maybe only temporary parameter
-    __slots__ = "request", "description", "path", "name", "date", "angle", "detector_type", "foils", "calibration", "efficiencies", "efficiencies_path"
+    __slots__ = "request", "description", "path", "name", "date", "angle", "detector_type", "foils", "calibration", \
+                "efficiencies", "efficiencies_path"
 
-    def __init__(self, request, path, name="", description="", date=datetime.date.today(), detector_type=DetectorType.ToF,
-                 calibration=CalibrationParameters(), foils=[]):
+    def __init__(self, request, path, name="", description="", date=datetime.date.today(),
+                 detector_type=DetectorType.ToF, calibration=CalibrationParameters(), foils=[]):
         """Initialize a detector.
 
         Args:

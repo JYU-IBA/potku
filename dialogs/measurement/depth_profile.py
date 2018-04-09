@@ -367,7 +367,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
         """
         output_dir = self.output_dir.replace(
                          self.parent.measurement.directory + "\\", "")
-        file = os.path.join(self.parent.measurement.directory, self.save_file)
+        file = os.path.join(self.parent.measurement.directory_depth_profiles, self.save_file)
         fh = open(file, "wt")
         fh.write("{0}\n".format(output_dir))
         fh.write("{0}\n".format("\t".join([str(element)

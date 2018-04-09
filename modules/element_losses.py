@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 19.4.2013
-Updated on 15.8.2013
+Updated on 9.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -37,20 +37,20 @@ from modules.null import Null
 class ElementLosses:
     '''Element Losses class.
     '''
-    def __init__(self, directory_cuts, directory_elemloss, reference_cut_file,
+    def __init__(self, directory_cuts, directory_composition_changes, reference_cut_file,
                  checked_cuts, partition_count, progress_bar=Null()):
         '''Inits Element Losses class.
         
         Args:
             directory_cuts: String representing cut file directory.
-            directory_elemloss: String representing elemental losses directory.
+            directory_composition_changes: String representing elemental losses directory.
             reference_cut_file: String representing reference cut file.
             checked_cuts: String list of cut files to be graphed.
             partition_count: Integer representing split count.
             progress_bar: QtWidgets.QProgressBar or Null() if not given.
         '''
         self.directory_cuts = directory_cuts
-        self.directory_elemloss = directory_elemloss
+        self.directory_composition_changes = directory_composition_changes
         self.partition_count = partition_count
         self.checked_cuts = checked_cuts
         self.progress_bar = progress_bar
@@ -144,8 +144,8 @@ class ElementLosses:
     
     
     def __element_losses_folder_clean_up(self):
-        for the_file in os.listdir(self.directory_elemloss):
-            file_path = os.path.join(self.directory_elemloss, the_file)
+        for the_file in os.listdir(self.directory_composition_changes):
+            file_path = os.path.join(self.directory_composition_changes, the_file)
             try:
                 if os.path.isfile(file_path):
                     os.unlink(file_path)

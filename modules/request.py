@@ -77,7 +77,7 @@ class Request:
 
         self.default_detector_folder = os.path.join(self.default_folder, "Detector")
         # TODO: Fix this call, not working now
-        self.detector = Detector(self.default_folder, "Detector", 40, [])
+        self.detector = Detector(self, self.default_folder)
             
         self.__set_request_logger()
         

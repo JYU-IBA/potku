@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 15.8.2013
+Updated on 9.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -23,8 +23,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
+             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import logging, os, sys
 from PyQt5 import uic, QtCore, QtWidgets
@@ -69,10 +70,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         self.__update_eff_files()
         
         if not hasattr(self.measurement, "measurement_settings"):
-            QtWidgets.QMessageBox.question(self,
-              "Warning",
-              "Settings have not been set. Please set settings before continuing.",
-              QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(self, "Warning",
+                                           "Settings have not been set. Please set settings before continuing.",
+                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         else:
             if not self.measurement.measurement_settings.has_been_set():
                 reply = QtWidgets.QMessageBox.question(self, "Warning",
@@ -83,7 +83,6 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     self.close()
                     return
             self.exec_()
-
 
     def __accept_params(self):
         """Accept given parameters and cut files.
@@ -149,8 +148,6 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                                                        "An error occured while trying to create energy spectrum",
                                                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
-
-
     def __update_eff_files(self):
         """Update efficiency files to UI which are used.
         """
@@ -184,8 +181,6 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                "Efficiency files used: {0}".format(", ".join(eff_files_used)))
         else:
             self.ui.label_efficiency_files.setText("No efficiency files.")
-
-
 
 
 class EnergySpectrumWidget(QtWidgets.QWidget):
@@ -251,10 +246,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             import traceback
             msg = "Could not create Energy Spectrum graph. "
             err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
-            str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + \
-                          traceback._some_str(sys.exc_info()[1]),
-                          err_file,
-                          str(sys.exc_info()[2].tb_lineno)])
+            str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + traceback._some_str(sys.exc_info()[1]), err_file,
+                                str(sys.exc_info()[2].tb_lineno)])
             msg += str_err
             logging.getLogger(self.measurement.measurement_name).error(msg)
             if hasattr(self, "matplotlib"):
@@ -263,8 +256,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             if self.progress_bar:
                 self.measurement.statusbar.removeWidget(self.progress_bar)
                 self.progress_bar.hide()
-        
-    
+
     def delete(self):
         """Delete variables and do clean up.
         """
@@ -275,7 +267,6 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
         self.ui.close()
         self.ui = None
         self.close()
-
 
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
@@ -288,15 +279,14 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
         except:
             pass
         super().closeEvent(evnt)
-        
-        
+
     def save_to_file(self):
         """Save object information to file.
         """
         files = "\t".join([tmp.replace(self.parent.measurement.directory + "\\",
                                        "") 
                            for tmp in self.use_cuts])
-        file = os.path.join(self.parent.measurement.directory, self.save_file)
+        file = os.path.join(self.parent.measurement.directory_energy_spectra, self.save_file)
         fh = open(file, "wt")
         fh.write("{0}\n".format(files))
         fh.write("{0}".format(self.width))
