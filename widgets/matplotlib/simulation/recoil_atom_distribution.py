@@ -210,6 +210,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Points that have been selected
         self.selected_points = []
 
+        self.click = None
+
         # Span selection tool (used to select all points within a range on the x axis)
         self.span_selector = SpanSelector(self.axes, self.on_span_select, 'horizontal', useblit=True,
                                           rectprops=dict(alpha=0.5, facecolor='red'), button=3)
@@ -505,8 +507,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             marker_contains, marker_info = self.markers.contains(event)
             if marker_contains:  # If clicked a point
                 i = marker_info['ind'][0]  # The clicked point's index
-                self.selected_points = [self.elements[0].get_point_by_i(i)]
-                self.dragged_points = [self.elements[0].get_point_by_i(i)]
+                clicked_point = self.elements[0].get_point_by_i(i)
+                # self.selected_points = [clicked_point]
+                # self.dragged_points = [clicked_point]
+                self.dragged_points = self.selected_points
+                # TODO: Store the click location
+                locations = []
+                for point in self.dragged_points:
+                    x0, y0 = point.get_coordinates()
+                    locations.append((x0, y0, event.xdata, event.ydata))
+                self.click = locations
                 self.update_plot()
             else:
                 self.selected_points.clear()
@@ -682,6 +692,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Only if there are points being dragged.
         if not self.dragged_points:
             return
+
+        # TODO: Check how much the coordinates have changed
+
+        leftmost_drag_point = self.dragged_points[0]
+
+        for i in range(0, len(self.dragged_points)):
+            x0, y0, xclick, yclick = self.click[i]
+            dx = event.xdata - xclick
+            dy = event.ydata - yclick
+            self.dragged_points[i].set_x(x0+dx)
+            self.dragged_points[i].set_y(y0+dy)
+
+        self.update_plot()
+        return
 
         leftmost_drag_point = self.dragged_points[0]
         left_neighbor = self.elements[0].get_left_neighbor(leftmost_drag_point)
