@@ -5,9 +5,9 @@ Updated on 28.3.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
-import numpy.random
+import numpy
 from PyQt5 import QtCore, QtWidgets
-from matplotlib.widgets import RectangleSelector
+from matplotlib.widgets import SpanSelector
 
 from widgets.matplotlib.base import MatplotlibWidget
 
@@ -210,9 +210,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Points that have been selected
         self.selected_points = []
 
+        # Span selection tool (used to select all points within a range on the x axis)
+        self.span_selector = SpanSelector(self.axes, self.on_span_select, 'horizontal', useblit=True,
+                                          rectprops=dict(alpha=0.5, facecolor='red'), button=3)
+        # self.span_selector.set_active(False)
+
         # Rectangle selection tool
-        self.rectangle_selector = RectangleSelector(self.axes, self.on_rectangle_select, drawtype='box', useblit=True)
-        self.rectangle_selector.set_active(False)
+        # self.rectangle_selector = RectangleSelector(self.axes, self.on_rectangle_select, drawtype='box', useblit=True)
+        # self.rectangle_selector.set_active(False)
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
@@ -345,8 +350,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         else:
             self.mpl_toolbar.mode_tool = 0
             # self.elementSelectionButton.setChecked(False)
-        self.rectangle_select_button.setChecked(False)
-        self.rectangle_selector.set_active(False)
+        # self.rectangle_select_button.setChecked(False)
+        # self.rectangle_selector.set_active(False)
         # self.elementSelectionSelectButton.setChecked(False)
         self.canvas.draw_idle()
 
@@ -358,8 +363,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # self.elementSelectionButton.setChecked(False)
         # self.elementSelectUndoButton.setEnabled(False)
         # self.elementSelectionSelectButton.setChecked(False)
-        self.rectangle_select_button.setChecked(False)
-        self.rectangle_selector.set_active(False)
+        # self.rectangle_select_button.setChecked(False)
+        # self.rectangle_selector.set_active(False)
         self.canvas.draw_idle()
 
     def __toggle_drag_zoom(self):
@@ -413,13 +418,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.y_coordinate_box.setEnabled(False)
 
         # Rectangle selector button
-        self.rectangle_select_button = QtWidgets.QToolButton(self)
-        self.rectangle_select_button.clicked.connect(self.toggle_rectangle_selector)
-        self.rectangle_select_button.setCheckable(True)
-        # TODO: Temporary icon
-        self.__icon_manager.set_icon(self.rectangle_select_button, "depth_profile_lim_all.svg")
-        self.rectangle_select_button.setToolTip("Rectangle select")
-        self.mpl_toolbar.addWidget(self.rectangle_select_button)
+        # self.rectangle_select_button = QtWidgets.QToolButton(self)
+        # self.rectangle_select_button.clicked.connect(self.toggle_rectangle_selector)
+        # self.rectangle_select_button.setCheckable(True)
+        # # TODO: Temporary icon
+        # self.__icon_manager.set_icon(self.rectangle_select_button, "depth_profile_lim_all.svg")
+        # self.rectangle_select_button.setToolTip("Rectangle select")
+        # self.mpl_toolbar.addWidget(self.rectangle_select_button)
 
         # Point removal button
         self.point_remove_button = QtWidgets.QToolButton(self)
@@ -491,8 +496,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         # TODO: Implement moving multiple points
         # Don't do anything if rectangle selector, drag tool or zoom tool is active.
-        if self.rectangle_selector.active or self.__button_drag.isChecked() \
-                or self.__button_zoom.isChecked():
+        if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
             return
         # Only inside the actual graph axes, else do nothing.
         if event.inaxes != self.axes:
@@ -515,11 +519,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     i = line_info['ind'][0]
                     # Drag the newly added point
                     self.dragged_points = [self.elements[0].get_point_by_i(i+1)]
-        # elif event.button == 3:  # Right click
-        #     contains, info = self.markers.contains(event)
-        #     if contains:
-        #         i = info['ind'][0]
-        #         self.remove_point(i)
 
     def add_point_on_click(self, point):
         """Adds a point when clicked close enough to a line."""
@@ -675,8 +674,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # self.update_plot()
 
         # Don't do anything if rectangle selector, drag tool or zoom tool is active.
-        if self.rectangle_selector.active or self.__button_drag.isChecked() \
-                or self.__button_zoom.isChecked():
+        if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
             return
         # Only inside the actual graph axes, else do nothing.
         if event.inaxes != self.axes:
@@ -765,53 +763,63 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
-        if self.rectangle_selector.active or self.mpl_toolbar.children()[12].isChecked() \
-                or self.mpl_toolbar.children()[14].isChecked():
+        if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
             return
         if event.button == 1:
             self.dragged_points.clear()
             self.update_plot()
+        # if event.button == 3:
+        #     self.span_selector.set_active(False)
+        #     self.update_plot()
 
-    def on_rectangle_select(self, eclick, erelease):
-        """Rectangle selector selection handler.
-
-        Args:
-            eclick: A MPL event for the click starting rectangle selection.
-            erelease: A MPL event for the releasing the mouse button during rectangle selection.
-        """
-        extents = self.rectangle_selector.extents  # The dimensions of the rectangle
-        xmin = extents[0]
-        xmax = extents[1]
-        ymin = extents[2]
-        ymax = extents[3]
-        # Selects the points under the rectangle
-        sel_xs = []
-        sel_ys = []
+    def on_span_select(self, xmin, xmax):
         sel_points = []
         for point in self.elements[0].get_points():
-            if xmin <= point.get_x() <= xmax and ymin <= point.get_y() < ymax:
-                sel_xs.append(point.get_x())
-                sel_ys.append(point.get_y())
+            if xmin <= point.get_x() <= xmax:
                 sel_points.append(point)
         self.selected_points = sel_points
         self.update_plot()
 
-    def toggle_rectangle_selector(self):
-        '''Toggle rectangle selector.
-        '''
-        if self.rectangle_selector.active:
-            self.__tool_label.setText("")
-            self.mpl_toolbar.mode_tool = 0
-            self.mpl_toolbar.mode = ""
-            self.rectangle_selector.set_active(False)
-            self.rectangle_select_button.setChecked(False)
-            self.canvas.draw_idle()
-        else:
-            self.__toggle_drag_zoom()
-            self.mpl_toolbar.mode_tool = 3
-            str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
-            self.__tool_label.setText(str_tool)
-            self.mpl_toolbar.mode = str_tool
-            self.rectangle_selector.set_active(True)
-            self.rectangle_select_button.setChecked(True)
-            self.canvas.draw_idle()
+    # def on_rectangle_select(self, eclick, erelease):
+    #     """Rectangle selector selection handler.
+    #
+    #     Args:
+    #         eclick: A MPL event for the click starting rectangle selection.
+    #         erelease: A MPL event for the releasing the mouse button during rectangle selection.
+    #     """
+    #     extents = self.rectangle_selector.extents  # The dimensions of the rectangle
+    #     xmin = extents[0]
+    #     xmax = extents[1]
+    #     ymin = extents[2]
+    #     ymax = extents[3]
+    #     # Selects the points under the rectangle
+    #     sel_xs = []
+    #     sel_ys = []
+    #     sel_points = []
+    #     for point in self.elements[0].get_points():
+    #         if xmin <= point.get_x() <= xmax and ymin <= point.get_y() < ymax:
+    #             sel_xs.append(point.get_x())
+    #             sel_ys.append(point.get_y())
+    #             sel_points.append(point)
+    #     self.selected_points = sel_points
+    #     self.update_plot()
+    #
+    # def toggle_rectangle_selector(self):
+    #     '''Toggle rectangle selector.
+    #     '''
+    #     if self.rectangle_selector.active:
+    #         self.__tool_label.setText("")
+    #         self.mpl_toolbar.mode_tool = 0
+    #         self.mpl_toolbar.mode = ""
+    #         self.rectangle_selector.set_active(False)
+    #         self.rectangle_select_button.setChecked(False)
+    #         self.canvas.draw_idle()
+    #     else:
+    #         self.__toggle_drag_zoom()
+    #         self.mpl_toolbar.mode_tool = 3
+    #         str_tool = self.tool_modes[self.mpl_toolbar.mode_tool]
+    #         self.__tool_label.setText(str_tool)
+    #         self.mpl_toolbar.mode = str_tool
+    #         self.rectangle_selector.set_active(True)
+    #         self.rectangle_select_button.setChecked(True)
+    #         self.canvas.draw_idle()
