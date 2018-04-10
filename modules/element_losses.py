@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 19.4.2013
-Updated on 9.4.2018
+Updated on 10.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -85,7 +85,7 @@ class ElementLosses:
         for key in self.cut_splits.get_keys():
             # Do not split elemental losses again.
             # TODO: Should elemental losses be possible to split again?
-            if len(key.split('.')) == 3:
+            if len(key.split('.')) == 4:
                 continue
             main_cut = self.cut_splits.get_cut(key)
             splits = self.cut_splits.get_splits(key)
@@ -96,7 +96,8 @@ class ElementLosses:
                 new_cut = CutFile(elem_loss=True,
                                   split_number=split_number,
                                   split_count=split_count)
-                new_cut.copy_info(main_cut, split, split_count)
+                new_dir = os.path.join(self.directory_composition_changes, "Changes")
+                new_cut.copy_info(main_cut, new_dir, split, split_count)
                 new_cut.save(main_cut.element_number)
                 split_number += 1
                 self.progress_bar.setValue((100 / count) * dirtyinteger \

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 27.3.2013
-Updated on 9.4.2018
+Updated on 10.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -155,7 +155,7 @@ class ElementLossesDialog(QtWidgets.QDialog):
 class ElementLossesWidget(QtWidgets.QWidget):
     """Element losses widget which is added to measurement tab.
     """
-    save_file = "widget_elemental_losses.save"
+    save_file = "widget_composition_changes.save"
     
     def __init__(self, parent, reference_cut_file, checked_cuts,
                  partition_count, y_scale):
@@ -198,7 +198,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
             self.ui.setWindowTitle(title)
             # Calculate elemental losses
             self.losses = ElementLosses(self.measurement.directory_cuts,
-                                        self.measurement.directory_elemloss,
+                                        self.measurement.directory_composition_changes,
                                         self.reference_cut_file,
                                         self.checked_cuts,
                                         self.partition_count,

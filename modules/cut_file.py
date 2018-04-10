@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.3.2013
-Updated on 6.4.2018
+Updated on 10.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -147,8 +147,9 @@ class CutFile:
             measurement_name_start = measurement_name_with_prefix.find('-')
             measurement_name = measurement_name_with_prefix[measurement_name_start + 1:]
             if self.is_elem_loss:
-                cut_folder = os.path.join(self.directory, "Elemloss")
-                file = os.path.join(cut_folder, "{0}.{1}.{2}.{3}.cut".format(
+                if not os.path.exists(self.directory):
+                    os.makedirs(self.directory)
+                file = os.path.join(self.directory, "{0}.{1}.{2}.{3}.cut".format(
                                                  measurement_name,
                                                  self.element,
                                                  element_count, self.split_number))
@@ -227,7 +228,7 @@ class CutFile:
             new_cut.save(self.element_number)
             split_number += 1
 
-    def copy_info(self, cut_file, data, additional_weight_factor=1.0):
+    def copy_info(self, cut_file, new_dir, data, additional_weight_factor=1.0):
         """Copy information from cut file_path object into this.
         
         Args:
@@ -235,7 +236,7 @@ class CutFile:
             data: List of data points.
             additional_weight_factor: Float
         """
-        self.directory = cut_file.directory
+        self.directory = new_dir
         self.data = data
         self.element = Element(cut_file.element)
         self.count = len(data)

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 9.4.2018
+Updated on 10.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -101,7 +101,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                                                                      item.file_name)
             child_count = item.childCount()
             if child_count > 0:  # Elemental Losses
-                dir_elo = self.parent.measurement.directory_elemloss
+                dir_elo = self.parent.measurement.directory_composition_changes
                 for i in range(child_count):
                     item_child = item.child(i)
                     if item_child.checkState(0):

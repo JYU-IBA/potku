@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 9.4.2018
+Updated on 10.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -135,7 +135,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                         item_child = item.child(j)
                         if item_child.checkState(0):
                             name = item_child.file_name
-                            dir_e = self.parent.measurement.directory_elemloss
+                            dir_e = self.parent.measurement.directory_composition_changes
                             use_cut.append(os.path.join(dir_e, name))
                             element = Element(item_child.file_name.split(".")[1])
                             elements.append(element)
