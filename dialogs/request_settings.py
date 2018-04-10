@@ -245,26 +245,26 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # This try-catch works for Beam Element that has not been set yet.
         try:
             # Measurement settings
-            isotope_index = self.isotopeComboBox.currentIndex()
+            isotope_index = self.measurement_settings_widget.isotopeComboBox.currentIndex()
             if isotope_index != -1:
-                isotope_data = self.isotopeComboBox.itemData(isotope_index)
-                self.request.default_measurement.element = Element(self.beamIonButton.text(), isotope_data[0])
-                self.request.default_measurement.name = self.nameLineEdit.text()
-                self.request.default_measurement.description = self.descriptionLineEdit.text()
-                self.request.default_measurement.energy = self.energyLineEdit.text()
-                self.request.default_measurement.charge = self.chargeLineEdit.text()
-                self.request.default_measurement.spot_size = [self.spotSizeXLineEdit.text(),
-                                                              self.spotSizeYLineEdit.text()]
-                self.request.default_measurement.divergence = self.divergenceLineEdit.text()
-                self.request.default_measurement.profile = MeasurementProfile(self.profileComboBox.currentIndex())
-                self.request.default_measurement.energy_dist = self.energyDistLineEdit.text()
-                self.request.default_measurement.fluence = self.fluenceLineEdit.text()
-                self.request.default_measurement.current = self.currentLineEdit.text()
-                self.request.default_measurement.time = self.timeLineEdit.text()
-                self.request.default_measurement.detector_theta = self.detectorThetaLineEdit.text()
-                self.request.default_measurement.detector_fii = self.detectorFiiLineEdit.text()
-                self.request.default_measurement.target_theta = self.targetThetaLineEdit.text()
-                self.request.default_measurement.target_fii = self.targetFiiLineEdit.text()
+                isotope_data = self.measurement_settings_widget.isotopeComboBox.itemData(isotope_index)
+                self.request.default_measurement.element = Element(self.measurement_settings_widget.beamIonButton.text(), isotope_data[0])
+                self.request.default_measurement.name = self.measurement_settings_widget.nameLineEdit.text()
+                self.request.default_measurement.description = self.measurement_settings_widget.descriptionLineEdit.text()
+                self.request.default_measurement.energy = self.measurement_settings_widget.energyLineEdit.text()
+                self.request.default_measurement.charge = self.measurement_settings_widget.chargeLineEdit.text()
+                self.request.default_measurement.spot_size = [self.measurement_settings_widget.spotSizeXLineEdit.text(),
+                                                              self.measurement_settings_widget.spotSizeYLineEdit.text()]
+                self.request.default_measurement.divergence = self.measurement_settings_widget.divergenceLineEdit.text()
+                self.request.default_measurement.profile = MeasurementProfile(self.measurement_settings_widget.profileComboBox.currentIndex())
+                self.request.default_measurement.energy_dist = self.measurement_settings_widget.energyDistLineEdit.text()
+                self.request.default_measurement.fluence = self.measurement_settings_widget.fluenceLineEdit.text()
+                self.request.default_measurement.current = self.measurement_settings_widget.currentLineEdit.text()
+                self.request.default_measurement.time = self.measurement_settings_widget.timeLineEdit.text()
+                self.request.default_measurement.detector_theta = self.measurement_settings_widget.detectorThetaLineEdit.text()
+                self.request.default_measurement.detector_fii = self.measurement_settings_widget.detectorFiiLineEdit.text()
+                self.request.default_measurement.target_theta = self.measurement_settings_widget.targetThetaLineEdit.text()
+                self.request.default_measurement.target_fii = self.measurement_settings_widget.targetFiiLineEdit.text()
 
             # Detector settings
             self.request.detector.name = self.detector_settings_widget.nameLineEdit.text()
@@ -289,7 +289,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.no_of_recoils = self.simulation_settings_widget.noOfRecoilsLineEdit.text()
             self.request.default_simulation.no_of_scaling = self.simulation_settings_widget.noOfScalingLineEdit.text()
 
-            self.depth_profile_settings.set_settings(self)
+            self.depth_profile_settings.set_settings(self.depth_profile_settings_widget)
             
             if not self.settings.has_been_set():
                 raise TypeError

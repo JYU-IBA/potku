@@ -146,9 +146,9 @@ class Measurement:
                 "profile", "energy_dist", "fluence", "current", "time", "detector_theta", "detector_fii", \
                 "target_theta", "target_fii", "data", "statusbar", "color_scheme", "measurement_file", \
                 "measurement_name", "directory", "directory_cuts", "directory_elemloss", "__request_settings", \
-                "measurement_settings", "selector", "defaultlog", "errorlog", "tab_id"
+                "measurement_settings", "selector", "defaultlog", "errorlog", "tab_id", "element"
 
-    def __init__(self, request, name="", description="", date=datetime.date.today(), ion=None, energy=10.0, charge=4,
+    def __init__(self, request, name="", description="", date=datetime.date.today(), element=None, energy=10.0, charge=4,
                  spot_size=[3.0, 5.0], divergence=0, profile=MeasurementProfile.Uniform, energy_dist=0,
                  fluence=1000000000000, current=1.07, time=600, detector_theta=40, detector_fii=0, target_theta=70,
                  target_fii=0):
@@ -164,7 +164,7 @@ class Measurement:
         self.description = description
         self.date = date
 
-        self.ion = ion
+        self.element = element
         self.energy = energy
         self.charge = charge
 
