@@ -26,6 +26,9 @@ along with this program (file named 'LICENCE').
 Dialog for the request settings
 """
 from modules.detector import DetectorType
+from modules.element import Element
+from modules.measurement import MeasurementProfile
+from modules.simulation import SimulationMode, SimulationType
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
@@ -82,8 +85,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # Tells the object to show its data in the given measuring unit widget
         self.measuring_unit_settings.show(self)
         self.depth_profile_settings.show(self)
-        
-        # Adds settings descriptive picture for the parameters 
+
+        # Adds settings descriptive picture for the parameters
         self.ui.picture.setScaledContents(True)
         
         pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
@@ -111,8 +114,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.ui.energyLineEdit.setValidator(positive_double_validator)
         
         double_angle_validator = InputValidator(0, 90, 10)
-        self.ui.detectorAngleLineEdit.setValidator(double_angle_validator)
-        self.ui.targetAngleLineEdit.setValidator(double_angle_validator)
+        self.ui.detectorThetaLineEdit.setValidator(double_angle_validator)
+        self.ui.targetThetaLineEdit.setValidator(double_angle_validator)
         
         self.ui.TOFLengthLineEdit.setValidator(positive_double_validator)
         self.ui.carbonFoilThicknessLineEdit.setValidator(positive_double_validator)
@@ -127,31 +130,31 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                                  double_validator)
 
         # Add detector settings view to the settings view
-        self.detector_settings = DetectorSettingsWidget()
-        self.ui.tabs.addTab(self.detector_settings, "Detector Settings")
+        self.detector_settings_widget = DetectorSettingsWidget()
+        self.ui.tabs.addTab(self.detector_settings_widget, "Detector Settings")
 
-        self.calibration_settings.show(self.detector_settings)
+        self.calibration_settings.show(self.detector_settings_widget)
 
-        self.detector_settings.ui.loadCalibrationParametersButton.clicked.connect(
+        self.detector_settings_widget.ui.loadCalibrationParametersButton.clicked.connect(
             lambda: self.__load_file("CALIBRATION_SETTINGS"))
-        self.detector_settings.ui.saveCalibrationParametersButton.clicked.connect(
+        self.detector_settings_widget.ui.saveCalibrationParametersButton.clicked.connect(
             lambda: self.__save_file("CALIBRATION_SETTINGS"))
-        self.detector_settings.ui.executeCalibrationButton.clicked.connect(
+        self.detector_settings_widget.ui.executeCalibrationButton.clicked.connect(
             self.__open_calibration_dialog)
-        self.detector_settings.ui.executeCalibrationButton.setEnabled(
+        self.detector_settings_widget.ui.executeCalibrationButton.setEnabled(
             not self.request.measurements.is_empty())
-        self.detector_settings.ui.slopeLineEdit.setValidator(double_validator)
-        self.detector_settings.ui.offsetLineEdit.setValidator(double_validator)
+        self.detector_settings_widget.ui.slopeLineEdit.setValidator(double_validator)
+        self.detector_settings_widget.ui.offsetLineEdit.setValidator(double_validator)
 
         # Add simulation settings view to the settings view
-        self.simulation_settings = SimulationSettingsWidget()
-        self.ui.tabs.addTab(self.simulation_settings, "Simulation Settings")
+        self.simulation_settings_widget = SimulationSettingsWidget()
+        self.ui.tabs.addTab(self.simulation_settings_widget, "Simulation Settings")
 
         self.ui.beamIonButton.clicked.connect(
-            lambda: self.__change_element(self.simulation_settings.ui.beamIonButton,
-                                          self.simulation_settings.ui.isotopeComboBox))
-        self.simulation_settings.ui.typeOfSimulationComboBox.addItem("ERD")
-        self.simulation_settings.ui.typeOfSimulationComboBox.addItem("RBS")
+            lambda: self.__change_element(self.simulation_settings_widget.ui.beamIonButton,
+                                          self.simulation_settings_widget.ui.isotopeComboBox))
+        self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem("ERD")
+        self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem("RBS")
 
         self.exec_()
 
@@ -183,7 +186,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             settings.show(self)
         elif settings_type == "CALIBRATION_SETTINGS":
             settings = CalibrationParameters()
-            settings.show(self.detector_settings)
+            settings.show(self.detector_settings_widget)
         else:
             return
 
@@ -207,7 +210,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         if filename:
             if settings_type == "CALIBRATION_SETTINGS":
-                settings.set_settings(self.detector_settings)
+                settings.set_settings(self.detector_settings_widget)
                 settings.save_settings(filename)
             else:
                 settings.set_settings(self)
@@ -240,12 +243,51 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # TODO: Proper checking for all setting values
         # This try-catch works for Beam Element that has not been set yet.
         try:
-            self.request.detector.name = self.detector_settings.nameLineEdit.text()
-            self.request.detector.description = self.detector_settings.descriptionLineEdit.text()
-            self.request.detector.detector_type = DetectorType(self.detector_settings.typeComboBox.currentIndex())
+            # Measurement settings
+            isotope_index = self.isotopeComboBox.currentIndex()
+            if isotope_index != -1:
+                isotope_data = self.isotopeComboBox.itemData(isotope_index)
+                self.request.default_measurement.element = Element(self.beamIonButton.text(), isotope_data[0])
+                self.request.default_measurement.name = self.nameLineEdit.text()
+                self.request.default_measurement.description = self.descriptionLineEdit.text()
+                self.request.default_measurement.energy = self.energyLineEdit.text()
+                self.request.default_measurement.charge = self.chargeLineEdit.text()
+                self.request.default_measurement.spot_size = [self.spotSizeXLineEdit.text(),
+                                                              self.spotSizeYLineEdit.text()]
+                self.request.default_measurement.divergence = self.divergenceLineEdit.text()
+                self.request.default_measurement.profile = MeasurementProfile(self.profileComboBox.currentIndex())
+                self.request.default_measurement.energy_dist = self.energyDistLineEdit.text()
+                self.request.default_measurement.fluence = self.fluenceLineEdit.text()
+                self.request.default_measurement.current = self.currentLineEdit.text()
+                self.request.default_measurement.time = self.timeLineEdit.text()
+                self.request.default_measurement.detector_theta = self.detectorThetaLineEdit.text()
+                self.request.default_measurement.detector_fii = self.detectorFiiLineEdit.text()
+                self.request.default_measurement.target_theta = self.targetThetaLineEdit.text()
+                self.request.default_measurement.target_fii = self.targetFiiLineEdit.text()
 
-            self.measuring_unit_settings.set_settings(self)
-            self.calibration_settings.set_settings(self.detector_settings)
+            # Detector settings
+            self.request.detector.name = self.detector_settings_widget.nameLineEdit.text()
+            self.request.detector.description = self.detector_settings_widget.descriptionLineEdit.text()
+            self.request.detector.detector_type = DetectorType(self.detector_settings_widget.typeComboBox.currentIndex())
+            self.calibration_settings.set_settings(self.detector_settings_widget)
+            self.request.detector.calibration = self.calibration_settings
+
+            # Simulation settings
+            self.request.default_simulation.name = self.simulation_settings_widget.nameLineEdit.text()
+            self.request.default_simulation.description = self.simulation_settings_widget.descriptionLineEdit.text()
+            self.request.default_simulation.mode = SimulationMode(self.simulation_settings_widget.modeComboBox
+                                                                  .currentIndex())
+            self.request.default_simulation.simulation_type = SimulationType(self.simulation_settings_widget
+                                                                             .typeOfSimulationComboBox.currentIndex())
+            self.request.default_simulation.scatter = self.simulation_settings_widget.scatterLineEdit.text()
+            self.request.default_simulation.main_scatter = self.simulation_settings_widget.mainScatterLineEdit.text()
+            self.request.default_simulation.energy = self.simulation_settings_widget.energyLineEdit.text()
+            self.request.default_simulation.no_of_ions = self.simulation_settings_widget.noOfIonsLineEdit.text()
+            self.request.default_simulation.no_of_preions = self.simulation_settings_widget.noOfPreionsLineEdit.text()
+            self.request.default_simulation.seed = self.simulation_settings_widget.seedLineEdit.text()
+            self.request.default_simulation.no_of_recoils = self.simulation_settings_widget.noOfRecoilsLineEdit.text()
+            self.request.default_simulation.no_of_scaling = self.simulation_settings_widget.noOfScalingLineEdit.text()
+
             self.depth_profile_settings.set_settings(self)
             
             if not self.settings.has_been_set():

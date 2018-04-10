@@ -340,7 +340,7 @@ class Potku(QtWidgets.QMainWindow):
                     name = "{0} (master)".format(name)
 
         elif type(tab) is SimulationTabWidget:
-            name = tab.simulation.simulation_name
+            name = tab.simulation.name
 
             # Check that the data is read.
             if not tab.data_loaded:
@@ -626,7 +626,7 @@ class Potku(QtWidgets.QMainWindow):
             for i in range(simulation_items.childCount()):
                 item = root.child(i)
                 tab_widget = self.tab_widgets[item.tab_id]
-                tab_name = tab_widget.simulation.simulation_name
+                tab_name = tab_widget.simulation.name
                 item.setText(0, tab_name)
                 
 
@@ -736,7 +736,6 @@ class Potku(QtWidgets.QMainWindow):
                 self.tab_id += 1
 
         if type == "simulation":
-
             simulation = self.request.simulations.add_simulation_file(filename, self.tab_id)
 
             if simulation:  # TODO: Finish this (load_data)
@@ -747,15 +746,15 @@ class Potku(QtWidgets.QMainWindow):
 
                 tab.setAttribute(QtCore.Qt.WA_DeleteOnClose)
                 self.tab_widgets[self.tab_id] = tab
-                tab.add_log()
+#                tab.add_log()
                 tab.data_loaded = load_data
                 if load_data:
                     simulation.load_data()
                     tab.add_simulation_depth_profile()
-                    self.ui.tabs.addTab(tab, simulation.simulation_name)
+                    self.ui.tabs.addTab(tab, simulation.name)
                     self.ui.tabs.setCurrentWidget(tab)
 
-                self.__add_simulation_to_tree(simulation.simulation_name, load_data)
+                self.__add_simulation_to_tree(simulation.name, load_data)
                 self.tab_id += 1
     
     

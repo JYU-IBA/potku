@@ -8,6 +8,7 @@ Updated on 26.3.2018
 
 Simulation.py runs the MCERD simulation with a command file.
 """
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __versio__ = "2.0"
 
@@ -16,11 +17,10 @@ import platform
 import subprocess
 import logging
 import sys
-from modules.general_functions import md5_for_file
-from modules.settings import Settings
 import shutil
-# from Modules.Null import Null
-# from errno import EEXIST
+import datetime
+from enum import Enum
+
 
 class Simulations:
     """Simulations class handles multiple simulations.
@@ -88,7 +88,10 @@ class Simulations:
             for key in keys:
                 if self.simulations[key].simulation_file == file_name:
                     return simulation  # measurement = None
-            simulation = Simulation(new_file, self.request, tab_id)
+            simulation = Simulation(self.request)
+            simulation.add_command_file(new_file)
+#            simulation.simulation_name = file_name
+            simulation.tab_id = tab_id
             # measurement.load_data()
             self.simulations[tab_id] = simulation
         except:
@@ -164,37 +167,55 @@ class Simulations:
 #
 #     # TODO: Function for removing simulation
 
+
+class SimulationType(Enum):
+    ERD = 0
+    RBS = 1
+
+
+class SimulationMode(Enum):
+    narrow = 0
+    wide = 1
+
+
 class Simulation:
     """Simulation class handles the simulation data."""
 
-    def __init__(self, command_file, request, tab_id):
+    __slots__ = "request", "name", "description", "date", "simulation_type", "scatter", "main_scatter", "energy", \
+                "mode", "no_of_ions", "no_of_preions", "seed", "no_of_recoils", "no_of_scaling", \
+                "data", "simulation_file", "directory", "__request_settings", "statusbar", "color_scheme", "callMCERD", "call_get_espe"
+
+    def __init__(self, request, name="", description="", date=datetime.date.today(), simulation_type=None, scatter=0.05,
+                 main_scatter=20, energy=1.0, mode=SimulationMode.narrow, no_of_ions=1000000, no_of_preions=100000,
+                 seed=101, no_of_recoils=10, no_of_scaling=5):
         """Inits Simulation.
         Args:
             request: Request class object.
         """
-
-        simulation_folder, simulation_name = os.path.split(command_file)
-        self.simulation_file = simulation_name  # With extension
-        self.simulation_name = os.path.splitext(simulation_name)[0]
-
         self.request = request
-        self.directory = os.path.join(simulation_folder, self.simulation_name)
+        self.name = name
+        self.description = description
+        self.date = date
+        self.simulation_type = simulation_type
+        self.scatter = scatter
+        self.main_scatter = main_scatter
+        self.energy = energy
+        self.mode = mode
+        self.no_of_ions = no_of_ions
+        self.no_of_preions = no_of_preions
+        self.seed = seed
+        self.no_of_recoils = no_of_recoils
+        self.no_of_scaling = no_of_scaling
 
         self.data = []
-        self.tab_id = tab_id
-
-        self.__make_directories(self.directory)
-        # self.set_loggers()
+        self.simulation_file = None
+        self.directory = None
 
         # The settings that come from the request
         self.__request_settings = self.request.settings
-        # The settings that are individually set for this measurement
-        self.simulation_settings = Settings(self.directory, self.__request_settings)
 
-        # Main window's statusbar TODO: Remove GUI stuff.
+        # Main window's status bar TODO: Remove GUI stuff.
         self.statusbar = self.request.statusbar
-
-        element_colors = self.request.global_settings.get_element_colors()
 
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
@@ -202,6 +223,25 @@ class Simulation:
         self.callMCERD = None
         self.call_get_espe = None
 
+    def add_command_file(self, command_file):
+        """ Adds command file to Simulation object.
+
+        Args:
+            command_file: Command file to add.
+        """
+        simulation_folder, name = os.path.split(command_file)
+        self.simulation_file = name  # With extension
+        self.name = os.path.splitext(name)[0]
+        self.create_directory(simulation_folder)
+
+    def create_directory(self, simulation_folder):
+        """ Creates folder structure for the simulation.
+
+        Args:
+            simulation_folder: Path of the simulation folder.
+        """
+        self.directory = os.path.join(simulation_folder, self.simulation_name)
+        self.__make_directories(self.directory)
 
     def remove_by_tab_id(self, tab_id):
         """Removes simulation from tabs by tab id
