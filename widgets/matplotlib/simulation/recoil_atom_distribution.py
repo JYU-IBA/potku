@@ -511,7 +511,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 # self.selected_points = [clicked_point]
                 # self.dragged_points = [clicked_point]
                 self.dragged_points = self.selected_points
-                # TODO: Store the click location
+                # TODO: Can't move one point
                 locations = []
                 for point in self.dragged_points:
                     x0, y0 = point.get_coordinates()
@@ -696,13 +696,66 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # TODO: Check how much the coordinates have changed
 
         leftmost_drag_point = self.dragged_points[0]
+        rightmost_drag_point = self.dragged_points[-1]
+        left_neighbor = self.elements[0].get_left_neighbor(leftmost_drag_point)
+        right_neighbor = self.elements[0].get_right_neighbor(rightmost_drag_point)
 
-        for i in range(0, len(self.dragged_points)):
-            x0, y0, xclick, yclick = self.click[i]
-            dx = event.xdata - xclick
-            dy = event.ydata - yclick
-            self.dragged_points[i].set_x(x0+dx)
-            self.dragged_points[i].set_y(y0+dy)
+        x0_left, y0_left, xclick_left, yclick_left = self.click[0]
+        dx_left = event.xdata - xclick_left
+        dy_left = event.ydata - yclick_left
+        new_x_left = x0_left + dx_left
+        new_y_left = y0_left + dy_left
+        
+        x0_right, y0_right, xclick_right, yclick_right = self.click[-1]
+        dx_right = event.xdata - xclick_right
+        dy_right = event.ydata - yclick_right
+        new_x_right = x0_right + dx_right
+        new_y_right = y0_right + dy_right
+
+        if left_neighbor is None:
+            if new_x_right < right_neighbor.get_x():
+                for i in range(0, len(self.dragged_points)):
+                    point = self.dragged_points[i]
+                    x0, y0, xclick, yclick = self.click[i]
+                    dx = event.xdata - xclick
+                    dy = event.ydata - yclick
+                    new_x = x0 + dx
+                    new_y = y0 + dy
+                    point.set_coordinates((new_x, new_y))
+            # else:
+            #     leftmost_drag_point.set_coordinates((right_neighbor.get_x() - 0.01, event.ydata))
+        elif right_neighbor is None:
+            if new_x_left > left_neighbor.get_x():
+                for i in range(0, len(self.dragged_points)):
+                    point = self.dragged_points[i]
+                    x0, y0, xclick, yclick = self.click[i]
+                    dx = event.xdata - xclick
+                    dy = event.ydata - yclick
+                    new_x = x0 + dx
+                    new_y = y0 + dy
+                    point.set_coordinates((new_x, new_y))
+            # else:
+            #     leftmost_drag_point.set_coordinates((left_neighbor.get_x() + 0.01, event.ydata))
+        elif left_neighbor.get_x() < new_x_left and new_x_right < right_neighbor.get_x():
+            for i in range(0, len(self.dragged_points)):
+                point = self.dragged_points[i]
+                x0, y0, xclick, yclick = self.click[i]
+                dx = event.xdata - xclick
+                dy = event.ydata - yclick
+                new_x = x0 + dx
+                new_y = y0 + dy
+                point.set_coordinates((new_x, new_y))
+        # elif left_neighbor.get_x() >= event.xdata:
+        #     leftmost_drag_point.set_coordinates((left_neighbor.get_x() + 0.01, event.ydata))
+        # elif right_neighbor.get_x() <= event.xdata:
+        #     leftmost_drag_point.set_coordinates((right_neighbor.get_x() - 0.01, event.ydata))
+
+        # for i in range(0, len(self.dragged_points)):
+        #     if left_neighbor is None:
+        #         if event.xdata < right_neighbor.get_x():
+        #             point.set_coordinates((new_x, new_y))
+        #         else:
+        #             leftmost_drag_point.set_coordinates((right_neighbor.get_x() - 0.01, event.ydata))
 
         self.update_plot()
         return
@@ -761,6 +814,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # elif self.elements[0].get_point_by_i(self.drag_i - 1).get_x() \
         #         < event.xdata < self.elements[0].get_point_by_i(self.drag_i + 1).get_x():
         #         self.update_location(event)
+
+    def calculate_new_coordinates(self, event):
+        # TODO: Implement
+        pass
+
 
     def update_location(self, event):
         """Updates the location of points that are being dragged."""
