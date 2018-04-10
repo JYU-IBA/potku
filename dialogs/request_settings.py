@@ -25,10 +25,14 @@ along with this program (file named 'LICENCE').
 
 Dialog for the request settings
 """
+from PyQt5.QtWidgets import QTabWidget
+
 from modules.detector import DetectorType
 from modules.element import Element
 from modules.measurement import MeasurementProfile
 from modules.simulation import SimulationMode, SimulationType
+from widgets.depth_profile_settings import DepthProfileSettingsWidget
+from widgets.measurement.settings import MeasurementSettingsWidget
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
@@ -70,64 +74,50 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.calibration_settings = self.settings.calibration_settings
         self.depth_profile_settings = self.settings.depth_profile_settings
 
-        if self.measuring_unit_settings.element.name:
-            self.masses.load_isotopes(self.measuring_unit_settings.element.name,
-                                      self.ui.isotopeComboBox,
-                                      str(self.measuring_unit_settings.element.isotope))
-        else:
-            self.ui.beamIonButton.setText("Select")
-            self.ui.isotopeComboBox.setEnabled(False)
-
         # self.masses.load_isotopes(self.measuring_unit_settings.element.name,
         #                          self.ui.isotopeComboBox,
         #                          str(self.measuring_unit_settings.element.isotope))
         
-        # Tells the object to show its data in the given measuring unit widget
-        self.measuring_unit_settings.show(self)
-        self.depth_profile_settings.show(self)
-
-        # Adds settings descriptive picture for the parameters
-        self.ui.picture.setScaledContents(True)
-        
-        pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
-        self.ui.picture.setPixmap(pixmap)
-
         # Connect buttons.
-        self.ui.loadButton.clicked.connect(
-                               lambda: self.__load_file("MEASURING_UNIT_SETTINGS"))
-        self.ui.saveButton.clicked.connect(
-                               lambda: self.__save_file("MEASURING_UNIT_SETTINGS"))
-        self.ui.loadDepthProfileSettingsButton.clicked.connect(
-                               lambda: self.__load_file("DEPTH_PROFILE_SETTINGS"))
-        self.ui.saveDepthProfileSettingsButton.clicked.connect(
-                               lambda: self.__save_file("DEPTH_PROFILE_SETTINGS"))
-
         self.ui.OKButton.clicked.connect(self.update_and_close_settings)
         self.ui.applyButton.clicked.connect(self.update_settings)
         self.ui.cancelButton.clicked.connect(self.close)
-        self.ui.beamIonButton.clicked.connect(
-                           lambda: self.__change_element(self.ui.beamIonButton, self.ui.isotopeComboBox))
         double_validator = InputValidator()
         positive_double_validator = InputValidator(bottom=0)
         
-        # Add validator that prevents user from inputting invalid values
-        self.ui.energyLineEdit.setValidator(positive_double_validator)
-        
+        # Add measurement settings view to the settings view
+        self.measurement_settings_widget = MeasurementSettingsWidget()
+        self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement Settings")
+
+        if self.measuring_unit_settings.element.name:
+            self.masses.load_isotopes(self.measuring_unit_settings.element.name,
+                                      self.measurement_settings_widget.ui.isotopeComboBox,
+                                      str(self.measuring_unit_settings.element.isotope))
+        else:
+            self.measurement_settings_widget.ui.beamIonButton.setText("Select")
+            self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(False)
+
+        self.measurement_settings_widget.ui.loadButton.clicked\
+            .connect(lambda: self.__load_file("MEASURING_UNIT_SETTINGS"))
+        self.measurement_settings_widget.ui.saveButton.clicked\
+            .connect(lambda: self.__save_file("MEASURING_UNIT_SETTINGS"))
+        self.measurement_settings_widget.ui.beamIonButton.clicked.connect(
+            lambda: self.__change_element(self.measurement_settings_widget.ui.beamIonButton,
+                                          self.measurement_settings_widget.ui.isotopeComboBox))
+        self.measurement_settings_widget.ui.TOFLengthLineEdit.setValidator(positive_double_validator)
+        self.measurement_settings_widget.ui.carbonFoilThicknessLineEdit.setValidator(positive_double_validator)
+        self.measurement_settings_widget.ui.targetDensityLineEdit.setValidator(positive_double_validator)
+
+        self.measurement_settings_widget.ui.energyLineEdit.setValidator(positive_double_validator)
         double_angle_validator = InputValidator(0, 90, 10)
-        self.ui.detectorThetaLineEdit.setValidator(double_angle_validator)
-        self.ui.targetThetaLineEdit.setValidator(double_angle_validator)
-        
-        self.ui.TOFLengthLineEdit.setValidator(positive_double_validator)
-        self.ui.carbonFoilThicknessLineEdit.setValidator(positive_double_validator)
-        self.ui.targetDensityLineEdit.setValidator(positive_double_validator)
-        
-        self.ui.depthStepForStoppingLineEdit.setValidator(double_validator)
-        self.ui.depthStepForOutputLineEdit.setValidator(double_validator)
-        
-        self.ui.depthsForConcentrationScalingLineEdit_1.setValidator(
-                                                                 double_validator)
-        self.ui.depthsForConcentrationScalingLineEdit_2.setValidator(
-                                                                 double_validator)
+        self.measurement_settings_widget.ui.detectorThetaLineEdit.setValidator(double_angle_validator)
+        self.measurement_settings_widget.ui.targetThetaLineEdit.setValidator(double_angle_validator)
+
+        self.measurement_settings_widget.ui.picture.setScaledContents(True)
+        pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
+        self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
+
+        self.measuring_unit_settings.show(self.measurement_settings_widget)
 
         # Add detector settings view to the settings view
         self.detector_settings_widget = DetectorSettingsWidget()
@@ -150,11 +140,22 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.simulation_settings_widget = SimulationSettingsWidget()
         self.ui.tabs.addTab(self.simulation_settings_widget, "Simulation Settings")
 
-        self.ui.beamIonButton.clicked.connect(
-            lambda: self.__change_element(self.simulation_settings_widget.ui.beamIonButton,
-                                          self.simulation_settings_widget.ui.isotopeComboBox))
         self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem("ERD")
         self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem("RBS")
+
+        # Add depth profile settings view to the settings view
+        self.depth_profile_settings_widget = DepthProfileSettingsWidget()
+        self.ui.tabs.addTab(self.depth_profile_settings_widget, "Depth Profile Settings")
+        self.depth_profile_settings.show(self.depth_profile_settings_widget)
+
+        self.depth_profile_settings_widget.ui.loadButton.clicked.connect(lambda: self.__load_file("DEPTH_PROFILE_SETTINGS"))
+        self.depth_profile_settings_widget.ui.saveButton.clicked.connect(lambda: self.__save_file("DEPTH_PROFILE_SETTINGS"))
+
+        self.depth_profile_settings_widget.ui.depthStepForStoppingLineEdit.setValidator(double_validator)
+        self.depth_profile_settings_widget.ui.depthStepForOutputLineEdit.setValidator(double_validator)
+
+        self.depth_profile_settings_widget.ui.depthsForConcentrationScalingLineEdit_1.setValidator(double_validator)
+        self.depth_profile_settings_widget.ui.depthsForConcentrationScalingLineEdit_2.setValidator(double_validator)
 
         self.exec_()
 
