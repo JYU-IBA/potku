@@ -1,13 +1,14 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 9.4.2018
+Updated on 11.4.2018
 
 #TODO Description of Potku and copyright
 #TODO Licence
 
 Simulation.py runs the MCERD simulation with a command file.
 """
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
@@ -16,8 +17,9 @@ import platform
 import subprocess
 import logging
 import sys
-from modules.settings import Settings
 import shutil
+import datetime
+from enum import Enum
 
 
 class Simulations:
@@ -83,7 +85,8 @@ class Simulations:
             for key in keys:
                 if sample.simulations.simulations[key].simulation_folder == simulation_name:
                     return simulation  # sismulation = None
-            simulation = Simulation(simulation_folder, self.request, tab_id)
+            simulation = Simulation(self.request, simulation_name)
+            simulation.create_directory(simulation_folder)
             sample.simulations.simulations[tab_id] = simulation
             self.request.samples.simulations.simulations[tab_id] = simulation
         except:
@@ -160,37 +163,55 @@ class Simulations:
 #     # TODO: Function for removing simulation
 
 
+class SimulationType(Enum):
+    ERD = 0
+    RBS = 1
+
+
+class SimulationMode(Enum):
+    narrow = 0
+    wide = 1
+
+
 class Simulation:
     """Simulation class handles the simulation data."""
 
-    def __init__(self, simulation_folder, request, tab_id):
+    __slots__ = "request", "name", "description", "date", "simulation_type", "scatter", "main_scatter", "energy", \
+                "mode", "no_of_ions", "no_of_preions", "seed", "no_of_recoils", "no_of_scaling", \
+                "data", "simulation_file", "directory", "__request_settings", "statusbar", "color_scheme", "callMCERD",\
+                "call_get_espe", "simulation_name"
+
+    def __init__(self, request, name="", description="", date=datetime.date.today(), simulation_type=None, scatter=0.05,
+                 main_scatter=20, energy=1.0, mode=SimulationMode.narrow, no_of_ions=1000000, no_of_preions=100000,
+                 seed=101, no_of_recoils=10, no_of_scaling=5):
         """Inits Simulation.
         Args:
-            simulation_folder: The path of the simulation folder
             request: Request class object.
         """
-
-        sim_folder, simulation_name = os.path.split(simulation_folder)
-        self.simulation_folder = simulation_name
-        name_start_index = simulation_folder.index('-')
-        self.simulation_name = simulation_folder[name_start_index + 1:]
-
         self.request = request
-        self.directory = simulation_folder
+        self.simulation_name = name
+        self.description = description
+        self.date = date
+        self.simulation_type = simulation_type
+        self.scatter = scatter
+        self.main_scatter = main_scatter
+        self.energy = energy
+        self.mode = mode
+        self.no_of_ions = no_of_ions
+        self.no_of_preions = no_of_preions
+        self.seed = seed
+        self.no_of_recoils = no_of_recoils
+        self.no_of_scaling = no_of_scaling
 
         self.data = []
-        self.tab_id = tab_id
-
-        self.__make_directories(self.directory)
-        # self.set_loggers()
+        self.simulation_file = None
+        self.directory = None
 
         # The settings that come from the request
         self.__request_settings = self.request.settings
 
-        # Main window's statusbar TODO: Remove GUI stuff.
+        # Main window's status bar TODO: Remove GUI stuff.
         self.statusbar = self.request.statusbar
-
-        element_colors = self.request.global_settings.get_element_colors()
 
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
@@ -204,9 +225,9 @@ class Simulation:
         Args:
             command_file: Command file to add.
         """
-        simulation_folder, simulation_name = os.path.split(command_file)
-        self.simulation_file = simulation_name  # With extension
-        self.simulation_name = os.path.splitext(simulation_name)[0]
+        simulation_folder, name = os.path.split(command_file)
+        self.simulation_file = name  # With extension
+        self.name = os.path.splitext(name)[0]
         self.create_directory(simulation_folder)
 
     def create_directory(self, simulation_folder):

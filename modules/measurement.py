@@ -1,13 +1,13 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 9.4.2018
+Updated on 11.4.2018
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
 Miika Raunio
 
 This program is free software; you can redistribute it and/or
@@ -27,6 +27,8 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkone
              "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
+import datetime
+from enum import Enum
 import logging, os, shutil, sys, time, hashlib
 from PyQt5 import QtCore, QtWidgets
 
@@ -41,7 +43,7 @@ class Measurements:
     """
     def __init__(self, request):
         """Inits measurements class.
-        
+
         Args:
             request: Request class object.
         """
@@ -52,9 +54,9 @@ class Measurements:
 
     def is_empty(self):
         """Check if there are any measurements.
-        
+
         Return:
-            Returns True if there are no measurements currently in the 
+            Returns True if there are no measurements currently in the
             measurements object.
         """
         return len(self.measurements) == 0
@@ -66,13 +68,13 @@ class Measurements:
 
     def add_measurement_file(self, sample, measurement_file, tab_id):
         """Add a new file to measurements.
-        
+
         Args:
             sample: The sample under which the measurement is put.
             measurement_file: String representing file containing measurement
                                   data.
             tab_id: Integer representing identifier for measurement's tab.
-        
+
         Return:
             Returns new measurement or None if it wasn't added
         """
@@ -129,13 +131,31 @@ class Measurements:
             r = dict(d)
             del r[key]
             return r
+
         self.measurements = remove_key(self.measurements, tab_id)
+
+
+class MeasurementProfile(Enum):
+    Uniform = 0
+    Gaussian = 1
 
 
 class Measurement:
     """Measurement class to handle one measurement data.
     """
-    def __init__(self, measurement_folder, measurement_file, request, tab_id):
+
+    __slots__ = "request", "description", "date", "ion", "energy", "charge", "spot_size", "divergence", \
+                "profile", "energy_dist", "fluence", "current", "time", "detector_theta", "detector_fii", \
+                "target_theta", "target_fii", "data", "statusbar", "color_scheme", "measurement_file", \
+                "measurement_name", "directory", "directory_cuts", "directory_elemloss", "__request_settings", \
+                "measurement_settings", "selector", "defaultlog", "errorlog", "tab_id", "element", \
+                "directory_composition_changes", "directory_energy_spectra", "directory_depth_profiles", \
+                "directory_data"
+
+    def __init__(self, request, name="", description="", date=datetime.date.today(), element=None, energy=10.0, charge=4,
+                 spot_size=[3.0, 5.0], divergence=0, profile=MeasurementProfile.Uniform, energy_dist=0,
+                 fluence=1000000000000, current=1.07, time=600, detector_theta=40, detector_fii=0, target_theta=70,
+                 target_fii=0):
         """Inits measurement.
 
         Args:
@@ -143,9 +163,45 @@ class Measurement:
             request: Request class object.
             tab_id: Integer representing tab identifier for measurement.
         """
+        self.request = request  # To which request be belong to
+        self.measurement_name = name
+        self.description = description
+        self.date = date
+
+        self.element = element
+        self.energy = energy
+        self.charge = charge
+
+        self.spot_size = spot_size
+        self.divergence = divergence
+        self.profile = profile
+        self.fluence = fluence
+        self.energy_dist = energy_dist
+        self.current = current
+        self.time = time
+
+        self.detector_theta = detector_theta
+        self.detector_fii = detector_fii
+        self.target_theta = target_theta
+        self.target_fii = target_fii
+
+        self.data = []
+
+        # Main window's statusbar TODO: Remove GUI stuff.
+        self.statusbar = self.request.statusbar
+
+        # Which color scheme is selected by default
+        self.color_scheme = "Default color"
+
+    def create_folder_structure(self, measurement_folder, measurement_file):
+        """ Creates folder structure for the measurement.
+
+        Args:
+            measurement_file: Path of the measurement folder.
+        """
         measurement_data_folder, measurement_name = os.path.split(measurement_file)
         self.measurement_file = measurement_name  # With extension
-        self.measurement_name = os.path.splitext(measurement_name)[0]
+        # elf.measurement_name = os.path.splitext(measurement_name)[0]
 
         self.directory = measurement_folder
         self.directory_cuts = os.path.join(self.directory, measurement_data_folder, "Cuts")
@@ -155,10 +211,6 @@ class Measurement:
         self.directory_energy_spectra = os.path.join(measurement_folder, "Energy spectra")
         self.directory_data = measurement_data_folder
 
-        self.request = request  # To which request be belong to
-        self.data = []
-        self.tab_id = tab_id
-
         self.__make_directories(self.directory)
         self.__make_directories(self.directory_cuts)
         self.__make_directories(self.directory_composition_changes)
@@ -166,15 +218,12 @@ class Measurement:
         self.__make_directories(self.directory_energy_spectra)
 
         self.set_loggers()
-
+        
         # The settings that come from the request
         self.__request_settings = self.request.settings
         # The settings that are individually set for this measurement
         self.measurement_settings = Settings(self.directory,
                                              self.__request_settings)
-
-        # Main window's statusbar TODO: Remove GUI stuff.
-        self.statusbar = self.request.statusbar
 
         element_colors = self.request.global_settings.get_element_colors()
         self.selector = Selector(self.directory_data, self.measurement_name,
@@ -266,15 +315,12 @@ class Measurement:
 
         # Set the formatter which will be used to log messages. Here you can edit
         # the format so it will be deprived to all log messages.
-        defaultformat = logging.Formatter(
-                                      '%(asctime)s - %(levelname)s - %(message)s',
-                                      datefmt='%Y-%m-%d %H:%M:%S')
+        defaultformat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
         requestlog = logging.FileHandler(os.path.join(self.request.directory,
                                                       'request.log'))
-        requestlogformat = logging.Formatter(
-             '%(asctime)s - %(levelname)s - [Measurement : %(name)s] - %(message)s',
-             datefmt='%Y-%m-%d %H:%M:%S')
+        requestlogformat = logging.Formatter('%(asctime)s - %(levelname)s - [Measurement : %(name)s] - %(message)s',
+                                             datefmt='%Y-%m-%d %H:%M:%S')
 
         # Set the formatters to the logs.
         requestlog.setFormatter(requestlogformat)
@@ -329,9 +375,9 @@ class Measurement:
         Args:
             point: Point (x, y) to be added to selection.
             canvas: matplotlib's FigureCanvas where selections are drawn.
-            
+
         Return:
-            1: When point closes open selection and allows new selection to 
+            1: When point closes open selection and allows new selection to
                 be made.
             0: When point was added to open selection.
             -1: When new selection is not allowed and there are no selections.
@@ -340,7 +386,7 @@ class Measurement:
         if flag >= 0:
             self.selector.update_axes_limits()
         return flag
-    
+
     def undo_point(self):
         """Undo last point in open selection.
              
@@ -386,7 +432,7 @@ class Measurement:
             cursorpoint: Point (x, y) which is clicked on the graph to select selection.
             highlight: Boolean to determine whether to highlight just this 
                        selection.
-            
+
         Return:
             1: If point is within selection.
             0: If point is not within selection.
@@ -435,9 +481,9 @@ class Measurement:
         # process.
 
         starttime = time.time()
-        
+
         self.__remove_old_cut_files()
-        
+
         # Initializes the list size to match the number of selections.
         points_in_selection = [[] for unused_i in range(self.selector.count())]
 
@@ -464,7 +510,7 @@ class Measurement:
         # Save all found data points into appropriate element cut files
         # Firstly clear old cut files so those won't be accidentally
         # left there.
-        
+
         dirtyinteger = 0  # Increases with for, for each selection
         content_lenght = len(points_in_selection)
         for points in points_in_selection:
@@ -474,14 +520,14 @@ class Measurement:
                 cut_file.set_info(selection, points)
                 cut_file.save()
             dirtyinteger += 1
-            progress_bar.setValue(90 + (dirtyinteger / content_lenght) * 10) 
+            progress_bar.setValue(90 + (dirtyinteger / content_lenght) * 10)
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
             # Mac requires event processing to show progress bar and its
             # process.
-            
+
         self.statusbar.removeWidget(progress_bar)
         progress_bar.hide()
-        
+
         log_msg = "Saving finished in {0} seconds.".format(time.time() - starttime)
         logging.getLogger(self.measurement_name).info(log_msg)
 
@@ -565,11 +611,11 @@ class Measurement:
                                         "external",
                                         "Potku-bin")
         tof_in_file = os.path.join(tof_in_directory, "tof.in")
-        
+
         # Get settings 
         use_settings = self.measurement_settings.get_measurement_settings()
         global_settings = self.request.global_settings
-        
+
         # Measurement settings
         str_beam = "Beam: {0}\n".format(
             use_settings.measuring_unit_settings.element)
@@ -585,7 +631,7 @@ class Measurement:
             use_settings.measuring_unit_settings.carbon_foil_thickness)
         str_density = "Target density: {0}\n".format(
             use_settings.measuring_unit_settings.target_density)
-        
+
         # Depth Profile settings
         str_depthnumber = "Number of depth steps: {0}\n".format(
             use_settings.depth_profile_settings.number_of_depth_steps)
@@ -607,7 +653,7 @@ class Measurement:
         # Efficiency directory
         eff_directory = global_settings.get_efficiency_directory()
         str_eff_dir = "Efficiency directory: {0}".format(eff_directory)
-        
+
         # Combine strings
         measurement = str_beam + str_energy + str_detector + str_target + str_toflen + str_carbon + str_density
         calibration = "TOF calibration: {0} {1}\n".format(
@@ -628,7 +674,7 @@ class Measurement:
             f = open(tof_in_file, 'r')
             digest_file = md5_for_file(f)
             f.close()
-        
+
         # If different back up old tof.in and generate a new one.
         if digest_file != digest:
             # Try to back up old file.
@@ -637,8 +683,8 @@ class Measurement:
                                                 time.strftime("%Y-%m-%d_%H.%M.%S"))
                 shutil.copyfile(tof_in_file, new_file)
                 back_up_msg = "Backed up old tof.in file to {0}".format(
-                                                        os.path.realpath(new_file))
-                logging.getLogger(self.measurement_name).info(back_up_msg)      
+                    os.path.realpath(new_file))
+                logging.getLogger(self.measurement_name).info(back_up_msg)
             except:
                 import traceback
                 err_file = sys.exc_info()[2].tb_frame.f_code.co_filename

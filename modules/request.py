@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 9.4.2018
+Updated on 11.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -32,9 +32,12 @@ import logging
 from datetime import datetime
 import os
 from modules.sample import Samples
+from modules.measurement import Measurement
+from modules.simulation import Simulation
 from modules.settings import Settings
 from modules.detector import Detector
 import re
+
 
 class Request:
     """Request class to handle all measurements.
@@ -61,6 +64,9 @@ class Request:
         self.statusbar = statusbar
         self.samples = Samples(self)
 
+        self.default_measurement = Measurement(self)
+        self.default_simulation = Simulation(self)
+
         self.__tabs = tabs
         self.__master_measurement = None
         self.__non_slaves = []  # List of measurements that aren't slaves. Easier
@@ -76,8 +82,10 @@ class Request:
             os.makedirs(self.default_folder)  # Create a Default folder
 
         self.default_detector_folder = os.path.join(self.default_folder, "Detector")
-        # TODO: Fix this call, not working now
-        self.detector = Detector(self, self.default_folder)
+        # TODO: Add folder creation as a function call
+        self.detector = Detector(self)
+
+
             
         self.__set_request_logger()
         
