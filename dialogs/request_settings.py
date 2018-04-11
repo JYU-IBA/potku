@@ -87,7 +87,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         
         # Add measurement settings view to the settings view
         self.measurement_settings_widget = MeasurementSettingsWidget()
-        self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement Settings")
+        self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
         if self.measuring_unit_settings.element.name:
             self.masses.load_isotopes(self.measuring_unit_settings.element.name,
@@ -121,7 +121,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Add detector settings view to the settings view
         self.detector_settings_widget = DetectorSettingsWidget()
-        self.ui.tabs.addTab(self.detector_settings_widget, "Detector Settings")
+        self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
 
         self.calibration_settings.show(self.detector_settings_widget)
 
@@ -138,14 +138,14 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Add simulation settings view to the settings view
         self.simulation_settings_widget = SimulationSettingsWidget()
-        self.ui.tabs.addTab(self.simulation_settings_widget, "Simulation Settings")
+        self.ui.tabs.addTab(self.simulation_settings_widget, "Simulation")
 
         self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem("ERD")
         self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem("RBS")
 
         # Add depth profile settings view to the settings view
         self.depth_profile_settings_widget = DepthProfileSettingsWidget()
-        self.ui.tabs.addTab(self.depth_profile_settings_widget, "Depth Profile Settings")
+        self.ui.tabs.addTab(self.depth_profile_settings_widget, "Depth Profile")
         self.depth_profile_settings.show(self.depth_profile_settings_widget)
 
         self.depth_profile_settings_widget.ui.loadButton.clicked.connect(lambda: self.__load_file("DEPTH_PROFILE_SETTINGS"))
@@ -250,7 +250,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 isotope_data = self.measurement_settings_widget.isotopeComboBox.itemData(isotope_index)
                 self.request.default_measurement.element = Element(self.measurement_settings_widget.beamIonButton.text(), isotope_data[0])
                 self.request.default_measurement.name = self.measurement_settings_widget.nameLineEdit.text()
-                self.request.default_measurement.description = self.measurement_settings_widget.descriptionLineEdit.text()
+                self.request.default_measurement.description = self.measurement_settings_widget.descriptionLineEdit.toPlainText()
                 self.request.default_measurement.energy = self.measurement_settings_widget.energyLineEdit.text()
                 self.request.default_measurement.charge = self.measurement_settings_widget.chargeLineEdit.text()
                 self.request.default_measurement.spot_size = [self.measurement_settings_widget.spotSizeXLineEdit.text(),
@@ -268,14 +268,14 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
             # Detector settings
             self.request.detector.name = self.detector_settings_widget.nameLineEdit.text()
-            self.request.detector.description = self.detector_settings_widget.descriptionLineEdit.text()
+            self.request.detector.description = self.detector_settings_widget.descriptionLineEdit.toPlainText()
             self.request.detector.detector_type = DetectorType(self.detector_settings_widget.typeComboBox.currentIndex())
             self.calibration_settings.set_settings(self.detector_settings_widget)
             self.request.detector.calibration = self.calibration_settings
 
             # Simulation settings
             self.request.default_simulation.name = self.simulation_settings_widget.nameLineEdit.text()
-            self.request.default_simulation.description = self.simulation_settings_widget.descriptionLineEdit.text()
+            self.request.default_simulation.description = self.simulation_settings_widget.descriptionLineEdit.toPlainText()
             self.request.default_simulation.mode = SimulationMode(self.simulation_settings_widget.modeComboBox
                                                                   .currentIndex())
             self.request.default_simulation.simulation_type = SimulationType(self.simulation_settings_widget
@@ -319,7 +319,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                   self.measuring_unit_settings.element.isotope)
         
     def __enabled_element_information(self):
-        self.ui.isotopeComboBox.setEnabled(True)
-        self.ui.isotopeLabel.setEnabled(True)
+        self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(True)
+        self.measurement_settings_widget.ui.isotopeLabel.setEnabled(True)
         self.ui.OKButton.setEnabled(True)
 
