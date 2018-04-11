@@ -71,12 +71,12 @@ class Simulations:
             # if file_directory != self.request.directory and file_directory:
             #     dirtyinteger = 2  # Begin from 2, since 0 and 1 would be confusing.
             #     while os.path.exists(new_file):
-            #         file_name = "{0}_{1}{2}".format(simulation_name[0],
+            #         file_name = "{0}_{1}{2}".format(name[0],
             #                                         dirtyinteger,
-            #                                         simulation_name[1])
+            #                                         name[1])
             #         new_file = os.path.join(sample.path, file_name)
             #         dirtyinteger += 1
-            #     shutil.copyfile(simulation_name, new_file)
+            #     shutil.copyfile(name, new_file)
             #     file_directory, file_name = os.path.split(new_file)
             #
             #     log = "Added new simulation {0} to the request.".format(file_name)
@@ -86,7 +86,7 @@ class Simulations:
                 if sample.simulations.simulations[key].simulation_folder == simulation_name:
                     return simulation  # sismulation = None
             simulation = Simulation(self.request, simulation_name)
-            simulation.create_directory(simulation_folder)
+            simulation.create_folder_structure(simulation_folder)
             sample.simulations.simulations[tab_id] = simulation
             self.request.samples.simulations.simulations[tab_id] = simulation
         except:
@@ -108,11 +108,11 @@ class Simulations:
 
         self.simulations = remove_key(self.simulations, tab_id)
 
-#     def load_simulation(self, simulation_name):
+#     def load_simulation(self, name):
 #         """Loads a single simulation
 #         """
 #
-#         simulation_directory = os.path.join(self._directory, simulation_name)
+#         simulation_directory = os.path.join(self._directory, name)
 #
 #     def load_simulations(self):
 #         """Loads all of the simulations in Simulations directory
@@ -125,16 +125,16 @@ class Simulations:
 #             simulation.load_settings()
 #             self.simulations.append(simulation)
 #
-#     def new_simulation(self, simulation_name):
+#     def new_simulation(self, name):
 #         """Adds a new simulation to request.
 #
 #         Args:
-#             simulation_name: Name of the simulation
+#             name: Name of the simulation
 #
 #         Return:
 #             Returns new simulation or None if it wasn't added
 #         """
-#         simulation_directory = os.path.join(self._directory, simulation_name)
+#         simulation_directory = os.path.join(self._directory, name)
 #
 #         # Check if simulation already exists. In case of exception we should
 #         # inform the user that another simulation name should be used.
@@ -144,7 +144,7 @@ class Simulations:
 #         try:
 #             os.makedirs(simulation_directory)
 #         except:
-#             log_msg = "Failed creating directory for simulation" + simulation_name
+#             log_msg = "Failed creating directory for simulation" + name
 #             logging.getLogger("request").critical(log_msg)
 #             # TODO: Inform user also with a pop up window.
 #             return
@@ -153,10 +153,10 @@ class Simulations:
 #         # list of simulations.
 #         try:
 #             self.simulations.append(Simulation(simulation_directory))
-#             log_msg =  "Added simulation " + simulation_name + " to the request."
+#             log_msg =  "Added simulation " + name + " to the request."
 #             logging.getLogger("request").info(log_msg)
 #         except:
-#             log_msg = "Something went wrong while adding simulation" + simulation_name
+#             log_msg = "Something went wrong while adding simulation" + name
 #             logging.getLogger("request").critical(log_msg)
 #             # TODO: Inform user also with a pop up window.
 #
@@ -179,7 +179,7 @@ class Simulation:
     __slots__ = "request", "name", "description", "date", "simulation_type", "scatter", "main_scatter", "energy", \
                 "mode", "no_of_ions", "no_of_preions", "seed", "no_of_recoils", "no_of_scaling", \
                 "data", "simulation_file", "directory", "__request_settings", "statusbar", "color_scheme", "callMCERD",\
-                "call_get_espe", "simulation_name"
+                "call_get_espe", "name"
 
     def __init__(self, request, name="", description="", date=datetime.date.today(), simulation_type=None, scatter=0.05,
                  main_scatter=20, energy=1.0, mode=SimulationMode.narrow, no_of_ions=1000000, no_of_preions=100000,
@@ -189,7 +189,7 @@ class Simulation:
             request: Request class object.
         """
         self.request = request
-        self.simulation_name = name
+        self.name = name
         self.description = description
         self.date = date
         self.simulation_type = simulation_type
@@ -219,6 +219,10 @@ class Simulation:
         self.callMCERD = None
         self.call_get_espe = None
 
+    def create_folder_structure(self, simulation_folder_path):
+        self.directory = simulation_folder_path
+        self.__make_directories(self.directory)
+
     def add_command_file(self, command_file):
         """ Adds command file to Simulation object.
 
@@ -236,7 +240,7 @@ class Simulation:
         Args:
             simulation_folder: Path of the simulation folder.
         """
-        self.directory = os.path.join(simulation_folder, self.simulation_name)
+        self.directory = os.path.join(simulation_folder, self.name)
         self.__make_directories(self.directory)
 
     def remove_by_tab_id(self, tab_id):

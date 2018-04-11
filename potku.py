@@ -348,7 +348,7 @@ class Potku(QtWidgets.QMainWindow):
             # Check that the data is read.
             if not tab.data_loaded:
                 tab.data_loaded = True
-                tab.simulation.load_data()
+                # tab.simulation.load_data()
                 tab.add_simulation_depth_profile()
                 self.__change_tab_icon(clicked_item)
         else:

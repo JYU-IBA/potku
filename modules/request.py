@@ -84,8 +84,7 @@ class Request:
         self.default_detector_folder = os.path.join(self.default_folder, "Detector")
         # TODO: Add folder creation as a function call
         self.detector = Detector(self)
-
-
+        self.detector.create_folder_structure(self.default_detector_folder)
             
         self.__set_request_logger()
         

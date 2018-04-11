@@ -133,7 +133,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.detector_settings_widget.ui.executeCalibrationButton.clicked.connect(
             self.__open_calibration_dialog)
         self.detector_settings_widget.ui.executeCalibrationButton.setEnabled(
-            not self.request.measurements.is_empty())
+            not self.request.samples.measurements.is_empty())
         self.detector_settings_widget.ui.slopeLineEdit.setValidator(double_validator)
         self.detector_settings_widget.ui.offsetLineEdit.setValidator(double_validator)
 
@@ -162,7 +162,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
     def __open_calibration_dialog(self):
         measurements = [self.request.measurements.get_key_value(key)
-                        for key in self.request.measurements.measurements.keys()]
+                        for key in self.request.samples.measurements.measurements.keys()]
         CalibrationDialog(measurements, self.settings, self.masses, self)
 
     def __load_file(self, settings_type):

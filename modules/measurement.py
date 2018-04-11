@@ -110,7 +110,9 @@ class Measurements:
             for key in keys:
                 if sample.measurements.measurements[key].measurement_file == file_name:
                     return measurement  # measurement = None
-            measurement = Measurement(measurement_folder, new_measurement_file, self.request, tab_id)
+            # measurement = Measurement(measurement_folder, new_measurement_file, self.request, tab_id)
+            measurement = Measurement(self.request, measurement_name[0])
+            measurement.create_folder_structure(measurement_folder, new_measurement_file)
             if file_directory != measurement.directory_data and file_directory:
                 measurement.copy_file_into_measurement(measurement_file)
             sample.measurements.measurements[tab_id] = measurement
@@ -193,11 +195,27 @@ class Measurement:
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
 
+        self.measurement_file = None
+        self.directory = None
+        self.directory_cuts = None
+        self.directory_composition_changes = None
+        self.directory_depth_profiles = None
+        self.directory_energy_spectra = None
+        self.directory_data = None
+
+        self.__request_settings = None
+        self.measurement_settings = None
+        self.selector = None
+
+        self.errorlog = None
+        self.defaultlog = None
+
     def create_folder_structure(self, measurement_folder, measurement_file):
         """ Creates folder structure for the measurement.
 
         Args:
-            measurement_file: Path of the measurement folder.
+            measurement_folder: Path of the measurement folder.
+            measurement_file: Path of the measurement file. (under Data)
         """
         measurement_data_folder, measurement_name = os.path.split(measurement_file)
         self.measurement_file = measurement_name  # With extension
@@ -232,8 +250,6 @@ class Measurement:
 
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
-        self.errorlog = None
-        self.defaultlog = None
 
     def __make_directories(self, directory):
         if not os.path.exists(directory):

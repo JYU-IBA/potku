@@ -2,7 +2,7 @@
 # TODO: Add licence information
 """
 Created on 23.3.2018
-Updated on 9.4.2018
+Updated on 11.4.2018
 """
 from enum import Enum
 
@@ -28,7 +28,7 @@ class Detector:
     __slots__ = "request", "description", "path", "name", "date", "angle", "detector_type", "foils", "calibration", \
                 "efficiencies", "efficiencies_path"
 
-    def __init__(self, request, path, name="", description="", date=datetime.date.today(),
+    def __init__(self, request, name="Default", description="", date=datetime.date.today(),
                  detector_type=DetectorType.ToF, calibration=CalibrationParameters(), foils=[]):
         """Initialize a detector.
 
@@ -43,7 +43,7 @@ class Detector:
 
         """
         self.request = request
-        self.path = path  # With this we get the path of the folder where the .json file needs to go.
+        self.path = None  # With this we get the path of the folder where the .json file needs to go.
         self.name = name
         self.description = description
         self.date = date
@@ -51,10 +51,18 @@ class Detector:
         self.calibration = calibration
         self.foils = foils
 
+        self.efficiencies = []
+        self.efficiencies_path = None
+
+    def create_folder_structure(self, path):
         # This is here only for testing that when creating a request and detector, a file is created that should contain
         # some information about the detector, if there is not one yet.
         # TODO: This needs to be more specific.
+        self.path = path
         file_name = os.path.join(self.path, self.name) + ".detector"
+
+        if not os.path.exists(self.path):
+            os.makedirs(self.path)
         try:
             file = open(file_name, "r")
             print(file.readlines())
@@ -62,7 +70,6 @@ class Detector:
             file = open(file_name, "w")
             file.write("This is a detector in json format.")
 
-        self.efficiencies = []
         self.efficiencies_path = os.path.join(self.path, "Efficiency_files")
 
         if not os.path.exists(self.efficiencies_path):

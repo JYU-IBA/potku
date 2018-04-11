@@ -45,7 +45,7 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
                                  err_file,
                                  str(sys.exc_info()[2].tb_lineno)])
             msg += str_err
-            logging.getLogger(self.simulation.simulation_name).error(msg)
+            logging.getLogger(self.simulation.name).error(msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
         finally:
