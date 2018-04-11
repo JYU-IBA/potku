@@ -1,9 +1,21 @@
+# Ignore all ...
+*
+# ... except directories ...
+!*/
+# ... and files with extensions.
+!*.*
+
+# Ignore exe- and pyc-files.
+*.exe
+*.pyc
+
+# Ignore scoef-binaries
+* scoef.*
+
+# Ignore these directories
+/external/data/
+/external/Examples/
 /.idea
 /.settings
 /__pycache__
 /venv
-/external/Potku-bin/mcerd
-/external/Potku-bin/mcerd.exe
-/external/Potku-bin/get_espe.exe
-/external/data/
-/external/Examples/
