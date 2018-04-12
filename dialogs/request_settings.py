@@ -182,6 +182,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             layout.addWidget(self.detector_structure_widgets[i + 1])
             i = i + 2
         foil_widget = FoilWidget()
+        foil_widget.ui.foilButton.clicked.connect(lambda: self._open_composition_dialog())
         self.detector_structure_widgets.append(foil_widget)
         layout.addWidget(foil_widget)
         return layout
