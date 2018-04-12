@@ -1,10 +1,10 @@
 # coding=utf-8
 '''
 Created on 1.3.2018
-Updated on 28.3.2018
+Updated on 11.4.2018
 '''
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen"
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import os, logging, sys
 from PyQt5 import QtCore, uic, QtWidgets
@@ -112,7 +112,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         log_widget specifies which ui element will handle the logging. That should 
         be the one which is added to this SimulationTabWidget.
         """
-        logger = logging.getLogger(self.simulation.simulation_name)
+        logger = logging.getLogger(self.simulation.simulation.name)
         defaultformat = logging.Formatter(
                                   '%(asctime)s - %(levelname)s - %(message)s',
                                   datefmt='%Y-%m-%d %H:%M:%S')
@@ -131,17 +131,17 @@ class SimulationTabWidget(QtWidgets.QWidget):
         '''
         if not directory:
             directory = self.simulation.directory
-        self.make_elemental_losses(directory, self.simulation.simulation_name)
+        self.make_elemental_losses(directory, self.simulation.name)
         progress_bar.setValue(66)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-        self.make_energy_spectrum(directory, self.simulation.simulation_name)
+        self.make_energy_spectrum(directory, self.simulation.name)
         progress_bar.setValue(82)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-        self.make_depth_profile(directory, self.simulation.simulation_name)
+        self.make_depth_profile(directory, self.simulation.name)
         progress_bar.setValue(98)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
@@ -205,7 +205,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         lines = self.__load_file(file)
         if not lines:
             return
-        m_name = self.simulation.simulation_name
+        m_name = self.simulation.name
         try:
             output_dir = self.__confirm_filepath(lines[0].strip(), name, m_name)
             use_cuts = self.__confirm_filepath(
@@ -249,7 +249,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         lines = self.__load_file(file)
         if not lines:
             return
-        m_name = self.simulation.simulation_name
+        m_name = self.simulation.name
         try:
             reference_cut = self.__confirm_filepath(lines[0].strip(), name, m_name)
             checked_cuts = self.__confirm_filepath(

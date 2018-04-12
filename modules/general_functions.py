@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 15.3.2013
-Updated on 15.3.2018
+Updated on 5.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -23,8 +23,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 '''
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio" \
+             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import numpy, hashlib
 from os import makedirs
@@ -53,10 +54,7 @@ def open_file_dialog(parent, default_folder, title, files):
         
         "C:/Transfer/FinlandiaData/esimerkkidata.zip"
     '''
-    filename = QtWidgets.QFileDialog.getOpenFileName(parent,
-                                                 title,
-                                                 default_folder,
-                                                 parent.tr(files))
+    filename = QtWidgets.QFileDialog.getOpenFileName(parent, title, default_folder, parent.tr(files))
     return filename[0]
 
 

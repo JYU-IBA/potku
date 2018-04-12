@@ -1,31 +1,30 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 26.3.2018
+Updated on 11.4.2018
 
 #TODO Description of Potku and copyright
-#TODO Lisence
+#TODO Licence
 
 Simulation.py runs the MCERD simulation with a command file.
 """
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
-__versio__ = "2.0"
+__version__ = "2.0"
 
 import os
 import platform
 import subprocess
 import logging
 import sys
-from modules.general_functions import md5_for_file
-from modules.settings import Settings
 import shutil
-# from Modules.Null import Null
-# from errno import EEXIST
+import datetime
+from enum import Enum
+
 
 class Simulations:
     """Simulations class handles multiple simulations.
     """
-
     def __init__(self, request):
         """Inits simulations class.
         Args:
@@ -52,45 +51,44 @@ class Simulations:
             return None
         return self.simulations[key]
 
-    def add_simulation_file(self, simulation_file, tab_id):
+    def add_simulation_file(self, sample, simulation_name, tab_id):
         """Add a new file to simulations.
 
         Args:
-            simulation_file: String representing file containing simulation data.
+            sample: The sample under which the simulation is put.
+            simulation_name: Name of the simulation (not a path)
             tab_id: Integer representing identifier for simulation's tab.
 
         Return:
             Returns new simulation or None if it wasn't added
         """
-        print(simulation_file)
         simulation = None
-        simulation_filename = os.path.split(simulation_file)[1]
-        simulation_name = os.path.splitext(simulation_filename)
-        new_file = os.path.join(self.request.directory, simulation_filename)
-
-        file_directory, file_name = os.path.split(simulation_file)
+        name_prefix = "MC_simulation_"
+        simulation_folder = os.path.join(sample.path, name_prefix + sample.get_running_int_simulation() + "-"
+                                         + simulation_name)
+        sample.increase_running_int_simulation_by_1()
         try:
-            if file_directory != self.request.directory and file_directory:
-                dirtyinteger = 2  # Begin from 2, since 0 and 1 would be confusing.
-                while os.path.exists(new_file):
-                    file_name = "{0}_{1}{2}".format(simulation_name[0],
-                                                    dirtyinteger,
-                                                    simulation_name[1])
-                    new_file = os.path.join(self.request.directory, file_name)
-                    dirtyinteger += 1
-                shutil.copyfile(simulation_file, new_file)
-                file_directory, file_name = os.path.split(new_file)
-
-                log = "Added new simulation {0} to the request.".format(
-                    file_name)
-                logging.getLogger("request").info(log)
-            keys = self.simulations.keys()
+            # if file_directory != self.request.directory and file_directory:
+            #     dirtyinteger = 2  # Begin from 2, since 0 and 1 would be confusing.
+            #     while os.path.exists(new_file):
+            #         file_name = "{0}_{1}{2}".format(name[0],
+            #                                         dirtyinteger,
+            #                                         name[1])
+            #         new_file = os.path.join(sample.path, file_name)
+            #         dirtyinteger += 1
+            #     shutil.copyfile(name, new_file)
+            #     file_directory, file_name = os.path.split(new_file)
+            #
+            #     log = "Added new simulation {0} to the request.".format(file_name)
+            #     logging.getLogger("request").info(log)
+            keys = sample.simulations.simulations.keys()
             for key in keys:
-                if self.simulations[key].simulation_file == file_name:
-                    return simulation  # measurement = None
-            simulation = Simulation(new_file, self.request, tab_id)
-            # measurement.load_data()
-            self.simulations[tab_id] = simulation
+                if sample.simulations.simulations[key].simulation_folder == simulation_name:
+                    return simulation  # sismulation = None
+            simulation = Simulation(self.request, simulation_name)
+            simulation.create_folder_structure(simulation_folder)
+            sample.simulations.simulations[tab_id] = simulation
+            self.request.samples.simulations.simulations[tab_id] = simulation
         except:
             log = "Something went wrong while adding a new simulation."
             logging.getLogger("request").critical(log)
@@ -110,11 +108,11 @@ class Simulations:
 
         self.simulations = remove_key(self.simulations, tab_id)
 
-#     def load_simulation(self, simulation_name):
+#     def load_simulation(self, name):
 #         """Loads a single simulation
 #         """
 #
-#         simulation_directory = os.path.join(self._directory, simulation_name)
+#         simulation_directory = os.path.join(self._directory, name)
 #
 #     def load_simulations(self):
 #         """Loads all of the simulations in Simulations directory
@@ -127,16 +125,16 @@ class Simulations:
 #             simulation.load_settings()
 #             self.simulations.append(simulation)
 #
-#     def new_simulation(self, simulation_name):
+#     def new_simulation(self, name):
 #         """Adds a new simulation to request.
 #
 #         Args:
-#             simulation_name: Name of the simulation
+#             name: Name of the simulation
 #
 #         Return:
 #             Returns new simulation or None if it wasn't added
 #         """
-#         simulation_directory = os.path.join(self._directory, simulation_name)
+#         simulation_directory = os.path.join(self._directory, name)
 #
 #         # Check if simulation already exists. In case of exception we should
 #         # inform the user that another simulation name should be used.
@@ -146,7 +144,7 @@ class Simulations:
 #         try:
 #             os.makedirs(simulation_directory)
 #         except:
-#             log_msg = "Failed creating directory for simulation" + simulation_name
+#             log_msg = "Failed creating directory for simulation" + name
 #             logging.getLogger("request").critical(log_msg)
 #             # TODO: Inform user also with a pop up window.
 #             return
@@ -155,46 +153,65 @@ class Simulations:
 #         # list of simulations.
 #         try:
 #             self.simulations.append(Simulation(simulation_directory))
-#             log_msg =  "Added simulation " + simulation_name + " to the request."
+#             log_msg =  "Added simulation " + name + " to the request."
 #             logging.getLogger("request").info(log_msg)
 #         except:
-#             log_msg = "Something went wrong while adding simulation" + simulation_name
+#             log_msg = "Something went wrong while adding simulation" + name
 #             logging.getLogger("request").critical(log_msg)
 #             # TODO: Inform user also with a pop up window.
 #
 #     # TODO: Function for removing simulation
 
+
+class SimulationType(Enum):
+    ERD = 0
+    RBS = 1
+
+
+class SimulationMode(Enum):
+    narrow = 0
+    wide = 1
+
+
 class Simulation:
     """Simulation class handles the simulation data."""
 
-    def __init__(self, command_file, request, tab_id):
+    __slots__ = "request", "name", "description", "date", "simulation_type", "scatter", "main_scatter", "energy", \
+                "mode", "no_of_ions", "no_of_preions", "seed", "no_of_recoils", "no_of_scaling", \
+                "data", "simulation_file", "directory", "__request_settings", "statusbar", "color_scheme", "callMCERD",\
+                "call_get_espe", "name"
+
+    def __init__(self, request, name="", description="", date=datetime.date.today(), simulation_type=None, scatter=0.05,
+                 main_scatter=20, energy=1.0, mode=SimulationMode.narrow, no_of_ions=1000000, no_of_preions=100000,
+                 seed=101, no_of_recoils=10, no_of_scaling=5):
         """Inits Simulation.
         Args:
             request: Request class object.
         """
-
-        simulation_folder, simulation_name = os.path.split(command_file)
-        self.simulation_file = simulation_name  # With extension
-        self.simulation_name = os.path.splitext(simulation_name)[0]
-
         self.request = request
-        self.directory = os.path.join(simulation_folder, self.simulation_name)
+        self.name = name
+        self.description = description
+        self.date = date
+        self.simulation_type = simulation_type
+        self.scatter = scatter
+        self.main_scatter = main_scatter
+        self.energy = energy
+        self.mode = mode
+        self.no_of_ions = no_of_ions
+        self.no_of_preions = no_of_preions
+        self.seed = seed
+        self.no_of_recoils = no_of_recoils
+        self.no_of_scaling = no_of_scaling
 
         self.data = []
-        self.tab_id = tab_id
-
-        self.__make_directories(self.directory)
-        # self.set_loggers()
+        self.simulation_file = None
+        self.directory = None
 
         # The settings that come from the request
         self.__request_settings = self.request.settings
-        # The settings that are individually set for this measurement
-        self.simulation_settings = Settings(self.directory, self.__request_settings)
 
-        # Main window's statusbar TODO: Remove GUI stuff.
+        # Main window's status bar TODO: Remove GUI stuff.
         self.statusbar = self.request.statusbar
-
-        element_colors = self.request.global_settings.get_element_colors()
 
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
@@ -202,6 +219,29 @@ class Simulation:
         self.callMCERD = None
         self.call_get_espe = None
 
+    def create_folder_structure(self, simulation_folder_path):
+        self.directory = simulation_folder_path
+        self.__make_directories(self.directory)
+
+    def add_command_file(self, command_file):
+        """ Adds command file to Simulation object.
+
+        Args:
+            command_file: Command file to add.
+        """
+        simulation_folder, name = os.path.split(command_file)
+        self.simulation_file = name  # With extension
+        self.name = os.path.splitext(name)[0]
+        self.create_directory(simulation_folder)
+
+    def create_directory(self, simulation_folder):
+        """ Creates folder structure for the simulation.
+
+        Args:
+            simulation_folder: Path of the simulation folder.
+        """
+        self.directory = os.path.join(simulation_folder, self.name)
+        self.__make_directories(self.directory)
 
     def remove_by_tab_id(self, tab_id):
         """Removes simulation from tabs by tab id
@@ -217,13 +257,13 @@ class Simulation:
 
         self.simulations = remove_key(self.simulations, tab_id)
 
-
     def __make_directories(self, directory):
         if not os.path.exists(directory):
             os.makedirs(directory)
             # log = "Created a directory {0}.".format(directory)
             # logging.getLogger("request").info(log)
 
+    # TODO: Fix this according to simulation (now copied from measurement).
     def load_data(self):
         """Loads measurement data from filepath
         """
@@ -232,12 +272,12 @@ class Simulation:
         # pr.enable()
         n=0
         try:
-            extension = os.path.splitext(self.simulation_file)[1]
+            extension = os.path.splitext(self.simulation_folder)[1]
             extension = extension.lower()
             if extension == ".asc":
                 with open("{0}{1}".format(self.directory, extension)) as fp:
                     for line in fp:
-                        n += 1 #Event number
+                        n += 1  # Event number
                         # TODO: Figure good way to split into columns. REGEX too slow.
                         split = line.split()
                         split_len = len(split)
@@ -287,7 +327,6 @@ class Simulation:
 #                             " > " + output_file
 
 
-
 class CallMCERD(object):
     """Handles calling the external program MCERD to run the simulation."""
 
@@ -319,7 +358,6 @@ class CallMCERD(object):
 
 class CallGetEspe(object):
     """Handles calling the external program get_espe to generate energy spectra coordinates."""
-
     def __init__(self, command_file_path):
         """Inits CallGetEspe.
 

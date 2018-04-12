@@ -1,7 +1,7 @@
 # coding=utf-8
-'''
+"""
 Created on 26.3.2013
-Updated on 1.7.2013
+Updated on 10.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -22,20 +22,22 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+"""
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
+             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import os
-
+import pathlib
 from modules.element import Element
 
 
 class CutFile:
-    '''Cut file_path object for when reading cut files is necessary.
-    '''
+    """
+    Cut file_path object for when reading cut files is necessary.
+    """
     def __init__(self, directory=None, elem_loss=False, weight_factor=1.0, split_number=0, split_count=1):
-        '''Inits cut file_path object.
+        """ Inits cut file_path object.
         
         Args:
             directory: String representing cut directory.
@@ -46,7 +48,7 @@ class CutFile:
                           splits.
             split_count: Integer. Required for Elemental Losses, total count of 
                          splits.
-        '''
+        """
         self.directory = directory
         self.element = None
         self.count = 0
@@ -59,15 +61,15 @@ class CutFile:
         self.detector_angle = None
         self.element_scatter = None
         self.data = []
-    
+        self.element_number = None
     
     def set_info(self, selection, data):
-        '''Set selection information and data into CutFile.
+        """ Set selection information and data into CutFile.
         
         Args:
             selection: Selection class object.
             data: Lists of data points.
-        '''
+        """
         self.data = data
         self.element = selection.element
         self.count = len(data)
@@ -79,13 +81,12 @@ class CutFile:
         self.energy = 0
         self.detector_angle = 0
 
-
     def load_file(self, file):
-        '''Load and parse cut file_path.
+        """Load and parse cut file_path.
         
         Args:
             file: String representing cut file.
-        '''
+        """
         if not file:
             return
         # print("CutFile:load_file() : {0}".format(file))
@@ -129,10 +130,9 @@ class CutFile:
                 else:
                     self.data.append([int(i) for i in line.split()])
                 dirtyinteger += 1
-        
     
     def save(self, element_count=0):
-        '''Save cut file_path.
+        """Save cut file_path.
         
         Saves data points into cut file_path with meta information.
         
@@ -141,21 +141,24 @@ class CutFile:
                            count of same element and isotope selection. This is so
                            that we do not overwrite first 2H selection with other
                            2H selection.
-        '''
+        """
         if self.element and self.directory and self.data:
-            cut_folder = os.path.join(self.directory, "cuts")
+            measurement_name_with_prefix = str(pathlib.Path(self.directory).parents[1])
+            measurement_name_start = measurement_name_with_prefix.find('-')
+            measurement_name = measurement_name_with_prefix[measurement_name_start + 1:]
             if self.is_elem_loss:
-                cut_folder = os.path.join(cut_folder, "elemloss")
-                file = os.path.join(cut_folder, "{0}.{1}.{2}.{3}.cut".format(
-                                                 os.path.basename(self.directory),
+                if not os.path.exists(self.directory):
+                    os.makedirs(self.directory)
+                file = os.path.join(self.directory, "{0}.{1}.{2}.{3}.cut".format(
+                                                 measurement_name,
                                                  self.element,
                                                  element_count, self.split_number))
             else:
-                if not os.path.exists(cut_folder): 
-                    os.makedirs(cut_folder)
+                if not os.path.exists(self.directory):
+                    os.makedirs(self.directory)
                 while True:  # Has to run until file that doesn't exist is found.
-                    file = os.path.join(cut_folder, "{0}.{1}.{2}.cut".format(
-                                                 os.path.basename(self.directory),
+                    file = os.path.join(self.directory, "{0}.{1}.{2}.cut".format(
+                                                 measurement_name,
                                                  self.element, element_count))
                     try:
                         # Using of os.path is not allowed here. 
@@ -166,25 +169,24 @@ class CutFile:
                         element_count += 1
                     except IOError:
                         break
-            myFile = open(file, 'wt')
-            myFile.write("Count: {0}\n".format(self.count))
-            myFile.write("Type: {0}\n".format(self.type))
-            myFile.write("Weight Factor: {0}\n".format(self.weight_factor))
-            myFile.write("Energy: {0}\n".format(0))
-            myFile.write("Detector Angle: {0}\n".format(0))
-            myFile.write("Scatter Element: {0}\n".format(self.element_scatter))
-            myFile.write("Element losses: {0}\n".format(self.is_elem_loss))
-            myFile.write("Split count: {0}\n".format(self.split_count))
-            myFile.write("\n")
-            myFile.write("ToF, Energy, Event number\n")
+            my_file = open(file, 'wt')
+            my_file.write("Count: {0}\n".format(self.count))
+            my_file.write("Type: {0}\n".format(self.type))
+            my_file.write("Weight Factor: {0}\n".format(self.weight_factor))
+            my_file.write("Energy: {0}\n".format(0))
+            my_file.write("Detector Angle: {0}\n".format(0))
+            my_file.write("Scatter Element: {0}\n".format(self.element_scatter))
+            my_file.write("Element losses: {0}\n".format(self.is_elem_loss))
+            my_file.write("Split count: {0}\n".format(self.split_count))
+            my_file.write("\n")
+            my_file.write("ToF, Energy, Event number\n")
             for p in self.data:  # Write all points
-                myFile.write(' '.join(map(str, p))) 
-                myFile.write('\n')
-            myFile.close()
-        
+                my_file.write(' '.join(map(str, p)))
+                my_file.write('\n')
+            my_file.close()
          
     def split(self, reference_cut, splits=10, save=True):
-        '''Splits cut file into X splits based on reference cut.
+        """Splits cut file into X splits based on reference cut.
         
         Args:
             reference_cut: Cut file (of heavy element) which is used split.
@@ -193,7 +195,7 @@ class CutFile:
             
         Return:
             Returns a list containing lists of the cut's splits' values.
-        '''
+        """
         # Cast to int to cut decimals.
         split_size = int(len(reference_cut.data) / splits)  
         self_size = len(self.data)
@@ -209,15 +211,14 @@ class CutFile:
         if save:
             self.__save_splits(splits, cut_splits)
         return cut_splits
-    
-    
+
     def __save_splits(self, splits, cut_splits):
-        '''Save splits into new CutFiles.
+        """Save splits into new CutFiles.
         
         Args:
             splits: Integer determining how many splits is cut splitted to.
             cut_splits: List of splitted data.
-        '''
+        """
         split_number = 0
         for split in cut_splits:
             new_cut = CutFile(elem_loss=True,
@@ -226,17 +227,16 @@ class CutFile:
             new_cut.copy_info(self, split, splits)
             new_cut.save(self.element_number)
             split_number += 1
-        
-        
-    def copy_info(self, cut_file, data, additional_weight_factor=1.0):
-        '''Copy information from cut file_path object into this.
+
+    def copy_info(self, cut_file, new_dir, data, additional_weight_factor=1.0):
+        """Copy information from cut file_path object into this.
         
         Args:
             cut_file: CutFile class object.
             data: List of data points.
             additional_weight_factor: Float
-        '''
-        self.directory = cut_file.directory
+        """
+        self.directory = new_dir
         self.data = data
         self.element = Element(cut_file.element)
         self.count = len(data)
@@ -247,17 +247,15 @@ class CutFile:
         self.element_scatter = Element(cut_file.element_scatter)
 
 
-
-
 def is_rbs(file):
-    '''Check if cut file is RBS.
+    """Check if cut file is RBS.
     
     Args:
         file: A string representing file to be checked.
         
     Return:
         Returns True if cut file is RBS and False if not.
-    '''
+    """
     with open(file) as fp:
         dirtyinteger = 0
         for line in fp:
@@ -274,7 +272,7 @@ def is_rbs(file):
 
 
 def get_scatter_element(file):
-    '''Check if cut file is RBS.
+    """Check if cut file is RBS.
     
     Args:
         file: A string representing file to be checked.
@@ -282,7 +280,7 @@ def get_scatter_element(file):
     Return:
         Returns an Element class object of scatter element. Returns an empty 
         Element class object if there is no scatter element (in case of ERD).
-    '''
+    """
     with open(file) as fp:
         dirtyinteger = 0
         for line in fp:

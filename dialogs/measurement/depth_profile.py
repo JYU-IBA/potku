@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 15.8.2013
+Updated on 10.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -23,10 +23,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
+             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
-import logging, os, sys
+import logging
+import os
+import sys
 from PyQt5 import uic, QtCore, QtWidgets
 
 from modules.cut_file import is_rbs, get_scatter_element
@@ -82,24 +85,21 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.ui.spin_systerr.setValue(DepthProfileDialog.systerr)
         
         if not hasattr(self.measurement, "measurement_settings"):
-            QtWidgets.QMessageBox.question(self,
-              "Warning",
-              "Settings have not been set. Please set settings before continuing.",
-              QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(self, "Warning",
+                                           "Settings have not been set. Please set settings before continuing.",
+                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         else:
             if not self.measurement.measurement_settings.has_been_set():
-                reply = QtWidgets.QMessageBox.question(self,
-                       "Warning",
-                       "Not all settings have been set. Do you want to continue?",
-                       QtWidgets.QMessageBox.Yes,
-                       QtWidgets.QMessageBox.No)
+                reply = QtWidgets.QMessageBox.question(self, "Warning",
+                                                       "Not all settings have been set. Do you want to continue?",
+                                                       QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                                                       QtWidgets.QMessageBox.No)
                 if reply == QtWidgets.QMessageBox.No:
                     self.close()
                     return
             self.__update_eff_files()
             self.__show_important_settings()
             self.exec_()
-        
         
     def __accept_params(self):
         """Accept given parameters
@@ -110,7 +110,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         try:
             use_cut = []
-            output_dir = os.path.join(self.measurement.directory, "depthfiles")
+            output_dir = self.measurement.directory_depth_profiles
             elements = []
                 
             progress_bar.setValue(10)
@@ -135,7 +135,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                         item_child = item.child(j)
                         if item_child.checkState(0):
                             name = item_child.file_name
-                            dir_e = self.parent.measurement.directory_elemloss
+                            dir_e = self.parent.measurement.directory_composition_changes
                             use_cut.append(os.path.join(dir_e, name))
                             element = Element(item_child.file_name.split(".")[1])
                             elements.append(element)
@@ -168,13 +168,13 @@ class DepthProfileDialog(QtWidgets.QDialog):
                     self.parent.del_widget(self.parent.depth_profile_widget)
                 
                 self.parent.depth_profile_widget = DepthProfileWidget(self.parent,
-                                                  output_dir,
-                                                  use_cut,
-                                                  elements,
-                                                  x_unit,
-                                                  DepthProfileDialog.line_zero,
-                                                  DepthProfileDialog.line_scale,
-                                                  DepthProfileDialog.systerr)
+                                                                      output_dir,
+                                                                      use_cut,
+                                                                      elements,
+                                                                      x_unit,
+                                                                      DepthProfileDialog.line_zero,
+                                                                      DepthProfileDialog.line_scale,
+                                                                      DepthProfileDialog.systerr)
                 progress_bar.setValue(90)
                 QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
                 # Mac requires event processing to show progress bar and its 
@@ -193,7 +193,6 @@ class DepthProfileDialog(QtWidgets.QDialog):
             self.__statusbar.removeWidget(progress_bar)
             progress_bar.hide()
 
-        
     def __update_eff_files(self):
         """Update efficiency files to UI which are used.
         """
@@ -223,16 +222,14 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 if not mass:
                     mass = round(masses.get_standard_isotope(cut_element.name),
                                  0)
-                if cut_element.name == element.name \
-                and mass == element.isotope.mass:
+                if cut_element.name == element.name and mass == element.isotope.mass:
                     eff_files_used.append(eff)
         if eff_files_used:
             self.ui.label_efficiency_files.setText(
                "Efficiency files used: \t\n{0}".format("\t\n".join(eff_files_used)))
         else:
             self.ui.label_efficiency_files.setText("No efficiency files.")
-            
-            
+
     def __show_important_settings(self):
         """Show some important setting values in the depth profile parameter
         dialog for the user.
@@ -249,9 +246,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
             dps.depths_for_concentration_from,
             dps.depths_for_concentration_to))
         
-        
-                
-            
+
 class DepthProfileWidget(QtWidgets.QWidget):
     """Depth Profile widget which is added to measurement tab.
     """
@@ -294,7 +289,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
                 os.makedirs(self.output_dir)
             output_files = os.path.join(self.output_dir, "depth")
             dp = DepthFiles(self.__use_cuts, output_files)
-            self.measurement.generate_tof_in() #This has to be before create_depth_files()
+            self.measurement.generate_tof_in()  # This has to be before create_depth_files()
             dp.create_depth_files()
             
             # Check for RBS selections.
@@ -321,34 +316,30 @@ class DepthProfileWidget(QtWidgets.QWidget):
                     if found_scatter:
                         elements[index] = scatter_element
             
-            settings = self.measurement.measurement_settings.\
-                            get_measurement_settings()
+            settings = self.measurement.measurement_settings.get_measurement_settings()
             ds = settings.depth_profile_settings
             depth_scale_from = ds.depths_for_concentration_from
             depth_scale_to = ds.depths_for_concentration_to
             self.matplotlib = MatplotlibDepthProfileWidget(self,
-                                       self.output_dir,
-                                       self.elements,
-                                       rbs_list,
-                                       (depth_scale_from, depth_scale_to),
-                                       self.x_units,
-                                       True,  # legend
-                                       self.__line_zero,
-                                       self.__line_scale,
-                                       self.__systerr)
+                                                           self.output_dir,
+                                                           self.elements,
+                                                           rbs_list,
+                                                           (depth_scale_from, depth_scale_to),
+                                                           self.x_units,
+                                                           True,  # legend
+                                                           self.__line_zero,
+                                                           self.__line_scale,
+                                                           self.__systerr)
         except:
             import traceback
             msg = "Could not create Depth Profile graph. "
             err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
-            str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + \
-                          traceback._some_str(sys.exc_info()[1]),
-                          err_file,
-                          str(sys.exc_info()[2].tb_lineno)])
+            str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + traceback._some_str(sys.exc_info()[1]), err_file,
+                                 str(sys.exc_info()[2].tb_lineno)])
             msg += str_err
             logging.getLogger(self.measurement.measurement_name).error(msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
-
 
     def delete(self):
         """Delete variables and do clean up.
@@ -358,7 +349,6 @@ class DepthProfileWidget(QtWidgets.QWidget):
         self.ui.close()
         self.ui = None
         self.close()
-
 
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
@@ -371,17 +361,16 @@ class DepthProfileWidget(QtWidgets.QWidget):
         except:
             pass
         super().closeEvent(evnt)
-        
-        
+
     def save_to_file(self):
         """Save object information to file.
         """
         output_dir = self.output_dir.replace(
                          self.parent.measurement.directory + "\\", "")
-        file = os.path.join(self.parent.measurement.directory, self.save_file)
+        file = os.path.join(self.parent.measurement.directory_depth_profiles, self.save_file)
         fh = open(file, "wt")
         fh.write("{0}\n".format(output_dir))
-        fh.write("{0}\n".format("\t".join([str(element) \
+        fh.write("{0}\n".format("\t".join([str(element)
                                            for element in self.elements])))
         fh.write("{0}\n".format("\t".join([cut for cut in self.__use_cuts])))
         fh.write("{0}\n".format(self.x_units))

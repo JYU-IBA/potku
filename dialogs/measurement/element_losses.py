@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 27.3.2013
-Updated on 26.8.2013
+Updated on 10.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -23,8 +23,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
+             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import logging, os, sys
 from PyQt5 import uic, QtCore, QtWidgets
@@ -42,6 +43,7 @@ class ElementLossesDialog(QtWidgets.QDialog):
     reference_cut = {}
     split_count = 10
     y_scale = 1
+
     def __init__(self, parent):
         """Inits element losses class.
         
@@ -83,14 +85,13 @@ class ElementLossesDialog(QtWidgets.QDialog):
         self.ui.radioButton_minmax.setChecked(ElementLossesDialog.y_scale == 1)
         
         self.exec_()
-    
 
     def __accept_params(self):
         """Called when OK button is pressed. Creates a elementlosses widget and
         adds it to the parent (mdiArea).
         """
         cut_dir = self.parent.measurement.directory_cuts
-        cut_elo = self.parent.measurement.directory_elemloss
+        cut_elo = self.parent.measurement.directory_composition_changes
         y_axis_0_scale = self.ui.radioButton_0max.isChecked()
         unused_y_axis_min_scale = self.ui.radioButton_minmax.isChecked()
         reference_cut = os.path.join(cut_dir, self.ui.referenceCut.currentText())
@@ -107,8 +108,8 @@ class ElementLossesDialog(QtWidgets.QDialog):
                 ElementLossesDialog.checked_cuts[m_name].append(item.file_name)
             child_count = item.childCount()
             if child_count > 0:  # Elemental Losses
-                for i in range(child_count):
-                    item_child = item.child(i)
+                for j in range(child_count):
+                    item_child = item.child(j)
                     if item_child.checkState(0):
                         checked_cuts.append(os.path.join(cut_elo,
                                                          item_child.file_name))
@@ -149,14 +150,12 @@ class ElementLossesDialog(QtWidgets.QDialog):
                                        split_counts.keys()])
             logging.getLogger(measurement_name).info(log_info + splitinfo)
             self.close()
-                                                    
 
 
-        
 class ElementLossesWidget(QtWidgets.QWidget):
     """Element losses widget which is added to measurement tab.
     """
-    save_file = "widget_elemental_losses.save"
+    save_file = "widget_composition_changes.save"
     
     def __init__(self, parent, reference_cut_file, checked_cuts,
                  partition_count, y_scale):
@@ -199,7 +198,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
             self.ui.setWindowTitle(title)
             # Calculate elemental losses
             self.losses = ElementLosses(self.measurement.directory_cuts,
-                                        self.measurement.directory_elemloss,
+                                        self.measurement.directory_composition_changes,
                                         self.reference_cut_file,
                                         self.checked_cuts,
                                         self.partition_count,
@@ -228,10 +227,8 @@ class ElementLossesWidget(QtWidgets.QWidget):
             import traceback
             msg = "Could not create Elemental Losses graph. "
             err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
-            str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + \
-                          traceback._some_str(sys.exc_info()[1]),
-                          err_file,
-                          str(sys.exc_info()[2].tb_lineno)])
+            str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + traceback._some_str(sys.exc_info()[1]), err_file,
+                                str(sys.exc_info()[2].tb_lineno)])
             msg += str_err
             logging.getLogger(self.measurement.measurement_name).error(msg)
             if hasattr(self, "matplotlib"):
@@ -241,7 +238,6 @@ class ElementLossesWidget(QtWidgets.QWidget):
                 self.measurement.statusbar.removeWidget(self.progress_bar)
                 self.progress_bar.hide()
 
-        
     def delete(self):
         """Delete variables and do clean up.
         """
@@ -252,7 +248,6 @@ class ElementLossesWidget(QtWidgets.QWidget):
         self.ui.close()
         self.ui = None
         self.close()
-
 
     def __save_splits(self):  # TODO: Use Null with GUI ProgresBar.
         if self.progress_bar:
@@ -269,7 +264,6 @@ class ElementLossesWidget(QtWidgets.QWidget):
             self.measurement.statusbar.removeWidget(self.progress_bar)
             self.progress_bar.hide()
 
-    
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
         """
@@ -281,8 +275,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
         except:
             pass
         super().closeEvent(evnt)
-        
-    
+
     def save_to_file(self):
         """Save object information to file.
         """
@@ -291,7 +284,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
         files = "\t".join([tmp.replace(self.parent.measurement.directory + "\\",
                                        "") 
                            for tmp in self.checked_cuts])
-        file = os.path.join(self.parent.measurement.directory, self.save_file)
+        file = os.path.join(self.parent.measurement.directory_composition_changes, self.save_file)
         fh = open(file, "wt")
         fh.write("{0}\n".format(reference))
         fh.write("{0}\n".format(files))
