@@ -347,7 +347,7 @@ class Measurement:
         """
         if filepath is None:
             filepath = self.directory
-        filepath = filepath + os.sep + self.measurement_name + ".measurement"
+        filepath = filepath + ".measurement"
         with open(filepath, 'w') as savefile:
             json.dump(self, savefile, indent=4, cls=MeasurementEncoder)
 

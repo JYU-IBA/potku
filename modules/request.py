@@ -83,7 +83,7 @@ class Request:
         self.detector = Detector(self)
         self.detector.create_folder_structure(self.default_detector_folder)
         self.default_measurement = Measurement(self, "Default")
-        self.default_measurement.save_settings(self.default_folder)
+        self.default_measurement.save_settings(self.default_folder + os.sep + self.default_measurement.measurement_name)
         self.default_simulation = Simulation(self)
 
         self.__set_request_logger()

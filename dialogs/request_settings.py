@@ -222,7 +222,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
     def __save_file(self, settings_type):
         """Opens file dialog and sets and saves the settings to a ini file.
         """
-
         if settings_type == "MEASURING_UNIT_SETTINGS":
             settings = MeasuringSettings()
         elif settings_type == "DEPTH_PROFILE_SETTINGS":
@@ -237,6 +236,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                     "Settings file (*.ini)")
 
         if filename:
+            self.request.default_measurement.save_settings(filename)
+
             if settings_type == "CALIBRATION_SETTINGS":
                 settings.set_settings(self.detector_settings_widget)
                 settings.save_settings(filename)
@@ -291,7 +292,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 self.request.default_measurement.target_theta = self.measurement_settings_widget.targetThetaLineEdit.text()
                 self.request.default_measurement.target_fii = self.measurement_settings_widget.targetFiiLineEdit.text()
 
-                self.request.default_measurement.save_settings(self.request.default_folder)
+                self.request.default_measurement.save_settings(self.request.default_folder + os.sep + self.request.default_measurement.measurement_name)
 
             # Detector settings
             self.request.detector.name = self.detector_settings_widget.nameLineEdit.text()
