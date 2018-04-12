@@ -189,8 +189,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # self.xys = sorted(self.xys, key=lambda x: x[0])
 
         # Placeholder points
-        self.xs = (99.99 * numpy.random.rand(20)).tolist()
-        self.ys = (99.99 * numpy.random.rand(20)).tolist()
+        # self.xs = (99.99 * numpy.random.rand(19)).tolist()
+        # self.xs = [round(self.xs[i], 2) for i in range(len(self.xs))]
+        # self.xs.insert(0, 0)
+        # self.ys = (99.99 * numpy.random.rand(20)).tolist()
+        # self.ys = [round(self.ys[i], 4) for i in range(len(self.ys))]
+        self.xs = [0.00, 65.00, 65.01, 100.00, 100.01, 170.00, 170.01, 200.00, 200.01, 200.02]
+        self.ys = [3.03, 3.03, 1.22, 1.22, 0.34, 0.34, 0.0001, 0.0001, 0.0, 0.0]
         self.xys = list(zip(self.xs, self.ys))
         self.points = []
         for xy in self.xys:
@@ -201,8 +206,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.x_dist_left = []
         self.x_dist_right = []
+        self.y_dist_left = []
+        self.y_dist_right = []
 
         self.x_res = 0.01
+        self.y_min = 0.0001
         # Markers representing points
         self.markers = None
         # Lines connecting markers
@@ -402,6 +410,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.x_coordinate_box.setToolTip("X coordinate of selected point")
         self.x_coordinate_box.setSingleStep(0.1)
         self.x_coordinate_box.setDecimals(2)
+        self.x_coordinate_box.setMinimum(0)
         self.x_coordinate_box.setKeyboardTracking(False)
         self.x_coordinate_box.valueChanged.connect(self.set_selected_point_x)
         # self.x_coordinate_box.setLocale()
@@ -417,6 +426,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.y_coordinate_box.setToolTip("Y coordinate of selected point")
         self.y_coordinate_box.setSingleStep(0.1)
         self.y_coordinate_box.setDecimals(4)
+        self.y_coordinate_box.setMinimum(self.y_min)
         self.y_coordinate_box.setKeyboardTracking(False)
         self.y_coordinate_box.valueChanged.connect(self.set_selected_point_y)
         # self.y_coordinate_box.setFixedWidth(40)
@@ -525,6 +535,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.x_dist_left = [self.dragged_points[i].get_x()-self.dragged_points[0].get_x()
                                     for i in range(1, len(self.dragged_points))]
                 self.x_dist_right = [self.dragged_points[-1].get_x()-self.dragged_points[i].get_x()
+                                     for i in range(0, len(self.dragged_points) - 1)]
+                self.y_dist_left = [self.dragged_points[i].get_y()-self.dragged_points[0].get_y()
+                                    for i in range(1, len(self.dragged_points))]
+                self.y_dist_right = [self.dragged_points[-1].get_y()-self.dragged_points[i].get_y()
                                      for i in range(0, len(self.dragged_points) - 1)]
                 self.update_plot()
             else:
@@ -807,7 +821,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         dr_ps = self.dragged_points
         new_coords = self.calculate_new_coordinates(event, dr_ps)
         for i in range(0, len(dr_ps)):
-            dr_ps[i].set_coordinates(new_coords[i])
+            if new_coords[i][0] < 0:
+                dr_ps[i].set_x(0)
+            else:
+                dr_ps[i].set_x(new_coords[i][0])
+            if new_coords[i][1] < self.y_min:
+                dr_ps[i].set_y(self.y_min)
+            else:
+                dr_ps[i].set_y(new_coords[i][1])
 
     def set_new_coordinates_edge(self, event, left):
         dr_ps = self.dragged_points
@@ -818,17 +839,33 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         new_coords = self.calculate_new_coordinates(event, dr_ps)
 
         if left:
-            leftmost_dr_p.set_coordinates(
-                (left_neighbor.get_x() + self.x_res, new_coords[0][1]))
+            if new_coords[0][1] < self.y_min:
+                leftmost_dr_p.set_coordinates(
+                    (left_neighbor.get_x() + self.x_res, self.y_min))
+            else:
+                leftmost_dr_p.set_coordinates(
+                    (left_neighbor.get_x() + self.x_res, new_coords[0][1]))
             for i in range(1, len(dr_ps)):
-                dr_ps[i].set_coordinates(
-                    (left_neighbor.get_x() + self.x_res + self.x_dist_left[i-1], new_coords[i][1]))
+                if new_coords[0][1] < self.y_min:
+                    dr_ps[i].set_coordinates(
+                        (left_neighbor.get_x() + self.x_res + self.x_dist_left[i-1], self.y_min))
+                else:
+                    dr_ps[i].set_coordinates(
+                        (left_neighbor.get_x() + self.x_res + self.x_dist_left[i - 1], new_coords[i][1]))
         else:
-            rightmost_dr_p.set_coordinates(
-                (right_neighbor.get_x() - self.x_res, new_coords[-1][1]))
+            if new_coords[0][1] < self.y_min:
+                rightmost_dr_p.set_coordinates(
+                    (right_neighbor.get_x() - self.x_res, self.y_min))
+            else:
+                rightmost_dr_p.set_coordinates(
+                    (right_neighbor.get_x() - self.x_res, new_coords[-1][1]))
             for i in range(0, len(dr_ps) - 1):
-                dr_ps[i].set_coordinates(
-                    (right_neighbor.get_x() - self.x_res - self.x_dist_right[i], new_coords[i][1]))
+                if new_coords[0][1] < self.y_min:
+                    dr_ps[i].set_coordinates(
+                        (right_neighbor.get_x() - self.x_res - self.x_dist_right[i], self.y_min))
+                else:
+                    dr_ps[i].set_coordinates(
+                        (right_neighbor.get_x() - self.x_res - self.x_dist_right[i], new_coords[i][1]))
 
     def update_location(self, event):
         """Updates the location of points that are being dragged."""
