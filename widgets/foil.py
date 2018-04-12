@@ -9,9 +9,9 @@ import os
 from PyQt5 import uic, QtWidgets
 
 
-class DetectorSettingsWidget(QtWidgets.QWidget):
-    """Class for creating a request wide simulation settings tab.
+class FoilWidget(QtWidgets.QWidget):
+    """Class for creating a foil widget for detector settings.
     """
     def __init__(self):
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_request_detector_settings.ui"), self)
+        self.ui = uic.loadUi(os.path.join("ui_files", "ui_foil_widget.ui"), self)
