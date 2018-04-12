@@ -64,9 +64,6 @@ class Request:
         self.statusbar = statusbar
         self.samples = Samples(self)
 
-        self.default_measurement = Measurement(self)
-        self.default_simulation = Simulation(self)
-
         self.__tabs = tabs
         self.__master_measurement = None
         self.__non_slaves = []  # List of measurements that aren't slaves. Easier
@@ -85,7 +82,10 @@ class Request:
         # TODO: Add folder creation as a function call
         self.detector = Detector(self)
         self.detector.create_folder_structure(self.default_detector_folder)
-            
+        self.default_measurement = Measurement(self, "Default")
+        self.default_measurement.save_settings(self.default_folder)
+        self.default_simulation = Simulation(self)
+
         self.__set_request_logger()
         
         # Request file containing necessary information of the request.
