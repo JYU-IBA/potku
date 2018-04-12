@@ -4,14 +4,14 @@
 Created on 23.3.2018
 Updated on 11.4.2018
 """
-from enum import Enum
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import json
 import os
+import json
 import datetime
+from enum import Enum
 
 from modules.foil import CircularFoil, RectangularFoil
 from modules.layer import Layer
@@ -22,10 +22,23 @@ class DetectorType(Enum):
     ToF = 0
 
 
+class DetectorEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Detector):
+            return {
+                "name": obj.name,
+                "description": obj.description,
+                "date": obj.date.isoformat(),
+                "detector_type": obj.detector_type.value,
+                "foils": []
+            }
+        return super(DetectorEncoder, self).default(obj)
+
+
 class Detector:
 
     # request maybe only temporary parameter
-    __slots__ = "request", "description", "path", "name", "date", "angle", "detector_type", "foils", "calibration", \
+    __slots__ = "request", "description", "path", "name", "date", "detector_type", "foils", "calibration", \
                 "efficiencies", "efficiencies_path"
 
     def __init__(self, request, name="Default", description="", date=datetime.date.today(),
@@ -112,6 +125,15 @@ class Detector:
                 raise json.JSONDecodeError
 
         return cls(file_path, name, angle, foils)
+
+    def save_settings(self, filepath=None):
+        """Saves parameters from Detector object in JSON format in .detector file.
+        """
+        if filepath is None:
+            filepath = self.directory
+        filepath = filepath + ".detector"
+        with open(filepath, 'w') as savefile:
+            json.dump(self, savefile, indent=4, cls=DetectorEncoder)
 
 
 class ToFDetector(Detector):
