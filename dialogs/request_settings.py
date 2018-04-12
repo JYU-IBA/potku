@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 11.4.2018
+Updated on 12.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -51,11 +51,14 @@ from modules.input_validator import InputValidator
 from modules.measuring_settings import MeasuringSettings
 from widgets.simulation.settings import SimulationSettingsWidget
 from widgets.detector_settings import DetectorSettingsWidget
+from widgets.foil import FoilWidget
+from widgets.distance import DistanceWidget
+from dialogs.simulation.composition import CompositionDialog
 
 
 class RequestSettingsDialog(QtWidgets.QDialog):
     
-    def __init__(self, masses, request):
+    def __init__(self, masses, request, icon_manager):
         """Constructor for the program
         
         Args:
@@ -69,7 +72,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         
         self.request = request
         self.settings = request.settings
-        
+        self.icon_manager = icon_manager
+
         # Creates object that loads and holds all the measuring data
         self.measuring_unit_settings = self.settings.measuring_unit_settings
         self.calibration_settings = self.settings.calibration_settings
@@ -125,6 +129,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.detector_settings_widget = DetectorSettingsWidget()
         self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
 
+        # Add foil widgets
+        self.detector_structure_widgets = []
+        layout = self._add_default_foils()
+        self.detector_settings_widget.ui.detectorScrollAreaContents.layout().addLayout(layout)
+
         self.calibration_settings.show(self.detector_settings_widget)
 
         self.detector_settings_widget.ui.saveButton.clicked \
@@ -152,8 +161,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.ui.tabs.addTab(self.depth_profile_settings_widget, "Depth Profile")
         self.depth_profile_settings.show(self.depth_profile_settings_widget)
 
-        self.depth_profile_settings_widget.ui.loadButton.clicked.connect(lambda: self.__load_file("DEPTH_PROFILE_SETTINGS"))
-        self.depth_profile_settings_widget.ui.saveButton.clicked.connect(lambda: self.__save_file("DEPTH_PROFILE_SETTINGS"))
+        self.depth_profile_settings_widget.ui.loadButton.clicked.connect(
+            lambda: self.__load_file("DEPTH_PROFILE_SETTINGS"))
+        self.depth_profile_settings_widget.ui.saveButton.clicked.connect(
+            lambda: self.__save_file("DEPTH_PROFILE_SETTINGS"))
 
         self.depth_profile_settings_widget.ui.depthStepForStoppingLineEdit.setValidator(double_validator)
         self.depth_profile_settings_widget.ui.depthStepForOutputLineEdit.setValidator(double_validator)
@@ -162,6 +173,27 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.depth_profile_settings_widget.ui.depthsForConcentrationScalingLineEdit_2.setValidator(double_validator)
 
         self.exec_()
+
+    def _add_default_foils(self):
+        layout = QtWidgets.QHBoxLayout()
+        i = 0
+        while i in range(4):
+            foil_widget = FoilWidget()
+            foil_widget.ui.foilButton.clicked.connect(lambda: self._open_composition_dialog())
+            distance_widget = DistanceWidget()
+            self.detector_structure_widgets.append(foil_widget)
+            self.detector_structure_widgets.append(distance_widget)
+            layout.addWidget(self.detector_structure_widgets[i])
+            layout.addWidget(self.detector_structure_widgets[i + 1])
+            i = i + 2
+        foil_widget = FoilWidget()
+        foil_widget.ui.foilButton.clicked.connect(lambda: self._open_composition_dialog())
+        self.detector_structure_widgets.append(foil_widget)
+        layout.addWidget(foil_widget)
+        return layout
+
+    def _open_composition_dialog(self):
+        CompositionDialog(self.icon_manager)
 
     def __open_calibration_dialog(self):
         measurements = [self.request.measurements.get_key_value(key)
@@ -343,7 +375,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                            QtWidgets.QMessageBox.Ok)
             raise TypeError
     
-    def __change_element(self, button, comboBox):
+    def __change_element(self, button, combo_box):
         """Opens element selection dialog and loads selected element's isotopes 
         to a combobox.
         
@@ -355,11 +387,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             button.setText(dialog.element)
             # Enabled settings once element is selected
             self.__enabled_element_information()  
-        self.masses.load_isotopes(dialog.element, comboBox,
+        self.masses.load_isotopes(dialog.element, combo_box,
                                   self.measuring_unit_settings.element.isotope)
         
     def __enabled_element_information(self):
         self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(True)
         self.measurement_settings_widget.ui.isotopeLabel.setEnabled(True)
         self.ui.OKButton.setEnabled(True)
-
