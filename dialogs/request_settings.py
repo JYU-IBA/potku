@@ -54,6 +54,8 @@ from widgets.detector_settings import DetectorSettingsWidget
 from widgets.foil import FoilWidget
 from widgets.distance import DistanceWidget
 from dialogs.simulation.foil import FoilDialog
+from modules.foil import CircularFoil
+from modules.foil import RectangularFoil
 
 
 class RequestSettingsDialog(QtWidgets.QDialog):
@@ -129,7 +131,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.detector_settings_widget = DetectorSettingsWidget()
         self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
 
-        # Add foil widgets
+        # Temporary foils list which holds all the information given in the foil dialog
+        # If user presses ok or apply, these vlues will be svaed into request's default detector
+        self.tmp_foil_info = []
+
+        # Add foil widgets and foil objects
         self.detector_structure_widgets = []
         self.foils_layout = self._add_default_foils()
         self.detector_settings_widget.ui.detectorScrollAreaContents.layout().addLayout(self.foils_layout)
@@ -187,24 +193,32 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
     def _add_default_foils(self):
         layout = QtWidgets.QHBoxLayout()
+
+        target = QtWidgets.QLabel("Target")
+        layout.addWidget(target)
+
         i = 0
-        while i in range(4):
+        while i in range(6):
             foil_widget = FoilWidget()
+            new_foil = CircularFoil("Foil")  # TODO: There should be default values here
+            self.tmp_foil_info.append(new_foil)
             foil_widget.ui.foilButton.clicked.connect(lambda: self._open_composition_dialog())
             distance_widget = DistanceWidget()
-            self.detector_structure_widgets.append(foil_widget)
             self.detector_structure_widgets.append(distance_widget)
+            self.detector_structure_widgets.append(foil_widget)
             layout.addWidget(self.detector_structure_widgets[i])
             layout.addWidget(self.detector_structure_widgets[i + 1])
             i = i + 2
-        foil_widget = FoilWidget()
-        foil_widget.ui.foilButton.clicked.connect(lambda: self._open_composition_dialog())
-        self.detector_structure_widgets.append(foil_widget)
-        layout.addWidget(foil_widget)
         return layout
 
     def _open_composition_dialog(self):
-        FoilDialog(self.icon_manager)
+        foil_name = self.sender().text()
+        foil_object = None
+        for foil in self.tmp_foil_info:
+            if foil_name == foil.name:
+                foil_object = foil
+                break
+        FoilDialog(foil_object, self.icon_manager)
 
     def __open_calibration_dialog(self):
         measurements = [self.request.measurements.get_key_value(key)

@@ -13,69 +13,14 @@
   <property name="minimumSize">
    <size>
     <width>500</width>
-    <height>450</height>
+    <height>500</height>
    </size>
   </property>
   <property name="windowTitle">
    <string>ui_composition_dialog</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
-     <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_4">
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_3">
-         <item>
-          <widget class="QLabel" name="nameLabel">
-           <property name="text">
-            <string>Name:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="nameEdit"/>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayout_2">
-         <item>
-          <widget class="QLabel" name="typeLabel">
-           <property name="text">
-            <string>Type:</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QComboBox" name="typeComboBox"/>
-         </item>
-        </layout>
-       </item>
-      </layout>
-     </item>
-     <item>
-      <layout class="QHBoxLayout" name="dimensionLayout"/>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QGridLayout" name="matplotlib_layout"/>
-   </item>
-   <item>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="2" column="0">
     <layout class="QHBoxLayout" name="horizontalLayout_5">
      <item>
       <spacer name="horizontalSpacer_2">
@@ -105,6 +50,71 @@
       </widget>
      </item>
     </layout>
+   </item>
+   <item row="0" column="0">
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_8">
+       <item>
+        <widget class="QLabel" name="nameLabel">
+         <property name="text">
+          <string>Name:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="nameEdit"/>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_7">
+       <item>
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Transmission:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLineEdit" name="transmissionEdit"/>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="horizontalLayout_2">
+       <item>
+        <widget class="QLabel" name="typeLabel">
+         <property name="text">
+          <string>Type:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="typeComboBox"/>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="dimensionLayout"/>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item row="1" column="0">
+    <layout class="QGridLayout" name="matplotlib_layout"/>
    </item>
   </layout>
  </widget>

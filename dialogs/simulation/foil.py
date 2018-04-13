@@ -14,10 +14,17 @@ from widgets.matplotlib.simulation.target_composition import TargetCompositionWi
 class FoilDialog(QtWidgets.QDialog):
     """ Class for creating a foil widget for detector settings.
     """
-    def __init__(self, icon_manager):
+    def __init__(self, tmp_foil, icon_manager):
+        """ Initializes the Foil Dialog.
+        Args:
+            tmp_foil: Foil object which is modified.
+            icon_manager: Icon manager for TargetCompositionWidget.
+        """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_composition_dialog.ui"), self)
         self.icon_manager = icon_manager
+        self.foil = tmp_foil
+
         # This widget adds itself into the matplotlib_layout
         self.composition = TargetCompositionWidget(self, self.icon_manager)
 
@@ -35,6 +42,7 @@ class FoilDialog(QtWidgets.QDialog):
         self.ui.typeComboBox.currentIndexChanged.connect(lambda: self._change_dimensions())
 
         self.ui.cancelButton.clicked.connect(self.close)
+        self.ui.okButton.clicked.connect(lambda: self._save_foil_info)
 
         self.exec_()
 
@@ -50,3 +58,8 @@ class FoilDialog(QtWidgets.QDialog):
             self.second_dimension_edit = QtWidgets.QLineEdit()
             self.dimension_edits.append(self.second_dimension_edit)
             self.ui.dimensionLayout.addWidget(self.second_dimension_edit)
+
+    def _save_foil_info(self):
+        self.foil.name = self.ui.nameEdit.text()
+        self.foil.transmission = self.ui.transmissionEdit.text()
+        self.foil.diameter = self.first_dimension_edit.text()
