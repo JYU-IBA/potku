@@ -106,7 +106,7 @@ class TargetCompositionWidget(MatplotlibWidget):
         # Button for adding a new layer
         self.button_add_layer = QtWidgets.QToolButton(self)
         self.button_add_layer.clicked.connect(lambda: self.add_layer())
-        self.__icon_manager.set_icon(self.button_add_layer, "del.png")  # TODO: Change icon!
+        self.__icon_manager.set_icon(self.button_add_layer, "add.png")  # TODO: Change icon!
         self.mpl_toolbar.addWidget(self.button_add_layer)
 
     def add_layer(self):

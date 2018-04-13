@@ -25,6 +25,8 @@ along with this program (file named 'LICENCE').
 
 Dialog for the request settings
 """
+from PyQt5.QtWidgets import QTabWidget
+
 from modules.detector import DetectorType
 from modules.element import Element
 from modules.measurement import MeasurementProfile
@@ -71,7 +73,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.request = request
         self.settings = request.settings
         self.icon_manager = icon_manager
-        
+
         # Creates object that loads and holds all the measuring data
         self.measuring_unit_settings = self.settings.measuring_unit_settings
         self.calibration_settings = self.settings.calibration_settings
@@ -103,7 +105,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.measurement_settings_widget.ui.loadButton.clicked\
             .connect(lambda: self.__load_file("MEASURING_UNIT_SETTINGS"))
         self.measurement_settings_widget.ui.saveButton.clicked\
-            .connect(lambda: self.__save_file("MEASURING_UNIT_SETTINGS"))
+            .connect(lambda: self.__save_file("MEASUREMENT_SETTINGS"))
         self.measurement_settings_widget.ui.beamIonButton.clicked.connect(
             lambda: self.__change_element(self.measurement_settings_widget.ui.beamIonButton,
                                           self.measurement_settings_widget.ui.isotopeComboBox))
@@ -120,7 +122,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
         self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
 
-        self.measuring_unit_settings.show(self.measurement_settings_widget)
+#        self.measuring_unit_settings.show(self.measurement_settings_widget)
+        self.show_settings()
 
         # Add detector settings view to the settings view
         self.detector_settings_widget = DetectorSettingsWidget()
@@ -135,6 +138,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         self.calibration_settings.show(self.detector_settings_widget)
 
+        self.detector_settings_widget.ui.saveButton.clicked \
+            .connect(lambda: self.__save_file("DETECTOR_SETTINGS"))
         self.detector_settings_widget.ui.loadCalibrationParametersButton.clicked.connect(
             lambda: self.__load_file("CALIBRATION_SETTINGS"))
         self.detector_settings_widget.ui.saveCalibrationParametersButton.clicked.connect(
@@ -206,6 +211,32 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         for key in self.request.samples.measurements.measurements.keys()]
         CalibrationDialog(measurements, self.settings, self.masses, self)
 
+    def show_settings(self):
+        if self.request.default_measurement.ion:
+            self.measurement_settings_widget.ui.beamIonButton.setText(self.request.default_measurement.ion.name)
+            # TODO Check that the isotope is also set.
+            self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(True)
+        else:
+            self.measurement_settings_widget.ui.beamIonButton.setText("Select")
+            self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(False)
+
+        self.measurement_settings_widget.nameLineEdit.setText(self.request.default_measurement.measurement_name)
+        self.measurement_settings_widget.descriptionLineEdit.setPlainText(self.request.default_measurement.description)
+        self.measurement_settings_widget.energyLineEdit.setText(str(self.request.default_measurement.energy))
+        self.measurement_settings_widget.chargeLineEdit.setText(str(self.request.default_measurement.charge))
+        self.measurement_settings_widget.spotSizeXLineEdit.setText(str(self.request.default_measurement.spot_size[0]))
+        self.measurement_settings_widget.spotSizeYLineEdit.setText(str(self.request.default_measurement.spot_size[1]))
+        self.measurement_settings_widget.divergenceLineEdit.setText(str(self.request.default_measurement.divergence))
+        self.measurement_settings_widget.profileComboBox.setCurrentIndex(self.request.default_measurement.profile.value)
+        self.measurement_settings_widget.energyDistLineEdit.setText(str(self.request.default_measurement.energy_dist))
+        self.measurement_settings_widget.fluenceLineEdit.setText(str(self.request.default_measurement.fluence))
+        self.measurement_settings_widget.currentLineEdit.setText(str(self.request.default_measurement.current))
+        self.measurement_settings_widget.timeLineEdit.setText(str(self.request.default_measurement.beam_time))
+        self.measurement_settings_widget.detectorThetaLineEdit.setText(str(self.request.default_measurement.detector_theta))
+        self.measurement_settings_widget.detectorFiiLineEdit.setText(str(self.request.default_measurement.detector_fii))
+        self.measurement_settings_widget.targetThetaLineEdit.setText(str(self.request.default_measurement.target_theta))
+        self.measurement_settings_widget.targetFiiLineEdit.setText(str(self.request.default_measurement.target_fii))
+
     def __load_file(self, settings_type):
         """Opens file dialog and loads and shows selected ini file's values.
         
@@ -236,13 +267,16 @@ class RequestSettingsDialog(QtWidgets.QDialog):
     def __save_file(self, settings_type):
         """Opens file dialog and sets and saves the settings to a ini file.
         """
-
         if settings_type == "MEASURING_UNIT_SETTINGS":
             settings = MeasuringSettings()
         elif settings_type == "DEPTH_PROFILE_SETTINGS":
             settings = DepthProfileSettings()
         elif settings_type == "CALIBRATION_SETTINGS":
             settings = CalibrationParameters()
+        elif settings_type == "DETECTOR_SETTINGS":
+            pass
+        elif settings_type == "MEASUREMENT_SETTINGS":
+            pass
         else:
             return
 
@@ -250,12 +284,17 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                     "Open measuring unit settings file",
                                     "Settings file (*.ini)")
 
+        self.update_settings()
         if filename:
             if settings_type == "CALIBRATION_SETTINGS":
                 settings.set_settings(self.detector_settings_widget)
                 settings.save_settings(filename)
+            elif settings_type == "MEASUREMENT_SETTINGS":
+                self.request.default_measurement.save_settings(filename)
+            elif settings_type == "DETECTOR_SETTINGS":
+                self.request.detector.save_settings(filename)
             else:
-                settings.set_settings(self)
+                settings.set_settings(self.measurement_settings_widget)
                 settings.save_settings(filename)
 
     def update_and_close_settings(self):
@@ -279,52 +318,46 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             pass
     
     def __update_settings(self):
-        """Update values from dialog to every setting object.
+        """Reads values from Request Settings dialog and updates them in default objects.
         """
         # TODO: Proper checking for all setting values
-        # This try-catch works for Beam Element that has not been set yet.
         try:
             # Measurement settings
             isotope_index = self.measurement_settings_widget.isotopeComboBox.currentIndex()
             if isotope_index != -1:
                 isotope_data = self.measurement_settings_widget.isotopeComboBox.itemData(isotope_index)
-                self.request.default_measurement.element = Element(
-                    self.measurement_settings_widget.beamIonButton.text(), isotope_data[0])
-                self.request.default_measurement.name = self.measurement_settings_widget.nameLineEdit.text()
-                self.request.default_measurement.description = \
-                    self.measurement_settings_widget.descriptionLineEdit.toPlainText()
+                self.request.default_measurement.ion = Element(self.measurement_settings_widget.beamIonButton.text(), isotope_data[0])
+                self.request.default_measurement.measurement_name = self.measurement_settings_widget.nameLineEdit.text()
+                self.request.default_measurement.description = self.measurement_settings_widget.descriptionLineEdit.toPlainText()
                 self.request.default_measurement.energy = self.measurement_settings_widget.energyLineEdit.text()
                 self.request.default_measurement.charge = self.measurement_settings_widget.chargeLineEdit.text()
                 self.request.default_measurement.spot_size = [self.measurement_settings_widget.spotSizeXLineEdit.text(),
                                                               self.measurement_settings_widget.spotSizeYLineEdit.text()]
                 self.request.default_measurement.divergence = self.measurement_settings_widget.divergenceLineEdit.text()
-                self.request.default_measurement.profile = MeasurementProfile(
-                    self.measurement_settings_widget.profileComboBox.currentIndex())
-                self.request.default_measurement.energy_dist = \
-                    self.measurement_settings_widget.energyDistLineEdit.text()
+                self.request.default_measurement.profile = MeasurementProfile(self.measurement_settings_widget.profileComboBox.currentIndex())
+                self.request.default_measurement.energy_dist = self.measurement_settings_widget.energyDistLineEdit.text()
                 self.request.default_measurement.fluence = self.measurement_settings_widget.fluenceLineEdit.text()
                 self.request.default_measurement.current = self.measurement_settings_widget.currentLineEdit.text()
-                self.request.default_measurement.time = self.measurement_settings_widget.timeLineEdit.text()
-                self.request.default_measurement.detector_theta = \
-                    self.measurement_settings_widget.detectorThetaLineEdit.text()
-                self.request.default_measurement.detector_fii = \
-                    self.measurement_settings_widget.detectorFiiLineEdit.text()
-                self.request.default_measurement.target_theta = \
-                    self.measurement_settings_widget.targetThetaLineEdit.text()
+                self.request.default_measurement.beam_time = self.measurement_settings_widget.timeLineEdit.text()
+                self.request.default_measurement.detector_theta = self.measurement_settings_widget.detectorThetaLineEdit.text()
+                self.request.default_measurement.detector_fii = self.measurement_settings_widget.detectorFiiLineEdit.text()
+                self.request.default_measurement.target_theta = self.measurement_settings_widget.targetThetaLineEdit.text()
                 self.request.default_measurement.target_fii = self.measurement_settings_widget.targetFiiLineEdit.text()
+
+                self.request.default_measurement.save_settings(self.request.default_folder + os.sep + "Default")
 
             # Detector settings
             self.request.detector.name = self.detector_settings_widget.nameLineEdit.text()
             self.request.detector.description = self.detector_settings_widget.descriptionLineEdit.toPlainText()
-            self.request.detector.detector_type = DetectorType(
-                self.detector_settings_widget.typeComboBox.currentIndex())
+            self.request.detector.detector_type = DetectorType(self.detector_settings_widget.typeComboBox.currentIndex())
             self.calibration_settings.set_settings(self.detector_settings_widget)
             self.request.detector.calibration = self.calibration_settings
 
+            self.request.detector.save_settings(self.request.default_folder + os.sep + "Default")
+
             # Simulation settings
             self.request.default_simulation.name = self.simulation_settings_widget.nameLineEdit.text()
-            self.request.default_simulation.description = \
-                self.simulation_settings_widget.descriptionLineEdit.toPlainText()
+            self.request.default_simulation.description = self.simulation_settings_widget.descriptionLineEdit.toPlainText()
             self.request.default_simulation.mode = SimulationMode(self.simulation_settings_widget.modeComboBox
                                                                   .currentIndex())
             self.request.default_simulation.simulation_type = SimulationType(self.simulation_settings_widget
@@ -339,9 +372,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.no_of_scaling = self.simulation_settings_widget.noOfScalingLineEdit.text()
 
             self.depth_profile_settings.set_settings(self.depth_profile_settings_widget)
-            
-            if not self.settings.has_been_set():
-                raise TypeError
+
+            # TODO Values should be checked.
+            # if not self.settings.has_been_set():
+            #     raise TypeError
             
             self.measuring_unit_settings.save_settings()
             self.calibration_settings.save_settings()

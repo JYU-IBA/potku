@@ -23,6 +23,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+import json
+
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
              "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
@@ -142,35 +144,68 @@ class MeasurementProfile(Enum):
     Gaussian = 1
 
 
+class MeasurementEncoder(json.JSONEncoder):
+    """Custom class to encode Measurement to JSON format.
+    """
+    def default(self, obj):
+        if isinstance(obj, Measurement):
+            measurement_dict = {
+                "name": obj.measurement_name,
+                "description": obj.description,
+                "date": obj.date.isoformat(),
+                "energy": obj.energy,
+                "charge": obj.charge,
+                "spot_size": obj.spot_size,
+                "divergence": obj.divergence,
+                "profile": obj.profile.value,
+                "energy_dist": obj.energy_dist,
+                "fluence": obj.fluence,
+                "current": obj.current,
+                "beam_time": obj.beam_time,
+                "detector_theta": obj.detector_theta,
+                "detector_fii": obj.detector_fii,
+                "target_theta": obj.detector_theta,
+                "target_fii": obj.detector_fii
+            }
+
+            if obj.ion is None:
+                measurement_dict["ion"] = ""
+                measurement_dict["isotope"] = ""
+                return measurement_dict
+
+            measurement_dict["ion"] =  obj.ion.name,
+            measurement_dict["isotope"] = str(obj.ion.isotope)
+            return measurement_dict
+        return super(MeasurementEncoder, self).default(obj)
+
+
 class Measurement:
     """Measurement class to handle one measurement data.
     """
 
     __slots__ = "request", "description", "date", "ion", "energy", "charge", "spot_size", "divergence", \
-                "profile", "energy_dist", "fluence", "current", "time", "detector_theta", "detector_fii", \
+                "profile", "energy_dist", "fluence", "current", "beam_time", "detector_theta", "detector_fii", \
                 "target_theta", "target_fii", "data", "statusbar", "color_scheme", "measurement_file", \
                 "measurement_name", "directory", "directory_cuts", "directory_elemloss", "__request_settings", \
-                "measurement_settings", "selector", "defaultlog", "errorlog", "tab_id", "element", \
+                "measurement_settings", "selector", "defaultlog", "errorlog", "tab_id", \
                 "directory_composition_changes", "directory_energy_spectra", "directory_depth_profiles", \
                 "directory_data"
 
-    def __init__(self, request, name="", description="", date=datetime.date.today(), element=None, energy=10.0, charge=4,
+    def __init__(self, request, name="", description="", date=datetime.date.today(), ion=None, energy=10.0, charge=4,
                  spot_size=[3.0, 5.0], divergence=0, profile=MeasurementProfile.Uniform, energy_dist=0,
-                 fluence=1000000000000, current=1.07, time=600, detector_theta=40, detector_fii=0, target_theta=70,
+                 fluence=1000000000000, current=1.07, beam_time=600, detector_theta=40, detector_fii=0, target_theta=70,
                  target_fii=0):
         """Inits measurement.
 
         Args:
-            measurement_file: String representing path to measurement file.
             request: Request class object.
-            tab_id: Integer representing tab identifier for measurement.
         """
         self.request = request  # To which request be belong to
         self.measurement_name = name
         self.description = description
         self.date = date
 
-        self.element = element
+        self.ion = ion
         self.energy = energy
         self.charge = charge
 
@@ -180,7 +215,7 @@ class Measurement:
         self.fluence = fluence
         self.energy_dist = energy_dist
         self.current = current
-        self.time = time
+        self.beam_time = beam_time
 
         self.detector_theta = detector_theta
         self.detector_fii = detector_fii
@@ -196,7 +231,7 @@ class Measurement:
         self.color_scheme = "Default color"
 
         self.measurement_file = None
-        self.directory = None
+        self.directory = request.default_folder
         self.directory_cuts = None
         self.directory_composition_changes = None
         self.directory_depth_profiles = None
@@ -306,6 +341,15 @@ class Measurement:
         # ps = pstats.Stats(pr)
         # ps.sort_stats("time")
         # ps.print_stats(10)
+
+    def save_settings(self, filepath=None):
+        """Saves parameters from Measurement object in JSON format in .measurement file.
+        """
+        if filepath is None:
+            filepath = self.directory
+        filepath = filepath + ".measurement"
+        with open(filepath, 'w') as savefile:
+            json.dump(self, savefile, indent=4, cls=MeasurementEncoder)
 
     def set_loggers(self):
         """Sets the loggers for this specified measurement.
