@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 12.4.2018
+Updated on 13.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -51,7 +51,7 @@ from widgets.simulation.settings import SimulationSettingsWidget
 from widgets.detector_settings import DetectorSettingsWidget
 from widgets.foil import FoilWidget
 from widgets.distance import DistanceWidget
-from dialogs.simulation.composition import CompositionDialog
+from dialogs.simulation.foil import FoilDialog
 
 
 class RequestSettingsDialog(QtWidgets.QDialog):
@@ -128,8 +128,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Add foil widgets
         self.detector_structure_widgets = []
-        layout = self._add_default_foils()
-        self.detector_settings_widget.ui.detectorScrollAreaContents.layout().addLayout(layout)
+        self.foils_layout = self._add_default_foils()
+        self.detector_settings_widget.ui.detectorScrollAreaContents.layout().addLayout(self.foils_layout)
+
+        self.detector_settings_widget.ui.newFoilButton.clicked.connect(lambda: self._add_new_foil())
 
         self.calibration_settings.show(self.detector_settings_widget)
 
@@ -169,6 +171,15 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         self.exec_()
 
+    def _add_new_foil(self):
+        distance_widget = DistanceWidget()
+        self.detector_structure_widgets.append(distance_widget)
+        foil_widget = FoilWidget()
+        foil_widget.ui.foilButton.clicked.connect(lambda: self._open_composition_dialog())
+        self.detector_structure_widgets.append(foil_widget)
+        self.foils_layout.addWidget(distance_widget)
+        self.foils_layout.addWidget(foil_widget)
+
     def _add_default_foils(self):
         layout = QtWidgets.QHBoxLayout()
         i = 0
@@ -188,7 +199,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         return layout
 
     def _open_composition_dialog(self):
-        CompositionDialog(self.icon_manager)
+        FoilDialog(self.icon_manager)
 
     def __open_calibration_dialog(self):
         measurements = [self.request.measurements.get_key_value(key)

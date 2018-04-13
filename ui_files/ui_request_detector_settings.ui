@@ -252,7 +252,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>325</width>
-                <height>194</height>
+                <height>180</height>
                </rect>
               </property>
               <layout class="QHBoxLayout" name="horizontalLayout_4"/>
@@ -260,7 +260,7 @@
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="pushButton_4">
+            <widget class="QPushButton" name="newFoilButton">
              <property name="text">
               <string>Add a new foil</string>
              </property>
