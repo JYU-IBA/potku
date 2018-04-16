@@ -64,13 +64,13 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
         if self.settings.use_settings == "REQUEST" or self.settings.use_settings == "":
             self.ui.useRequestSettingsValuesCheckBox.setChecked(True)
             self.request_settings.show(self)  # Show the request's settings
-            self.masses.load_isotopes(self.request_settings.element.name,
+            self.masses.load_isotopes(self.request_settings.element.symbol,
                                       self.ui.isotopeComboBox,
                                       str(self.request_settings.element.isotope))
         elif self.settings.use_settings == "MEASUREMENT":
             self.ui.useRequestSettingsValuesCheckBox.setChecked(False)
             self.settings.show(self)  # Show the measurement's settings
-            self.masses.load_isotopes(self.settings.element.name,
+            self.masses.load_isotopes(self.settings.element.symbol,
                                       self.ui.isotopeComboBox,
                                       str(self.settings.element.isotope))
         
@@ -124,7 +124,7 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
         if filename:  # TODO: toistuvaa koodia
             settings = MeasuringSettings()
             settings.load_settings(filename)
-            self.masses.load_isotopes(settings.element.name,
+            self.masses.load_isotopes(settings.element.symbol,
                                       self.isotopeComboBox,
                                       str(settings.element.isotope))
             settings.show(self)

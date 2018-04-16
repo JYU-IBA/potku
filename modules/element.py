@@ -29,16 +29,16 @@ __versio__ = "1.0"
 import re
 
 class Element:
-    def __init__(self, element, isotope=None, amount=None):
+    def __init__(self, symbol, isotope=None, amount=None):
         """Initializes an element object.
         Args:
-              element: Two letter symbol of the element. E.g. 'He' for Helium.
+              symbol: Two letter symbol of the element. E.g. 'He' for Helium.
               isotope: The isotope number. If one wants to use standard mass,
                        then this parameter is not required.
               amount:  This is an optional parameter. It is used to describe
                        the amount of the element in a single layer of a target.
         """
-        self.element = element
+        self.symbol = symbol
         self.isotope = isotope
         self.amount = amount
 
@@ -48,40 +48,44 @@ class Element:
         Args:
             str: A string from which the element information will be parsed.
         """
-        m = re.match("(?P<isotope>[0-9]{0,3})(?P<element>[a-zA-Z]{1,2})"
+        m = re.match("(?P<isotope>[0-9]{0,3})(?P<symbol>[a-zA-Z]{1,2})"
                      "(\s(?P<amount>\d*(\.?\d+)?))?", str.strip())
         if m:
-            name = m.group("element")
-            isotope = int(m.group("isotope"))
-            amount = float(m.group("amount"))
+            symbol = m.group("symbol")
+            isotope = m.group("isotope")
+            amount = m.group("amount")
+
+            if isotope and amount:
+                return cls(symbol, int(isotope), float(amount))
+            elif isotope:
+                return cls(symbol, int(isotope))
+            elif amount:
+                return cls(symbol, None, float(amount))
+            else:
+                return cls(symbol)
         else:
             raise ValueError("Incorrect string given.")
-
-        return cls(name, isotope, amount)
 
     
     def __str__(self):
         '''Transform element into string.
         
         Return:
-            Returns element and its isotope in string format.
+            Returns element, isotope and amount in string format.
         '''
-        return "{0}{1}".format(self.isotope, self.name)
+        if self.isotope and self.amount:
+            return "{0}{1} {2}".format(self.isotope, self.symbol, self.amount)
+        if self.isotope:
+            return "{0}{1}".format(self.isotope, self.symbol)
+        if self.amount:
+            return "{0} {1}".format(self.symbol, self.amount)
+        return self.symbol
 
 
     def __eq__(self, other): 
         '''Compare object.
         '''
         return str(self) == str(other)
-    
-                          
-    def get_element_and_isotope(self):
-        '''Get Element's name and isotope.
-        
-        Return:
-            Returns element's name (string) and its isotope (class object).
-        '''
-        return self.name, self.isotope
 
 if __name__ == "__main__":
     import doctest

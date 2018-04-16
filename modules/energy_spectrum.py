@@ -101,7 +101,7 @@ class EnergySpectrum:
             
             for cut_file in self.__cut_files:
                 filename_split = os.path.basename(cut_file).split('.')
-                element = Element(filename_split[1])
+                element = Element.from_string(filename_split[1])
                 if len(filename_split) == 4:  # Regular cut file
                     key = "{0}.{1}".format(element, filename_split[2])
                 else:  # Elemental Losses cut file

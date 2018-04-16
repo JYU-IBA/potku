@@ -295,27 +295,23 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         # Get selections for legend
         for sel in self.measurement.selector.selections:
             rbs_string = ""
-            if sel.type == "ERD":
-                element_object = sel.element
-            elif sel.type == "RBS":
-                element_object = sel.element_scatter
+            element = sel.element
+            if sel.type == "RBS":
                 rbs_string = "*"
             sel.points.set_marker(None)  # Remove markers for legend.
             dirtyinteger = 0
-            key_string = "{0}{1}".format(element_object, dirtyinteger)
+            key_string = "{0}{1}".format(element.symbol, dirtyinteger)
             while key_string in selection_legend.keys():
                 dirtyinteger += 1
-                key_string = "{0}{1}".format(element_object,
-                                             dirtyinteger)
-                
-            element, isotope = element_object.get_element_and_isotope()
-            label = r"$^{" + str(isotope) + "}$" + element + rbs_string
-            mass = str(isotope)
-            if not mass:
-                mass = self.__masses.get_standard_isotope(element)
+
+            if element.isotope:
+                isotope_str = str(int(element.isotope))
             else:
-                mass = float(mass)
-            selection_legend[key_string] = (label, mass, sel.points)
+                isotope_str = str(int(self.__masses.get_standard_isotope(element.symbol)))
+
+            label = r"$^{" + isotope_str + "}$" + element.symbol + rbs_string
+
+            selection_legend[key_string] = (label, isotope_str, sel.points)
         
         # Sort legend text
         sel_text = []

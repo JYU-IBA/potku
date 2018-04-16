@@ -84,7 +84,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
     def __sortt(self, key):
         cut_file = key.split('.')
-        element_object = Element(cut_file[0].strip())
+        element_object = Element.from_string(cut_file[0].strip())
         element, isotope = element_object.get_element_and_isotope()
         mass = str(isotope)
         if not mass:
@@ -112,7 +112,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         for key in keys:
             cut_file = key.split('.')
             cut = self.histed_files[key]
-            element_object = Element(cut_file[0])  # Yeah...
+            element_object = Element.from_string(cut_file[0])  # Yeah...
             element, isotope = element_object.get_element_and_isotope()
             if key in self.__ignore_elements:
                 continue

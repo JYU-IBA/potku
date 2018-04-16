@@ -81,7 +81,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.calibration_settings = self.settings.calibration_settings
         self.depth_profile_settings = self.settings.depth_profile_settings
 
-        # self.masses.load_isotopes(self.measuring_unit_settings.element.name,
+        # self.masses.load_isotopes(self.measuring_unit_settings.element.symbol,
         #                          self.ui.isotopeComboBox,
         #                          str(self.measuring_unit_settings.element.isotope))
 
@@ -96,8 +96,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.measurement_settings_widget = MeasurementSettingsWidget()
         self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
-        if self.measuring_unit_settings.element.name:
-            self.masses.load_isotopes(self.measuring_unit_settings.element.name,
+        if self.measuring_unit_settings.element:
+            self.masses.load_isotopes(self.measuring_unit_settings.element.symbol,
                                       self.measurement_settings_widget.ui.isotopeComboBox,
                                       str(self.measuring_unit_settings.element.isotope))
         else:
@@ -265,7 +265,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         if settings_type == "MEASURING_UNIT_SETTINGS":
             settings = MeasuringSettings()
             settings.load_settings(filename)
-            self.masses.load_isotopes(settings.element.name,
+            self.masses.load_isotopes(settings.element.symbol,
                                       self.isotopeComboBox,
                                       str(settings.element.isotope))
             settings.show(self)
@@ -412,7 +412,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             button.setText(dialog.element)
             # Enabled settings once element is selected
             self.__enabled_element_information()  
-        self.masses.load_isotopes(dialog.element, combo_box,
+            self.masses.load_isotopes(dialog.element, combo_box,
                                   self.measuring_unit_settings.element.isotope)
         
     def __enabled_element_information(self):

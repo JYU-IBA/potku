@@ -161,19 +161,19 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         child_count = root.childCount()
         for eff in eff_files:
             str_element, unused_ext = eff.split(".")
-            element = Element(str_element)
+            element = Element.from_string(str_element)
             for i in range(child_count): 
                 item = root.child(i)
                 # TODO: Perhaps make this update every time a cut file is
                 # selected so user knows exactly what files are used instead
                 # of what files match all the cut files.
                 # if not item.checkState(0): continue
-                cut_element = Element(item.file_name.split(".")[1])
+                cut_element = Element.from_string(item.file_name.split(".")[1])
                 mass = cut_element.isotope.mass
                 if not mass:
-                    mass = round(masses.get_standard_isotope(cut_element.name),
+                    mass = round(masses.get_standard_isotope(cut_element.symbol),
                                  0)
-                if cut_element.name == element.name \
+                if cut_element.symbol == element.symbol \
                 and mass == element.isotope.mass:
                     eff_files_used.append(eff)
         if eff_files_used:

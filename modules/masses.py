@@ -51,8 +51,8 @@ class Masses:
         '''Load isotopes into given combobox.
         
         Args:
-            element: String representing selected element of which 
-                        isotopes are loaded.
+            element: A two letter symbol representing selected element of which
+                        isotopes are loaded, e.g. 'He'.
             combobox: QComboBox to which items are added.
             current_isotope: Current isotope to select it on combobox by default 
                              (string).
@@ -78,10 +78,8 @@ class Masses:
     
     def get_standard_isotope(self, element):
         '''Calculate standard element weight.
-        
         Args:
-            element: String representing element.
-            
+            element: A two letter symbol representing an element, e.g. 'He'
         Return:
             Returns standard weight of given element (float).
         '''
@@ -111,7 +109,6 @@ class Masses:
     
     def __get_isotopes(self, element):
         '''Get isotopes of given element.
-        
         Return:
             Returns a list of element's isotopes.
         '''

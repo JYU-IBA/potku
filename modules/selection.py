@@ -297,8 +297,7 @@ class Selector:
             lines = {}
             for s in self.selections:
                 s.draw()
-                element, unused_isotope = s.element.get_element_and_isotope()
-                lines[element] = s.points
+                lines[s.element.symbol] = s.points
             if self.draw_legend:
                 line_text = lines.keys()
                 line_points = []
@@ -385,7 +384,7 @@ class Selector:
         for sel in self.selections:
             element, isotope = sel.element.get_element_and_isotope()
             if sel.type == "RBS":
-                element, isotope = sel.element_scatter.get_element_and_isotope()
+                element, isotope = sel.element, sel.element.isotope
             dirtyinteger = 0
             # Use dirtyinteger to differentiate multiple selections of same 
             # selection. This is roundabout method, but works as it should with
@@ -520,7 +519,7 @@ class Selection:
             settings: Measurement's settings to which selector belongs. 
                       (for selection dialog)
             element: String representing element
-            isotope: String representing isotope
+            isotope: Integer representing isotope
             element_type: "ERD" or "RBS"
             color: String representing color for the element
             points: String list representing points in selection.
@@ -544,7 +543,6 @@ class Selection:
         self.type = element_type
         self.element = Element(element, isotope)
         self.weight_factor = weight_factor
-        self.element_scatter = Element(scatter)
         
         self.events_counted = False
         self.event_count = 0
@@ -758,15 +756,14 @@ class Selection:
         Return:
             String representing current selection object.
         """
-        element, isotope = self.element.get_element_and_isotope()
-        save_string = "{0}    {1}    {2}    {3}    {4}    {5}    {6}".format(
-                         self.type,
-                         element,
-                         isotope,
-                         self.weight_factor,
-                         self.element_scatter,
-                         self.default_color,
-                         self.__save_points(is_transposed))
+        if self.element:
+            save_string = "{0}    {1}    {2}    {3}    {4}    {5}".format(
+                self.type,
+                self.element.symbol,
+                str(self.element.isotope),
+                self.weight_factor,
+                self.default_color,
+                self.__save_points(is_transposed))
         return save_string
 
     def transpose(self, transpose):

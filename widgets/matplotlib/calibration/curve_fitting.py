@@ -128,9 +128,7 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
             self.selectButton.setChecked(False)
             self.selection_given_manually = False
             self.cut_standard_mass = self.masses.get_standard_isotope(
-                                                          self.cut.element.name)
-            self.cut_standard_scatter_mass = self.masses.get_standard_isotope(
-                                                          self.cut.element_scatter)
+                                                          self.cut.element.symbol)
         self.on_draw()
         
         

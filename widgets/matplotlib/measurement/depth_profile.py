@@ -293,7 +293,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             element = Element(labels[i])
             element_str = str(element)
             element_isotope = str(element.isotope)
-            element_name = element.name
+            element_name = element.symbol
             if element_str in self.__rbs_list.values():
                 element_name += "*"
             str_element = "{0:>3}{1:<3}".format(element_isotope, element_name)

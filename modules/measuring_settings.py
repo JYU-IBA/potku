@@ -47,7 +47,7 @@ class MeasuringSettings:
         # settings ('REQUEST')
         self.use_settings = ""         
         
-        self.element = Element()
+        self.element = None
         self.energy = 0
         self.detector_angle = 0
         self.target_angle = 0
@@ -90,8 +90,8 @@ class MeasuringSettings:
                 dialog.ui.useRequestSettingsValuesCheckBox.setChecked(False)
         except:
             print("Can't find the checkbox in the dialog")
-        if self.element.name:
-            dialog.beamIonButton.setText(self.element.name)
+        if self.element.symbol:
+            dialog.beamIonButton.setText(self.element.symbol)
             dialog.isotopeComboBox.setEnabled(True)
         else:
             dialog.beamIonButton.setText("Select")
@@ -122,7 +122,7 @@ class MeasuringSettings:
         # Check that an isotope has been selected. Otherwise the program will crash.
         if isotope_index != -1:
             isotope_data = dialog.isotopeComboBox.itemData(isotope_index)
-            self.element = Element(dialog.beamIonButton.text(), isotope_data[0])
+            self.element = Element(dialog.beamIonButton.text(), int(isotope_data[0]))
             self.energy = float(dialog.energyLineEdit.text())
             self.detector_angle = float(dialog.detectorAngleLineEdit.text())
             self.target_angle = float(dialog.targetAngleLineEdit.text())
@@ -147,8 +147,20 @@ class MeasuringSettings:
             tofl = "time_of_flight_lenght"
             cft = "carbon_foil_thickness"
             self.use_settings = self.config['default']['use_settings']
-            self.element = Element(self.config['beam']['element'],
-                                   self.config['beam']['isotope'])
+
+            element = None
+            isotope = None
+
+            try: element = self.config['beam']['element']
+            except KeyError: pass
+            try: isotope = self.config['beam']['isotope']
+            except KeyError: pass
+
+            if element and isotope:
+                self.element = Element(element, int(isotope))
+            elif element: self.element = Element(element)
+            else: pass
+
             self.energy = float(self.config['beam']['energy'])
             self.detector_angle = float(self.config[mu]['detector_angle'])
             self.target_angle = float(self.config[mu]['target_angle'])
@@ -167,8 +179,11 @@ class MeasuringSettings:
         self.config.add_section('default')
         self.config.set('default', 'use_settings', str(self.use_settings))
         self.config.add_section('beam')
-        self.config.set('beam', 'element', self.element.name)
-        self.config.set('beam', 'isotope', str(self.element.isotope))
+
+        if self.element:
+            self.config.set('beam', 'element', self.element.symbol)
+            self.config.set('beam', 'isotope', str(self.element.isotope))
+
         self.config.set('beam', 'energy', str(self.energy))
         self.config.add_section(mu)
         self.config.set(mu, 'detector_angle', str(self.detector_angle))
@@ -189,8 +204,11 @@ class MeasuringSettings:
         tofl = "time_of_flight_lenght"
         cft = "carbon_foil_thickness"
         self.config['default']['use_settings'] = self.use_settings
-        self.config['beam']['element'] = str(self.element.name)
-        self.config['beam']['isotope'] = str(self.element.isotope)
+
+        if self.element:
+            self.config['beam']['element'] = str(self.element.symbol)
+            self.config['beam']['isotope'] = str(self.element.isotope)
+
         self.config['beam']['energy'] = str(self.energy)
         self.config[mu]['detector_angle'] = str(self.detector_angle)
         self.config[mu]['target_angle'] = str(self.target_angle)
