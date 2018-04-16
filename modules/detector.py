@@ -31,7 +31,7 @@ class DetectorEncoder(json.JSONEncoder):
                 "description": obj.description,
                 "date": obj.date.isoformat(),
                 "detector_type": obj.detector_type.value,
-                "foils": []
+                "foils": obj.foils
             }
         return super(DetectorEncoder, self).default(obj)
 

@@ -4,10 +4,31 @@
 Created on 23.3.2018
 Updated on 13.4.2018
 """
+from json import JSONEncoder
+
+from modules.layer import Layer
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __versio__ = "2.0"
+
+
+class FoilEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Foil):
+            foil_dict = {
+                "name": obj.name,
+                "distance": obj.distance,
+                # TODO Layer attributes
+                "layers": [],
+                "transmission": obj.transmission,
+            }
+            if isinstance(obj, CircularFoil):
+                foil_dict["size"] = obj.diameter
+            if isinstance(obj, RectangularFoil):
+                foil_dict["size"] = obj.size
+            return foil_dict
+        return super(FoilEncoder, self).default(obj)
 
 
 class Foil:
