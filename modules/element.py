@@ -29,42 +29,35 @@ __versio__ = "1.0"
 import re
 
 class Element:
-    def __init__(self, element="", isotope=None):
-        '''Inits element class.        
-        
-        >>> test_a = Element("1H")
-        >>> test_b = Element("H")
-        >>> test_c = Element("H", 1)
-        >>> test_d = Element("Ca", 40)
-        >>> test_e = Element("")
-        >>> test_f = Element("H1")
-        >>> print(test_a)
-        1H
-        >>> print(test_b)
-        H
-        >>> print(test_c)
-        1H
-        >>> print(test_d)
-        40Ca
-        >>> print(test_f) # Suppose we ignore numbers or whatever after element.
-        H
-        '''
-        if type(element) == Element:
-            element = str(element)
-        if element:
-            m = re.match("(?P<isotope>[0-9]{0,3})(?P<element>[a-zA-Z]{1,2})",
-                         element.strip())
-            if m:
-                self.name = m.group("element")
-                if isotope:
-                    self.isotope = Isotope(isotope)
-                else:
-                    self.isotope = Isotope(m.group("isotope"))
-            else: 
-                raise ValueError("Incorrect string given.")
+    def __init__(self, element, isotope=None, amount=None):
+        """Initializes an element object.
+        Args:
+              element: Two letter symbol of the element. E.g. 'He' for Helium.
+              isotope: The isotope number. If one wants to use standard mass,
+                       then this parameter is not required.
+              amount:  This is an optional parameter. It is used to describe
+                       the amount of the element in a single layer of a target.
+        """
+        self.element = element
+        self.isotope = isotope
+        self.amount = amount
+
+    @classmethod
+    def from_string(cls, str):
+        """A function that initializes an element object from a string.
+        Args:
+            str: A string from which the element information will be parsed.
+        """
+        m = re.match("(?P<isotope>[0-9]{0,3})(?P<element>[a-zA-Z]{1,2})"
+                     "(\s(?P<amount>\d*(\.?\d+)?))?", str.strip())
+        if m:
+            name = m.group("element")
+            isotope = int(m.group("isotope"))
+            amount = float(m.group("amount"))
         else:
-            self.name = element
-            self.isotope = Isotope(isotope)
+            raise ValueError("Incorrect string given.")
+
+        return cls(name, isotope, amount)
 
     
     def __str__(self):
@@ -89,41 +82,6 @@ class Element:
             Returns element's name (string) and its isotope (class object).
         '''
         return self.name, self.isotope
-
-
-
-
-class Isotope:
-    def __init__(self, isotope):
-        '''Inits isotope class.
-        
-        >>> test_a = Isotope(2)
-        >>> test_b = Isotope("a")
-        Traceback (most recent call last):
-        ...
-        ValueError: invalid literal for int() with base 10: 'a'
-        >>> print(str(test_a))
-        2
-        '''
-        if isotope == "" or isotope == "None" or not isotope:  # Mundane check
-            self.mass = None
-        else:
-            self.mass = int(isotope)
-    
-    
-    def __str__(self):
-        '''Transform isotope into string.
-        
-        Return:
-            Returns isotope in string format.
-        '''
-        if not self.mass:  # Otherwise will get "NoneO".
-            return ""
-        else:
-            return str(self.mass)
-        
-
-
 
 if __name__ == "__main__":
     import doctest
