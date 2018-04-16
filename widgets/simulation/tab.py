@@ -57,6 +57,9 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.ui.detectorSettingsButton.clicked.connect(self.open_detector_settings)
         self.ui.mcSimulationButton.clicked.connect(lambda: self.start_mcsimulation(self))
 
+        self.simulation_started = False
+        self.stop_simulation_button = None
+
     def add_widget(self, widget, minimized=None, has_close_button=True, icon=None):
         """ Adds a new widget to current simulation tab.
         
@@ -152,14 +155,29 @@ class SimulationTabWidget(QtWidgets.QWidget):
         Args:
             parent: Parent of the energy spectrum widget.
         """
+        if self.simulation_started:
+            return
         mcerd_path = os.path.join(self.request.directory, "35Cl-85-LiMnO_Li")
         self.simulation.callMCERD = CallMCERD(mcerd_path)
         self.simulation.callMCERD.run_simulation()
+        self.simulation_started = True
+
+        self.stop_simulation_button = QtWidgets.QPushButton("Stop the simulation")
+        self.stop_simulation_button.clicked.connect(self.stop_mcsimulation)
+        self.ui.verticalLayout_6.addWidget(self.stop_simulation_button)
+
+    def stop_mcsimulation(self):
+        self.simulation.callMCERD.stop_simulation()
+        self.simulation_started = False
+
+        self.ui.verticalLayout_6.removeWidget(self.stop_simulation_button)
+        self.stop_simulation_button.deleteLater()
 
         self.simulation.call_get_espe = CallGetEspe(self.request.directory)
         self.simulation.call_get_espe.run_get_espe()
 
         self.make_energy_spectrum(self.request.directory, self.simulation.call_get_espe.output_file)
+        # TODO: if there is already an energy spectrum, it should be removed
         self.add_widget(self.energy_spectrum_widget)
             
     def del_widget(self, widget):
