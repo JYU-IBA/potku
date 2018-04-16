@@ -16,10 +16,10 @@ __versio__ = "2.0"
 class FoilEncoder(JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Foil):
+            layers = []
             foil_dict = {
                 "name": obj.name,
                 "distance": obj.distance,
-                # TODO Layer attributes
                 "layers": [],
                 "transmission": obj.transmission,
             }
@@ -27,6 +27,9 @@ class FoilEncoder(JSONEncoder):
                 foil_dict["size"] = obj.diameter
             if isinstance(obj, RectangularFoil):
                 foil_dict["size"] = obj.size
+            for l in obj.layers:
+                layers.append(l)
+            foil_dict["layers"] = layers
             return foil_dict
         return super(FoilEncoder, self).default(obj)
 
