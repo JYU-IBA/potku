@@ -38,9 +38,10 @@ class TargetWidget(QtWidgets.QWidget):
 
         TargetCompositionWidget(self, icon_manager)
         self.recoil_widget = RecoilAtomDistributionWidget(self, icon_manager)
+        self.ui.recoil_list_widget.hide()
 
-        self.ui.targetRadioButton.clicked.connect(lambda: self.ui.stackedWidget.setCurrentIndex(0))
-        self.ui.recoilRadioButton.clicked.connect(lambda: self.ui.stackedWidget.setCurrentIndex(1))
+        self.ui.targetRadioButton.clicked.connect(lambda: {self.ui.stackedWidget.setCurrentIndex(0), self.ui.recoil_list_widget.hide()})
+        self.ui.recoilRadioButton.clicked.connect(lambda: {self.ui.stackedWidget.setCurrentIndex(1), self.ui.recoil_list_widget.show()})
 
         self.ui.targetRadioButton.setChecked(True)
         self.ui.stackedWidget.setCurrentIndex(0)
