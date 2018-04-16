@@ -9,21 +9,32 @@ import os
 from PyQt5 import uic
 from PyQt5 import QtWidgets
 from widgets.matplotlib.simulation.target_composition import TargetCompositionWidget
+from modules.foil import CircularFoil
+from modules.foil import RectangularFoil
 
 
 class FoilDialog(QtWidgets.QDialog):
     """ Class for creating a foil widget for detector settings.
     """
-    def __init__(self, tmp_foil, icon_manager):
+    def __init__(self, tmp_foils, tmp_index, icon_manager):
         """ Initializes the Foil Dialog.
         Args:
-            tmp_foil: Foil object which is modified.
+            tmp_foil: Foil object list.
+            tmp_index: Index of the Foil object in tmp_foils.
             icon_manager: Icon manager for TargetCompositionWidget.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_composition_dialog.ui"), self)
         self.icon_manager = icon_manager
-        self.foil = tmp_foil
+        self.foils = tmp_foils
+        self.index = tmp_index
+        self.foil = [tmp_index]
+        self.foil_type_changed = False
+
+        if type(tmp_foils[tmp_index]) is CircularFoil:
+            self.foil_type = CircularFoil
+        else:
+            self.foil_type = RectangularFoil
 
         # This widget adds itself into the matplotlib_layout
         self.composition = TargetCompositionWidget(self, self.icon_manager)
@@ -42,7 +53,7 @@ class FoilDialog(QtWidgets.QDialog):
         self.ui.typeComboBox.currentIndexChanged.connect(lambda: self._change_dimensions())
 
         self.ui.cancelButton.clicked.connect(self.close)
-        self.ui.okButton.clicked.connect(lambda: self._save_foil_info)
+        self.ui.okButton.clicked.connect(lambda: self._save_foil_info())
 
         self.exec_()
 
@@ -53,11 +64,20 @@ class FoilDialog(QtWidgets.QDialog):
             self.ui.dimensionLayout.removeWidget(self.second_dimension_edit)
             self.second_dimension_edit.deleteLater()
             self.second_dimension_edit = None
+            self.foil_type_changed = True
+            if self.foil_type is RectangularFoil:
+                self.foil_type_changed = True
+            else:
+                self.foil_type_changed = False
         else:
             self.dimension_label.setText("Size:")
             self.second_dimension_edit = QtWidgets.QLineEdit()
             self.dimension_edits.append(self.second_dimension_edit)
             self.ui.dimensionLayout.addWidget(self.second_dimension_edit)
+            if self.foil_type is CircularFoil:
+                self.foil_type_changed = True
+            else:
+                self.foil_type_changed = False
 
     def _save_foil_info(self):
         self.foil.name = self.ui.nameEdit.text()
