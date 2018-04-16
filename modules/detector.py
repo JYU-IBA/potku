@@ -94,8 +94,7 @@ class Detector:
         """Initialize Detector from a JSON file.
 
         Args:
-            file_path: A file path to JSON file containing the detector
-                       parameters.
+            file_path: A file path to JSON file containing the detector parameters.
         """
         obj = json.load(open(file_path))
 
