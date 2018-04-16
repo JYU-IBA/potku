@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 13.4.2018
+Updated on 16.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -219,6 +219,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 foil_object_index = i
                 break
         FoilDialog(self.tmp_foil_info, foil_object_index, self.icon_manager)
+        self.sender().setText(self.tmp_foil_info[foil_object_index].name)
 
     def __open_calibration_dialog(self):
         measurements = [self.request.measurements.get_key_value(key)
