@@ -302,7 +302,8 @@ class CallMCERD(object):
         # self.bin_dir = "%s%s%s" % ("external", os.sep, "Potku-bin")
 
         self.command_win = "external\Potku-bin\mcerd.exe " + command_file
-        self.command_unix = "external/Potku-bin/mcerd " + command_file
+        self.command_linux = "external/Potku-bin/mcerd_linux " + command_file
+        self.command_mac = "external/Potku-bin/mcerd_mac " + command_file
 
         self._executing_mcerd_process = None
 
@@ -313,10 +314,10 @@ class CallMCERD(object):
         if used_os == "Windows":
             self._executing_mcerd_process = subprocess.Popen(self.command_win, shell=True)
         elif used_os == "Linux":
-            self._executing_mcerd_process = subprocess.Popen("ulimit -s 64000; exec " + self.command_unix, shell=True)
+            self._executing_mcerd_process = subprocess.Popen("ulimit -s 64000; exec " + self.command_linux, shell=True)
             print("Called MCERD")
         elif used_os == "Darwin":
-            subprocess.call(self.command_unix, shell=True)
+            self._executing_mcerd_process = subprocess.Popen("ulimit -s 64000; exec " + self.command_mac, shell=True)
         else:
             print("It appears we do not support your OS.")
 
@@ -329,7 +330,7 @@ class CallMCERD(object):
             cmd = "TASKKILL /F /PID " + str(self._executing_mcerd_process.pid) + " /T"
             subprocess.Popen(cmd)
             self._executing_mcerd_process = None
-        elif used_os == "Linux":
+        elif used_os == "Linux" or used_os == "Darwin":
             self._executing_mcerd_process.kill()
             self._executing_mcerd_process = None
         else:
