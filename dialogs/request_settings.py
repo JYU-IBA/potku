@@ -25,7 +25,6 @@ along with this program (file named 'LICENCE').
 
 Dialog for the request settings
 """
-from PyQt5.QtWidgets import QTabWidget
 
 from modules.detector import DetectorType
 from modules.element import Element
@@ -55,7 +54,6 @@ from widgets.foil import FoilWidget
 from widgets.distance import DistanceWidget
 from dialogs.simulation.foil import FoilDialog
 from modules.foil import CircularFoil
-from modules.foil import RectangularFoil
 
 
 class RequestSettingsDialog(QtWidgets.QDialog):
@@ -163,6 +161,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem("ERD")
         self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem("RBS")
+        self.simulation_settings_widget.ui.saveButton.clicked \
+            .connect(lambda: self.__save_file("SIMULATION_SETTINGS"))
 
         # Add depth profile settings view to the settings view
         self.depth_profile_settings_widget = DepthProfileSettingsWidget()
@@ -291,6 +291,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             pass
         elif settings_type == "MEASUREMENT_SETTINGS":
             pass
+        elif settings_type == "SIMULATION_SETTINGS":
+            pass
         else:
             return
 
@@ -305,6 +307,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 settings.save_settings(filename)
             elif settings_type == "MEASUREMENT_SETTINGS":
                 self.request.default_measurement.save_settings(filename)
+            elif settings_type == "SIMULATION_SETTINGS":
+                self.request.default_simulation.save_settings(filename)
             elif settings_type == "DETECTOR_SETTINGS":
                 self.request.detector.save_settings(filename)
             else:
@@ -385,6 +389,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.no_of_recoils = self.simulation_settings_widget.noOfRecoilsLineEdit.text()
             self.request.default_simulation.no_of_scaling = self.simulation_settings_widget.noOfScalingLineEdit.text()
 
+            self.request.default_simulation.save_settings(self.request.default_folder + os.sep + "Default")
+
+            #Depth profile settings
             self.depth_profile_settings.set_settings(self.depth_profile_settings_widget)
 
             # TODO Values should be checked.

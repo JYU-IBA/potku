@@ -133,7 +133,7 @@ class Detector:
         Args:
             filepath: Filepath including name of the file.
         """
-        save_settings(self, ".detecotr", DetectorEncoder, filepath)
+        save_settings(self, ".detector", DetectorEncoder, filepath)
 
 
 class ToFDetector(Detector):
