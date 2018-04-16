@@ -313,8 +313,8 @@ class CallMCERD(object):
         if used_os == "Windows":
             self._executing_mcerd_process = subprocess.Popen(self.command_win, shell=True)
         elif used_os == "Linux":
-            self._executing_mcerd_process = subprocess.Popen("exec " + self.command_unix, shell=True)
-
+            self._executing_mcerd_process = subprocess.Popen("ulimit -s 64000; exec " + self.command_unix, shell=True)
+            print("Called MCERD")
         elif used_os == "Darwin":
             subprocess.call(self.command_unix, shell=True)
         else:
