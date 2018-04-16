@@ -305,59 +305,60 @@ class Potku(QtWidgets.QMainWindow):
         # TODO: This doesn't work. There is no list/dictionary of references to the
         # tab widgets once they are removed from the QTabWidget. 
         # tab = self.request_measurements[clicked_item.tab_id]
-        tab = self.tab_widgets[clicked_item.tab_id]
+        if hasattr(clicked_item, "tab_id"):
+            tab = self.tab_widgets[clicked_item.tab_id]
 
-        if type(tab) is MeasurementTabWidget:
-            name = tab.measurement.measurement_name
+            if type(tab) is MeasurementTabWidget:
+                name = tab.measurement.measurement_name
 
-            # Check that the data is read.
-            if not tab.data_loaded:
-                tab.data_loaded = True
-                progress_bar = QtWidgets.QProgressBar()
-                loading_bar = QtWidgets.QProgressBar()
-                loading_bar.setMinimum(0)
-                loading_bar.setMaximum(0)
-                self.statusbar.addWidget(progress_bar, 1)
-                self.statusbar.addWidget(loading_bar, 2)
-                progress_bar.show()
-                loading_bar.show()
-                progress_bar.setValue(5)
-                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+                # Check that the data is read.
+                if not tab.data_loaded:
+                    tab.data_loaded = True
+                    progress_bar = QtWidgets.QProgressBar()
+                    loading_bar = QtWidgets.QProgressBar()
+                    loading_bar.setMinimum(0)
+                    loading_bar.setMaximum(0)
+                    self.statusbar.addWidget(progress_bar, 1)
+                    self.statusbar.addWidget(loading_bar, 2)
+                    progress_bar.show()
+                    loading_bar.show()
+                    progress_bar.setValue(5)
+                    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
 
-                tab.measurement.load_data()
-                progress_bar.setValue(35)
-                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+                    tab.measurement.load_data()
+                    progress_bar.setValue(35)
+                    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
 
-                tab.add_histogram()
-                loading_bar.hide()
-                self.statusbar.removeWidget(loading_bar)
+                    tab.add_histogram()
+                    loading_bar.hide()
+                    self.statusbar.removeWidget(loading_bar)
 
-                progress_bar.setValue(50)
-                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-                tab.check_previous_state_files(progress_bar)  # Load previous states.
-                self.statusbar.removeWidget(progress_bar)
-                progress_bar.hide()
-                self.__change_tab_icon(clicked_item)
-                master_mea = tab.measurement.request.get_master()
-                if master_mea and tab.measurement.measurement_name == master_mea.measurement_name:
-                    name = "{0} (master)".format(name)
+                    progress_bar.setValue(50)
+                    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+                    tab.check_previous_state_files(progress_bar)  # Load previous states.
+                    self.statusbar.removeWidget(progress_bar)
+                    progress_bar.hide()
+                    self.__change_tab_icon(clicked_item)
+                    master_mea = tab.measurement.request.get_master()
+                    if master_mea and tab.measurement.measurement_name == master_mea.measurement_name:
+                        name = "{0} (master)".format(name)
 
-        elif type(tab) is SimulationTabWidget:
-            name = tab.simulation.name
+            elif type(tab) is SimulationTabWidget:
+                name = tab.simulation.name
 
-            # Check that the data is read.
-            if not tab.data_loaded:
-                tab.data_loaded = True
-                # tab.simulation.load_data()
-                tab.add_simulation_depth_profile()
-                self.__change_tab_icon(clicked_item)
-        else:
-            raise TabError("No such tab widget")
-        
-        # Check that the tab to be focused exists.
-        if not self.__tab_exists(clicked_item.tab_id): 
-            self.ui.tabs.addTab(tab, name)
-        self.ui.tabs.setCurrentWidget(tab)
+                # Check that the data is read.
+                if not tab.data_loaded:
+                    tab.data_loaded = True
+                    # tab.simulation.load_data()
+                    tab.add_simulation_depth_profile()
+                    self.__change_tab_icon(clicked_item)
+            else:
+                raise TabError("No such tab widget")
+
+            # Check that the tab to be focused exists.
+            if not self.__tab_exists(clicked_item.tab_id):
+                self.ui.tabs.addTab(tab, name)
+            self.ui.tabs.setCurrentWidget(tab)
 
     def hide_panel(self, enable_hide=None):
         """Sets the frame (including measurement navigation view, global 
