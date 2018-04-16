@@ -8,7 +8,6 @@ Updated on 11.4.2018
 
 Simulation.py runs the MCERD simulation with a command file.
 """
-
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
@@ -20,7 +19,6 @@ import sys
 import shutil
 import datetime
 from enum import Enum
-
 
 class Simulations:
     """Simulations class handles multiple simulations.
@@ -340,18 +338,37 @@ class CallMCERD(object):
         # self.bin_dir = "%s%s%s" % ("external", os.sep, "Potku-bin")
 
         self.command_win = "external\Potku-bin\mcerd.exe " + command_file
-        self.command_unix = "external/Potku-bin/mcerd " + command_file
+        self.command_linux = "external/Potku-bin/mcerd_linux " + command_file
+        self.command_mac = "external/Potku-bin/mcerd_mac " + command_file
+
+        self._executing_mcerd_process = None
 
     def run_simulation(self):
         """Runs the simulation.
         """
         used_os = platform.system()
         if used_os == "Windows":
-            subprocess.call(self.command_win, shell=True)
+            self._executing_mcerd_process = subprocess.Popen(self.command_win, shell=True)
         elif used_os == "Linux":
-            subprocess.call(self.command_unix, shell=True)
+            self._executing_mcerd_process = subprocess.Popen("ulimit -s 64000; exec " + self.command_linux, shell=True)
+            print("Called MCERD")
         elif used_os == "Darwin":
-            subprocess.call(self.command_unix, shell=True)
+            self._executing_mcerd_process = subprocess.Popen("ulimit -s 64000; exec " + self.command_mac, shell=True)
+        else:
+            print("It appears we do not support your OS.")
+
+    def stop_simulation(self):
+        """
+        Stops the current simulation.
+        """
+        used_os = platform.system()
+        if used_os == "Windows":
+            cmd = "TASKKILL /F /PID " + str(self._executing_mcerd_process.pid) + " /T"
+            subprocess.Popen(cmd)
+            self._executing_mcerd_process = None
+        elif used_os == "Linux" or used_os == "Darwin":
+            self._executing_mcerd_process.kill()
+            self._executing_mcerd_process = None
         else:
             print("It appears we do not support your OS.")
 
@@ -406,7 +423,9 @@ class CallGetEspe(object):
 
         self.command_win = "type " + command_file_path + os.sep + input_file + " | " + "external\Potku-bin\get_espe " \
                            + params_string + " > " + command_file_path + os.sep + self.output_file
-        self.command_unix = "cat " + command_file_path + os.sep + input_file + " | " + "external/Potku-bin/get_espe" \
+        self.command_linux = "cat " + command_file_path + os.sep + input_file + " | " + "external/Potku-bin/get_espe_linux " \
+                            + params_string + " > " + command_file_path + os.sep + self.output_file
+        self.command_mac = "cat " + command_file_path + os.sep + input_file + " | " + "external/Potku-bin/get_espe_mac " \
                             + params_string + " > " + command_file_path + os.sep + self.output_file
 
     def run_get_espe(self):
@@ -416,9 +435,9 @@ class CallGetEspe(object):
         if used_os == "Windows":
             subprocess.call(self.command_win, shell=True)
         elif used_os == "Linux":
-            subprocess.call(self.command_unix, shell=True)
+            subprocess.call(self.command_linux, shell=True)
         elif used_os == "Darwin":
-            subprocess.call(self.command_unix, shell=True)
+            subprocess.call(self.command_mac, shell=True)
         else:
             print("It appears we do not support your OS.")
 

@@ -1,17 +1,18 @@
 # coding=utf-8
 """
 Created on 26.3.2018
-Updated on 28.3.2018
+Updated on 12.4.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
+__version__ = "2.0"
 
 from PyQt5 import QtCore, QtWidgets
-import matplotlib.patches as patches
 
 from dialogs.simulation.layer_properties import LayerPropertiesDialog
 from widgets.matplotlib.base import MatplotlibWidget
 from modules.layer import Layer
+
 
 class TargetCompositionWidget(MatplotlibWidget):
     """Matplotlib target composition widget. Using this widget, the user
@@ -61,7 +62,6 @@ class TargetCompositionWidget(MatplotlibWidget):
     #     self.axes.add_patch(layer)
     #     self.canvas.draw_idle()
 
-
     def __toggle_tool_drag(self):
         if self.__button_drag.isChecked():
             self.mpl_toolbar.mode_tool = 1
@@ -106,7 +106,7 @@ class TargetCompositionWidget(MatplotlibWidget):
         # Button for adding a new layer
         self.button_add_layer = QtWidgets.QToolButton(self)
         self.button_add_layer.clicked.connect(lambda: self.add_layer())
-        self.__icon_manager.set_icon(self.button_add_layer, "del.png") # TODO: Change icon!
+        self.__icon_manager.set_icon(self.button_add_layer, "add.png")  # TODO: Change icon!
         self.mpl_toolbar.addWidget(self.button_add_layer)
 
     def add_layer(self):

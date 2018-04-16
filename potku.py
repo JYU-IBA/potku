@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 9.4.2018
+Updated on 12.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -654,7 +654,7 @@ class Potku(QtWidgets.QMainWindow):
     def open_request_settings(self):
         """Opens request settings dialog.
         """
-        RequestSettingsDialog(self.masses, self.request)
+        RequestSettingsDialog(self.masses, self.request, self.icon_manager)
 
     def remove_tab(self, tab_index):
         """Remove tab which's close button has been pressed.
