@@ -4,6 +4,7 @@
 Created on 23.3.2018
 Updated on 11.4.2018
 """
+from modules.general_functions import save_settings
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
@@ -128,12 +129,11 @@ class Detector:
 
     def save_settings(self, filepath=None):
         """Saves parameters from Detector object in JSON format in .detector file.
+
+        Args:
+            filepath: Filepath including name of the file.
         """
-        if filepath is None:
-            filepath = self.directory
-        filepath = filepath + ".detector"
-        with open(filepath, 'w') as savefile:
-            json.dump(self, savefile, indent=4, cls=DetectorEncoder)
+        save_settings(self, ".detecotr", DetectorEncoder, filepath)
 
 
 class ToFDetector(Detector):
