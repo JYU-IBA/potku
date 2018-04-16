@@ -696,7 +696,6 @@ class Potku(QtWidgets.QMainWindow):
             self.__change_tab_icon(tree_item, "folder_open.svg")
         else:
             self.__change_tab_icon(tree_item, "folder_locked.svg")
-        self.ui.treeWidget.addTopLevelItem(tree_item)
         self.simulations_item.addChild(tree_item)
 
     def __add_new_tab(self, tab_type, filename, sample, progress_bar=None,
