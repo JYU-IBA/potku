@@ -49,8 +49,6 @@ class Target:
         for layer in obj["layers"]:
             layers.append(Layer(layer["elements"],
                                 layer["thickness"],
-                                layer["ion_stopping"],
-                                layer["recoil_stopping"],
                                 layer["density"]))
 
         return cls(name, angle, layers)
