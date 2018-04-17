@@ -60,7 +60,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
         Return:
              True if the settings are okay and false if some required fields
-             are empty or if the sum of elements doesn't equal 100%.
+             are empty.
         """
         failed_style = "background-color: #FFDDDD"
         empty_fields = []
@@ -108,10 +108,6 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         if empty_fields:
             self.__missing_information_message(empty_fields)
             return False
-        # If sum of the elements doesn't equal 100%, inform user.
-        elif not sum == 100:
-            self.__sum_unequals_100_message(sum)
-            return False
         return True # If everything is ok, return true.
 
         # TODO: Check if negative or zero values are given.
@@ -154,13 +150,6 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             "The following fields are still empty:\n\n" + fields +
             "\nFill out the required information in order to continue.",
             QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-
-    def __sum_unequals_100_message(self, sum):
-        # TODO: Add docstring.
-        QtWidgets.QMessageBox.critical(self.parent(),
-            "Sum of elements doesn't equal 100%",
-            "Sum of elements doesn't equal 100%. Currently the sum equals " +
-            str(sum) + "%.", QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def __add_element_layout(self):
         # TODO: Add docstring.
