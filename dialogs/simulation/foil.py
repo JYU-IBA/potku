@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Created on 16.4.2018
+Created on 17.4.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"

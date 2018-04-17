@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 16.4.2018
+Updated on 17.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -372,8 +372,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.calibration_settings.set_settings(self.detector_settings_widget)
             self.request.detector.calibration = self.calibration_settings
             # Detector foils
-            for widget in self.detector_structure_widgets:
-                pass
+            for i in range(len(self.detector_structure_widgets)):
+                widget = self.detector_structure_widgets[i]
+                if type(widget) is DistanceWidget:
+                    distance = widget.ui.distanceEdit.text()
+                    # TODO: Add the distance as the attribute of the Foil corresponding to the Foilwidget in position i+1
 
             self.request.detector.save_settings(self.request.default_folder + os.sep + "Default")
 
