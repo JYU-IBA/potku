@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 13.4.2018
+Updated on 16.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -200,7 +200,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         i = 0
         while i in range(6):
             foil_widget = FoilWidget()
-            new_foil = CircularFoil("Foil")  # TODO: There should be default values here
+            new_foil = CircularFoil("Foil")
             self.tmp_foil_info.append(new_foil)
             foil_widget.ui.foilButton.clicked.connect(lambda: self._open_composition_dialog())
             distance_widget = DistanceWidget()
@@ -213,12 +213,13 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
     def _open_composition_dialog(self):
         foil_name = self.sender().text()
-        foil_object = None
-        for foil in self.tmp_foil_info:
-            if foil_name == foil.name:
-                foil_object = foil
+        foil_object_index = -1
+        for i in range(len(self.tmp_foil_info)):
+            if foil_name == self.tmp_foil_info[i].name:
+                foil_object_index = i
                 break
-        FoilDialog(foil_object, self.icon_manager)
+        FoilDialog(self.tmp_foil_info, foil_object_index, self.icon_manager)
+        self.sender().setText(self.tmp_foil_info[foil_object_index].name)
 
     def __open_calibration_dialog(self):
         measurements = [self.request.measurements.get_key_value(key)

@@ -8,10 +8,6 @@ Updated on 11.4.2018
 
 Simulation.py runs the MCERD simulation with a command file.
 """
-from json import JSONEncoder
-
-from modules.general_functions import save_settings
-
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
@@ -23,6 +19,9 @@ import sys
 import shutil
 import datetime
 from enum import Enum
+from json import JSONEncoder
+
+from modules.general_functions import save_settings
 
 
 class Simulations:
@@ -375,16 +374,33 @@ class CallMCERD(object):
         self.command_linux = "external/Potku-bin/mcerd_linux " + command_file
         self.command_mac = "external/Potku-bin/mcerd_mac " + command_file
 
+        self._executing_mcerd_process = None
+
     def run_simulation(self):
         """Runs the simulation.
         """
         used_os = platform.system()
         if used_os == "Windows":
-            subprocess.call(self.command_win, shell=True)
+            self._executing_mcerd_process = subprocess.Popen(self.command_win, shell=True)
         elif used_os == "Linux":
-            subprocess.call(self.command_linux, shell=True)
+            self._executing_mcerd_process = subprocess.Popen("ulimit -s 64000; exec " + self.command_linux, shell=True)
         elif used_os == "Darwin":
-            subprocess.call(self.command_mac, shell=True)
+            self._executing_mcerd_process = subprocess.Popen("ulimit -s 64000; exec " + self.command_mac, shell=True)
+        else:
+            print("It appears we do not support your OS.")
+
+    def stop_simulation(self):
+        """
+        Stops the current simulation.
+        """
+        used_os = platform.system()
+        if used_os == "Windows":
+            cmd = "TASKKILL /F /PID " + str(self._executing_mcerd_process.pid) + " /T"
+            subprocess.Popen(cmd)
+            self._executing_mcerd_process = None
+        elif used_os == "Linux" or used_os == "Darwin":
+            self._executing_mcerd_process.kill()
+            self._executing_mcerd_process = None
         else:
             print("It appears we do not support your OS.")
 

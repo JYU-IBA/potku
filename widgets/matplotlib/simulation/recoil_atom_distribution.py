@@ -422,8 +422,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
-        # TODO: Implement moving multiple points
-        # Don't do anything if rectangle selector, drag tool or zoom tool is active.
+        # Don't do anything if drag tool or zoom tool is active.
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
             return
         # Only inside the actual graph axes, else do nothing.
@@ -445,17 +444,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.selected_points.clear()
                 self.update_plot()
                 line_contains, line_info = self.lines.contains(event)
-                if line_contains: # If clicked a line
+                if line_contains:  # If clicked a line
                     x = event.xdata
                     y = event.ydata
-                    self.add_point_on_click((x, y))
-                    i = line_info['ind'][0]
-                    # Drag the newly added point
-                    self.dragged_points = [self.elements[0].get_point_by_i(i+1)]
-
-                    self.set_on_click_attributes(event)
-
-                    self.update_plot()
+                    new_point = self.add_point((x, y))
+                    if new_point:
+                        self.selected_points = [new_point]
+                        self.dragged_points = [new_point]
+                        self.set_on_click_attributes(event)
+                        self.update_plot()
 
     def set_on_click_attributes(self, event):
         """Sets the attributes needed for dragging points."""
@@ -479,16 +476,37 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                               - self.dragged_points[self.lowest_dr_p_i].get_y()
                               for i in range(len(self.dragged_points))]
 
-    def add_point_on_click(self, point):
-        """Adds a point when clicked close enough to a line."""
-        new_point = Point(point)
+    def add_point(self, coords):
+        """Adds a point if there is space for it.
+        Returns the point if a point was added, None if not.
+        """
+        new_point = Point(coords)
         self.elements[0].add_point(new_point)
-        self.selected_points = [new_point]
-        # i = bisect.bisect(self.xs, x)
-        # self.xs.insert(i, x)
-        # self.ys.insert(i, y)
+        left_neighbor_x = self.elements[0].get_left_neighbor(new_point).get_x()
+        right_neighbor_x = self.elements[0].get_right_neighbor(new_point).get_x()
 
-        self.update_plot()
+        error = False
+
+        if new_point.get_x() - left_neighbor_x < self.x_res:  # Too close to left
+            # Need space to insert the new point
+            if right_neighbor_x - new_point.get_x() < 2 * self.x_res:
+                error = True
+            else:
+                # Insert the new point as close to its left neighbor as possible
+                new_point.set_x(left_neighbor_x + self.x_res)
+        elif right_neighbor_x - new_point.get_x() < self.x_res:
+            if new_point.get_x() - left_neighbor_x < 2 * self.x_res:
+                error = True
+            else:
+                new_point.set_x(right_neighbor_x - self.x_res)
+
+        if error:
+            self.elements[0].remove_point(new_point)
+            # TODO: Add an error message text label
+            print("Can't add a point here. There is no space for it.")
+            return None
+        else:
+            return new_point
 
     def update_plot(self):
         """ Updates marker and line data and redraws the plot. """
@@ -517,65 +535,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.fig.canvas.draw_idle()
 
-    # def line_picker(self, line, mouseevent):
-    #     """
-    #     find the points within a certain distance from the mouseclick in
-    #     data coords and attach some extra attributes, pickx and picky
-    #     which are the data points that were picked
-    #     """
-    #     if mouseevent.xdata is None:
-    #         return False, dict()
-    #     xdata = line.get_xdata()
-    #     ydata = line.get_ydata()
-    #     maxd = self.fig.dpi / 72. * 5
-    #     d = np.sqrt((xdata - mouseevent.xdata)**2. + (ydata - mouseevent.ydata)**2.)
-    #
-    #     ind = np.nonzero(np.less_equal(d, maxd))
-    #     if len(ind):
-    #         pickx = np.take(xdata, ind)
-    #         picky = np.take(ydata, ind)
-    #         props = dict(ind=ind, pickx=pickx, picky=picky)
-    #         return True, props
-    #     else:
-    #         return False, dict()
-    #
-    # def onpick2(self, event):
-    #     print('onpick2 line:', event.pickx, event.picky)
-    #     self.selected_x = event.pickx
-    #     self.selected_y = event.picky
-    #
-    # def onpick1(self, event):
-    #     if event.artist != self.points:
-    #         return True
-    #
-    #     N = len(event.ind)
-    #     if not N:
-    #         return True
-    #
-    #     print(self.xs[event.ind], self.ys[event.ind])
-    #     # the click locations
-    #     x = event.mouseevent.xdata
-    #     y = event.mouseevent.ydata
-    #
-    #     distances = np.hypot(x - self.xs[event.ind], y - self.ys[event.ind])
-    #     indmin = distances.argmin()
-    #     dataind = event.ind[indmin]
-    #
-    #     self.lastind = dataind
-    #     self.update_plot()
-        #
-        # if isinstance(event.artist, Line2D):
-        #     thisline = event.artist
-        #     xdata = thisline.get_xdata()
-        #     ydata = thisline.get_ydata()
-        #     ind = event.ind
-        #     self.selected_x = np.take(xdata, ind)
-        #     self.selected_y = np.take(ydata, ind)
-        #     self.selected.set_data(self.selected_x, self.selected_y)
-        #     print('onpick1 line:', np.take(xdata, ind), np.take(ydata, ind))
-        #     self.update_plot()
-
-
     def on_motion(self, event):
         """Callback method for mouse motion event. Moves points that are being dragged.
 
@@ -596,7 +555,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # self.dragging_point = self.add_point_on_motion(event)
         # self.update_plot()
 
-        # Don't do anything if rectangle selector, drag tool or zoom tool is active.
+        # Don't do anything if drag tool or zoom tool is active.
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
             return
         # Only inside the actual graph axes, else do nothing.
@@ -703,6 +662,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
+        # Don't do anything if drag tool or zoom tool is active.
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
             return
         if event.button == 1:
