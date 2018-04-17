@@ -24,6 +24,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMenu, QTreeWidget, QAbstractItemView
+
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
              "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
@@ -35,7 +38,7 @@ import sys
 import platform
 import subprocess
 from datetime import datetime, timedelta
-from PyQt5 import QtWidgets, QtCore, uic
+from PyQt5 import QtWidgets, QtCore, uic, QtGui
 
 from dialogs.about import AboutDialog
 from dialogs.global_settings import GlobalSettingsDialog
@@ -166,14 +169,58 @@ class Potku(QtWidgets.QMainWindow):
         """
         Makes the top item visible in the tree of the UI.
         """
+        self.tree_widget = self.ui.treeWidget
+        self.tree_widget.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.tree_widget.customContextMenuRequested.connect(self.open_menu)
+        self.tree_widget.setDropIndicatorShown(True)
+        self.tree_widget.setDragDropMode(QAbstractItemView.InternalMove)
+        self.tree_widget.setDragEnabled(True)
+
         self.measurements_item = QtWidgets.QTreeWidgetItem()
         self.simulations_item = QtWidgets.QTreeWidgetItem()
         self.measurements_item.setText(0, "Measurements")
         self.simulations_item.setText(0, "Simulations")
         self.__change_tab_icon(self.measurements_item, "folder_locked.svg")
         self.__change_tab_icon(self.simulations_item, "folder_locked.svg")
-        self.ui.treeWidget.addTopLevelItem(self.measurements_item)
-        self.ui.treeWidget.addTopLevelItem(self.simulations_item)
+        self.tree_widget.addTopLevelItem(self.measurements_item)
+        self.tree_widget.addTopLevelItem(self.simulations_item)
+
+    def dropEvent(self, event):
+        return_val = super(QTreeWidget, self).dropEvent(event)
+        print("Drop finished")
+        d = event.mimeData()
+        print(d + " " + event.source())
+        return return_val
+
+    def open_menu(self, position):
+        """Opens the right click menu in tree view.
+        """
+        indexes = self.tree_widget.selectedIndexes()
+        if len(indexes) > 0:
+            level = 0
+            index = indexes[0]
+            while index.parent().isValid():
+                index = index.parent()
+                level += 1
+
+        menu = QMenu()
+        if level == 1:
+            menu.addAction("Rename", self.__rename_tree_item)
+            menu.addAction("Remove", self.__remove_tree_item)
+
+        menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
+
+    def __rename_tree_item(self):
+        """Renames selected tree item in tree view and in folder structure.
+        """
+        QtWidgets.QMessageBox.critical(self, "Error", "Renaming not yet implemented!", QtWidgets.QMessageBox.Ok,
+                                       QtWidgets.QMessageBox.Ok)
+
+    def __remove_tree_item(self):
+        """Removes selected tree item in tree view and in folder structure.
+        """
+        QtWidgets.QMessageBox.critical(self, "Error", "Removing not yet implemented!", QtWidgets.QMessageBox.Ok,
+                                       QtWidgets.QMessageBox.Ok)
 
     def create_report(self):
         """
