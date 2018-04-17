@@ -13,8 +13,7 @@ class Layer:
     """Class for a target or foil layer.
     """
 
-    __slots__ = "elements", "thickness", "ion_stopping", "recoil_stopping",\
-                "density"
+    __slots__ = "name", "elements", "thickness", "density"
 
     def __init__(self, name, elements, thickness, density):
         """Initializes a target or foil layer.
