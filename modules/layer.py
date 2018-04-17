@@ -16,23 +16,17 @@ class Layer:
     __slots__ = "elements", "thickness", "ion_stopping", "recoil_stopping",\
                 "density"
 
-    def __init__(self, name, elements, thickness, ion_stopping, recoil_stopping,
-                 density):
+    def __init__(self, name, elements, thickness, density):
         """Initializes a target or foil layer.
 
         Args:
-            elements:        A list of tuples that contain the element, the
-                             isotope and amount, eg. ("O", 16.00, 0.13).
+            name:            Name of the layer.
+            elements:        A list of Element objects.
             thickness:       Thickness of the layer in nanometers.
-            ion_stopping:    Stopping model for the primary ion.
-            recoil_stopping: Stopping model for the recoils.
             density:         Layer density.
         """
-
         self.name = name
         self.elements = elements
         self.thickness = thickness
-        self.ion_stopping = ion_stopping
-        self.recoil_stopping = recoil_stopping
         self.density = density
 
