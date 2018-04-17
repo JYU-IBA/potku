@@ -6,7 +6,7 @@ Updated on 28.3.2018
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
 import numpy
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets, QtGui
 from matplotlib.widgets import SpanSelector
 
 from widgets.matplotlib.base import MatplotlibWidget
@@ -196,7 +196,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         parent.ui.horizontalLayout_2.addWidget(self.radio1)
         self.radio1.toggled.connect(self.choose_element)
 
-
         # Locations of points about to be dragged at the time of click
         self.click_locations = []
         # Distances between points about to be dragged
@@ -261,9 +260,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.current_element_i = 1
         self.dragged_points.clear()
         self.selected_points.clear()
+        self.update_plot()
         self.axes.relim()
         self.axes.autoscale_view()
-        self.update_plot()
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -449,18 +448,21 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
                 self.update_plot()
             else:
-                self.selected_points.clear()
-                self.update_plot()
-                line_contains, line_info = self.lines.contains(event)
-                if line_contains:  # If clicked a line
-                    x = event.xdata
-                    y = event.ydata
-                    new_point = self.add_point((x, y))
-                    if new_point:
-                        self.selected_points = [new_point]
-                        self.dragged_points = [new_point]
-                        self.set_on_click_attributes(event)
-                        self.update_plot()
+                # Ctrl-click to add a point
+                modifiers = QtGui.QGuiApplication.queryKeyboardModifiers()
+                if modifiers == QtCore.Qt.ControlModifier:
+                    self.selected_points.clear()
+                    self.update_plot()
+                    line_contains, line_info = self.lines.contains(event)
+                    if line_contains:  # If clicked a line
+                        x = event.xdata
+                        y = event.ydata
+                        new_point = self.add_point((x, y))
+                        if new_point:
+                            self.selected_points = [new_point]
+                            self.dragged_points = [new_point]
+                            self.set_on_click_attributes(event)
+                            self.update_plot()
 
     def set_on_click_attributes(self, event):
         """Sets the attributes needed for dragging points."""
@@ -549,20 +551,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
-        # if not isinstance(event, MouseEvent):
-        #     return
-        # x = round(event.xdata, 4)
-        # y = round(event.ydata, 4)
-        # if not self.dragging_point:
-        #     return
-        # self.dragging_point[0] = x
-        # self.dragging_point[1] = y
-        # if not self.dragging_point:
-        #     return
-        # self.remove_point(self.dragging_point)
-        # self.dragging_point = self.add_point_on_motion(event)
-        # self.update_plot()
-
         # Don't do anything if drag tool or zoom tool is active.
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
             return
