@@ -36,19 +36,19 @@ from modules.measurement import Measurement
 from modules.simulation import Simulation
 from modules.settings import Settings
 from modules.detector import Detector
+
 import re
 
 
 class Request:
     """Request class to handle all measurements.
     """
-    def __init__(self, directory, name, masses, statusbar, global_settings,
+    def __init__(self, directory, name, statusbar, global_settings,
                  tabs):
         """Inits Request class. 
         
         Args:
             directory: A String representing request directory.
-            masses: A Masses class object.
             statusbar: A QtGui.QMainWindow's QStatusBar.
             global_settings: A GlobalSettings class object (of the program).
             tabs: A dictionary of MeasurementTabWidgets and SimulationTabWidgets
@@ -60,7 +60,6 @@ class Request:
         unused_directory, tmp_dirname = os.path.split(self.directory)
         self.settings = Settings(self.directory)
         self.global_settings = global_settings
-        self.masses = masses
         self.statusbar = statusbar
         self.samples = Samples(self)
 

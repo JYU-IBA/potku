@@ -47,13 +47,12 @@ class MeasurementTabWidget(QtWidgets.QWidget):
     '''Tab widget where measurement stuff is added.
     '''
     issueMaster = QtCore.pyqtSignal()
-    def __init__(self, tab_id, measurement, masses, icon_manager):
+    def __init__(self, tab_id, measurement, icon_manager):
         '''Init measurement tab class.
         
         Args:
             tab_id: An integer representing ID of the tabwidget.
             measurement: A measurement class object.
-            masses: A masses class object.
             icon_manager: An iconmanager class object.
         '''
         super().__init__()
@@ -61,7 +60,6 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_measurement_tab.ui"), self)
         self.measurement = measurement
-        self.masses = masses
         self.icon_manager = icon_manager
         
         self.histogram = Null()
@@ -128,7 +126,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
     def add_histogram(self):
         '''Adds ToF-E histogram into tab if it doesn't have one already.
         '''
-        self.histogram = TofeHistogramWidget(self.measurement, self.masses,
+        self.histogram = TofeHistogramWidget(self.measurement,
                                              self.icon_manager)
         self.measurement.set_axes(self.histogram.matplotlib.axes)
         self.ui.makeSelectionsButton.clicked.connect(
@@ -364,7 +362,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
     def open_measuring_unit_settings(self):
         '''Opens measurement settings dialog.
         '''
-        MeasurementUnitSettings(self.measurement.measurement_settings, self.measurement.request.masses)
+        MeasurementUnitSettings(self.measurement.measurement_settings)
         
         
     def open_depth_profile_settings(self):

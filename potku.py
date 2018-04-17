@@ -47,7 +47,6 @@ from dialogs.simulation.new_simulation import SimulationNewDialog
 from modules.general_functions import open_file_dialog
 from modules.global_settings import GlobalSettings
 from modules.icon_manager import IconManager
-from modules.masses import Masses
 from modules.request import Request
 from widgets.measurement.tab import MeasurementTabWidget
 from widgets.simulation.tab import SimulationTabWidget
@@ -68,7 +67,6 @@ class Potku(QtWidgets.QMainWindow):
         self.icon_manager = IconManager()
         self.settings = GlobalSettings()
         self.request = None
-        self.masses = Masses(os.path.join("external", "Potku-data", "masses.dat"))
         self.potku_bin_dir = os.getcwd()
         
         # Holds references to all the tab widgets in "tab_measurements" 
@@ -504,7 +502,7 @@ class Potku(QtWidgets.QMainWindow):
             self.ui.treeWidget.setHeaderLabel("Request: {0}".format(dialog.name))
             self.__initialize_top_items()
 
-            self.request = Request(dialog.directory, dialog.name, self.masses,
+            self.request = Request(dialog.directory, dialog.name,
                                    self.statusbar, self.settings,
                                    self.tab_widgets)
             self.settings.set_request_directory_last_open(dialog.directory)
@@ -521,7 +519,7 @@ class Potku(QtWidgets.QMainWindow):
     def open_global_settings(self):
         """Opens global settings dialog.
         """
-        GlobalSettingsDialog(self.masses, self.settings)
+        GlobalSettingsDialog(self.settings)
 
     def open_new_measurement(self):
         """Opens file an open dialog and if filename is given opens new measurement 
@@ -598,7 +596,7 @@ class Potku(QtWidgets.QMainWindow):
             folders = folder.split("/")
             fd_with_correct_sep = os.sep.join(folders)
             tmp_name = os.path.splitext(os.path.basename(file))[0]
-            self.request = Request(fd_with_correct_sep, tmp_name, self.masses,
+            self.request = Request(fd_with_correct_sep, tmp_name,
                                    self.statusbar, self.settings,
                                    self.tab_widgets)
             self.ui.setWindowTitle("{0} - Request: {1}".format(
@@ -653,7 +651,7 @@ class Potku(QtWidgets.QMainWindow):
     def open_request_settings(self):
         """Opens request settings dialog.
         """
-        RequestSettingsDialog(self.masses, self.request, self.icon_manager)
+        RequestSettingsDialog(self.request, self.icon_manager)
 
     def remove_tab(self, tab_index):
         """Remove tab which's close button has been pressed.
@@ -727,7 +725,7 @@ class Potku(QtWidgets.QMainWindow):
             sample.increase_running_int_measurement_by_1()
             if measurement:  # TODO: Finish this (load_data)
                 tab = MeasurementTabWidget(self.tab_id, measurement,
-                                           self.masses, self.icon_manager)
+                                           self.icon_manager)
                 tab.issueMaster.connect(self.__master_issue_commands)
 
                 tab.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -757,7 +755,7 @@ class Potku(QtWidgets.QMainWindow):
 
             if simulation:  # TODO: Finish this (load_data)
                 tab = SimulationTabWidget(self.request, self.tab_id, simulation,
-                                          self.masses, self.icon_manager)
+                                          self.icon_manager)
                 tab.issueMaster.connect(self.__master_issue_commands)
 
                 tab.setAttribute(QtCore.Qt.WA_DeleteOnClose)

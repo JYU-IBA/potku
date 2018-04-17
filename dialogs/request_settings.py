@@ -56,21 +56,20 @@ from widgets.distance import DistanceWidget
 from dialogs.simulation.foil import FoilDialog
 from modules.foil import CircularFoil
 from modules.foil import RectangularFoil
+import modules.masses as masses
 
 
 class RequestSettingsDialog(QtWidgets.QDialog):
     
-    def __init__(self, masses, request, icon_manager):
+    def __init__(self, request, icon_manager):
         """Constructor for the program
         
         Args:
-            masses: Reference to Masses class object.
             request: Request class object.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_measuring_settings.ui"), self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        self.masses = masses
         
         self.request = request
         self.settings = request.settings
@@ -81,7 +80,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.calibration_settings = self.settings.calibration_settings
         self.depth_profile_settings = self.settings.depth_profile_settings
 
-        # self.masses.load_isotopes(self.measuring_unit_settings.element.symbol,
+        # masses.load_isotopes(self.measuring_unit_settings.element.symbol,
         #                          self.ui.isotopeComboBox,
         #                          str(self.measuring_unit_settings.element.isotope))
 
@@ -97,7 +96,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
         if self.measuring_unit_settings.element:
-            self.masses.load_isotopes(self.measuring_unit_settings.element.symbol,
+            masses.load_isotopes(self.measuring_unit_settings.element.symbol,
                                       self.measurement_settings_widget.ui.isotopeComboBox,
                                       str(self.measuring_unit_settings.element.isotope))
         else:
@@ -223,7 +222,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
     def __open_calibration_dialog(self):
         measurements = [self.request.measurements.get_key_value(key)
                         for key in self.request.samples.measurements.measurements.keys()]
-        CalibrationDialog(measurements, self.settings, self.masses, self)
+        CalibrationDialog(measurements, self.settings, self)
 
     def show_settings(self):
         if self.request.default_measurement.ion:
@@ -265,7 +264,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         if settings_type == "MEASURING_UNIT_SETTINGS":
             settings = MeasuringSettings()
             settings.load_settings(filename)
-            self.masses.load_isotopes(settings.element.symbol,
+            masses.load_isotopes(settings.element.symbol,
                                       self.isotopeComboBox,
                                       str(settings.element.isotope))
             settings.show(self)
@@ -412,7 +411,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             button.setText(dialog.element)
             # Enabled settings once element is selected
             self.__enabled_element_information()  
-            self.masses.load_isotopes(dialog.element, combo_box,
+            masses.load_isotopes(dialog.element, combo_box,
                                   self.measuring_unit_settings.element.isotope)
         
     def __enabled_element_information(self):

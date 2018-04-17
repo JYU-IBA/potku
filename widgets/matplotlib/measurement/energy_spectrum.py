@@ -31,6 +31,7 @@ from PyQt5 import QtWidgets
 from dialogs.graph_ignore_elements import GraphIgnoreElements
 from modules.element import Element
 from widgets.matplotlib.base import MatplotlibWidget
+import modules.masses as masses
 
 
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
@@ -52,7 +53,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.histed_files = histed_files
         self.__rbs_list = rbs_list
         self.__icon_manager = parent.icon_manager
-        self.__masses = parent.parent.masses
         self.__selection_colors = parent.measurement.selector.get_colors()
         
         self.__initiated_box = False
@@ -88,7 +88,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         element, isotope = element_object.get_element_and_isotope()
         mass = str(isotope)
         if not mass:
-            mass = self.__masses.get_standard_isotope(element)
+            mass = masses.get_standard_isotope(element)
         else:
             mass = float(mass)
         return mass

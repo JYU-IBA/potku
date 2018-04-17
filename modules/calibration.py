@@ -33,6 +33,7 @@ import scipy.optimize as optimize
 from scipy.special import erf
 from numpy import array, linspace
 import collections
+import modules.masses as masses
 
 
 class TOFCalibrationHistogram:
@@ -364,19 +365,17 @@ class TOFCalibration:
 class TOFCalibrationPoint:
     """ Class for the calculation of a theoretical time of flight.
     """
-    def __init__(self, time_of_flight, cut, masses, settings):
+    def __init__(self, time_of_flight, cut, settings):
         """ Inits the class.
         
         Args:
             time_of_flight: An integer representing time of flight channel.
             cut: A CutFile class object.
-            masses: A Masses class object.
             settings: A Settings class object.
         """
         self.cut = cut
         self.type = cut.type
         self.point_used = True
-        self.masses = masses
         measuring_settings = settings.measuring_unit_settings
                
         # Recoiled atoms' parameters
@@ -385,8 +384,8 @@ class TOFCalibrationPoint:
             mass = float(cut.element.isotope)
             isotope = int(mass)
         else:  # If the cut doesn't have a isotope, calculate standard atomic mass.
-            mass = self.masses.get_standard_isotope(self.cut.element.symbol)
-            isotope = self.masses.get_most_common_isotope(self.cut.element.symbol)[0]
+            mass = masses.get_standard_isotope(self.cut.element.symbol)
+            isotope = masses.get_most_common_isotope(self.cut.element.symbol)[0]
         self.mass = convert_amu_to_kg(mass)
         
         # Measuring unit parameters

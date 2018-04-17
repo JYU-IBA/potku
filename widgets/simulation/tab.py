@@ -25,13 +25,12 @@ class SimulationTabWidget(QtWidgets.QWidget):
     """
     issueMaster = QtCore.pyqtSignal()
 
-    def __init__(self, request, tab_id, simulation, masses, icon_manager):
+    def __init__(self, request, tab_id, simulation, icon_manager):
         """ Init simulation tab class.
         
         Args:
             tab_id: An integer representing ID of the tabwidget.
             simulation: A simulation class object.
-            masses: A masses class object.
             icon_manager: An iconmanager class object.
         """
         super().__init__()
@@ -39,7 +38,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.tab_id = tab_id
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_simulation_tab.ui"), self)
         self.simulation = simulation
-        self.masses = masses
         self.icon_manager = icon_manager
 
         self.simulation_depth_profile = None

@@ -13,7 +13,9 @@ __versio__ = "2.0"
 import os
 from PyQt5 import uic, QtWidgets
 from dialogs.element_selection import ElementSelectionDialog
-from modules.masses import Masses
+from modules.element import Element
+from modules.layer import Layer
+import modules.masses as masses
 
 class LayerPropertiesDialog(QtWidgets.QDialog):
     """Dialog for adding a new layer or editing an existing one.
@@ -25,6 +27,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         super().__init__()
         self.__ui = uic.loadUi(os.path.join("ui_files", "ui_layer_dialog.ui"),
                                self)
+        self.layer = None
 
 
         # Some border of widgets might be displaying red, because information
@@ -120,8 +123,6 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         name = self.__ui.nameEdit.text()
         thickness = self.__ui.thicknessEdit.text()
         density = self.__ui.densityEdit.text()
-        ion_stopping = self.__ui.ionStoppingComboBox.currentText()
-        recoil_stopping = self.__ui.recoilStoppingComboBox.currentText()
         elements = []
         children = self.__ui.scrollAreaWidgetContents.children()
 
@@ -129,17 +130,17 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         # TODO: Explain the following. Maybe better implementation?
         i = 1
         while (i < len(children)):
-            element = []
-            element.append(children[i].text())
+            elem_symbol = children[i].text()
             i += 1
-            element.append(int(children[i].currentText().split(" ")[0]))
+            elem_isotope = int(children[i].currentText().split(" ")[0])
             # TODO: Some elements don't have isotope values. Figure out why.
             i += 1
-            element.append(float(children[i].text()) / 100)
-            elements.append(element)
+            elem_amount = float(children[i].text())
+            elements.append(Element(elem_symbol, elem_isotope, elem_amount))
             i += 2
 
         # TODO: Create a new Layer object
+        self.layer = Layer(name, elements, thickness, density)
         # Layer(...)
         self.close()
 
@@ -222,6 +223,5 @@ class ElementLayout(QtWidgets.QHBoxLayout):
 
     def __load_isotopes(self):
         # TODO: Change the path.
-        masses = Masses("/home/severij/Code/potku/external/Potku-data/masses.dat")
         masses.load_isotopes(self.element.text(), self.isotope, None)
 

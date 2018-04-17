@@ -37,6 +37,7 @@ from modules.depth_files import DepthFiles
 from modules.element import Element
 from modules.null import Null
 from widgets.matplotlib.measurement.depth_profile import MatplotlibDepthProfileWidget
+import modules.masses as masses
 
 
 class DepthProfileDialog(QtWidgets.QDialog):
@@ -200,7 +201,6 @@ class DepthProfileDialog(QtWidgets.QDialog):
         # that matter, to get all efficiency files from directory defined
         # in global settings that match the cut files of measurements.
         eff_files = self.__global_settings.get_efficiencies()
-        masses = self.measurement.request.masses
         eff_files_used = []
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()

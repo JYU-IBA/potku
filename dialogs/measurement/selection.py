@@ -31,6 +31,7 @@ from PyQt5 import QtCore, QtGui, uic, QtWidgets
 
 from dialogs.element_selection import ElementSelectionDialog
 from modules.element import Element
+import modules.masses as masses
 
 
 class SelectionSettingsDialog(QtWidgets.QDialog):
@@ -270,9 +271,9 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
             element: String representing element.
             current_isotope: String representing current isotope.
         """
-        standard_mass = self.selection.masses.get_standard_isotope(element)
+        standard_mass = masses.get_standard_isotope(element)
         standard_mass_label.setText(str(round(standard_mass, 3)))
-        self.selection.masses.load_isotopes(element, combobox, current_isotope)
+        masses.load_isotopes(element, combobox, current_isotope)
 
         
     def __change_type(self):
@@ -316,7 +317,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         #measurement_settings = self.settings.get_measurement_settings()
         #elem_symbol = measurement_settings.measuring_unit_settings.element.symbol
         #elem_isotope = str(measurement_settings.measuring_unit_settings.element.isotope)
-        # standard_mass = str(self.selection.masses.get_standard_isotope(
+        # standard_mass = str(masses.get_standard_isotope(
         #                                                           elem_symbol))
         # self.ui.sample_element_button.setText(elem_symbol)
         self.ui.sample_standard_mass_radio.setEnabled(False)
@@ -325,7 +326,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         self.ui.sample_isotope_radio.setChecked(True)
         self.ui.sample_isotope_radio.setEnabled(False)
         self.ui.sample_isotope_combobox.setEnabled(False)
-        # self.selection.masses.load_isotopes(elem_symbol,
+        # masses.load_isotopes(elem_symbol,
         #                                     self.ui.sample_isotope_combobox,
         #                                     elem_isotope)
         # self.__set_color_button_color(sample_element)

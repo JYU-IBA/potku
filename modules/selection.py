@@ -93,15 +93,13 @@ class AxesLimits:
 class Selector:
     """Selector objects handles all selections within measurement.
     """
-    def __init__(self, directory, measurement_name, masses,
-                 element_colormap, settings):
+    def __init__(self, directory, measurement_name, element_colormap, settings):
         """Inits Selector.
         
         Inits Selector object.
         
         Args:
             filepath: String representing filepath of measurement data (ascii file).
-            masses: Reference to element masses object of main program.
             element_colormap: Default colors for new element selections.
             settings: Measurement's settings to which selector belongs. 
                       (for selection dialog)
@@ -121,7 +119,6 @@ class Selector:
         self.axes_limits = AxesLimits()
         self.selected_id = None
         self.draw_legend = False
-        self.masses = masses
 
     def count(self):
         """Get count of selections.
@@ -185,8 +182,8 @@ class Selector:
             -1: When new selection is not allowed and there are no selections.
         """
         if self.new_selection_is_allowed:
-            sel = Selection(self.axes, self.masses,
-                            self.element_colormap, settings=self.settings)
+            sel = Selection(self.axes, self.element_colormap,
+                            settings=self.settings)
             self.grey_out_except(sel.id)
             self.selections.append(sel)
             # Do not allow new selections without closing/purging
@@ -437,7 +434,7 @@ class Selector:
             for line in fp:
                 # ['ONone', '16', 'red', '3436, 2964, 4054;2376, 3964, 3914']
                 split = line.strip().split("    ")
-                sel = Selection(self.axes, self.masses, self.element_colormap,
+                sel = Selection(self.axes, self.element_colormap,
                                 element_type=split[0],
                                 element=split[1],
                                 isotope=split[2],
@@ -507,14 +504,13 @@ class Selection:
     LINE_MARKER_SIZE = 3.0
     GLOBAL_ID = 0
     
-    def __init__(self, axes, masses, element_colormap, settings, element=None, isotope=None,
+    def __init__(self, axes, element_colormap, settings, element=None, isotope=None,
                  element_type="ERD", color=None, points=None, scatter=None,
                  weight_factor=1, transposed=False):
         """Inits Selection class.
         
         Args:
             axes: Matplotlib FigureCanvas's subplot
-            masses: Reference to element masses object of main program.
             element_colormap: Default colors for new element selections.
             settings: Measurement's settings to which selector belongs. 
                       (for selection dialog)
@@ -529,7 +525,6 @@ class Selection:
             transposed: Boolean representing if axes are transposed.
         """
         self.id = Selection.GLOBAL_ID
-        self.masses = masses  # Element isotopes
         self.element_colormap = element_colormap
         self.settings = settings
         

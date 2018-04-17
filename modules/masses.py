@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 20.3.2013
-Updated on 26.6.2013
+Updated on 17.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -25,117 +25,88 @@ along with this program (file named 'LICENCE').
 
 Reads data of the elements isotopes from masses.dat
 '''
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
+             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__versio__ = "2.0"
 
 import csv
 
-class Masses:
-    '''Masses class handles all element isotopes' masses.
+__FILE_PATH = "external/Potku-data/masses.dat"
+
+__isotopes = {}
+
+for line in csv.reader(open(__FILE_PATH), delimiter=" ", skipinitialspace=True):
+    if line:  # skips empty lines
+        if line[3] not in __isotopes:
+            __isotopes[line[3]] = []
+        __isotopes[line[3]].append((line[2], line[5]))
+
+def __get_isotopes(element):
+    '''Get isotopes of given element.
+    Return:
+        Returns a list of element's isotopes.
     '''
-    def __init__(self, filepath):
-        '''Inits Masses object
-        
-        Args:
-            filepath: String representing filepath to masses.dat
-        '''
-        self.isotopes = {}   
+    try:
+        isotopes = __isotopes[element]
+    except:
+        isotopes = []
+    return isotopes
 
-        for data in self.__import_text(filepath, ' '):
-            if data[3] not in self.isotopes:
-                self.isotopes[data[3]] = []
-            self.isotopes[data[3]].append((data[2], data[5]))
+def load_isotopes(element, combobox, current_isotope=None):
+    '''Load isotopes into given combobox.
 
-    
-    def load_isotopes(self, element, combobox, current_isotope=None):
-        '''Load isotopes into given combobox.
-        
-        Args:
-            element: A two letter symbol representing selected element of which
-                        isotopes are loaded, e.g. 'He'.
-            combobox: QComboBox to which items are added.
-            current_isotope: Current isotope to select it on combobox by default 
-                             (string).
-        '''
-        if element == None:
-            return
-        combobox.clear() 
-        # Sort isotopes based on their commonness
-        isotopes = sorted(self.__get_isotopes(element),
-                          key=lambda isotope: isotope[1],
-                          reverse=True)
-        dirtyinteger = 0
-        for isotope, tn in isotopes:
-            # We don't need rare isotopes to be shown
-            if float(tn) > 0.0:
-                combobox.addItem("{0} ({1}%)".format(isotope,
-                                                     round(float(tn), 3)),
-                                 userData=(isotope, tn)) 
-                if isotope == str(current_isotope):
-                    combobox.setCurrentIndex(dirtyinteger) 
-            dirtyinteger += 1
-    
-    
-    def get_standard_isotope(self, element):
-        '''Calculate standard element weight.
-        Args:
-            element: A two letter symbol representing an element, e.g. 'He'
-        Return:
-            Returns standard weight of given element (float).
-        '''
-        standard = 0.0
-        for isotope in self.__get_isotopes(element):
-            # Has to have float() on both, else we crash.
-            standard += float(isotope[0]) * float(isotope[1])
-        return standard / 100.0
-     
-     
-    def get_most_common_isotope(self, element):
-        '''Get the most common isotope for an element.
-        
-        Args:
-            element: String representing element.
-            
-        Return:
-            Returns the most common isotope for the element (int)
-            and the propability (commonness) of the isotope (float)
-            as a tuple(int, float).
-        '''
-        isotopes = sorted(self.__get_isotopes(element),
-                          key=lambda isotope: isotope[1],
-                          reverse=True)
-        return int(isotopes[0][0]), float(isotopes[0][1]) 
-    
-    
-    def __get_isotopes(self, element):
-        '''Get isotopes of given element.
-        Return:
-            Returns a list of element's isotopes.
-        '''
-        try:
-            isotopes = self.isotopes[element]
-        except:
-            isotopes = []
-        return isotopes
-    
-    
-    def __import_text(self, filename, separator):
-        '''Import test from masses.dat
-        
-        Args:
-            filename: String representing full filepath to file which includes 
-                      masses.
-            separator: String representing separator for columns in the file.
-            
-        Returns:
-            Yields one line in the file.
-        '''
-        for line in csv.reader(open(filename),
-                               delimiter=separator,
-                               skipinitialspace=True):
-            if line:  # skips empty lines
-                yield line
+    Args:
+        element: A two letter symbol representing selected element of which
+                    isotopes are loaded, e.g. 'He'.
+        combobox: QComboBox to which items are added.
+        current_isotope: Current isotope to select it on combobox by default
+                         (string).
+    '''
+    if element == None:
+        return
+    combobox.clear()
+    # Sort isotopes based on their commonness
+    isotopes = sorted(__get_isotopes(element),
+                      key=lambda isotope: isotope[1],
+                      reverse=True)
+    dirtyinteger = 0
+    for isotope, tn in isotopes:
+        # We don't need rare isotopes to be shown
+        if float(tn) > 0.0:
+            combobox.addItem("{0} ({1}%)".format(isotope,
+                                                 round(float(tn), 3)),
+                             userData=(isotope, tn))
+            if isotope == str(current_isotope):
+                combobox.setCurrentIndex(dirtyinteger)
+        dirtyinteger += 1
 
-    
+def get_standard_isotope(element):
+    '''Calculate standard element weight.
+    Args:
+        element: A two letter symbol representing an element, e.g. 'He'
+    Return:
+        Returns standard weight of given element (float).
+    '''
+    standard = 0.0
+    for isotope in __get_isotopes(element):
+        # Has to have float() on both, else we crash.
+        standard += float(isotope[0]) * float(isotope[1])
+    return standard / 100.0
 
-    
+def get_most_common_isotope(element):
+    '''Get the most common isotope for an element.
+
+    Args:
+        element: String representing element.
+
+    Return:
+        Returns the most common isotope for the element (int)
+        and the propability (commonness) of the isotope (float)
+        as a tuple(int, float).
+    '''
+    isotopes = sorted(__get_isotopes(element),
+                      key=lambda isotope: isotope[1],
+                      reverse=True)
+    return int(isotopes[0][0]), float(isotopes[0][1])
+
