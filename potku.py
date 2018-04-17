@@ -166,15 +166,15 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.showMaximized()
 
     def __initialize_top_items(self):
-        """
-        Makes the top item visible in the tree of the UI.
+        """Inits the tree view and creates the top level items.
         """
         self.tree_widget = self.ui.treeWidget
         self.tree_widget.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.tree_widget.customContextMenuRequested.connect(self.open_menu)
+        self.tree_widget.customContextMenuRequested.connect(self.__open_menu)
         self.tree_widget.setDropIndicatorShown(True)
         self.tree_widget.setDragDropMode(QAbstractItemView.InternalMove)
         self.tree_widget.setDragEnabled(True)
+        self.tree_widget.setSelectionMode(QAbstractItemView.SingleSelection)
 
         self.measurements_item = QtWidgets.QTreeWidgetItem()
         self.simulations_item = QtWidgets.QTreeWidgetItem()
@@ -182,17 +182,13 @@ class Potku(QtWidgets.QMainWindow):
         self.simulations_item.setText(0, "Simulations")
         self.__change_tab_icon(self.measurements_item, "folder_locked.svg")
         self.__change_tab_icon(self.simulations_item, "folder_locked.svg")
+        self.measurements_item.setFlags(self.measurements_item.flags() ^ Qt.ItemIsDragEnabled)
+        self.simulations_item.setFlags(self.simulations_item.flags() ^ Qt.ItemIsDragEnabled)
+
         self.tree_widget.addTopLevelItem(self.measurements_item)
         self.tree_widget.addTopLevelItem(self.simulations_item)
 
-    def dropEvent(self, event):
-        return_val = super(QTreeWidget, self).dropEvent(event)
-        print("Drop finished")
-        d = event.mimeData()
-        print(d + " " + event.source())
-        return return_val
-
-    def open_menu(self, position):
+    def __open_menu(self, position):
         """Opens the right click menu in tree view.
         """
         indexes = self.tree_widget.selectedIndexes()
@@ -739,12 +735,15 @@ class Potku(QtWidgets.QMainWindow):
         tree_item = QtWidgets.QTreeWidgetItem()
         tree_item.setText(0, simulation_name)
         tree_item.tab_id = self.tab_id
+        tree_item.setFlags(tree_item.flags() | Qt.ItemNeverHasChildren)
+        tree_item.setFlags(tree_item.flags() ^ Qt.ItemIsDropEnabled)
         # tree_item.setIcon(0, self.icon_manager.get_icon("folder_open.svg"))
         if load_data:
             self.__change_tab_icon(tree_item, "folder_open.svg")
         else:
             self.__change_tab_icon(tree_item, "folder_locked.svg")
         self.simulations_item.addChild(tree_item)
+        self.simulations_item.setExpanded(True)
 
     def __add_new_tab(self, tab_type, filename, sample, progress_bar=None,
                       file_current=0, file_count=1, load_data=False):
