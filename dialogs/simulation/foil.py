@@ -43,9 +43,13 @@ class FoilDialog(QtWidgets.QDialog):
         self.ui.dimensionLayout.addWidget(self.dimension_label)
         self.ui.dimensionLayout.addWidget(self.dimension_edits[0])
 
+        self.ui.nameEdit.setText(self.foil.name)
+        self.ui.transmissionEdit.setText(str(self.foil.transmission))
+
         if type(tmp_foils[tmp_index]) is CircularFoil:
             self.foil_type = CircularFoil
             self.ui.typeComboBox.setCurrentIndex(0)
+            self.first_dimension_edit.setText(str(self.foil.diameter))
         else:
             self.foil_type = RectangularFoil
             self.ui.typeComboBox.setCurrentIndex(1)
@@ -53,7 +57,9 @@ class FoilDialog(QtWidgets.QDialog):
             self.second_dimension_edit = QtWidgets.QLineEdit()
             self.dimension_edits.append(self.second_dimension_edit)
             self.ui.dimensionLayout.addWidget(self.dimension_edits[1])
-        
+            self.first_dimension_edit.setText(str(self.foil.size[0]))
+            self.second_dimension_edit.setText(str(self.foil.size[1]))
+
         # This widget adds itself into the matplotlib_layout
         self.composition = TargetCompositionWidget(self, self.icon_manager)
 

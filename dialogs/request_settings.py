@@ -371,6 +371,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.detector.detector_type = DetectorType(self.detector_settings_widget.typeComboBox.currentIndex())
             self.calibration_settings.set_settings(self.detector_settings_widget)
             self.request.detector.calibration = self.calibration_settings
+            # Detector foils
+            for widget in self.detector_structure_widgets:
+                pass
 
             self.request.detector.save_settings(self.request.default_folder + os.sep + "Default")
 
