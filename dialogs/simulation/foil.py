@@ -100,6 +100,7 @@ class FoilDialog(QtWidgets.QDialog):
             else:
                 new_foil = CircularFoil(self.ui.nameEdit.text())
                 new_foil.diameter = self.first_dimension_edit.text()
+            new_foil.distance = self.foils[self.index].distance
             self.foils[self.index] = new_foil
         else:
             self.foil.name = self.ui.nameEdit.text()

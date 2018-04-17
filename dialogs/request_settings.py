@@ -138,7 +138,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.foils_layout = self._add_default_foils()
         self.detector_settings_widget.ui.detectorScrollAreaContents.layout().addLayout(self.foils_layout)
 
-        self.detector_settings_widget.ui.newFoilButton.clicked.connect(lambda: self._add_new_foil())
+        self.detector_settings_widget.ui.newFoilButton.clicked.connect(lambda: self._add_new_foil(self.foils_layout))
 
         self.calibration_settings.show(self.detector_settings_widget)
 
@@ -182,32 +182,25 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         self.exec_()
 
-    def _add_new_foil(self):
-        distance_widget = DistanceWidget()
-        self.detector_structure_widgets.append(distance_widget)
-        foil_widget = FoilWidget()
+    def _add_new_foil(self, layout):
+        foil_widget = FoilWidget(self)
+        new_foil = CircularFoil("Foil")
+        self.tmp_foil_info.append(new_foil)
         foil_widget.ui.foilButton.clicked.connect(lambda: self._open_composition_dialog())
+        distance_widget = DistanceWidget()
+        distance_widget.ui.distanceEdit.setText(str(new_foil.distance))
+        self.detector_structure_widgets.append(distance_widget)
         self.detector_structure_widgets.append(foil_widget)
-        self.foils_layout.addWidget(distance_widget)
-        self.foils_layout.addWidget(foil_widget)
+        layout.addWidget(distance_widget)
+        layout.addWidget(foil_widget)
 
     def _add_default_foils(self):
         layout = QtWidgets.QHBoxLayout()
-
         target = QtWidgets.QLabel("Target")
         layout.addWidget(target)
-
         i = 0
         while i in range(6):
-            foil_widget = FoilWidget()
-            new_foil = CircularFoil("Foil")
-            self.tmp_foil_info.append(new_foil)
-            foil_widget.ui.foilButton.clicked.connect(lambda: self._open_composition_dialog())
-            distance_widget = DistanceWidget()
-            self.detector_structure_widgets.append(distance_widget)
-            self.detector_structure_widgets.append(foil_widget)
-            layout.addWidget(self.detector_structure_widgets[i])
-            layout.addWidget(self.detector_structure_widgets[i + 1])
+            self._add_new_foil(layout)
             i = i + 2
         return layout
 
@@ -316,6 +309,27 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 settings.set_settings(self.measurement_settings_widget)
                 settings.save_settings(filename)
 
+    def calculate_distance(self):
+        distance = 0
+        for i in range(len(self.detector_structure_widgets)):
+            widget = self.detector_structure_widgets[i]
+            if type(widget) is DistanceWidget:
+                distance = distance + float(widget.ui.distanceEdit.text())
+                index = int(i / 2)  # one foil object corresponds to distance widget + foil widget (indexes)
+                self.tmp_foil_info[index].distance = distance
+
+    def delete_foil_and_distance(self, foil_widget):
+        index_of_widget = self.detector_structure_widgets.index(foil_widget)
+        distance_widget = self.detector_structure_widgets[index_of_widget - 1]
+        del(self.detector_structure_widgets[index_of_widget - 1: index_of_widget + 1])
+        del(self.tmp_foil_info[int(index_of_widget / 2)])
+
+        self.foils_layout.removeWidget(foil_widget)
+        foil_widget.deleteLater()
+
+        self.foils_layout.removeWidget(distance_widget)
+        distance_widget.deleteLater()
+
     def update_and_close_settings(self):
         """Updates measuring settings values with the dialog's values and saves them
         to default ini file.
@@ -372,11 +386,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.calibration_settings.set_settings(self.detector_settings_widget)
             self.request.detector.calibration = self.calibration_settings
             # Detector foils
-            for i in range(len(self.detector_structure_widgets)):
-                widget = self.detector_structure_widgets[i]
-                if type(widget) is DistanceWidget:
-                    distance = widget.ui.distanceEdit.text()
-                    # TODO: Add the distance as the attribute of the Foil corresponding to the Foilwidget in position i+1
+            self.calculate_distance()
+            self.request.detector.foils = self.tmp_foil_info
 
             self.request.detector.save_settings(self.request.default_folder + os.sep + "Default")
 
