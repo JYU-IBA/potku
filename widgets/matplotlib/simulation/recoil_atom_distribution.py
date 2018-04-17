@@ -190,11 +190,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.radio0 = QtWidgets.QRadioButton("He")
         parent.ui.horizontalLayout_2.addWidget(self.radio0)
-        self.radio0.toggled.connect(self.choose_element)
 
         self.radio1 = QtWidgets.QRadioButton("Mn")
         parent.ui.horizontalLayout_2.addWidget(self.radio1)
-        self.radio1.toggled.connect(self.choose_element)
+
+        self.radios = QtWidgets.QButtonGroup(self)
+        self.radios.addButton(self.radio0, 0)
+        self.radios.addButton(self.radio1, 1)
+        self.radios.buttonToggled[int, bool].connect(self.choose_element)
 
         # Locations of points about to be dragged at the time of click
         self.click_locations = []
@@ -253,16 +256,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.on_draw()
 
-    def choose_element(self):
-        if self.radio0.isChecked():
-            self.current_element_i = 0
-        if self.radio1.isChecked():
-            self.current_element_i = 1
-        self.dragged_points.clear()
-        self.selected_points.clear()
-        self.update_plot()
-        self.axes.relim()
-        self.axes.autoscale_view()
+    def choose_element(self, buttonid, checked):
+        if checked:
+            self.current_element_i = buttonid
+            self.dragged_points.clear()
+            self.selected_points.clear()
+            self.update_plot()
+            self.axes.relim()
+            self.axes.autoscale_view()
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -295,6 +296,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Remove axis ticks and draw
         self.remove_axes_ticks()
         self.canvas.draw()
+        self.radio0.setChecked(True)
 
     def __toggle_tool_drag(self):
         if self.__button_drag.isChecked():
