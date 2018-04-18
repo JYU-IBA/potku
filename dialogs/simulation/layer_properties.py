@@ -117,8 +117,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         window.
         """
         name = self.__ui.nameEdit.text()
-        thickness = self.__ui.thicknessEdit.text()
-        density = self.__ui.densityEdit.text()
+        thickness = float(self.__ui.thicknessEdit.text())
+        density = float(self.__ui.densityEdit.text())
         elements = []
         children = self.__ui.scrollAreaWidgetContents.children()
 
@@ -135,9 +135,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             elements.append(Element(elem_symbol, elem_isotope, elem_amount))
             i += 2
 
-        # TODO: Create a new Layer object
         self.layer = Layer(name, elements, thickness, density)
-        # Layer(...)
         self.close()
 
     def __missing_information_message(self, empty_fields):

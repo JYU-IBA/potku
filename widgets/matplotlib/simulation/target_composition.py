@@ -11,7 +11,10 @@ from PyQt5 import QtCore, QtWidgets
 
 from dialogs.simulation.layer_properties import LayerPropertiesDialog
 from widgets.matplotlib.base import MatplotlibWidget
+from modules.target import Target
 from modules.layer import Layer
+
+import matplotlib as mpl
 
 
 class TargetCompositionWidget(MatplotlibWidget):
@@ -28,14 +31,21 @@ class TargetCompositionWidget(MatplotlibWidget):
         """
         super().__init__(parent)
         self.canvas.manager.set_title("Target Composition")
-        self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
-        self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
-        self.__icon_manager = icon_manager
 
+        self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
+        #self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
+
+        self.__icon_manager = icon_manager
         self.__fork_toolbar_buttons()
 
-        self.name_y_axis = "Concentration"
+        # Remove Y-axis ticks
         self.name_x_axis = "Depth"
+        self.axes.yaxis.set_tick_params("both", left="off", labelleft="off")
+
+        self.target = Target("targetin nimi", 35.0, [])
+        self.__colors = ["#cce8ff", "#bdffc4", "#fcffa9", "#ffe6bc", "#ffdada", "#e9daff"]
+        self.__number_of_colors = len(self.__colors)
+        self.__layer_color_ids = []
 
         self.on_draw()
 
@@ -43,24 +53,13 @@ class TargetCompositionWidget(MatplotlibWidget):
         """Draw method for matplotlib.
         """
         self.axes.clear()  # Clear old stuff
-
-        self.axes.set_ylabel(self.name_y_axis.title())
         self.axes.set_xlabel(self.name_x_axis.title())
 
         # Remove axis ticks and draw
         self.remove_axes_ticks()
         self.canvas.draw()
 
-    # def add_layer(self):
-    #     """Adds a layer in the target composition.
-    #     """
-    #     layer = patches.Rectangle(
-    #             (0.0, 0.0),  # (x,y)
-    #             0.3,  # width
-    #             1.0,  # height
-    #         )
-    #     self.axes.add_patch(layer)
-    #     self.canvas.draw_idle()
+
 
     def __toggle_tool_drag(self):
         if self.__button_drag.isChecked():
@@ -111,3 +110,41 @@ class TargetCompositionWidget(MatplotlibWidget):
 
     def add_layer(self):
         dialog = LayerPropertiesDialog()
+        self.target.layers.append(dialog.layer)
+        if self.__layer_color_ids:
+            self.__layer_color_ids.append(self.__layer_color_ids[-1] + 1)
+        else:
+            self.__layer_color_ids.append(0)
+        self.__update_figure()
+
+    def __update_figure(self):
+        next_layer_position = 0
+        for idx, layer in enumerate(self.target.layers):
+            layer_patch = mpl.patches.Rectangle((next_layer_position, 0),
+                                                layer.thickness, 1,
+                                                color= self.__colors[self.__layer_color_ids[idx] % self.__number_of_colors])
+            self.axes.add_patch(layer_patch)
+
+            if not next_layer_position == 0:
+                layer_line = mpl.patches.ConnectionPatch((next_layer_position, 0),
+                                                     (next_layer_position, 1),
+                                                     coordsA="data")
+                self.axes.add_line(layer_line)
+
+            self.axes.annotate(layer.name, (next_layer_position + layer.thickness / 2, 0.5), ha="center")
+            next_layer_position += layer.thickness
+
+        self.axes.set_xbound(0, next_layer_position)
+        self.canvas.draw_idle()
+        self.mpl_toolbar.update()
+
+    # def __add_layer(self):
+    #     """Adds a layer in the target composition.
+    #     """
+    #     layer = mpl.patches.Rectangle(
+    #             (0.0, 0.0),  # (x,y)
+    #             0.3,  # width
+    #             1.0,  # height
+    #         )
+    #     self.axes.add_patch(layer)
+    #     self.canvas.draw_idle()
