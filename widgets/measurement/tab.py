@@ -174,7 +174,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         log_widget specifies which ui element will handle the logging. That should 
         be the one which is added to this MeasurementTabWidget.
         '''
-        logger = logging.getLogger(self.measurement.measurement_name)
+        logger = logging.getLogger(self.measurement.name)
         defaultformat = logging.Formatter(
                                   '%(asctime)s - %(levelname)s - %(message)s',
                                   datefmt='%Y-%m-%d %H:%M:%S')
@@ -194,17 +194,17 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         '''
         if not directory:
             directory = self.measurement.directory
-        self.make_elemental_losses(directory, self.measurement.measurement_name)
+        self.make_elemental_losses(directory, self.measurement.name)
         progress_bar.setValue(66)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-        self.make_energy_spectrum(directory, self.measurement.measurement_name)
+        self.make_energy_spectrum(directory, self.measurement.name)
         progress_bar.setValue(82)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-        self.make_depth_profile(directory, self.measurement.measurement_name)
+        self.make_depth_profile(directory, self.measurement.name)
         progress_bar.setValue(98)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
@@ -256,7 +256,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         lines = self.__load_file(file)
         if not lines:
             return
-        m_name = self.measurement.measurement_name
+        m_name = self.measurement.name
         try:
             output_dir = self.__confirm_filepath(lines[0].strip(), name, m_name)
             use_cuts = self.__confirm_filepath(
@@ -301,7 +301,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         lines = self.__load_file(file)
         if not lines:
             return
-        m_name = self.measurement.measurement_name
+        m_name = self.measurement.name
         try:
             reference_cut = self.__confirm_filepath(lines[0].strip(), name, m_name)
             checked_cuts = self.__confirm_filepath(
@@ -336,7 +336,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         lines = self.__load_file(file)
         if not lines:
             return
-        m_name = self.measurement.measurement_name
+        m_name = self.measurement.name
         try:
             use_cuts = self.__confirm_filepath(
                                    lines[0].strip().split("\t"), name, m_name)
@@ -422,7 +422,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         """Toggle enabled state of the master measurement button in the
         measurementtabwidget.
         """
-        measurement_name = self.measurement.measurement_name
+        measurement_name = self.measurement.name
         master_name = self.measurement.request.has_master()
         self.ui.command_master.setEnabled(measurement_name == master_name)
     
@@ -481,7 +481,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         """Signal that master measurement's command has been issued
         to all slave measurements in the request.
         """
-        meas_name = self.measurement.measurement_name
+        meas_name = self.measurement.name
         master_name = self.measurement.request.has_master()
         if meas_name == master_name:
             #self.emit(QtCore.SIGNAL("issueMaster"))

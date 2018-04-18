@@ -36,7 +36,7 @@ from subprocess import Popen
 import hashlib
 import numpy
 from PyQt5 import QtWidgets
-from os import makedirs, rename
+from os import makedirs, rename, path
 from os.path import curdir, join, exists, realpath, split, splitext
 
 
@@ -118,9 +118,9 @@ def rename_dir(old_dir, new_name):
     """
     if not new_name:
         return
-    path, old_name = split(old_dir)
+    dir_path, old_name = split(old_dir)
     try:
-        rename(old_dir, path.join(path, new_name))
+        rename(old_dir, path.join(dir_path, new_name))
     except OSError:
         # Directory or file exists on the same name.
         return OSError

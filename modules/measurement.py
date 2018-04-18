@@ -150,7 +150,7 @@ class MeasurementEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Measurement):
             measurement_dict = {
-                "name": obj.measurement_name,
+                "name": obj.name,
                 "description": obj.description,
                 "date": obj.date.isoformat(),
                 "energy": obj.energy,
@@ -183,10 +183,10 @@ class Measurement:
     """Measurement class to handle one measurement data.
     """
 
-    __slots__ = "request", "description", "date", "ion", "energy", "charge", "spot_size", "divergence", \
+    __slots__ = "request", "name", "description", "date", "ion", "energy", "charge", "spot_size", "divergence", \
                 "profile", "energy_dist", "fluence", "current", "beam_time", "detector_theta", "detector_fii", \
                 "target_theta", "target_fii", "data", "statusbar", "color_scheme", "measurement_file", \
-                "measurement_name", "directory", "directory_cuts", "directory_elemloss", "__request_settings", \
+                "directory", "directory_cuts", "directory_elemloss", "__request_settings", \
                 "measurement_settings", "selector", "defaultlog", "errorlog", "tab_id", \
                 "directory_composition_changes", "directory_energy_spectra", "directory_depth_profiles", \
                 "directory_data", "tab_id"
@@ -203,7 +203,7 @@ class Measurement:
         self.tab_id = tab_id
 
         self.request = request  # To which request be belong to
-        self.measurement_name = name
+        self.name = name
         self.description = description
         self.date = date
 
@@ -281,7 +281,7 @@ class Measurement:
                                              self.__request_settings)
 
         element_colors = self.request.global_settings.get_element_colors()
-        self.selector = Selector(self.directory_data, self.measurement_name,
+        self.selector = Selector(self.directory_data, self.name,
                                  self.request.masses, element_colors,
                                  settings=self.measurement_settings)
 
@@ -324,7 +324,7 @@ class Measurement:
             extension = os.path.splitext(self.measurement_file)[1]
             extension = extension.lower()
             if extension == ".asc":
-                file_to_open = os.path.join(self.directory_data, self.measurement_name + extension)
+                file_to_open = os.path.join(self.directory_data, self.name + extension)
                 with open(file_to_open, "r") as fp:
                     for line in fp:
                         n += 1  # Event number
@@ -339,7 +339,7 @@ class Measurement:
         except IOError as e:
             error_log = "Error while loading the {0} {1}. {2}".format(
                         "measurement date for the measurement",
-                        self.measurement_name,
+                        self.name,
                         "The error was:")
             error_log_2 = "I/O error ({0}): {1}".format(e.errno, e.strerror)
             logging.getLogger('request').error(error_log)
@@ -370,7 +370,7 @@ class Measurement:
         """
 
         # Initializes the logger for this measurement.
-        logger = logging.getLogger(self.measurement_name)
+        logger = logging.getLogger(self.name)
         logger.setLevel(logging.DEBUG)
 
         # Adds two loghandlers. The other one will be used to log info (and up)
@@ -408,7 +408,7 @@ class Measurement:
         Args:
             log_filehandler: Log's filehandler.
         """
-        logging.getLogger(self.measurement_name).removeHandler(log_filehandler)
+        logging.getLogger(self.name).removeHandler(log_filehandler)
         log_filehandler.flush()
         log_filehandler.close()
 
@@ -431,13 +431,13 @@ class Measurement:
         """
         try:
             selection_file = os.path.join(self.directory_data,
-                                          "{0}.selections".format(self.measurement_name))
+                                          "{0}.selections".format(self.name))
             with open(selection_file): 
                 self.load_selection(selection_file)
         except:
             # TODO: Is it necessary to inform user with this?
             log_msg = "There was no old selection file to add to this request."
-            logging.getLogger(self.measurement_name).info(log_msg)
+            logging.getLogger(self.name).info(log_msg)
 
     def add_point(self, point, canvas):
         """ Add point into selection or create new selection if first or all closed.
@@ -599,7 +599,7 @@ class Measurement:
         progress_bar.hide()
 
         log_msg = "Saving finished in {0} seconds.".format(time.time() - starttime)
-        logging.getLogger(self.measurement_name).info(log_msg)
+        logging.getLogger(self.name).info(log_msg)
 
     def __remove_old_cut_files(self):
         self.__unlink_files(self.directory_cuts)
@@ -615,7 +615,7 @@ class Measurement:
                     os.unlink(file_path)
             except Exception:
                 log_msg = "Failed to remove the old cut files."
-                logging.getLogger(self.measurement_name).error(log_msg)
+                logging.getLogger(self.name).error(log_msg)
 
     def get_cut_files(self):
         """ Get cut files from a measurement.
@@ -754,16 +754,16 @@ class Measurement:
                 shutil.copyfile(tof_in_file, new_file)
                 back_up_msg = "Backed up old tof.in file to {0}".format(
                     os.path.realpath(new_file))
-                logging.getLogger(self.measurement_name).info(back_up_msg)
+                logging.getLogger(self.name).info(back_up_msg)
             except:
                 import traceback
                 err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
                 str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + traceback._some_str(sys.exc_info()[1]),
                                      err_file, str(sys.exc_info()[2].tb_lineno)])
                 error_msg = "Unexpected error when generating tof.in: {0}".format(str_err)
-                logging.getLogger(self.measurement_name).error(error_msg)
+                logging.getLogger(self.name).error(error_msg)
             # Write new settings to the file.
             with open(tof_in_file, "wt+") as fp:
                 fp.write(tof_in)
             str_logmsg = "Generated tof.in with params> {0}".format(tof_in.replace("\n", "; "))
-            logging.getLogger(self.measurement_name).info(str_logmsg)
+            logging.getLogger(self.name).info(str_logmsg)
