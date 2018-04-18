@@ -406,7 +406,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.calculate_distance()
             self.request.detector.foils = self.tmp_foil_info
 
-            self.request.detector.save_settings(self.request.default_folder + os.sep + "Default")
+            self.request.detector.save_settings(self.request.default_folder + os.sep + "Detector" + os.sep + "Default")
 
             # Simulation settings
             self.request.default_simulation.name = self.simulation_settings_widget.nameLineEdit.text()

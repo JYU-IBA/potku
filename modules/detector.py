@@ -14,7 +14,7 @@ import json
 import datetime
 from enum import Enum
 
-from modules.foil import CircularFoil, RectangularFoil
+from modules.foil import CircularFoil, RectangularFoil, FoilEncoder
 from modules.layer import Layer
 from modules.calibration_parameters import CalibrationParameters
 
@@ -26,13 +26,34 @@ class DetectorType(Enum):
 class DetectorEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Detector):
-            return {
+            detector_dict = {
                 "name": obj.name,
                 "description": obj.description,
                 "date": obj.date.isoformat(),
                 "detector_type": obj.detector_type.value,
-                "foils": obj.foils
+                "foils": []
             }
+            foils = []
+            layers = []
+            for f in obj.foils:
+                foil_dict = {
+                    "name": f.name,
+                    "distance": f.distance,
+                    "layers": [],
+                    "transmission": f.transmission,
+                }
+                if isinstance(f, CircularFoil):
+                    foil_dict["type"] = "circular"
+                    foil_dict["size"] = f.diameter
+                if isinstance(f, RectangularFoil):
+                    foil_dict["type"] = "rectangular"
+                    foil_dict["size"] = f.size
+                for l in f.layers:
+                    layers.append(l)
+                foil_dict["layers"] = layers
+                foils.append(foil_dict)
+            detector_dict["foils"] = foils
+            return detector_dict
         return super(DetectorEncoder, self).default(obj)
 
 
