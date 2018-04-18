@@ -120,10 +120,14 @@ def rename_dir(old_dir, new_name):
         return
     dir_path, old_name = split(old_dir)
     try:
-        rename(old_dir, path.join(dir_path, new_name))
+        new_dir = path.join(dir_path, new_name)
+        if path.exists(new_dir):
+            raise OSError
+        rename(old_dir, new_dir)
     except OSError:
-        # Directory or file exists on the same name.
-        return OSError
+        # os.rename should raise this if directory or file exists on the same name, but it seems it always doesn't.
+        raise OSError
+    return new_dir
 
 
 def hist(data, width=1.0, col=1):

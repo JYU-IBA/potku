@@ -47,7 +47,7 @@ from dialogs.measurement.import_measurement import ImportMeasurementsDialog
 from dialogs.request_settings import RequestSettingsDialog
 from dialogs.new_request import RequestNewDialog
 from dialogs.simulation.new_simulation import SimulationNewDialog
-from modules.general_functions import open_file_dialog
+from modules.general_functions import open_file_dialog, rename_dir
 from modules.global_settings import GlobalSettings
 from modules.icon_manager import IconManager
 from modules.masses import Masses
@@ -156,13 +156,14 @@ class Potku(QtWidgets.QMainWindow):
 
         self.measurements_item = QtWidgets.QTreeWidgetItem()
         self.measurements_item.item_type = "measurement"
+        self.measurements_item.setText(0, "Measurements")
+        self.__change_tab_icon(self.measurements_item, "folder_locked.svg")
+        self.measurements_item.setFlags(self.measurements_item.flags() ^ Qt.ItemIsDragEnabled)
+
         self.simulations_item = QtWidgets.QTreeWidgetItem()
         self.simulations_item.item_type = "simulation"
-        self.measurements_item.setText(0, "Measurements")
         self.simulations_item.setText(0, "Simulations")
-        self.__change_tab_icon(self.measurements_item, "folder_locked.svg")
         self.__change_tab_icon(self.simulations_item, "folder_locked.svg")
-        self.measurements_item.setFlags(self.measurements_item.flags() ^ Qt.ItemIsDragEnabled)
         self.simulations_item.setFlags(self.simulations_item.flags() ^ Qt.ItemIsDragEnabled)
 
         self.tree_widget.addTopLevelItem(self.measurements_item)
@@ -208,12 +209,13 @@ class Potku(QtWidgets.QMainWindow):
         if clicked_item:
             try:
                 new_name = clicked_item.text(0)
-                clicked_item.obj.rename_dir(new_name)
+                new_dir = rename_dir(clicked_item.obj.directory, new_name)
             except OSError:
                 QtWidgets.QMessageBox.critical(self, "Error", "A file or folder already exists on name " + new_name,
                                                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 self.tree_widget.setText(clicked_item.obj.name)
             clicked_item.obj.name = new_name
+            clicked_item.obj.directory = new_dir
 
     def __remove_tree_item(self):
         """Removes selected tree item in tree view and in folder structure.
@@ -710,50 +712,29 @@ class Potku(QtWidgets.QMainWindow):
         """
         self.ui.tabs.removeTab(tab_index)
 
-    def __add_measurement_to_tree(self, measurement, load_data):
-        """Add measurement to tree where it can be opened.
+    def __add_item_to_tree(self, parent_item, obj, load_data):
+        """Add item to tree where it can be opened.
         
         Args:
-            measurement: Measurement object.
-            load_data: A boolean representing if measurement data is loaded.
+            obj: Object related to item.
+            load_data: A boolean representing if data is loaded.
         """
         tree_item = QtWidgets.QTreeWidgetItem()
-        tree_item.setText(0, measurement.name)
+        tree_item.setText(0, obj.name)
+        tree_item.tab_id = self.tab_id
+        tree_item.item_name = obj.name
+        tree_item.obj = obj
         tree_item.setFlags(tree_item.flags() | Qt.ItemNeverHasChildren)
         tree_item.setFlags(tree_item.flags() ^ Qt.ItemIsDropEnabled)
         tree_item.setFlags(tree_item.flags() | Qt.ItemIsEditable)
-        tree_item.tab_id = self.tab_id
-        tree_item.item_name = measurement.name
-        tree_item.obj = measurement
         # tree_item.setIcon(0, self.icon_manager.get_icon("folder_open.svg"))
         if load_data:
             self.__change_tab_icon(tree_item, "folder_open.svg")
         else:
             self.__change_tab_icon(tree_item, "folder_locked.svg")
         # self.ui.treeWidget.addTopLevelItem(tree_item)
-        self.measurements_item.addChild(tree_item)
-
-    def __add_simulation_to_tree(self, simulation_name, load_data):
-        """Add simulation to tree where it can be opened.
-
-        Args:
-            simulation_name: A string representing simulation's name.
-            load_data: A boolean representing if simulation data is loaded.
-        """
-        tree_item = QtWidgets.QTreeWidgetItem()
-        tree_item.setText(0, simulation_name)
-        tree_item.tab_id = self.tab_id
-        tree_item.item_name = simulation_name
-        tree_item.setFlags(tree_item.flags() | Qt.ItemNeverHasChildren)
-        tree_item.setFlags(tree_item.flags() ^ Qt.ItemIsDropEnabled)
-        tree_item.setFlags(tree_item.flags() | Qt.ItemIsEditable)
-        # tree_item.setIcon(0, self.icon_manager.get_icon("folder_open.svg"))
-        if load_data:
-            self.__change_tab_icon(tree_item, "folder_open.svg")
-        else:
-            self.__change_tab_icon(tree_item, "folder_locked.svg")
-        self.simulations_item.addChild(tree_item)
-        self.simulations_item.setExpanded(True)
+        parent_item.addChild(tree_item)
+        parent_item.setExpanded(True)
 
     def __add_new_tab(self, tab_type, filename, sample, progress_bar=None,
                       file_current=0, file_count=1, load_data=False):
@@ -804,7 +785,7 @@ class Potku(QtWidgets.QMainWindow):
 
                     loading_bar.hide()
                     self.statusbar.removeWidget(loading_bar)
-                self.__add_measurement_to_tree(measurement, load_data)
+                self.__add_item_to_tree(self.measurements_item, measurement, load_data)
                 self.tab_id += 1
 
         if tab_type == "simulation":
@@ -826,7 +807,7 @@ class Potku(QtWidgets.QMainWindow):
                     self.ui.tabs.addTab(tab, simulation.name)
                     self.ui.tabs.setCurrentWidget(tab)
 
-                self.__add_simulation_to_tree(simulation.name, load_data)
+                self.__add_item_to_tree(self.simulations_item, simulation, load_data)
                 self.tab_id += 1
 
     def __change_tab_icon(self, tree_item, icon="folder_open.svg"):
