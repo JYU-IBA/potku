@@ -195,8 +195,11 @@ class Potku(QtWidgets.QMainWindow):
     def __rename_tree_item(self):
         """Renames selected tree item in tree view and in folder structure.
         """
-        QtWidgets.QMessageBox.critical(self, "Error", "Renaming not yet implemented!", QtWidgets.QMessageBox.Ok,
-                                       QtWidgets.QMessageBox.Ok)
+        # TODO Prevent renaming as empty string.
+        # TODO Rename folder structure accordingly.
+        clicked_item = self.tree_widget.currentItem()
+        self.tree_widget.editItem(clicked_item
+                                  )
 
     def __remove_tree_item(self):
         """Removes selected tree item in tree view and in folder structure.
@@ -702,6 +705,9 @@ class Potku(QtWidgets.QMainWindow):
         """
         tree_item = QtWidgets.QTreeWidgetItem()
         tree_item.setText(0, measurement_name)
+        tree_item.setFlags(tree_item.flags() | Qt.ItemNeverHasChildren)
+        tree_item.setFlags(tree_item.flags() ^ Qt.ItemIsDropEnabled)
+        tree_item.setFlags(tree_item.flags() | Qt.ItemIsEditable)
         tree_item.tab_id = self.tab_id
         tree_item.item_name = measurement_name
         # tree_item.setIcon(0, self.icon_manager.get_icon("folder_open.svg"))
@@ -725,6 +731,7 @@ class Potku(QtWidgets.QMainWindow):
         tree_item.item_name = simulation_name
         tree_item.setFlags(tree_item.flags() | Qt.ItemNeverHasChildren)
         tree_item.setFlags(tree_item.flags() ^ Qt.ItemIsDropEnabled)
+        tree_item.setFlags(tree_item.flags() | Qt.ItemIsEditable)
         # tree_item.setIcon(0, self.icon_manager.get_icon("folder_open.svg"))
         if load_data:
             self.__change_tab_icon(tree_item, "folder_open.svg")
