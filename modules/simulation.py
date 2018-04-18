@@ -11,14 +11,14 @@ Simulation.py runs the MCERD simulation with a command file.
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
+import datetime
+import logging
 import os
 import platform
 import subprocess
-import logging
 import sys
-import shutil
-import datetime
 from enum import Enum
+
 
 class Simulations:
     """Simulations class handles multiple simulations.
@@ -32,6 +32,7 @@ class Simulations:
         # self.simulations = []
         self.request = request
         self.simulations = {}  # Dictionary<Simulation>
+        self.name_prefix = "MC_simulation_"
         # self.measuring_unit_settings = None
         # self.default_settings = None
 
@@ -45,7 +46,7 @@ class Simulations:
         return len(self.simulations) == 0
 
     def get_key_value(self, key):
-        if not key in self.simulations:
+        if key not in self.simulations:
             return None
         return self.simulations[key]
 
@@ -61,8 +62,7 @@ class Simulations:
             Returns new simulation or None if it wasn't added
         """
         simulation = None
-        name_prefix = "MC_simulation_"
-        simulation_folder = os.path.join(sample.path, name_prefix + sample.get_running_int_simulation() + "-"
+        simulation_folder = os.path.join(sample.path, self.name_prefix + sample.get_running_int_simulation() + "-"
                                          + simulation_name)
         sample.increase_running_int_simulation_by_1()
         try:
@@ -82,7 +82,7 @@ class Simulations:
             keys = sample.simulations.simulations.keys()
             for key in keys:
                 if sample.simulations.simulations[key].simulation_folder == simulation_name:
-                    return simulation  # sismulation = None
+                    return simulation  # simulation = None
             simulation = Simulation(self.request, simulation_name)
             simulation.create_folder_structure(simulation_folder)
             sample.simulations.simulations[tab_id] = simulation
@@ -176,8 +176,8 @@ class Simulation:
 
     __slots__ = "request", "name", "description", "date", "simulation_type", "scatter", "main_scatter", "energy", \
                 "mode", "no_of_ions", "no_of_preions", "seed", "no_of_recoils", "no_of_scaling", \
-                "data", "simulation_file", "directory", "__request_settings", "statusbar", "color_scheme", "callMCERD",\
-                "call_get_espe", "name"
+                "data", "name_prefix", "simulation_file", "directory", "__request_settings", "statusbar", \
+                "color_scheme", "callMCERD", "call_get_espe", "name"
 
     def __init__(self, request, name="", description="", date=datetime.date.today(), simulation_type=None, scatter=0.05,
                  main_scatter=20, energy=1.0, mode=SimulationMode.narrow, no_of_ions=1000000, no_of_preions=100000,
@@ -203,6 +203,7 @@ class Simulation:
 
         self.data = []
         self.simulation_file = None
+        self.name_prefix = "MC_simulation_"
         self.directory = None
 
         # The settings that come from the request

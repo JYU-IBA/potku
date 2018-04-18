@@ -209,7 +209,7 @@ class Potku(QtWidgets.QMainWindow):
         if clicked_item:
             try:
                 new_name = clicked_item.text(0)
-                new_dir = rename_dir(clicked_item.obj.directory, new_name)
+                new_dir = rename_dir(clicked_item.obj.directory, clicked_item.obj.name_prefix + new_name)
             except OSError:
                 QtWidgets.QMessageBox.critical(self, "Error", "A file or folder already exists on name " + new_name,
                                                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)

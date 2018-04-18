@@ -53,6 +53,7 @@ class Measurements:
         self.measurements = {}  # Dictionary<Measurement>
         self.measuring_unit_settings = None
         self.default_settings = None
+        self.name_prefix = "Measurement_"
 
     def is_empty(self):
         """Check if there are any measurements.
@@ -84,8 +85,7 @@ class Measurements:
         measurement_filename = os.path.split(measurement_file)[1]
         measurement_name = os.path.splitext(measurement_filename)
 
-        name_prefix = "Measurement_"
-        measurement_folder = os.path.join(sample.path, name_prefix + sample.get_running_int_measurement() + "-"
+        measurement_folder = os.path.join(sample.path, self.name_prefix + sample.get_running_int_measurement() + "-"
                                           + measurement_name[0])
         sample.increase_running_int_measurement_by_1()
 
@@ -186,7 +186,7 @@ class Measurement:
     __slots__ = "request", "name", "description", "date", "ion", "energy", "charge", "spot_size", "divergence", \
                 "profile", "energy_dist", "fluence", "current", "beam_time", "detector_theta", "detector_fii", \
                 "target_theta", "target_fii", "data", "statusbar", "color_scheme", "measurement_file", \
-                "directory", "directory_cuts", "directory_elemloss", "__request_settings", \
+                "name_prefix", "directory", "directory_cuts", "directory_elemloss", "__request_settings", \
                 "measurement_settings", "selector", "defaultlog", "errorlog", "tab_id", \
                 "directory_composition_changes", "directory_energy_spectra", "directory_depth_profiles", \
                 "directory_data", "tab_id"
@@ -233,6 +233,7 @@ class Measurement:
         self.color_scheme = "Default color"
 
         self.measurement_file = None
+        self.name_prefix = "Measurement_"
         self.directory = request.default_folder
         self.directory_cuts = None
         self.directory_composition_changes = None
