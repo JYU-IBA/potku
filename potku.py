@@ -24,6 +24,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMenu, QTreeWidget, QAbstractItemView
+
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
              "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
@@ -35,7 +38,7 @@ import sys
 import platform
 import subprocess
 from datetime import datetime, timedelta
-from PyQt5 import QtWidgets, QtCore, uic
+from PyQt5 import QtWidgets, QtCore, uic, QtGui
 
 from dialogs.about import AboutDialog
 from dialogs.global_settings import GlobalSettingsDialog
