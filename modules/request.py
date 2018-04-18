@@ -82,7 +82,7 @@ class Request:
         # TODO: Add folder creation as a function call
         self.detector = Detector(self)
         self.detector.create_folder_structure(self.default_detector_folder)
-        self.detector.save_settings(self.default_folder + os.sep + self.detector.name)
+        self.detector.save_settings(self.default_folder + os.sep + "Detector" + os.sep + self.detector.name)
         self.default_measurement = Measurement(self, "Default")
         self.default_measurement.save_settings(self.default_folder + os.sep + self.default_measurement.measurement_name)
         self.default_simulation = Simulation(self)
