@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Created on 17.4.2018
+Created on 18.4.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
@@ -19,5 +19,5 @@ class FoilWidget(QtWidgets.QWidget):
         self.ui.deleteButton.clicked.connect(lambda: self._delete_foil())
 
     def _delete_foil(self):
-        self.parent.delete_foil_and_distance(self)
+        self.parent.delete_foil(self)
         self.parent.calculate_distance()

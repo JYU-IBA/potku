@@ -133,7 +133,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # If user presses ok or apply, these vlues will be svaed into request's default detector
         self.tmp_foil_info = []
 
-        # List of foils that are timing foils
+        # List of foil indexes that are timing foils
         self.tof_foils = []
 
         # Add foil widgets and foil objects
@@ -191,32 +191,33 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.tmp_foil_info.append(new_foil)
         foil_widget.ui.foilButton.clicked.connect(lambda: self._open_composition_dialog())
         foil_widget.ui.timingFoilCheckBox.stateChanged.connect(lambda: self._check_and_add())
-        distance_widget = DistanceWidget()
-        distance_widget.ui.distanceEdit.setText(str(new_foil.distance))
-        self.detector_structure_widgets.append(distance_widget)
+        foil_widget.ui.distanceEdit.setText(str(new_foil.distance))
         self.detector_structure_widgets.append(foil_widget)
-        layout.addWidget(distance_widget)
         layout.addWidget(foil_widget)
 
     def _add_default_foils(self):
         layout = QtWidgets.QHBoxLayout()
         target = QtWidgets.QLabel("Target")
         layout.addWidget(target)
-        i = 0
-        while i in range(6):
+        for i in range(4):
             self._add_new_foil(layout)
-            i = i + 2
         return layout
 
     def _check_and_add(self):
         check_box = self.sender()
-        i = 1
-        while i in range(len(self.detector_structure_widgets)):
+        for i in range(len(self.detector_structure_widgets)):
             if self.detector_structure_widgets[i].ui.timingFoilCheckBox is self.sender():
                 if check_box.isChecked():
-                    self.tof_foils.append(self.detector_structure_widgets[i])
+                    if self.tof_foils:
+                        if self.tof_foils[0] > i:
+                            self.tof_foils.insert(0, i)
+                        else:
+                            self.tof_foils.append(i)
+                    else:
+                        self.tof_foils.append(i)
                 else:
-                    self.tof_foils.remove(self.detector_structure_widgets[i])
+                    self.tof_foils.remove(i)
+                break
 
     def _open_composition_dialog(self):
         foil_name = self.sender().text()
@@ -327,22 +328,24 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         distance = 0
         for i in range(len(self.detector_structure_widgets)):
             widget = self.detector_structure_widgets[i]
-            if type(widget) is DistanceWidget:
-                distance = distance + float(widget.ui.distanceEdit.text())
-                index = int(i / 2)  # one foil object corresponds to distance widget + foil widget (indexes)
-                self.tmp_foil_info[index].distance = distance
+            # if type(widget) is DistanceWidget:
+            #     distance = distance + float(widget.ui.distanceEdit.text())
+            #     index = int(i / 2)  # one foil object corresponds to distance widget + foil widget (indexes)
+            #     self.tmp_foil_info[index].distance = distance
+            distance = distance + float(widget.ui.distanceEdit.text())
+            self.tmp_foil_info[i].distance = distance
 
-    def delete_foil_and_distance(self, foil_widget):
+    def delete_foil(self, foil_widget):
         index_of_widget = self.detector_structure_widgets.index(foil_widget)
-        distance_widget = self.detector_structure_widgets[index_of_widget - 1]
-        del(self.detector_structure_widgets[index_of_widget - 1: index_of_widget + 1])
-        del(self.tmp_foil_info[int(index_of_widget / 2)])
+        # distance_widget = self.detector_structure_widgets[index_of_widget - 1]
+        del(self.detector_structure_widgets[index_of_widget])
+        foil_to_be_deleted = self.tmp_foil_info[index_of_widget]
+        if index_of_widget in self.tof_foils:
+            self.tof_foils.remove(index_of_widget)
+        self.tmp_foil_info.remove(foil_to_be_deleted)
 
         self.foils_layout.removeWidget(foil_widget)
         foil_widget.deleteLater()
-
-        self.foils_layout.removeWidget(distance_widget)
-        distance_widget.deleteLater()
 
     def update_and_close_settings(self):
         """Updates measuring settings values with the dialog's values and saves them
