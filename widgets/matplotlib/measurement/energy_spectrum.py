@@ -31,6 +31,7 @@ from PyQt5 import QtWidgets
 from dialogs.graph_ignore_elements import GraphIgnoreElements
 from modules.element import Element
 from widgets.matplotlib.base import MatplotlibWidget
+import modules.masses as masses
 
 
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
@@ -52,7 +53,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.histed_files = histed_files
         self.__rbs_list = rbs_list
         self.__icon_manager = parent.icon_manager
-        self.__masses = parent.parent.masses
         self.__selection_colors = parent.measurement.selector.get_colors()
         
         self.__initiated_box = False
@@ -84,11 +84,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
     def __sortt(self, key):
         cut_file = key.split('.')
-        element_object = Element(cut_file[0].strip())
+        element_object = Element.from_string(cut_file[0].strip())
         element, isotope = element_object.get_element_and_isotope()
         mass = str(isotope)
         if not mass:
-            mass = self.__masses.get_standard_isotope(element)
+            mass = masses.get_standard_isotope(element)
         else:
             mass = float(mass)
         return mass
@@ -112,7 +112,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         for key in keys:
             cut_file = key.split('.')
             cut = self.histed_files[key]
-            element_object = Element(cut_file[0])  # Yeah...
+            element_object = Element.from_string(cut_file[0])  # Yeah...
             element, isotope = element_object.get_element_and_isotope()
             if key in self.__ignore_elements:
                 continue

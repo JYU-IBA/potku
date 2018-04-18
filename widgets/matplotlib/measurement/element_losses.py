@@ -31,6 +31,7 @@ from PyQt5 import QtWidgets
 from dialogs.graph_ignore_elements import GraphIgnoreElements
 from modules.element import Element
 from widgets.matplotlib.base import MatplotlibWidget
+import modules.masses as masses
 
 
 class MatplotlibElementLossesWidget(MatplotlibWidget):
@@ -53,7 +54,6 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
         self.split = split
         self.y_scale = y_scale
         self.__rbs_list = rbs_list
-        self.__masses = parent.parent.masses
         self.__icon_manager = parent.icon_manager
         self.selection_colors = parent.measurement.selector.get_colors()
         
@@ -94,7 +94,7 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
         element, isotope = element_object.get_element_and_isotope()
         mass = str(isotope)
         if not mass:
-            mass = self.__masses.get_standard_isotope(element)
+            mass = masses.get_standard_isotope(element)
         else:
             mass = float(mass)
         return mass

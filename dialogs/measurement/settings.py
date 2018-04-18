@@ -35,20 +35,19 @@ from modules.measuring_settings import MeasuringSettings
 from modules.input_validator import InputValidator
 from dialogs.element_selection import ElementSelectionDialog
 from dialogs.measurement.calibration import CalibrationDialog
+import modules.masses as masses
 
 class MeasurementUnitSettings(QtWidgets.QDialog):
-    def __init__(self, measurement_settings, masses):
+    def __init__(self, measurement_settings):
         """Constructor for the program
         
         Args:
             measurement_settings: Settings class object
-            masses: Reference to Masses class object.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
                               "ui_measurement_measuring_unit_settings.ui"), self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        self.masses = masses
         
         self.__measurement_settings = measurement_settings
         
@@ -64,13 +63,13 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
         if self.settings.use_settings == "REQUEST" or self.settings.use_settings == "":
             self.ui.useRequestSettingsValuesCheckBox.setChecked(True)
             self.request_settings.show(self)  # Show the request's settings
-            self.masses.load_isotopes(self.request_settings.element.name,
+            masses.load_isotopes(self.request_settings.element.symbol,
                                       self.ui.isotopeComboBox,
                                       str(self.request_settings.element.isotope))
         elif self.settings.use_settings == "MEASUREMENT":
             self.ui.useRequestSettingsValuesCheckBox.setChecked(False)
             self.settings.show(self)  # Show the measurement's settings
-            self.masses.load_isotopes(self.settings.element.name,
+            masses.load_isotopes(self.settings.element.symbol,
                                       self.ui.isotopeComboBox,
                                       str(self.settings.element.isotope))
         
@@ -124,7 +123,7 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
         if filename:  # TODO: toistuvaa koodia
             settings = MeasuringSettings()
             settings.load_settings(filename)
-            self.masses.load_isotopes(settings.element.name,
+            masses.load_isotopes(settings.element.symbol,
                                       self.isotopeComboBox,
                                       str(settings.element.isotope))
             settings.show(self)
@@ -177,7 +176,7 @@ class MeasurementUnitSettings(QtWidgets.QDialog):
         if dialog.element != None:
             button.setText(dialog.element)
             self.__enabled_element_information()  # Enabled settings once element is selected
-        self.masses.load_isotopes(dialog.element, self.isotopeComboBox, str(self.settings.element.isotope))
+        masses.load_isotopes(dialog.element, self.isotopeComboBox, str(self.settings.element.isotope))
 
         
     def __enabled_element_information(self):
@@ -198,7 +197,6 @@ class CalibrationSettings(QtWidgets.QDialog):
         super().__init__()
         self.default_folder = os.path.curdir
         self.measurement = measurement
-        self.masses = self.measurement.request.masses
         
         self.ui = uic.loadUi(os.path.join("ui_files",
                               "ui_measurement_calibration_parameters.ui"), self)
@@ -241,7 +239,7 @@ class CalibrationSettings(QtWidgets.QDialog):
         settings = self.measurement.measurement_settings
         # Ask from the measurement all the correct settings to be used for the calibration
         CalibrationDialog(measurements, settings.get_measurement_settings(),
-                          self.masses, self) 
+                          self)
         
     
     

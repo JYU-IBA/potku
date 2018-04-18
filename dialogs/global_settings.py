@@ -34,11 +34,10 @@ from widgets.matplotlib.measurement.tofe_histogram import MatplotlibHistogramWid
 
 
 class GlobalSettingsDialog(QtWidgets.QDialog):
-    def __init__(self, masses, settings):
+    def __init__(self, settings):
         """Constructor for the program
         """
         super().__init__()
-        self.masses = masses
         self.settings = settings
         self.__added_timings = {}  # Placeholder for timings
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)

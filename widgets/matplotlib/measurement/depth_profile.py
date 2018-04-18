@@ -36,6 +36,7 @@ from dialogs.measurement.depth_profile_ignore_elements import DepthProfileIgnore
 import modules.depth_files as df
 from modules.element import Element
 from widgets.matplotlib.base import MatplotlibWidget
+import modules.masses as masses
 
 
 class MatplotlibDepthProfileWidget(MatplotlibWidget):
@@ -81,7 +82,6 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__ignore_from_ratio = []
         self.selection_colors = parent.measurement.selector.get_colors()
         self.icon_manager = parent.icon_manager
-        self.__masses = parent.parent.masses
         self.lim_a = float
         self.lim_b = float
         self.lim_icons = {'a':'depth_profile_lim_all.svg',
@@ -134,7 +134,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         element, isotope = element_object.get_element_and_isotope()
         mass = str(isotope)
         if not mass:
-            mass = self.__masses.get_standard_isotope(element)
+            mass = masses.get_standard_isotope(element)
         else:
             mass = float(mass)
         return mass
@@ -293,7 +293,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             element = Element(labels[i])
             element_str = str(element)
             element_isotope = str(element.isotope)
-            element_name = element.name
+            element_name = element.symbol
             if element_str in self.__rbs_list.values():
                 element_name += "*"
             str_element = "{0:>3}{1:<3}".format(element_isotope, element_name)

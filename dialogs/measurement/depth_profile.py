@@ -37,6 +37,7 @@ from modules.depth_files import DepthFiles
 from modules.element import Element
 from modules.null import Null
 from widgets.matplotlib.measurement.depth_profile import MatplotlibDepthProfileWidget
+import modules.masses as masses
 
 
 class DepthProfileDialog(QtWidgets.QDialog):
@@ -126,7 +127,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 item = root.child(i)
                 if item.checkState(0):
                     use_cut.append(os.path.join(item.directory, item.file_name))
-                    element = Element(item.file_name.split(".")[1])
+                    element = Element.from_string(item.file_name.split(".")[1])
                     elements.append(element)
                     DepthProfileDialog.checked_cuts[m_name].append(item.file_name)
                 child_count_2 = item.childCount()
@@ -137,7 +138,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                             name = item_child.file_name
                             dir_e = self.parent.measurement.directory_composition_changes
                             use_cut.append(os.path.join(dir_e, name))
-                            element = Element(item_child.file_name.split(".")[1])
+                            element = Element.from_string(item_child.file_name.split(".")[1])
                             elements.append(element)
                             DepthProfileDialog.checked_cuts[m_name].append(
                                                             item_child.file_name)
@@ -200,13 +201,12 @@ class DepthProfileDialog(QtWidgets.QDialog):
         # that matter, to get all efficiency files from directory defined
         # in global settings that match the cut files of measurements.
         eff_files = self.__global_settings.get_efficiencies()
-        masses = self.measurement.request.masses
         eff_files_used = []
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()
         for eff in eff_files:
             str_element, unused_ext = eff.split(".")
-            element = Element(str_element)
+            element = Element.from_string(str_element)
             for i in range(child_count): 
                 item = root.child(i)
                 # TODO: Perhaps make this update every time a cut file is
@@ -217,12 +217,12 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 # TODO: Does not check elemental losses for efficiency files.
                 if not hasattr(item, "file_name"):
                     continue
-                cut_element = Element(item.file_name.split(".")[1])
+                cut_element = Element.from_string(item.file_name.split(".")[1])
                 mass = cut_element.isotope.mass
                 if not mass:
-                    mass = round(masses.get_standard_isotope(cut_element.name),
+                    mass = round(masses.get_standard_isotope(cut_element.symbol),
                                  0)
-                if cut_element.name == element.name and mass == element.isotope.mass:
+                if cut_element.symbol == element.symbol and mass == element.isotope:
                     eff_files_used.append(eff)
         if eff_files_used:
             self.ui.label_efficiency_files.setText(
@@ -297,7 +297,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
             for cut in self.__use_cuts:
                 filename = os.path.basename(cut)
                 split = filename.split(".")
-                element = Element(split[1])
+                element = Element.from_string(split[1])
                 if is_rbs(cut):
                     # This should work for regular cut and split.
                     key = "{0}.{1}.{2}".format(split[1], split[2], split[3])

@@ -30,12 +30,13 @@ from PyQt5 import QtGui, QtWidgets
 
 from modules.calibration import TOFCalibrationPoint, TOFCalibrationHistogram
 from widgets.matplotlib.base import MatplotlibWidget
+import modules.masses as masses
 
 
 class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
     '''Energy spectrum widget
     '''
-    def __init__(self, parent, settings, tof_calibration, cut, masses,
+    def __init__(self, parent, settings, tof_calibration, cut,
                  bin_width=2.0, column=1, dialog=None):
         '''Inits Energy Spectrum widget.
         
@@ -44,7 +45,6 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
             settings: Settings class object.
             tof_calibration: TOFCalibration class object.
             cut: CutFile class object.
-            masses: Reference to element masses object of main program.
             bin_width: Histograms bin width
             column: Which column of the CutFile's data is used to create a 
                     histogram.
@@ -57,7 +57,6 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
         self.dialog = dialog
         self.settings = settings
         self.cut = cut
-        self.masses = masses
         self.cut_standard_mass = 0
         self.cut_standard_scatter_mass = 0
         self.bin_width = bin_width
@@ -87,7 +86,6 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
         self.selected_tof = tof
         self.tof_calibration_point = TOFCalibrationPoint(self.selected_tof,
                                                          self.cut,
-                                                         self.masses,
                                                          self.settings)
         self.__update_dialog_values()
         self.on_draw()
@@ -127,10 +125,8 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
             self.cut = cut 
             self.selectButton.setChecked(False)
             self.selection_given_manually = False
-            self.cut_standard_mass = self.masses.get_standard_isotope(
-                                                          self.cut.element.name)
-            self.cut_standard_scatter_mass = self.masses.get_standard_isotope(
-                                                          self.cut.element_scatter)
+            self.cut_standard_mass = masses.get_standard_isotope(
+                                                        self.cut.element.symbol)
         self.on_draw()
         
         
@@ -178,7 +174,6 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
                 self.selected_tof = params[0]  
                 self.tof_calibration_point = TOFCalibrationPoint(self.selected_tof,
                                                                  self.cut,
-                                                                 self.masses,
                                                                  self.settings)
                 # Update dialog and draw a vertical line
                 self.__update_dialog_values()

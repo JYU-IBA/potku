@@ -40,13 +40,12 @@ import MatplotlibCalibrationLinearFittingWidget
 class CalibrationDialog(QtWidgets.QDialog):
     """A dialog for the time of flight calibration
     """
-    def __init__(self, measurements, settings, masses, parent_settings_dialog=None):
+    def __init__(self, measurements, settings, parent_settings_dialog=None):
         """Inits the calibration dialog class.
         
         Args:
             measurements: A string list representing measurements files.
             settings: A Settings class object.
-            masses: A Masses class object.
             parent_settings_dialog: A representing from which dialog this was 
                                     opened from.
         """
@@ -95,8 +94,7 @@ class CalibrationDialog(QtWidgets.QDialog):
                                                     self.tof_calibration,
                                                     self.settings,
                                                     self.ui.binWidthSpinBox.value(),
-                                                    1,
-                                                    masses)
+                                                    1)
         
         old_params = None
         if parent_settings_dialog.detector_settings:  # Get old parameters from the parent dialog
@@ -298,7 +296,7 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
     """Widget class for holding MatplotlibCalibrationCurveFittingWidget.
     """
     def __init__(self, dialog, cut, tof_calibration,
-                 settings, bin_width, column, masses):
+                 settings, bin_width, column):
         """Inits widget.
         
         Args:
@@ -308,7 +306,6 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
             settings: Settings object
             bin_width: Float representing histogram's bin width.
             column: Integer representing which column number is used.
-            masses: Reference to Masses class object.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
@@ -321,7 +318,7 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
         self.matplotlib = MatplotlibCalibrationCurveFittingWidget(self,
                                                                   settings,
                                                                   tof_calibration,
-                                                                  cut, masses,
+                                                                  cut,
                                                                   bin_width,
                                                                   column,
                                                                   dialog)

@@ -280,7 +280,7 @@ class Measurement:
 
         element_colors = self.request.global_settings.get_element_colors()
         self.selector = Selector(self.directory_data, self.measurement_name,
-                                 self.request.masses, element_colors,
+                                 element_colors,
                                  settings=self.measurement_settings)
 
         # Which color scheme is selected by default

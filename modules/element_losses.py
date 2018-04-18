@@ -57,7 +57,7 @@ class ElementLosses:
         # self.cut_splits_dict = {}
         self.reference_cut_file = reference_cut_file
         filename_split = reference_cut_file.split('.')
-        element = Element(filename_split[1])
+        element = Element.from_string(filename_split[1])
         self.reference_key = "{0}.{1}".format(element, filename_split[2])
         self.cut_splits = ElementLossesSplitHolder()
     
@@ -130,7 +130,7 @@ class ElementLosses:
             cut = CutFile()
             cut.load_file(file)
             filename_split = file.split('.')
-            element = Element(filename_split[1])
+            element = Element.from_string(filename_split[1])
             if len(filename_split) == 4:  # Regular cut file
                 key = "{0}.{1}".format(element, filename_split[2])
             else:  # Elemental Losses cut file

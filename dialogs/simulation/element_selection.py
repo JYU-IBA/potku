@@ -170,9 +170,9 @@ class SimulationElementSelectionDialog(QtWidgets.QDialog):
             element: String representing element.
             current_isotope: String representing current isotope.
         """
-        # standard_mass = self.selection.masses.get_standard_isotope(element)
+        # standard_mass = masses.get_standard_isotope(element)
         # standard_mass_label.setText(str(round(standard_mass, 3)))
-        # self.selection.masses.load_isotopes(element, combobox, current_isotope)
+        # masses.load_isotopes(element, combobox, current_isotope)
 
     # def __toggle_isotope_sample(self):
     #     """Toggle Sample isotope radio button.
