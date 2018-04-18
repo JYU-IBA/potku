@@ -35,7 +35,7 @@ import logging, os, shutil, sys, time, hashlib
 from PyQt5 import QtCore, QtWidgets
 
 from modules.cut_file import CutFile
-from modules.general_functions import md5_for_file
+from modules.general_functions import md5_for_file, rename_dir
 from modules.selection import Selector
 from modules.settings import Settings
 
@@ -287,6 +287,14 @@ class Measurement:
 
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
+
+    def rename_dir(self, new_name):
+        """Renames measurement directory.
+        """
+        try:
+            rename_dir(self.directory, new_name)
+        except OSError:
+            return OSError
 
     def __make_directories(self, directory):
         if not os.path.exists(directory):

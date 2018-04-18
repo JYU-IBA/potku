@@ -198,8 +198,16 @@ class Potku(QtWidgets.QMainWindow):
         # TODO Prevent renaming as empty string.
         # TODO Rename folder structure accordingly.
         clicked_item = self.tree_widget.currentItem()
-        self.tree_widget.editItem(clicked_item
-                                  )
+        if clicked_item:
+            try:
+                self.tree_widget.editItem(clicked_item)
+                new_name = clicked_item.text(0)
+                clicked_item.object.rename_dir(new_name)
+            except OSError:
+                QtWidgets.QMessageBox.critical(self, "Error", "A file or folder already exists on name " + new_name,
+                                               QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+                self.tree_widget.setText(object.name)
+            object.name = new_name
 
     def __remove_tree_item(self):
         """Removes selected tree item in tree view and in folder structure.
@@ -696,20 +704,21 @@ class Potku(QtWidgets.QMainWindow):
         """
         self.ui.tabs.removeTab(tab_index)
 
-    def __add_measurement_to_tree(self, measurement_name, load_data):
+    def __add_measurement_to_tree(self, measurement, load_data):
         """Add measurement to tree where it can be opened.
         
         Args:
-            measurement_name: A string representing measurement's name.
+            measurement: Measurement object.
             load_data: A boolean representing if measurement data is loaded.
         """
         tree_item = QtWidgets.QTreeWidgetItem()
-        tree_item.setText(0, measurement_name)
+        tree_item.setText(0, measurement.measurement_name)
         tree_item.setFlags(tree_item.flags() | Qt.ItemNeverHasChildren)
         tree_item.setFlags(tree_item.flags() ^ Qt.ItemIsDropEnabled)
         tree_item.setFlags(tree_item.flags() | Qt.ItemIsEditable)
         tree_item.tab_id = self.tab_id
-        tree_item.item_name = measurement_name
+        tree_item.item_name = measurement.measurement_name
+        tree_item.object = measurement
         # tree_item.setIcon(0, self.icon_manager.get_icon("folder_open.svg"))
         if load_data:
             self.__change_tab_icon(tree_item, "folder_open.svg")
@@ -789,7 +798,7 @@ class Potku(QtWidgets.QMainWindow):
 
                     loading_bar.hide()
                     self.statusbar.removeWidget(loading_bar)
-                self.__add_measurement_to_tree(measurement.measurement_name, load_data)
+                self.__add_measurement_to_tree(measurement, load_data)
                 self.tab_id += 1
 
         if tab_type == "simulation":
