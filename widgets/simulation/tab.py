@@ -87,7 +87,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
     def add_simulation_depth_profile(self):
         """ Adds depth profile for modifying the elements into tab if it doesn't have one already.
         """
-        self.simulation_depth_profile = TargetWidget(self.icon_manager)
+        self.simulation_depth_profile = TargetWidget(self, self.icon_manager)
         self.add_widget(self.simulation_depth_profile, has_close_button=False)
         # TODO: Do all the necessary operations so that the widget can be used.
 
