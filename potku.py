@@ -25,7 +25,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMenu, QTreeWidget, QAbstractItemView
+from PyQt5.QtWidgets import QMenu, QTreeWidget, QAbstractItemView, QTreeWidgetItem
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
              "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
@@ -47,7 +47,7 @@ from dialogs.measurement.import_measurement import ImportMeasurementsDialog
 from dialogs.request_settings import RequestSettingsDialog
 from dialogs.new_request import RequestNewDialog
 from dialogs.simulation.new_simulation import SimulationNewDialog
-from modules.general_functions import open_file_dialog, rename_dir
+from modules.general_functions import open_file_dialog, rename_file
 from modules.global_settings import GlobalSettings
 from modules.icon_manager import IconManager
 from modules.masses import Masses
@@ -85,7 +85,7 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.globalSettingsButton.clicked.connect(self.open_global_settings)
         self.ui.tabs.tabCloseRequested.connect(self.remove_tab)
         self.ui.treeWidget.itemDoubleClicked.connect(self.focus_selected_tab)
-        
+
         self.ui.requestNewButton.clicked.connect(self.make_new_request)
         self.ui.requestOpenButton.clicked.connect(self.open_request)
         self.ui.actionNew_Request.triggered.connect(self.make_new_request)
@@ -142,7 +142,7 @@ class Potku(QtWidgets.QMainWindow):
         self.__set_icons()
         self.ui.showMaximized()
 
-    def __initialize_top_items(self):
+    def __initialize_tree_view(self):
         """Inits the tree view and creates the top level items.
         """
         self.tree_widget = self.ui.treeWidget
@@ -152,7 +152,8 @@ class Potku(QtWidgets.QMainWindow):
         self.tree_widget.setDragDropMode(QAbstractItemView.InternalMove)
         self.tree_widget.setDragEnabled(True)
         self.tree_widget.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.tree_widget.itemChanged.connect(self.__rename_dir)
+        self.tree_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.tree_widget.itemChanged[QTreeWidgetItem, int].connect(self.__rename_dir)
 
         self.measurements_item = QtWidgets.QTreeWidgetItem()
         self.measurements_item.item_type = "measurement"
@@ -198,7 +199,6 @@ class Potku(QtWidgets.QMainWindow):
         """Renames selected tree item in tree view and in folder structure.
         """
         # TODO Prevent renaming as empty string.
-        # TODO Rename folder structure accordingly.
         clicked_item = self.tree_widget.currentItem()
         self.tree_widget.editItem(clicked_item)
 
@@ -209,13 +209,16 @@ class Potku(QtWidgets.QMainWindow):
         if clicked_item:
             try:
                 new_name = clicked_item.text(0)
-                new_dir = rename_dir(clicked_item.obj.directory, clicked_item.obj.name_prefix + new_name)
+                clicked_item.obj.rename_data_file(new_name)
+                new_path = clicked_item.obj.name_prefix + clicked_item.obj.serial_number + "-" + new_name
+                new_dir = rename_file(clicked_item.obj.directory, new_path)
             except OSError:
                 QtWidgets.QMessageBox.critical(self, "Error", "A file or folder already exists on name " + new_name,
                                                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-                self.tree_widget.setText(clicked_item.obj.name)
+                clicked_item.setText(0, clicked_item.obj.name)
             clicked_item.obj.name = new_name
             clicked_item.obj.directory = new_dir
+
 
     def __remove_tree_item(self):
         """Removes selected tree item in tree view and in folder structure.
@@ -551,7 +554,7 @@ class Potku(QtWidgets.QMainWindow):
             self.ui.setWindowTitle(title)
 
             self.ui.treeWidget.setHeaderLabel("Request: {0}".format(dialog.name))
-            self.__initialize_top_items()
+            self.__initialize_tree_view()
 
             self.request = Request(dialog.directory, dialog.name, self.masses,
                                    self.statusbar, self.settings,
@@ -655,7 +658,7 @@ class Potku(QtWidgets.QMainWindow):
                                                        self.request.get_name()))
             self.ui.treeWidget.setHeaderLabel(
                                  "Request: {0}".format(self.request.get_name()))
-            self.__initialize_top_items()
+            self.__initialize_tree_view()
             self.settings.set_request_directory_last_open(folder)
 
             self.load_request_samples()

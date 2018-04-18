@@ -109,25 +109,25 @@ def save_file_dialog(parent, default_folder, title, files):
     return filename
 
 
-def rename_dir(old_dir, new_name):
-    """Renames directory.
+def rename_file(old_path, new_name):
+    """Renames file or directory.
 
     Args:
-        old_dir: Path of directory to rename.
-        new_name: New name for the directory.
+        old_path: Path of file or directory to rename.
+        new_name: New name for the file or directory.
     """
     if not new_name:
         return
-    dir_path, old_name = split(old_dir)
+    dir_path, old_name = split(old_path)
     try:
-        new_dir = path.join(dir_path, new_name)
-        if path.exists(new_dir):
+        new_file = path.join(dir_path, new_name)
+        if path.exists(new_file):
             raise OSError
-        rename(old_dir, new_dir)
+        rename(old_path, new_file)
     except OSError:
         # os.rename should raise this if directory or file exists on the same name, but it seems it always doesn't.
         raise OSError
-    return new_dir
+    return new_file
 
 
 def hist(data, width=1.0, col=1):

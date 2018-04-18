@@ -24,6 +24,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 import json
+from os import path
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
              "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
@@ -35,7 +36,7 @@ import logging, os, shutil, sys, time, hashlib
 from PyQt5 import QtCore, QtWidgets
 
 from modules.cut_file import CutFile
-from modules.general_functions import md5_for_file, rename_dir
+from modules.general_functions import md5_for_file, rename_file
 from modules.selection import Selector
 from modules.settings import Settings
 
@@ -43,6 +44,7 @@ from modules.settings import Settings
 class Measurements:
     """ Measurements class handles multiple measurements.
     """
+
     def __init__(self, request):
         """Inits measurements class.
 
@@ -81,42 +83,35 @@ class Measurements:
         Return:
             Returns new measurement or None if it wasn't added
         """
-        measurement = None
-        measurement_filename = os.path.split(measurement_file)[1]
-        measurement_name = os.path.splitext(measurement_filename)
-
-        measurement_folder = os.path.join(sample.path, self.name_prefix + sample.get_running_int_measurement() + "-"
-                                          + measurement_name[0])
-        sample.increase_running_int_measurement_by_1()
-
-        new_measurement_file = os.path.join(measurement_folder, "Data", measurement_filename)
-        # new_measurement_file should go to request/sample/measurement/data/file_name
-
-        # file_directory is empty, if this is called while loading a measurement
-        file_directory, file_name = os.path.split(measurement_file)
         try:
-            # if file_directory != self.request.directory and file_directory:
-            #     dirtyinteger = 2  # Begin from 2, since 0 and 1 would be confusing.
-            #     while os.path.exists(new_measurement_file):
-            #         file_name = "{0}_{1}{2}".format(measurement_name[0],
-            #                                         dirtyinteger,
-            #                                         measurement_name[1])
-            #         new_measurement_file = os.path.join(measurement_folder, "Data", file_name)
-            #         dirtyinteger += 1
-            #     # shutil.copyfile(measurement_file, new_measurement_file) Measurement can do the copying
-            #     file_directory, file_name = os.path.split(new_measurement_file)
-            #
-            #     log = "Added new measurement {0} to the request.".format(file_name)
-            #     logging.getLogger('request').info(log)
+            measurement_filename = os.path.split(measurement_file)[1]
+            measurement_name = os.path.splitext(measurement_filename)
+            file_directory, file_name = os.path.split(measurement_file)
+
+            # Check if measurement on the same name already exists.
             keys = sample.measurements.measurements.keys()
             for key in keys:
                 if sample.measurements.measurements[key].measurement_file == file_name:
-                    return measurement  # measurement = None
-            # measurement = Measurement(measurement_folder, new_measurement_file, self.request, tab_id)
+                    return None
+
+            # Create new Measurement object.
             measurement = Measurement(self.request, tab_id=tab_id, name=measurement_name[0])
-            measurement.create_folder_structure(measurement_folder, new_measurement_file)
+            measurement.serial_number = sample.get_running_int_measurement()
+
+            # Create path for measurement directory.
+            measurement_directory = os.path.join(sample.path, measurement.name_prefix + measurement.serial_number + "-"
+                                                 + measurement.name)
+
+            # TODO Can increasing the int be handled by sample?
+            sample.increase_running_int_measurement_by_1()
+
+            # Create path for measurement file used by the program and create folder structure.
+            new_measurement_file = os.path.join(measurement_directory, "Data", measurement_filename)
+            measurement.create_folder_structure(measurement_directory, new_measurement_file)
             if file_directory != measurement.directory_data and file_directory:
                 measurement.copy_file_into_measurement(measurement_file)
+
+            # Add Measurement to  Measurements.
             sample.measurements.measurements[tab_id] = measurement
             self.request.samples.measurements.measurements[tab_id] = measurement
         except:
@@ -131,6 +126,7 @@ class Measurements:
         Args:
             tab_id: Integer representing tab identifier.
         """
+
         def remove_key(d, key):
             r = dict(d)
             del r[key]
@@ -147,6 +143,7 @@ class MeasurementProfile(Enum):
 class MeasurementEncoder(json.JSONEncoder):
     """Custom class to encode Measurement to JSON format.
     """
+
     def default(self, obj):
         if isinstance(obj, Measurement):
             measurement_dict = {
@@ -173,7 +170,7 @@ class MeasurementEncoder(json.JSONEncoder):
                 measurement_dict["isotope"] = ""
                 return measurement_dict
 
-            measurement_dict["ion"] =  obj.ion.name,
+            measurement_dict["ion"] = obj.ion.name,
             measurement_dict["isotope"] = str(obj.ion.isotope)
             return measurement_dict
         return super(MeasurementEncoder, self).default(obj)
@@ -189,9 +186,10 @@ class Measurement:
                 "name_prefix", "directory", "directory_cuts", "directory_elemloss", "__request_settings", \
                 "measurement_settings", "selector", "defaultlog", "errorlog", "tab_id", \
                 "directory_composition_changes", "directory_energy_spectra", "directory_depth_profiles", \
-                "directory_data", "tab_id"
+                "directory_data", "tab_id", "serial_number"
 
-    def __init__(self, request, tab_id=-1, name="", description="", date=datetime.date.today(), ion=None, energy=10.0, charge=4,
+    def __init__(self, request, tab_id=-1, name="", description="", date=datetime.date.today(), ion=None, energy=10.0,
+                 charge=4,
                  spot_size=[3.0, 5.0], divergence=0, profile=MeasurementProfile.Uniform, energy_dist=0,
                  fluence=1000000000000, current=1.07, beam_time=600, detector_theta=40, detector_fii=0, target_theta=70,
                  target_fii=0):
@@ -234,6 +232,7 @@ class Measurement:
 
         self.measurement_file = None
         self.name_prefix = "Measurement_"
+        self.serial_number = 0
         self.directory = request.default_folder
         self.directory_cuts = None
         self.directory_composition_changes = None
@@ -274,7 +273,7 @@ class Measurement:
         self.__make_directories(self.directory_energy_spectra)
 
         self.set_loggers()
-        
+
         # The settings that come from the request
         self.__request_settings = self.request.settings
         # The settings that are individually set for this measurement
@@ -331,9 +330,9 @@ class Measurement:
             self.selector.measurement = self
         except IOError as e:
             error_log = "Error while loading the {0} {1}. {2}".format(
-                        "measurement date for the measurement",
-                        self.name,
-                        "The error was:")
+                "measurement date for the measurement",
+                self.name,
+                "The error was:")
             error_log_2 = "I/O error ({0}): {1}".format(e.errno, e.strerror)
             logging.getLogger('request').error(error_log)
             logging.getLogger('request').error(error_log_2)
@@ -344,6 +343,13 @@ class Measurement:
         # ps = pstats.Stats(pr)
         # ps.sort_stats("time")
         # ps.print_stats(10)
+
+    def rename_data_file(self, new_name=None):
+        """Renames the measurement data file.
+        """
+        if new_name is None:
+            return
+        rename_file(path.join(self.directory_data, self.measurement_file), new_name + ".asc")
 
     def save_settings(self, filepath=None):
         """Saves parameters from Measurement object in JSON format in .measurement file.
@@ -417,7 +423,7 @@ class Measurement:
         """
         self.selector.axes = axes
         # We've set axes information, check for old selection.
-        self.__check_for_old_selection()  
+        self.__check_for_old_selection()
 
     def __check_for_old_selection(self):
         """ Use old selection file_path if exists.
@@ -425,7 +431,7 @@ class Measurement:
         try:
             selection_file = os.path.join(self.directory_data,
                                           "{0}.selections".format(self.name))
-            with open(selection_file): 
+            with open(selection_file):
                 self.load_selection(selection_file)
         except:
             # TODO: Is it necessary to inform user with this?
@@ -524,7 +530,7 @@ class Measurement:
         Removes currently selected selection.
         """
         self.selector.remove_selected()
-    
+
     # TODO: UI stuff here. Something should be in the widgets...?
     def save_cuts(self):
         """ Save cut files
@@ -563,7 +569,7 @@ class Measurement:
             # Check if point is within selectors' limits for faster processing.
             if not self.selector.axes_limits.is_inside(point):
                 continue
-            
+
             dirtyinteger = 0  # Lazyway
             for selection in self.selector.selections:
                 if selection.point_inside(point):
@@ -616,7 +622,7 @@ class Measurement:
         Return:
             Returns a list of cut files in measurement.
         """
-        cuts = [f for f in os.listdir(self.directory_cuts) 
+        cuts = [f for f in os.listdir(self.directory_cuts)
                 if os.path.isfile(os.path.join(self.directory_cuts, f))]
         elemloss = [f for f in os.listdir(self.directory_composition_changes)
                     if os.path.isfile(os.path.join(self.directory_composition_changes, f))]
@@ -705,12 +711,12 @@ class Measurement:
         str_depthscale = "Depths for concentration scaling: {0} {1}\n".format(
             use_settings.depth_profile_settings.depths_for_concentration_from,
             use_settings.depth_profile_settings.depths_for_concentration_to)
-        
+
         # Cross section
         flag_cross = global_settings.get_cross_sections()
         str_cross = "Cross section: {0}\n".format(flag_cross)
         # Cross Sections: 1=Rutherford, 2=L'Ecuyer, 3=Andersen
-        
+
         str_num_iterations = "Number of iterations: {0}\n".format(global_settings.get_num_iterations())
 
         # Efficiency directory
@@ -720,12 +726,12 @@ class Measurement:
         # Combine strings
         measurement = str_beam + str_energy + str_detector + str_target + str_toflen + str_carbon + str_density
         calibration = "TOF calibration: {0} {1}\n".format(
-                          use_settings.calibration_settings.slope,
-                          use_settings.calibration_settings.offset)
+            use_settings.calibration_settings.slope,
+            use_settings.calibration_settings.offset)
         anglecalib = "Angle calibration: {0} {1}\n".format(use_settings.calibration_settings.angleslope,
                                                            use_settings.calibration_settings.angleoffset)
         depthprofile = str_depthnumber + str_depthstop + str_depthout + str_depthscale
-        
+
         tof_in = measurement + calibration + anglecalib + depthprofile + str_cross + str_num_iterations + str_eff_dir
 
         # Get md5 of file and new settings
