@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 17.4.2018
+Updated on 18.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -133,6 +133,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # If user presses ok or apply, these vlues will be svaed into request's default detector
         self.tmp_foil_info = []
 
+        # List of foils that are timing foils
+        self.tof_foils = []
+
         # Add foil widgets and foil objects
         self.detector_structure_widgets = []
         self.foils_layout = self._add_default_foils()
@@ -187,6 +190,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         new_foil = CircularFoil("Foil")
         self.tmp_foil_info.append(new_foil)
         foil_widget.ui.foilButton.clicked.connect(lambda: self._open_composition_dialog())
+        foil_widget.ui.timingFoilCheckBox.stateChanged.connect(lambda: self._check_and_add())
         distance_widget = DistanceWidget()
         distance_widget.ui.distanceEdit.setText(str(new_foil.distance))
         self.detector_structure_widgets.append(distance_widget)
@@ -203,6 +207,16 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self._add_new_foil(layout)
             i = i + 2
         return layout
+
+    def _check_and_add(self):
+        check_box = self.sender()
+        i = 1
+        while i in range(len(self.detector_structure_widgets)):
+            if self.detector_structure_widgets[i].ui.timingFoilCheckBox is self.sender():
+                if check_box.isChecked():
+                    self.tof_foils.append(self.detector_structure_widgets[i])
+                else:
+                    self.tof_foils.remove(self.detector_structure_widgets[i])
 
     def _open_composition_dialog(self):
         foil_name = self.sender().text()
