@@ -126,30 +126,7 @@ class Potku(QtWidgets.QMainWindow):
         # Set up report tool connection in UI
         self.ui.actionCreate_report.triggered.connect(self.create_report)
 
-        # Add the context menu to the treewidget.
-        # PyCharm can't find reference, but they do work
-        delete_measurement = QtWidgets.QAction("Delete", self.ui.treeWidget)
-        delete_measurement.triggered.connect(self.delete_selections)
-        master_measurement = QtWidgets.QAction("Make master", self.ui.treeWidget)
-        master_measurement.triggered.connect(self.__make_master_measurement)
-        master_measurement_rem = QtWidgets.QAction("Remove master", self.ui.treeWidget)
-        master_measurement_rem.triggered.connect(self.__remove_master_measurement)
-        slave_measurement = QtWidgets.QAction("Exclude from slaves", self.ui.treeWidget)
-        slave_measurement.triggered.connect(self.__make_nonslave_measurement)
-        slave_measurement_rem = QtWidgets.QAction("Include as slave", self.ui.treeWidget)
-        slave_measurement_rem.triggered.connect(self.__make_slave_measurement)
-        self.ui.treeWidget.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
-        self.ui.treeWidget.addAction(master_measurement)
-        self.ui.treeWidget.addAction(master_measurement_rem)
-        # self.ui.treeWidget.addSeparator() TODO: This should have separator
-        # but doesn't work for QTreeWidget().
-        self.ui.treeWidget.addAction(slave_measurement)
-        self.ui.treeWidget.addAction(slave_measurement_rem)
-        # self.ui.treeWidget.addSeparator() TODO: This should have separator
-        # but doesn't work for QTreeWidget().
-        self.ui.treeWidget.addAction(delete_measurement)
-        
-        # Set up styles for main window 
+        # Set up styles for main window
         bg_blue = "images/background_blue.svg"  # Cannot use os.path.join (PyQT+css)
         bg_green = "images/background_green.svg"
         style_intro = "QWidget#introduceTab {border-image: url(" + bg_blue + ");}"
@@ -177,7 +154,9 @@ class Potku(QtWidgets.QMainWindow):
         self.tree_widget.setSelectionMode(QAbstractItemView.SingleSelection)
 
         self.measurements_item = QtWidgets.QTreeWidgetItem()
+        self.measurements_item.item_type = "measurement"
         self.simulations_item = QtWidgets.QTreeWidgetItem()
+        self.simulations_item.item_type = "simulation"
         self.measurements_item.setText(0, "Measurements")
         self.simulations_item.setText(0, "Simulations")
         self.__change_tab_icon(self.measurements_item, "folder_locked.svg")
@@ -203,6 +182,13 @@ class Potku(QtWidgets.QMainWindow):
         if level == 1:
             menu.addAction("Rename", self.__rename_tree_item)
             menu.addAction("Remove", self.__remove_tree_item)
+
+        if hasattr(self.tree_widget.currentItem().parent(), "item_type") \
+                and self.tree_widget.currentItem().parent().item_type == "measurement":
+            menu.addAction("Make master", self.__make_master_measurement)
+            menu.addAction("Remove master", self.__remove_master_measurement)
+            menu.addAction("Exclude from slaves", self.__make_nonslave_measurement)
+            menu.addAction("Include as slave", self.__make_slave_measurement)
 
         menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
 
@@ -717,6 +703,7 @@ class Potku(QtWidgets.QMainWindow):
         tree_item = QtWidgets.QTreeWidgetItem()
         tree_item.setText(0, measurement_name)
         tree_item.tab_id = self.tab_id
+        tree_item.item_name = measurement_name
         # tree_item.setIcon(0, self.icon_manager.get_icon("folder_open.svg"))
         if load_data:
             self.__change_tab_icon(tree_item, "folder_open.svg")
@@ -735,6 +722,7 @@ class Potku(QtWidgets.QMainWindow):
         tree_item = QtWidgets.QTreeWidgetItem()
         tree_item.setText(0, simulation_name)
         tree_item.tab_id = self.tab_id
+        tree_item.item_name = simulation_name
         tree_item.setFlags(tree_item.flags() | Qt.ItemNeverHasChildren)
         tree_item.setFlags(tree_item.flags() ^ Qt.ItemIsDropEnabled)
         # tree_item.setIcon(0, self.icon_manager.get_icon("folder_open.svg"))
@@ -888,9 +876,9 @@ class Potku(QtWidgets.QMainWindow):
         # if old_master:
         #    old_master_name = old_master.measurement_name
         #    self.ui.tab_measurements.setTabText(old_master.tab_id, old_master_name)
-        root = self.treeWidget.invisibleRootItem()
-        root_child_count = root.childCount()
-        for i in range(root_child_count):
+        root = self.measurements_item
+        measurements_child_count = self.measurements_item.childCount()
+        for i in range(measurements_child_count):
             item = root.child(i)
             tab_widget = self.tab_widgets[item.tab_id]
             tab_name = tab_widget.measurement.measurement_name
@@ -945,7 +933,7 @@ class Potku(QtWidgets.QMainWindow):
         progress_bar.setValue(25)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents) 
         
-        root = self.treeWidget.invisibleRootItem()
+        root = self.tree_widget.invisibleRootItem()
         root_child_count = root.childCount()
         i = 1
         for i in range(root_child_count):
@@ -974,7 +962,7 @@ class Potku(QtWidgets.QMainWindow):
                 QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
                 # Update tree item icon to open folder
                 tree_item = None
-                root = self.treeWidget.invisibleRootItem()
+                root = self.tree_widget.invisibleRootItem()
                 root_child_count = root.childCount()
                 for j in range(root_child_count):
                     item = root.child(j)
@@ -1030,9 +1018,9 @@ class Potku(QtWidgets.QMainWindow):
         """
         old_master = self.request.get_master()
         self.request.set_master()  # No master measurement
-        root = self.treeWidget.invisibleRootItem()
-        root_child_count = root.childCount()
-        for i in range(root_child_count):
+        root = self.measurements_item
+        measurements_child_count = self.measurements_item.childCount()
+        for i in range(measurements_child_count):
             item = root.child(i)
             tab_widget = self.tab_widgets[item.tab_id]
             tab_name = tab_widget.measurement.measurement_name
