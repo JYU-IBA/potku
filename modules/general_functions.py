@@ -110,7 +110,7 @@ def save_file_dialog(parent, default_folder, title, files):
 
 
 def rename_file(old_path, new_name):
-    """Renames file or directory.
+    """Renames file or directory and returns new path.
 
     Args:
         old_path: Path of file or directory to rename.

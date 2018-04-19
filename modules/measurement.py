@@ -97,18 +97,17 @@ class Measurements:
             # Create new Measurement object.
             measurement = Measurement(self.request, tab_id=tab_id, name=measurement_name[0])
             measurement.serial_number = sample.get_running_int_measurement()
+            # TODO Can increasing the int be handled by sample?
+            sample.increase_running_int_measurement_by_1()
 
             # Create path for measurement directory.
             measurement_directory = os.path.join(sample.path, measurement.name_prefix + measurement.serial_number + "-"
                                                  + measurement.name)
 
-            # TODO Can increasing the int be handled by sample?
-            sample.increase_running_int_measurement_by_1()
-
             # Create path for measurement file used by the program and create folder structure.
             new_measurement_file = os.path.join(measurement_directory, "Data", measurement_filename)
             measurement.create_folder_structure(measurement_directory, new_measurement_file)
-            if file_directory != measurement.directory_data and file_directory:
+            if file_directory != os.path.join(measurement.directory, measurement.directory_data) and file_directory:
                 measurement.copy_file_into_measurement(measurement_file)
 
             # Add Measurement to  Measurements.
@@ -117,7 +116,6 @@ class Measurements:
         except:
             log = "Something went wrong while adding a new measurement."
             logging.getLogger("request").critical(log)
-            print(sys.exc_info())  # TODO: Remove this.
         return measurement
 
     def remove_by_tab_id(self, tab_id):
@@ -256,17 +254,16 @@ class Measurement:
         """
         measurement_data_folder, measurement_name = os.path.split(measurement_file)
         self.measurement_file = measurement_name  # With extension
-        # elf.measurement_name = os.path.splitext(measurement_name)[0]
 
         self.directory = measurement_folder
-        self.directory_cuts = os.path.join(self.directory, measurement_data_folder, "Cuts")
-
-        self.directory_composition_changes = os.path.join(measurement_folder, "Composition_changes")
-        self.directory_depth_profiles = os.path.join(measurement_folder, "Depth_profiles")
-        self.directory_energy_spectra = os.path.join(measurement_folder, "Energy spectra")
-        self.directory_data = measurement_data_folder
+        self.directory_data = "Data"
+        self.directory_cuts = os.path.join(self.directory_data, "Cuts")
+        self.directory_composition_changes = os.path.join("Composition_changes")
+        self.directory_depth_profiles = os.path.join("Depth_profiles")
+        self.directory_energy_spectra = os.path.join("Energy spectra")
 
         self.__make_directories(self.directory)
+        self.__make_directories(self.directory_data)
         self.__make_directories(self.directory_cuts)
         self.__make_directories(self.directory_composition_changes)
         self.__make_directories(self.directory_depth_profiles)
@@ -281,7 +278,8 @@ class Measurement:
                                              self.__request_settings)
 
         element_colors = self.request.global_settings.get_element_colors()
-        self.selector = Selector(self.directory_data, self.name,
+        # TODO Selector doesn't get updated if directory changes. Can selector get the dir from measurement?
+        self.selector = Selector(os.path.join(self.directory, self.directory_data), self.name,
                                  self.request.masses, element_colors,
                                  settings=self.measurement_settings)
 
@@ -289,9 +287,10 @@ class Measurement:
         self.color_scheme = "Default color"
 
     def __make_directories(self, directory):
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-            log = "Created a directory {0}.".format(directory)
+        new_dir = os.path.join(self.directory, directory)
+        if not os.path.exists(new_dir):
+            os.makedirs(new_dir)
+            log = "Created a directory {0}.".format(new_dir)
             logging.getLogger("request").info(log)
 
     def copy_file_into_measurement(self, file_path):
@@ -302,7 +301,7 @@ class Measurement:
             file_path: The file that needs to be copied.
         """
         file_name = os.path.basename(file_path)
-        new_path = os.path.join(self.directory_data, file_name)
+        new_path = os.path.join(self.directory, self.directory_data, file_name)
         shutil.copyfile(file_path, new_path)
 
     def load_data(self):
@@ -316,7 +315,7 @@ class Measurement:
             extension = os.path.splitext(self.measurement_file)[1]
             extension = extension.lower()
             if extension == ".asc":
-                file_to_open = os.path.join(self.directory_data, self.name + extension)
+                file_to_open = os.path.join(self.directory, self.directory_data, self.name + extension)
                 with open(file_to_open, "r") as fp:
                     for line in fp:
                         n += 1  # Event number
@@ -349,7 +348,7 @@ class Measurement:
         """
         if new_name is None:
             return
-        rename_file(path.join(self.directory_data, self.measurement_file), new_name + ".asc")
+        self.measurement_file = new_name + ".asc"
 
     def save_settings(self, filepath=None):
         """Saves parameters from Measurement object in JSON format in .measurement file.
@@ -429,7 +428,7 @@ class Measurement:
         """ Use old selection file_path if exists.
         """
         try:
-            selection_file = os.path.join(self.directory_data,
+            selection_file = os.path.join(self.directory, self.directory_data,
                                           "{0}.selections".format(self.name))
             with open(selection_file):
                 self.load_selection(selection_file)
@@ -539,8 +538,8 @@ class Measurement:
         """
         if self.selector.is_empty():
             return 0
-        if not os.path.exists(self.directory_cuts):
-            os.makedirs(self.directory_cuts)
+        if not os.path.exists(os.path.join(self.directory, self.directory_cuts)):
+            self.__make_directories(self.directory_cuts)
 
         progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
@@ -585,7 +584,7 @@ class Measurement:
         for points in points_in_selection:
             if points:  # If not empty selection -> save
                 selection = self.selector.get_at(dirtyinteger)
-                cut_file = CutFile(self.directory_cuts)
+                cut_file = CutFile(os.path.join(self.directory, self.directory_cuts))
                 cut_file.set_info(selection, points)
                 cut_file.save()
             dirtyinteger += 1
@@ -601,10 +600,10 @@ class Measurement:
         logging.getLogger(self.name).info(log_msg)
 
     def __remove_old_cut_files(self):
-        self.__unlink_files(self.directory_cuts)
-        if not os.path.exists(self.directory_composition_changes):
-            os.makedirs(self.directory_composition_changes)
-        self.__unlink_files(self.directory_composition_changes)
+        self.__unlink_files(os.path.join(self.directory, self.directory_cuts))
+        if not os.path.exists(os.path.join(self.directory, self.directory_composition_changes)):
+            self.__make_directories(self.directory_composition_changes)
+        self.__unlink_files(os.path.join(self.directory, self.directory_composition_changes))
 
     def __unlink_files(self, directory):
         for the_file in os.listdir(directory):
@@ -622,10 +621,10 @@ class Measurement:
         Return:
             Returns a list of cut files in measurement.
         """
-        cuts = [f for f in os.listdir(self.directory_cuts)
-                if os.path.isfile(os.path.join(self.directory_cuts, f))]
-        elemloss = [f for f in os.listdir(self.directory_composition_changes)
-                    if os.path.isfile(os.path.join(self.directory_composition_changes, f))]
+        cuts = [f for f in os.listdir(os.path.join(self.directory, self.directory_cuts))
+                if os.path.isfile(os.path.join(self.directory, self.directory_cuts, f))]
+        elemloss = [f for f in os.listdir(os.path.join(self.directory, self.directory_composition_changes))
+                    if os.path.isfile(os.path.join(self.directory, self.directory_composition_changes, f))]
         return cuts, elemloss
 
     def fill_cuts_treewidget(self, treewidget, use_elemloss=False, checked_files=[]):
@@ -640,7 +639,7 @@ class Measurement:
         cuts, cuts_elemloss = self.get_cut_files()
         for cut in cuts:
             item = QtWidgets.QTreeWidgetItem([cut])
-            item.directory = self.directory_cuts
+            item.directory = os.path.join(self.directory, self.directory_cuts)
             item.file_name = cut
             if not checked_files or item.file_name in checked_files:
                 item.setCheckState(0, QtCore.Qt.Checked)
@@ -651,7 +650,7 @@ class Measurement:
             elem_root = QtWidgets.QTreeWidgetItem(["Elemental Losses"])
             for elemloss in cuts_elemloss:
                 item = QtWidgets.QTreeWidgetItem([elemloss])
-                item.directory = self.directory_composition_changes
+                item.directory = os.path.join(self.directory, self.directory_composition_changes)
                 item.file_name = elemloss
                 if item.file_name in checked_files:
                     item.setCheckState(0, QtCore.Qt.Checked)

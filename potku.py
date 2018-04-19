@@ -203,22 +203,27 @@ class Potku(QtWidgets.QMainWindow):
         self.tree_widget.editItem(clicked_item)
 
     def __rename_dir(self):
-        """Renames object based on selected tree item.
+        """Renames object based on selected tree item. This method is called when tree item is changed.
         """
         clicked_item = self.tree_widget.currentItem()
         if clicked_item:
             try:
                 new_name = clicked_item.text(0)
-                clicked_item.obj.rename_data_file(new_name)
                 new_path = clicked_item.obj.name_prefix + clicked_item.obj.serial_number + "-" + new_name
                 new_dir = rename_file(clicked_item.obj.directory, new_path)
             except OSError:
                 QtWidgets.QMessageBox.critical(self, "Error", "A file or folder already exists on name " + new_name,
                                                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+                # Block edit event from tree view when changing the name back to original.
+                self.tree_widget.blockSignals(True)
                 clicked_item.setText(0, clicked_item.obj.name)
+                self.tree_widget.blockSignals(False)
+                return
+            self.tree_widget.blockSignals(True)
             clicked_item.obj.name = new_name
             clicked_item.obj.directory = new_dir
-
+            clicked_item.obj.rename_data_file(new_name)
+            self.tree_widget.blockSignals(False)
 
     def __remove_tree_item(self):
         """Removes selected tree item in tree view and in folder structure.
@@ -356,6 +361,10 @@ class Potku(QtWidgets.QMainWindow):
         # TODO: This doesn't work. There is no list/dictionary of references to the
         # tab widgets once they are removed from the QTabWidget. 
         # tab = self.request_measurements[clicked_item.tab_id]
+
+        # Blocking signals from tree view to prevent edit event
+        self.tree_widget.blockSignals(True)
+
         if hasattr(clicked_item, "tab_id"):
             tab = self.tab_widgets[clicked_item.tab_id]
 
@@ -410,6 +419,8 @@ class Potku(QtWidgets.QMainWindow):
             if not self.__tab_exists(clicked_item.tab_id):
                 self.ui.tabs.addTab(tab, name)
             self.ui.tabs.setCurrentWidget(tab)
+
+        self.tree_widget.blockSignals(False)
 
     def hide_panel(self, enable_hide=None):
         """Sets the frame (including measurement navigation view, global 
