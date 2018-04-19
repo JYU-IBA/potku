@@ -195,6 +195,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.detector_structure_widgets.append(foil_widget)
         layout.addWidget(foil_widget)
 
+        if len(self.tof_foils) >= 2:
+            foil_widget.ui.timingFoilCheckBox.setEnabled(False)
+
     def _add_default_foils(self):
         layout = QtWidgets.QHBoxLayout()
         target = QtWidgets.QLabel("Target")
@@ -213,11 +216,26 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                             self.tof_foils.insert(0, i)
                         else:
                             self.tof_foils.append(i)
+                        if len(self.tof_foils) >= 2:
+                            self._disable_checkboxes()
                     else:
                         self.tof_foils.append(i)
                 else:
                     self.tof_foils.remove(i)
+                    if 0 < len(self.tof_foils) < 2:
+                        self._enable_checkboxes()
                 break
+
+    def _disable_checkboxes(self):
+        for i in range(len(self.detector_structure_widgets)):
+            if i not in self.tof_foils:
+                widget = self.detector_structure_widgets[i]
+                widget.ui.timingFoilCheckBox.setEnabled(False)
+
+    def _enable_checkboxes(self):
+        for i in range(len(self.detector_structure_widgets)):
+            widget = self.detector_structure_widgets[i]
+            widget.ui.timingFoilCheckBox.setEnabled(True)
 
     def _open_composition_dialog(self):
         foil_name = self.sender().text()
@@ -328,21 +346,28 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         distance = 0
         for i in range(len(self.detector_structure_widgets)):
             widget = self.detector_structure_widgets[i]
-            # if type(widget) is DistanceWidget:
-            #     distance = distance + float(widget.ui.distanceEdit.text())
-            #     index = int(i / 2)  # one foil object corresponds to distance widget + foil widget (indexes)
-            #     self.tmp_foil_info[index].distance = distance
             distance = distance + float(widget.ui.distanceEdit.text())
             self.tmp_foil_info[i].distance = distance
 
     def delete_foil(self, foil_widget):
-        index_of_widget = self.detector_structure_widgets.index(foil_widget)
-        # distance_widget = self.detector_structure_widgets[index_of_widget - 1]
-        del(self.detector_structure_widgets[index_of_widget])
-        foil_to_be_deleted = self.tmp_foil_info[index_of_widget]
-        if index_of_widget in self.tof_foils:
-            self.tof_foils.remove(index_of_widget)
+        index_of_item_to_be_deleted = self.detector_structure_widgets.index(foil_widget)
+        del(self.detector_structure_widgets[index_of_item_to_be_deleted])
+        foil_to_be_deleted = self.tmp_foil_info[index_of_item_to_be_deleted]
+        # tof_foils = []
+        # for i in self.tof_foils:
+        #     tof_foils.append(self.tmp_foil_info[i])
+        if index_of_item_to_be_deleted in self.tof_foils:
+            self.tof_foils.remove(index_of_item_to_be_deleted)
+            if 0 < len(self.tof_foils) < 2:
+                self._enable_checkboxes()
         self.tmp_foil_info.remove(foil_to_be_deleted)
+        # for j in range(len(self.tmp_foil_info)):
+        #     for k in range(len(tof_foils)):
+        #         if self.tmp_foil_info[j] is tof_foils[k] and j not in self.tof_foils:
+        #             self.tof_foils.append(j)
+        for i in range(len(self.tof_foils)):
+            if self.tof_foils[i] > index_of_item_to_be_deleted:
+                self.tof_foils[i] = self.tof_foils[i] - 1
 
         self.foils_layout.removeWidget(foil_widget)
         foil_widget.deleteLater()
