@@ -278,10 +278,7 @@ class Measurement:
                                              self.__request_settings)
 
         element_colors = self.request.global_settings.get_element_colors()
-        # TODO Selector doesn't get updated if directory changes. Can selector get the dir from measurement?
-        self.selector = Selector(os.path.join(self.directory, self.directory_data), self.name,
-                                 self.request.masses, element_colors,
-                                 settings=self.measurement_settings)
+        self.selector = Selector(self, element_colors)
 
         # Which color scheme is selected by default
         self.color_scheme = "Default color"

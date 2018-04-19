@@ -88,32 +88,28 @@ class AxesLimits:
         elif point[1] > self.__y_max:
             return False
         return True
-        
+
 
 class Selector:
     """Selector objects handles all selections within measurement.
     """
-    def __init__(self, directory, measurement_name, masses,
-                 element_colormap, settings):
+    def __init__(self, measurement, element_colormap):
         """Inits Selector.
         
         Inits Selector object.
         
         Args:
-            filepath: String representing filepath of measurement data (ascii file).
-            masses: Reference to element masses object of main program.
+            measurement: Measurement object of this Selector.
             element_colormap: Default colors for new element selections.
-            settings: Measurement's settings to which selector belongs. 
-                      (for selection dialog)
         """
         self.element_colormap = element_colormap
-        self.settings = settings
-        self.measurement_name = measurement_name
-        self.directory = directory
+        self.settings = measurement.settings
+        self.measurement_name = measurement.name
+        self.directory = os.path.join(measurement.directory, measurement.directory_data)
         self.selection_file = os.path.join(self.directory,
                                            "{0}.selections".format(self.measurement_name))
         # List is sufficient enough. TODO: Perhaps add a new class for it.
-        self.selections = []  
+        self.selections = []
         self.new_selection_is_allowed = True
         self.is_transposed = False
         self.looseness = 10  # Default 40, how loose the selection completion is.
@@ -121,7 +117,7 @@ class Selector:
         self.axes_limits = AxesLimits()
         self.selected_id = None
         self.draw_legend = False
-        self.masses = masses
+        self.masses = measurement.request.masses
 
     def count(self):
         """Get count of selections.
@@ -138,7 +134,7 @@ class Selector:
             Returns True if no selections.
         """
         return self.count() == 0
-    
+
     def get_at(self, index):  # Get selection at index
         """Get selection at index.
         
@@ -190,34 +186,31 @@ class Selector:
             self.grey_out_except(sel.id)
             self.selections.append(sel)
             # Do not allow new selections without closing/purging
-            self.new_selection_is_allowed = False  
+            self.new_selection_is_allowed = False
         elif not self.selections:  # Something went horribly wrong!
-            # print("[SELECTOR:add_point] Empty tuple!")
             return -1
         else:
             sel = self.selections[-1]  # Select last one
-        
 
         # Check if closing selection
         if sel.count() >= 3:  # Requirement for there to be selection
             # If we are close enough, close selection
-            if self.distance(sel.get_first(), point) < self.looseness: 
+            if self.distance(sel.get_first(), point) < self.looseness:
                 selection_is_ok = sel.end_selection(canvas)
                 # If selection was cancelled -> remove just made selection
-                if not selection_is_ok:  
+                if not selection_is_ok:
                     self.__remove_last()
                 self.reset_colors()
                 self.auto_save()
-                #self.update_selection_points() <-- redundant? remove comment if you disagree...
-                self.new_selection_is_allowed = True 
+                self.new_selection_is_allowed = True
                 return 1
         # Do not allow selection of too close point
         if sel.count() >= 1:
             for point2 in sel.get_points():
-                if self.distance(point2, point) < self.looseness:  
+                if self.distance(point2, point) < self.looseness:
                     print("Point too close!")
                     return -1
-        
+
         sel.add_point(point)
         return 0
 
@@ -227,7 +220,7 @@ class Selector:
         Undo last point in open (last) selection. If there are no selections, 
         do nothing.
         """
-        if self.is_empty(): 
+        if self.is_empty():
             return
         sel = self.selections[-1]  # [-1] = last one
         if not sel.is_closed:
@@ -253,7 +246,7 @@ class Selector:
             if s.id == self.selected_id:
                 s.delete()
                 self.selections.remove(s)
-        self.selected_id = None 
+        self.selected_id = None
 
     def __remove_last(self):
         """Remove last selection.
@@ -265,7 +258,7 @@ class Selector:
         self.selections.remove(selection_last)
         # Purge everything just in case and allow new selection.
         self.purge()
-    
+
     def remove_all(self):
         """Remove all selections in selector.
         """
@@ -326,12 +319,12 @@ class Selector:
             message = "At least two points required to close selection"
             logging.getLogger(self.measurement_name).error(message)
             return 0
-        elif not sel.is_closed: 
+        elif not sel.is_closed:
             selection_is_ok = sel.end_selection(canvas)
             if not selection_is_ok:
                 self.__remove_last()
             self.reset_colors()
-            self.auto_save() 
+            self.auto_save()
             self.update_single_selection_points(sel)
             self.new_selection_is_allowed = True
             return 1
@@ -394,7 +387,7 @@ class Selector:
                 color_string = "{0}{1}{2}".format(isotope,
                                                   element,
                                                   dirtyinteger)
-                if not color_string in color_dict:
+                if color_string not in color_dict:
                     break
                 dirtyinteger += 1
             color_dict[color_string] = sel.default_color
@@ -410,9 +403,9 @@ class Selector:
         """
         for sel in self.selections:
             if sel.id == selected_id:
-                sel.set_color("red") 
+                sel.set_color("red")
             else:
-                sel.set_color("grey")    
+                sel.set_color("grey")
 
     def auto_save(self):
         """Save all selections into a file.
@@ -420,7 +413,7 @@ class Selector:
         if not os.path.exists(self.directory):
             os.makedirs(self.directory)
         # Truncate old .sel and write new one
-        with open(self.selection_file, "wt+") as fp:  
+        with open(self.selection_file, "wt+") as fp:
             for sel in self.selections:
                 fp.write(sel.save_string(self.is_transposed) + "\n")
             fp.close()
@@ -455,7 +448,7 @@ class Selector:
         self.update_selection_points()
         message = "Selection file {0} was read successfully!".format(filename)
         logging.getLogger(self.measurement_name).info(message)
-    
+
     def update_axes_limits(self):
         """Update selector's axes limits based on all points in all selections.
         """
@@ -481,7 +474,7 @@ class Selector:
             selection.events_counted=True
             return
         for n in range(len(data)):
-            selection.point_inside(data[n])    
+            selection.point_inside(data[n])
         selection.events_counted=True
 
     def update_selection_points(self):
@@ -498,7 +491,7 @@ class Selector:
                     selection.point_inside(point)
         for selection in self.selections:
             selection.events_counted = True
-                
+
 
 class Selection:
     """Selection object which knows all selection points.
@@ -507,10 +500,9 @@ class Selection:
     LINE_MARKER = 'o'  # Default node style for selections
     LINE_MARKER_SIZE = 3.0
     GLOBAL_ID = 0
-    
-    def __init__(self, axes, masses, element_colormap, settings, element=None, isotope=None,
-                 element_type="ERD", color=None, points=None, scatter=None,
-                 weight_factor=1, transposed=False):
+
+    def __init__(self, axes, masses, element_colormap, settings, element=None, isotope=None, element_type="ERD",
+                 color=None, points=None, scatter=None, weight_factor=1, transposed=False):
         """Inits Selection class.
         
         Args:
@@ -533,35 +525,35 @@ class Selection:
         self.masses = masses  # Element isotopes
         self.element_colormap = element_colormap
         self.settings = settings
-        
-        if color != None:
+
+        if color is not None:
             self.default_color = color
-        elif element != None:
+        elif element is not None:
             self.default_color = self.element_colormap[element]
         else:  # By change that color is not in element_colormap
-            self.default_color = "red" 
-        
+            self.default_color = "red"
+
         self.type = element_type
         self.element = Element(element, isotope)
         self.weight_factor = weight_factor
         self.element_scatter = Element(scatter)
-        
+
         self.events_counted = False
         self.event_count = 0
         self.__is_transposed = False
         self.is_closed = False
-        self.points = None 
+        self.points = None
         self.axes = axes
         self.axes_limits = AxesLimits()
-            
+
         Selection.GLOBAL_ID += 1
 
-        if points != None:
+        if points is not None:
             points = points.split(';')
             if transposed:
                 points[0], points[1] = points[1], points[0]
-            x = [int(i) for i in points[0].split(',')]  #  
-            y = [int(i) for i in points[1].split(',')]  #
+            x = [int(i) for i in points[0].split(',')]
+            y = [int(i) for i in points[1].split(',')]
             point_count = len(x)  #
             for i in range(point_count):  #
                 self.add_point((x[i], y[i]))
@@ -691,8 +683,8 @@ class Selection:
         x.pop()
         y.pop()
 
-        selection_completed = True;
-        if canvas != None:
+        selection_completed = True
+        if canvas is not None:
             canvas.draw_idle()
             selection_settings_dialog = SelectionSettingsDialog(self)
             # True = ok, False = cancel -> delete selection
@@ -750,7 +742,7 @@ class Selection:
         return ';'.join(s)
 
     def save_string(self, is_transposed):
-        """Get selection in string format for selectiong file save.
+        """Get selection in string format for selection file save.
 
         Args:
             is_transposed: Boolean representing if axes are transposed.
@@ -821,10 +813,10 @@ class Selection:
         Polygon is a list of (x,y) pairs.        
         
         Algorithm got from: http://www.ariel.com.au/a/python-point-int-poly.html
-        """   
+        """
         n = len(poly)
         inside = False
-        
+
         p1x, p1y = poly[0]
         for i in range(n + 1):
             p2x, p2y = poly[i % n]
