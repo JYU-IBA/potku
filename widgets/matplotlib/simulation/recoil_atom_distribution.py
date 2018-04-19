@@ -169,35 +169,22 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
         self.__icon_manager = icon_manager
 
-        # Placeholder points
-        xs = [0.00, 65.00, 65.01, 100.00, 100.01, 170.00, 170.01, 200.00, 200.01, 200.02]
-        ys = [3.03, 3.03, 1.22, 1.22, 0.34, 0.34, 0.0001, 0.0001, 0.0, 0.0]
-        xys = list(zip(xs, ys))
-        points = []
-        for xy in xys:
-            points.append(Point(xy))
+        self.elements = {}
 
-        xs2 = [0.00, 35.00, 35.10, 55.00]
-        ys2 = [1.0, 1.0, 0.5, 0.4]
-        xys2 = list(zip(xs2, ys2))
-        points2 = []
-        for xy2 in xys2:
-            points2.append(Point(xy2))
+        self.current_element = None
 
-        # Minimum number of points for each element is 2
-        self.elements = [Element("He", points), Element("Mn", points2)]
-        self.current_element_i = 0
-
-        self.radio0 = QtWidgets.QRadioButton("He")
-        parent.ui.horizontalLayout_2.addWidget(self.radio0)
-
-        self.radio1 = QtWidgets.QRadioButton("Mn")
-        parent.ui.horizontalLayout_2.addWidget(self.radio1)
+        self.parent_ui = parent.ui
+        self.scroll_vertical_layout = QtWidgets.QVBoxLayout()
+        self.parent_ui.recoilScrollAreaContents.setLayout(self.scroll_vertical_layout)
+        widget = QtWidgets.QWidget()
+        self.recoil_vertical_layout = QtWidgets.QVBoxLayout()
+        widget.setLayout(self.recoil_vertical_layout)
+        self.scroll_vertical_layout.addWidget(widget)
+        self.scroll_vertical_layout.addItem(QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding))
+        self.parent_ui.addPushButton.clicked.connect(self.add_element)
 
         self.radios = QtWidgets.QButtonGroup(self)
-        self.radios.addButton(self.radio0, 0)
-        self.radios.addButton(self.radio1, 1)
-        self.radios.buttonToggled[int, bool].connect(self.choose_element)
+        self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(self.choose_element)
 
         # Locations of points about to be dragged at the time of click
         self.click_locations = []
@@ -254,16 +241,19 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.name_y_axis = "Concentration?"
         self.name_x_axis = "Depth"
 
+        self.add_element()
+
         self.on_draw()
 
-    def choose_element(self, buttonid, checked):
+    def choose_element(self, button, checked):
         if checked:
-            self.current_element_i = buttonid
+            self.current_element = self.elements[button]
             self.dragged_points.clear()
             self.selected_points.clear()
             self.update_plot()
             self.axes.relim()
             self.axes.autoscale_view()
+            print(self.axes.viewLim)
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -278,9 +268,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.set_ylabel(self.name_y_axis.title())
         self.axes.set_xlabel(self.name_x_axis.title())
 
-        self.lines, = self.axes.plot(self.elements[self.current_element_i].get_xs(), self.elements[self.current_element_i].get_ys(),
+        self.lines, = self.axes.plot(self.current_element.get_xs(), self.current_element.get_ys(),
                                      color="blue")
-        self.markers, = self.axes.plot(self.elements[self.current_element_i].get_xs(), self.elements[self.current_element_i].get_ys(),
+        self.markers, = self.axes.plot(self.current_element.get_xs(), self.current_element.get_ys(),
                                        color="blue", marker="o", markersize=10, linestyle="None")
         self.markers_selected, = self.axes.plot(0, 0, marker="o", markersize=10, linestyle="None",
                                                 color='yellow', visible=False)
@@ -296,7 +286,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Remove axis ticks and draw
         self.remove_axes_ticks()
         self.canvas.draw()
-        self.radio0.setChecked(True)
 
     def __toggle_tool_drag(self):
         if self.__button_drag.isChecked():
@@ -396,8 +385,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """Sets the selected point's x coordinate to the value of the x spinbox."""
         x = self.x_coordinate_box.value()
         leftmost_sel_point = self.selected_points[0]
-        left_neighbor = self.elements[self.current_element_i].get_left_neighbor(leftmost_sel_point)
-        right_neighbor = self.elements[self.current_element_i].get_right_neighbor(leftmost_sel_point)
+        left_neighbor = self.current_element.get_left_neighbor(leftmost_sel_point)
+        right_neighbor = self.current_element.get_right_neighbor(leftmost_sel_point)
 
         # Can't move past neighbors. If tried, sets x coordinate to distance x_res from neighbor's x coordinate.
         if left_neighbor is None:
@@ -441,7 +430,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             marker_contains, marker_info = self.markers.contains(event)
             if marker_contains:  # If clicked a point
                 i = marker_info['ind'][0]  # The clicked point's index
-                clicked_point = self.elements[self.current_element_i].get_point_by_i(i)
+                clicked_point = self.current_element.get_point_by_i(i)
                 if clicked_point not in self.selected_points:
                     self.selected_points = [clicked_point]
                 self.dragged_points.extend(self.selected_points)
@@ -493,9 +482,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Returns the point if a point was added, None if not.
         """
         new_point = Point(coords)
-        self.elements[self.current_element_i].add_point(new_point)
-        left_neighbor_x = self.elements[self.current_element_i].get_left_neighbor(new_point).get_x()
-        right_neighbor_x = self.elements[self.current_element_i].get_right_neighbor(new_point).get_x()
+        self.current_element.add_point(new_point)
+        left_neighbor_x = self.current_element.get_left_neighbor(new_point).get_x()
+        right_neighbor_x = self.current_element.get_right_neighbor(new_point).get_x()
 
         error = False
 
@@ -513,7 +502,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 new_point.set_x(right_neighbor_x - self.x_res)
 
         if error:
-            self.elements[self.current_element_i].remove_point(new_point)
+            self.current_element.remove_point(new_point)
             # TODO: Add an error message text label
             print("Can't add a point here. There is no space for it.")
             return None
@@ -523,8 +512,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def update_plot(self):
         """ Updates marker and line data and redraws the plot. """
 
-        self.markers.set_data(self.elements[self.current_element_i].get_xs(), self.elements[self.current_element_i].get_ys())
-        self.lines.set_data(self.elements[self.current_element_i].get_xs(), self.elements[self.current_element_i].get_ys())
+        self.markers.set_data(self.current_element.get_xs(), self.current_element.get_ys())
+        self.lines.set_data(self.current_element.get_xs(), self.current_element.get_ys())
 
         if self.selected_points:  # If there are selected points
             self.markers_selected.set_visible(True)
@@ -541,6 +530,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # self.text.set_text('selected: %d %d' % (self.selected_points[0].get_coordinates()[0],
             #                                     self.selected_points[0].get_coordinates()[1]))
         else:
+            self.markers_selected.set_data(self.current_element.get_xs(), self.current_element.get_ys())
             self.markers_selected.set_visible(False)
             self.x_coordinate_box.setEnabled(False)
             self.y_coordinate_box.setEnabled(False)
@@ -582,8 +572,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         leftmost_dr_p = dr_ps[0]
         rightmost_dr_p = dr_ps[-1]
-        left_neighbor = self.elements[self.current_element_i].get_left_neighbor(leftmost_dr_p)
-        right_neighbor = self.elements[self.current_element_i].get_right_neighbor(rightmost_dr_p)
+        left_neighbor = self.current_element.get_left_neighbor(leftmost_dr_p)
+        right_neighbor = self.current_element.get_right_neighbor(rightmost_dr_p)
 
         new_coords = self.get_new_unchecked_coordinates(event)
         new_x_left = new_coords[0][0]
@@ -645,14 +635,51 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
     def remove_points(self):
         """Removes all selected points, but not if there would be less than two points left."""
-        if len(self.elements[self.current_element_i].get_points()) - len(self.selected_points) < 2:
+        if len(self.current_element.get_points()) - len(self.selected_points) < 2:
             # TODO: Add an error message text label
             print("There must always be at least two points")
         else:
             for sel_point in self.selected_points:
-                self.elements[self.current_element_i].remove_point(sel_point)
+                self.current_element.remove_point(sel_point)
             self.selected_points.clear()
             self.update_plot()
+
+    def add_element(self):
+        horizontal_layout = QtWidgets.QHBoxLayout()
+
+        radio_button = QtWidgets.QRadioButton("Li")
+        self.radios.addButton(radio_button)
+
+        push_button = QtWidgets.QPushButton()
+        self.__icon_manager.set_icon(push_button, "gear.svg")
+        push_button.setToolTip("Simulation settings")
+
+        spinbox = QtWidgets.QSpinBox()
+        spinbox.setToolTip("Number of processes")
+
+        horizontal_layout.addWidget(radio_button)
+        horizontal_layout.addWidget(push_button)
+        horizontal_layout.addWidget(spinbox)
+
+        widget = QtWidgets.QWidget()
+        widget.setLayout(horizontal_layout)
+
+        self.recoil_vertical_layout.addWidget(widget)
+
+        # Placeholder points
+        # Minimum number of points for each element is 2
+        xs2 = [0.00, 35.00]
+        ys2 = [1.0, 1.0]
+        xys2 = list(zip(xs2, ys2))
+        points2 = []
+        for xy2 in xys2:
+            points2.append(Point(xy2))
+        element = Element("Mn", points2)
+
+        self.elements[radio_button] = element
+
+        if self.current_element is None:
+            self.current_element = element
 
     def on_release(self, event):
         """Callback method for mouse release event. Stops dragging.
@@ -669,7 +696,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
     def on_span_select(self, xmin, xmax):
         sel_points = []
-        for point in self.elements[self.current_element_i].get_points():
+        for point in self.current_element.get_points():
             if xmin <= point.get_x() <= xmax:
                 sel_points.append(point)
         self.selected_points = sel_points
@@ -691,7 +718,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     #     sel_xs = []
     #     sel_ys = []
     #     sel_points = []
-    #     for point in self.elements[self.current_element_i].get_points():
+    #     for point in self.current_element.get_points():
     #         if xmin <= point.get_x() <= xmax and ymin <= point.get_y() < ymax:
     #             sel_xs.append(point.get_x())
     #             sel_ys.append(point.get_y())
