@@ -47,10 +47,12 @@ class Target:
     """Target object describes the target.
     """
 
-    __slots__ = "name", "angle", "layers"
+    __slots__ = "name", "date", "description", "target_type", "image_size",\
+                "image_file", "scattering", "layers"
 
-    def __init__(self, name="", date=datetime.date.today(), description="", target_type=TargetType.AFM,
-                 image_size=(1024,1024), image_file="", scattering=None, layers=[]):
+    def __init__(self, name="", date=datetime.date.today(), description="",
+                 target_type=TargetType.AFM, image_size=(1024,1024),
+                 image_file="", scattering=None, layers=[]):
         """Initialize a target.
 
         Args:

@@ -7,15 +7,16 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-from PyQt5 import QtCore, QtWidgets
+import enum
+import matplotlib
+import random
 
 from dialogs.simulation.layer_properties import LayerPropertiesDialog
-from widgets.matplotlib.base import MatplotlibWidget
 from modules.target import Target
 from modules.layer import Layer
-
-import matplotlib as mpl
-
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+from widgets.matplotlib.base import MatplotlibWidget
 
 class TargetCompositionWidget(MatplotlibWidget):
     """Matplotlib target composition widget. Using this widget, the user
@@ -32,20 +33,18 @@ class TargetCompositionWidget(MatplotlibWidget):
         super().__init__(parent)
         self.canvas.manager.set_title("Target Composition")
 
+        # Remove Y-axis ticks and label
+        self.axes.yaxis.set_tick_params("both", left="off", labelleft="off")
+
         self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
-        #self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
+        self.name_x_axis = "Depth"
 
         self.__icon_manager = icon_manager
         self.__fork_toolbar_buttons()
 
-        # Remove Y-axis ticks
-        self.name_x_axis = "Depth"
-        self.axes.yaxis.set_tick_params("both", left="off", labelleft="off")
+        self.__layer_colors = []
 
-        self.target = Target("targetin nimi", 35.0, [])
-        self.__colors = ["#cce8ff", "#bdffc4", "#fcffa9", "#ffe6bc", "#ffdada", "#e9daff"]
-        self.__number_of_colors = len(self.__colors)
-        self.__layer_color_ids = []
+        self.target = Target()
 
         self.on_draw()
 
@@ -104,47 +103,55 @@ class TargetCompositionWidget(MatplotlibWidget):
 
         # Button for adding a new layer
         self.button_add_layer = QtWidgets.QToolButton(self)
-        self.button_add_layer.clicked.connect(lambda: self.add_layer())
+        self.button_add_layer.clicked.connect(lambda: (self.__add_layer()))
         self.__icon_manager.set_icon(self.button_add_layer, "add.png")  # TODO: Change icon!
         self.mpl_toolbar.addWidget(self.button_add_layer)
 
-    def add_layer(self):
+    def __add_layer(self, position = -1):
+        """Adds a new layer to the target. A random color is given for the
+        layer in such manner, that the layers next to it doesn't have same
+        color.
+
+        Args:
+            position: A position where the layer should be added. If -1 is
+                      given, the layer is added at the end of the target.
+        """
         dialog = LayerPropertiesDialog()
-        self.target.layers.append(dialog.layer)
-        if self.__layer_color_ids:
-            self.__layer_color_ids.append(self.__layer_color_ids[-1] + 1)
-        else:
-            self.__layer_color_ids.append(0)
-        self.__update_figure()
+
+        if dialog.layer:
+            layer_color = dialog.layer_color
+            self.target.layers.append(dialog.layer)
+            self.__layer_colors.append(layer_color)
+            self.__update_figure()
 
     def __update_figure(self):
         next_layer_position = 0
         for idx, layer in enumerate(self.target.layers):
-            layer_patch = mpl.patches.Rectangle((next_layer_position, 0),
-                                                layer.thickness, 1,
-                                                color= self.__colors[self.__layer_color_ids[idx] % self.__number_of_colors])
+            layer_patch = matplotlib.patches.Rectangle(
+                (next_layer_position, 0),
+                layer.thickness, 1,
+                color = self.__layer_colors[idx]
+            )
             self.axes.add_patch(layer_patch)
 
-            if not next_layer_position == 0:
-                layer_line = mpl.patches.ConnectionPatch((next_layer_position, 0),
-                                                     (next_layer_position, 1),
-                                                     coordsA="data")
+            # Don't add a line before the first layer.
+            if next_layer_position != 0:
+                # Add a line between layers.
+                layer_line = matplotlib.patches.ConnectionPatch(
+                    (next_layer_position, 0),
+                    (next_layer_position, 1),
+                    coordsA="data"
+                )
                 self.axes.add_line(layer_line)
 
-            self.axes.annotate(layer.name, (next_layer_position + layer.thickness / 2, 0.5), ha="center")
+            # Put annotation in the middle of the rectangular patch.
+            self.axes.annotate(layer.name,
+                               (next_layer_position + layer.thickness / 2, 0.5),
+                               ha="center")
+
+            # Move the position where the next layer starts.
             next_layer_position += layer.thickness
 
         self.axes.set_xbound(0, next_layer_position)
         self.canvas.draw_idle()
         self.mpl_toolbar.update()
-
-    # def __add_layer(self):
-    #     """Adds a layer in the target composition.
-    #     """
-    #     layer = mpl.patches.Rectangle(
-    #             (0.0, 0.0),  # (x,y)
-    #             0.3,  # width
-    #             1.0,  # height
-    #         )
-    #     self.axes.add_patch(layer)
-    #     self.canvas.draw_idle()

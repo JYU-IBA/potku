@@ -11,23 +11,39 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __versio__ = "2.0"
 
 import os
-from PyQt5 import uic, QtWidgets
+from PyQt5 import uic, QtGui, QtWidgets
 from dialogs.element_selection import ElementSelectionDialog
 from modules.element import Element
 from modules.layer import Layer
 import modules.masses as masses
+import enum
+import random
+
+class Color(enum.Enum):
+    """Definition of colors used in the layers widget."""
+
+    blue = "#cce8ff"
+    green = "#bdffc4"
+    yellow = "#fcffa9"
+    orange = "#ffe6bc"
+    red = "#ffdada"
+    purple = "#e9daff"
 
 class LayerPropertiesDialog(QtWidgets.QDialog):
     """Dialog for adding a new layer or editing an existing one.
     """
 
-    def __init__(self):
+    def __init__(self, layer_color=None):
         """Inits a layer dialog.
         """
         super().__init__()
         self.__ui = uic.loadUi(os.path.join("ui_files", "ui_layer_dialog.ui"),
                                self)
         self.layer = None
+        if not layer_color:
+            self.layer_color = random.choice(["#cce8ff", "#bdffc4", "#fcffa9",
+                                              "#ffe6bc", "#ffdada", "#e9daff"])
+            self.__change_color_button_color()
 
 
         # Some border of widgets might be displaying red, because information
@@ -42,6 +58,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
         # Connect buttons to events
         self.__ui.addElementButton.clicked.connect(self.__add_element_layout)
+        self.__ui.colorButton.clicked.connect(self.__click_color_button)
         self.__ui.okButton.clicked.connect(self.__add_layer)
         self.__ui.cancelButton.clicked.connect(self.close)
 
@@ -153,6 +170,21 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         # TODO: Add docstring.
         self.__ui.scrollArea.setStyleSheet("")
         self.__element_layouts.append(ElementLayout(self.__ui.scrollAreaWidgetContents))
+
+    def __click_color_button(self):
+        """Shows dialog to change selection color.
+        """
+        dialog = QtWidgets.QColorDialog(self)
+        self.layer_color = dialog.getColor(QtGui.QColor(self.layer_color)).name()
+        self.__change_color_button_color()
+
+    def __change_color_button_color(self):
+        """Change color button's color."""
+
+        style = "background-color: " + self.layer_color
+        self.__ui.colorButton.setStyleSheet(style)
+
+
 
 class ElementLayout(QtWidgets.QHBoxLayout):
     # TODO: Add docstring and more comments.

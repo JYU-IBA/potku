@@ -120,7 +120,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
 
         # self.color = QtGui.QColor(self.selection.default_color)
         # Check if selection color is same as default color for "automatic" text.
-        # self.__change_color_button_color(element)
+        # self.__change_color_button_color(element.symbol)
         self.ui.colorButton.setText("Automatic [{0}]".format(element.symbol))
 
         self.__check_if_settings_ok()
@@ -255,6 +255,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         style = "background-color: {0}; color: {1};".format(self.color.name(),
                                                             text_color)
         self.ui.colorButton.setStyleSheet(style)
+
         if self.color.name() == self.element_colormap[element]:
             self.ui.colorButton.setText("Automatic [{0}]".format(element))
         else:
