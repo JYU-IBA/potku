@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 18.4.2018
+Updated on 20.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -197,13 +197,17 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         if len(self.tof_foils) >= 2:
             foil_widget.ui.timingFoilCheckBox.setEnabled(False)
+        return foil_widget
 
     def _add_default_foils(self):
         layout = QtWidgets.QHBoxLayout()
         target = QtWidgets.QLabel("Target")
         layout.addWidget(target)
         for i in range(4):
-            self._add_new_foil(layout)
+            foil_widget = self._add_new_foil(layout)
+            for index in self.request.detector.tof_foils:
+                if index == i:
+                    foil_widget.ui.timingFoilCheckBox.setChecked(True)
         return layout
 
     def _check_and_add(self):
@@ -430,6 +434,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             # Detector foils
             self.calculate_distance()
             self.request.detector.foils = self.tmp_foil_info
+            # Tof foils
+            self.request.detector.tof_foils = self.tof_foils
 
             self.request.detector.save_settings(self.request.default_folder + os.sep + "Detector" + os.sep + "Default")
 
