@@ -5,7 +5,7 @@ block_cipher = None
 
 a = Analysis(['potku.py'],
              pathex=['./'],
-             binaries=[],
+             binaries=[('external/Potku-bin/*', 'external/Potku-bin')],
              datas=[('external/Potku-data/*', 'external/Potku-data'),
                     ('ui_files/*', 'ui_files'),
                     ('ui_icons/reinhardt/*', 'ui_icons/reinhardt'),
@@ -28,7 +28,7 @@ exe = EXE(pyz,
           debug=False,
           strip=False,
           upx=True,
-          console=True )
+          console=False )
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
