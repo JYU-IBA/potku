@@ -10,6 +10,8 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 from matplotlib.widgets import SpanSelector
 
 from widgets.matplotlib.base import MatplotlibWidget
+from dialogs.element_selection import ElementSelectionDialog
+from dialogs.simulation.recoil_element_selection import RecoilElementSelectionDialog
 
 
 class Point:
@@ -238,10 +240,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # This customizes the toolbar buttons
         self.__fork_toolbar_buttons()
 
-        self.name_y_axis = "Concentration?"
+        self.name_y_axis = "Concentration"
         self.name_x_axis = "Depth"
 
-        self.add_element()
+        # TODO: Placeholder
+        xs2 = [0.00, 35.00]
+        ys2 = [1.0, 1.0]
+        xys2 = list(zip(xs2, ys2))
+        points2 = []
+        for xy2 in xys2:
+            points2.append(Point(xy2))
+        element = Element("Mn", points2)
+        self.current_element = element
 
         self.on_draw()
 
@@ -252,8 +262,47 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.selected_points.clear()
             self.update_plot()
             self.axes.relim()
-            self.axes.autoscale_view()
-            print(self.axes.viewLim)
+            self.axes.autoscale()
+
+    def add_element(self):
+        dialog = RecoilElementSelectionDialog(self)
+
+        horizontal_layout = QtWidgets.QHBoxLayout()
+
+        radio_button = QtWidgets.QRadioButton("Li")
+        radio_button.setText(dialog.element)
+        self.radios.addButton(radio_button)
+
+        push_button = QtWidgets.QPushButton()
+        self.__icon_manager.set_icon(push_button, "gear.svg")
+        push_button.setToolTip("Simulation settings")
+
+        spinbox = QtWidgets.QSpinBox()
+        spinbox.setToolTip("Number of processes used in simulation")
+
+        horizontal_layout.addWidget(radio_button)
+        horizontal_layout.addWidget(push_button)
+        horizontal_layout.addWidget(spinbox)
+
+        widget = QtWidgets.QWidget()
+        widget.setLayout(horizontal_layout)
+
+        self.recoil_vertical_layout.addWidget(widget)
+
+        # Placeholder points
+        # Minimum number of points for each element is 2
+        xs2 = [0.00, 35.00]
+        ys2 = [1.0, 1.0]
+        xys2 = list(zip(xs2, ys2))
+        points2 = []
+        for xy2 in xys2:
+            points2.append(Point(xy2))
+        element = Element("Mn", points2)
+
+        self.elements[radio_button] = element
+
+        if self.current_element is None:
+            self.current_element = element
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -643,43 +692,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.current_element.remove_point(sel_point)
             self.selected_points.clear()
             self.update_plot()
-
-    def add_element(self):
-        horizontal_layout = QtWidgets.QHBoxLayout()
-
-        radio_button = QtWidgets.QRadioButton("Li")
-        self.radios.addButton(radio_button)
-
-        push_button = QtWidgets.QPushButton()
-        self.__icon_manager.set_icon(push_button, "gear.svg")
-        push_button.setToolTip("Simulation settings")
-
-        spinbox = QtWidgets.QSpinBox()
-        spinbox.setToolTip("Number of processes")
-
-        horizontal_layout.addWidget(radio_button)
-        horizontal_layout.addWidget(push_button)
-        horizontal_layout.addWidget(spinbox)
-
-        widget = QtWidgets.QWidget()
-        widget.setLayout(horizontal_layout)
-
-        self.recoil_vertical_layout.addWidget(widget)
-
-        # Placeholder points
-        # Minimum number of points for each element is 2
-        xs2 = [0.00, 35.00]
-        ys2 = [1.0, 1.0]
-        xys2 = list(zip(xs2, ys2))
-        points2 = []
-        for xy2 in xys2:
-            points2.append(Point(xy2))
-        element = Element("Mn", points2)
-
-        self.elements[radio_button] = element
-
-        if self.current_element is None:
-            self.current_element = element
 
     def on_release(self, event):
         """Callback method for mouse release event. Stops dragging.
