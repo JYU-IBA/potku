@@ -62,35 +62,26 @@ class Simulations:
             Returns new simulation or None if it wasn't added
         """
         simulation = None
-        simulation_folder = os.path.join(sample.path, self.name_prefix + sample.get_running_int_simulation() + "-"
-                                         + simulation_name)
-        sample.increase_running_int_simulation_by_1()
         try:
-            # if file_directory != self.request.directory and file_directory:
-            #     dirtyinteger = 2  # Begin from 2, since 0 and 1 would be confusing.
-            #     while os.path.exists(new_file):
-            #         file_name = "{0}_{1}{2}".format(name[0],
-            #                                         dirtyinteger,
-            #                                         name[1])
-            #         new_file = os.path.join(sample.path, file_name)
-            #         dirtyinteger += 1
-            #     shutil.copyfile(name, new_file)
-            #     file_directory, file_name = os.path.split(new_file)
-            #
-            #     log = "Added new simulation {0} to the request.".format(file_name)
-            #     logging.getLogger("request").info(log)
             keys = sample.simulations.simulations.keys()
             for key in keys:
                 if sample.simulations.simulations[key].simulation_folder == simulation_name:
                     return simulation  # simulation = None
+
             simulation = Simulation(self.request, simulation_name)
-            simulation.create_folder_structure(simulation_folder)
+            simulation.serial_number = sample.get_running_int_simulation()
+            # TODO Can increasing the int be handled by sample?
+            sample.increase_running_int_measurement_by_1()
+
+            # Create path for simulation directory.
+            simulation_directory = os.path.join(sample.path, simulation.name_prefix + simulation.serial_number + "-" +
+                                                simulation.name)
+            simulation.create_folder_structure(simulation_directory)
             sample.simulations.simulations[tab_id] = simulation
             self.request.samples.simulations.simulations[tab_id] = simulation
         except:
             log = "Something went wrong while adding a new simulation."
             logging.getLogger("request").critical(log)
-            print(sys.exc_info())  # TODO: Remove this.
         return simulation
 
     def remove_by_tab_id(self, tab_id):
@@ -177,7 +168,7 @@ class Simulation:
     __slots__ = "request", "name", "description", "date", "simulation_type", "scatter", "main_scatter", "energy", \
                 "mode", "no_of_ions", "no_of_preions", "seed", "no_of_recoils", "no_of_scaling", \
                 "data", "name_prefix", "simulation_file", "directory", "__request_settings", "statusbar", \
-                "color_scheme", "callMCERD", "call_get_espe", "name"
+                "color_scheme", "callMCERD", "call_get_espe", "serial_number"
 
     def __init__(self, request, name="", description="", date=datetime.date.today(), simulation_type=None, scatter=0.05,
                  main_scatter=20, energy=1.0, mode=SimulationMode.narrow, no_of_ions=1000000, no_of_preions=100000,
@@ -204,6 +195,7 @@ class Simulation:
         self.data = []
         self.simulation_file = None
         self.name_prefix = "MC_simulation_"
+        self.serial_number = 0
         self.directory = None
 
         # The settings that come from the request
@@ -261,6 +253,14 @@ class Simulation:
             os.makedirs(directory)
             # log = "Created a directory {0}.".format(directory)
             # logging.getLogger("request").info(log)
+
+    def rename_data_file(self, new_name=None):
+        """Renames the simulation files.
+        """
+        if new_name is None:
+            return
+        # Rename any simulation related files.
+        pass
 
     # TODO: Fix this according to simulation (now copied from measurement).
     def load_data(self):
