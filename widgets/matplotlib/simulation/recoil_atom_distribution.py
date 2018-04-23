@@ -267,42 +267,52 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def add_element(self):
         dialog = RecoilElementSelectionDialog(self)
 
-        horizontal_layout = QtWidgets.QHBoxLayout()
+        if dialog.isOk:
 
-        radio_button = QtWidgets.QRadioButton("Li")
-        radio_button.setText(dialog.element)
-        self.radios.addButton(radio_button)
+            horizontal_layout = QtWidgets.QHBoxLayout()
 
-        push_button = QtWidgets.QPushButton()
-        self.__icon_manager.set_icon(push_button, "gear.svg")
-        push_button.setToolTip("Simulation settings")
+            radio_button = QtWidgets.QRadioButton("Li")
 
-        spinbox = QtWidgets.QSpinBox()
-        spinbox.setToolTip("Number of processes used in simulation")
 
-        horizontal_layout.addWidget(radio_button)
-        horizontal_layout.addWidget(push_button)
-        horizontal_layout.addWidget(spinbox)
+            # isotope_str = str(int(dialog.isotope))
+            #
+            # label = r"$^{" + isotope_str + "}$" + element.symbol
+            # radio_button.setText(r"$^{" + dialog.isotope + "}$" + dialog.element)
+            radio_button.setText(dialog.element)
 
-        widget = QtWidgets.QWidget()
-        widget.setLayout(horizontal_layout)
 
-        self.recoil_vertical_layout.addWidget(widget)
+            self.radios.addButton(radio_button)
 
-        # Placeholder points
-        # Minimum number of points for each element is 2
-        xs2 = [0.00, 35.00]
-        ys2 = [1.0, 1.0]
-        xys2 = list(zip(xs2, ys2))
-        points2 = []
-        for xy2 in xys2:
-            points2.append(Point(xy2))
-        element = Element("Mn", points2)
+            push_button = QtWidgets.QPushButton()
+            self.__icon_manager.set_icon(push_button, "gear.svg")
+            push_button.setToolTip("Simulation settings")
 
-        self.elements[radio_button] = element
+            spinbox = QtWidgets.QSpinBox()
+            spinbox.setToolTip("Number of processes used in simulation")
 
-        if self.current_element is None:
-            self.current_element = element
+            horizontal_layout.addWidget(radio_button)
+            horizontal_layout.addWidget(push_button)
+            horizontal_layout.addWidget(spinbox)
+
+            widget = QtWidgets.QWidget()
+            widget.setLayout(horizontal_layout)
+
+            self.recoil_vertical_layout.addWidget(widget)
+
+            # Placeholder points
+            # Minimum number of points for each element is 2
+            xs2 = [0.00, 35.00]
+            ys2 = [1.0, 1.0]
+            xys2 = list(zip(xs2, ys2))
+            points2 = []
+            for xy2 in xys2:
+                points2.append(Point(xy2))
+            element = Element("Mn", points2)
+
+            self.elements[radio_button] = element
+
+            if self.current_element is None:
+                self.current_element = element
 
     def on_draw(self):
         """Draw method for matplotlib.

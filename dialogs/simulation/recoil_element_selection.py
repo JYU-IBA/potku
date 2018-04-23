@@ -30,7 +30,7 @@ from os.path import join
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
 
 from dialogs.element_selection import ElementSelectionDialog
-from modules.masses import Masses
+import modules.masses as masses
 
 
 class RecoilElementSelectionDialog(QtWidgets.QDialog):
@@ -48,11 +48,13 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
 
         # Setup connections
         self.ui.element_button.clicked.connect(self.__change_sample_element)
-        # self.ui.isotope_radio.toggled.connect(self.__toggle_isotope_sample)
-        self.ui.isotope_combobox.currentIndexChanged.connect(lambda: self.__set_isotope_weight_factor(self.ui.sample_isotope_combobox))
+        self.ui.isotope_radio.toggled.connect(self.__toggle_isotope_sample)
 
         self.ui.OKButton.clicked.connect(self.__accept_settings)
         self.ui.cancelButton.clicked.connect(self.close)
+
+        self.element = None
+        self.isotope = None
 
         # Set current values to UI and show
         #self.__set_values_to_dialog()
@@ -128,30 +130,14 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
             element: String representing element.
             current_isotope: String representing current isotope.
         """
-        standard_mass = self.selection.masses.get_standard_isotope(element)
+        standard_mass = masses.get_standard_isotope(element)
         standard_mass_label.setText(str(round(standard_mass, 3)))
-        self.selection.masses.load_isotopes(element, combobox, current_isotope)
+        masses.load_isotopes(element, combobox, current_isotope)
 
-    # def __toggle_isotope_sample(self):
-    #     """Toggle Sample isotope radio button.
-    #     """
-    #     self.__change_to_specific_isotope(self.ui.isotope_radio,
-    #                                       self.ui.isotope_combobox)
-
-    # def __change_to_specific_isotope(self, radio, combobox):
-    #     """Toggle combobox visibility depending on if radio button is checked.
-    #
-    #     Args:
-    #         radio: A QtGui.QRadioButton element.
-    #         combobox: A QtWidgets.QComboBox element.
-    #     """
-    #     combobox.setEnabled(radio.isChecked())
-    #     # self.__set_isotope_weight_factor()
-    #     if radio.isChecked():
-    #         self.__set_isotope_weight_factor(combobox)
-    #     else:
-    #         self.__set_isotope_weight_factor()
-    #
+    def __toggle_isotope_sample(self):
+        """Toggle Sample isotope radio button.
+        """
+        self.ui.isotope_combobox.setEnabled(self.ui.isotope_radio.isChecked())
     # def __set_isotope_weight_factor(self, isotope_combobox=None):
     #     """Set a specific isotope's weight factor to label.
     #
@@ -182,16 +168,15 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
     def __accept_settings(self):
         """Accept settings given in the selection dialog and save these to parent.
         """
-        element = self.ui.element_button.text()
+        self.element = self.ui.element_button.text()
 
         # For standard isotopes:
-        isotope = None
 
         # Check if specific isotope was chosen and use that instead.
         if self.ui.isotope_radio.isChecked():
             isotope_index = self.ui.isotope_combobox.currentIndex()
             isotope_data = self.ui.isotope_combobox.itemData(isotope_index)
-            isotope = isotope_data[0]
+            self.isotope = isotope_data[0]
             # sample_isotope = self.ui.sample_isotope_combobox.currentText()
 
         self.isOk = True
