@@ -35,7 +35,7 @@ import logging, os, shutil, sys, time, hashlib
 from PyQt5 import QtCore, QtWidgets
 
 from modules.cut_file import CutFile
-from modules.general_functions import md5_for_file
+from modules.general_functions import md5_for_file, save_settings
 from modules.selection import Selector
 from modules.settings import Settings
 
@@ -280,7 +280,7 @@ class Measurement:
 
         element_colors = self.request.global_settings.get_element_colors()
         self.selector = Selector(self.directory_data, self.measurement_name,
-                                 self.request.masses, element_colors,
+                                 element_colors,
                                  settings=self.measurement_settings)
 
         # Which color scheme is selected by default
@@ -344,12 +344,11 @@ class Measurement:
 
     def save_settings(self, filepath=None):
         """Saves parameters from Measurement object in JSON format in .measurement file.
+
+        Args:
+            filepath: Filepath including name of the file.
         """
-        if filepath is None:
-            filepath = self.directory
-        filepath = filepath + ".measurement"
-        with open(filepath, 'w') as savefile:
-            json.dump(self, savefile, indent=4, cls=MeasurementEncoder)
+        save_settings(self, ".measurement", MeasurementEncoder, filepath)
 
     def set_loggers(self):
         """Sets the loggers for this specified measurement.

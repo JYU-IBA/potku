@@ -23,6 +23,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 '''
+import json
+
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio" \
              "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
@@ -144,6 +146,21 @@ def hist(data, width=1.0, col=1):
     # Add zero to the end.
     # hist_list.append((a - (width / 2.0), 0))
     return hist_list
+
+
+def save_settings(obj, extension, encoder, filepath=None):
+    """Saves an object in JSON format in a file.
+
+    Args:
+        extension: Extension for the file.
+        encoder: JSONEncoder class used in converting to JSON.
+        filepath: Filepath including the name of the file.
+    """
+    if filepath is None:
+        filepath = obj.directory
+    filepath = filepath + extension
+    with open(filepath, 'w') as savefile:
+        json.dump(obj, savefile, indent=4, cls=encoder)
 
 
 def read_espe_file(directory, espe_file):

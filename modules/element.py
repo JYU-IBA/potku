@@ -29,101 +29,63 @@ __versio__ = "1.0"
 import re
 
 class Element:
-    def __init__(self, element="", isotope=None):
-        '''Inits element class.        
-        
-        >>> test_a = Element("1H")
-        >>> test_b = Element("H")
-        >>> test_c = Element("H", 1)
-        >>> test_d = Element("Ca", 40)
-        >>> test_e = Element("")
-        >>> test_f = Element("H1")
-        >>> print(test_a)
-        1H
-        >>> print(test_b)
-        H
-        >>> print(test_c)
-        1H
-        >>> print(test_d)
-        40Ca
-        >>> print(test_f) # Suppose we ignore numbers or whatever after element.
-        H
-        '''
-        if type(element) == Element:
-            element = str(element)
-        if element:
-            m = re.match("(?P<isotope>[0-9]{0,3})(?P<element>[a-zA-Z]{1,2})",
-                         element.strip())
-            if m:
-                self.name = m.group("element")
-                if isotope:
-                    self.isotope = Isotope(isotope)
-                else:
-                    self.isotope = Isotope(m.group("isotope"))
-            else: 
-                raise ValueError("Incorrect string given.")
+    def __init__(self, symbol, isotope=None, amount=None):
+        """Initializes an element object.
+        Args:
+              symbol: Two letter symbol of the element. E.g. 'He' for Helium.
+              isotope: The isotope number. If one wants to use standard mass,
+                       then this parameter is not required.
+              amount:  This is an optional parameter. It is used to describe
+                       the amount of the element in a single layer of a target.
+        """
+        self.symbol = symbol
+        self.isotope = isotope
+        self.amount = amount
+
+    @classmethod
+    def from_string(cls, str):
+        """A function that initializes an element object from a string.
+        Args:
+            str: A string from which the element information will be parsed.
+        """
+        m = re.match("(?P<isotope>[0-9]{0,3})(?P<symbol>[a-zA-Z]{1,2})"
+                     "(\s(?P<amount>\d*(\.?\d+)?))?", str.strip())
+        if m:
+            symbol = m.group("symbol")
+            isotope = m.group("isotope")
+            amount = m.group("amount")
+
+            if isotope and amount:
+                return cls(symbol, int(isotope), float(amount))
+            elif isotope:
+                return cls(symbol, int(isotope))
+            elif amount:
+                return cls(symbol, None, float(amount))
+            else:
+                return cls(symbol)
         else:
-            self.name = element
-            self.isotope = Isotope(isotope)
+            raise ValueError("Incorrect string given.")
 
     
     def __str__(self):
         '''Transform element into string.
         
         Return:
-            Returns element and its isotope in string format.
+            Returns element, isotope and amount in string format.
         '''
-        return "{0}{1}".format(self.isotope, self.name)
+        if self.isotope and self.amount:
+            return "{0}{1} {2}".format(self.isotope, self.symbol, self.amount)
+        if self.isotope:
+            return "{0}{1}".format(self.isotope, self.symbol)
+        if self.amount:
+            return "{0} {1}".format(self.symbol, self.amount)
+        return self.symbol
 
 
     def __eq__(self, other): 
         '''Compare object.
         '''
         return str(self) == str(other)
-    
-                          
-    def get_element_and_isotope(self):
-        '''Get Element's name and isotope.
-        
-        Return:
-            Returns element's name (string) and its isotope (class object).
-        '''
-        return self.name, self.isotope
-
-
-
-
-class Isotope:
-    def __init__(self, isotope):
-        '''Inits isotope class.
-        
-        >>> test_a = Isotope(2)
-        >>> test_b = Isotope("a")
-        Traceback (most recent call last):
-        ...
-        ValueError: invalid literal for int() with base 10: 'a'
-        >>> print(str(test_a))
-        2
-        '''
-        if isotope == "" or isotope == "None" or not isotope:  # Mundane check
-            self.mass = None
-        else:
-            self.mass = int(isotope)
-    
-    
-    def __str__(self):
-        '''Transform isotope into string.
-        
-        Return:
-            Returns isotope in string format.
-        '''
-        if not self.mass:  # Otherwise will get "NoneO".
-            return ""
-        else:
-            return str(self.mass)
-        
-
-
 
 if __name__ == "__main__":
     import doctest

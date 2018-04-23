@@ -35,19 +35,18 @@ from widgets.matplotlib.measurement.tofe_histogram import MatplotlibHistogramWid
 class TofeHistogramWidget(QtWidgets.QWidget):
     '''HistogramWidget used to draw ToF-E Histograms.
     '''
-    def __init__(self, measurement, masses, icon_manager):
+    def __init__(self, measurement, icon_manager):
         '''Inits TofeHistogramWidget widget.
         
         Args:
             measurement: A measurement class object.
-            masses: A masses class object.
             icon_manager: An iconmanager class object.
         '''
         super().__init__()
         self.ui = uic.loadUi(join("ui_files", "ui_histogram_widget.ui"), self)
         self.measurement = measurement
         self.matplotlib = MatplotlibHistogramWidget(self, measurement,
-                                                    masses, icon_manager)
+                                                    icon_manager)
         self.ui.saveCutsButton.clicked.connect(self.matplotlib.save_cuts)
         self.ui.loadSelectionsButton.clicked.connect(
                                                  self.matplotlib.load_selections)

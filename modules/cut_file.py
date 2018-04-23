@@ -59,7 +59,6 @@ class CutFile:
         self.weight_factor = weight_factor
         self.energy = None
         self.detector_angle = None
-        self.element_scatter = None
         self.data = []
         self.element_number = None
     
@@ -76,7 +75,6 @@ class CutFile:
         self.is_elem_loss = False
         self.type = selection.type
         self.weight_factor = selection.weight_factor
-        self.element_scatter = selection.element_scatter
         # TODO: Is this meta information necessary?
         self.energy = 0
         self.detector_angle = 0
@@ -101,7 +99,7 @@ class CutFile:
         element_information = file_name.split('.')[1]
         self.element_number = file_name.split('.')[2] 
         
-        self.element = Element(element_information)
+        self.element = Element.from_string(element_information)
         # print("Load cut: {0} {1}".format(self.element, self.isotope))
         with open(file) as fp:
             dirtyinteger = 0
@@ -121,8 +119,8 @@ class CutFile:
                             self.energy = float(value)
                         elif key == "Detector Angle":
                             self.detector_angle = int(value)
-                        elif key == "Scatter Element":
-                            self.element_scatter = Element(value)
+                        elif key == "Element":
+                            self.element = Element(value)
                         elif key == "Element losses":
                             self.is_elem_loss = bool(value)
                         elif key == "Split count":
@@ -175,7 +173,7 @@ class CutFile:
             my_file.write("Weight Factor: {0}\n".format(self.weight_factor))
             my_file.write("Energy: {0}\n".format(0))
             my_file.write("Detector Angle: {0}\n".format(0))
-            my_file.write("Scatter Element: {0}\n".format(self.element_scatter))
+            my_file.write("Element: {0}\n".format(self.element))
             my_file.write("Element losses: {0}\n".format(self.is_elem_loss))
             my_file.write("Split count: {0}\n".format(self.split_count))
             my_file.write("\n")
@@ -244,7 +242,6 @@ class CutFile:
         self.weight_factor = cut_file.weight_factor * additional_weight_factor
         self.energy = cut_file.energy
         self.detector_angle = cut_file.detector_angle
-        self.element_scatter = Element(cut_file.element_scatter)
 
 
 def is_rbs(file):
@@ -292,4 +289,4 @@ def get_scatter_element(file):
                 value = line_split[1].strip()
             if key == "Scatter Element":
                 return Element(value)
-    return Element()
+    return None

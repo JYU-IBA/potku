@@ -11,20 +11,39 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __versio__ = "2.0"
 
 import os
-from PyQt5 import uic, QtWidgets
+from PyQt5 import uic, QtGui, QtWidgets
 from dialogs.element_selection import ElementSelectionDialog
-from modules.masses import Masses
+from modules.element import Element
+from modules.layer import Layer
+import modules.masses as masses
+import enum
+import random
+
+class Color(enum.Enum):
+    """Definition of colors used in the layers widget."""
+
+    blue = "#cce8ff"
+    green = "#bdffc4"
+    yellow = "#fcffa9"
+    orange = "#ffe6bc"
+    red = "#ffdada"
+    purple = "#e9daff"
 
 class LayerPropertiesDialog(QtWidgets.QDialog):
     """Dialog for adding a new layer or editing an existing one.
     """
 
-    def __init__(self):
+    def __init__(self, layer_color=None):
         """Inits a layer dialog.
         """
         super().__init__()
         self.__ui = uic.loadUi(os.path.join("ui_files", "ui_layer_dialog.ui"),
                                self)
+        self.layer = None
+        if not layer_color:
+            self.layer_color = random.choice(["#cce8ff", "#bdffc4", "#fcffa9",
+                                              "#ffe6bc", "#ffdada", "#e9daff"])
+            self.__change_color_button_color()
 
 
         # Some border of widgets might be displaying red, because information
@@ -39,6 +58,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
         # Connect buttons to events
         self.__ui.addElementButton.clicked.connect(self.__add_element_layout)
+        self.__ui.colorButton.clicked.connect(self.__click_color_button)
         self.__ui.okButton.clicked.connect(self.__add_layer)
         self.__ui.cancelButton.clicked.connect(self.close)
 
@@ -57,7 +77,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
         Return:
              True if the settings are okay and false if some required fields
-             are empty or if the sum of elements doesn't equal 100%.
+             are empty.
         """
         failed_style = "background-color: #FFDDDD"
         empty_fields = []
@@ -105,10 +125,6 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         if empty_fields:
             self.__missing_information_message(empty_fields)
             return False
-        # If sum of the elements doesn't equal 100%, inform user.
-        elif not sum == 100:
-            self.__sum_unequals_100_message(sum)
-            return False
         return True # If everything is ok, return true.
 
         # TODO: Check if negative or zero values are given.
@@ -118,10 +134,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         window.
         """
         name = self.__ui.nameEdit.text()
-        thickness = self.__ui.thicknessEdit.text()
-        density = self.__ui.densityEdit.text()
-        ion_stopping = self.__ui.ionStoppingComboBox.currentText()
-        recoil_stopping = self.__ui.recoilStoppingComboBox.currentText()
+        thickness = float(self.__ui.thicknessEdit.text())
+        density = float(self.__ui.densityEdit.text())
         elements = []
         children = self.__ui.scrollAreaWidgetContents.children()
 
@@ -129,18 +143,16 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         # TODO: Explain the following. Maybe better implementation?
         i = 1
         while (i < len(children)):
-            element = []
-            element.append(children[i].text())
+            elem_symbol = children[i].text()
             i += 1
-            element.append(int(children[i].currentText().split(" ")[0]))
+            elem_isotope = int(children[i].currentText().split(" ")[0])
             # TODO: Some elements don't have isotope values. Figure out why.
             i += 1
-            element.append(float(children[i].text()) / 100)
-            elements.append(element)
+            elem_amount = float(children[i].text())
+            elements.append(Element(elem_symbol, elem_isotope, elem_amount))
             i += 2
 
-        # TODO: Create a new Layer object
-        # Layer(...)
+        self.layer = Layer(name, elements, thickness, density)
         self.close()
 
     def __missing_information_message(self, empty_fields):
@@ -154,17 +166,25 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             "\nFill out the required information in order to continue.",
             QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
-    def __sum_unequals_100_message(self, sum):
-        # TODO: Add docstring.
-        QtWidgets.QMessageBox.critical(self.parent(),
-            "Sum of elements doesn't equal 100%",
-            "Sum of elements doesn't equal 100%. Currently the sum equals " +
-            str(sum) + "%.", QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-
     def __add_element_layout(self):
         # TODO: Add docstring.
         self.__ui.scrollArea.setStyleSheet("")
         self.__element_layouts.append(ElementLayout(self.__ui.scrollAreaWidgetContents))
+
+    def __click_color_button(self):
+        """Shows dialog to change selection color.
+        """
+        dialog = QtWidgets.QColorDialog(self)
+        self.layer_color = dialog.getColor(QtGui.QColor(self.layer_color)).name()
+        self.__change_color_button_color()
+
+    def __change_color_button_color(self):
+        """Change color button's color."""
+
+        style = "background-color: " + self.layer_color
+        self.__ui.colorButton.setStyleSheet(style)
+
+
 
 class ElementLayout(QtWidgets.QHBoxLayout):
     # TODO: Add docstring and more comments.
@@ -222,6 +242,5 @@ class ElementLayout(QtWidgets.QHBoxLayout):
 
     def __load_isotopes(self):
         # TODO: Change the path.
-        masses = Masses("/home/severij/Code/potku/external/Potku-data/masses.dat")
         masses.load_isotopes(self.element.text(), self.isotope, None)
 

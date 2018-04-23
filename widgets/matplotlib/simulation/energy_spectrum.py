@@ -28,7 +28,6 @@ class MatplotlibSimulationEnergySpectrumWidget(MatplotlibWidget):
         self.energy_spectrum_data = data
         # self.__rbs_list = rbs_list
         self.__icon_manager = parent.icon_manager
-        self.__masses = parent.parent.masses
         # self.__selection_colors = parent.measurement.selector.get_colors()
         
         self.__initiated_box = False

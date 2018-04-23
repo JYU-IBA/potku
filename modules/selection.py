@@ -93,15 +93,13 @@ class AxesLimits:
 class Selector:
     """Selector objects handles all selections within measurement.
     """
-    def __init__(self, directory, measurement_name, masses,
-                 element_colormap, settings):
+    def __init__(self, directory, measurement_name, element_colormap, settings):
         """Inits Selector.
         
         Inits Selector object.
         
         Args:
             filepath: String representing filepath of measurement data (ascii file).
-            masses: Reference to element masses object of main program.
             element_colormap: Default colors for new element selections.
             settings: Measurement's settings to which selector belongs. 
                       (for selection dialog)
@@ -121,7 +119,6 @@ class Selector:
         self.axes_limits = AxesLimits()
         self.selected_id = None
         self.draw_legend = False
-        self.masses = masses
 
     def count(self):
         """Get count of selections.
@@ -185,8 +182,8 @@ class Selector:
             -1: When new selection is not allowed and there are no selections.
         """
         if self.new_selection_is_allowed:
-            sel = Selection(self.axes, self.masses,
-                            self.element_colormap, settings=self.settings)
+            sel = Selection(self.axes, self.element_colormap,
+                            settings=self.settings)
             self.grey_out_except(sel.id)
             self.selections.append(sel)
             # Do not allow new selections without closing/purging
@@ -297,8 +294,7 @@ class Selector:
             lines = {}
             for s in self.selections:
                 s.draw()
-                element, unused_isotope = s.element.get_element_and_isotope()
-                lines[element] = s.points
+                lines[s.element.symbol] = s.points
             if self.draw_legend:
                 line_text = lines.keys()
                 line_points = []
@@ -385,7 +381,7 @@ class Selector:
         for sel in self.selections:
             element, isotope = sel.element.get_element_and_isotope()
             if sel.type == "RBS":
-                element, isotope = sel.element_scatter.get_element_and_isotope()
+                element, isotope = sel.element, sel.element.isotope
             dirtyinteger = 0
             # Use dirtyinteger to differentiate multiple selections of same 
             # selection. This is roundabout method, but works as it should with
@@ -438,7 +434,7 @@ class Selector:
             for line in fp:
                 # ['ONone', '16', 'red', '3436, 2964, 4054;2376, 3964, 3914']
                 split = line.strip().split("    ")
-                sel = Selection(self.axes, self.masses, self.element_colormap,
+                sel = Selection(self.axes, self.element_colormap,
                                 element_type=split[0],
                                 element=split[1],
                                 isotope=split[2],
@@ -508,19 +504,18 @@ class Selection:
     LINE_MARKER_SIZE = 3.0
     GLOBAL_ID = 0
     
-    def __init__(self, axes, masses, element_colormap, settings, element=None, isotope=None,
+    def __init__(self, axes, element_colormap, settings, element=None, isotope=None,
                  element_type="ERD", color=None, points=None, scatter=None,
                  weight_factor=1, transposed=False):
         """Inits Selection class.
         
         Args:
             axes: Matplotlib FigureCanvas's subplot
-            masses: Reference to element masses object of main program.
             element_colormap: Default colors for new element selections.
             settings: Measurement's settings to which selector belongs. 
                       (for selection dialog)
             element: String representing element
-            isotope: String representing isotope
+            isotope: Integer representing isotope
             element_type: "ERD" or "RBS"
             color: String representing color for the element
             points: String list representing points in selection.
@@ -530,7 +525,6 @@ class Selection:
             transposed: Boolean representing if axes are transposed.
         """
         self.id = Selection.GLOBAL_ID
-        self.masses = masses  # Element isotopes
         self.element_colormap = element_colormap
         self.settings = settings
         
@@ -544,7 +538,6 @@ class Selection:
         self.type = element_type
         self.element = Element(element, isotope)
         self.weight_factor = weight_factor
-        self.element_scatter = Element(scatter)
         
         self.events_counted = False
         self.event_count = 0
@@ -758,15 +751,14 @@ class Selection:
         Return:
             String representing current selection object.
         """
-        element, isotope = self.element.get_element_and_isotope()
-        save_string = "{0}    {1}    {2}    {3}    {4}    {5}    {6}".format(
-                         self.type,
-                         element,
-                         isotope,
-                         self.weight_factor,
-                         self.element_scatter,
-                         self.default_color,
-                         self.__save_points(is_transposed))
+        if self.element:
+            save_string = "{0}    {1}    {2}    {3}    {4}    {5}".format(
+                self.type,
+                self.element.symbol,
+                str(self.element.isotope),
+                self.weight_factor,
+                self.default_color,
+                self.__save_points(is_transposed))
         return save_string
 
     def transpose(self, transpose):

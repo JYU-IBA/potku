@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 16.4.2018
+Updated on 20.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -25,7 +25,6 @@ along with this program (file named 'LICENCE').
 
 Dialog for the request settings
 """
-from PyQt5.QtWidgets import QTabWidget
 
 from modules.detector import DetectorType
 from modules.element import Element
@@ -56,21 +55,20 @@ from widgets.distance import DistanceWidget
 from dialogs.simulation.foil import FoilDialog
 from modules.foil import CircularFoil
 from modules.foil import RectangularFoil
+import modules.masses as masses
 
 
 class RequestSettingsDialog(QtWidgets.QDialog):
     
-    def __init__(self, masses, request, icon_manager):
+    def __init__(self, request, icon_manager):
         """Constructor for the program
         
         Args:
-            masses: Reference to Masses class object.
             request: Request class object.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_measuring_settings.ui"), self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        self.masses = masses
         
         self.request = request
         self.settings = request.settings
@@ -81,7 +79,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.calibration_settings = self.settings.calibration_settings
         self.depth_profile_settings = self.settings.depth_profile_settings
 
-        # self.masses.load_isotopes(self.measuring_unit_settings.element.name,
+        # masses.load_isotopes(self.measuring_unit_settings.element.symbol,
         #                          self.ui.isotopeComboBox,
         #                          str(self.measuring_unit_settings.element.isotope))
 
@@ -96,8 +94,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.measurement_settings_widget = MeasurementSettingsWidget()
         self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
-        if self.measuring_unit_settings.element.name:
-            self.masses.load_isotopes(self.measuring_unit_settings.element.name,
+        if self.measuring_unit_settings.element:
+            masses.load_isotopes(self.measuring_unit_settings.element.symbol,
                                       self.measurement_settings_widget.ui.isotopeComboBox,
                                       str(self.measuring_unit_settings.element.isotope))
         else:
@@ -135,12 +133,15 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # If user presses ok or apply, these vlues will be svaed into request's default detector
         self.tmp_foil_info = []
 
+        # List of foil indexes that are timing foils
+        self.tof_foils = []
+
         # Add foil widgets and foil objects
         self.detector_structure_widgets = []
         self.foils_layout = self._add_default_foils()
         self.detector_settings_widget.ui.detectorScrollAreaContents.layout().addLayout(self.foils_layout)
 
-        self.detector_settings_widget.ui.newFoilButton.clicked.connect(lambda: self._add_new_foil())
+        self.detector_settings_widget.ui.newFoilButton.clicked.connect(lambda: self._add_new_foil(self.foils_layout))
 
         self.calibration_settings.show(self.detector_settings_widget)
 
@@ -163,6 +164,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem("ERD")
         self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem("RBS")
+        self.simulation_settings_widget.ui.saveButton.clicked \
+            .connect(lambda: self.__save_file("SIMULATION_SETTINGS"))
 
         # Add depth profile settings view to the settings view
         self.depth_profile_settings_widget = DepthProfileSettingsWidget()
@@ -182,34 +185,61 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         self.exec_()
 
-    def _add_new_foil(self):
-        distance_widget = DistanceWidget()
-        self.detector_structure_widgets.append(distance_widget)
-        foil_widget = FoilWidget()
+    def _add_new_foil(self, layout):
+        foil_widget = FoilWidget(self)
+        new_foil = CircularFoil("Foil")
+        self.tmp_foil_info.append(new_foil)
         foil_widget.ui.foilButton.clicked.connect(lambda: self._open_composition_dialog())
+        foil_widget.ui.timingFoilCheckBox.stateChanged.connect(lambda: self._check_and_add())
+        foil_widget.ui.distanceEdit.setText(str(new_foil.distance))
         self.detector_structure_widgets.append(foil_widget)
-        self.foils_layout.addWidget(distance_widget)
-        self.foils_layout.addWidget(foil_widget)
+        layout.addWidget(foil_widget)
+
+        if len(self.tof_foils) >= 2:
+            foil_widget.ui.timingFoilCheckBox.setEnabled(False)
+        return foil_widget
 
     def _add_default_foils(self):
         layout = QtWidgets.QHBoxLayout()
-
         target = QtWidgets.QLabel("Target")
         layout.addWidget(target)
-
-        i = 0
-        while i in range(6):
-            foil_widget = FoilWidget()
-            new_foil = CircularFoil("Foil")
-            self.tmp_foil_info.append(new_foil)
-            foil_widget.ui.foilButton.clicked.connect(lambda: self._open_composition_dialog())
-            distance_widget = DistanceWidget()
-            self.detector_structure_widgets.append(distance_widget)
-            self.detector_structure_widgets.append(foil_widget)
-            layout.addWidget(self.detector_structure_widgets[i])
-            layout.addWidget(self.detector_structure_widgets[i + 1])
-            i = i + 2
+        for i in range(4):
+            foil_widget = self._add_new_foil(layout)
+            for index in self.request.detector.tof_foils:
+                if index == i:
+                    foil_widget.ui.timingFoilCheckBox.setChecked(True)
         return layout
+
+    def _check_and_add(self):
+        check_box = self.sender()
+        for i in range(len(self.detector_structure_widgets)):
+            if self.detector_structure_widgets[i].ui.timingFoilCheckBox is self.sender():
+                if check_box.isChecked():
+                    if self.tof_foils:
+                        if self.tof_foils[0] > i:
+                            self.tof_foils.insert(0, i)
+                        else:
+                            self.tof_foils.append(i)
+                        if len(self.tof_foils) >= 2:
+                            self._disable_checkboxes()
+                    else:
+                        self.tof_foils.append(i)
+                else:
+                    self.tof_foils.remove(i)
+                    if 0 < len(self.tof_foils) < 2:
+                        self._enable_checkboxes()
+                break
+
+    def _disable_checkboxes(self):
+        for i in range(len(self.detector_structure_widgets)):
+            if i not in self.tof_foils:
+                widget = self.detector_structure_widgets[i]
+                widget.ui.timingFoilCheckBox.setEnabled(False)
+
+    def _enable_checkboxes(self):
+        for i in range(len(self.detector_structure_widgets)):
+            widget = self.detector_structure_widgets[i]
+            widget.ui.timingFoilCheckBox.setEnabled(True)
 
     def _open_composition_dialog(self):
         foil_name = self.sender().text()
@@ -224,7 +254,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
     def __open_calibration_dialog(self):
         measurements = [self.request.measurements.get_key_value(key)
                         for key in self.request.samples.measurements.measurements.keys()]
-        CalibrationDialog(measurements, self.settings, self.masses, self)
+        CalibrationDialog(measurements, self.settings, self)
 
     def show_settings(self):
         if self.request.default_measurement.ion:
@@ -266,7 +296,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         if settings_type == "MEASURING_UNIT_SETTINGS":
             settings = MeasuringSettings()
             settings.load_settings(filename)
-            self.masses.load_isotopes(settings.element.name,
+            masses.load_isotopes(settings.element.symbol,
                                       self.isotopeComboBox,
                                       str(settings.element.isotope))
             settings.show(self)
@@ -292,6 +322,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             pass
         elif settings_type == "MEASUREMENT_SETTINGS":
             pass
+        elif settings_type == "SIMULATION_SETTINGS":
+            pass
         else:
             return
 
@@ -306,11 +338,43 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 settings.save_settings(filename)
             elif settings_type == "MEASUREMENT_SETTINGS":
                 self.request.default_measurement.save_settings(filename)
+            elif settings_type == "SIMULATION_SETTINGS":
+                self.request.default_simulation.save_settings(filename)
             elif settings_type == "DETECTOR_SETTINGS":
                 self.request.detector.save_settings(filename)
             else:
                 settings.set_settings(self.measurement_settings_widget)
                 settings.save_settings(filename)
+
+    def calculate_distance(self):
+        distance = 0
+        for i in range(len(self.detector_structure_widgets)):
+            widget = self.detector_structure_widgets[i]
+            distance = distance + float(widget.ui.distanceEdit.text())
+            self.tmp_foil_info[i].distance = distance
+
+    def delete_foil(self, foil_widget):
+        index_of_item_to_be_deleted = self.detector_structure_widgets.index(foil_widget)
+        del(self.detector_structure_widgets[index_of_item_to_be_deleted])
+        foil_to_be_deleted = self.tmp_foil_info[index_of_item_to_be_deleted]
+        # tof_foils = []
+        # for i in self.tof_foils:
+        #     tof_foils.append(self.tmp_foil_info[i])
+        if index_of_item_to_be_deleted in self.tof_foils:
+            self.tof_foils.remove(index_of_item_to_be_deleted)
+            if 0 < len(self.tof_foils) < 2:
+                self._enable_checkboxes()
+        self.tmp_foil_info.remove(foil_to_be_deleted)
+        # for j in range(len(self.tmp_foil_info)):
+        #     for k in range(len(tof_foils)):
+        #         if self.tmp_foil_info[j] is tof_foils[k] and j not in self.tof_foils:
+        #             self.tof_foils.append(j)
+        for i in range(len(self.tof_foils)):
+            if self.tof_foils[i] > index_of_item_to_be_deleted:
+                self.tof_foils[i] = self.tof_foils[i] - 1
+
+        self.foils_layout.removeWidget(foil_widget)
+        foil_widget.deleteLater()
 
     def update_and_close_settings(self):
         """Updates measuring settings values with the dialog's values and saves them
@@ -367,8 +431,13 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.detector.detector_type = DetectorType(self.detector_settings_widget.typeComboBox.currentIndex())
             self.calibration_settings.set_settings(self.detector_settings_widget)
             self.request.detector.calibration = self.calibration_settings
+            # Detector foils
+            self.calculate_distance()
+            self.request.detector.foils = self.tmp_foil_info
+            # Tof foils
+            self.request.detector.tof_foils = self.tof_foils
 
-            self.request.detector.save_settings(self.request.default_folder + os.sep + "Default")
+            self.request.detector.save_settings(self.request.default_folder + os.sep + "Detector" + os.sep + "Default")
 
             # Simulation settings
             self.request.default_simulation.name = self.simulation_settings_widget.nameLineEdit.text()
@@ -386,6 +455,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.no_of_recoils = self.simulation_settings_widget.noOfRecoilsLineEdit.text()
             self.request.default_simulation.no_of_scaling = self.simulation_settings_widget.noOfScalingLineEdit.text()
 
+            self.request.default_simulation.save_settings(self.request.default_folder + os.sep + "Default")
+
+            #Depth profile settings
             self.depth_profile_settings.set_settings(self.depth_profile_settings_widget)
 
             # TODO Values should be checked.
@@ -413,7 +485,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             button.setText(dialog.element)
             # Enabled settings once element is selected
             self.__enabled_element_information()  
-        self.masses.load_isotopes(dialog.element, combo_box,
+            masses.load_isotopes(dialog.element, combo_box,
                                   self.measuring_unit_settings.element.isotope)
         
     def __enabled_element_information(self):

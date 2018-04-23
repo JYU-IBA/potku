@@ -2,8 +2,9 @@
 # TODO: Add licence information
 """
 Created on 23.3.2018
-Updated on 11.4.2018
+Updated on 20.4.2018
 """
+from modules.general_functions import save_settings
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
@@ -13,9 +14,10 @@ import json
 import datetime
 from enum import Enum
 
-from modules.foil import CircularFoil, RectangularFoil
+from modules.foil import CircularFoil, RectangularFoil, FoilEncoder
 from modules.layer import Layer
 from modules.calibration_parameters import CalibrationParameters
+from modules.element import Element
 
 
 class DetectorType(Enum):
@@ -25,13 +27,35 @@ class DetectorType(Enum):
 class DetectorEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, Detector):
-            return {
+            detector_dict = {
                 "name": obj.name,
                 "description": obj.description,
                 "date": obj.date.isoformat(),
                 "detector_type": obj.detector_type.value,
-                "foils": []
+                "foils": [],
+                "tof_foils": obj.tof_foils
             }
+            foils = []
+            layers = []
+            for f in obj.foils:
+                foil_dict = {
+                    "name": f.name,
+                    "distance": f.distance,
+                    "layers": [],
+                    "transmission": f.transmission,
+                }
+                if isinstance(f, CircularFoil):
+                    foil_dict["type"] = "circular"
+                    foil_dict["size"] = f.diameter
+                if isinstance(f, RectangularFoil):
+                    foil_dict["type"] = "rectangular"
+                    foil_dict["size"] = f.size
+                for l in f.layers:
+                    layers.append(l)
+                foil_dict["layers"] = layers
+                foils.append(foil_dict)
+            detector_dict["foils"] = foils
+            return detector_dict
         return super(DetectorEncoder, self).default(obj)
 
 
@@ -39,10 +63,10 @@ class Detector:
 
     # request maybe only temporary parameter
     __slots__ = "request", "description", "path", "name", "date", "detector_type", "foils", "calibration", \
-                "efficiencies", "efficiencies_path"
+                "efficiencies", "efficiencies_path", "tof_foils"
 
     def __init__(self, request, name="Default", description="", date=datetime.date.today(),
-                 detector_type=DetectorType.ToF, calibration=CalibrationParameters(), foils=[]):
+                 detector_type=DetectorType.ToF, calibration=CalibrationParameters(), foils=[], tof_foils=[1, 2]):
         """Initialize a detector.
 
         Args:
@@ -53,6 +77,7 @@ class Detector:
             detector_type: Type of detector.
             calibration: Calibration parameters for detector.
             foils: Detector foils.
+            tof_foils: List of indexes that tell the index of tof foils in foils list.
 
         """
         self.request = request
@@ -63,6 +88,7 @@ class Detector:
         self.detector_type = detector_type
         self.calibration = calibration
         self.foils = foils
+        self.tof_foils = tof_foils
 
         self.efficiencies = []
         self.efficiencies_path = None
@@ -93,8 +119,7 @@ class Detector:
         """Initialize Detector from a JSON file.
 
         Args:
-            file_path: A file path to JSON file containing the detector
-                       parameters.
+            file_path: A file path to JSON file containing the detector parameters.
         """
         obj = json.load(open(file_path))
 
@@ -109,11 +134,10 @@ class Detector:
             layers = []
 
             for layer in foil["layers"]:
-                layers.append(Layer(tuple(layer["elements"]),
-                                    layer["thickness"],
-                                    layer["ion_stopping"],
-                                    layer["recoil_stopping"],
-                                    layer["density"]))
+                layers.append(Layer(layer["name"],
+                                    Element.from_string(layer["elements"]),
+                                    float(layer["thickness"]),
+                                    float(layer["density"])))
 
             if foil["type"] == "circular":
                 foils.append(
@@ -128,12 +152,11 @@ class Detector:
 
     def save_settings(self, filepath=None):
         """Saves parameters from Detector object in JSON format in .detector file.
+
+        Args:
+            filepath: Filepath including name of the file.
         """
-        if filepath is None:
-            filepath = self.directory
-        filepath = filepath + ".detector"
-        with open(filepath, 'w') as savefile:
-            json.dump(self, savefile, indent=4, cls=DetectorEncoder)
+        save_settings(self, ".detector", DetectorEncoder, filepath)
 
 
 class ToFDetector(Detector):

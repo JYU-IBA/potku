@@ -25,13 +25,12 @@ class SimulationTabWidget(QtWidgets.QWidget):
     """
     issueMaster = QtCore.pyqtSignal()
 
-    def __init__(self, request, tab_id, simulation, masses, icon_manager):
+    def __init__(self, request, tab_id, simulation, icon_manager):
         """ Init simulation tab class.
         
         Args:
             tab_id: An integer representing ID of the tabwidget.
             simulation: A simulation class object.
-            masses: A masses class object.
             icon_manager: An iconmanager class object.
         """
         super().__init__()
@@ -39,7 +38,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.tab_id = tab_id
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_simulation_tab.ui"), self)
         self.simulation = simulation
-        self.masses = masses
         self.icon_manager = icon_manager
 
         self.simulation_depth_profile = None
@@ -230,7 +228,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
                                    lines[2].strip().split("\t"), name, m_name)
             cut_names = [os.path.basename(cut) for cut in use_cuts]
             elements_string = lines[1].strip().split("\t")
-            elements = [Element(element) for element in elements_string]
+            elements = [Element.from_string(element) for element in elements_string]
             x_unit = lines[3].strip()
             line_zero = False
             line_scale = False

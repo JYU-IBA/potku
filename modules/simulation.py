@@ -19,6 +19,10 @@ import sys
 import shutil
 import datetime
 from enum import Enum
+from json import JSONEncoder
+
+from modules.general_functions import save_settings
+
 
 class Simulations:
     """Simulations class handles multiple simulations.
@@ -161,6 +165,27 @@ class Simulations:
 #     # TODO: Function for removing simulation
 
 
+class SimulationEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Simulation):
+            return {
+                "name": obj.name,
+                "description": obj.description,
+                "date": obj.date.isoformat(),
+                "simulation_type": obj.simulation_type.value,
+                "scatter": obj.scatter,
+                "main_scatter": obj.main_scatter,
+                "energy": obj.energy,
+                "mode": obj.mode.value,
+                "no_of_ions": obj.no_of_ions,
+                "no_of_preions": obj.no_of_preions,
+                "seed": obj.seed,
+                "no_of_recoils": obj.no_of_recoils,
+                "no_of_scaling": obj.no_of_scaling
+            }
+        return super(SimulationEncoder, self).default(obj)
+
+
 class SimulationType(Enum):
     ERD = 0
     RBS = 1
@@ -220,6 +245,14 @@ class Simulation:
     def create_folder_structure(self, simulation_folder_path):
         self.directory = simulation_folder_path
         self.__make_directories(self.directory)
+
+    def save_settings(self, filepath=None):
+        """Saves parameters from Simulation object in JSON format in .mc_simu file.
+
+        Args:
+            filepath: Filepath including name of the file.
+        """
+        save_settings(self, ".mc_simu", SimulationEncoder, filepath)
 
     def add_command_file(self, command_file):
         """ Adds command file to Simulation object.
@@ -351,7 +384,6 @@ class CallMCERD(object):
             self._executing_mcerd_process = subprocess.Popen(self.command_win, shell=True)
         elif used_os == "Linux":
             self._executing_mcerd_process = subprocess.Popen("ulimit -s 64000; exec " + self.command_linux, shell=True)
-            print("Called MCERD")
         elif used_os == "Darwin":
             self._executing_mcerd_process = subprocess.Popen("ulimit -s 64000; exec " + self.command_mac, shell=True)
         else:
@@ -378,7 +410,9 @@ class CallGetEspe(object):
     def __init__(self, command_file_path):
         """Inits CallGetEspe.
 
-        Args:
+tash list
+
+   ssArgs:
             command_file_path: Full path of where simulation command file is located.
         """
 

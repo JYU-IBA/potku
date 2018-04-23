@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Created on 16.4.2018
+Created on 18.4.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
@@ -43,9 +43,13 @@ class FoilDialog(QtWidgets.QDialog):
         self.ui.dimensionLayout.addWidget(self.dimension_label)
         self.ui.dimensionLayout.addWidget(self.dimension_edits[0])
 
+        self.ui.nameEdit.setText(self.foil.name)
+        self.ui.transmissionEdit.setText(str(self.foil.transmission))
+
         if type(tmp_foils[tmp_index]) is CircularFoil:
             self.foil_type = CircularFoil
             self.ui.typeComboBox.setCurrentIndex(0)
+            self.first_dimension_edit.setText(str(self.foil.diameter))
         else:
             self.foil_type = RectangularFoil
             self.ui.typeComboBox.setCurrentIndex(1)
@@ -53,7 +57,9 @@ class FoilDialog(QtWidgets.QDialog):
             self.second_dimension_edit = QtWidgets.QLineEdit()
             self.dimension_edits.append(self.second_dimension_edit)
             self.ui.dimensionLayout.addWidget(self.dimension_edits[1])
-        
+            self.first_dimension_edit.setText(str(self.foil.size[0]))
+            self.second_dimension_edit.setText(str(self.foil.size[1]))
+
         # This widget adds itself into the matplotlib_layout
         self.composition = TargetCompositionWidget(self, self.icon_manager)
 
@@ -79,6 +85,7 @@ class FoilDialog(QtWidgets.QDialog):
         else:
             self.dimension_label.setText("Size:")
             self.second_dimension_edit = QtWidgets.QLineEdit()
+            self.second_dimension_edit.setText("0.0")
             self.dimension_edits.append(self.second_dimension_edit)
             self.ui.dimensionLayout.addWidget(self.second_dimension_edit)
             if self.foil_type is CircularFoil:
@@ -94,6 +101,7 @@ class FoilDialog(QtWidgets.QDialog):
             else:
                 new_foil = CircularFoil(self.ui.nameEdit.text())
                 new_foil.diameter = self.first_dimension_edit.text()
+            new_foil.distance = self.foils[self.index].distance
             self.foils[self.index] = new_foil
         else:
             self.foil.name = self.ui.nameEdit.text()

@@ -34,6 +34,7 @@ from dialogs.measurement.selection import SelectionSettingsDialog
 from dialogs.graph_settings import TofeGraphSettingsWidget
 from modules.general_functions import open_file_dialog
 from widgets.matplotlib.base import MatplotlibWidget
+import modules.masses as masses
 
 class MatplotlibHistogramWidget(MatplotlibWidget):
     '''Matplotlib histogram widget, used to graph "bananas" (ToF-E).
@@ -51,21 +52,19 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                    4 : "selection select tool"
                   }
     
-    def __init__(self, parent, measurement_data, masses, icon_manager):
+    def __init__(self, parent, measurement_data, icon_manager):
         '''Inits histogram widget
         
         Args:https://www.stack.nl/~dimitri/doxygen/manual/starting.html#step2
             parent: A TofeHistogramWidget class object.
             measurement_data: A list of data points.
             icon_manager: IconManager class object.
-            masses: A masses class object.
             icon_manager: An iconmanager class object.
         '''
         super().__init__(parent)
         self.canvas.manager.set_title("ToF-E Histogram")
         self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
-        self.__masses = masses
         self.__icon_manager = icon_manager
         
         # Connections and setup
@@ -295,27 +294,23 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         # Get selections for legend
         for sel in self.measurement.selector.selections:
             rbs_string = ""
-            if sel.type == "ERD":
-                element_object = sel.element
-            elif sel.type == "RBS":
-                element_object = sel.element_scatter
+            element = sel.element
+            if sel.type == "RBS":
                 rbs_string = "*"
             sel.points.set_marker(None)  # Remove markers for legend.
             dirtyinteger = 0
-            key_string = "{0}{1}".format(element_object, dirtyinteger)
+            key_string = "{0}{1}".format(element.symbol, dirtyinteger)
             while key_string in selection_legend.keys():
                 dirtyinteger += 1
-                key_string = "{0}{1}".format(element_object,
-                                             dirtyinteger)
-                
-            element, isotope = element_object.get_element_and_isotope()
-            label = r"$^{" + str(isotope) + "}$" + element + rbs_string
-            mass = str(isotope)
-            if not mass:
-                mass = self.__masses.get_standard_isotope(element)
+
+            if element.isotope:
+                isotope_str = str(int(element.isotope))
             else:
-                mass = float(mass)
-            selection_legend[key_string] = (label, mass, sel.points)
+                isotope_str = str(int(masses.get_standard_isotope(element.symbol)))
+
+            label = r"$^{" + isotope_str + "}$" + element.symbol + rbs_string
+
+            selection_legend[key_string] = (label, isotope_str, sel.points)
         
         # Sort legend text
         sel_text = []
