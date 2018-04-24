@@ -258,7 +258,7 @@ class Request:
         if not measurement:
             self.__request_information["meta"]["master"] = ""
         else:
-            name = measurement.measurement_name
+            name = measurement.name
             self.__request_information["meta"]["master"] = name
         self.save()
 
