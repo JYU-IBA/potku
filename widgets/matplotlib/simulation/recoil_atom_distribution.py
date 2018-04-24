@@ -12,6 +12,7 @@ from matplotlib.widgets import SpanSelector
 from widgets.matplotlib.base import MatplotlibWidget
 from dialogs.element_selection import ElementSelectionDialog
 from dialogs.simulation.recoil_element_selection import RecoilElementSelectionDialog
+import modules.general_functions as general
 
 
 class Point:
@@ -240,7 +241,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # This customizes the toolbar buttons
         self.__fork_toolbar_buttons()
 
-        self.name_y_axis = "Concentration"
+        self.name_y_axis = "Relative concentration"
         self.name_x_axis = "Depth"
 
         # TODO: Placeholder
@@ -273,13 +274,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
             radio_button = QtWidgets.QRadioButton("Li")
 
+            if dialog.isotope:
+                isotope_superscript = general.to_superscript(dialog.isotope)
+                button_text = isotope_superscript + " " + dialog.element
+            else:
+                button_text = dialog.element
 
-            # isotope_str = str(int(dialog.isotope))
-            #
-            # label = r"$^{" + isotope_str + "}$" + element.symbol
-            # radio_button.setText(r"$^{" + dialog.isotope + "}$" + dialog.element)
-            radio_button.setText(dialog.element)
-
+            # button_text = r"$^{" + isotope_str + "}$" + dialog.element
+            radio_button.setText(button_text)
 
             self.radios.addButton(radio_button)
 
