@@ -608,7 +608,7 @@ class Potku(QtWidgets.QMainWindow):
             progress_bar.show()
 
             name_prefix = "Sample_"
-            sample_path = os.path.join(self.request.directory, name_prefix + self.request.get_running_int())
+            sample_path = os.path.join(self.request.directory, name_prefix + "%02d" % self.request.get_running_int())
             new_sample = self.request.samples.add_sample_file(sample_path)
             self.request.increase_running_int_by_1()
 
@@ -641,7 +641,7 @@ class Potku(QtWidgets.QMainWindow):
             # self.__add_new_tab("simulation", filename, progress_bar, load_data=False)
             # self.__add_new_tab("simulation", "tiedosto", progress_bar, load_data=False)
             name_prefix = "Sample_"
-            sample_path = os.path.join(self.request.directory, name_prefix + self.request.get_running_int())
+            sample_path = os.path.join(self.request.directory, name_prefix + "%02d" % self.request.get_running_int())
             new_sample = self.request.samples.add_sample_file(sample_path)
 
             self.__add_new_tab("simulation", dialog.name, new_sample, progress_bar, load_data=False)

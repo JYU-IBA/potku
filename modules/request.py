@@ -163,15 +163,14 @@ class Request:
                 match_object = re.search("\d", item)
                 if match_object:
                     number_str = item[match_object.start()]
-                    if  number_str == "0":
+                    if number_str == "0":
                         self._running_int = int(item[match_object.start() + 1])
                     else:
                         self._running_int = int(item[match_object.start():match_object.start() + 2])
         return samples
 
     def get_running_int(self):
-        formated_number_str = str(self._running_int).zfill(2)
-        return formated_number_str
+        return self._running_int
 
     def increase_running_int_by_1(self):
         self._running_int = self._running_int + 1

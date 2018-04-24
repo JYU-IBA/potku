@@ -74,7 +74,7 @@ class Simulations:
             sample.increase_running_int_measurement_by_1()
 
             # Create path for simulation directory.
-            simulation_directory = os.path.join(sample.path, simulation.name_prefix + simulation.serial_number + "-" +
+            simulation_directory = os.path.join(sample.path, simulation.name_prefix + "%02d" % simulation.serial_number + "-" +
                                                 simulation.name)
             simulation.create_folder_structure(simulation_directory)
             sample.simulations.simulations[tab_id] = simulation

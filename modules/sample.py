@@ -93,15 +93,13 @@ class Sample:
             os.makedirs(self.path)
 
     def get_running_int_measurement(self):
-        formatted_number_str = str(self._running_int_measurement).zfill(2)
-        return formatted_number_str
+        return self._running_int_measurement
 
     def increase_running_int_measurement_by_1(self):
         self._running_int_measurement = self._running_int_measurement + 1
 
     def get_running_int_simulation(self):
-        formatted_number_str = str(self._running_int_simulation).zfill(2)
-        return formatted_number_str
+        return self._running_int_simulation
 
     def increase_running_int_simulation_by_1(self):
         self._running_int_simulation = self._running_int_simulation + 1
