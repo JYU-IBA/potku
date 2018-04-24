@@ -155,21 +155,6 @@ class Potku(QtWidgets.QMainWindow):
         self.tree_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tree_widget.itemChanged[QTreeWidgetItem, int].connect(self.__rename_dir)
 
-        self.measurements_item = QtWidgets.QTreeWidgetItem()
-        self.measurements_item.item_type = "measurement"
-        self.measurements_item.setText(0, "Measurements")
-        self.__change_tab_icon(self.measurements_item, "folder_locked.svg")
-        self.measurements_item.setFlags(self.measurements_item.flags() ^ Qt.ItemIsDragEnabled)
-
-        self.simulations_item = QtWidgets.QTreeWidgetItem()
-        self.simulations_item.item_type = "simulation"
-        self.simulations_item.setText(0, "Simulations")
-        self.__change_tab_icon(self.simulations_item, "folder_locked.svg")
-        self.simulations_item.setFlags(self.simulations_item.flags() ^ Qt.ItemIsDragEnabled)
-
-        self.tree_widget.addTopLevelItem(self.measurements_item)
-        self.tree_widget.addTopLevelItem(self.simulations_item)
-
     def __open_menu(self, position):
         """Opens the right click menu in tree view.
         """
@@ -521,9 +506,11 @@ class Potku(QtWidgets.QMainWindow):
         sample_paths_in_request = self.request.get_samples_files()
         if sample_paths_in_request:
             for sample_path in sample_paths_in_request:
-                self.request.samples.add_sample_file(sample_path)
+                sample = self.request.samples.add_sample_file(sample_path)
+                sample.serial_number = self.request.get_running_int()
+                self.request.increase_running_int_by_1()
+                self.__add_root_item_to_tree(sample)
             self.request.increase_running_int_by_1()
-        # TODO: update widget tree with the uploaded samples
 
     def load_request_simulations(self, simulations=[]):
         """Load simulation files in the request.
@@ -610,6 +597,7 @@ class Potku(QtWidgets.QMainWindow):
             name_prefix = "Sample_"
             sample_path = os.path.join(self.request.directory, name_prefix + "%02d" % self.request.get_running_int())
             new_sample = self.request.samples.add_sample_file(sample_path)
+            new_sample.serial_number = self.request.get_running_int()
             self.request.increase_running_int_by_1()
 
             self.__add_new_tab("measurement", filename, new_sample, progress_bar, load_data=True)
@@ -643,6 +631,8 @@ class Potku(QtWidgets.QMainWindow):
             name_prefix = "Sample_"
             sample_path = os.path.join(self.request.directory, name_prefix + "%02d" % self.request.get_running_int())
             new_sample = self.request.samples.add_sample_file(sample_path)
+            new_sample.serial_number = self.request.get_running_int()
+            self.request.increase_running_int_by_1()
 
             self.__add_new_tab("simulation", dialog.name, new_sample, progress_bar, load_data=False)
             self.__remove_info_tab()
@@ -689,29 +679,34 @@ class Potku(QtWidgets.QMainWindow):
                         master_measurement = measurement
                         self.request.set_master(measurement)
                         break
-            root = self.treeWidget.invisibleRootItem()
-            # root_child_count = root.childCount()
-            measurement_items = root.child(0)
-            simulation_items = root.child(1)
 
-            for i in range(measurement_items.childCount()):
-                item = measurement_items.child(i)
-                tab_widget = self.tab_widgets[item.tab_id]
-                tab_name = tab_widget.measurement.name
-                if master_measurement_name and \
-                   item.tab_id == master_measurement.tab_id:
-                    item.setText(0,
-                                 "{0} (master)".format(master_measurement_name))
-                elif tab_name in nonslaves or not master_measurement_name:
-                    item.setText(0, tab_name)
-                else:
-                    item.setText(0, "{0} (slave)".format(tab_name))
+            for sample in self.request.samples.samples:
+                # Get Sample item from tree
+                try:
+                    sample_item = (self.tree_widget.findItems("%02d" % sample.serial_number + " " + sample.name,
+                                                             Qt.MatchEndsWith, 0))[0]
+                    for i in range(sample_item.measurement_items.childCount()):
+                        item = sample_item.measurement_items.child(i)
+                        tab_widget = self.tab_widgets[item.tab_id]
+                        tab_name = tab_widget.measurement.name
+                        if master_measurement_name and \
+                                item.tab_id == master_measurement.tab_id:
+                            item.setText(0,
+                                         "{0} (master)".format(master_measurement_name))
+                        elif tab_name in nonslaves or not master_measurement_name:
+                            item.setText(0, tab_name)
+                        else:
+                            item.setText(0, "{0} (slave)".format(tab_name))
 
-            for i in range(simulation_items.childCount()):
-                item = root.child(i)
-                tab_widget = self.tab_widgets[item.tab_id]
-                tab_name = tab_widget.simulation.name
-                item.setText(0, tab_name)
+                    for i in range(sample_item.simulation_items.childCount()):
+                        item = sample_item.simulations_item.child(i)
+                        tab_widget = self.tab_widgets[item.tab_id]
+                        tab_name = tab_widget.simulation.name
+                        item.setText(0, tab_name)
+                except:
+                    # TODO Sample was not found in tree.
+                    pass
+
 
     def open_request_settings(self):
         """Opens request settings dialog.
@@ -725,6 +720,37 @@ class Potku(QtWidgets.QMainWindow):
             tab_index: Integer representing index of the current tab
         """
         self.ui.tabs.removeTab(tab_index)
+
+    def __add_root_item_to_tree(self, sample):
+        """Adds sample to tree and Measurements and Simulations under it.
+
+        Args:
+            sample: Sample related to item.
+        """
+        sample_item = QtWidgets.QTreeWidgetItem()
+        sample_item.item_type = "sample"
+        sample_item.setText(0, "Sample " + "%02d" % sample.serial_number + " " + sample.name)
+        self.__change_tab_icon(sample_item, "folder_locked.svg")
+        sample_item.setFlags(sample_item.flags() ^ Qt.ItemIsDragEnabled)
+        sample_item.obj = sample
+
+        measurements_item = QtWidgets.QTreeWidgetItem()
+        measurements_item.item_type = "measurement"
+        measurements_item.setText(0, "Measurements")
+        self.__change_tab_icon(measurements_item, "folder_locked.svg")
+        measurements_item.setFlags(measurements_item.flags() ^ Qt.ItemIsDragEnabled)
+
+        simulations_item = QtWidgets.QTreeWidgetItem()
+        simulations_item.item_type = "simulation"
+        simulations_item.setText(0, "Simulations")
+        self.__change_tab_icon(simulations_item, "folder_locked.svg")
+        simulations_item.setFlags(simulations_item.flags() ^ Qt.ItemIsDragEnabled)
+
+        sample_item.measurements_item = measurements_item
+        sample_item.simulations_item = simulations_item
+        sample_item.addChild(measurements_item)
+        sample_item.addChild(simulations_item)
+        self.tree_widget.addTopLevelItem(sample_item)
 
     def __add_item_to_tree(self, parent_item, obj, load_data):
         """Add item to tree where it can be opened.
@@ -799,7 +825,9 @@ class Potku(QtWidgets.QMainWindow):
 
                     loading_bar.hide()
                     self.statusbar.removeWidget(loading_bar)
-                self.__add_item_to_tree(self.measurements_item, measurement, load_data)
+                sample_item = (self.tree_widget.findItems("%02d" % sample.serial_number + " " + sample.name,
+                                                              Qt.MatchEndsWith, 0))[0]
+                self.__add_item_to_tree(sample_item.measurements_item, measurement, load_data)
                 self.tab_id += 1
 
         if tab_type == "simulation":
@@ -821,7 +849,9 @@ class Potku(QtWidgets.QMainWindow):
                     self.ui.tabs.addTab(tab, simulation.name)
                     self.ui.tabs.setCurrentWidget(tab)
 
-                self.__add_item_to_tree(self.simulations_item, simulation, load_data)
+                sample_item = (self.tree_widget.findItems("%02d" % sample.serial_number + " " + sample.name,
+                                                          Qt.MatchEndsWith, 0))[0]
+                self.__add_item_to_tree(sample_item.simulations_item, simulation, load_data)
                 self.tab_id += 1
 
     def __change_tab_icon(self, tree_item, icon="folder_open.svg"):

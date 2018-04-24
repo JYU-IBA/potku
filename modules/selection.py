@@ -103,7 +103,7 @@ class Selector:
             element_colormap: Default colors for new element selections.
         """
         self.element_colormap = element_colormap
-        self.settings = measurement.settings
+        self.settings = measurement.measurement_settings
         self.measurement_name = measurement.name
         self.directory = os.path.join(measurement.directory, measurement.directory_data)
         self.selection_file = os.path.join(self.directory,

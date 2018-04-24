@@ -73,7 +73,7 @@ class Sample:
     Class for a sample.
     """
 
-    def __init__(self, path, request, name):
+    def __init__(self, path, request, name=""):
         """
         Initialize the Sample.
 
@@ -82,6 +82,8 @@ class Sample:
             request: Which request the sample belongs to.
             name: Optional name for the sample.
         """
+        self.name = name
+
         self.path = path
         self.measurements = Measurements(request)
         self.simulations = Simulations(request)
