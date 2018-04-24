@@ -609,32 +609,18 @@ class Potku(QtWidgets.QMainWindow):
         """
         Opens a dialog for creating a new simulation.
         """
-        dialog = SimulationNewDialog()
+        dialog = SimulationNewDialog(self.request.samples.samples)
 
-        # filename = dialog.name
-        # if filename:
-        #     try:
-        #         self.ui.tabs.removeTab(self.ui.tabs.indexOf(
-        #             self.measurement_info_tab))
-        #     except:
-        #         pass  # If there is no info tab, no need to worry about.
-        #         # print("Can't find an info tab to remove")
-        #
         simulation_name = dialog.name
+        sample_name = dialog.sample
         if simulation_name:
             progress_bar = QtWidgets.QProgressBar()
             self.statusbar.addWidget(progress_bar, 1)
             progress_bar.show()
 
-            # self.__add_new_tab("simulation", filename, progress_bar, load_data=False)
-            # self.__add_new_tab("simulation", "tiedosto", progress_bar, load_data=False)
-            name_prefix = "Sample_"
-            sample_path = os.path.join(self.request.directory, name_prefix + "%02d" % self.request.get_running_int())
-            new_sample = self.request.samples.add_sample_file(sample_path)
-            new_sample.serial_number = self.request.get_running_int()
-            self.request.increase_running_int_by_1()
+            sample_item = (self.tree_widget.findItems(sample_name, Qt.MatchEndsWith, 0))[0]
 
-            self.__add_new_tab("simulation", dialog.name, new_sample, progress_bar, load_data=False)
+            self.__add_new_tab("simulation", dialog.name, sample_item.obj, progress_bar, load_data=False)
             self.__remove_info_tab()
             self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()

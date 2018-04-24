@@ -19,12 +19,11 @@ from PyQt5 import uic, QtWidgets
 class SimulationNewDialog(QtWidgets.QDialog):
     """Dialog creating a new simulation.
     """
-    # def __init__(self, parent):
-    def __init__(self):
+    def __init__(self, samples):
         """Inits a new simulation dialog.
-        TODO: Right now only the Cancel button works.
+
         Args:
-            parent: Ibasoft class object.
+            samples: Samples of request.
         """
         super().__init__()
         # self.parent = parent
@@ -34,14 +33,16 @@ class SimulationNewDialog(QtWidgets.QDialog):
         self.ui.pushCreate.clicked.connect(self.__create_simulation)
         self.ui.pushCancel.clicked.connect(self.close)
         self.name = None
+
+        for sample in samples:
+            self.ui.samplesComboBox.addItem("Sample " + "%02d" % sample.serial_number + " " + sample.name)
         
         self.exec_()
 
     def __create_simulation(self):
         self.name = self.ui.simulationNameLineEdit.text().replace(" ", "_")
-        # TODO: Remove replace above to allow spaces in request names.
-        # TODO: Get rid of print -> message window perhaps
+        self.sample = self.ui.samplesComboBox.currentText()
         if not self.name:
-            print("Request name required!")
+            print("Simulation name required!")
             return
         self.close()

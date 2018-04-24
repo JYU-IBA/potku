@@ -72,20 +72,20 @@
        <item>
         <widget class="QLineEdit" name="simulationNameLineEdit">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
          <property name="minimumSize">
           <size>
-           <width>210</width>
+           <width>0</width>
            <height>0</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
-           <width>210</width>
+           <width>16777215</width>
            <height>16777215</height>
           </size>
          </property>
@@ -99,23 +99,23 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
-        <widget class="QLabel" name="BindLabel">
+        <widget class="QLabel" name="SampleLabel">
          <property name="text">
-          <string>Bind to measurement:</string>
+          <string>Create under sample:</string>
          </property>
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="BindComboBox">
+        <widget class="QComboBox" name="samplesComboBox">
          <property name="minimumSize">
           <size>
-           <width>210</width>
+           <width>0</width>
            <height>0</height>
           </size>
          </property>
          <property name="maximumSize">
           <size>
-           <width>210</width>
+           <width>16777215</width>
            <height>16777215</height>
           </size>
          </property>
