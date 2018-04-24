@@ -172,22 +172,27 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
         self.__icon_manager = icon_manager
 
-        self.elements = {}
+        self.elements = []
 
         self.current_element = None
 
-        self.parent_ui = parent.ui
-        self.scroll_vertical_layout = QtWidgets.QVBoxLayout()
-        self.parent_ui.recoilScrollAreaContents.setLayout(self.scroll_vertical_layout)
+        scroll_vertical_layout = QtWidgets.QVBoxLayout()
+        parent.ui.recoilScrollAreaContents.setLayout(scroll_vertical_layout)
         widget = QtWidgets.QWidget()
         self.recoil_vertical_layout = QtWidgets.QVBoxLayout()
         widget.setLayout(self.recoil_vertical_layout)
-        self.scroll_vertical_layout.addWidget(widget)
-        self.scroll_vertical_layout.addItem(QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding))
-        self.parent_ui.addPushButton.clicked.connect(self.add_element)
+        scroll_vertical_layout.addWidget(widget)
+        scroll_vertical_layout.addItem(QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding))
+        parent.ui.addPushButton.clicked.connect(self.add_element)
 
         self.radios = QtWidgets.QButtonGroup(self)
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(self.choose_element)
+
+        # TODO: Set lock on only when simulation has been run
+        self.edit_lock_push_button = parent.ui.editLockPushButton
+        self.edit_lock_push_button.setEnabled(False)
+        self.edit_lock_push_button.clicked.connect(self.unlock_edit)
+        self.edit_lock_on = True
 
         # Locations of points about to be dragged at the time of click
         self.click_locations = []
@@ -211,6 +216,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.dragged_points = []
         # Points that have been selected
         self.selected_points = []
+
 
         # Span selection tool (used to select all points within a range on the x axis)
         self.span_selector = SpanSelector(self.axes, self.on_span_select, 'horizontal', useblit=True,
@@ -256,9 +262,40 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.on_draw()
 
+    def unlock_edit(self):
+        confirm_box = QtWidgets.QMessageBox()
+        confirm_box.setIcon(QtWidgets.QMessageBox.Warning)
+        yes_button = confirm_box.addButton(QtWidgets.QMessageBox.Yes)
+        confirm_box.addButton(QtWidgets.QMessageBox.Cancel)
+        confirm_box.setText("Are you sure you want to unlock full edit?\nAll previous results of this element's simulation will be deleted!")
+        confirm_box.setInformativeText("When full edit is unlocked, you can change the x coordinate of the rightmost point.")
+        confirm_box.setWindowTitle("Confirm")
+
+        confirm_box.exec()
+        if confirm_box.clickedButton() == yes_button:
+            for item in self.elements:
+                if self.radios.checkedButton() in item:
+                    item[2] = False
+                    self.edit_lock_on = False
+            self.edit_lock_push_button.setText("Full edit unlocked")
+            self.edit_lock_push_button.setEnabled(False)
+        self.update_plot()
+
     def choose_element(self, button, checked):
         if checked:
-            self.current_element = self.elements[button]
+            current_item = None
+            for item in self.elements:
+                if button in item:
+                    current_item = item
+                    self.current_element = current_item[0]
+            if current_item[2]:
+                self.edit_lock_on = True
+                self.edit_lock_push_button.setText("Unlock full edit")
+                self.edit_lock_push_button.setEnabled(True)
+            else:
+                self.edit_lock_on = False
+                self.edit_lock_push_button.setText("Full edit unlocked")
+                self.edit_lock_push_button.setEnabled(False)
             self.dragged_points.clear()
             self.selected_points.clear()
             self.update_plot()
@@ -280,13 +317,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             else:
                 button_text = dialog.element
 
-            # button_text = r"$^{" + isotope_str + "}$" + dialog.element
             radio_button.setText(button_text)
-
             self.radios.addButton(radio_button)
 
             push_button = QtWidgets.QPushButton()
             self.__icon_manager.set_icon(push_button, "gear.svg")
+            push_button.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
             push_button.setToolTip("Simulation settings")
 
             spinbox = QtWidgets.QSpinBox()
@@ -311,7 +347,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 points2.append(Point(xy2))
             element = Element("Mn", points2)
 
-            self.elements[radio_button] = element
+            self.elements.append([element, radio_button, True])
 
             if self.current_element is None:
                 self.current_element = element
@@ -381,7 +417,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.__button_zoom.setChecked(False)
 
     def __fork_toolbar_buttons(self):
-        # super().fork_toolbar_buttons()
+        super().fork_toolbar_buttons()
         self.mpl_toolbar.mode_tool = 0
         self.__tool_label = self.mpl_toolbar.children()[24]
         self.__button_drag = self.mpl_toolbar.children()[12]
@@ -584,7 +620,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 selected_xs.append(point.get_x())
                 selected_ys.append(point.get_y())
             self.markers_selected.set_data(selected_xs, selected_ys)
-            self.x_coordinate_box.setEnabled(True)
+            if self.selected_points[0] == self.current_element.get_points()[-1] and self.edit_lock_on:
+                self.x_coordinate_box.setEnabled(False)
+            else:
+                self.x_coordinate_box.setEnabled(True)
             self.x_coordinate_box.setValue(self.selected_points[0].get_x())
             self.y_coordinate_box.setEnabled(True)
             self.y_coordinate_box.setValue(self.selected_points[0].get_y())
@@ -621,7 +660,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         new_coords = self.get_new_checked_coordinates(event)
 
         for i in range(0, len(dr_ps)):
-            dr_ps[i].set_coordinates(new_coords[i])
+            if dr_ps[i] == self.current_element.get_points()[-1] and self.edit_lock_on:
+                dr_ps[i].set_y(new_coords[i][1])
+            else:
+                dr_ps[i].set_coordinates(new_coords[i])
 
         self.update_plot()
 
