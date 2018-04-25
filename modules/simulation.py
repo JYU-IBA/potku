@@ -220,11 +220,11 @@ class Simulation:
 
         self.simulation_type = simulation_type
         self.number_of_ions = number_of_ions
-        self.number_of_preions_in_presimu = number_of_ions_in_presimu
+        self.number_of_ions_in_presimu = number_of_ions_in_presimu
         self.number_of_scaling_ions = number_of_scaling_ions
         self.number_of_recoils = number_of_recoils
         self.minimum_main_scattering_angle = minimum_main_scattering_angle
-        self.minimum_energy_of_ions
+        self.minimum_energy_of_ions = minimum_energy_of_ions
         self.mode = mode
         self.seed_number = seed_number
 
@@ -233,7 +233,7 @@ class Simulation:
         settings = {
             "simulation_type": self.simulation_type,
             "number_of_ions": self.number_of_ions,
-            "number_of_preions_in_presimu": self.number_of_ion_in_presimu,
+            "number_of_preions_in_presimu": self.number_of_ions_in_presimu,
             "number_of_scaling_ions": self.number_of_scaling_ions,
             "number_of_recoils": self.number_of_recoils,
             "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
@@ -242,7 +242,7 @@ class Simulation:
             "seed_number": self.seed_number,
             "beam": self.beam,
             "target": self.target,
-            "detector": self..detector,
+            "detector": self.detector,
             "recoil": self.recoil
         }
 
