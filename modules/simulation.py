@@ -68,21 +68,32 @@ class Simulations:
                 if sample.simulations.simulations[key].simulation_folder == simulation_name:
                     return simulation  # simulation = None
 
-            simulation = Simulation(self.request, simulation_name)
+            simulation = Simulation(self.request, simulation_name, tab_id=tab_id)
             simulation.serial_number = sample.get_running_int_simulation()
             # TODO Can increasing the int be handled by sample?
             sample.increase_running_int_measurement_by_1()
 
             # Create path for simulation directory.
-            simulation_directory = os.path.join(sample.path, simulation.name_prefix + "%02d" % simulation.serial_number + "-" +
-                                                simulation.name)
+            simulation_directory = os.path.join(self.request.directory, sample.directory, simulation.name_prefix
+                                                + "%02d" % simulation.serial_number + "-" + simulation.name)
             simulation.create_folder_structure(simulation_directory)
+            self.simulations[tab_id] = simulation
+
+            # TODO Are simulations stored in multiple places?
             sample.simulations.simulations[tab_id] = simulation
             self.request.samples.simulations.simulations[tab_id] = simulation
         except:
             log = "Something went wrong while adding a new simulation."
             logging.getLogger("request").critical(log)
         return simulation
+
+    def remove_obj(self, removed_obj):
+        """Removes given simulation.
+
+        Args:
+            removed_obj: Simulation to remove.
+        """
+        self.simulations.pop(removed_obj.tab_id)
 
     def remove_by_tab_id(self, tab_id):
         """Removes simulation from simulations by tab id
@@ -168,16 +179,17 @@ class Simulation:
     __slots__ = "request", "name", "description", "date", "simulation_type", "scatter", "main_scatter", "energy", \
                 "mode", "no_of_ions", "no_of_preions", "seed", "no_of_recoils", "no_of_scaling", \
                 "data", "name_prefix", "simulation_file", "directory", "__request_settings", "statusbar", \
-                "color_scheme", "callMCERD", "call_get_espe", "serial_number"
+                "color_scheme", "callMCERD", "call_get_espe", "serial_number", "tab_id"
 
     def __init__(self, request, name="", description="", date=datetime.date.today(), simulation_type=None, scatter=0.05,
                  main_scatter=20, energy=1.0, mode=SimulationMode.narrow, no_of_ions=1000000, no_of_preions=100000,
-                 seed=101, no_of_recoils=10, no_of_scaling=5):
+                 seed=101, no_of_recoils=10, no_of_scaling=5, tab_id=-1):
         """Inits Simulation.
         Args:
             request: Request class object.
         """
         self.request = request
+        self.tab_id = tab_id
         self.name = name
         self.description = description
         self.date = date
