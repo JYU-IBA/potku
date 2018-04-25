@@ -128,7 +128,7 @@ class ImportDialogBinary(QtWidgets.QDialog):
 
             sample_path = os.path.join(self.__request.directory, "Sample_" + str(sample_count))
             sample_count += 1
-            self.request.samples.add_sample_file(sample_path)
+            self.request.samples.add_sample(sample_path)
             measurement_path = os.path.join(sample_path, item.name)
 
             output_file = "{0}.{1}".format(measurement_path, "asc")

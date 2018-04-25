@@ -7,8 +7,8 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinik
 __version__ = "2.0"
 
 import os
-from modules.measurement import Measurements
-from modules.simulation import Simulations
+from modules.measurement import Measurements, Measurement
+from modules.simulation import Simulations, Simulation
 import re
 
 
@@ -31,7 +31,7 @@ class Samples:
         self.measurements = Measurements(self.request)
         self.simulations = Simulations(self.request)
 
-    def add_sample_file(self, sample_path, name=""):
+    def add_sample(self, sample_path=None, name=""):
         """
         Create and add a Sample to the samples.
 
@@ -39,7 +39,26 @@ class Samples:
             sample_path: The path of the sample to be added to the samples.
             name: Optional name for the sample.
         """
-        sample = Sample(sample_path, self.request, name)
+        if sample_path:
+            sample_path, sample_dir = os.path.split(sample_path)
+            dir_split = sample_dir.split("-")
+            prefix = dir_split[0].split("_")
+            serial_string = prefix[1]
+            try:
+                serial_number = int(serial_string)
+                sample = Sample(serial_number, self.request, sample_dir, name)
+            except Exception as e:
+                # Couldn't read sample's serial number from file path.
+                print("Couldn't read sample's serial number from path. " + e)
+                return
+        else:
+            next_serial = self.request.get_running_int()
+            sample_dir = "Sample_" + "%02d" % next_serial + "-" + name
+            new_path = os.path.join(self.request.directory, sample_dir)
+            sample = Sample(next_serial, self.request, sample_dir, name)
+            self.request.increase_running_int_by_1()
+            if not os.path.exists(new_path):
+                os.makedirs(new_path)
         self.samples.append(sample)
         return sample
 
@@ -73,35 +92,35 @@ class Sample:
     Class for a sample.
     """
 
-    def __init__(self, path, request, name):
+    def __init__(self, serial_number, request, directory, name=""):
         """
         Initialize the Sample.
 
         Args:
-            path: Path of the sample
+            serial_number: Serial number for sample.
             request: Which request the sample belongs to.
             name: Optional name for the sample.
         """
-        self.path = path
+        self.name = name
+        self.serial_number = serial_number
+        self.request = request
+
+        self.directory = directory
+
         self.measurements = Measurements(request)
         self.simulations = Simulations(request)
 
         self._running_int_measurement = 1
         self._running_int_simulation = 1
 
-        if not os.path.exists(self.path):
-            os.makedirs(self.path)
-
     def get_running_int_measurement(self):
-        formatted_number_str = str(self._running_int_measurement).zfill(2)
-        return formatted_number_str
+        return self._running_int_measurement
 
     def increase_running_int_measurement_by_1(self):
         self._running_int_measurement = self._running_int_measurement + 1
 
     def get_running_int_simulation(self):
-        formatted_number_str = str(self._running_int_simulation).zfill(2)
-        return formatted_number_str
+        return self._running_int_simulation
 
     def increase_running_int_simulation_by_1(self):
         self._running_int_simulation = self._running_int_simulation + 1
@@ -115,7 +134,7 @@ class Sample:
         """
         # TODO: Possible for different formats (such as binary data .lst)
         all_measurements = []
-        for item in os.listdir(self.path):
+        for item in os.listdir(os.path.join(self.request.directory, self.directory)):
             if item.startswith("Measurement_"):
                 measurement_name_start = item.find('-')
                 if measurement_name_start == -1:  # measurement needs to have a name.
@@ -126,13 +145,9 @@ class Sample:
                 else:
                     self._running_int_measurement = int(item[measurement_name_start - 2:measurement_name_start - 1])
                 measurement_name = item[measurement_name_start+1:]
-                if os.path.isfile(os.path.join(self.path, item, "Data", measurement_name + ".asc")):
+                if os.path.isfile(os.path.join(self.request.directory, self.directory, item, "Data", measurement_name + ".asc")):
                     all_measurements.append(measurement_name + ".asc")
         return all_measurements
-        # return [f for f in os.listdir(self.path)
-        #         if os.path.isfile(os.path.join(self.path, f)) and
-        #         os.path.splitext(f)[1] == ".asc" and
-        #         os.stat(os.path.join(self.path, f)).st_size]  # Do not load empty files.
 
     def get_simulation_files(self):
         """Get simulation files inside request folder.
@@ -140,7 +155,17 @@ class Sample:
         Return:
             A list of simulation file names.
         """
-        return [f for f in os.listdir(self.path)
-                if os.path.isfile(os.path.join(self.path, f)) and
+        return [f for f in os.listdir(os.path.join(self.request.directory, self.directory))
+                if os.path.isfile(os.path.join(self.request.directory, self.directory, f)) and
                 os.path.splitext(f)[1] == ".sim" and
-                os.stat(os.path.join(self.path, f)).st_size]  # Do not load empty files.
+                os.stat(os.path.join(self.request.directory, self.directory, f)).st_size]  # Do not load empty files.
+
+    def remove_obj(self, obj_removed):
+        """Removes given object from sample.
+        Args:
+            obj_removed: Object to remove.
+        """
+        if isinstance(obj_removed, Measurement):
+            self.measurements.remove_obj(obj_removed)
+        elif isinstance(obj_removed, Simulation):
+            self.simulations.remove_obj(obj_removed)

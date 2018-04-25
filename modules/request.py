@@ -83,7 +83,7 @@ class Request:
         self.detector.create_folder_structure(self.default_detector_folder)
         self.detector.save_settings(self.default_folder + os.sep + "Detector" + os.sep + self.detector.name)
         self.default_measurement = Measurement(self, "Default")
-        self.default_measurement.save_settings(self.default_folder + os.sep + self.default_measurement.measurement_name)
+        self.default_measurement.save_settings(self.default_folder + os.sep + self.default_measurement.name)
         self.default_simulation = Simulation(self)
 
         self.__set_request_logger()
@@ -114,7 +114,7 @@ class Request:
         Args:
             measurement: A measurement class object.
         """
-        name = measurement.measurement_name
+        name = measurement.name
         # Check if measurement is already excluded.
         if name in self.__non_slaves:
             return
@@ -128,7 +128,7 @@ class Request:
         Args:
             measurement: A measurement class object.
         """
-        name = measurement.measurement_name
+        name = measurement.name
         # Check if measurement is in the list.
         if not name in self.__non_slaves:
             return
@@ -162,15 +162,14 @@ class Request:
                 match_object = re.search("\d", item)
                 if match_object:
                     number_str = item[match_object.start()]
-                    if  number_str == "0":
+                    if number_str == "0":
                         self._running_int = int(item[match_object.start() + 1])
                     else:
                         self._running_int = int(item[match_object.start():match_object.start() + 2])
         return samples
 
     def get_running_int(self):
-        formated_number_str = str(self._running_int).zfill(2)
-        return formated_number_str
+        return self._running_int
 
     def increase_running_int_by_1(self):
         self._running_int = self._running_int + 1
@@ -218,12 +217,12 @@ class Request:
         Args:
             measurement: A measurement class object that issued save cuts.
         """
-        name = measurement.measurement_name
+        name = measurement.name
         if name == self.has_master():
             nonslaves = self.get_nonslaves()
             tabs = self.get_measurement_tabs(measurement.tab_id)
             for tab in tabs:
-                tab_name = tab.measurement.measurement_name
+                tab_name = tab.measurement.name
                 if tab.data_loaded and not tab_name in nonslaves and \
                    tab_name != name:
                     # No need to save same measurement twice.
@@ -236,13 +235,13 @@ class Request:
             measurement: A measurement class object that issued save cuts.
         """
         directory = measurement.directory_data
-        name = measurement.measurement_name
+        name = measurement.name
         selection_file = "{0}.selections".format(os.path.join(directory, name))
         if name == self.has_master():
             nonslaves = self.get_nonslaves()
             tabs = self.get_measurement_tabs(measurement.tab_id)
             for tab in tabs:
-                tab_name = tab.measurement.measurement_name
+                tab_name = tab.measurement.name
                 if tab.data_loaded and not tab_name in nonslaves and \
                    tab_name != name:
                     tab.measurement.selector.load(selection_file)
@@ -258,7 +257,7 @@ class Request:
         if not measurement:
             self.__request_information["meta"]["master"] = ""
         else:
-            name = measurement.measurement_name
+            name = measurement.name
             self.__request_information["meta"]["master"] = name
         self.save()
 
