@@ -12,8 +12,8 @@ from os.path import join
 from PyQt5 import QtCore, uic, QtWidgets
 
 from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilAtomDistributionWidget
-from widgets.matplotlib.simulation.target_composition import TargetCompositionWidget
-from dialogs.simulation.element_selection import SimulationElementSelectionDialog
+from widgets.matplotlib.simulation.composition import TargetCompositionWidget
+from modules.target import Target
 
 
 class TargetWidget(QtWidgets.QWidget):
@@ -24,7 +24,7 @@ class TargetWidget(QtWidgets.QWidget):
         '''Inits TofeHistogramWidget widget.
 
         Args:
-            icon_manager: An iconmanager class object.
+            icon_manager: An icon manager class object.
         '''
         super().__init__()
         self.ui = uic.loadUi(join("ui_files", "ui_target_widget.ui"), self)
@@ -36,7 +36,8 @@ class TargetWidget(QtWidgets.QWidget):
         #self.ui.stackedWidget.children()[1].setLayout(QtWidgets.QHBoxLayout)
         #self.ui.stackedWidget.children()[2].setLayout(QtWidgets.QHBoxLayout)
 
-        TargetCompositionWidget(self, icon_manager)
+        target = Target()
+        TargetCompositionWidget(self, icon_manager, target)
         self.recoil_widget = RecoilAtomDistributionWidget(self, icon_manager)
 
         self.ui.targetRadioButton.clicked.connect(lambda: self.ui.stackedWidget.setCurrentIndex(0))

@@ -8,7 +8,7 @@ __version__ = "2.0"
 import os
 from PyQt5 import uic
 from PyQt5 import QtWidgets
-from widgets.matplotlib.simulation.target_composition import TargetCompositionWidget
+from widgets.matplotlib.simulation.composition import TargetCompositionWidget
 from modules.foil import CircularFoil
 from modules.foil import RectangularFoil
 

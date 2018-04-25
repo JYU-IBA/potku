@@ -12,40 +12,37 @@ import matplotlib
 import random
 
 from dialogs.simulation.layer_properties import LayerPropertiesDialog
-from modules.target import Target
 from modules.layer import Layer
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from widgets.matplotlib.base import MatplotlibWidget
 
-class TargetCompositionWidget(MatplotlibWidget):
-    """Matplotlib target composition widget. Using this widget, the user
-    can edit target composition for the simulation.
+class _CompositionWidget(MatplotlibWidget):
+    """This class works as a basis for TargetCompositionWidget and
+    FoilCompositionWidget classes. Using this widget the user can edit
+    the layers of the target or the foil. This class should not be used
+    as such.
     """
 
     def __init__(self, parent, icon_manager):
-        """Inits
+        """Initialize a CompositionWidget.
 
         Args:
-            parent: A SimulationDepthProfileWidget class object.
-            icon_manager: An iconmanager class object.
+            parent:       Either a TargetWidget or FoilWidget object, which
+                          works as a parent of this Matplotlib widget.
+            icon_manager: An icon manager class object.
         """
         super().__init__(parent)
-        self.canvas.manager.set_title("Target Composition")
 
         # Remove Y-axis ticks and label
         self.axes.yaxis.set_tick_params("both", left="off", labelleft="off")
-
         self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
         self.name_x_axis = "Depth"
 
         self.__icon_manager = icon_manager
         self.__fork_toolbar_buttons()
-
         self.__layer_colors = []
-
-        self.target = Target()
-
+        self.__layers = []
         self.on_draw()
 
     def on_draw(self):
@@ -58,16 +55,11 @@ class TargetCompositionWidget(MatplotlibWidget):
         self.remove_axes_ticks()
         self.canvas.draw()
 
-
-
     def __toggle_tool_drag(self):
         if self.__button_drag.isChecked():
             self.mpl_toolbar.mode_tool = 1
         else:
             self.mpl_toolbar.mode_tool = 0
-            # self.elementSelectionButton.setChecked(False)
-        # self.elementSelectUndoButton.setEnabled(False)
-        # self.elementSelectionSelectButton.setChecked(False)
         self.canvas.draw_idle()
 
     def __toggle_tool_zoom(self):
@@ -75,9 +67,6 @@ class TargetCompositionWidget(MatplotlibWidget):
             self.mpl_toolbar.mode_tool = 2
         else:
             self.mpl_toolbar.mode_tool = 0
-            # self.elementSelectionButton.setChecked(False)
-        # self.elementSelectUndoButton.setEnabled(False)
-        # self.elementSelectionSelectButton.setChecked(False)
         self.canvas.draw_idle()
 
     def __toggle_drag_zoom(self):
@@ -108,25 +97,28 @@ class TargetCompositionWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.button_add_layer)
 
     def __add_layer(self, position = -1):
-        """Adds a new layer to the target. A random color is given for the
-        layer in such manner, that the layers next to it doesn't have same
-        color.
+        """Adds a new layer to the list of layers.
 
         Args:
             position: A position where the layer should be added. If -1 is
-                      given, the layer is added at the end of the target.
+                      given, the layer is added at the end of the list.
         """
+        if position < -1:
+            raise ValueError("No negative values other than -1 are allowed.")
+        if position > len(self.__layers):
+            ValueError("There are not that many layers.")
+
         dialog = LayerPropertiesDialog()
 
         if dialog.layer:
             layer_color = dialog.layer_color
-            self.target.layers.append(dialog.layer)
+            self.__layers.append(dialog.layer)
             self.__layer_colors.append(layer_color)
             self.__update_figure()
 
     def __update_figure(self):
         next_layer_position = 0
-        for idx, layer in enumerate(self.target.layers):
+        for idx, layer in enumerate(self.__layers):
             layer_patch = matplotlib.patches.Rectangle(
                 (next_layer_position, 0),
                 layer.thickness, 1,
@@ -155,3 +147,39 @@ class TargetCompositionWidget(MatplotlibWidget):
         self.axes.set_xbound(0, next_layer_position)
         self.canvas.draw_idle()
         self.mpl_toolbar.update()
+
+
+
+class TargetCompositionWidget(_CompositionWidget):
+
+    def __init__(self, parent, icon_manager, target):
+        """Initializes a TargetCompositionWidget object.
+
+        Args:
+            parent:       A TargetWidget object, which works as a parent of this
+                          widget.
+            icon_manager: An icon manager class object.
+        """
+
+        _CompositionWidget.__init__(self, parent, icon_manager)
+
+        self.__layers = target.layers
+        self.canvas.manager.set_title("Target composition")
+
+
+
+class FoilCompositionWidget(_CompositionWidget):
+
+    def __init__(self, parent, icon_manager, foil):
+        """Initializes a FoilCompositionWidget object.
+
+        Args:
+            parent:       A FoilWidget object, which works as a parent of this
+                          widget.
+            icon_manager: An icon manager class object.
+        """
+
+        _CompositionWidget.__init__(self, parent, icon_manager)
+
+        self.__layers = foil.layers
+        self.canvas.manager.set_title("Foil composition")

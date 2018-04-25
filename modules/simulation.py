@@ -199,14 +199,16 @@ class SimulationMode(Enum):
 class Simulation:
     """Simulation class handles the simulation data."""
 
-    __slots__ = "request", "name", "description", "date", "simulation_type", "scatter", "main_scatter", "energy", \
-                "mode", "no_of_ions", "no_of_preions", "seed", "no_of_recoils", "no_of_scaling", \
-                "data", "simulation_file", "directory", "__request_settings", "statusbar", "color_scheme", "callMCERD",\
-                "call_get_espe", "name"
+    # __slots__ = "request", "name", "description", "date", "simulation_type", "scatter", "main_scatter", "energy", \
+    #             "mode", "no_of_ions", "no_of_preions", "seed", "no_of_recoils", "no_of_scaling", \
+    #             "data", "simulation_file", "directory", "__request_settings", "statusbar", "color_scheme", "callMCERD",\
+    #             "call_get_espe", "name"
 
-    def __init__(self, request, name="", description="", date=datetime.date.today(), simulation_type=None, scatter=0.05,
-                 main_scatter=20, energy=1.0, mode=SimulationMode.narrow, no_of_ions=1000000, no_of_preions=100000,
-                 seed=101, no_of_recoils=10, no_of_scaling=5):
+    def __init__(self, request, name="", description="", date=datetime.date.today(),
+                 simulation_type=None, number_of_ions=1000000,
+                 number_of_ions_in_presimu=100000, number_of_scaling_ions=5,
+                 number_of_recoils=10, minimum_main_scattering_angle=20,
+                 minimum_energy_of_ions=0, mode="narrow", seed_number=101):
         """Inits Simulation.
         Args:
             request: Request class object.
@@ -215,20 +217,34 @@ class Simulation:
         self.name = name
         self.description = description
         self.date = date
-        self.simulation_type = simulation_type
-        self.scatter = scatter
-        self.main_scatter = main_scatter
-        self.energy = energy
-        self.mode = mode
-        self.no_of_ions = no_of_ions
-        self.no_of_preions = no_of_preions
-        self.seed = seed
-        self.no_of_recoils = no_of_recoils
-        self.no_of_scaling = no_of_scaling
 
-        self.data = []
-        self.simulation_file = None
+        self.simulation_type = simulation_type
+        self.number_of_ions = number_of_ions
+        self.number_of_preions_in_presimu = number_of_ions_in_presimu
+        self.number_of_scaling_ions = number_of_scaling_ions
+        self.number_of_recoils = number_of_recoils
+        self.minimum_main_scattering_angle = minimum_main_scattering_angle
+        self.minimum_energy_of_ions
+        self.mode = mode
+        self.seed_number = seed_number
+
         self.directory = None
+
+        settings = {
+            "simulation_type": self.simulation_type,
+            "number_of_ions": self.number_of_ions,
+            "number_of_preions_in_presimu": self.number_of_ion_in_presimu,
+            "number_of_scaling_ions": self.number_of_scaling_ions,
+            "number_of_recoils": self.number_of_recoils,
+            "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
+            "minimum_energy_of_ions": self.minimum_energy_of_ions,
+            "mode": self.mode,
+            "seed_number": self.seed_number,
+            "beam": self.beam,
+            "target": self.target,
+            "detector": self..detector,
+            "recoil": self.recoil
+        }
 
         # The settings that come from the request
         self.__request_settings = self.request.settings
