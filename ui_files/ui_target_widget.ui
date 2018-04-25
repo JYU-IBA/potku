@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>300</height>
+    <width>977</width>
+    <height>524</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -22,7 +22,7 @@
      <item>
       <widget class="QRadioButton" name="targetRadioButton">
        <property name="text">
-        <string>Target composition</string>
+        <string>Target co&amp;mposition</string>
        </property>
        <property name="checked">
         <bool>true</bool>
@@ -32,7 +32,7 @@
      <item>
       <widget class="QRadioButton" name="recoilRadioButton">
        <property name="text">
-        <string>Recoil atom distribution</string>
+        <string>Recoil atom distributio&amp;n</string>
        </property>
       </widget>
      </item>
@@ -57,7 +57,7 @@
       <number>0</number>
      </property>
      <item>
-      <widget class="QLabel" name="label">
+      <widget class="QLabel" name="beamLabel">
        <property name="font">
         <font>
          <pointsize>11</pointsize>
@@ -76,6 +76,91 @@
        <property name="currentIndex">
         <number>-1</number>
        </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QWidget" name="recoilListWidget" native="true">
+       <property name="minimumSize">
+        <size>
+         <width>0</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>200</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <layout class="QVBoxLayout" name="recoil_layout">
+        <item>
+         <widget class="QScrollArea" name="recoilScrollArea">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <widget class="QWidget" name="recoilScrollAreaContents">
+           <property name="geometry">
+            <rect>
+             <x>0</x>
+             <y>0</y>
+             <width>180</width>
+             <height>424</height>
+            </rect>
+           </property>
+          </widget>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
+          <item>
+           <widget class="QPushButton" name="addPushButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Add element</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>../ui_icons/reinhardt/edit_add.svg</normaloff>../ui_icons/reinhardt/edit_add.svg</iconset>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="removePushButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="toolTip">
+             <string>Remove selected element</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>../ui_icons/reinhardt/delete.svg</normaloff>../ui_icons/reinhardt/delete.svg</iconset>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+       </layout>
       </widget>
      </item>
     </layout>
