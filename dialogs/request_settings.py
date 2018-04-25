@@ -26,7 +26,7 @@ along with this program (file named 'LICENCE').
 Dialog for the request settings
 """
 
-from modules.detector import DetectorType
+from modules.detector import Detector
 from modules.element import Element
 from modules.measurement import MeasurementProfile
 from modules.simulation import SimulationMode, SimulationType
@@ -265,7 +265,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.measurement_settings_widget.ui.beamIonButton.setText("Select")
             self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(False)
 
-        self.measurement_settings_widget.nameLineEdit.setText(self.request.default_measurement.measurement_name)
+        self.measurement_settings_widget.nameLineEdit.setText(self.request.default_measurement.name)
         self.measurement_settings_widget.descriptionLineEdit.setPlainText(self.request.default_measurement.description)
         self.measurement_settings_widget.energyLineEdit.setText(str(self.request.default_measurement.energy))
         self.measurement_settings_widget.chargeLineEdit.setText(str(self.request.default_measurement.charge))

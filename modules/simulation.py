@@ -22,6 +22,9 @@ from enum import Enum
 from json import JSONEncoder
 
 from modules.general_functions import save_settings
+from modules.beam import Beam
+from modules.detector import Detector
+from modules.target import Target
 
 
 class Simulations:
@@ -66,8 +69,8 @@ class Simulations:
         """
         simulation = None
         name_prefix = "MC_simulation_"
-        simulation_folder = os.path.join(sample.path, name_prefix + sample.get_running_int_simulation() + "-"
-                                         + simulation_name)
+        # simulation_folder = os.path.join(sample.path, name_prefix + sample.get_running_int_simulation() + "-"
+        #                                  + simulation_name)
         sample.increase_running_int_simulation_by_1()
         try:
             # if file_directory != self.request.directory and file_directory:
@@ -204,7 +207,8 @@ class Simulation:
     #             "data", "simulation_file", "directory", "__request_settings", "statusbar", "color_scheme", "callMCERD",\
     #             "call_get_espe", "name"
 
-    def __init__(self, request, name="", description="", date=datetime.date.today(),
+    def __init__(self, request, tab_id, name="", description="",
+                 date=datetime.date.today(),
                  simulation_type=None, number_of_ions=1000000,
                  number_of_ions_in_presimu=100000, number_of_scaling_ions=5,
                  number_of_recoils=10, minimum_main_scattering_angle=20,
@@ -229,6 +233,10 @@ class Simulation:
         self.mode = mode
         self.seed_number = seed_number
 
+        self.beam = Beam()
+        self.target = Target()
+        self.detector = Detector()
+
         self.name_prefix = "MC_simulation_"
         self.serial_number = 0
         self.directory = None
@@ -246,7 +254,7 @@ class Simulation:
             "beam": self.beam,
             "target": self.target,
             "detector": self.detector,
-            "recoil": self.recoil
+            "recoil": None
         }
 
         # The settings that come from the request
@@ -384,52 +392,6 @@ class Simulation:
 #                             " | " + os.getcwd() + "/external/Potku-bin/get_espe " + params_string + \
 #                             " > " + output_file
 
-
-class CallMCERD(object):
-    """Handles calling the external program MCERD to run the simulation."""
-
-    def __init__(self, command_file):
-        """Inits CallMCERD.
-
-        Args:
-            command_file: Full path to the command file.
-        """
-        # TODO When the directory structure for simulation settings has been decided, update this
-        # self.bin_dir = "%s%s%s" % ("external", os.sep, "Potku-bin")
-
-        self.command_win = "external\Potku-bin\mcerd.exe " + command_file
-        self.command_linux = "external/Potku-bin/mcerd_linux " + command_file
-        self.command_mac = "external/Potku-bin/mcerd_mac " + command_file
-
-        self._executing_mcerd_process = None
-
-    def run_simulation(self):
-        """Runs the simulation.
-        """
-        used_os = platform.system()
-        if used_os == "Windows":
-            self._executing_mcerd_process = subprocess.Popen(self.command_win, shell=True)
-        elif used_os == "Linux":
-            self._executing_mcerd_process = subprocess.Popen("ulimit -s 64000; exec " + self.command_linux, shell=True)
-        elif used_os == "Darwin":
-            self._executing_mcerd_process = subprocess.Popen("ulimit -s 64000; exec " + self.command_mac, shell=True)
-        else:
-            print("It appears we do not support your OS.")
-
-    def stop_simulation(self):
-        """
-        Stops the current simulation.
-        """
-        used_os = platform.system()
-        if used_os == "Windows":
-            cmd = "TASKKILL /F /PID " + str(self._executing_mcerd_process.pid) + " /T"
-            subprocess.Popen(cmd)
-            self._executing_mcerd_process = None
-        elif used_os == "Linux" or used_os == "Darwin":
-            self._executing_mcerd_process.kill()
-            self._executing_mcerd_process = None
-        else:
-            print("It appears we do not support your OS.")
 
 
 class CallGetEspe(object):

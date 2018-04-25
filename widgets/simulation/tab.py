@@ -16,7 +16,7 @@ from modules.element import Element
 from modules.general_functions import read_espe_file
 from modules.null import Null
 from modules.ui_log_handlers import customLogHandler
-from modules.simulation import CallMCERD, CallGetEspe
+from modules.simulation import CallGetEspe
 from widgets.log import LogWidget
 from widgets.simulation.energy_spectrum import SimulationEnergySpectrumWidget
 

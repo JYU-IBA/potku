@@ -28,4 +28,3 @@ class Layer:
         self.elements = elements
         self.thickness = thickness
         self.density = density
-

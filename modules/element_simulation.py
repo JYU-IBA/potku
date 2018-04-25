@@ -5,6 +5,8 @@ import datetime
 import json
 import os
 
+from modules.mcerd import MCERD
+
 class ElementSimulation():
 
     __slots__ = "type", "element", "profile", "name", "description",\
@@ -70,7 +72,8 @@ class ElementSimulation():
             "profile": []  # TODO: Finish this.
         }
 
-        json.dump(obj, file_path)
+        with open(file_path, "w") as file:
+            json.dump(obj, file)
 
 
     def start(self):

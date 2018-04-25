@@ -12,28 +12,6 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __versio__ = "2.0"
 
-
-class FoilEncoder(JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Foil):
-            layers = []
-            foil_dict = {
-                "name": obj.name,
-                "distance": obj.distance,
-                "layers": [],
-                "transmission": obj.transmission,
-            }
-            if isinstance(obj, CircularFoil):
-                foil_dict["size"] = obj.diameter
-            if isinstance(obj, RectangularFoil):
-                foil_dict["size"] = obj.size
-            for l in obj.layers:
-                layers.append(l)
-            foil_dict["layers"] = layers
-            return foil_dict
-        return super(FoilEncoder, self).default(obj)
-
-
 class Foil:
     """Class for detector foil.
     """
@@ -44,8 +22,10 @@ class Foil:
         """Initialize a detector foil.
 
         Args:
-            distance: Distance from the origin of the sample.
-            layers: Layers of the foil in a single list.
+            name:         Name of the foil
+            distance:     Distance from the origin of the sample.
+            layers:       Layers of the foil in a single list.
+            transmission: TODO: Find out what this is...
         """
         self.name = name
         self.distance = distance
@@ -59,14 +39,15 @@ class CircularFoil(Foil):
 
     __slots__ = "diameter"
 
-    def __init__(self, name, diameter=0.0, distance=0.0, layers=[], transmission=1.0):
+    def __init__(self, name, diameter=0.0, distance=0.0, layers=[],
+                 transmission=1.0):
         """Initialize a circular detector foil.
 
         Args:
-            diameter: Diameter of the circular foil.
-            distance: Distance from the origin of the sample.
-            layers: Layers of the foil in a single list.
-            transmission: ??
+            diameter:     Diameter of the circular foil.
+            distance:     Distance from the origin of the sample.
+            layers:       Layers of the foil in a single list.
+            transmission: TODO: Find out what this is...
         """
 
         Foil.__init__(self, name, distance, layers, transmission)
@@ -79,13 +60,15 @@ class RectangularFoil(Foil):
 
     __slots__ = "size"
 
-    def __init__(self, name, size_x=0.0, size_y=0.0, distance=0.0, layers=[], transmission=1.0):
+    def __init__(self, name, size_x=0.0, size_y=0.0, distance=0.0, layers=[],
+                 transmission=1.0):
         """Initialize a rectangular detector foil.
 
         Args:
-            size: Size of the circular foil in a tuple.
-            distance: Distance from the origin of the sample.
-            layers: Layers of the foil in a single list.
+            size:         Size of the rectangular foil in a tuple.
+            distance:     Distance from the origin of the sample.
+            layers:       Layers of the foil in a single list.
+            transmission: TODO: Find out what this is...
         """
 
         Foil.__init__(self, name, distance, layers, transmission)

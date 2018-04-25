@@ -12,80 +12,38 @@ __version__ = "2.0"
 import os
 import json
 import datetime
-from enum import Enum
 
-from modules.foil import CircularFoil, RectangularFoil, FoilEncoder
+from modules.foil import CircularFoil, RectangularFoil
 from modules.layer import Layer
 from modules.calibration_parameters import CalibrationParameters
 from modules.element import Element
 
-
-class DetectorType(Enum):
-    ToF = 0
-
-
-class DetectorEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Detector):
-            detector_dict = {
-                "name": obj.name,
-                "description": obj.description,
-                "date": obj.date.isoformat(),
-                "detector_type": obj.detector_type.value,
-                "foils": [],
-                "tof_foils": obj.tof_foils
-            }
-            foils = []
-            layers = []
-            for f in obj.foils:
-                foil_dict = {
-                    "name": f.name,
-                    "distance": f.distance,
-                    "layers": [],
-                    "transmission": f.transmission,
-                }
-                if isinstance(f, CircularFoil):
-                    foil_dict["type"] = "circular"
-                    foil_dict["size"] = f.diameter
-                if isinstance(f, RectangularFoil):
-                    foil_dict["type"] = "rectangular"
-                    foil_dict["size"] = f.size
-                for l in f.layers:
-                    layers.append(l)
-                foil_dict["layers"] = layers
-                foils.append(foil_dict)
-            detector_dict["foils"] = foils
-            return detector_dict
-        return super(DetectorEncoder, self).default(obj)
-
-
 class Detector:
 
     # request maybe only temporary parameter
-    __slots__ = "request", "description", "path", "name", "date", "detector_type", "foils", "calibration", \
-                "efficiencies", "efficiencies_path", "tof_foils"
+    __slots__ = "name", "description", "path", "date",\
+                "type", "foils", "calibration", "efficiencies",\
+                "efficiencies_path", "tof_foils"
 
-    def __init__(self, request, name="Default", description="", date=datetime.date.today(),
-                 detector_type=DetectorType.ToF, calibration=CalibrationParameters(), foils=[], tof_foils=[1, 2]):
+    def __init__(self, name="Default", description="", date=datetime.date.today(),
+                 detector_type="TOF", calibration=CalibrationParameters(), foils=[], tof_foils=[1, 2]):
         """Initialize a detector.
 
         Args:
-            request: Request in which this detector is used.
             name: Detector name.
             description: Detector description.
             date: Date of modification of detector file.
-            detector_type: Type of detector.
+            type: Type of detector.
             calibration: Calibration parameters for detector.
             foils: Detector foils.
             tof_foils: List of indexes that tell the index of tof foils in foils list.
 
         """
-        self.request = request
         self.path = None  # With this we get the path of the folder where the .json file needs to go.
         self.name = name
         self.description = description
         self.date = date
-        self.detector_type = detector_type
+        self.type = type
         self.calibration = calibration
         self.foils = foils
         self.tof_foils = tof_foils
@@ -93,26 +51,26 @@ class Detector:
         self.efficiencies = []
         self.efficiencies_path = None
 
-    def create_folder_structure(self, path):
-        # This is here only for testing that when creating a request and detector, a file is created that should contain
-        # some information about the detector, if there is not one yet.
-        # TODO: This needs to be more specific.
-        self.path = path
-        file_name = os.path.join(self.path, self.name) + ".detector"
-
-        if not os.path.exists(self.path):
-            os.makedirs(self.path)
-        try:
-            file = open(file_name, "r")
-            print(file.readlines())
-        except IOError:
-            file = open(file_name, "w")
-            file.write("This is a detector in json format.")
-
-        self.efficiencies_path = os.path.join(self.path, "Efficiency_files")
-
-        if not os.path.exists(self.efficiencies_path):
-            os.makedirs(self.efficiencies_path)
+    # def create_folder_structure(self, path):
+    #     # This is here only for testing that when creating a request and detector, a file is created that should contain
+    #     # some information about the detector, if there is not one yet.
+    #     # TODO: This needs to be more specific.
+    #     self.path = path
+    #     file_name = os.path.join(self.path, self.name) + ".detector"
+    #
+    #     if not os.path.exists(self.path):
+    #         os.makedirs(self.path)
+    #     try:
+    #         file = open(file_name, "r")
+    #         print(file.readlines())
+    #     except IOError:
+    #         file = open(file_name, "w")
+    #         file.write("This is a detector in json format.")
+    #
+    #     self.efficiencies_path = os.path.join(self.path, "Efficiency_files")
+    #
+    #     if not os.path.exists(self.efficiencies_path):
+    #         os.makedirs(self.efficiencies_path)
 
     @classmethod
     def from_file(cls, file_path):
@@ -142,33 +100,67 @@ class Detector:
             if foil["type"] == "circular":
                 foils.append(
                     CircularFoil(foil["diameter"], distance, layers))
-            elif foil["type"] == "rectangular":
+            else:
                 foils.append(
                     RectangularFoil(foil["size"], distance, layers))
-            else:
-                raise json.JSONDecodeError
+
 
         return cls(file_path, name, angle, foils)
 
-    def save_settings(self, filepath=None):
-        """Saves parameters from Detector object in JSON format in .detector file.
+    def to_file(self, file_path):
+        """Save detector settings to a file.
 
         Args:
-            filepath: Filepath including name of the file.
-        """
-        save_settings(self, ".detector", DetectorEncoder, filepath)
+            file_path: File in which the detector settings will be saved."""
+
+        obj = {
+            "name": self.name,
+            "description": self.description,
+            "date": self.date,
+            "type": self.type,
+            "foils": [],
+            "tof_foils": self.tof_foils
+        }
+
+        for foil in self.foils:
+            foil_obj = {
+                "name": foil.name,
+                "distance": foil.distance,
+                "layers": [],
+                "transmission": foil.transmission,
+            }
+            if isinstance(foil, CircularFoil):
+                foil_obj["type"] = "circular"
+                foil_obj["diameter"] = str(foil.diameter)
+            else:
+                foil_obj["type"] = "rectangular"
+                foil_obj["size"] = str(foil.size)
+
+            for layer in foil.layers:
+                layer_obj = {
+                    "name": layer.name,
+                    "elements": [str(element) for element in layer.elements],
+                    "thickness": layer.thickness,
+                    "density": layer.density
+                }
+                foil_obj["layers"].append(layer_obj)
+
+            obj["foils"].append(foil_obj)
+
+        with open(file_path, "w") as file:
+            json.dump(obj, file)
 
 
-class ToFDetector(Detector):
-
-    def __init__(self, path, name, angle, foils):
-        """Initialize a Time-of-Flight detector.
-
-        Args:
-            angle: Detector angle
-
-        """
-        Detector.__init__(self, path, name, angle, foils)
+# class ToFDetector(Detector):
+#
+#     def __init__(self, path, name, angle, foils):
+#         """Initialize a Time-of-Flight detector.
+#
+#         Args:
+#             angle: Detector angle
+#
+#         """
+#         Detector.__init__(self, path, name, angle, foils)
 
 
 # TODO: Add other detector types (GAS, SSD).
