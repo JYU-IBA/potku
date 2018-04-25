@@ -101,8 +101,8 @@ class Measurements:
             sample.increase_running_int_measurement_by_1()
 
             # Create path for measurement directory.
-            measurement_directory = os.path.join(sample.path, measurement.name_prefix + "%02d" % measurement.serial_number + "-"
-                                                 + measurement.name)
+            measurement_directory = os.path.join(self.request.directory, sample.directory, measurement.name_prefix
+                                                 + "%02d" % measurement.serial_number + "-" + measurement.name)
 
             # Create path for measurement file used by the program and create folder structure.
             new_measurement_file = os.path.join(measurement_directory, "Data", measurement_filename)

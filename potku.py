@@ -580,7 +580,7 @@ class Potku(QtWidgets.QMainWindow):
             return
 
         dialog = LoadMeasurementDialog(self.request.samples.samples, self.request.directory)
-        sample_name = dialog.name
+        sample_name = dialog.sample
 
         if dialog.filename:
             try:
@@ -591,6 +591,12 @@ class Potku(QtWidgets.QMainWindow):
             progress_bar = QtWidgets.QProgressBar()
             self.statusbar.addWidget(progress_bar, 1)
             progress_bar.show()
+
+            try:
+                sample_item = (self.tree_widget.findItems(sample_name, Qt.MatchEndsWith, 0))[0]
+            except Exception as e:
+                # Sample is not yet in the tree, so add it
+                self.__add_sample(sample_name)
 
             sample_item = (self.tree_widget.findItems(sample_name, Qt.MatchEndsWith, 0))[0]
 
@@ -778,7 +784,6 @@ class Potku(QtWidgets.QMainWindow):
 
         if tab_type == "measurement":
             measurement = self.request.samples.measurements.add_measurement_file(sample, filename, self.tab_id)
-            sample.increase_running_int_measurement_by_1()
             if measurement:  # TODO: Finish this (load_data)
                 tab = MeasurementTabWidget(self.tab_id, measurement,
                                            self.masses, self.icon_manager)
@@ -865,7 +870,7 @@ class Potku(QtWidgets.QMainWindow):
         for i in range(tree_root.childCount()):
             sample_item = tree_root.child(i)
             for j in range(sample_item.childCount()):
-                tree_item = sample_item.child(i)
+                tree_item = sample_item.child(j)
                 if isinstance(tree_item.obj, Measurement):
                     tab_widget = self.tab_widgets[tree_item.tab_id]
                     tabs = tab_widget.obj
@@ -888,7 +893,7 @@ class Potku(QtWidgets.QMainWindow):
         for i in range(tree_root.childCount()):
             sample_item = tree_root.child(i)
             for j in range(sample_item.childCount()):
-                tree_item = sample_item.child(i)
+                tree_item = sample_item.child(j)
                 if isinstance(tree_item.obj, Measurement):
                     tab_widget = self.tab_widgets[tree_item.tab_id]
                     tabs = tab_widget.obj
@@ -977,7 +982,7 @@ class Potku(QtWidgets.QMainWindow):
         for i in range(tree_root.childCount()):
             sample_item = tree_root.child(i)
             for j in range(sample_item.childCount()):
-                tree_item = sample_item.child(i)
+                tree_item = sample_item.child(j)
                 if isinstance(tree_item.obj, Measurement):
                     tab = self.tab_widgets[tree_item.tab_id]
                     tabs = tab.obj
@@ -993,7 +998,7 @@ class Potku(QtWidgets.QMainWindow):
                         progress_bar_data.setValue(5)
                         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
 
-                        tab.measurement.load_data()
+                        tab.obj.load_data()
                         progress_bar_data.setValue(35)
                         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
 
@@ -1068,7 +1073,7 @@ class Potku(QtWidgets.QMainWindow):
         for i in range(tree_root.childCount()):
             sample_item = tree_root.child(i)
             for j in range(sample_item.childCount()):
-                tree_item = sample_item.child(i)
+                tree_item = sample_item.child(j)
                 if isinstance(tree_item.obj, Measurement):
                     tab_widget = self.tab_widgets[tree_item.tab_id]
                     tab_name = tab_widget.obj.name
