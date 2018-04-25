@@ -508,11 +508,8 @@ class Potku(QtWidgets.QMainWindow):
         sample_paths_in_request = self.request.get_samples_files()
         if sample_paths_in_request:
             for sample_path in sample_paths_in_request:
-                sample = self.request.samples.add_sample_file(sample_path)
-                sample.serial_number = self.request.get_running_int()
-                self.request.increase_running_int_by_1()
+                sample = self.request.samples.add_sample(sample_path)
                 self.__add_root_item_to_tree(sample)
-            self.request.increase_running_int_by_1()
 
     def load_request_simulations(self, simulations=[]):
         """Load simulation files in the request.
@@ -610,17 +607,31 @@ class Potku(QtWidgets.QMainWindow):
 
         simulation_name = dialog.name
         sample_name = dialog.sample
-        if simulation_name:
+        if simulation_name and sample_name:
             progress_bar = QtWidgets.QProgressBar()
             self.statusbar.addWidget(progress_bar, 1)
             progress_bar.show()
 
-            sample_item = (self.tree_widget.findItems(sample_name, Qt.MatchEndsWith, 0))[0]
+            try:
+                sample_item = (self.tree_widget.findItems(sample_name, Qt.MatchEndsWith, 0))[0]
+            except Exception as e:
+                # Sample is not yet in the tree, so add it
+                self.__add_sample(sample_name)
 
+            sample_item = (self.tree_widget.findItems(sample_name, Qt.MatchEndsWith, 0))[0]
             self.__add_new_tab("simulation", dialog.name, sample_item.obj, progress_bar, load_data=False)
             self.__remove_info_tab()
             self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
+
+    def __add_sample(self, sample_name):
+        """Creates a new Sample object and adds it to tree view.
+
+        Args:
+            sample_name: Sample name.
+        """
+        sample = self.request.samples.add_sample(name=sample_name)
+        self.__add_root_item_to_tree(sample)
 
     def open_request(self):
         """Shows a dialog to open a request.

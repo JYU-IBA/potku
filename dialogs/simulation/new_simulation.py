@@ -7,6 +7,8 @@ Updated on 6.4.2018
 #TODO Licence
 
 """
+from dialogs.new_sample import NewSampleDialog
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
@@ -30,14 +32,23 @@ class SimulationNewDialog(QtWidgets.QDialog):
         
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_new_simulation.ui"), self)
 
+        self.samples = samples
+        for sample in samples:
+            self.ui.samplesComboBox.addItem("Sample " + "%02d" % sample.serial_number + " " + sample.name)
+
+        self.ui.addSampleButton.clicked.connect(self.__add_sample)
         self.ui.pushCreate.clicked.connect(self.__create_simulation)
         self.ui.pushCancel.clicked.connect(self.close)
         self.name = None
+        self.sample = None
 
-        for sample in samples:
-            self.ui.samplesComboBox.addItem("Sample " + "%02d" % sample.serial_number + " " + sample.name)
-        
         self.exec_()
+
+    def __add_sample(self):
+        dialog = NewSampleDialog(self.samples)
+        if dialog.name:
+            self.ui.samplesComboBox.addItem(dialog.name)
+            self.ui.samplesComboBox.setCurrentIndex(self.ui.samplesComboBox.findText(dialog.name))
 
     def __create_simulation(self):
         self.name = self.ui.simulationNameLineEdit.text().replace(" ", "_")
