@@ -23,11 +23,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio" \
              "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
 import platform
+import shutil
 import re
 import subprocess
 import sys
@@ -37,7 +39,6 @@ import hashlib
 import numpy
 from PyQt5 import QtWidgets
 from os import makedirs, rename, path
-from os.path import curdir, join, exists, realpath, split, splitext
 
 
 def open_file_dialog(parent, default_folder, title, files):
@@ -118,7 +119,7 @@ def rename_file(old_path, new_name):
     """
     if not new_name:
         return
-    dir_path, old_name = split(old_path)
+    dir_path, old_name = path.split(old_path)
     try:
         new_file = path.join(dir_path, new_name)
         if path.exists(new_file):
@@ -128,6 +129,21 @@ def rename_file(old_path, new_name):
         # os.rename should raise this if directory or file exists on the same name, but it seems it always doesn't.
         raise OSError
     return new_file
+
+
+def remove_file(file_path):
+    """Removes file or directory.
+
+    Args:
+        file_path: Path of file or directory to remove.
+    """
+    if not file_path:
+        return
+    try:
+        shutil.rmtree(file_path)
+    except Exception as e:
+        # Removal failed
+        print(e)
 
 
 def hist(data, width=1.0, col=1):
@@ -176,7 +192,7 @@ def read_espe_file(directory, espe_file):
     Returns:
         Returns energy spectrum data as a list.
         """
-    file = join(directory, espe_file)
+    file = path.join(directory, espe_file)
     lines = load_file(file)
     if not lines:
         # TODO Handle exception when file can not be read.
@@ -218,7 +234,7 @@ def tof_list(cut_file, directory, save_output=False):
     Returns:
         Returns cut file as list transformed through Arstila's tof_list program.
     """
-    bin_dir = join(realpath(curdir), "external", "Potku-bin")
+    bin_dir = path.join(path.realpath(path.curdir), "external", "Potku-bin")
     tof_list_array = []
     if not cut_file:
         return []
@@ -227,14 +243,14 @@ def tof_list(cut_file, directory, save_output=False):
         if platform.system() == 'Windows':
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            command = (str(join(bin_dir, "tof_list.exe")),
+            command = (str(path.join(bin_dir, "tof_list.exe")),
                        cut_file)
             stdout = subprocess.check_output(command,
                                              cwd=bin_dir,
                                              shell=True,
                                              startupinfo=startupinfo)
         elif platform.system() == 'Linux':
-            command = "{0} {1}".format(join(bin_dir, "tof_list_linux"), cut_file)
+            command = "{0} {1}".format(path.join(bin_dir, "tof_list_linux"), cut_file)
             p = subprocess.Popen(command.split(' ', 1), cwd=bin_dir,
                                  stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE,
@@ -242,7 +258,7 @@ def tof_list(cut_file, directory, save_output=False):
             stdout, unused_stderr = p.communicate()
 
         else:
-            command = "{0} {1}".format(join(bin_dir, "tof_list_mac"), cut_file)
+            command = "{0} {1}".format(path.join(bin_dir, "tof_list_mac"), cut_file)
             p = subprocess.Popen(command.split(' ', 1), cwd=bin_dir,
                                  stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE,
@@ -265,12 +281,12 @@ def tof_list(cut_file, directory, save_output=False):
             tof_list_array.append(tupled)
         if save_output:
             if not directory:
-                directory = join(realpath(curdir), "energy_spectrum_output")
-            if not exists(directory):
+                directory = path.join(path.realpath(path.curdir), "energy_spectrum_output")
+            if not path.exists(directory):
                 makedirs(directory)
-            unused_dir, file = split(cut_file)
-            directory_es_file = join(directory,
-                                     "{0}.tof_list".format(splitext(file)[0]))
+            unused_dir, file = path.split(cut_file)
+            directory_es_file = path.join(directory,
+                                     "{0}.tof_list".format(path.splitext(file)[0]))
             numpy_array = numpy.array(tof_list_array,
                                       dtype=[('float1', float),
                                              ('float2', float),
@@ -335,13 +351,13 @@ def carbon_stopping(element, isotope, energy, carbon_thickness):
     Returns:
         Energy loss of particle in a carbon foil of some thickness in Joules
     """
-    bin_dir = join(realpath(curdir), 'external', 'Potku-bin')
+    bin_dir = path.join(path.realpath(path.curdir), 'external', 'Potku-bin')
     # parameters can be 0 but not None
     if element is not None and isotope is not None and energy is not None and carbon_thickness is not None:
         inputdata = bytes("{0}-{1}".format(isotope, element), 'utf-8')
         if platform.system() == 'Windows':
             print("Running gsto_stop.exe on Windows.")
-            args = [join(bin_dir, 'gsto_stop.exe'), "{0}-{1}".format(isotope, element), 'C', str(energy)]
+            args = [path.join(bin_dir, 'gsto_stop.exe'), "{0}-{1}".format(isotope, element), 'C', str(energy)]
             print(args)
             p = Popen(args, cwd=bin_dir, stdin=subprocess.PIPE,
                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -401,7 +417,7 @@ def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
     column_template = "%i " * column_count
     if not column_count or not timing_str:  # No columns or timings...
         return
-    bin_dir = join(realpath(curdir), "external", "Potku-bin")
+    bin_dir = path.join(path.realpath(path.curdir), "external", "Potku-bin")
     timediff_str = ""
     if timediff or temporary:
         timediff_str = "--timediff"

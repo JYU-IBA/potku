@@ -7,8 +7,8 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinik
 __version__ = "2.0"
 
 import os
-from modules.measurement import Measurements
-from modules.simulation import Simulations
+from modules.measurement import Measurements, Measurement
+from modules.simulation import Simulations, Simulation
 import re
 
 
@@ -159,3 +159,13 @@ class Sample:
                 if os.path.isfile(os.path.join(self.request.directory, self.directory, f)) and
                 os.path.splitext(f)[1] == ".sim" and
                 os.stat(os.path.join(self.request.directory, self.directory, f)).st_size]  # Do not load empty files.
+
+    def remove_obj(self, obj_removed):
+        """Removes given object from sample.
+        Args:
+            obj_removed: Object to remove.
+        """
+        if isinstance(obj_removed, Measurement):
+            self.measurements.remove_obj(obj_removed)
+        elif isinstance(obj_removed, Simulation):
+            self.simulations.remove_obj(obj_removed)

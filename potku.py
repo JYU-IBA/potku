@@ -50,7 +50,7 @@ from dialogs.measurement.import_measurement import ImportMeasurementsDialog
 from dialogs.request_settings import RequestSettingsDialog
 from dialogs.new_request import RequestNewDialog
 from dialogs.simulation.new_simulation import SimulationNewDialog
-from modules.general_functions import open_file_dialog, rename_file
+from modules.general_functions import open_file_dialog, rename_file, remove_file
 from modules.global_settings import GlobalSettings
 from modules.icon_manager import IconManager
 from modules.masses import Masses
@@ -215,8 +215,15 @@ class Potku(QtWidgets.QMainWindow):
     def __remove_tree_item(self):
         """Removes selected tree item in tree view and in folder structure.
         """
-        QtWidgets.QMessageBox.critical(self, "Error", "Removing not yet implemented!", QtWidgets.QMessageBox.Ok,
-                                       QtWidgets.QMessageBox.Ok)
+        clicked_item = self.tree_widget.currentItem()
+        if clicked_item:
+            self.tree_widget.blockSignals(True)
+            remove_file(clicked_item.obj.directory)
+            clicked_item.parent().removeChild(clicked_item)
+            self.tree_widget.blockSignals(False)
+        # Delete object from Sample
+#        clicked_item.parent().obj.remove_obj(clicked_item.obj)
+        self.remove_tab(clicked_item.tab_id)
 
     def create_report(self):
         """
@@ -707,14 +714,13 @@ class Potku(QtWidgets.QMainWindow):
                     # TODO Sample was not found in tree.
                     pass
 
-
     def open_request_settings(self):
         """Opens request settings dialog.
         """
         RequestSettingsDialog(self.masses, self.request, self.icon_manager)
 
     def remove_tab(self, tab_index):
-        """Remove tab which's close button has been pressed.
+        """Remove tab.
         
         Args:
             tab_index: Integer representing index of the current tab
