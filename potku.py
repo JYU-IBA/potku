@@ -873,15 +873,13 @@ class Potku(QtWidgets.QMainWindow):
                 tree_item = sample_item.child(j)
                 if isinstance(tree_item.obj, Measurement):
                     tab_widget = self.tab_widgets[tree_item.tab_id]
-                    tabs = tab_widget.obj
-                    tab_name = tabs.name
-                    if master and tab_name != master.name:
-                        self.request.exclude_slave(tabs)
-                        tree_item.setText(0, tab_name)
+                    if master and tab_widget.obj.directory != master.directory:
+                        self.request.exclude_slave(tab_widget.obj)
+                        tree_item.setText(0, tab_widget.obj.name)
         self.tree_widget.blockSignals(False)
 
     def __make_slave_measurement(self):
-        """Exclude selected measurements from slave category.
+        """Include selected measurements in slave category.
         """
         self.tree_widget.blockSignals(True)
         items = self.ui.treeWidget.selectedItems()
@@ -896,11 +894,9 @@ class Potku(QtWidgets.QMainWindow):
                 tree_item = sample_item.child(j)
                 if isinstance(tree_item.obj, Measurement):
                     tab_widget = self.tab_widgets[tree_item.tab_id]
-                    tabs = tab_widget.obj
-                    tab_name = tabs.name
-                    if master and tab_name != master.name:
-                        self.request.include_slave(tabs)
-                        tree_item.setText(0, "{0} (slave)".format(tab_name))
+                    if master and master.directory != tab_widget.obj.directory:
+                        self.request.include_slave(tab_widget.obj)
+                        tree_item.setText(0, "{0} (slave)".format(tab_widget.obj.name))
         self.tree_widget.blockSignals(False)
 
     def __make_master_measurement(self):

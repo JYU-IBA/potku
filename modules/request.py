@@ -115,7 +115,7 @@ class Request:
         Args:
             measurement: A measurement class object.
         """
-        name = measurement.measurement_name
+        name = measurement.name
         # Check if measurement is already excluded.
         if name in self.__non_slaves:
             return
@@ -129,7 +129,7 @@ class Request:
         Args:
             measurement: A measurement class object.
         """
-        name = measurement.measurement_name
+        name = measurement.name
         # Check if measurement is in the list.
         if not name in self.__non_slaves:
             return
@@ -218,12 +218,12 @@ class Request:
         Args:
             measurement: A measurement class object that issued save cuts.
         """
-        name = measurement.measurement_name
+        name = measurement.name
         if name == self.has_master():
             nonslaves = self.get_nonslaves()
             tabs = self.get_measurement_tabs(measurement.tab_id)
             for tab in tabs:
-                tab_name = tab.measurement.measurement_name
+                tab_name = tab.measurement.name
                 if tab.data_loaded and not tab_name in nonslaves and \
                    tab_name != name:
                     # No need to save same measurement twice.
@@ -236,13 +236,13 @@ class Request:
             measurement: A measurement class object that issued save cuts.
         """
         directory = measurement.directory_data
-        name = measurement.measurement_name
+        name = measurement.name
         selection_file = "{0}.selections".format(os.path.join(directory, name))
         if name == self.has_master():
             nonslaves = self.get_nonslaves()
             tabs = self.get_measurement_tabs(measurement.tab_id)
             for tab in tabs:
-                tab_name = tab.measurement.measurement_name
+                tab_name = tab.measurement.name
                 if tab.data_loaded and not tab_name in nonslaves and \
                    tab_name != name:
                     tab.measurement.selector.load(selection_file)

@@ -345,6 +345,7 @@ class Measurement:
         """
         if new_name is None:
             return
+        rename_file(os.path.join(self.directory, self.directory_data, self.measurement_file), new_name + ".asc")
         self.measurement_file = new_name + ".asc"
 
     def save_settings(self, filepath=None):
