@@ -49,7 +49,7 @@ class Simulations:
         return len(self.simulations) == 0
 
     def get_key_value(self, key):
-        if not key in self.simulations:
+        if key not in self.simulations:
             return None
         return self.simulations[key]
 
@@ -214,6 +214,7 @@ class Simulation:
             request: Request class object.
         """
         self.request = request
+        self.tab_id = tab_id
         self.name = name
         self.description = description
         self.date = date
@@ -228,6 +229,8 @@ class Simulation:
         self.mode = mode
         self.seed_number = seed_number
 
+        self.name_prefix = "MC_simulation_"
+        self.serial_number = 0
         self.directory = None
 
         settings = {
@@ -309,6 +312,14 @@ class Simulation:
             os.makedirs(directory)
             # log = "Created a directory {0}.".format(directory)
             # logging.getLogger("request").info(log)
+
+    def rename_data_file(self, new_name=None):
+        """Renames the simulation files.
+        """
+        if new_name is None:
+            return
+        # Rename any simulation related files.
+        pass
 
     # TODO: Fix this according to simulation (now copied from measurement).
     def load_data(self):

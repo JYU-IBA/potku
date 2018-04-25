@@ -20,7 +20,7 @@ class TargetWidget(QtWidgets.QWidget):
     '''HistogramWidget used to draw ToF-E Histograms.
     '''
 
-    def __init__(self, icon_manager):
+    def __init__(self, tab, icon_manager):
         '''Inits TofeHistogramWidget widget.
 
         Args:
@@ -38,14 +38,15 @@ class TargetWidget(QtWidgets.QWidget):
 
         target = Target()
         TargetCompositionWidget(self, icon_manager, target)
+        self.tab = tab
         self.recoil_widget = RecoilAtomDistributionWidget(self, icon_manager)
+        self.ui.recoilListWidget.hide()
 
-        self.ui.targetRadioButton.clicked.connect(lambda: self.ui.stackedWidget.setCurrentIndex(0))
-        self.ui.recoilRadioButton.clicked.connect(lambda: self.ui.stackedWidget.setCurrentIndex(1))
+        self.ui.targetRadioButton.clicked.connect(lambda: {self.ui.stackedWidget.setCurrentIndex(0), self.ui.recoilListWidget.hide()})
+        self.ui.recoilRadioButton.clicked.connect(lambda: {self.ui.stackedWidget.setCurrentIndex(1), self.ui.recoilListWidget.show()})
 
         self.ui.targetRadioButton.setChecked(True)
         self.ui.stackedWidget.setCurrentIndex(0)
-
 
         self.ui.setWindowTitle("Otsikko") # TODO: Change title
         self.set_shortcuts()
