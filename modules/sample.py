@@ -150,15 +150,24 @@ class Sample:
         return all_measurements
 
     def get_simulation_files(self):
-        """Get simulation files inside request folder.
+        """Get simulation files inside sample folder.
 
         Return:
             A list of simulation file names.
         """
-        return [f for f in os.listdir(os.path.join(self.request.directory, self.directory))
-                if os.path.isfile(os.path.join(self.request.directory, self.directory, f)) and
-                os.path.splitext(f)[1] == ".sim" and
-                os.stat(os.path.join(self.request.directory, self.directory, f)).st_size]  # Do not load empty files.
+        all_simulations = []
+        for item in os.listdir(os.path.join(self.request.directory, self.directory)):
+            if item.startswith("MC_simulation_"):
+                simulation_name_start = item.find('-')
+                if simulation_name_start == -1:  # simulation needs to have a name.
+                    return []
+                number_str = item[simulation_name_start - 2]
+                if number_str == "0":
+                    self._running_int_simulation = int(item[simulation_name_start - 1])
+                else:
+                    self._running_int_simulation = int(item[simulation_name_start - 2:simulation_name_start - 1])
+                all_simulations.append(os.path.join(self.request.directory, self.directory, item))
+        return all_simulations
 
     def remove_obj(self, obj_removed):
         """Removes given object from sample.

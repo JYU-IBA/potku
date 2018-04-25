@@ -93,8 +93,7 @@ class AxesLimits:
 class Selector:
     """Selector objects handles all selections within measurement.
     """
-    def __init__(self, directory, measurement,
-                 element_colormap, settings):
+    def __init__(self, measurement, element_colormap):
         """Inits Selector.
         
         Inits Selector object.

@@ -24,6 +24,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QMenu, QTreeWidgetItem, QAbstractItemView
+
+from dialogs.measurement.load_measurement import LoadMeasurementDialog
+from modules.measurement import Measurement
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
              "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
@@ -46,7 +51,7 @@ from dialogs.measurement.import_measurement import ImportMeasurementsDialog
 from dialogs.new_request import RequestNewDialog
 from dialogs.request_settings import RequestSettingsDialog
 from dialogs.simulation.new_simulation import SimulationNewDialog
-from modules.general_functions import open_file_dialog
+from modules.general_functions import open_file_dialog, remove_file, rename_file
 from modules.global_settings import GlobalSettings
 from modules.icon_manager import IconManager
 from modules.request import Request
@@ -819,7 +824,8 @@ class Potku(QtWidgets.QMainWindow):
                 self.tab_id += 1
 
         if tab_type == "simulation":
-            simulation = self.request.samples.simulations.add_simulation_file(sample, filename, self.tab_id)
+            smple_dir, simulation_name = os.path.split(filename)
+            simulation = self.request.samples.simulations.add_simulation_file(sample, simulation_name, self.tab_id)
             sample.increase_running_int_simulation_by_1()
 
             if simulation:  # TODO: Finish this (load_data)
