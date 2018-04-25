@@ -118,6 +118,11 @@ class Measurements:
             logging.getLogger("request").critical(log)
         return measurement
 
+    def remove_obj(self, removed_obj):
+        """Removes given measurement.
+        """
+        self.measurements.pop(removed_obj.tab_id)
+
     def remove_by_tab_id(self, tab_id):
         """Removes measurement from measurements by tab id
         

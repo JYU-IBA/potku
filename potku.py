@@ -217,13 +217,19 @@ class Potku(QtWidgets.QMainWindow):
         """
         clicked_item = self.tree_widget.currentItem()
         if clicked_item:
-            self.tree_widget.blockSignals(True)
+            # Remove object from Sample
+            clicked_item.parent().obj.remove_obj(clicked_item.obj)
+
+            # Remove object directory
             remove_file(clicked_item.obj.directory)
+
+            # Remove object from tree
+            self.tree_widget.blockSignals(True)
             clicked_item.parent().removeChild(clicked_item)
             self.tree_widget.blockSignals(False)
-        # Delete object from Sample
-#        clicked_item.parent().obj.remove_obj(clicked_item.obj)
-        self.remove_tab(clicked_item.tab_id)
+
+            # Remove object tab
+            self.remove_tab(clicked_item.tab_id)
 
     def create_report(self):
         """
