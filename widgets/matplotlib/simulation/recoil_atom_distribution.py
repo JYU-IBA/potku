@@ -5,7 +5,6 @@ Updated on 28.3.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
-import numpy
 from PyQt5 import QtCore, QtWidgets, QtGui
 from matplotlib.widgets import SpanSelector
 
@@ -55,7 +54,7 @@ class Element:
     """An element that has a list of points. The points are kept in ascending order by their
     x coordinate.
     """
-    def __init__(self, name, points):
+    def __init__(self, name, points, widget):
         """Inits element.
 
         Args:
@@ -64,7 +63,21 @@ class Element:
         """
         self._name = name
         self._points = sorted(points)
+        self._widget = widget
+        self._edit_lock_on = True
         # sorted_points = sorted(list(zip(xs, ys)), key=lambda x: x[0])
+
+    def delete_widget(self):
+        self._widget.deleteLater()
+
+    def lock_edit(self):
+        self._edit_lock_on = True
+
+    def unlock_edit(self):
+        self._edit_lock_on = False
+
+    def get_edit_lock_state(self):
+        return self._edit_lock_on
 
     def _sort_points(self):
         """Sorts the points in ascending order by their x coordinate."""
@@ -81,7 +94,10 @@ class Element:
         return [point.get_y() for point in self._points]
 
     def get_name(self):
-        return self.name
+        return self._name
+
+    def get_widget(self):
+        return self._widget
 
     def get_point_by_i(self, i):
         """Returns the i:th point."""
@@ -118,6 +134,72 @@ class Element:
         else:
             return self._points[ind + 1]
 
+
+class ElementWidget(QtWidgets.QWidget):
+    """Class for creating an element widget for the recoil atom distribution."""
+    def __init__(self, isotope, element, icon_manager):
+        super().__init__()
+
+        horizontal_layout = QtWidgets.QHBoxLayout()
+
+        self._radio_button = QtWidgets.QRadioButton()
+
+        if isotope:
+            isotope_superscript = general.to_superscript(isotope)
+            button_text = isotope_superscript + " " + element
+        else:
+            button_text = element
+
+        self._radio_button.setText(button_text)
+
+        push_button = QtWidgets.QPushButton()
+        icon_manager.set_icon(push_button, "gear.svg")
+        push_button.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
+        push_button.setToolTip("Simulation settings")
+
+        spinbox = QtWidgets.QSpinBox()
+        spinbox.setToolTip("Number of processes used in simulation")
+
+        horizontal_layout.addWidget(self._radio_button)
+        horizontal_layout.addWidget(push_button)
+        horizontal_layout.addWidget(spinbox)
+
+        self.setLayout(horizontal_layout)
+
+    def get_radio_button(self):
+        return self._radio_button
+
+
+class Elements:
+    def __init__(self, icon_manager):
+        self.icon_manager = icon_manager
+        self._elements = []
+
+    def get_elements(self):
+        return self._elements
+
+    def get_element(self, radio_button):
+        for element in self._elements:
+            if element.get_widget().get_radio_button() == radio_button:
+                return element
+
+    def add_element(self, isotope, element):
+        xs2 = [0.00, 35.00]
+        ys2 = [1.0, 1.0]
+        xys2 = list(zip(xs2, ys2))
+        points2 = []
+        for xy2 in xys2:
+            points2.append(Point(xy2))
+
+        widget = ElementWidget(isotope, element, self.icon_manager)
+        element = Element("Mn", points2, widget)
+        self._elements.append(element)
+
+        return element
+
+    def remove_element(self, element):
+        element.delete_widget()
+        self._elements.remove(element)
 
 # xs = (100 * numpy.random.rand(20)).tolist()
 # ys = (100 * numpy.random.rand(20)).tolist()
@@ -172,8 +254,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
         self.__icon_manager = icon_manager
 
-        self.elements = []
-
         self.current_element = None
 
         scroll_vertical_layout = QtWidgets.QVBoxLayout()
@@ -184,9 +264,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         scroll_vertical_layout.addWidget(widget)
         scroll_vertical_layout.addItem(QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding))
         parent.ui.addPushButton.clicked.connect(self.add_element)
+        self.remove_push_button = parent.ui.removePushButton
+        self.remove_push_button.clicked.connect(self.remove_current_element)
 
         self.radios = QtWidgets.QButtonGroup(self)
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(self.choose_element)
+
+        self.elements = Elements(self.__icon_manager)
 
         # TODO: Set lock on only when simulation has been run
         self.edit_lock_push_button = parent.ui.editLockPushButton
@@ -250,15 +334,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.name_y_axis = "Relative concentration"
         self.name_x_axis = "Depth"
 
-        # TODO: Placeholder
-        xs2 = [0.00, 35.00]
-        ys2 = [1.0, 1.0]
-        xys2 = list(zip(xs2, ys2))
-        points2 = []
-        for xy2 in xys2:
-            points2.append(Point(xy2))
-        element = Element("Mn", points2)
-        self.current_element = element
+        self.current_element = self.elements.add_element("2", "He")
 
         self.on_draw()
 
@@ -267,15 +343,17 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         confirm_box.setIcon(QtWidgets.QMessageBox.Warning)
         yes_button = confirm_box.addButton(QtWidgets.QMessageBox.Yes)
         confirm_box.addButton(QtWidgets.QMessageBox.Cancel)
-        confirm_box.setText("Are you sure you want to unlock full edit?\nAll previous results of this element's simulation will be deleted!")
-        confirm_box.setInformativeText("When full edit is unlocked, you can change the x coordinate of the rightmost point.")
+        confirm_box.setText("Are you sure you want to unlock full edit for this element?\n"
+                            "All previous results of this element's simulation will be deleted!")
+        confirm_box.setInformativeText("When full edit is unlocked, you can change the"
+                                       " x coordinate of the rightmost point.")
         confirm_box.setWindowTitle("Confirm")
 
         confirm_box.exec()
         if confirm_box.clickedButton() == yes_button:
-            for item in self.elements:
-                if self.radios.checkedButton() in item:
-                    item[2] = False
+            for element in self.elements.get_elements():
+                if self.radios.checkedButton() == element.get_widget().get_radio_button():
+                    element.unlock_edit()
                     self.edit_lock_on = False
             self.edit_lock_push_button.setText("Full edit unlocked")
             self.edit_lock_push_button.setEnabled(False)
@@ -283,12 +361,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
     def choose_element(self, button, checked):
         if checked:
-            current_item = None
-            for item in self.elements:
-                if button in item:
-                    current_item = item
-                    self.current_element = current_item[0]
-            if current_item[2]:
+            self.current_element = self.elements.get_element(button)
+            if self.current_element.get_edit_lock_state():
                 self.edit_lock_on = True
                 self.edit_lock_push_button.setText("Unlock full edit")
                 self.edit_lock_push_button.setEnabled(True)
@@ -306,51 +380,35 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         dialog = RecoilElementSelectionDialog(self)
 
         if dialog.isOk:
+            element = self.elements.add_element(dialog.isotope, dialog.element)
+            self.radios.addButton(element.get_widget().get_radio_button())
+            self.recoil_vertical_layout.addWidget(element.get_widget())
 
-            horizontal_layout = QtWidgets.QHBoxLayout()
+            # # Placeholder points
+            # # Minimum number of points for each element is 2
+            # xs2 = [0.00, 35.00]
+            # ys2 = [1.0, 1.0]
+            # xys2 = list(zip(xs2, ys2))
+            # points2 = []
+            # for xy2 in xys2:
+            #     points2.append(Point(xy2))
+            # element = Element("Mn", points2)
 
-            radio_button = QtWidgets.QRadioButton("Li")
-
-            if dialog.isotope:
-                isotope_superscript = general.to_superscript(dialog.isotope)
-                button_text = isotope_superscript + " " + dialog.element
-            else:
-                button_text = dialog.element
-
-            radio_button.setText(button_text)
-            self.radios.addButton(radio_button)
-
-            push_button = QtWidgets.QPushButton()
-            self.__icon_manager.set_icon(push_button, "gear.svg")
-            push_button.setSizePolicy(QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed))
-            push_button.setToolTip("Simulation settings")
-
-            spinbox = QtWidgets.QSpinBox()
-            spinbox.setToolTip("Number of processes used in simulation")
-
-            horizontal_layout.addWidget(radio_button)
-            horizontal_layout.addWidget(push_button)
-            horizontal_layout.addWidget(spinbox)
-
-            widget = QtWidgets.QWidget()
-            widget.setLayout(horizontal_layout)
-
-            self.recoil_vertical_layout.addWidget(widget)
-
-            # Placeholder points
-            # Minimum number of points for each element is 2
-            xs2 = [0.00, 35.00]
-            ys2 = [1.0, 1.0]
-            xys2 = list(zip(xs2, ys2))
-            points2 = []
-            for xy2 in xys2:
-                points2.append(Point(xy2))
-            element = Element("Mn", points2)
-
-            self.elements.append([element, radio_button, True])
+            # self.elements.append([element, widget, True])
 
             if self.current_element is None:
                 self.current_element = element
+
+    def remove_current_element(self):
+        for element in self.elements.get_elements():
+            if element.get_widget().get_radio_button() == self.radios.checkedButton():
+                self.remove_element(element)
+                # TODO: Don't show points when there is no element selected
+                # self.current_element = None
+                return
+
+    def remove_element(self, element):
+        self.elements.remove_element(element)
 
     def on_draw(self):
         """Draw method for matplotlib.
