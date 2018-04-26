@@ -24,7 +24,7 @@ class _CompositionWidget(MatplotlibWidget):
     as such.
     """
 
-    def __init__(self, parent, icon_manager):
+    def __init__(self, parent, target, icon_manager):
         """Initialize a CompositionWidget.
 
         Args:
