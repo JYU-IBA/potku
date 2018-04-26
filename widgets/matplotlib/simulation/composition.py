@@ -149,10 +149,9 @@ class _CompositionWidget(MatplotlibWidget):
         self.mpl_toolbar.update()
 
 
-
 class TargetCompositionWidget(_CompositionWidget):
 
-    def __init__(self, parent, icon_manager, target):
+    def __init__(self, parent, target, icon_manager):
         """Initializes a TargetCompositionWidget object.
 
         Args:
@@ -165,7 +164,6 @@ class TargetCompositionWidget(_CompositionWidget):
 
         self.__layers = target.layers
         self.canvas.manager.set_title("Target composition")
-
 
 
 class FoilCompositionWidget(_CompositionWidget):

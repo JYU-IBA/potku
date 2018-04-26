@@ -26,7 +26,8 @@ class Detector:
     # request maybe only temporary parameter
     __slots__ = "name", "description", "date", "type", "calibration", "foils",\
                 "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
-                "angle_slope", "angle_offset"
+                "angle_slope", "angle_offset", "path", "modification_time",\
+                "efficiencies", "efficiency_directory"
 
     def __init__(self, name="Default", description="This a default detector.",
                  modification_time=datetime.datetime.now(), type="TOF",
@@ -99,7 +100,7 @@ class Detector:
         Args:
             file_path: Path of the efficiency file.
         """
-        shutil.copy(file_path, self.request.detector.efficiency_directory)
+        shutil.copy(file_path, self.efficiency_directory)
 
     def remove_efficiency_file(self, file_name):
         """Removes efficiency file from detector's efficiency file folder.
@@ -144,7 +145,6 @@ class Detector:
             else:
                 foils.append(
                     RectangularFoil(foil["size"], distance, layers))
-
 
         return cls(file_path, name, angle, foils)
 

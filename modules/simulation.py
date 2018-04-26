@@ -69,8 +69,8 @@ class Simulations:
         """
         simulation = None
         name_prefix = "MC_simulation_"
-        # simulation_folder = os.path.join(sample.path, name_prefix + sample.get_running_int_simulation() + "-"
-        #                                  + simulation_name)
+        simulation_folder = os.path.join(sample.directory, name_prefix + "%02d" % sample.get_running_int_simulation() + "-"
+                                         + simulation_name)
         sample.increase_running_int_simulation_by_1()
         try:
             # if file_directory != self.request.directory and file_directory:
@@ -88,7 +88,7 @@ class Simulations:
             #     logging.getLogger("request").info(log)
             keys = sample.simulations.simulations.keys()
             for key in keys:
-                if sample.simulations.simulations[key].simulation_folder == simulation_name:
+                if sample.simulations.simulations[key].directory == simulation_name:
                     return simulation  # sismulation = None
             simulation = Simulation(self.request, simulation_name)
             simulation.create_folder_structure(simulation_folder)

@@ -265,6 +265,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         """
         new_efficiency_file = open_file_dialog(self, self.request.default_folder, "Select efficiency file",
                                                "Efficiency File (*.eff)")
+        if not new_efficiency_file:
+            return
         self.request.detector.add_efficiency_file(new_efficiency_file)
         self.detector_settings_widget.ui.efficiencyListWidget.clear()
         self.detector_settings_widget.ui.efficiencyListWidget.addItems(self.request.detector.get_efficiency_files())
