@@ -4,6 +4,8 @@
 Created on 23.3.2018
 Updated on 20.4.2018
 """
+import re
+
 from modules.general_functions import save_settings
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
@@ -22,8 +24,8 @@ class Detector:
 
     # request maybe only temporary parameter
     __slots__ = "name", "description", "path", "date",\
-                "type", "foils", "calibration", "efficiencies",\
-                "efficiencies_path", "tof_foils"
+                "type", "foils", "calibration", "efficiencies", \
+                "efficiency_directory", "tof_foils"
 
     def __init__(self, name="Default", description="", date=datetime.date.today(),
                  detector_type="TOF", calibration=CalibrationParameters(), foils=[], tof_foils=[1, 2]):
@@ -49,28 +51,30 @@ class Detector:
         self.tof_foils = tof_foils
 
         self.efficiencies = []
-        self.efficiencies_path = None
+        self.efficiency_directory = None
 
-    # def create_folder_structure(self, path):
-    #     # This is here only for testing that when creating a request and detector, a file is created that should contain
-    #     # some information about the detector, if there is not one yet.
-    #     # TODO: This needs to be more specific.
-    #     self.path = path
-    #     file_name = os.path.join(self.path, self.name) + ".detector"
-    #
-    #     if not os.path.exists(self.path):
-    #         os.makedirs(self.path)
-    #     try:
-    #         file = open(file_name, "r")
-    #         print(file.readlines())
-    #     except IOError:
-    #         file = open(file_name, "w")
-    #         file.write("This is a detector in json format.")
-    #
-    #     self.efficiencies_path = os.path.join(self.path, "Efficiency_files")
-    #
-    #     if not os.path.exists(self.efficiencies_path):
-    #         os.makedirs(self.efficiencies_path)
+    def create_folder_structure(self, path):
+        self.path = path
+
+        if not os.path.exists(self.path):
+            os.makedirs(self.path)
+
+        self.efficiency_directory = os.path.join(self.path, "Efficiency_files")
+        if not os.path.exists(self.efficiency_directory):
+            os.makedirs(self.efficiency_directory)
+
+    def get_efficiency_files(self):
+        """Get efficiency files that are in detector's efficiency file folder and return
+        them as a list.
+
+        Return:
+            Returns a string list of efficiency files.
+        """
+        files = []
+        for f in os.listdir(self.efficiency_directory):
+            if f.strip().endswith(".eff"):
+                files.append(f)
+        return files
 
     @classmethod
     def from_file(cls, file_path):

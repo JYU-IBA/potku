@@ -79,11 +79,12 @@ class Request:
 
         self.default_detector_folder = os.path.join(self.default_folder, "Detector")
         # TODO: Add folder creation as a function call
-        # self.detector = Detector(self)
+        self.detector = Detector(self)
+        self.detector.create_folder_structure(self.default_detector_folder)
         # self.detector.to_file(os.path.join(directory, "default.detector"))
         # self.detector.save_settings(self.default_folder + os.sep + "Detector" + os.sep + self.detector.name)
         self.default_measurement = Measurement(self, "Default")
-        self.default_measurement.save_settings(self.default_folder + os.sep + self.default_measurement.name)
+        self.default_measurement.save_settings(os.path.join(self.default_folder, self.default_measurement.name))
         self.default_simulation = Simulation(self, 1) # TODO: Fix this.
 
         self.__set_request_logger()

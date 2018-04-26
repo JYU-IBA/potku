@@ -126,6 +126,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.detector_settings_widget = DetectorSettingsWidget()
         self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
 
+        self.detector_settings_widget.ui.saveButton.clicked \
+            .connect(lambda: self.__save_file("DETECTOR_SETTINGS"))
+
         # Temporary foils list which holds all the information given in the foil dialog
         # If user presses ok or apply, these vlues will be svaed into request's default detector
         self.tmp_foil_info = []
@@ -137,13 +140,14 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.detector_structure_widgets = []
         self.foils_layout = self._add_default_foils()
         self.detector_settings_widget.ui.detectorScrollAreaContents.layout().addLayout(self.foils_layout)
-
         self.detector_settings_widget.ui.newFoilButton.clicked.connect(lambda: self._add_new_foil(self.foils_layout))
 
-        self.calibration_settings.show(self.detector_settings_widget)
+        # Efficiency files
+        self.detector_settings_widget.ui.efficiencyListWidget.addItems(self.request.detector.get_efficiency_files())
+        self.detector_settings_widget.ui.addEfficiencyButton.clicked.connect(lambda: self.__add_efficiency)
+        self.detector_settings_widget.ui.removeEfficiencyButton.clicked.connect(lambda: self.__remove_efficiency)
 
-        self.detector_settings_widget.ui.saveButton.clicked \
-            .connect(lambda: self.__save_file("DETECTOR_SETTINGS"))
+        # Calibration settings
         self.detector_settings_widget.ui.loadCalibrationParametersButton.clicked.connect(
             lambda: self.__load_file("CALIBRATION_SETTINGS"))
         self.detector_settings_widget.ui.saveCalibrationParametersButton.clicked.connect(
@@ -154,6 +158,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             not self.request.samples.measurements.is_empty())
         self.detector_settings_widget.ui.slopeLineEdit.setValidator(double_validator)
         self.detector_settings_widget.ui.offsetLineEdit.setValidator(double_validator)
+
+        self.calibration_settings.show(self.detector_settings_widget)
 
         # Add simulation settings view to the settings view
         self.simulation_settings_widget = SimulationSettingsWidget()
@@ -166,7 +172,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Add depth profile settings view to the settings view
         self.depth_profile_settings_widget = DepthProfileSettingsWidget()
-        self.ui.tabs.addTab(self.depth_profile_settings_widget, "Depth Profile")
+        self.ui.tabs.addTab(self.depth_profile_settings_widget, "Profile")
+        self.depth_profile_settings_widget.ui.normalizationComboBox.addItem("First")
+
         self.depth_profile_settings.show(self.depth_profile_settings_widget)
 
         self.depth_profile_settings_widget.ui.loadButton.clicked.connect(
