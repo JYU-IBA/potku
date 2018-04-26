@@ -8,7 +8,7 @@ __version__ = "2.0"
 import os
 from PyQt5 import uic
 from PyQt5 import QtWidgets
-from widgets.matplotlib.simulation.composition import TargetCompositionWidget
+from widgets.matplotlib.simulation.composition import FoilCompositionWidget
 from modules.foil import CircularFoil
 from modules.foil import RectangularFoil
 
@@ -61,7 +61,7 @@ class FoilDialog(QtWidgets.QDialog):
             self.second_dimension_edit.setText(str(self.foil.size[1]))
 
         # This widget adds itself into the matplotlib_layout
-        self.composition = TargetCompositionWidget(self, self.icon_manager)
+        self.composition = FoilCompositionWidget(self, self.foil, self.icon_manager)
 
         self.ui.typeComboBox.currentIndexChanged.connect(lambda: self._change_dimensions())
 

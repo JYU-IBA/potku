@@ -24,7 +24,7 @@ class _CompositionWidget(MatplotlibWidget):
     as such.
     """
 
-    def __init__(self, parent, target, icon_manager):
+    def __init__(self, parent, icon_manager):
         """Initialize a CompositionWidget.
 
         Args:
@@ -42,7 +42,7 @@ class _CompositionWidget(MatplotlibWidget):
         self.__icon_manager = icon_manager
         self.__fork_toolbar_buttons()
         self.__layer_colors = []
-        self.__layers = []
+        self.layers = []
         self.on_draw()
 
     def on_draw(self):
@@ -105,20 +105,20 @@ class _CompositionWidget(MatplotlibWidget):
         """
         if position < -1:
             raise ValueError("No negative values other than -1 are allowed.")
-        if position > len(self.__layers):
+        if position > len(self.layers):
             ValueError("There are not that many layers.")
 
         dialog = LayerPropertiesDialog()
 
         if dialog.layer:
             layer_color = dialog.layer_color
-            self.__layers.append(dialog.layer)
+            self.layers.append(dialog.layer)
             self.__layer_colors.append(layer_color)
             self.__update_figure()
 
     def __update_figure(self):
         next_layer_position = 0
-        for idx, layer in enumerate(self.__layers):
+        for idx, layer in enumerate(self.layers):
             layer_patch = matplotlib.patches.Rectangle(
                 (next_layer_position, 0),
                 layer.thickness, 1,
@@ -162,22 +162,22 @@ class TargetCompositionWidget(_CompositionWidget):
 
         _CompositionWidget.__init__(self, parent, icon_manager)
 
-        self.__layers = target.layers
+        self.layers = target.layers
         self.canvas.manager.set_title("Target composition")
 
 
 class FoilCompositionWidget(_CompositionWidget):
 
-    def __init__(self, parent, icon_manager, foil):
+    def __init__(self, parent, foil, icon_manager):
         """Initializes a FoilCompositionWidget object.
 
         Args:
-            parent:       A FoilWidget object, which works as a parent of this
+            parent:       A FoilDialog object, which works as a parent of this
                           widget.
             icon_manager: An icon manager class object.
         """
 
         _CompositionWidget.__init__(self, parent, icon_manager)
 
-        self.__layers = foil.layers
+        self.layers = foil.layers
         self.canvas.manager.set_title("Foil composition")
