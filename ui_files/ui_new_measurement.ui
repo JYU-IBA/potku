@@ -167,7 +167,7 @@
          </property>
          <property name="icon">
           <iconset>
-           <normaloff>../ui_icons/potku/add.png</normaloff>../ui_icons/potku/add.png</iconset>
+           <normaloff>../ui_icons/reinhardt/edit_add.svg</normaloff>../ui_icons/reinhardt/edit_add.svg</iconset>
          </property>
         </widget>
        </item>
