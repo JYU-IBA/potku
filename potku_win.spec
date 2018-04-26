@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['potku.py'],
-             pathex=['C:\\MyTemp\\potku\\potku', 
+             pathex=[
 			 'C:\\Users\\localadmin\\.virtualenvs\\potku-s0gTnhB1\\Lib\\site-packages\\scipy\\extra-dll'],
              binaries=[('external\\Potku-bin\\*', 'external\\Potku-bin')],
              datas=[('external\\Potku-data\\*', 'external\\Potku-data'),
@@ -13,10 +13,10 @@ a = Analysis(['potku.py'],
                     ('ui_icons\\potku\\*', 'ui_icons\\potku'),
                     ('images\\*', 'images')
 					],
-             hiddenimports=['scipy', 'scipy._lib.messagestream'],
+             hiddenimports=['scipy._lib.messagestream'],
              hookspath=[],
              runtime_hooks=[],
-             excludes=[],
+             excludes=['tkagg'],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
              cipher=block_cipher)
@@ -29,7 +29,7 @@ exe = EXE(pyz,
           debug=False,
           strip=False,
           upx=True,
-          console=False )
+          console=False)
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,

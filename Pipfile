@@ -1,24 +1,19 @@
 [[source]]
-
 url = "https://pypi.python.org/simple"
 verify_ssl = true
 name = "pypi"
 
-
 [packages]
-
 numpy = "*"
 scipy = "*"
 matplotlib = "*"
-"pyqt5" = "*"
-
+"PyQt5" = "*"
+"pyqt5" = "==5.9.2"
 
 [dev-packages]
-pyinstaller = "*"
-pypiwin32 = "*"
-pywin32 = "*"
-
+PyInstaller = "*"
+"pypiwin32" = "*"
+"pywin32" = "*"
 
 [requires]
-
 python_version = "3.6"
