@@ -24,18 +24,34 @@ from modules.element import Element
 class Detector:
 
     # request maybe only temporary parameter
-    __slots__ = "name", "description", "path", "date",\
-                "type", "foils", "calibration", "efficiencies", \
-                "efficiency_directory", "tof_foils"
+    __slots__ = "name", "description", "date", "type", "calibration", "foils",\
+                "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
+                "angle_slope", "angle_offset"
 
-    def __init__(self, name="Default", description="", date=datetime.date.today(),
-                 detector_type="TOF", calibration=CalibrationParameters(), foils=[], tof_foils=[1, 2]):
+    def __init__(self, name="Default", description="This a default detector.",
+                 modification_time=datetime.datetime.now(), type="TOF",
+                 calibration=CalibrationParameters(),
+                 foils=[CircularFoil("Default", 7.0, 256.0,
+                                     [Layer("First", [Element("C", 12.011, 1)],
+                                            0.1, 2.25)]),
+                        CircularFoil("Default", 9.0, 319.0,
+                                     [Layer("Second", [Element("C", 12.011, 1)],
+                                            13.3, 2.25)]),
+                        CircularFoil("Default", 18.0, 942.0,
+                                     [Layer("Third", [Element("C", 12.011, 1)],
+                                            44.4, 2.25)]),
+                        RectangularFoil("Default", (14.0, 14.0), 957.0,
+                                     [Layer("Fourth", [Element("N", 14.00, 0.57),
+                                                       Element("Si", 28.09, 0.43)],
+                                            1.0, 3.44)])],
+                 tof_foils=[1, 2], virtual_size=(2.0, 5.0), tof_slope=1e-11,
+                 tof_offset=1e-9, angle_slope=0, angle_offset=0):
         """Initialize a detector.
 
         Args:
             name: Detector name.
             description: Detector description.
-            date: Date of modification of detector file.
+            modification_time: Time of modification of detector file.
             type: Type of detector.
             calibration: Calibration parameters for detector.
             foils: Detector foils.
@@ -45,7 +61,7 @@ class Detector:
         self.path = None  # With this we get the path of the folder where the .json file needs to go.
         self.name = name
         self.description = description
-        self.date = date
+        self.modification_time = modification_time
         self.type = type
         self.calibration = calibration
         self.foils = foils

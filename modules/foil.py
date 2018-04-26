@@ -39,7 +39,7 @@ class CircularFoil(Foil):
 
     __slots__ = "diameter"
 
-    def __init__(self, name, diameter=0.0, distance=0.0, layers=[],
+    def __init__(self, name="", diameter=0.0, distance=0.0, layers=[],
                  transmission=1.0):
         """Initialize a circular detector foil.
 
@@ -60,7 +60,7 @@ class RectangularFoil(Foil):
 
     __slots__ = "size"
 
-    def __init__(self, name, size_x=0.0, size_y=0.0, distance=0.0, layers=[],
+    def __init__(self, name="", size_x=0.0, size_y=0.0, distance=0.0, layers=[],
                  transmission=1.0):
         """Initialize a rectangular detector foil.
 

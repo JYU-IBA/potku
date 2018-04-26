@@ -35,7 +35,9 @@ from modules.sample import Samples
 from modules.measurement import Measurement
 from modules.simulation import Simulation
 from modules.settings import Settings
+from modules.beam import Beam
 from modules.detector import Detector
+from modules.target import Target
 
 import re
 
@@ -62,6 +64,11 @@ class Request:
         self.global_settings = global_settings
         self.statusbar = statusbar
         self.samples = Samples(self)
+
+        self.default_beam = Beam()
+        self.default_detector = Detector()
+        self.default_target = Target()
+
 
         self.__tabs = tabs
         self.__master_measurement = None
