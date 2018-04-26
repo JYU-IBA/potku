@@ -22,6 +22,7 @@ from enum import Enum
 from json import JSONEncoder
 
 from modules.general_functions import save_settings
+from modules.target import Target
 
 
 class Simulations:
@@ -202,7 +203,7 @@ class Simulation:
     __slots__ = "request", "name", "description", "date", "simulation_type", "scatter", "main_scatter", "energy", \
                 "mode", "no_of_ions", "no_of_preions", "seed", "no_of_recoils", "no_of_scaling", \
                 "data", "simulation_file", "directory", "__request_settings", "statusbar", "color_scheme", "callMCERD",\
-                "call_get_espe", "name"
+                "call_get_espe", "name", "target"
 
     def __init__(self, request, name="", description="", date=datetime.date.today(), simulation_type=None, scatter=0.05,
                  main_scatter=20, energy=1.0, mode=SimulationMode.narrow, no_of_ions=1000000, no_of_preions=100000,
@@ -226,6 +227,8 @@ class Simulation:
         self.no_of_recoils = no_of_recoils
         self.no_of_scaling = no_of_scaling
 
+        self.target = Target()
+
         self.data = []
         self.simulation_file = None
         self.directory = None
@@ -241,6 +244,7 @@ class Simulation:
 
         self.callMCERD = None
         self.call_get_espe = None
+
 
     def create_folder_structure(self, simulation_folder_path):
         self.directory = simulation_folder_path

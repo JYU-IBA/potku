@@ -23,7 +23,7 @@ class TargetCompositionWidget(MatplotlibWidget):
     can edit target composition for the simulation.
     """
 
-    def __init__(self, parent, icon_manager):
+    def __init__(self, parent, target, icon_manager):
         """Inits
 
         Args:
@@ -42,9 +42,9 @@ class TargetCompositionWidget(MatplotlibWidget):
         self.__icon_manager = icon_manager
         self.__fork_toolbar_buttons()
 
-        self.__layer_colors = []
+        self.target = target
 
-        self.target = Target()
+        self.__layer_colors = []
 
         self.on_draw()
 

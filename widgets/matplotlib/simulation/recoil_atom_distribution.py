@@ -13,6 +13,7 @@ from dialogs.element_selection import ElementSelectionDialog
 from dialogs.simulation.recoil_element_selection import RecoilElementSelectionDialog
 import modules.general_functions as general
 
+import matplotlib
 
 class Point:
     """A 2D point with x and y coordinates."""
@@ -137,7 +138,7 @@ class Element:
 
 class ElementWidget(QtWidgets.QWidget):
     """Class for creating an element widget for the recoil atom distribution."""
-    def __init__(self, isotope, element, icon_manager):
+    def __init__(self, element, isotope, icon_manager):
         super().__init__()
 
         horizontal_layout = QtWidgets.QHBoxLayout()
@@ -183,16 +184,17 @@ class Elements:
             if element.get_widget().get_radio_button() == radio_button:
                 return element
 
-    def add_element(self, isotope, element):
-        xs2 = [0.00, 35.00]
-        ys2 = [1.0, 1.0]
-        xys2 = list(zip(xs2, ys2))
-        points2 = []
-        for xy2 in xys2:
-            points2.append(Point(xy2))
+    def add_element(self, element, isotope):
+        # Default points
+        xs = [0.00, 35.00]
+        ys = [1.0, 1.0]
+        xys = list(zip(xs, ys))
+        points = []
+        for xy in xys:
+            points.append(Point(xy))
 
-        widget = ElementWidget(isotope, element, self.icon_manager)
-        element = Element("Mn", points2, widget)
+        widget = ElementWidget(element, isotope, self.icon_manager)
+        element = Element("Mn", points, widget)
         self._elements.append(element)
 
         return element
@@ -224,6 +226,7 @@ class Elements:
 # except:
 #     print("Ei löydy")
 
+
 class RecoilAtomDistributionWidget(MatplotlibWidget):
     """Matplotlib simulation recoil atom distribution widget. Using this widget, the user
     can edit the recoil atom distribution for the simulation.
@@ -240,7 +243,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                   3: "rectangle selection tool"
                   }
 
-    def __init__(self, parent, icon_manager):
+    def __init__(self, parent, target, icon_manager):
         """Inits recoil atom distribution widget.
 
         Args:
@@ -255,6 +258,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.__icon_manager = icon_manager
 
         self.current_element = None
+        self.elements = Elements(self.__icon_manager)
+        self.target = target
+        self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
 
         scroll_vertical_layout = QtWidgets.QVBoxLayout()
         parent.ui.recoilScrollAreaContents.setLayout(scroll_vertical_layout)
@@ -269,8 +275,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.radios = QtWidgets.QButtonGroup(self)
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(self.choose_element)
-
-        self.elements = Elements(self.__icon_manager)
 
         # TODO: Set lock on only when simulation has been run
         self.edit_lock_push_button = parent.ui.editLockPushButton
@@ -334,7 +338,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.name_y_axis = "Relative concentration"
         self.name_x_axis = "Depth"
 
-        self.current_element = self.elements.add_element("2", "He")
+        self.current_element = self.elements.add_element("He", "2")
 
         self.on_draw()
 
@@ -380,21 +384,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         dialog = RecoilElementSelectionDialog(self)
 
         if dialog.isOk:
-            element = self.elements.add_element(dialog.isotope, dialog.element)
+            element = self.elements.add_element(dialog.element, dialog.isotope)
             self.radios.addButton(element.get_widget().get_radio_button())
             self.recoil_vertical_layout.addWidget(element.get_widget())
-
-            # # Placeholder points
-            # # Minimum number of points for each element is 2
-            # xs2 = [0.00, 35.00]
-            # ys2 = [1.0, 1.0]
-            # xys2 = list(zip(xs2, ys2))
-            # points2 = []
-            # for xy2 in xys2:
-            #     points2.append(Point(xy2))
-            # element = Element("Mn", points2)
-
-            # self.elements.append([element, widget, True])
 
             if self.current_element is None:
                 self.current_element = element
@@ -429,6 +421,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                        color="blue", marker="o", markersize=10, linestyle="None")
         self.markers_selected, = self.axes.plot(0, 0, marker="o", markersize=10, linestyle="None",
                                                 color='yellow', visible=False)
+
 
         # self.text_axes = self.fig.add_axes([0.8, 0.05, 0.1, 0.075])
         # self.text_box = TextBox(self.text_axes, 'Coordinates', initial="Testi")
@@ -692,6 +685,24 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.markers_selected.set_visible(False)
             self.x_coordinate_box.setEnabled(False)
             self.y_coordinate_box.setEnabled(False)
+
+        self.fig.canvas.draw_idle()
+
+    def update_layer_borders(self):
+        next_layer_position = 0
+        for idx, layer in enumerate(self.target.layers):
+            self.axes.axvspan(
+                next_layer_position, next_layer_position + layer.thickness,
+                facecolor=self.layer_colors[idx % 2]
+            )
+
+            # Put annotation in the middle of the rectangular patch.
+            self.axes.annotate(layer.name,
+                               (next_layer_position + layer.thickness / 2, 0.5),
+                               ha="center")
+
+            # Move the position where the next layer starts.
+            next_layer_position += layer.thickness
 
         self.fig.canvas.draw_idle()
 
