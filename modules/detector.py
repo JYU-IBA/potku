@@ -2,24 +2,22 @@
 # TODO: Add licence information
 """
 Created on 23.3.2018
-Updated on 20.4.2018
+Updated on 26.4.2018
 """
-import re
-import shutil
-
-from modules.general_functions import save_settings
-
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
+             "Sinikka Siironen"
 __version__ = "2.0"
 
 import os
 import json
 import datetime
+import shutil
 
 from modules.foil import CircularFoil, RectangularFoil
 from modules.layer import Layer
 from modules.calibration_parameters import CalibrationParameters
 from modules.element import Element
+
 
 class Detector:
 
@@ -42,8 +40,9 @@ class Detector:
                                      [Layer("Third", [Element("C", 12.011, 1)],
                                             44.4, 2.25)]),
                         RectangularFoil("Default", (14.0, 14.0), 957.0,
-                                     [Layer("Fourth", [Element("N", 14.00, 0.57),
-                                                       Element("Si", 28.09, 0.43)],
+                                     [Layer("Fourth", [
+                                         Element("N", 14.00, 0.57),
+                                         Element("Si", 28.09, 0.43)],
                                             1.0, 3.44)])],
                  tof_foils=[1, 2], virtual_size=(2.0, 5.0), tof_slope=1e-11,
                  tof_offset=1e-9, angle_slope=0, angle_offset=0):
@@ -56,10 +55,13 @@ class Detector:
             type: Type of detector.
             calibration: Calibration parameters for detector.
             foils: Detector foils.
-            tof_foils: List of indexes that tell the index of tof foils in foils list.
+            tof_foils: List of indexes that tell the index of tof foils in
+            foils list.
 
         """
-        self.path = None  # With this we get the path of the folder where the .json file needs to go.
+        # With this we get the path of the folder where the
+        # .json file needs to go.
+        self.path = None
         self.name = name
         self.description = description
         self.modification_time = modification_time
@@ -82,8 +84,8 @@ class Detector:
             os.makedirs(self.efficiency_directory)
 
     def get_efficiency_files(self):
-        """Get efficiency files that are in detector's efficiency file folder and return
-        them as a list.
+        """Get efficiency files that are in detector's efficiency
+        file folder and return them as a list.
 
         Return:
             Returns a string list of efficiency files.
@@ -119,7 +121,8 @@ class Detector:
         """Initialize Detector from a JSON file.
 
         Args:
-            file_path: A file path to JSON file containing the detector parameters.
+            file_path: A file path to JSON file containing the
+            detector parameters.
         """
         obj = json.load(open(file_path))
 

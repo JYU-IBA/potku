@@ -1,8 +1,18 @@
+# coding=utf-8
+"""
+Created on 25.4.2018
+Updated on 26.4.2018
+"""
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
+             "Sinikka Siironen"
+__version__ = "2.0"
+
 import hashlib
 import os
 import platform
 import subprocess
 import tempfile
+
 
 class MCERD:
 

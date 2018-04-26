@@ -1,8 +1,10 @@
 # coding=utf-8
 """
 Created on 18.4.2018
+Modified on 26.4.2018
 """
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
+             "\n Sinikka Siironen"
 __version__ = "2.0"
 
 import os
@@ -15,7 +17,8 @@ class FoilWidget(QtWidgets.QWidget):
     def __init__(self, parent):
         super().__init__()
         self.parent = parent
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_foil_widget.ui"), self)
+        self.ui = uic.loadUi(os.path.join("ui_files", "ui_foil_widget.ui"),
+                             self)
         self.ui.deleteButton.clicked.connect(lambda: self._delete_foil())
 
     def _delete_foil(self):
