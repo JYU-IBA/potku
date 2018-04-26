@@ -377,8 +377,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.dragged_points.clear()
             self.selected_points.clear()
             self.update_plot()
-            self.axes.relim()
-            self.axes.autoscale()
+            # self.axes.relim()
+            # self.axes.autoscale()
 
     def add_element(self):
         dialog = RecoilElementSelectionDialog(self)
