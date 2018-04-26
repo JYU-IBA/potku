@@ -25,6 +25,7 @@ along with this program (file named 'LICENCE').
 
 Dialog for the request settings
 """
+import shutil
 
 from modules.detector import Detector
 from modules.element import Element
@@ -144,8 +145,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Efficiency files
         self.detector_settings_widget.ui.efficiencyListWidget.addItems(self.request.detector.get_efficiency_files())
-        self.detector_settings_widget.ui.addEfficiencyButton.clicked.connect(lambda: self.__add_efficiency)
-        self.detector_settings_widget.ui.removeEfficiencyButton.clicked.connect(lambda: self.__remove_efficiency)
+        self.detector_settings_widget.ui.addEfficiencyButton.clicked.connect(lambda: self.__add_efficiency())
+        self.detector_settings_widget.ui.removeEfficiencyButton.clicked.connect(lambda: self.__remove_efficiency())
 
         # Calibration settings
         self.detector_settings_widget.ui.loadCalibrationParametersButton.clicked.connect(
@@ -255,6 +256,20 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 break
         FoilDialog(self.tmp_foil_info, foil_object_index, self.icon_manager)
         self.sender().setText(self.tmp_foil_info[foil_object_index].name)
+
+    def __add_efficiency(self):
+        """Adds efficiency file in detector's efficiency directory and updates settings view.
+        """
+        new_efficiency_file = open_file_dialog(self, self.request.default_folder, "Select efficiency file",
+                                               "Efficiency File (*.eff)")
+        # TODO The file should be copied only if user applies settings. In that case clicking Cancel would not add file.
+        shutil.copy(new_efficiency_file, self.request.detector.efficiency_directory)
+        self.detector_settings_widget.ui.efficiencyListWidget.clear()
+        self.detector_settings_widget.ui.efficiencyListWidget.addItems(self.request.detector.get_efficiency_files())
+
+    def __remove_efficiency(self):
+        """Removes efficiency file from detector's efficiency directory and updates settings view.
+        """
 
     def __open_calibration_dialog(self):
         measurements = [self.request.measurements.get_key_value(key)
