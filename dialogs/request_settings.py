@@ -262,14 +262,17 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         """
         new_efficiency_file = open_file_dialog(self, self.request.default_folder, "Select efficiency file",
                                                "Efficiency File (*.eff)")
-        # TODO The file should be copied only if user applies settings. In that case clicking Cancel would not add file.
-        shutil.copy(new_efficiency_file, self.request.detector.efficiency_directory)
+        self.request.detector.add_efficiency_file(new_efficiency_file)
         self.detector_settings_widget.ui.efficiencyListWidget.clear()
         self.detector_settings_widget.ui.efficiencyListWidget.addItems(self.request.detector.get_efficiency_files())
 
     def __remove_efficiency(self):
         """Removes efficiency file from detector's efficiency directory and updates settings view.
         """
+        selected_efficiency_file = self.detector_settings_widget.ui.efficiencyListWidget.currentItem().text()
+        self.request.detector.remove_efficiency_file(selected_efficiency_file)
+        self.detector_settings_widget.ui.efficiencyListWidget.clear()
+        self.detector_settings_widget.ui.efficiencyListWidget.addItems(self.request.detector.get_efficiency_files())
 
     def __open_calibration_dialog(self):
         measurements = [self.request.measurements.get_key_value(key)

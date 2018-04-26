@@ -5,6 +5,7 @@ Created on 23.3.2018
 Updated on 20.4.2018
 """
 import re
+import shutil
 
 from modules.general_functions import save_settings
 
@@ -75,6 +76,26 @@ class Detector:
             if f.strip().endswith(".eff"):
                 files.append(f)
         return files
+
+    def add_efficiency_file(self, file_path):
+        """Copies efficiency file to detector's efficiency folder.
+
+        Args:
+            file_path: Path of the efficiency file.
+        """
+        shutil.copy(file_path, self.request.detector.efficiency_directory)
+
+    def remove_efficiency_file(self, file_name):
+        """Removes efficiency file from detector's efficiency file folder.
+
+        Args:
+            file_name: Name of the efficiency file.
+        """
+        try:
+            os.remove(os.path.join(self.efficiency_directory, file_name))
+        except OSError as e:
+            # File was not found in efficiency file folder.
+            pass
 
     @classmethod
     def from_file(cls, file_path):
