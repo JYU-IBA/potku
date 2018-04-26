@@ -109,9 +109,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.measurement_settings_widget.ui.beamIonButton.clicked.connect(
             lambda: self.__change_element(self.measurement_settings_widget.ui.beamIonButton,
                                           self.measurement_settings_widget.ui.isotopeComboBox))
-        self.measurement_settings_widget.ui.TOFLengthLineEdit.setValidator(positive_double_validator)
-        self.measurement_settings_widget.ui.carbonFoilThicknessLineEdit.setValidator(positive_double_validator)
-        self.measurement_settings_widget.ui.targetDensityLineEdit.setValidator(positive_double_validator)
 
         self.measurement_settings_widget.ui.energyLineEdit.setValidator(positive_double_validator)
         double_angle_validator = InputValidator(0, 90, 10)
