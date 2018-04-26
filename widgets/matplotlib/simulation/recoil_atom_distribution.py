@@ -12,6 +12,7 @@ from widgets.matplotlib.base import MatplotlibWidget
 from dialogs.element_selection import ElementSelectionDialog
 from dialogs.simulation.recoil_element_selection import RecoilElementSelectionDialog
 import modules.general_functions as general
+import modules.element
 
 import matplotlib
 
@@ -51,22 +52,24 @@ class Point:
         self._y = xy[1]
 
 
-class Element:
-    """An element that has a list of points. The points are kept in ascending order by their
+class RecoilElement:
+    """An element that has a list of points and a widget. The points are kept in ascending order by their
     x coordinate.
     """
-    def __init__(self, name, points, widget):
+    def __init__(self, element, points, widget):
         """Inits element.
 
         Args:
             name: Name of the element. Usually the symbol of the element.
             points: List of Point class objects.
         """
-        self._name = name
+        self._element = element
         self._points = sorted(points)
         self._widget = widget
         self._edit_lock_on = True
-        # sorted_points = sorted(list(zip(xs, ys)), key=lambda x: x[0])
+
+    def get_element(self):
+        return self._element
 
     def delete_widget(self):
         self._widget.deleteLater()
@@ -93,9 +96,6 @@ class Element:
     def get_ys(self):
         """Returns a list of the y coordinates of the points."""
         return [point.get_y() for point in self._points]
-
-    def get_name(self):
-        return self._name
 
     def get_widget(self):
         return self._widget
@@ -138,18 +138,18 @@ class Element:
 
 class ElementWidget(QtWidgets.QWidget):
     """Class for creating an element widget for the recoil atom distribution."""
-    def __init__(self, element, isotope, icon_manager):
+    def __init__(self, element, icon_manager):
         super().__init__()
 
         horizontal_layout = QtWidgets.QHBoxLayout()
 
         self._radio_button = QtWidgets.QRadioButton()
 
-        if isotope:
-            isotope_superscript = general.to_superscript(isotope)
-            button_text = isotope_superscript + " " + element
+        if element.isotope:
+            isotope_superscript = general.to_superscript(str(element.isotope))
+            button_text = isotope_superscript + " " + element.symbol
         else:
-            button_text = element
+            button_text = element.symbol
 
         self._radio_button.setText(button_text)
 
@@ -184,7 +184,7 @@ class Elements:
             if element.get_widget().get_radio_button() == radio_button:
                 return element
 
-    def add_element(self, element, isotope):
+    def add_element(self, element):
         # Default points
         xs = [0.00, 35.00]
         ys = [1.0, 1.0]
@@ -193,11 +193,11 @@ class Elements:
         for xy in xys:
             points.append(Point(xy))
 
-        widget = ElementWidget(element, isotope, self.icon_manager)
-        element = Element("Mn", points, widget)
-        self._elements.append(element)
+        widget = ElementWidget(element, self.icon_manager)
+        recoil_element = RecoilElement(element, points, widget)
+        self._elements.append(recoil_element)
 
-        return element
+        return recoil_element
 
     def remove_element(self, element):
         element.delete_widget()
@@ -338,7 +338,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.name_y_axis = "Relative concentration"
         self.name_x_axis = "Depth"
 
-        self.current_element = self.elements.add_element("He", "2")
+        self.current_element = self.elements.add_element(modules.element.Element("He", 2))
 
         self.on_draw()
 
@@ -384,7 +384,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         dialog = RecoilElementSelectionDialog(self)
 
         if dialog.isOk:
-            element = self.elements.add_element(dialog.element, dialog.isotope)
+            element = self.elements.add_element(modules.element.Element(dialog.element, dialog.isotope))
             self.radios.addButton(element.get_widget().get_radio_button())
             self.recoil_vertical_layout.addWidget(element.get_widget())
 
@@ -705,6 +705,19 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             next_layer_position += layer.thickness
 
         self.fig.canvas.draw_idle()
+
+    def update_elements(self):
+        for layer in self.target.layers:
+            for layer_element in layer.elements:
+                already_exists = False
+                for existing_element in self.elements.get_elements():
+                    if layer_element == existing_element.get_element():
+                        already_exists = True
+                        break
+                if not already_exists:
+                    new_element = self.elements.add_element(layer_element)
+                    self.radios.addButton(new_element.get_widget().get_radio_button())
+                    self.recoil_vertical_layout.addWidget(new_element.get_widget())
 
     def on_motion(self, event):
         """Callback method for mouse motion event. Moves points that are being dragged.

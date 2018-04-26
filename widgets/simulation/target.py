@@ -49,7 +49,8 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.recoilRadioButton.clicked.connect(lambda: {self.ui.stackedWidget.setCurrentIndex(1),
                                                            self.ui.recoilListWidget.show(),
                                                            self.ui.editLockPushButton.show(),
-                                                           self.recoil_widget.update_layer_borders()})
+                                                           self.recoil_widget.update_layer_borders(),
+                                                           self.recoil_widget.update_elements()})
 
         self.ui.targetRadioButton.setChecked(True)
         self.ui.stackedWidget.setCurrentIndex(0)
