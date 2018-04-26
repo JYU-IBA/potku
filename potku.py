@@ -25,7 +25,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMenu, QTreeWidgetItem, QAbstractItemView
+from PyQt5.QtWidgets import QMenu, QTreeWidgetItem, QAbstractItemView, QDesktopWidget, QApplication
 
 from dialogs.measurement.load_measurement import LoadMeasurementDialog
 from modules.measurement import Measurement

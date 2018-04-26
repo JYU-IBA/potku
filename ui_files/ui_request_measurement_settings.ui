@@ -9,19 +9,19 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>468</width>
-    <height>260</height>
+    <width>400</width>
+    <height>534</height>
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
     <horstretch>0</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
   </property>
   <property name="minimumSize">
    <size>
-    <width>0</width>
+    <width>400</width>
     <height>0</height>
    </size>
   </property>
@@ -79,8 +79,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>432</width>
-        <height>1014</height>
+        <width>367</width>
+        <height>981</height>
        </rect>
       </property>
       <property name="sizePolicy">
