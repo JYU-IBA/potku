@@ -824,7 +824,7 @@ class Potku(QtWidgets.QMainWindow):
                 self.tab_id += 1
 
         if tab_type == "simulation":
-            smple_dir, simulation_name = os.path.split(filename)
+            sample_dir, simulation_name = os.path.split(filename)
             simulation = self.request.samples.simulations.add_simulation_file(sample, simulation_name, self.tab_id)
             sample.increase_running_int_simulation_by_1()
 

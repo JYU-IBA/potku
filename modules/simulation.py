@@ -115,7 +115,7 @@ class Simulations:
 
 class Simulation:
 
-    def __init__(self, request, tab_id, name="", description=""):
+    def __init__(self, request, name, tab_id=-1, description=""):
         self.request = request
         self.tab_id = tab_id
         self.name = name
