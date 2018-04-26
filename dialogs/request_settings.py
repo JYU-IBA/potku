@@ -26,6 +26,7 @@ along with this program (file named 'LICENCE').
 Dialog for the request settings
 """
 import shutil
+from PyQt5.QtWidgets import QDesktopWidget, QApplication
 
 from modules.detector import Detector
 from modules.element import Element
@@ -70,7 +71,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_measuring_settings.ui"), self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        
+        screen_geometry = QDesktopWidget.availableGeometry(QApplication.desktop())
+        self.resize(self.geometry().width(), screen_geometry.size().height() * 0.8)
+
         self.request = request
         self.settings = request.settings
         self.icon_manager = icon_manager

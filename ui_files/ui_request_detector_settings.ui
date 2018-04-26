@@ -82,8 +82,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>466</width>
-        <height>578</height>
+        <width>462</width>
+        <height>580</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -256,8 +256,8 @@
                      <rect>
                       <x>0</x>
                       <y>0</y>
-                      <width>424</width>
-                      <height>235</height>
+                      <width>401</width>
+                      <height>187</height>
                      </rect>
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_4"/>
@@ -557,12 +557,22 @@
            </widget>
           </widget>
          </item>
+         <item>
+          <spacer name="verticalSpacer_3">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
         </layout>
        </item>
       </layout>
-      <zorder>groupBox_9</zorder>
-      <zorder>tabs</zorder>
-      <zorder>verticalLayoutWidget</zorder>
      </widget>
     </widget>
    </item>
