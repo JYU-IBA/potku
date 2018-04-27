@@ -98,7 +98,8 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 if reply == QtWidgets.QMessageBox.No:
                     self.close()
                     return
-            self.__update_eff_files()
+            # Efficiency directory should be read from measurement's detector.
+            # self.__update_eff_files()
             self.__show_important_settings()
             self.exec_()
         
