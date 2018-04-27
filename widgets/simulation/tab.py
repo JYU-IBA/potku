@@ -17,7 +17,6 @@ from modules.element import Element
 from modules.general_functions import read_espe_file
 from modules.null import Null
 from modules.ui_log_handlers import customLogHandler
-from modules.simulation import CallGetEspe
 from widgets.log import LogWidget
 from widgets.simulation.energy_spectrum import SimulationEnergySpectrumWidget
 
@@ -164,32 +163,34 @@ class SimulationTabWidget(QtWidgets.QWidget):
         Args:
             parent: Parent of the energy spectrum widget.
         """
-        if self.simulation_started:
-            return
-        mcerd_path = os.path.join(self.request.directory, "35Cl-85-LiMnO_Li")
-        self.obj.callMCERD = CallMCERD(mcerd_path)
-        self.obj.callMCERD.run_simulation()
-        self.simulation_started = True
-
-        self.stop_simulation_button = QtWidgets.QPushButton("Stop the "
-                                                            "simulation")
-        self.stop_simulation_button.clicked.connect(self.stop_mcsimulation)
-        self.ui.verticalLayout_6.addWidget(self.stop_simulation_button)
+        pass
+        # if self.simulation_started:
+        #     return
+        # mcerd_path = os.path.join(self.request.directory, "35Cl-85-LiMnO_Li")
+        # self.obj.callMCERD = CallMCERD(mcerd_path)
+        # self.obj.callMCERD.run_simulation()
+        # self.simulation_started = True
+        #
+        # self.stop_simulation_button = QtWidgets.QPushButton("Stop the "
+        #                                                     "simulation")
+        # self.stop_simulation_button.clicked.connect(self.stop_mcsimulation)
+        # self.ui.verticalLayout_6.addWidget(self.stop_simulation_button)
 
     def stop_mcsimulation(self):
-        self.obj.callMCERD.stop_simulation()
-        self.simulation_started = False
-
-        self.ui.verticalLayout_6.removeWidget(self.stop_simulation_button)
-        self.stop_simulation_button.deleteLater()
-
-        self.obj.call_get_espe = CallGetEspe(self.request.directory)
-        self.obj.call_get_espe.run_get_espe()
-
-        self.make_energy_spectrum(self.request.directory,
-                                  self.obj.call_get_espe.output_file)
-        # TODO: if there is already an energy spectrum, it should be removed
-        self.add_widget(self.energy_spectrum_widget)
+        pass
+        # self.obj.callMCERD.stop_simulation()
+        # self.simulation_started = False
+        #
+        # self.ui.verticalLayout_6.removeWidget(self.stop_simulation_button)
+        # self.stop_simulation_button.deleteLater()
+        #
+        # self.obj.call_get_espe = CallGetEspe(self.request.directory)
+        # self.obj.call_get_espe.run_get_espe()
+        #
+        # self.make_energy_spectrum(self.request.directory,
+        #                           self.obj.call_get_espe.output_file)
+        # # TODO: if there is already an energy spectrum, it should be removed
+        # self.add_widget(self.energy_spectrum_widget)
             
     def del_widget(self, widget):
         """Delete a widget from current (measurement) tab.
