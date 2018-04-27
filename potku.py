@@ -3,11 +3,11 @@
 Created on 21.3.2013
 Updated on 26.4.2018
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
 Miika Raunio
 
 This program is free software; you can redistribute it and/or
@@ -63,7 +63,7 @@ from widgets.simulation.tab import SimulationTabWidget
 class Potku(QtWidgets.QMainWindow):
     """Potku is main window class.
     """
-    
+
     def __init__(self):
         """Init main window for Potku.
         """
@@ -72,13 +72,13 @@ class Potku(QtWidgets.QMainWindow):
                              self)
         self.title = self.ui.windowTitle()
         self.ui.treeWidget.setHeaderLabel("")
-        
+
         self.icon_manager = IconManager()
         self.settings = GlobalSettings()
         self.request = None
         self.potku_bin_dir = os.getcwd()
-        
-        # Holds references to all the tab widgets in "tab_measurements" 
+
+        # Holds references to all the tab widgets in "tab_measurements"
         # (even when they are removed from the QTabWidget)
         self.tab_widgets = {}
         self.tab_id = 0  # identification for each tab
@@ -103,25 +103,25 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.actionImport_pelletron.triggered.connect(self.import_pelletron)
         self.ui.actionBinary_data_lst.triggered.connect(self.import_binary)
         self.ui.action_manual.triggered.connect(self.__open_manual)
-        
+
         self.ui.actionSave_cuts.triggered.connect(
-                                self.current_measurement_save_cuts)
+            self.current_measurement_save_cuts)
         self.ui.actionAnalyze_elemental_losses.triggered.connect(
             self.current_measurement_analyze_elemental_losses)
         self.ui.actionCreate_energy_spectrum.triggered.connect(
-                                self.current_measurement_create_energy_spectrum)
+            self.current_measurement_create_energy_spectrum)
         self.ui.actionCreate_depth_profile.triggered.connect(
-                                self.current_measurement_create_depth_profile)
+            self.current_measurement_create_depth_profile)
         self.ui.actionGlobal_Settings.triggered.connect(
             self.open_global_settings)
         self.ui.actionRequest_Settings.triggered.connect(
             self.open_request_settings)
         self.ui.actionAbout.triggered.connect(self.open_about_dialog)
-        
+
         self.ui.actionNew_Request_2.triggered.connect(self.make_new_request)
         self.ui.actionOpen_Request_2.triggered.connect(self.open_request)
         self.ui.actionExit.triggered.connect(self.close)
-        
+
         self.ui.menuImport.setEnabled(False)
         self.panel_shown = True
         self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
@@ -152,9 +152,9 @@ class Potku(QtWidgets.QMainWindow):
         self.ui.introduceTab.setStyleSheet(style_intro)
         self.ui.infoTab.setStyleSheet(style_mesinfo)
         self.__remove_info_tab()
-        
-        self.ui.setWindowIcon(self.icon_manager.get_icon("potku_icon.ico"))        
-        
+
+        self.ui.setWindowIcon(self.icon_manager.get_icon("potku_icon.ico"))
+
         # Set main window's icons to place
         self.__set_icons()
         self.ui.showMaximized()
@@ -263,7 +263,7 @@ class Potku(QtWidgets.QMainWindow):
                                        QtWidgets.QMessageBox.Ok)
 
     def current_measurement_create_depth_profile(self):
-        """Opens the depth profile analyzation tool for the current open 
+        """Opens the depth profile analyzation tool for the current open
         measurement tab widget.
         """
         widget = self.ui.tabs.currentWidget()
@@ -277,7 +277,7 @@ class Potku(QtWidgets.QMainWindow):
                                            QtWidgets.QMessageBox.Ok)
 
     def current_measurement_analyze_elemental_losses(self):
-        """Opens the element losses analyzation tool for the current open 
+        """Opens the element losses analyzation tool for the current open
         measurement tab widget.
         """
         widget = self.ui.tabs.currentWidget()
@@ -291,7 +291,7 @@ class Potku(QtWidgets.QMainWindow):
                                            QtWidgets.QMessageBox.Ok)
 
     def current_measurement_create_energy_spectrum(self):
-        """Opens the energy spectrum analyzation tool for the current open 
+        """Opens the energy spectrum analyzation tool for the current open
         measurement tab widget.
         """
         widget = self.ui.tabs.currentWidget()
@@ -305,7 +305,7 @@ class Potku(QtWidgets.QMainWindow):
                                            QtWidgets.QMessageBox.Ok)
 
     def current_measurement_save_cuts(self):
-        """Saves the current open measurement tab widget's selected cuts 
+        """Saves the current open measurement tab widget's selected cuts
         to cut files.
         """
         widget = self.ui.tabs.currentWidget()
@@ -332,7 +332,7 @@ class Potku(QtWidgets.QMainWindow):
                                            "do this action.",
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
-    
+
     def delete_selections(self):
         """Deletes the selected tree widget items.
         """
@@ -358,7 +358,7 @@ class Potku(QtWidgets.QMainWindow):
             if reply == QtWidgets.QMessageBox.No or reply == \
                     QtWidgets.QMessageBox.Cancel:
                 return  # If clicked Yes, then continue normally
-        
+
         for tab in selected_tabs:
             measurement = self.request.samples.measurements.get_key_value(
                 tab.tab_id)
@@ -366,7 +366,7 @@ class Potku(QtWidgets.QMainWindow):
                 # Close and remove logs
                 measurement.remove_and_close_log(measurement.defaultlog)
                 measurement.remove_and_close_log(measurement.errorlog)
-                
+
                 # Remove measurement's directory tree
                 shutil.rmtree(measurement.directory)
                 os.remove(os.path.join(self.request.directory,
@@ -379,21 +379,21 @@ class Potku(QtWidgets.QMainWindow):
                                                QtWidgets.QMessageBox.Ok)
                 measurement.set_loggers()
                 return
-            
+
             self.request.samples.measurements.remove_by_tab_id(tab.tab_id)
             remove_index = self.ui.tabs.indexOf(tab)
-            self.remove_tab(remove_index)  # Remove measurement from open tabs 
-            
+            self.remove_tab(remove_index)  # Remove measurement from open tabs
+
             tab.histogram.matplotlib.delete()
             tab.elemental_losses_widget.matplotlib.delete()
             tab.energy_spectrum_widget.matplotlib.delete()
             tab.depth_profile_widget.matplotlib.delete()
-            
+
             tab.mdiArea.closeAllSubWindows()
             del self.tab_widgets[tab.tab_id]
-            tab.close() 
+            tab.close()
             tab.deleteLater()
-            
+
         # Remove selected from tree widget
         root = self.ui.treeWidget.invisibleRootItem()
         for item in self.ui.treeWidget.selectedItems():
@@ -402,7 +402,7 @@ class Potku(QtWidgets.QMainWindow):
 
     def focus_selected_tab(self, clicked_item):
         """Focus to selected tab (in tree widget) and if it isn't open, open it.
-        
+
         Args:
             clicked_item: TreeWidgetItem with tab_id attribute (int) that
             connects the item to the corresponding MeasurementTabWidget
@@ -476,18 +476,18 @@ class Potku(QtWidgets.QMainWindow):
         self.tree_widget.blockSignals(False)
 
     def hide_panel(self, enable_hide=None):
-        """Sets the frame (including measurement navigation view, global 
+        """Sets the frame (including measurement navigation view, global
         settings and request settings buttons) visible.
-        
+
         Args:
-            enable_hide: If True, sets the frame visible and vice versa. 
-            If not given, sets the frame visible or hidden depending its 
+            enable_hide: If True, sets the frame visible and vice versa.
+            If not given, sets the frame visible or hidden depending its
             previous state.
         """
         if enable_hide is not None:
             self.panel_shown = enable_hide
         else:
-            self.panel_shown = not self.panel_shown    
+            self.panel_shown = not self.panel_shown
         if self.panel_shown:
             self.ui.hidePanelButton.setText("<")
         else:
@@ -497,8 +497,8 @@ class Potku(QtWidgets.QMainWindow):
 
     def import_pelletron(self):
         """Import Pelletron's measurements into request.
-        
-        Import Pelletron's measurements from 
+
+        Import Pelletron's measurements from
         """
         if not self.request:
             return
@@ -512,8 +512,8 @@ class Potku(QtWidgets.QMainWindow):
 
     def import_binary(self):
         """Import binary measurements into request.
-        
-        Import binary measurements from 
+
+        Import binary measurements from
         """
         if not self.request:
             return
@@ -546,7 +546,7 @@ class Potku(QtWidgets.QMainWindow):
 
     def load_request_measurements(self, measurements=[]):
         """Load measurement files in the request.
-        
+
         Args:
             measurements: A list representing loadable measurements when
             importing measurements to the request.
@@ -564,7 +564,7 @@ class Potku(QtWidgets.QMainWindow):
         progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
-        
+
         count = len(samples_with_measurements)
         dirtyinteger = 0
         for sample, measurements in samples_with_measurements.items():
@@ -665,8 +665,8 @@ class Potku(QtWidgets.QMainWindow):
         if dialog.filename:
             try:
                 self.ui.tabs.removeTab(self.ui.tabs.indexOf(
-                                                   self.measurement_info_tab))
-            except: 
+                    self.measurement_info_tab))
+            except:
                 pass  # If there is no info tab, no need to worry about.
             progress_bar = QtWidgets.QProgressBar()
             self.statusbar.addWidget(progress_bar, 1)
@@ -744,10 +744,10 @@ class Potku(QtWidgets.QMainWindow):
                                    self.statusbar, self.settings,
                                    self.tab_widgets)
             self.ui.setWindowTitle("{0} - Request: {1}".format(
-                                                       self.title,
-                                                       self.request.get_name()))
+                self.title,
+                self.request.get_name()))
             self.ui.treeWidget.setHeaderLabel(
-                                 "Request: {0}".format(self.request.get_name()))
+                "Request: {0}".format(self.request.get_name()))
             self.__initialize_tree_view()
             self.settings.set_request_directory_last_open(folder)
 
@@ -756,7 +756,7 @@ class Potku(QtWidgets.QMainWindow):
             self.load_request_simulations()
             self.__remove_introduction_tab()
             self.__set_request_buttons_enabled(True)
-            
+
             master_measurement_name = self.request.has_master()
             nonslaves = self.request.get_nonslaves()
             if master_measurement_name:
@@ -808,7 +808,7 @@ class Potku(QtWidgets.QMainWindow):
 
     def remove_tab(self, tab_index):
         """Remove tab.
-        
+
         Args:
             tab_index: Integer representing index of the current tab
         """
@@ -857,10 +857,10 @@ class Potku(QtWidgets.QMainWindow):
                       file_current=0, file_count=1, load_data=False):
         """Add new tab into TabWidget.
         TODO: Simulation included. Should be changed.
-        
-        Adds a new tab into program's tabWidget. Makes a new measurement for 
+
+        Adds a new tab into program's tabWidget. Makes a new measurement for
         said tab.
-        
+
         Args:
             tab_type: Either "measurement" or "simulation".
             filename: A string representing measurement file.
@@ -941,7 +941,7 @@ class Potku(QtWidgets.QMainWindow):
 
     def __change_tab_icon(self, tree_item, icon="folder_open.svg"):
         """Change tab icon in QTreeWidgetItem.
-        
+
         Args:
             tree_item: A QtWidgets.QTreeWidgetItem class object.
             icon: A string representing the icon name.
@@ -1004,7 +1004,7 @@ class Potku(QtWidgets.QMainWindow):
         self.tree_widget.blockSignals(False)
 
     def __make_master_measurement(self):
-        """Make selected or first of the selected measurements 
+        """Make selected or first of the selected measurements
         a master measurement.
         """
         self.tree_widget.blockSignals(True)
@@ -1017,7 +1017,7 @@ class Potku(QtWidgets.QMainWindow):
         self.request.set_master(master_tab.obj)
         # old_master = self.request.get_master()
         nonslaves = self.request.get_nonslaves()
-        
+
         tree_root = self.tree_widget.invisibleRootItem()
         for i in range(tree_root.childCount()):
             sample_item = tree_root.child(i)
@@ -1046,7 +1046,7 @@ class Potku(QtWidgets.QMainWindow):
         self.tree_widget.blockSignals(False)
 
     def __master_issue_commands(self):
-        """Issue commands from master measurement to all slave measurements in 
+        """Issue commands from master measurement to all slave measurements in
         the request.
         """
         reply = QtWidgets.QMessageBox.question(self, "Confirmation",
@@ -1062,7 +1062,7 @@ class Potku(QtWidgets.QMainWindow):
                                                QtWidgets.QMessageBox.Yes)
         if reply == QtWidgets.QMessageBox.No:
             return
-        
+
         time_start = datetime.now()
         progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
@@ -1073,13 +1073,13 @@ class Potku(QtWidgets.QMainWindow):
         master_name = master.name
         directory = master.directory
         progress_bar.setValue(1)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents) 
+        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Load selections and save cut files
         # TODO: Make a check for these if identical already -> don't redo.
         self.request.save_selection(master)
         progress_bar.setValue(10)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents) 
-        
+        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+
         self.request.save_cuts(master)
         progress_bar.setValue(25)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
@@ -1250,10 +1250,10 @@ class Potku(QtWidgets.QMainWindow):
 
     def __tab_exists(self, tab_id):
         """Check if there is an open tab with the tab_id (identifier).
-        
+
         Args:
             tab_id: Identifier (int) for the MeasurementTabWidget
-            
+
         Returns:
             True if tab is found, False if not
         """

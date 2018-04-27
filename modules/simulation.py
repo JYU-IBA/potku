@@ -8,24 +8,15 @@ Updated on 27.4.2018
 
 Simulation.py runs the MCERD simulation with a command file.
 """
+from modules.target import Target
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
-import platform
-import subprocess
 import logging
+import os
 import sys
-import shutil
-import datetime
-from enum import Enum
-from json import JSONEncoder
-
-from modules.general_functions import save_settings
-from modules.beam import Beam
-from modules.detector import Detector
-from modules.target import Target
 
 
 class Simulations:
@@ -67,9 +58,10 @@ class Simulations:
         """
         simulation = None
         name_prefix = "MC_simulation_"
-        simulation_folder = os.path.join(sample.directory, name_prefix +
-                              "%02d" % sample.get_running_int_simulation() + "-"
-                              + simulation_name)
+        simulation_folder = os.path.join(
+            sample.request.directory, sample.directory, name_prefix +
+                            "%02d" % sample.get_running_int_simulation() + "-"
+                            + simulation_name)
         sample.increase_running_int_simulation_by_1()
         try:
             keys = sample.simulations.simulations.keys()
@@ -103,7 +95,7 @@ class Simulations:
 
 class Simulation:
 
-    def __init__(self, request, name, tab_id=-1, description=""):
+    def __init__(self, request, name, tab_id=-1, description="", target=None):
         self.request = request
         self.tab_id = tab_id
         self.name = name
@@ -112,6 +104,9 @@ class Simulation:
         self.name_prefix = "MC_simulation_"
         self.serial_number = 0
         self.directory = None
+
+        #self.target = None
+        self.target = Target()
 
     def create_folder_structure(self, simulation_folder_path):
         self.directory = simulation_folder_path
@@ -139,106 +134,3 @@ class Simulation:
             return
         # Rename any simulation related files.
         pass
-
-
-class ElementSimulationEncoder(JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, ElementSimulation):
-            return {
-                "name": obj.name,
-                "date": obj.modification_time.isoformat(),
-                "simulation_type": obj.simulation_type,
-                "scatter": obj.minimum_scattering_angle,
-                "main_scatter": obj.minimum_main_scattering_angle,
-                "energy": obj.minimum_energy,
-                "mode": obj.simulation_mode,
-                "no_of_ions": obj.number_of_ions,
-                "no_of_preions": obj.number_of_preions,
-                "seed": obj.seed_number,
-                "no_of_recoils": obj.number_of_recoils,
-                "no_of_scaling": obj.number_of_scaling_ions
-            }
-        return super(ElementSimulationEncoder, self).default(obj)
-
-
-class ElementSimulation:
-    """ElementSimulation class handles the simulation parameters and data."""
-
-    __slots__ = "name", \
-                "modification_time", \
-                "simulation_type", "number_of_ions", "number_of_preions", \
-                "number_of_scaling_ions", "number_of_recoils", \
-                "minimum_scattering_angle", \
-                "minimum_main_scattering_angle", "minimum_energy", \
-                "simulation_mode", "seed_number", \
-                "element", "recoil_atoms", "mcerd", "get_espe", \
-                "channel_width", "reference_density", "beam", "target", \
-                "detector",
-
-    def __init__(self, name="",
-                 modification_time=datetime.datetime.now(),
-                 simulation_type="rec",
-                 number_of_ions=1000000, number_of_preions=100000,
-                 number_of_scaling_ions=5, number_of_recoils=10,
-                 minimum_main_scattering_angle=20,
-                 simulation_mode="narrow", seed_number=101,
-                 minimum_energy=1.0, channel_width=0.1,
-                 reference_density=4.98e22):
-        """Inits Simulation.
-        Args:
-            request: Request class object.
-        """
-        self.name = name
-        self.modification_time = modification_time
-
-        self.simulation_type = simulation_type
-        self.simulation_mode = simulation_mode
-        self.number_of_ions = number_of_ions
-        self.number_of_preions = number_of_preions
-        self.number_of_scaling_ions = number_of_scaling_ions
-        self.number_of_recoils = number_of_recoils
-        self.minimum_main_scattering_angle = minimum_main_scattering_angle
-        self.minimum_energy = minimum_energy
-        self.seed_number = seed_number
-        self.channel_width = channel_width
-        self.reference_density = reference_density
-
-        self.beam = Beam()
-        self.target = Target()
-        self.detector = Detector()
-
-        settings = {
-            "simulation_type": self.simulation_type,
-            "number_of_ions": self.number_of_ions,
-            "number_of_preions_in_presimu": self.number_of_preions,
-            "number_of_scaling_ions": self.number_of_scaling_ions,
-            "number_of_recoils": self.number_of_recoils,
-            "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
-            "minimum_energy_of_ions": self.minimum_energy,
-            "simulation_mode": self.simulation_mode,
-            "seed_number": self.seed_number,
-            "beam": self.beam,
-            "target": self.target,
-            "detector": self.detector,
-            "recoil": None
-        }
-
-    def save_settings(self, filepath=None):
-        """Saves parameters from Simulation object in JSON format in .mc_simu
-        file.
-
-        Args:
-            filepath: Filepath including name of the file.
-        """
-        save_settings(self, ".mc_simu", ElementSimulationEncoder, filepath)
-
-    def add_command_file(self, command_file):
-        """ Adds command file to Simulation object.
-
-        Args:
-            command_file: Command file to add.
-        """
-        simulation_folder, name = os.path.split(command_file)
-        self.simulation_file = name  # With extension
-        self.name = os.path.splitext(name)[0]
-        self.create_directory(simulation_folder)
