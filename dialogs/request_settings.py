@@ -3,11 +3,11 @@
 Created on 19.3.2013
 Updated on 20.4.2018
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
 Miika Raunio
 
 This program is free software; you can redistribute it and/or
@@ -58,7 +58,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
     def __init__(self, request, icon_manager):
         """Constructor for the program
-        
+
         Args:
             request: Request class object.
         """
@@ -143,7 +143,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # Add foil widgets and foil objects
         self.detector_structure_widgets = []
         self.foils_layout = self._add_default_foils()
-        self.detector_settings_widget.ui.detectorScrollAreaContents.layout()\
+        self.detector_settings_widget.ui.detectorScrollAreaContents.layout() \
             .addLayout(self.foils_layout)
         self.detector_settings_widget.ui.newFoilButton.clicked.connect(
             lambda: self._add_new_foil(self.foils_layout))
@@ -352,10 +352,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
     def __load_file(self, settings_type):
         """Opens file dialog and loads and shows selected ini file's values.
-        
+
         Args:
-            settings_type: (string) selects which settings file type will be loaded. 
-                           Can be "MEASURING_UNIT_SETTINGS", 
+            settings_type: (string) selects which settings file type will be loaded.
+                           Can be "MEASURING_UNIT_SETTINGS",
                            "DEPTH_PROFILE_SETTINGS" or "CALIBRATION_SETTINGS"
         """
         filename = open_file_dialog(self, self.request.directory,
@@ -524,7 +524,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.mode = \
                 self.simulation_settings_widget.modeComboBox.currentText()
             self.request.default_simulation.simulation_type = \
-                self.simulation_settings_widget\
+                self.simulation_settings_widget \
                     .typeOfSimulationComboBox.currentText()
             self.request.default_simulation.scatter = self.simulation_settings_widget.scatterLineEdit.text()
             self.request.default_simulation.main_scatter = self.simulation_settings_widget.mainScatterLineEdit.text()
@@ -558,9 +558,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             raise TypeError
 
     def __change_element(self, button, combo_box):
-        """Opens element selection dialog and loads selected element's isotopes 
+        """Opens element selection dialog and loads selected element's isotopes
         to a combobox.
-        
+
         Args:
             button: button whose text is changed accordingly to the made selection.
         """
