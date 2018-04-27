@@ -1,9 +1,10 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 11.4.2018
+Updated on 27.4.2018
 """
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
+             "\n Sinikka Siironen"
 __version__ = "2.0"
 
 import os, logging, sys
@@ -37,7 +38,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
         super().__init__()
         self.request = request
         self.tab_id = tab_id
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_simulation_tab.ui"), self)
+        self.ui = uic.loadUi(os.path.join("ui_files", "ui_simulation_tab.ui"),
+                             self)
         self.obj = simulation
         self.icon_manager = icon_manager
 
@@ -53,13 +55,16 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
 
         # Set up settings and energy spectra connections within the tab UI
-        self.ui.detectorSettingsButton.clicked.connect(self.open_detector_settings)
-        self.ui.mcSimulationButton.clicked.connect(lambda: self.start_mcsimulation(self))
+        self.ui.detectorSettingsButton.clicked.connect(
+            self.open_detector_settings)
+        self.ui.mcSimulationButton.clicked.connect(
+            lambda: self.start_mcsimulation(self))
 
         self.simulation_started = False
         self.stop_simulation_button = None
 
-    def add_widget(self, widget, minimized=None, has_close_button=True, icon=None):
+    def add_widget(self, widget, minimized=None, has_close_button=True,
+                   icon=None):
         """ Adds a new widget to current simulation tab.
         
         Args:
@@ -70,8 +75,10 @@ class SimulationTabWidget(QtWidgets.QWidget):
         if has_close_button:
             subwindow = self.ui.mdiArea.addSubWindow(widget)
         else:
-            subwindow = self.ui.mdiArea.addSubWindow(widget, QtCore.Qt.CustomizeWindowHint | QtCore.Qt.WindowTitleHint |
-                                                     QtCore.Qt.WindowMinMaxButtonsHint)
+            subwindow = self.ui.mdiArea.addSubWindow(
+                widget, QtCore.Qt.CustomizeWindowHint |
+                        QtCore.Qt.WindowTitleHint |
+                        QtCore.Qt.WindowMinMaxButtonsHint)
         if icon:
             subwindow.setWindowIcon(icon)
         subwindow.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -84,17 +91,19 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.__set_icons()
 
     def add_simulation_depth_profile(self):
-        """ Adds depth profile for modifying the elements into tab if it doesn't have one already.
+        """ Adds depth profile for modifying the elements into tab if it
+        doesn't have one already.
         """
-        self.simulation_depth_profile = TargetWidget(self, self.obj.target, self.icon_manager)
+        self.simulation_depth_profile = TargetWidget(self, self.obj.target,
+                                                     self.icon_manager)
         self.add_widget(self.simulation_depth_profile, has_close_button=False)
         # TODO: Do all the necessary operations so that the widget can be used.
 
     def add_log(self):        
         """ Add the simulation log to simulation tab widget.
         
-        Checks also if there's already some logging for this measurement and appends 
-        the text field of the user interface with this log.
+        Checks also if there's already some logging for this measurement
+        and appends the text field of the user interface with this log.
         """
         # TODO: Perhaps add a simulation log.
         self.log = LogWidget()
@@ -108,11 +117,11 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.__read_log_file(log_error, 0)
     
     def add_UI_logger(self, log_widget):
-        """ Adds handlers to simulation logger so the logger can log the events to
-        the user interface too.
+        """ Adds handlers to simulation logger so the logger can log the events
+        to the user interface too.
         
-        log_widget specifies which ui element will handle the logging. That should 
-        be the one which is added to this SimulationTabWidget.
+        log_widget specifies which ui element will handle the logging. That
+        should be the one which is added to this SimulationTabWidget.
         """
         logger = logging.getLogger(self.obj.simulation.name)
         defaultformat = logging.Formatter(
@@ -150,7 +159,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
         # process.
 
     def start_mcsimulation(self, parent):
-        """ Start the Monte Carlo simulation and draw energy spectrum based on it.
+        """ Start the Monte Carlo simulation and draw energy spectrum based on
+        it.
         Args:
             parent: Parent of the energy spectrum widget.
         """
@@ -161,7 +171,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.obj.callMCERD.run_simulation()
         self.simulation_started = True
 
-        self.stop_simulation_button = QtWidgets.QPushButton("Stop the simulation")
+        self.stop_simulation_button = QtWidgets.QPushButton("Stop the "
+                                                            "simulation")
         self.stop_simulation_button.clicked.connect(self.stop_mcsimulation)
         self.ui.verticalLayout_6.addWidget(self.stop_simulation_button)
 
@@ -175,7 +186,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.obj.call_get_espe = CallGetEspe(self.request.directory)
         self.obj.call_get_espe.run_get_espe()
 
-        self.make_energy_spectrum(self.request.directory, self.obj.call_get_espe.output_file)
+        self.make_energy_spectrum(self.request.directory,
+                                  self.obj.call_get_espe.output_file)
         # TODO: if there is already an energy spectrum, it should be removed
         self.add_widget(self.energy_spectrum_widget)
             
@@ -229,7 +241,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
                                    lines[2].strip().split("\t"), name, m_name)
             cut_names = [os.path.basename(cut) for cut in use_cuts]
             elements_string = lines[1].strip().split("\t")
-            elements = [Element.from_string(element) for element in elements_string]
+            elements = [Element.from_string(element)
+                        for element in elements_string]
             x_unit = lines[3].strip()
             line_zero = False
             line_scale = False
@@ -268,9 +281,11 @@ class SimulationTabWidget(QtWidgets.QWidget):
             return
         m_name = self.obj.name
         try:
-            reference_cut = self.__confirm_filepath(lines[0].strip(), name, m_name)
+            reference_cut = self.__confirm_filepath(lines[0].strip(), name,
+                                                    m_name)
             checked_cuts = self.__confirm_filepath(
-                                        lines[1].strip().split("\t"), name, m_name)
+                lines[1].strip().split("\t"), name,
+                m_name)
             cut_names = [os.path.basename(cut) for cut in checked_cuts]
             split_count = int(lines[2])
             y_scale = int(lines[3])
@@ -298,7 +313,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
         """
         try:
             data = read_espe_file(directory, name)
-            self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self, data)
+            self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self,
+                                                                         data)
             icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
         except:  # We do not need duplicate error logs, log in widget instead
             print(sys.exc_info())  # TODO: Remove this.
@@ -306,8 +322,11 @@ class SimulationTabWidget(QtWidgets.QWidget):
     def open_detector_settings(self):
         """ Open the detector settings dialog.
         """
-        QtWidgets.QMessageBox.critical(self, "Error", "Detector or other settings dialogs not yet implemented!",
-                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+        QtWidgets.QMessageBox.critical(self, "Error",
+                                       "Detector or other settings dialogs not "
+                                       "yet implemented!",
+                                       QtWidgets.QMessageBox.Ok,
+                                       QtWidgets.QMessageBox.Ok)
     
     def __confirm_filepath(self, filepath, name, m_name):
         """Confirm whether filepath exist and changes it accordingly.
@@ -315,7 +334,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
         Args:
             filepath: A string representing a filepath.
             name: A string representing origin measurement's name.
-            m_name: A string representing measurement's name where graph is created.
+            m_name: A string representing measurement's name where graph is
+            created.
         """
         if type(filepath) == str:
             # Replace two for measurement and cut file's name. Not all, in case 

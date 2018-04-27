@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 11.4.2018
+Updated on 27.4.2018
 
 #TODO Description of Potku and copyright
 #TODO Licence
 
 Simulation.py runs the MCERD simulation with a command file.
 """
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
+             "\n Sinikka Siironen"
 __version__ = "2.0"
 
 import os
@@ -71,19 +72,6 @@ class Simulations:
                               + simulation_name)
         sample.increase_running_int_simulation_by_1()
         try:
-            # if file_directory != self.request.directory and file_directory:
-            #     dirtyinteger = 2  # Begin from 2, since 0 and 1 would be confusing.
-            #     while os.path.exists(new_file):
-            #         file_name = "{0}_{1}{2}".format(name[0],
-            #                                         dirtyinteger,
-            #                                         name[1])
-            #         new_file = os.path.join(sample.path, file_name)
-            #         dirtyinteger += 1
-            #     shutil.copyfile(name, new_file)
-            #     file_directory, file_name = os.path.split(new_file)
-            #
-            #     log = "Added new simulation {0} to the request.".format(file_name)
-            #     logging.getLogger("request").info(log)
             keys = sample.simulations.simulations.keys()
             for key in keys:
                 if sample.simulations.simulations[key].directory == \
@@ -236,7 +224,8 @@ class ElementSimulation:
         }
 
     def save_settings(self, filepath=None):
-        """Saves parameters from Simulation object in JSON format in .mc_simu file.
+        """Saves parameters from Simulation object in JSON format in .mc_simu
+        file.
 
         Args:
             filepath: Filepath including name of the file.
@@ -256,8 +245,9 @@ class ElementSimulation:
 
 
 class CallGetEspe(object):
-    """Handles calling the external program get_espe to generate energy spectra coordinates."""
-
+    """Handles calling the external program get_espe to generate energy
+    spectra coordinates.
+    """
     def __init__(self, command_file_path):
         """Inits CallGetEspe.
 
@@ -293,7 +283,8 @@ tash list
         #         -solid   solid angle of the detector (msr)
         #         -density surface atomic density of the first 10 nm layer (at/cm^2)
 
-        # TODO When the directory structure for simulation settings has been decided, update this
+        # TODO When the directory structure for simulation settings has been
+        # decided, update this
         # self.bin_dir = "%s%s%s" % ("external", os.sep, "Examples")
         # TODO Read the parameters from the program
 
@@ -308,15 +299,22 @@ tash list
         params_string = " ".join(params)
         self.output_file = "LiMnO_Li.simu"
 
-        self.command_win = "type " + command_file_path + os.sep + input_file + " | " + "external\Potku-bin\get_espe " \
-                           + params_string + " > " + command_file_path + os.sep + self.output_file
-        self.command_linux = "cat " + command_file_path + os.sep + input_file + " | " + "external/Potku-bin/get_espe_linux " \
-                             + params_string + " > " + command_file_path + os.sep + self.output_file
-        self.command_mac = "cat " + command_file_path + os.sep + input_file + " | " + "external/Potku-bin/get_espe_mac " \
-                           + params_string + " > " + command_file_path + os.sep + self.output_file
+        self.command_win = "type " + command_file_path + os.sep + input_file + \
+                           " | " + "external\Potku-bin\get_espe " \
+                           + params_string + " > " + command_file_path + os.sep\
+                           + self.output_file
+        self.command_linux = "cat " + command_file_path + os.sep + input_file \
+                             + " | " + "external/Potku-bin/get_espe_linux " \
+                             + params_string + " > " + command_file_path + \
+                             os.sep + self.output_file
+        self.command_mac = "cat " + command_file_path + os.sep + input_file \
+                           + " | " + "external/Potku-bin/get_espe_mac " \
+                           + params_string + " > " + command_file_path + \
+                           os.sep + self.output_file
 
     def run_get_espe(self):
-        """Runs get_espe. It generates an energy spectrum coordinate file from the result of MCERD.
+        """Runs get_espe. It generates an energy spectrum coordinate file from
+        the result of MCERD.
         """
         used_os = platform.system()
         if used_os == "Windows":
@@ -329,8 +327,10 @@ tash list
             print("It appears we do not support your OS.")
 
 # For testing the CallMCERD class:
-# CallMCERD(r"C:\Users\localadmin\potku\requests\testi7\35Cl-85-LiMnO_Li").run_simulation()
-# MCERD tries to read the input files from the path specified in the command file
+# CallMCERD(r"C:\Users\localadmin\potku\requests\testi7\35Cl-85-LiMnO_Li")
+# .run_simulation()
+# MCERD tries to read the input files from the path specified in the command
+# file
 # CallMCERD(r"..\Examples\35Cl-85-LiMnO_Li").run_simulation()
 
 # For testing the CallGetEspe class:

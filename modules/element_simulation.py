@@ -1,3 +1,11 @@
+# coding=utf-8
+"""
+Created on 25.4.2018
+Updated on 27.4.2018
+"""
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
+             "Sinikka Siironen"
+__version__ = "2.0"
 
 import subprocess
 import platform
@@ -6,11 +14,14 @@ import json
 import os
 
 from modules.mcerd import MCERD
+from modules.get_espe import GetEspe
+
 
 class ElementSimulation():
 
     __slots__ = "type", "element", "profile", "name", "description",\
-                "modification_time"
+                "modification_time", "__command", "__process", \
+                "mcerd_objects", "get_espe"
 
     def __init__(self, type, element, profile, name="", description="",
                  modification_time=datetime.datetime.now()):
@@ -19,9 +30,11 @@ class ElementSimulation():
         Args:
             type:              Type of the simulation (String, either
                                "recoiling" or "scattering").
-            element:           An element (either recoiling or scattering) that will
+            element:           An element (either recoiling or scattering) that
+                               will
                                be used in the simulation.
-            profile:           A recoil atom distribution profile for the element.
+            profile:           A recoil atom distribution profile for the
+                               element.
             name:              Name of the particular element simulation.
             description:       A description given for the element simulation.
             modification_time: A modification time in ISO 8601 format, without
@@ -37,6 +50,10 @@ class ElementSimulation():
         self.__command = os.path.join("external", "Potku-bin", "mcerd" +
             (".exe" if platform.system() == "Windows" else ""))
         self.__process = None
+        # This has all the mcerd objects so get_espe knows all the element
+        # simulations that belong together (with different seed numbers)
+        self.mcerd_objects = {}
+        self.get_espe = None
 
     @classmethod
     def from_file(cls, file_path):
@@ -75,16 +92,19 @@ class ElementSimulation():
         with open(file_path, "w") as file:
             json.dump(obj, file)
 
-
     def start(self):
         """Start the simulation."""
-        self.mcerd = MCERD(settings)
+        self.mcerd_objects.append = MCERD(settings)
 
     def stop(self):
         """Stop the simulation."""
-        del(self.mcerd)
+        for sim in self.mcerd_objects:
+            del(sim)
 
     def pause(self):
         """Pause the simulation."""
         # TODO: Implement this sometime in the future.
         pass
+
+    def calculate_espe(self):
+        self.get_espe = GetEspe(espe_settings, self.mcerd_objects)
