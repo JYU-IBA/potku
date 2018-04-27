@@ -94,7 +94,8 @@ class ElementSimulation():
 
     def start(self):
         """Start the simulation."""
-        self.mcerd_objects.append = MCERD(settings)
+        # TODO: fix this to have the real seed number
+        self.mcerd_objects["seed number"] = MCERD(settings)
 
     def stop(self):
         """Stop the simulation."""
