@@ -8,6 +8,8 @@ Updated on 27.4.2018
 
 Simulation.py runs the MCERD simulation with a command file.
 """
+from modules.target import Target
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
@@ -93,7 +95,7 @@ class Simulations:
 
 class Simulation:
 
-    def __init__(self, request, name, tab_id=-1, description=""):
+    def __init__(self, request, name, tab_id=-1, description="", target=None):
         self.request = request
         self.tab_id = tab_id
         self.name = name
@@ -102,6 +104,9 @@ class Simulation:
         self.name_prefix = "MC_simulation_"
         self.serial_number = 0
         self.directory = None
+
+        #self.target = None
+        self.target = Target()
 
     def create_folder_structure(self, simulation_folder_path):
         self.directory = simulation_folder_path
