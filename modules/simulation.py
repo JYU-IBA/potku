@@ -95,7 +95,7 @@ class Simulations:
 
 class Simulation:
 
-    def __init__(self, request, name, tab_id=-1, description="", target=None):
+    def __init__(self, request, name, tab_id=-1, description=""):
         self.request = request
         self.tab_id = tab_id
         self.name = name
@@ -105,7 +105,6 @@ class Simulation:
         self.serial_number = 0
         self.directory = None
 
-        #self.target = None
         self.target = Target()
 
     def create_folder_structure(self, simulation_folder_path):

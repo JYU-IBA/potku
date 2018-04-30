@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 11.4.2018
+Updated on 30.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -23,8 +23,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
-             "\n Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
+             "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen " \
+             "\n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
 import configparser
@@ -69,12 +70,13 @@ class Request:
         self.default_detector = Detector()
         self.default_target = Target()
 
-
         self.__tabs = tabs
         self.__master_measurement = None
-        self.__non_slaves = []  # List of measurements that aren't slaves. Easier
-        # This is used to number all the samples e.g. Sample-01, Sample-02.optional_name,...
-        self._running_int = 1  # TODO: This should maybe be saved into .request file?
+        self.__non_slaves = []  # List of measurements that aren't slaves,
+        # easier.
+        # This is used to number all the samples
+        # e.g. Sample-01, Sample-02.optional_name,...
+        self._running_int = 1  # TODO: Maybe be saved into .request file?
 
         # Check folder exists and make request file there.
         if not os.path.exists(directory):
@@ -84,15 +86,18 @@ class Request:
         if not os.path.exists(self.default_folder):
             os.makedirs(self.default_folder)  # Create a Default folder
 
-        self.default_detector_folder = os.path.join(self.default_folder, "Detector")
+        self.default_detector_folder = os.path.join(self.default_folder,
+                                                    "Detector")
         # TODO: Add folder creation as a function call
         self.detector = Detector(self)
         self.detector.create_folder_structure(self.default_detector_folder)
         # self.detector.to_file(os.path.join(directory, "default.detector"))
-        # self.detector.save_settings(self.default_folder + os.sep + "Detector" + os.sep + self.detector.name)
+        # self.detector.save_settings(self.default_folder + os.sep + "
+        # Detector" + os.sep + self.detector.name)
         self.default_measurement = Measurement(self, "Default")
-        self.default_measurement.save_settings(os.path.join(self.default_folder, self.default_measurement.name))
-        self.default_simulation = Simulation(self, 1) # TODO: Fix this.
+        self.default_measurement.save_settings(os.path.join(
+            self.default_folder, self.default_measurement.name))
+        self.default_simulation = Simulation(self, 1)  # TODO: Fix this.
 
         self.__set_request_logger()
         
@@ -100,9 +105,11 @@ class Request:
         # If it exists, we assume old request is loaded.
         self.__request_information = configparser.ConfigParser()
 
-        # tmp_dirname has extra .potku in it, need to remove it for the .request file name
+        # tmp_dirname has extra .potku in it, need to remove it for the
+        # .request file name
         stripped_tmp_dirname = tmp_dirname.replace(".potku", "")
-        self.request_file = os.path.join(directory, "{0}.request".format(stripped_tmp_dirname))
+        self.request_file = os.path.join(directory, "{0}.request".format(
+            stripped_tmp_dirname))
         
         # Defaults
         self.__request_information.add_section("meta")
@@ -127,7 +134,8 @@ class Request:
         if name in self.__non_slaves:
             return
         self.__non_slaves.append(name)
-        self.__request_information["meta"]["nonslave"] = "|".join(self.__non_slaves)
+        self.__request_information["meta"]["nonslave"] = "|".join(
+            self.__non_slaves)
         self.save()
 
     def include_slave(self, measurement):
@@ -141,7 +149,8 @@ class Request:
         if not name in self.__non_slaves:
             return
         self.__non_slaves.remove(name)
-        self.__request_information["meta"]["nonslave"] = "|".join(self.__non_slaves)
+        self.__request_information["meta"]["nonslave"] = "|".join(
+            self.__non_slaves)
         self.save()
 
     def get_name(self):
@@ -164,16 +173,19 @@ class Request:
         """
         samples = []
         for item in os.listdir(self.directory):
-            if os.path.isdir(os.path.join(self.directory, item)) and item.startswith("Sample_"):
+            if os.path.isdir(os.path.join(self.directory, item)) and \
+                    item.startswith("Sample_"):
                 samples.append(os.path.join(self.directory, item))
-                # It is presumed that the sample numbers are of format '01', '02',...,'10', '11',...
+                # It is presumed that the sample numbers are of format
+                # '01', '02',...,'10', '11',...
                 match_object = re.search("\d", item)
                 if match_object:
                     number_str = item[match_object.start()]
                     if number_str == "0":
                         self._running_int = int(item[match_object.start() + 1])
                     else:
-                        self._running_int = int(item[match_object.start():match_object.start() + 2])
+                        self._running_int = int(item[match_object.start():
+                                                     match_object.start() + 2])
         return samples
 
     def get_running_int(self):
@@ -202,7 +214,8 @@ class Request:
         
         This is used when loading request. As request has no measurement in it
         when inited so check is made in potku.py after loading all measurements
-        via this method. The corresponding master title in treewidget is then set.
+        via this method. The corresponding master title in treewidget is then
+        set.
         """
         return self.__request_information["meta"]["master"]
 
@@ -210,7 +223,8 @@ class Request:
         """Load request
         """
         self.__request_information.read(self.request_file)
-        self.__non_slaves = self.__request_information["meta"]["nonslave"].split("|")
+        self.__non_slaves = self.__request_information["meta"]["nonslave"]\
+            .split("|")
 
     def save(self):
         """Save request
@@ -270,19 +284,18 @@ class Request:
         self.save()
 
     def __set_request_logger(self):
-        """Sets the logger which is used to log everything that doesn't happen in 
-        measurements.
+        """Sets the logger which is used to log everything that doesn't happen
+        in measurements.
         """
         logger = logging.getLogger("request")
         logger.setLevel(logging.DEBUG)
         
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s",
+        formatter = logging.Formatter("%(asctime)s - %(levelname)s - "
+                                      "%(message)s",
                                       datefmt="%Y-%m-%d %H:%M:%S")    
-        requestlog = logging.FileHandler(os.path.join(self.directory, "request.log"))
+        requestlog = logging.FileHandler(os.path.join(self.directory,
+                                                      "request.log"))
         requestlog.setLevel(logging.INFO)   
         requestlog.setFormatter(formatter)
         
         logger.addHandler(requestlog)
-
-
-

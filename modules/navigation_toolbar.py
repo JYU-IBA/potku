@@ -1,5 +1,5 @@
 # coding=utf-8
-'''
+"""
 Created on 18.3.2013
 Updated on 26.6.2013
 
@@ -24,8 +24,13 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 
 Adds _views attribute to NavigationToolBar2QT
-'''
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
+"""
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
+             "\n Sinikka Siironen"
+__version__ = "2.0"
+from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as \
+    NavigationToolbar
+
 
 class NavigationToolBar2QTView(NavigationToolbar):
 

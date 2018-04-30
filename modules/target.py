@@ -2,7 +2,7 @@
 # TODO: Add licence information
 """
 Created on 27.3.2018
-Updated on 27.4.2018
+Updated on 30.4.2018
 """
 from enum import Enum
 from json import JSONEncoder
@@ -26,8 +26,8 @@ class TargetEncoder(JSONEncoder):
             target_dict = {
                 "name": obj.name,
                 "description": obj.description,
-                "date": obj.date,
-                "type": obj.topography_type.value,
+                "date": str(obj.date),
+                "type": obj.target_type.name,
                 "image_size": obj.image_size,
                 "image_file": obj.image_file,
                 "layers": []
@@ -47,7 +47,7 @@ class Target:
     """Target object describes the target.
     """
 
-    __slots__ = "name", "date", "description", "topography_type", "image_size",\
+    __slots__ = "name", "date", "description", "target_type", "image_size",\
                 "image_file", "layers", "target_fii", "target_theta"
 
     def __init__(self, name="", date=datetime.date.today(), description="",
@@ -72,7 +72,7 @@ class Target:
         self.name = name
         self.date = date
         self.description = description
-        self.topography_type = target_type
+        self.target_type = target_type
         self.image_size = image_size
         self.image_file = image_file
         self.target_fii = target_fii
@@ -112,8 +112,8 @@ class Target:
         obj = {
             "name": self.name,
             "description": self.description,
-            "date": self.date,
-            "topograpy_type": self.topography_type,
+            "date": str(self.date),
+            "target_type": self.target_type.name,
             "image_size": self.image_size,
             "image_file": self.image_file,
             "target_fii": self.target_fii,

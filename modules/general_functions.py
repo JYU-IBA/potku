@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 26.4.2018
+Updated on 30.4.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -178,8 +178,8 @@ def hist(data, width=1.0, col=1):
     y = sorted(y, reverse=False)
     data_length = len(y)
 
-    a = int(y[0] / width) * width;
-    i = 0;
+    a = int(y[0] / width) * width
+    i = 0
     hist_list = []
     while i < data_length:
         b = 0.0
@@ -197,6 +197,7 @@ def save_settings(obj, extension, encoder, filepath=None):
     """Saves an object in JSON format in a file.
 
     Args:
+        obj: object to be saved
         extension: Extension for the file.
         encoder: JSONEncoder class used in converting to JSON.
         filepath: Filepath including the name of the file.
@@ -316,7 +317,7 @@ def tof_list(cut_file, directory, save_output=False):
                 makedirs(directory)
             unused_dir, file = path.split(cut_file)
             directory_es_file = path.join(
-                directory,"{0}.tof_list".format(path.splitext(file)[0]))
+                directory, "{0}.tof_list".format(path.splitext(file)[0]))
             numpy_array = numpy.array(tof_list_array,
                                       dtype=[('float1', float),
                                              ('float2', float),
@@ -386,7 +387,7 @@ def carbon_stopping(element, isotope, energy, carbon_thickness):
     # parameters can be 0 but not None
     if element is not None and isotope is not None and energy is not None and \
             carbon_thickness is not None:
-        inputdata = bytes("{0}-{1}".format(isotope, element), 'utf-8')
+        # inputdata = bytes("{0}-{1}".format(isotope, element), 'utf-8')
         if platform.system() == 'Windows':
             print("Running gsto_stop.exe on Windows.")
             args = [path.join(bin_dir, 'gsto_stop.exe'),
@@ -430,10 +431,11 @@ def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
                    coincidences.
         trigger: An integer representing trigger ADC.
         adc_count: An integer representing the count of ADCs.
-        nevents: An integer representing limit of how many events will the
-                 program look for. 0 means no limit.
         timing: A tupple consisting of (min, max) representing different ADC
                 timings.
+        columns: Columns.
+        nevents: An integer representing limit of how many events will the
+                 program look for. 0 means no limit.
         timediff: A boolean representing whether timediff is output or not.
         temporary: A boolean representing whether temporary file is used. This
                    is used when doing first-time-import for file set to
@@ -449,7 +451,7 @@ def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
                                                         timing[key][1])
         timing_str = "{0} {1}".format(timing_str, tmp_str)
     column_count = len(columns.split(','))
-    column_template = "%i " * column_count
+    # column_template = "%i " * column_count
     if not column_count or not timing_str:  # No columns or timings...
         return
     bin_dir = path.join(path.realpath(path.curdir), "external", "Potku-bin")
@@ -516,4 +518,3 @@ def to_superscript(string):
             "9": "\u2079"}
 
     return ''.join(sups.get(char, char) for char in string)
-
