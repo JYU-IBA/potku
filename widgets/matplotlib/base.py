@@ -59,7 +59,7 @@ class MatplotlibWidget(QtWidgets.QWidget):
         self.canvas.setParent(self.main_frame)
         self.axes = self.fig.add_subplot(111)
 
-        self.mpl_toolbar = NavigationToolbar.NavigationToolBar2QTView(
+        self.mpl_toolbar = NavigationToolbar(
             self.canvas, self.main_frame)
 
         if hasattr(self.main_frame.ui, "matplotlib_layout"):
