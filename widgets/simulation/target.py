@@ -80,7 +80,8 @@ class TargetWidget(QtWidgets.QWidget):
         target_path = os.path.join(self.simulation.directory, target_name +
                                    ".target")
         self.target.to_file(target_path)
-        pass
+
+        self.recoil_widget.save_recoils(self.simulation.directory)
 
     def add_layer(self):
         """Adds a layer in the target composition.

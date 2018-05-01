@@ -5,6 +5,11 @@ Updated on 28.3.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
+import matplotlib
+import datetime
+import json
+import os
+
 from PyQt5 import QtCore, QtWidgets, QtGui
 from matplotlib.widgets import SpanSelector
 
@@ -14,7 +19,6 @@ from dialogs.simulation.recoil_element_selection import RecoilElementSelectionDi
 import modules.general_functions as general
 import modules.element
 
-import matplotlib
 
 class Point:
     """A 2D point with x and y coordinates."""
@@ -64,9 +68,39 @@ class RecoilElement:
             points: List of Point class objects.
         """
         self._element = element
+        self._description = ""
+        self._type = "rec"
         self._points = sorted(points)
         self._widget = widget
         self._edit_lock_on = True
+
+    def to_file(self, directory):
+        file_path = os.path.join(directory, self._element.symbol + ".rec")
+        # Convert datetime object to string. Put the string in ISO 8601 format
+        #  without information about the timezone. TODO: Add timezone
+        if self._element.isotope:
+            name = str(self._element.isotope) + self._element.symbol
+        else:
+            name = self._element.symbol
+        obj = {
+            "name": name,
+            "description": self._description,
+            "modification_time": datetime.datetime.now().isoformat(
+                timespec="seconds"),
+            "type": self._type,
+            "element": self._element.symbol,
+            "profile": []
+        }
+
+        for point in self._points:
+            point_obj = {
+                "Point": str(round(point.get_x(), 2)) + " " +
+                         str(round(point.get_y(), 4))
+            }
+            obj["profile"].append(point_obj)
+
+        with open(file_path, "w") as file:
+            json.dump(obj, file, indent=4)
 
     def get_element(self):
         return self._element
@@ -339,6 +373,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.name_x_axis = "Depth"
 
         self.on_draw()
+
+    def save_recoils(self, directory):
+        for element in self.elements.get_elements():
+            element.to_file(directory)
 
     def unlock_edit(self):
         confirm_box = QtWidgets.QMessageBox()
