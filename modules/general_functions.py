@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 5.4.2018
+Updated on 30.4.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -24,8 +24,10 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio" \
-             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli " \
+             "Rahkonen \n Miika Raunio" \
+             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
+             "\n Sinikka Siironen"
 __version__ = "2.0"
 
 import platform
@@ -61,7 +63,9 @@ def open_file_dialog(parent, default_folder, title, files):
 
         "C:/Transfer/FinlandiaData/esimerkkidata.zip"
     """
-    filename = QtWidgets.QFileDialog.getOpenFileName(parent, title, default_folder, parent.tr(files))
+    filename = QtWidgets.QFileDialog.getOpenFileName(parent, title,
+                                                     default_folder,
+                                                     parent.tr(files))
     return filename[0]
 
 
@@ -69,7 +73,8 @@ def open_files_dialog(parent, default_folder, title, files):
     """Opens open file dialog for multiple files
 
     Opens dialog to select files to be opened and returns full file path to
-    selected file if one or more is selected. If no file is selected returns None.
+    selected file if one or more is selected.
+    If no file is selected returns None.
 
     Args:
         parent: Parent object which opens the open file dialog.
@@ -84,7 +89,9 @@ def open_files_dialog(parent, default_folder, title, files):
 
         "C:/Transfer/FinlandiaData/esimerkkidata.zip"
     """
-    filenames = QtWidgets.QFileDialog.getOpenFileNames(parent, title, default_folder, parent.tr(files))
+    filenames = QtWidgets.QFileDialog.getOpenFileNames(parent, title,
+                                                       default_folder,
+                                                       parent.tr(files))
     return filenames
 
 
@@ -107,7 +114,9 @@ def save_file_dialog(parent, default_folder, title, files):
 
         "C:/Transfer/FinlandiaData/esimerkkidata.zip"
     """
-    filename = QtWidgets.QFileDialog.getSaveFileName(parent, title, default_folder, parent.tr(files))[0]
+    filename = QtWidgets.QFileDialog.getSaveFileName(parent, title,
+                                                     default_folder,
+                                                     parent.tr(files))[0]
     return filename
 
 
@@ -127,7 +136,8 @@ def rename_file(old_path, new_name):
             raise OSError
         rename(old_path, new_file)
     except OSError:
-        # os.rename should raise this if directory or file exists on the same name, but it seems it always doesn't.
+        # os.rename should raise this if directory or file exists on the
+        # same name, but it seems it always doesn't.
         raise OSError
     return new_file
 
@@ -168,8 +178,8 @@ def hist(data, width=1.0, col=1):
     y = sorted(y, reverse=False)
     data_length = len(y)
 
-    a = int(y[0] / width) * width;
-    i = 0;
+    a = int(y[0] / width) * width
+    i = 0
     hist_list = []
     while i < data_length:
         b = 0.0
@@ -187,6 +197,7 @@ def save_settings(obj, extension, encoder, filepath=None):
     """Saves an object in JSON format in a file.
 
     Args:
+        obj: object to be saved
         extension: Extension for the file.
         encoder: JSONEncoder class used in converting to JSON.
         filepath: Filepath including the name of the file.
@@ -244,7 +255,8 @@ def tof_list(cut_file, directory, save_output=False):
 
     Args:
         cut_file: A string representing cut file to be ran through tof_list.
-        directory: A string representing measurement's energy spectrum directory.
+        directory: A string representing measurement's energy spectrum
+                   directory.
         save_output: A boolean representing whether tof_list output is saved.
 
     Returns:
@@ -266,7 +278,8 @@ def tof_list(cut_file, directory, save_output=False):
                                              shell=True,
                                              startupinfo=startupinfo)
         elif platform.system() == 'Linux':
-            command = "{0} {1}".format(path.join(bin_dir, "tof_list_linux"), cut_file)
+            command = "{0} {1}".format(path.join(bin_dir, "tof_list_linux"),
+                                       cut_file)
             p = subprocess.Popen(command.split(' ', 1), cwd=bin_dir,
                                  stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE,
@@ -274,7 +287,8 @@ def tof_list(cut_file, directory, save_output=False):
             stdout, unused_stderr = p.communicate()
 
         else:
-            command = "{0} {1}".format(path.join(bin_dir, "tof_list_mac"), cut_file)
+            command = "{0} {1}".format(path.join(bin_dir, "tof_list_mac"),
+                                       cut_file)
             p = subprocess.Popen(command.split(' ', 1), cwd=bin_dir,
                                  stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE,
@@ -297,12 +311,13 @@ def tof_list(cut_file, directory, save_output=False):
             tof_list_array.append(tupled)
         if save_output:
             if not directory:
-                directory = path.join(path.realpath(path.curdir), "energy_spectrum_output")
+                directory = path.join(path.realpath(path.curdir),
+                                      "energy_spectrum_output")
             if not path.exists(directory):
                 makedirs(directory)
             unused_dir, file = path.split(cut_file)
-            directory_es_file = path.join(directory,
-                                     "{0}.tof_list".format(path.splitext(file)[0]))
+            directory_es_file = path.join(
+                directory, "{0}.tof_list".format(path.splitext(file)[0]))
             numpy_array = numpy.array(tof_list_array,
                                       dtype=[('float1', float),
                                              ('float2', float),
@@ -319,7 +334,8 @@ def tof_list(cut_file, directory, save_output=False):
         import traceback
         msg = "Error in tof_list: "
         err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
-        str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + traceback._some_str(sys.exc_info()[1]), err_file,
+        str_err = ", ".join([sys.exc_info()[0].__name__ + ": " +
+                             traceback._some_str(sys.exc_info()[1]), err_file,
                              str(sys.exc_info()[2].tb_lineno)])
         msg += str_err
         print(msg)
@@ -369,17 +385,20 @@ def carbon_stopping(element, isotope, energy, carbon_thickness):
     """
     bin_dir = path.join(path.realpath(path.curdir), 'external', 'Potku-bin')
     # parameters can be 0 but not None
-    if element is not None and isotope is not None and energy is not None and carbon_thickness is not None:
-        inputdata = bytes("{0}-{1}".format(isotope, element), 'utf-8')
+    if element is not None and isotope is not None and energy is not None and \
+            carbon_thickness is not None:
+        # inputdata = bytes("{0}-{1}".format(isotope, element), 'utf-8')
         if platform.system() == 'Windows':
             print("Running gsto_stop.exe on Windows.")
-            args = [path.join(bin_dir, 'gsto_stop.exe'), "{0}-{1}".format(isotope, element), 'C', str(energy)]
+            args = [path.join(bin_dir, 'gsto_stop.exe'),
+                    "{0}-{1}".format(isotope, element), 'C', str(energy)]
             print(args)
             p = Popen(args, cwd=bin_dir, stdin=subprocess.PIPE,
                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         else:
             print("Running gsto_stop on Unix.")
-            args = ['./gsto_stop', "{0}-{1}".format(isotope, element), 'C', str(energy)]
+            args = ['./gsto_stop', "{0}-{1}".format(isotope, element),
+                    'C', str(energy)]
             print(args)
             p = Popen(args, cwd=bin_dir, stdin=subprocess.PIPE,
                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -389,7 +408,8 @@ def carbon_stopping(element, isotope, energy, carbon_thickness):
         print(unused_stderr.decode())
         print("Stopping: ", output, "eV/(1e15 at/cm^2)")
         amu = 1.660548782e-27  # FIXME: This should be somewhere globally
-        # Energy loss in eV calculated from energy loss (eV/10e15 at/cm^2) and thickness (kg/cm^2)
+        # Energy loss in eV calculated from energy loss (eV/10e15 at/cm^2)
+        # and thickness (kg/cm^2)
         e_loss = (float(output) / 1e15) * (carbon_thickness * 1e-9 / (12 * amu))
         e_loss *= 1.6021765e-19  # eV to Joule
         return e_loss
@@ -411,10 +431,11 @@ def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
                    coincidences.
         trigger: An integer representing trigger ADC.
         adc_count: An integer representing the count of ADCs.
-        nevents: An integer representing limit of how many events will the program
-                 look for. 0 means no limit.
         timing: A tupple consisting of (min, max) representing different ADC
                 timings.
+        columns: Columns.
+        nevents: An integer representing limit of how many events will the
+                 program look for. 0 means no limit.
         timediff: A boolean representing whether timediff is output or not.
         temporary: A boolean representing whether temporary file is used. This
                    is used when doing first-time-import for file set to
@@ -430,7 +451,7 @@ def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
                                                         timing[key][1])
         timing_str = "{0} {1}".format(timing_str, tmp_str)
     column_count = len(columns.split(','))
-    column_template = "%i " * column_count
+    # column_template = "%i " * column_count
     if not column_count or not timing_str:  # No columns or timings...
         return
     bin_dir = path.join(path.realpath(path.curdir), "external", "Potku-bin")
@@ -497,4 +518,3 @@ def to_superscript(string):
             "9": "\u2079"}
 
     return ''.join(sups.get(char, char) for char in string)
-

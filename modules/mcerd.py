@@ -1,8 +1,18 @@
+# coding=utf-8
+"""
+Created on 25.4.2018
+Updated on 27.4.2018
+"""
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
+             "Sinikka Siironen"
+__version__ = "2.0"
+
 import hashlib
 import os
 import platform
 import subprocess
 import tempfile
+
 
 class MCERD:
 
@@ -21,7 +31,7 @@ class MCERD:
         # to be unique because there can be several MCERD processes.
         self.__hash = hashlib.sha1(str(settings).encode("utf-8")).hexdigest()
 
-        self.__create_mcerd_files()
+        self.recoil_file = self.__create_mcerd_files()
 
         command = os.path.join("external", "Potku-bin", "mcerd" +
             (".exe " if platform.system() == "Windows" else " ") +
@@ -38,6 +48,10 @@ class MCERD:
         self.__process.kill()
 
     def __create_mcerd_files(self):
+        """
+        Creates the files needed for running MCERD.
+        Return: Path of the recoil file.
+        """
 
         command_file = os.path.join(self.__tmp, self.__hash + ".main")
         target_file = os.path.join(self.__tmp, self.__hash + ".target")
@@ -175,3 +189,7 @@ class MCERD:
                         for element in layer.elements:
                             file.write(str(count) + (" %0.3f" % element.amount))
                             count += 1
+
+            # TODO: Create the MCERD recoil file
+
+            return recoil_file

@@ -1,14 +1,14 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on ...
+Updated on 30.4.2018
 
 #TODO Licence and copyright
 
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
-__versio__ = "2.0"
+__version__ = "2.0"
 
 import os
 from PyQt5 import uic, QtGui, QtWidgets
@@ -19,6 +19,7 @@ import modules.masses as masses
 import enum
 import random
 
+
 class Color(enum.Enum):
     """Definition of colors used in the layers widget."""
 
@@ -28,6 +29,7 @@ class Color(enum.Enum):
     orange = "#ffe6bc"
     red = "#ffdada"
     purple = "#e9daff"
+
 
 class LayerPropertiesDialog(QtWidgets.QDialog):
     """Dialog for adding a new layer or editing an existing one.
@@ -44,7 +46,6 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.layer_color = random.choice(["#cce8ff", "#bdffc4", "#fcffa9",
                                               "#ffe6bc", "#ffdada", "#e9daff"])
             self.__change_color_button_color()
-
 
         # Some border of widgets might be displaying red, because information
         # is missing. Remove the red border by reseting the style sheets, for
@@ -81,7 +82,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         """
         failed_style = "background-color: #FFDDDD"
         empty_fields = []
-        sum = 0
+        help_sum = 0
 
         # Check if 'nameEdit' is empty.
         if not self.__ui.nameEdit.text():
@@ -113,19 +114,20 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             if type(child) is QtWidgets.QLineEdit:
                 if child.isEnabled():
                     if child.text():
-                        sum += float(child.text())
+                        help_sum += float(child.text())
                     else:
                         child.setStyleSheet(failed_style)
                         one_or_more_empty = True
 
-        if one_or_more_empty: empty_fields.append("Elements")
+        if one_or_more_empty:
+            empty_fields.append("Elements")
 
         # If there are any empty fields, create a message box telling which
         # of the fields are empty.
         if empty_fields:
             self.__missing_information_message(empty_fields)
             return False
-        return True # If everything is ok, return true.
+        return True  # If everything is ok, return true.
 
         # TODO: Check if negative or zero values are given.
 
@@ -139,10 +141,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         elements = []
         children = self.__ui.scrollAreaWidgetContents.children()
 
-
         # TODO: Explain the following. Maybe better implementation?
         i = 1
-        while (i < len(children)):
+        while i < len(children):
             elem_symbol = children[i].text()
             i += 1
             elem_isotope = int(children[i].currentText().split(" ")[0])
@@ -160,7 +161,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         fields = ""
         for field in empty_fields:
             fields += "  • " + field + "\n"
-        QtWidgets.QMessageBox.critical(self.parent(),
+        QtWidgets.QMessageBox.critical(
+            self.parent(),
             "Required information missing",
             "The following fields are still empty:\n\n" + fields +
             "\nFill out the required information in order to continue.",
@@ -169,13 +171,15 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
     def __add_element_layout(self):
         # TODO: Add docstring.
         self.__ui.scrollArea.setStyleSheet("")
-        self.__element_layouts.append(ElementLayout(self.__ui.scrollAreaWidgetContents))
+        self.__element_layouts.append(ElementLayout(
+            self.__ui.scrollAreaWidgetContents))
 
     def __click_color_button(self):
         """Shows dialog to change selection color.
         """
         dialog = QtWidgets.QColorDialog(self)
-        self.layer_color = dialog.getColor(QtGui.QColor(self.layer_color)).name()
+        self.layer_color = dialog.getColor(
+            QtGui.QColor(self.layer_color)).name()
         self.__change_color_button_color()
 
     def __change_color_button_color(self):
@@ -183,7 +187,6 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
         style = "background-color: " + self.layer_color
         self.__ui.colorButton.setStyleSheet(style)
-
 
 
 class ElementLayout(QtWidgets.QHBoxLayout):
@@ -243,4 +246,3 @@ class ElementLayout(QtWidgets.QHBoxLayout):
     def __load_isotopes(self):
         # TODO: Change the path.
         masses.load_isotopes(self.element.text(), self.isotope, None)
-

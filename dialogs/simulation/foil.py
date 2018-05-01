@@ -1,8 +1,10 @@
 # coding=utf-8
 """
 Created on 18.4.2018
+Updated on 26.4.2018
 """
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
+             "Sinikka Siironen"
 __version__ = "2.0"
 
 import os
@@ -24,14 +26,16 @@ class FoilDialog(QtWidgets.QDialog):
             icon_manager: Icon manager for TargetCompositionWidget.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_composition_dialog.ui"), self)
+        self.ui = uic.loadUi(os.path.join("ui_files",
+                                          "ui_composition_dialog.ui"), self)
         self.icon_manager = icon_manager
         self.foils = tmp_foils
         self.index = tmp_index
         self.foil = tmp_foils[tmp_index]
         self.foil_type_changed = False
 
-        self.ui.typeComboBox.addItem("circular")  # This is put as the current text
+        # This is put as the current text
+        self.ui.typeComboBox.addItem("circular")
         self.ui.typeComboBox.addItem("rectangular")
 
         self.dimension_edits = []
@@ -61,19 +65,24 @@ class FoilDialog(QtWidgets.QDialog):
             self.second_dimension_edit.setText(str(self.foil.size[1]))
 
         # This widget adds itself into the matplotlib_layout
-        self.composition = FoilCompositionWidget(self, self.foil, self.icon_manager)
+        self.composition = FoilCompositionWidget(self, self.foil,
+                                                 self.icon_manager)
 
-        self.ui.typeComboBox.currentIndexChanged.connect(lambda: self._change_dimensions())
+        self.ui.typeComboBox.currentIndexChanged.connect(
+            lambda: self._change_dimensions())
 
         self.ui.cancelButton.clicked.connect(self.close)
-        self.ui.okButton.clicked.connect(lambda: self._save_foil_info_and_close())
+        self.ui.okButton.clicked.connect(lambda:
+                                         self._save_foil_info_and_close())
 
         self.exec_()
 
     def _change_dimensions(self):
         if self.ui.typeComboBox.currentText() == "circular":
             self.dimension_label.setText("Diameter:")
-            self.dimension_edits.pop()  # removes the second dimension edit that is only needed by rectangular type
+            # removes the second dimension edit that is only needed
+            # by rectangular type
+            self.dimension_edits.pop()
             self.ui.dimensionLayout.removeWidget(self.second_dimension_edit)
             self.second_dimension_edit.deleteLater()
             self.second_dimension_edit = None
@@ -97,7 +106,8 @@ class FoilDialog(QtWidgets.QDialog):
         if self.foil_type_changed:
             if self.foil_type is CircularFoil:
                 new_foil = RectangularFoil(self.ui.nameEdit.text())
-                new_foil.size = (self.first_dimension_edit.text(), self.second_dimension_edit.text())
+                new_foil.size = (self.first_dimension_edit.text(),
+                                 self.second_dimension_edit.text())
             else:
                 new_foil = CircularFoil(self.ui.nameEdit.text())
                 new_foil.diameter = self.first_dimension_edit.text()
@@ -109,5 +119,6 @@ class FoilDialog(QtWidgets.QDialog):
             if self.foil_type is CircularFoil:
                 self.foil.diameter = self.first_dimension_edit.text()
             else:
-                self.foil.size = (self.first_dimension_edit.text(), self.second_dimension_edit.text())
+                self.foil.size = (self.first_dimension_edit.text(),
+                                  self.second_dimension_edit.text())
         self.close()

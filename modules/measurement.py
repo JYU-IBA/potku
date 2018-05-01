@@ -721,7 +721,9 @@ class Measurement:
         str_num_iterations = "Number of iterations: {0}\n".format(global_settings.get_num_iterations())
 
         # Efficiency directory
-        eff_directory = global_settings.get_efficiency_directory()
+        # TODO Efficiency directory should be measurement's detector's
+        # directory and not request's.
+        eff_directory = self.request.detector.efficiency_directory
         str_eff_dir = "Efficiency directory: {0}".format(eff_directory)
 
         # Combine strings
