@@ -131,4 +131,4 @@ class Target:
             obj["layers"].append(layer_obj)
 
         with open(file_path, "w") as file:
-            json.dump(obj, file)
+            json.dump(obj, file, indent=4)

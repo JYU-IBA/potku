@@ -192,7 +192,7 @@ class Detector:
             obj["foils"].append(foil_obj)
 
         with open(file_path, "w") as file:
-            json.dump(obj, file)
+            json.dump(obj, file, indent=4)
 
 
 # class ToFDetector(Detector):
