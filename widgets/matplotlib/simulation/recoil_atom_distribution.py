@@ -793,13 +793,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         new_x_left = new_coords[0][0]
         new_x_right = new_coords[-1][0]
 
+        if left_neighbor is None and right_neighbor is None:
+            pass  # No neighbors to limit movement
         # Check for neighbor collisions:
-        if left_neighbor is None:
+        elif left_neighbor is None and right_neighbor is not None:
             if new_coords[-1][0] >= right_neighbor.get_x() - self.x_res:
                 new_coords[-1][0] = right_neighbor.get_x() - self.x_res
                 for i in range(0, len(dr_ps) - 1):
                     new_coords[i][0] = right_neighbor.get_x() - self.x_res - self.x_dist_right[i]
-        elif right_neighbor is None:
+        elif right_neighbor is None and left_neighbor is not None:
             if new_coords[0][0] <= left_neighbor.get_x() + self.x_res:
                 new_coords[0][0] = left_neighbor.get_x() + self.x_res
                 for i in range(1, len(dr_ps)):
