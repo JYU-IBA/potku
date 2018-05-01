@@ -545,7 +545,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Make own buttons
         self.mpl_toolbar.addSeparator()
 
-        # TODO: New buttons aren't displayed in the overflow menu
         # Point x coordinate spinbox
         self.x_coordinate_box = QtWidgets.QDoubleSpinBox(self)
         self.x_coordinate_box.setToolTip("X coordinate of selected point")
@@ -587,13 +586,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # self.rectangle_select_button.setToolTip("Rectangle select")
         # self.mpl_toolbar.addWidget(self.rectangle_select_button)
 
-        # Point removal button
-        self.point_remove_button = QtWidgets.QToolButton(self)
-        self.point_remove_button.clicked.connect(self.remove_points)
+        # Point removal
+        point_remove_action = QtWidgets.QAction("Remove point", self)
+        point_remove_action.triggered.connect(self.remove_points)
+        point_remove_action.setToolTip("Remove selected points")
         # TODO: Temporary icon
-        self.__icon_manager.set_icon(self.point_remove_button, "del.png")
-        self.point_remove_button.setToolTip("Remove selected points")
-        self.mpl_toolbar.addWidget(self.point_remove_button)
+        self.__icon_manager.set_icon(point_remove_action, "del.png")
+        self.mpl_toolbar.addAction(point_remove_action)
 
     def set_selected_point_x(self):
         """Sets the selected point's x coordinate to the value of the x spinbox."""
@@ -889,6 +888,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
     def remove_points(self):
         """Removes all selected points, but not if there would be less than two points left."""
+        # TODO: Don't allow the rightmost point to be removed if edit lock is on.
+        if not self.current_element:
+            return
         if len(self.current_element.get_points()) - len(self.selected_points) < 2:
             # TODO: Add an error message text label
             print("There must always be at least two points")
