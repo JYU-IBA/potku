@@ -438,7 +438,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def remove_element(self, element):
         self.elements.remove_element(element)
 
-    def update_elements(self):
+    def import_elements(self):
         for layer in self.target.layers:
             for layer_element in layer.elements:
                 already_exists = False

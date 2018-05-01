@@ -51,16 +51,19 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.recoilListWidget.hide()
         self.ui.editLockPushButton.hide()
 
+        self.ui.exportElementsButton.clicked.connect(self.recoil_widget.import_elements)
+
         self.ui.targetRadioButton.clicked.connect(
             lambda: {self.ui.stackedWidget.setCurrentIndex(0),
                      self.ui.recoilListWidget.hide(),
-                     self.ui.editLockPushButton.hide()})
+                     self.ui.editLockPushButton.hide(),
+                     self.ui.exportElementsButton.show()})
         self.ui.recoilRadioButton.clicked.connect(
             lambda: {self.ui.stackedWidget.setCurrentIndex(1),
                      self.ui.recoilListWidget.show(),
                      self.ui.editLockPushButton.show(),
-                     self.recoil_widget.update_layer_borders(),
-                     self.recoil_widget.update_elements()})
+                     self.ui.exportElementsButton.hide(),
+                     self.recoil_widget.update_layer_borders()})
 
         self.ui.targetRadioButton.setChecked(True)
         self.ui.stackedWidget.setCurrentIndex(0)

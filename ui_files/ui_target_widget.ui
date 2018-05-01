@@ -56,6 +56,16 @@
        </property>
       </widget>
      </item>
+     <item>
+      <widget class="QPushButton" name="exportElementsButton">
+       <property name="text">
+        <string>Export elements</string>
+       </property>
+       <property name="toolTip">
+        <string>Export layer elements to recoil atom distribution</string>
+       </property>
+      </widget>
+     </item>
     </layout>
    </item>
    <item>
