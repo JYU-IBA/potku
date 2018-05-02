@@ -594,19 +594,19 @@ class Potku(QtWidgets.QMainWindow):
                           simulation to the request.
         """
         if simulations:
-            samples_with_measurements = simulations
+            samples_with_simulations = simulations
             load_data = True
         else:
-            samples_with_measurements = \
+            samples_with_simulations = \
                 self.request.samples.get_samples_and_simulations()
             load_data = False
         progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
 
-        count = len(samples_with_measurements)
+        count = len(samples_with_simulations)
         dirtyinteger = 0
-        for sample, simulations in samples_with_measurements.items():
+        for sample, simulations in samples_with_simulations.items():
             for simulation_file in simulations:
                 self.__add_new_tab("simulation", simulation_file, sample,
                                    progress_bar,dirtyinteger, count,
@@ -916,7 +916,6 @@ class Potku(QtWidgets.QMainWindow):
             sample_dir, simulation_name = os.path.split(filename)
             simulation = self.request.samples.simulations.add_simulation_file(
                 sample, simulation_name, self.tab_id)
-            sample.increase_running_int_simulation_by_1()
 
             if simulation:  # TODO: Finish this (load_data)
                 tab = SimulationTabWidget(self.request, self.tab_id, simulation,

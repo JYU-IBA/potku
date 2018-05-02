@@ -8,6 +8,8 @@ Updated on 27.4.2018
 
 Simulation.py runs the MCERD simulation with a command file.
 """
+import re
+
 from modules.target import Target
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
@@ -58,18 +60,19 @@ class Simulations:
         """
         simulation = None
         name_prefix = "MC_simulation_"
+        plain_name = re.sub('^MC_simulation_\d\d-', '', simulation_name)
         simulation_folder = os.path.join(
             sample.request.directory, sample.directory, name_prefix +
-                            "%02d" % sample.get_running_int_simulation() + "-"
-                            + simulation_name)
+                                                        "%02d" % sample.get_running_int_simulation() + "-"
+                                                        + plain_name)
         sample.increase_running_int_simulation_by_1()
         try:
             keys = sample.simulations.simulations.keys()
             for key in keys:
                 if sample.simulations.simulations[key].directory == \
-                        simulation_name:
+                        plain_name:
                     return simulation  # simulation = None
-            simulation = Simulation(self.request, simulation_name)
+            simulation = Simulation(self.request, plain_name)
             simulation.create_folder_structure(simulation_folder)
             sample.simulations.simulations[tab_id] = simulation
             self.request.samples.simulations.simulations[tab_id] = simulation

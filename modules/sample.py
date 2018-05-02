@@ -167,6 +167,7 @@ class Sample:
                 else:
                     self._running_int_simulation = int(item[simulation_name_start - 2:simulation_name_start - 1])
                 all_simulations.append(os.path.join(self.request.directory, self.directory, item))
+        all_simulations.sort()
         return all_simulations
 
     def remove_obj(self, obj_removed):
