@@ -51,7 +51,8 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.recoilListWidget.hide()
         self.ui.editLockPushButton.hide()
 
-        self.ui.exportElementsButton.clicked.connect(self.recoil_widget.import_elements)
+        self.ui.exportElementsButton.clicked.connect(
+            self.recoil_widget.import_elements)
 
         self.ui.targetRadioButton.clicked.connect(
             lambda: {self.ui.stackedWidget.setCurrentIndex(0),

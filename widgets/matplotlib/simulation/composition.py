@@ -79,7 +79,7 @@ class _CompositionWidget(MatplotlibWidget):
         self.__button_zoom.setChecked(False)
 
     def __fork_toolbar_buttons(self):
-        # super().fork_toolbar_buttons()
+        super().fork_toolbar_buttons()
         self.mpl_toolbar.mode_tool = 0
         self.__tool_label = self.mpl_toolbar.children()[24]
         self.__button_drag = self.mpl_toolbar.children()[12]
@@ -90,11 +90,19 @@ class _CompositionWidget(MatplotlibWidget):
         # Make own buttons
         self.mpl_toolbar.addSeparator()
 
-        # Button for adding a new layer
-        self.button_add_layer = QtWidgets.QToolButton(self)
-        self.button_add_layer.clicked.connect(lambda: (self.__add_layer()))
-        self.__icon_manager.set_icon(self.button_add_layer, "add.png")  # TODO: Change icon!
-        self.mpl_toolbar.addWidget(self.button_add_layer)
+        # Black magic to make the following action work
+        temp_button = QtWidgets.QToolButton(self)
+        temp_button.clicked.connect(lambda: self.__add_layer())
+        self.mpl_toolbar.removeAction(self.mpl_toolbar.addWidget(temp_button))
+
+        # Action for adding a new layer
+        action_add_layer = QtWidgets.QAction("Add layer", self)
+        action_add_layer.triggered.connect(lambda: self.__add_layer())
+        action_add_layer.setToolTip("Add layer")
+        # TODO: Change icon!
+        self.__icon_manager.set_icon(action_add_layer, "add.png")
+        self.mpl_toolbar.addAction(action_add_layer)
+
 
     def __add_layer(self, position = -1):
         """Adds a new layer to the list of layers.
