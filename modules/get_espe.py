@@ -1,6 +1,7 @@
 # coding=utf-8
 """
 Created on 27.4.2018
+Updated on 2.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
@@ -10,7 +11,7 @@ import os
 import platform
 
 
-class GetEspe():
+class GetEspe:
     """
     Class for handling calling the external program get_espe to generate
     energy spectra coordinates.
@@ -18,7 +19,7 @@ class GetEspe():
     __slots__ = "__result_files", "__recoil_file", \
                 "__settings", "__beam", "__detector", "__target", \
                 "__channel_width", "__reference_density", "__fluence", \
-                "__params", "output_file"
+                "__params", "output_file", "__timeres", "__density", "__solid"
 
     def __init__(self, settings, mcerd_objects):
         """
@@ -60,29 +61,34 @@ class GetEspe():
             self.__result_files += value.result_file + " "
             # All the mcerd processes should have the same recoil
             # distribution, so it shouldn't matter which of the files is used.
+            # TODO: WRONG, this needs to be fixed!
             self.__recoil_file = value.recoil_file
             self.output_file = value.recoil_file[:len(
                 value.recoil_file) - 3] + "simu"
             # output file has the same name as recoil file
 
-        self.__beam = settings["beam"]
+        self.__beam = self.__settings["beam"]
         self.__detector = self.__settings["detector"]
         self.__target = self.__settings["target"]
         self.__channel_width = self.__settings["ch"]
-        self.__reference_density = self.__settings["reference_density"]
         self.__fluence = self.__settings["fluence"]  # from Run object
+        self.__timeres = self.__settings["timeres"]
+        self.__density = self.__settings["reference_density"]
+        self.__solid = self.__settings["solid"]
 
         toflen = self.__detector.foils[self.__detector.tof_foils[0]].distance
         toflen -= self.__detector.foils[self.__detector.tof_foils[1]].distance
 
         self.__params = "-ch " + str(self.__channel_width) + " -dist " + \
-                        self.__recoil_file + " -toflen " + str(toflen) + \
+                        self.__recoil_file + " -timeres" + self.__timeres +\
+                        " -toflen " + str(toflen) + \
                         " -beam " + str(self.__beam.ion.isotope) + \
                         self.__beam.ion.symbol + "-dose " + str(self.__fluence)\
                         + " -energy " + str(self.__beam.energy) + " -theta " + \
                         str(self.__detector.detector_theta) + " -tangle " + \
-                        str(self.__target.target_theta)
-        # This is missing timeres, solid and density
+                        str(self.__target.target_theta) + " -solid" + \
+                        self.__solid + " -density " + \
+                        self.__density
 
     def run(self):
         command = ("type " if platform.system() == "Windows" else "cat ") + \

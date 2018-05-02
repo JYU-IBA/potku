@@ -1,13 +1,14 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 27.4.2018
+Updated on 2.5.2018
 """
+import math
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import subprocess
 import platform
 import datetime
 import json
@@ -15,9 +16,14 @@ import os
 
 from modules.mcerd import MCERD
 from modules.get_espe import GetEspe
+from modules.foil import CircularFoil
 
 
-class ElementSimulation():
+class ElementSimulation:
+    """
+    Class for handling the element specific simulation. Can have multiple
+    MCERD objects, but only one GetEspe object.
+    """
 
     __slots__ = "name", \
                 "modification_time", \
@@ -28,9 +34,10 @@ class ElementSimulation():
                 "simulation_mode", "seed_number", \
                 "element", "recoil_atoms", "mcerd_objects", "get_espe", \
                 "channel_width", "reference_density", "beam", "target", \
-                "detector", "__command", "__process",
+                "detector", "__command", "__process", "settings", \
+                "espe_settings", "description", "run"
 
-    def __init__(self, name="",
+    def __init__(self, beam, target, detector, run, name="", description="",
                  modification_time=datetime.datetime.now(),
                  simulation_type="rec",
                  number_of_ions=1000000, number_of_preions=100000,
@@ -39,13 +46,33 @@ class ElementSimulation():
                  simulation_mode="narrow", seed_number=101,
                  minimum_energy=1.0, channel_width=0.1,
                  reference_density=4.98e22):
-        """Inits Simulation.
+        """ Initializes ElementSimulation.
         Args:
-            request: Request class object.
+            beam: Beam object reference.
+            target: Target object reference.
+            detector: Detector object reference.
+            run: Run object reference.
+            name: Name of the element simulation.
             modification_time: A modification time in ISO 8601 format, without
                                information about the timezone.
+            simulation_type: Type of simulation
+            number_of_ions: Number of ions to be simulated.
+            number_of_preions: Number of preions.
+            number_of_scaling_ions: Number of scaling ions.
+            number_of_recoils: Number of recoils.
+            minimum_main_scattering_angle: Minimum angle of scattering.
+            simulation_mode: Mode of simulation.
+            seed_number: Seed number to give unique value to one simulation.
+            minimum_energy: Minimum energy.
+            channel_width: Channel width.
+            reference_density: Reference density.
         """
+        self.beam = beam
+        self.target = target
+        self.detector = detector
+        self.run = run
         self.name = name
+        self.description = description
         self.modification_time = modification_time
 
         self.simulation_type = simulation_type
@@ -61,14 +88,15 @@ class ElementSimulation():
         self.reference_density = reference_density
 
         self.__command = os.path.join("external", "Potku-bin", "mcerd" +
-                                      (".exe" if platform.system() == "Windows" else ""))
+                                      (".exe" if platform.system() == "Windows"
+                                       else ""))
         self.__process = None
         # This has all the mcerd objects so get_espe knows all the element
         # simulations that belong together (with different seed numbers)
         self.mcerd_objects = {}
         self.get_espe = None
 
-        settings = {
+        self.settings = {
             "simulation_type": self.simulation_type,
             "number_of_ions": self.number_of_ions,
             "number_of_preions_in_presimu": self.number_of_preions,
@@ -83,6 +111,58 @@ class ElementSimulation():
             "detector": self.detector,
             "recoil": None
         }
+
+        self.espe_settings = {
+            "beam": self.beam,
+            "detector": self.detector,
+            "target": self.target,
+            "ch": self.channel_width,
+            "reference_density": self.reference_density,
+            "fluence": self.run.fluence,
+            "timeres": self.detector.timeres,
+            "solid": self.calculate_solid()
+        }
+
+    def calculate_solid(self):
+        """
+        Calculate the solid parameter.
+        Return:
+            Returns the solid parameter calculated.
+        """
+        transmissions = self.detector.foils[0].transmission
+        i = 1
+        while i in range(len(self.detector.foils)):
+            transmissions *= self.detector.foils[i].transmission
+
+        smallest_solid_angle = self.calculate_smallest_solid_angle()
+
+        return smallest_solid_angle * transmissions
+
+    def calculate_smallest_solid_angle(self):
+        """
+        Calculate the smallest solid angle.
+        Return:
+            Smallest solid angle. (unit millisteradian)
+        """
+        foil = self.detector.foils[0]
+        if type(foil) is CircularFoil:
+            radius = foil.diameter / 2
+            smallest = math.pi * radius ** 2 / foil.distance ** 2
+        else:
+            smallest = foil.size[0] * foil.size[1] / foil.distance ** 2
+        i = 1
+        while i in range(len(self.detector.foils)):
+            foil = self.detector.foils[i]
+            if type(foil) is CircularFoil:
+                radius = foil.diameter / 2
+                solid_angle = math.pi * radius**2 / foil.distance**2
+            else:
+                solid_angle = foil.size[0] * foil.size[1] / foil.distance**2
+            if smallest > solid_angle:
+                smallest = solid_angle
+            i += 1
+        return smallest * 1000  # usually the unit is millisteradian,
+        # hence the multiplication by 1000
 
     @classmethod
     def from_file(cls, file_path):
@@ -103,6 +183,7 @@ class ElementSimulation():
         profile = []  # TODO: Finish this.
 
         cls(type, element, profile, name, description, modification_time)
+        # TODO: update the cls call above
 
     def to_file(self, file_path):
 
@@ -113,7 +194,7 @@ class ElementSimulation():
             "description": self.description,
             "modification_time": datetime.datetime.now().isoformat(
                 timespec="seconds"),
-            "type": self.type,
+            "type": self.simulation_type,
             "element": self.element,
             "profile": []  # TODO: Finish this.
         }
@@ -122,14 +203,14 @@ class ElementSimulation():
             json.dump(obj, file, indent=4)
 
     def start(self):
-        """Start the simulation."""
+        """ Start the simulation."""
         # TODO: fix this to have the real seed number
-        self.mcerd_objects["seed number"] = MCERD(settings)
+        self.mcerd_objects["seed number"] = MCERD(self.settings)
 
     def stop(self):
-        """Stop the simulation."""
+        """ Stop the simulation."""
         for sim in self.mcerd_objects:
-            del(sim)
+            del sim
 
     def pause(self):
         """Pause the simulation."""
@@ -137,4 +218,7 @@ class ElementSimulation():
         pass
 
     def calculate_espe(self):
-        self.get_espe = GetEspe(espe_settings, self.mcerd_objects)
+        """
+        Calculate the energy spectrum from the mcred result file.
+        """
+        self.get_espe = GetEspe(self.espe_settings, self.mcerd_objects)

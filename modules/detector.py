@@ -2,7 +2,7 @@
 # TODO: Add licence information
 """
 Created on 23.3.2018
-Updated on 26.4.2018
+Updated on 2.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
@@ -25,7 +25,7 @@ class Detector:
     __slots__ = "name", "description", "date", "type", "calibration", "foils",\
                 "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
                 "angle_slope", "angle_offset", "path", "modification_time",\
-                "efficiencies", "efficiency_directory"
+                "efficiencies", "efficiency_directory", "timeres"
 
     def __init__(self, name="Default", description="This a default detector.",
                  modification_time=datetime.datetime.now(), type="TOF",
@@ -45,7 +45,7 @@ class Detector:
                                          Element("Si", 28.09, 0.43)],
                                             1.0, 3.44)])],
                  tof_foils=[1, 2], virtual_size=(2.0, 5.0), tof_slope=1e-11,
-                 tof_offset=1e-9, angle_slope=0, angle_offset=0):
+                 tof_offset=1e-9, angle_slope=0, angle_offset=0, timeres=250.0):
         """Initialize a detector.
 
         Args:
@@ -57,6 +57,7 @@ class Detector:
             foils: Detector foils.
             tof_foils: List of indexes that tell the index of tof foils in
             foils list.
+            timeres: Time resolution.
 
         """
         # With this we get the path of the folder where the
@@ -69,6 +70,7 @@ class Detector:
         self.calibration = calibration
         self.foils = foils
         self.tof_foils = tof_foils
+        self.timeres = timeres
 
         self.efficiencies = []
         self.efficiency_directory = None
@@ -149,7 +151,7 @@ class Detector:
                 foils.append(
                     RectangularFoil(foil["size"], distance, layers))
 
-        return cls(file_path, name, angle, foils)
+        return cls(file_path, name, angle, foils) # TODO: Update this
 
     def to_file(self, file_path):
         """Save detector settings to a file.
@@ -163,7 +165,8 @@ class Detector:
             "date": self.date,
             "type": self.type,
             "foils": [],
-            "tof_foils": self.tof_foils
+            "tof_foils": self.tof_foils,
+            "timeres": self.timeres
         }
 
         for foil in self.foils:
