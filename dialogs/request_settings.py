@@ -516,7 +516,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 self.detector_settings_widget.nameLineEdit.text()
             self.request.default_detector.description = \
                 self.detector_settings_widget.descriptionLineEdit.toPlainText()
-            self.request.default_detector.detector_type = \
+            self.request.default_detector.type = \
                 self.detector_settings_widget.typeComboBox.currentText()
             self.calibration_settings.set_settings(
                 self.detector_settings_widget)
