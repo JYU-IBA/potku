@@ -279,8 +279,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         super().__init__(parent)
         self.canvas.manager.set_title("Recoil Atom Distribution")
-        self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
-        self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
+        self.axes.fmt_xdata = lambda x: "{0:1.2f}".format(x)
+        self.axes.fmt_ydata = lambda y: "{0:1.4f}".format(y)
         self.__icon_manager = icon_manager
 
         self.current_recoil_element = None
@@ -746,7 +746,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 selected_xs.append(point.get_x())
                 selected_ys.append(point.get_y())
             self.markers_selected.set_data(selected_xs, selected_ys)
-            if self.selected_points[0] == self.current_recoil_element.get_points()[-1] and self.edit_lock_on:
+            if self.selected_points[0] == \
+                    self.current_recoil_element.get_points()[-1]\
+                    and self.edit_lock_on:
                 self.x_coordinate_box.setEnabled(False)
             else:
                 self.x_coordinate_box.setEnabled(True)
@@ -756,7 +758,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # self.text.set_text('selected: %d %d' % (self.selected_points[0].get_coordinates()[0],
             #                                     self.selected_points[0].get_coordinates()[1]))
         else:
-            self.markers_selected.set_data(self.current_recoil_element.get_xs(), self.current_recoil_element.get_ys())
+            self.markers_selected.set_data(
+                self.current_recoil_element.get_xs(),
+                self.current_recoil_element.get_ys())
             self.markers_selected.set_visible(False)
             self.x_coordinate_box.setEnabled(False)
             self.y_coordinate_box.setEnabled(False)
