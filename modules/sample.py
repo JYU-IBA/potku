@@ -1,9 +1,10 @@
 # coding=utf-8
 """
 Created on 30.3.2018
-Edited on 6.4.2018
+Edited on 3.5.2018
 """
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
+             "\n Sinikka Siironen"
 __version__ = "2.0"
 
 import os
@@ -49,7 +50,8 @@ class Samples:
                 sample = Sample(serial_number, self.request, sample_dir, name)
             except Exception as e:
                 # Couldn't read sample's serial number from file path.
-                print("Couldn't read sample's serial number from path. " + e)
+                print("Couldn't read sample's serial number from path. " +
+                      str(e))
                 return
         else:
             next_serial = self.request.get_running_int()
@@ -64,19 +66,22 @@ class Samples:
 
     def get_samples_and_measurements(self):
         """
-        Collects all the samples and the measurement files under them into a dictionary.
+        Collects all the samples and the measurement files under them into a
+        dictionary.
 
         Return:
             A dictionary containing samples and their measurements.
         """
         all_samples_and_measurements = {}
         for sample in self.samples:
-            all_samples_and_measurements[sample] = sample.get_measurements_files()
+            all_samples_and_measurements[sample] = \
+                sample.get_measurements_files()
         return all_samples_and_measurements
 
     def get_samples_and_simulations(self):
         """
-        Collects all the samples and the simulation files under them into a dictionary.
+        Collects all the samples and the simulation files under them into a
+        dictionary.
 
         Return:
             A dictionary containing samples and their simulations.
@@ -134,18 +139,25 @@ class Sample:
         """
         # TODO: Possible for different formats (such as binary data .lst)
         all_measurements = []
-        for item in os.listdir(os.path.join(self.request.directory, self.directory)):
+        for item in os.listdir(os.path.join(self.request.directory,
+                                            self.directory)):
             if item.startswith("Measurement_"):
                 measurement_name_start = item.find('-')
-                if measurement_name_start == -1:  # measurement needs to have a name.
+                # measurement needs to have a name.
+                if measurement_name_start == -1:
                     return []
                 number_str = item[measurement_name_start - 2]
                 if number_str == "0":
-                    self._running_int_measurement = int(item[measurement_name_start - 1])
+                    self._running_int_measurement = \
+                        int(item[measurement_name_start - 1])
                 else:
-                    self._running_int_measurement = int(item[measurement_name_start - 2:measurement_name_start - 1])
+                    self._running_int_measurement = \
+                        int(item[measurement_name_start - 2
+                                 :measurement_name_start - 1])
                 measurement_name = item[measurement_name_start+1:]
-                if os.path.isfile(os.path.join(self.request.directory, self.directory, item, "Data", measurement_name + ".asc")):
+                if os.path.isfile(os.path.join(self.request.directory,
+                                               self.directory, item, "Data",
+                                               measurement_name + ".asc")):
                     all_measurements.append(measurement_name + ".asc")
         return all_measurements
 
@@ -156,17 +168,24 @@ class Sample:
             A list of simulation file names.
         """
         all_simulations = []
-        for item in os.listdir(os.path.join(self.request.directory, self.directory)):
+        for item in os.listdir(os.path.join(self.request.directory,
+                                            self.directory)):
             if item.startswith("MC_simulation_"):
                 simulation_name_start = item.find('-')
-                if simulation_name_start == -1:  # simulation needs to have a name.
+                # simulation needs to have a name.
+                if simulation_name_start == -1:
                     return []
                 number_str = item[simulation_name_start - 2]
                 if number_str == "0":
-                    self._running_int_simulation = int(item[simulation_name_start - 1])
+                    self._running_int_simulation = \
+                        int(item[simulation_name_start - 1])
                 else:
-                    self._running_int_simulation = int(item[simulation_name_start - 2:simulation_name_start - 1])
-                all_simulations.append(os.path.join(self.request.directory, self.directory, item))
+                    self._running_int_simulation = \
+                        int(item[
+                            simulation_name_start - 2
+                            :simulation_name_start - 1])
+                all_simulations.append(os.path.join(self.request.directory,
+                                                    self.directory, item))
         all_simulations.sort()
         return all_simulations
 

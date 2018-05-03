@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 30.4.2018
+Updated on 3.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -38,7 +38,6 @@ from modules.sample import Samples
 from modules.measurement import Measurement
 from modules.simulation import Simulation
 from modules.settings import Settings
-from modules.beam import Beam
 from modules.detector import Detector
 from modules.target import Target
 
@@ -50,14 +49,15 @@ class Request:
     """
     def __init__(self, directory, name, statusbar, global_settings,
                  tabs):
-        """Inits Request class. 
+        """ Initializes Request class.
         
         Args:
             directory: A String representing request directory.
+            name: Name of the request.
             statusbar: A QtGui.QMainWindow's QStatusBar.
             global_settings: A GlobalSettings class object (of the program).
             tabs: A dictionary of MeasurementTabWidgets and SimulationTabWidgets
-            of the request.
+                  of the request.
         """
         # TODO: Get rid of statusbar.
         self.directory = directory
@@ -92,7 +92,8 @@ class Request:
         # TODO: Add folder creation as a function call
         self.default_detector = Detector(
             os.path.join(self.default_detector_folder, "Default.detector"))
-        self.default_detector.create_folder_structure(self.default_detector_folder)
+        self.default_detector.create_folder_structure(
+            self.default_detector_folder)
         # self.detector.to_file(os.path.join(directory, "default.detector"))
         # self.detector.save_settings(self.default_folder + os.sep + "
         # Detector" + os.sep + self.detector.name)
@@ -126,7 +127,7 @@ class Request:
             self.load()
 
     def exclude_slave(self, measurement):
-        """Exclude measurement from slave category under master.
+        """ Exclude measurement from slave category under master.
         
         Args:
             measurement: A measurement class object.
@@ -141,14 +142,14 @@ class Request:
         self.save()
 
     def include_slave(self, measurement):
-        """Include measurement to slave category under master.
+        """ Include measurement to slave category under master.
         
         Args:
             measurement: A measurement class object.
         """
         name = measurement.name
         # Check if measurement is in the list.
-        if not name in self.__non_slaves:
+        if name not in self.__non_slaves:
             return
         self.__non_slaves.remove(name)
         self.__request_information["meta"]["nonslave"] = "|".join(
@@ -156,7 +157,7 @@ class Request:
         self.save()
 
     def get_name(self):
-        """Get the request's name.
+        """ Get the request's name.
         
         Return:
             Returns the request's name.
@@ -164,14 +165,16 @@ class Request:
         return self.__request_information["meta"]["request_name"]
 
     def get_master(self):
-        """Get master measurement of the request.
+        """ Get master measurement of the request.
         """
         return self.__master_measurement
 
     def get_samples_files(self):
         """
         Searches the directory for folders beginning with "Sample".
-        Returns all the paths for these samples.
+
+        Return:
+            Returns all the paths for these samples.
         """
         samples = []
         for item in os.listdir(self.directory):
@@ -191,13 +194,19 @@ class Request:
         return samples
 
     def get_running_int(self):
+        """
+        Get the running int needed for numbering the samples.
+        """
         return self._running_int
 
     def increase_running_int_by_1(self):
+        """
+        Increase running int by one.
+        """
         self._running_int = self._running_int + 1
 
     def get_measurement_tabs(self, exclude_id=-1):
-        """Get measurement tabs of a request.
+        """ Get measurement tabs of a request.
         """
         list_m = []
         keys = list(filter((exclude_id).__ne__, self.__measurement_tabs.keys()))
@@ -206,12 +215,12 @@ class Request:
         return list_m
 
     def get_nonslaves(self):
-        """Get measurement names that will be excluded from slave category.
+        """ Get measurement names that will be excluded from slave category.
         """
         return self.__non_slaves
 
     def has_master(self):
-        """Does request have master measurement? Check from config file as
+        """ Does request have master measurement? Check from config file as
         it is not loaded yet.
         
         This is used when loading request. As request has no measurement in it
@@ -222,21 +231,21 @@ class Request:
         return self.__request_information["meta"]["master"]
 
     def load(self):
-        """Load request
+        """ Load request.
         """
         self.__request_information.read(self.request_file)
         self.__non_slaves = self.__request_information["meta"]["nonslave"]\
             .split("|")
 
     def save(self):
-        """Save request
+        """ Save request.
         """
         # TODO: Saving properly.
         with open(self.request_file, "wt+") as configfile:
             self.__request_information.write(configfile)
 
     def save_cuts(self, measurement):
-        """Save cuts for all measurements except for master.
+        """ Save cuts for all measurements except for master.
         
         Args:
             measurement: A measurement class object that issued save cuts.
@@ -253,7 +262,7 @@ class Request:
                     tab.measurement.save_cuts()
 
     def save_selection(self, measurement):
-        """Save selection for all measurements except for master.
+        """ Save selection for all measurements except for master.
         
         Args:
             measurement: A measurement class object that issued save cuts.
@@ -266,13 +275,13 @@ class Request:
             tabs = self.get_measurement_tabs(measurement.tab_id)
             for tab in tabs:
                 tab_name = tab.measurement.name
-                if tab.data_loaded and not tab_name in nonslaves and \
+                if tab.data_loaded and tab_name not in nonslaves and \
                    tab_name != name:
                     tab.measurement.selector.load(selection_file)
                     tab.histogram.matplotlib.on_draw()
 
     def set_master(self, measurement=None):
-        """Set master measurement for the request.
+        """ Set master measurement for the request.
         
         Args:
             measurement: A measurement class object.
@@ -286,7 +295,7 @@ class Request:
         self.save()
 
     def __set_request_logger(self):
-        """Sets the logger which is used to log everything that doesn't happen
+        """ Sets the logger which is used to log everything that doesn't happen
         in measurements.
         """
         logger = logging.getLogger("request")
