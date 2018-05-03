@@ -37,7 +37,8 @@ class ElementSimulation:
                 "detector", "__command", "__process", "settings", \
                 "espe_settings", "description", "run"
 
-    def __init__(self, beam, target, detector, run, name="", description="",
+    def __init__(self, element, beam, target, detector, run, name="",
+                 description="",
                  modification_time=datetime.datetime.now(),
                  simulation_type="rec",
                  number_of_ions=1000000, number_of_preions=100000,
@@ -67,6 +68,7 @@ class ElementSimulation:
             channel_width: Channel width.
             reference_density: Reference density.
         """
+        self.element = element
         self.beam = beam
         self.target = target
         self.detector = detector
@@ -130,9 +132,8 @@ class ElementSimulation:
             Returns the solid parameter calculated.
         """
         transmissions = self.detector.foils[0].transmission
-        i = 1
-        while i in range(len(self.detector.foils)):
-            transmissions *= self.detector.foils[i].transmission
+        for f in self.detector.foils:
+            transmissions *= f.transmission
 
         smallest_solid_angle = self.calculate_smallest_solid_angle()
 
@@ -157,7 +158,9 @@ class ElementSimulation:
                 radius = foil.diameter / 2
                 solid_angle = math.pi * radius**2 / foil.distance**2
             else:
-                solid_angle = foil.size[0] * foil.size[1] / foil.distance**2
+                # TODO Foil.size[0] is tuple and breaks the math
+#                solid_angle = foil.size[0] * foil.size[1] / foil.distance**2
+                pass
             if smallest > solid_angle:
                 smallest = solid_angle
             i += 1

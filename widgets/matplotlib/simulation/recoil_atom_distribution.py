@@ -3,6 +3,8 @@
 Created on 1.3.2018
 Updated on 28.3.2018
 """
+from modules.element_simulation import ElementSimulation
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 
 import matplotlib
@@ -57,8 +59,8 @@ class Point:
 
 
 class RecoilElement:
-    """An element that has a list of points and a widget. The points are kept in ascending order by their
-    x coordinate.
+    """An element that has a list of points and a widget. The points are kept
+    in ascending order by their x coordinate.
     """
     def __init__(self, element, points, widget):
         """Inits element.
@@ -206,9 +208,10 @@ class ElementWidget(QtWidgets.QWidget):
 
 
 class RecoilElements:
-    def __init__(self, icon_manager):
+    def __init__(self, icon_manager, simulation):
         self.icon_manager = icon_manager
         self._recoil_elements = []
+        self.simulation = simulation
 
     def get_elements(self):
         return self._recoil_elements
@@ -230,6 +233,7 @@ class RecoilElements:
         widget = ElementWidget(element, self.icon_manager)
         recoil_element = RecoilElement(element, points, widget)
         self._recoil_elements.append(recoil_element)
+        self.simulation.add_element_simulation(element)
 
         return recoil_element
 
@@ -277,7 +281,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                   3: "rectangle selection tool"
                   }
 
-    def __init__(self, parent, target, icon_manager):
+    def __init__(self, parent, simulation, target, icon_manager):
         """Inits recoil atom distribution widget.
 
         Args:
@@ -292,7 +296,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.__icon_manager = icon_manager
 
         self.current_element = None
-        self.elements = RecoilElements(self.__icon_manager)
+        self.elements = RecoilElements(self.__icon_manager, simulation)
         self.target = target
         self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
 
