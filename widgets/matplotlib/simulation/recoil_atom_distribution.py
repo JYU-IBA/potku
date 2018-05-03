@@ -296,19 +296,26 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.target = target
         self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
 
-        scroll_vertical_layout = QtWidgets.QVBoxLayout()
-        parent.ui.recoilScrollAreaContents.setLayout(scroll_vertical_layout)
+        # Setting up the element scroll area
         widget = QtWidgets.QWidget()
         self.recoil_vertical_layout = QtWidgets.QVBoxLayout()
         widget.setLayout(self.recoil_vertical_layout)
+
+        scroll_vertical_layout = QtWidgets.QVBoxLayout()
+        parent.ui.recoilScrollAreaContents.setLayout(scroll_vertical_layout)
+
         scroll_vertical_layout.addWidget(widget)
-        scroll_vertical_layout.addItem(QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Expanding))
+        scroll_vertical_layout.addItem(
+            QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum,
+                                  QtWidgets.QSizePolicy.Expanding))
+
         parent.ui.addPushButton.clicked.connect(self.add_element)
         self.remove_push_button = parent.ui.removePushButton
         self.remove_push_button.clicked.connect(self.remove_current_element)
 
         self.radios = QtWidgets.QButtonGroup(self)
-        self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(self.choose_element)
+        self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
+            self.choose_element)
 
         # TODO: Set lock on only when simulation has been run
         self.edit_lock_push_button = parent.ui.editLockPushButton
@@ -339,32 +346,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Points that have been selected
         self.selected_points = []
 
-
-        # Span selection tool (used to select all points within a range on the x axis)
-        self.span_selector = SpanSelector(self.axes, self.on_span_select, 'horizontal', useblit=True,
-                                          rectprops=dict(alpha=0.5, facecolor='red'), button=3)
-        # self.span_selector.set_active(False)
-
-        # Rectangle selection tool
-        # self.rectangle_selector = RectangleSelector(self.axes, self.on_rectangle_select, drawtype='box', useblit=True)
-        # self.rectangle_selector.set_active(False)
+        # Span selection tool (used to select all points within a range
+        # on the x axis)
+        self.span_selector = SpanSelector(self.axes, self.on_span_select,
+                                          'horizontal', useblit=True,
+                                          rectprops=dict(alpha=0.5,
+                                                         facecolor='red'),
+                                          button=3)
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
         self.canvas.mpl_connect('button_release_event', self.on_release)
         self.canvas.mpl_connect('motion_notify_event', self.on_motion)
-        # self.canvas.mpl_connect('key_press_event', self.handle_key_press)
-
-
-        # self.buttonshortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+O"), self)
-        # self.buttonshortcut.setKey(QtCore.Qt.Key_Q)
-        # self.buttonshortcut.activated.connect(self.tulostele)
-
-        self.canvas.setFocusPolicy(QtCore.Qt.StrongFocus)
-        self.canvas.setFocus()
-        # self.canvas.mpl_connect('pick_event', self.onpick2)
-        # self.canvas.mpl_connect('pick_event', self.onpick1)
-
 
         # This customizes the toolbar buttons
         self.__fork_toolbar_buttons()
@@ -427,6 +420,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if self.current_element is None:
                 self.current_element = element
 
+    def remove_element(self, element):
+        self.elements.remove_element(element)
+
     def remove_current_element(self):
         for element in self.elements.get_elements():
             if element.get_widget().get_radio_button() == self.radios.checkedButton():
@@ -434,9 +430,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 # TODO: Don't show points when there is no element selected
                 self.current_element = None
                 return
-
-    def remove_element(self, element):
-        self.elements.remove_element(element)
 
     def import_elements(self):
         for layer in self.target.layers:
@@ -576,15 +569,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # self.y_coordinate_box.setFixedWidth(40)
         self.mpl_toolbar.addWidget(self.y_coordinate_box)
         self.y_coordinate_box.setEnabled(False)
-
-        # Rectangle selector button
-        # self.rectangle_select_button = QtWidgets.QToolButton(self)
-        # self.rectangle_select_button.clicked.connect(self.toggle_rectangle_selector)
-        # self.rectangle_select_button.setCheckable(True)
-        # # TODO: Temporary icon
-        # self.__icon_manager.set_icon(self.rectangle_select_button, "depth_profile_lim_all.svg")
-        # self.rectangle_select_button.setToolTip("Rectangle select")
-        # self.mpl_toolbar.addWidget(self.rectangle_select_button)
 
         # Point removal
         point_remove_action = QtWidgets.QAction("Remove point", self)
