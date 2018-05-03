@@ -2,7 +2,7 @@
 # TODO: Add licence information
 """
 Created on 23.3.2018
-Updated on 2.5.2018
+Updated on 3.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
@@ -25,7 +25,8 @@ class Detector:
     __slots__ = "name", "description", "date", "type", "calibration", "foils",\
                 "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
                 "angle_slope", "angle_offset", "path", "modification_time",\
-                "efficiencies", "efficiency_directory", "timeres"
+                "efficiencies", "efficiency_directory", "timeres", \
+                "detector_theta", "detector_fii"
 
     def __init__(self, name="Default", description="This a default detector.",
                  modification_time=datetime.datetime.now(), type="TOF",
@@ -45,7 +46,8 @@ class Detector:
                                          Element("Si", 28.09, 0.43)],
                                             1.0, 3.44)])],
                  tof_foils=[1, 2], virtual_size=(2.0, 5.0), tof_slope=1e-11,
-                 tof_offset=1e-9, angle_slope=0, angle_offset=0, timeres=250.0):
+                 tof_offset=1e-9, angle_slope=0, angle_offset=0,
+                 timeres=250.0, detector_theta=40, detector_fii=0):
         """Initialize a detector.
 
         Args:
@@ -71,6 +73,13 @@ class Detector:
         self.foils = foils
         self.tof_foils = tof_foils
         self.timeres = timeres
+        self.virtual_size = virtual_size
+        self.detector_theta = detector_theta
+        self.detector_fii = detector_fii
+        self.tof_slope = tof_slope
+        self.tof_offset =tof_offset
+        self.angle_slope = angle_slope
+        self.angle_offset = angle_offset
 
         self.efficiencies = []
         self.efficiency_directory = None

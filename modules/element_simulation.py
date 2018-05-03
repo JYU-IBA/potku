@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 2.5.2018
+Updated on 3.5.2018
 """
 import math
 
@@ -49,16 +49,18 @@ class ElementSimulation:
                  reference_density=4.98e22):
         """ Initializes ElementSimulation.
         Args:
+            recoil_element:
             beam: Beam object reference.
             target: Target object reference.
             detector: Detector object reference.
             run: Run object reference.
             name: Name of the element simulation.
+            description: Description of the ElementSimulation
             modification_time: A modification time in ISO 8601 format, without
                                information about the timezone.
             simulation_type: Type of simulation
             number_of_ions: Number of ions to be simulated.
-            number_of_preions: Number of preions.
+            number_of_preions: Number of ions in presimulation.
             number_of_scaling_ions: Number of scaling ions.
             number_of_recoils: Number of recoils.
             minimum_main_scattering_angle: Minimum angle of scattering.
@@ -67,6 +69,7 @@ class ElementSimulation:
             minimum_energy: Minimum energy.
             channel_width: Channel width.
             reference_density: Reference density.
+            number_of_ions_in_presimu: Number of ions in presimulation.
         """
         self.recoil_element = recoil_element
         self.beam = beam
@@ -101,7 +104,7 @@ class ElementSimulation:
         self.settings = {
             "simulation_type": self.simulation_type,
             "number_of_ions": self.number_of_ions,
-            "number_of_preions_in_presimu": self.number_of_preions,
+            "number_of_ions_in_presimu": self.number_of_preions,
             "number_of_scaling_ions": self.number_of_scaling_ions,
             "number_of_recoils": self.number_of_recoils,
             "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
@@ -111,7 +114,7 @@ class ElementSimulation:
             "beam": self.beam,
             "target": self.target,
             "detector": self.detector,
-            "recoil": None
+            "recoil_element": self.recoil_element
         }
 
         self.espe_settings = {
