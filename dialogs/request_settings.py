@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 20.4.2018
+Updated on 3.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -26,8 +26,9 @@ along with this program (file named 'LICENCE').
 Dialog for the request settings
 """
 
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
-             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
+             "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
 import os
@@ -123,7 +124,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
         self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
 
-        #        self.measuring_unit_settings.show(self.measurement_settings_widget)
         self.show_settings()
 
         # Add detector settings view to the settings view
@@ -133,8 +133,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.detector_settings_widget.ui.saveButton.clicked \
             .connect(lambda: self.__save_file("DETECTOR_SETTINGS"))
 
-        # Temporary foils list which holds all the information given in the foil dialog
-        # If user presses ok or apply, these vlues will be svaed into request's default detector
+        # Temporary foils list which holds all the information given in the
+        # foil dialog
+        # If user presses ok or apply, these values will be saved into
+        # request's default detector
         self.tmp_foil_info = []
 
         # List of foil indexes that are timing foils
@@ -157,12 +159,12 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             lambda: self.__remove_efficiency())
 
         # Calibration settings
-        self.detector_settings_widget.ui.loadCalibrationParametersButton.clicked.connect(
-            lambda: self.__load_file("CALIBRATION_SETTINGS"))
-        self.detector_settings_widget.ui.saveCalibrationParametersButton.clicked.connect(
-            lambda: self.__save_file("CALIBRATION_SETTINGS"))
-        self.detector_settings_widget.ui.executeCalibrationButton.clicked.connect(
-            self.__open_calibration_dialog)
+        self.detector_settings_widget.ui.loadCalibrationParametersButton.\
+            clicked.connect(lambda: self.__load_file("CALIBRATION_SETTINGS"))
+        self.detector_settings_widget.ui.saveCalibrationParametersButton.\
+            clicked.connect(lambda: self.__save_file("CALIBRATION_SETTINGS"))
+        self.detector_settings_widget.ui.executeCalibrationButton.clicked.\
+            connect(self.__open_calibration_dialog)
         self.detector_settings_widget.ui.executeCalibrationButton.setEnabled(
             not self.request.samples.measurements.is_empty())
         self.detector_settings_widget.ui.slopeLineEdit.setValidator(
@@ -200,21 +202,23 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.depth_profile_settings_widget.ui.saveButton.clicked.connect(
             lambda: self.__save_file("DEPTH_PROFILE_SETTINGS"))
 
-        self.depth_profile_settings_widget.ui.depthStepForStoppingLineEdit.setValidator(
-            double_validator)
-        self.depth_profile_settings_widget.ui.depthStepForOutputLineEdit.setValidator(
-            double_validator)
+        self.depth_profile_settings_widget.ui.depthStepForStoppingLineEdit.\
+            setValidator(double_validator)
+        self.depth_profile_settings_widget.ui.depthStepForOutputLineEdit.\
+            setValidator(double_validator)
 
-        self.depth_profile_settings_widget.ui.depthsForConcentrationScalingLineEdit_1.setValidator(
-            double_validator)
-        self.depth_profile_settings_widget.ui.depthsForConcentrationScalingLineEdit_2.setValidator(
-            double_validator)
+        self.depth_profile_settings_widget.ui.\
+            depthsForConcentrationScalingLineEdit_1.setValidator(
+                double_validator)
+        self.depth_profile_settings_widget.ui.\
+            depthsForConcentrationScalingLineEdit_2.setValidator(
+                double_validator)
 
         self.exec_()
 
     def _add_new_foil(self, layout):
         foil_widget = FoilWidget(self)
-        new_foil = CircularFoil("Foil")
+        new_foil = CircularFoil("Foil", layers=[])
         self.tmp_foil_info.append(new_foil)
         foil_widget.ui.foilButton.clicked.connect(
             lambda: self._open_composition_dialog())
@@ -242,8 +246,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
     def _check_and_add(self):
         check_box = self.sender()
         for i in range(len(self.detector_structure_widgets)):
-            if self.detector_structure_widgets[
-                i].ui.timingFoilCheckBox is self.sender():
+            if self.detector_structure_widgets[i].\
+                    ui.timingFoilCheckBox is self.sender():
                 if check_box.isChecked():
                     if self.tof_foils:
                         if self.tof_foils[0] > i:
@@ -282,7 +286,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.sender().setText(self.tmp_foil_info[foil_object_index].name)
 
     def __add_efficiency(self):
-        """Adds efficiency file in detector's efficiency directory and updates settings view.
+        """Adds efficiency file in detector's efficiency directory and
+        updates settings view.
         """
         new_efficiency_file = open_file_dialog(self,
                                                self.request.default_folder,
@@ -296,9 +301,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_detector.get_efficiency_files())
 
     def __remove_efficiency(self):
-        """Removes efficiency file from detector's efficiency directory and updates settings view.
+        """Removes efficiency file from detector's efficiency directory and
+        updates settings view.
         """
-        selected_efficiency_file = self.detector_settings_widget.ui.efficiencyListWidget.currentItem().text()
+        selected_efficiency_file = self.detector_settings_widget.ui.\
+            efficiencyListWidget.currentItem().text()
         self.request.default_detector.remove_efficiency_file(
             selected_efficiency_file)
         self.detector_settings_widget.ui.efficiencyListWidget.clear()
@@ -359,7 +366,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         """Opens file dialog and loads and shows selected ini file's values.
 
         Args:
-            settings_type: (string) selects which settings file type will be loaded.
+            settings_type: (string) selects which settings file type will be
+                           loaded.
                            Can be "MEASURING_UNIT_SETTINGS",
                            "DEPTH_PROFILE_SETTINGS" or "CALIBRATION_SETTINGS"
         """
@@ -440,10 +448,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             if 0 < len(self.tof_foils) < 2:
                 self._enable_checkboxes()
         self.tmp_foil_info.remove(foil_to_be_deleted)
-        # for j in range(len(self.tmp_foil_info)):
-        #     for k in range(len(tof_foils)):
-        #         if self.tmp_foil_info[j] is tof_foils[k] and j not in self.tof_foils:
-        #             self.tof_foils.append(j)
         for i in range(len(self.tof_foils)):
             if self.tof_foils[i] > index_of_item_to_be_deleted:
                 self.tof_foils[i] = self.tof_foils[i] - 1
@@ -452,8 +456,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         foil_widget.deleteLater()
 
     def update_and_close_settings(self):
-        """Updates measuring settings values with the dialog's values and saves them
-        to default ini file.
+        """Updates measuring settings values with the dialog's values and
+        saves them to default settings file.
         """
         try:
             self.__update_settings()
@@ -472,36 +476,54 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             pass
 
     def __update_settings(self):
-        """Reads values from Request Settings dialog and updates them in default objects.
+        """Reads values from Request Settings dialog and updates them in
+        default objects.
         """
         # TODO: Proper checking for all setting values
         try:
             # Measurement settings
-            isotope_index = self.measurement_settings_widget.isotopeComboBox.currentIndex()
+            isotope_index = self.measurement_settings_widget.isotopeComboBox.\
+                currentIndex()
             if isotope_index != -1:
-                isotope_data = self.measurement_settings_widget.isotopeComboBox.itemData(
-                    isotope_index)
+                isotope_data = self.measurement_settings_widget.\
+                    isotopeComboBox.itemData(isotope_index)
                 self.request.default_measurement.ion = Element(
                     self.measurement_settings_widget.beamIonButton.text(),
                     isotope_data[0])
-                self.request.default_measurement.measurement_name = self.measurement_settings_widget.nameLineEdit.text()
-                self.request.default_measurement.description = self.measurement_settings_widget.descriptionLineEdit.toPlainText()
-                self.request.default_measurement.energy = self.measurement_settings_widget.energyLineEdit.text()
-                self.request.default_measurement.charge = self.measurement_settings_widget.chargeLineEdit.text()
+                self.request.default_measurement.measurement_name = \
+                    self.measurement_settings_widget.nameLineEdit.text()
+                self.request.default_measurement.description = \
+                    self.measurement_settings_widget.descriptionLineEdit.\
+                    toPlainText()
+                self.request.default_measurement.energy = \
+                    self.measurement_settings_widget.energyLineEdit.text()
+                self.request.default_measurement.charge = \
+                    self.measurement_settings_widget.chargeLineEdit.text()
                 self.request.default_measurement.spot_size = [
                     self.measurement_settings_widget.spotSizeXLineEdit.text(),
                     self.measurement_settings_widget.spotSizeYLineEdit.text()]
-                self.request.default_measurement.divergence = self.measurement_settings_widget.divergenceLineEdit.text()
+                self.request.default_measurement.divergence = \
+                    self.measurement_settings_widget.divergenceLineEdit.text()
                 self.request.default_measurement.profile = MeasurementProfile(
-                    self.measurement_settings_widget.profileComboBox.currentIndex())
-                self.request.default_measurement.energy_dist = self.measurement_settings_widget.energyDistLineEdit.text()
-                self.request.default_measurement.fluence = self.measurement_settings_widget.fluenceLineEdit.text()
-                self.request.default_measurement.current = self.measurement_settings_widget.currentLineEdit.text()
-                self.request.default_measurement.beam_time = self.measurement_settings_widget.timeLineEdit.text()
-                self.request.default_measurement.detector_theta = self.measurement_settings_widget.detectorThetaLineEdit.text()
-                self.request.default_measurement.detector_fii = self.measurement_settings_widget.detectorFiiLineEdit.text()
-                self.request.default_measurement.target_theta = self.measurement_settings_widget.targetThetaLineEdit.text()
-                self.request.default_measurement.target_fii = self.measurement_settings_widget.targetFiiLineEdit.text()
+                    self.measurement_settings_widget.profileComboBox.
+                    currentIndex())
+                self.request.default_measurement.energy_dist = \
+                    self.measurement_settings_widget.energyDistLineEdit.text()
+                self.request.default_measurement.fluence = \
+                    self.measurement_settings_widget.fluenceLineEdit.text()
+                self.request.default_measurement.current = \
+                    self.measurement_settings_widget.currentLineEdit.text()
+                self.request.default_measurement.beam_time = \
+                    self.measurement_settings_widget.timeLineEdit.text()
+                self.request.default_measurement.detector_theta = \
+                    self.measurement_settings_widget.detectorThetaLineEdit.\
+                    text()
+                self.request.default_measurement.detector_fii = \
+                    self.measurement_settings_widget.detectorFiiLineEdit.text()
+                self.request.default_measurement.target_theta = \
+                    self.measurement_settings_widget.targetThetaLineEdit.text()
+                self.request.default_measurement.target_fii = \
+                    self.measurement_settings_widget.targetFiiLineEdit.text()
 
                 self.request.default_measurement.save_settings(
                     self.request.default_folder + os.sep +
@@ -520,7 +542,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 self.detector_settings_widget.typeComboBox.currentText()
             self.calibration_settings.set_settings(
                 self.detector_settings_widget)
-            self.request.default_detector.calibration = self.calibration_settings
+            self.request.default_detector.calibration = \
+                self.calibration_settings
             # Detector foils
             self.calculate_distance()
             self.request.default_detector.foils = self.tmp_foil_info
@@ -531,21 +554,32 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 self.request.default_detector_folder, "Default.detector"))
 
             # Simulation settings
-            self.request.default_simulation.name = self.simulation_settings_widget.nameLineEdit.text()
-            self.request.default_simulation.description = self.simulation_settings_widget.descriptionLineEdit.toPlainText()
+            self.request.default_simulation.name = \
+                self.simulation_settings_widget.nameLineEdit.text()
+            self.request.default_simulation.description = \
+                self.simulation_settings_widget.descriptionLineEdit.\
+                toPlainText()
             self.request.default_simulation.mode = \
                 self.simulation_settings_widget.modeComboBox.currentText()
             self.request.default_simulation.simulation_type = \
                 self.simulation_settings_widget \
                     .typeOfSimulationComboBox.currentText()
-            self.request.default_simulation.scatter = self.simulation_settings_widget.scatterLineEdit.text()
-            self.request.default_simulation.main_scatter = self.simulation_settings_widget.mainScatterLineEdit.text()
-            self.request.default_simulation.energy = self.simulation_settings_widget.energyLineEdit.text()
-            self.request.default_simulation.no_of_ions = self.simulation_settings_widget.noOfIonsLineEdit.text()
-            self.request.default_simulation.no_of_preions = self.simulation_settings_widget.noOfPreionsLineEdit.text()
-            self.request.default_simulation.seed = self.simulation_settings_widget.seedLineEdit.text()
-            self.request.default_simulation.no_of_recoils = self.simulation_settings_widget.noOfRecoilsLineEdit.text()
-            self.request.default_simulation.no_of_scaling = self.simulation_settings_widget.noOfScalingLineEdit.text()
+            self.request.default_simulation.scatter = \
+                self.simulation_settings_widget.scatterLineEdit.text()
+            self.request.default_simulation.main_scatter = \
+                self.simulation_settings_widget.mainScatterLineEdit.text()
+            self.request.default_simulation.energy = \
+                self.simulation_settings_widget.energyLineEdit.text()
+            self.request.default_simulation.no_of_ions = \
+                self.simulation_settings_widget.noOfIonsLineEdit.text()
+            self.request.default_simulation.no_of_preions = \
+                self.simulation_settings_widget.noOfPreionsLineEdit.text()
+            self.request.default_simulation.seed = \
+                self.simulation_settings_widget.seedLineEdit.text()
+            self.request.default_simulation.no_of_recoils = \
+                self.simulation_settings_widget.noOfRecoilsLineEdit.text()
+            self.request.default_simulation.no_of_scaling = \
+                self.simulation_settings_widget.noOfScalingLineEdit.text()
 
             # TODO Simulation doesn't have to_file method yet.
 #            self.request.default_simulation.to_file(
@@ -564,8 +598,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.depth_profile_settings.save_settings()
         except TypeError:
             QtWidgets.QMessageBox.question(self, "Warning",
-                                           "Some of the setting values have not been set.\n" +
-                                           "Please input setting values to save them.",
+                                           "Some of the setting values have "
+                                           "not been set.\n" +
+                                           "Please input setting values to "
+                                           "save them.",
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
             raise TypeError
@@ -575,7 +611,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         to a combobox.
 
         Args:
-            button: button whose text is changed accordingly to the made selection.
+            button: button whose text is changed accordingly to the made
+            selection.
         """
         dialog = ElementSelectionDialog()
         if dialog.element:

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.3.2018
-Updated on 12.4.2018
+Updated on 3.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -17,6 +17,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from widgets.matplotlib.base import MatplotlibWidget
 
+
 class _CompositionWidget(MatplotlibWidget):
     """This class works as a basis for TargetCompositionWidget and
     FoilCompositionWidget classes. Using this widget the user can edit
@@ -24,7 +25,7 @@ class _CompositionWidget(MatplotlibWidget):
     as such.
     """
 
-    def __init__(self, parent, icon_manager):
+    def __init__(self, parent, layers, icon_manager):
         """Initialize a CompositionWidget.
 
         Args:
@@ -41,9 +42,10 @@ class _CompositionWidget(MatplotlibWidget):
 
         self.__icon_manager = icon_manager
         self.__fork_toolbar_buttons()
-        self.__layer_colors = []
-        self.layers = []
+        self.layers = layers
         self.on_draw()
+        if self.layers:
+            self.__update_figure()
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -79,7 +81,7 @@ class _CompositionWidget(MatplotlibWidget):
         self.__button_zoom.setChecked(False)
 
     def __fork_toolbar_buttons(self):
-        super().fork_toolbar_buttons()
+        # super().fork_toolbar_buttons()
         self.mpl_toolbar.mode_tool = 0
         self.__tool_label = self.mpl_toolbar.children()[24]
         self.__button_drag = self.mpl_toolbar.children()[12]
@@ -90,19 +92,12 @@ class _CompositionWidget(MatplotlibWidget):
         # Make own buttons
         self.mpl_toolbar.addSeparator()
 
-        # Black magic to make the following action work
-        temp_button = QtWidgets.QToolButton(self)
-        temp_button.clicked.connect(lambda: self.__add_layer())
-        self.mpl_toolbar.removeAction(self.mpl_toolbar.addWidget(temp_button))
-
-        # Action for adding a new layer
-        action_add_layer = QtWidgets.QAction("Add layer", self)
-        action_add_layer.triggered.connect(lambda: self.__add_layer())
-        action_add_layer.setToolTip("Add layer")
+        # Button for adding a new layer
+        self.button_add_layer = QtWidgets.QToolButton(self)
+        self.button_add_layer.clicked.connect(lambda: (self.__add_layer()))
         # TODO: Change icon!
-        self.__icon_manager.set_icon(action_add_layer, "add.png")
-        self.mpl_toolbar.addAction(action_add_layer)
-
+        self.__icon_manager.set_icon(self.button_add_layer, "add.png")
+        self.mpl_toolbar.addWidget(self.button_add_layer)
 
     def __add_layer(self, position = -1):
         """Adds a new layer to the list of layers.
@@ -119,30 +114,22 @@ class _CompositionWidget(MatplotlibWidget):
         dialog = LayerPropertiesDialog()
 
         if dialog.layer:
-            layer_color = dialog.layer_color
             self.layers.append(dialog.layer)
-            self.__layer_colors.append(layer_color)
             self.__update_figure()
 
     def __update_figure(self):
         next_layer_position = 0
+        is_next_color_dark = True
         for idx, layer in enumerate(self.layers):
             layer_patch = matplotlib.patches.Rectangle(
                 (next_layer_position, 0),
                 layer.thickness, 1,
-                color = self.__layer_colors[idx]
+                color = (0.85, 0.85, 0.85) if is_next_color_dark else
+                (0.9, 0.9, 0.9)
             )
+            if is_next_color_dark: is_next_color_dark = False
+            else: is_next_color_dark = True
             self.axes.add_patch(layer_patch)
-
-            # Don't add a line before the first layer.
-            if next_layer_position != 0:
-                # Add a line between layers.
-                layer_line = matplotlib.patches.ConnectionPatch(
-                    (next_layer_position, 0),
-                    (next_layer_position, 1),
-                    coordsA="data"
-                )
-                self.axes.add_line(layer_line)
 
             # Put annotation in the middle of the rectangular patch.
             self.axes.annotate(layer.name,
@@ -167,10 +154,10 @@ class TargetCompositionWidget(_CompositionWidget):
                           widget.
             icon_manager: An icon manager class object.
         """
+        self.foil_layers = target.layers
+        _CompositionWidget.__init__(self, parent, self.foil_layers,
+                                    icon_manager)
 
-        _CompositionWidget.__init__(self, parent, icon_manager)
-
-        self.layers = target.layers
         self.canvas.manager.set_title("Target composition")
 
 
@@ -185,7 +172,8 @@ class FoilCompositionWidget(_CompositionWidget):
             icon_manager: An icon manager class object.
         """
 
-        _CompositionWidget.__init__(self, parent, icon_manager)
+        self.foil_layers = foil.layers
+        _CompositionWidget.__init__(self, parent, self.foil_layers,
+                                    icon_manager)
 
-        self.layers = foil.layers
         self.canvas.manager.set_title("Foil composition")

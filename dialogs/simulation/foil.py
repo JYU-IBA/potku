@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2018
-Updated on 26.4.2018
+Updated on 3.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
@@ -105,11 +105,13 @@ class FoilDialog(QtWidgets.QDialog):
     def _save_foil_info_and_close(self):
         if self.foil_type_changed:
             if self.foil_type is CircularFoil:
-                new_foil = RectangularFoil(self.ui.nameEdit.text())
+                new_foil = RectangularFoil(self.ui.nameEdit.text(),
+                                           layers=self.foil.layers)
                 new_foil.size = (self.first_dimension_edit.text(),
                                  self.second_dimension_edit.text())
             else:
-                new_foil = CircularFoil(self.ui.nameEdit.text())
+                new_foil = CircularFoil(self.ui.nameEdit.text(),
+                                        layers=self.foil.layers)
                 new_foil.diameter = self.first_dimension_edit.text()
             new_foil.distance = self.foils[self.index].distance
             self.foils[self.index] = new_foil
