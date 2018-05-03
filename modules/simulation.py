@@ -10,6 +10,7 @@ Simulation.py runs the MCERD simulation with a command file.
 """
 import re
 
+from modules.element_simulation import ElementSimulation
 from modules.target import Target
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
@@ -72,7 +73,9 @@ class Simulations:
                 if sample.simulations.simulations[key].directory == \
                         plain_name:
                     return simulation  # simulation = None
-            simulation = Simulation(self.request, plain_name)
+            simulation = Simulation(self.request, plain_name,
+                                    run=self.request.default_run,
+                                    detector=self.request.default_detector)
             simulation.create_folder_structure(simulation_folder)
             sample.simulations.simulations[tab_id] = simulation
             self.request.samples.simulations.simulations[tab_id] = simulation
@@ -98,17 +101,21 @@ class Simulations:
 
 class Simulation:
 
-    def __init__(self, request, name, tab_id=-1, description=""):
+    def __init__(self, request, name, tab_id=-1, description="", run=None,
+                 detector=None):
         self.request = request
         self.tab_id = tab_id
         self.name = name
         self.description = description
+        self.element_simulations = {}
+
+        self.run = run
+        self.target = Target()
+        self.detector = detector
 
         self.name_prefix = "MC_simulation_"
         self.serial_number = 0
         self.directory = None
-
-        self.target = Target()
 
     def create_folder_structure(self, simulation_folder_path):
         self.directory = simulation_folder_path
@@ -136,3 +143,14 @@ class Simulation:
             return
         # Rename any simulation related files.
         pass
+
+    def add_element_simulation(self, element):
+        """Adds ElementSimulation to Simulation.
+
+        Args:
+            element: Element that is simulated.
+        """
+        element_simulation = ElementSimulation(element, self.run.beam,
+                                               self.target,
+                                               self.detector, self.run)
+        self.element_simulations[element.symbol] = element_simulation

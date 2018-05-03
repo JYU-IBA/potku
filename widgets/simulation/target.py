@@ -46,7 +46,9 @@ class TargetWidget(QtWidgets.QWidget):
         self.target = target
 
         TargetCompositionWidget(self, self.target, icon_manager)
-        self.recoil_widget = RecoilAtomDistributionWidget(self, self.target,
+        self.recoil_widget = RecoilAtomDistributionWidget(self,
+                                                          self.simulation,
+                                                          self.target,
                                                           icon_manager)
         self.ui.recoilListWidget.hide()
         self.ui.editLockPushButton.hide()

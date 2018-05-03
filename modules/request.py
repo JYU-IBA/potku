@@ -23,6 +23,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+from modules.run import Run
+
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen " \
              "\n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
@@ -66,7 +68,7 @@ class Request:
         self.statusbar = statusbar
         self.samples = Samples(self)
 
-        self.default_beam = Beam()
+        self.default_run = Run()
         self.default_detector = Detector()
         self.default_target = Target()
 
