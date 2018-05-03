@@ -150,7 +150,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Efficiency files
         self.detector_settings_widget.ui.efficiencyListWidget.addItems(
-            self.request.detector.get_efficiency_files())
+            self.request.default_detector.get_efficiency_files())
         self.detector_settings_widget.ui.addEfficiencyButton.clicked.connect(
             lambda: self.__add_efficiency())
         self.detector_settings_widget.ui.removeEfficiencyButton.clicked.connect(
@@ -169,8 +169,12 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             double_validator)
         self.detector_settings_widget.ui.offsetLineEdit.setValidator(
             double_validator)
-
         self.calibration_settings.show(self.detector_settings_widget)
+
+        self.request.default_detector = self.request.default_detector.from_file(
+            os.path.join(self.request.directory,
+                         self.request.default_detector_folder,
+                         "Default.detector"))
 
         # Add simulation settings view to the settings view
         self.simulation_settings_widget = SimulationSettingsWidget()
@@ -230,7 +234,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         layout.addWidget(target)
         for i in range(4):
             foil_widget = self._add_new_foil(layout)
-            for index in self.request.detector.tof_foils:
+            for index in self.request.default_detector.tof_foils:
                 if index == i:
                     foil_widget.ui.timingFoilCheckBox.setChecked(True)
         return layout
@@ -286,19 +290,20 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                "Efficiency File (*.eff)")
         if not new_efficiency_file:
             return
-        self.request.detector.add_efficiency_file(new_efficiency_file)
+        self.request.default_detector.add_efficiency_file(new_efficiency_file)
         self.detector_settings_widget.ui.efficiencyListWidget.clear()
         self.detector_settings_widget.ui.efficiencyListWidget.addItems(
-            self.request.detector.get_efficiency_files())
+            self.request.default_detector.get_efficiency_files())
 
     def __remove_efficiency(self):
         """Removes efficiency file from detector's efficiency directory and updates settings view.
         """
         selected_efficiency_file = self.detector_settings_widget.ui.efficiencyListWidget.currentItem().text()
-        self.request.detector.remove_efficiency_file(selected_efficiency_file)
+        self.request.default_detector.remove_efficiency_file(
+            selected_efficiency_file)
         self.detector_settings_widget.ui.efficiencyListWidget.clear()
         self.detector_settings_widget.ui.efficiencyListWidget.addItems(
-            self.request.detector.get_efficiency_files())
+            self.request.default_detector.get_efficiency_files())
 
     def __open_calibration_dialog(self):
         measurements = [self.request.measurements.get_key_value(key)
@@ -410,7 +415,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             elif settings_type == "SIMULATION_SETTINGS":
                 self.request.default_simulation.save_settings(filename)
             elif settings_type == "DETECTOR_SETTINGS":
-                self.request.detector.save_settings(filename)
+                self.request.default_detector.save_settings(filename)
             else:
                 settings.set_settings(self.measurement_settings_widget)
                 settings.save_settings(filename)
@@ -507,22 +512,23 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 #                    "Default.measurement")
 
             # Detector settings
-            self.request.detector.name = self.detector_settings_widget.nameLineEdit.text()
-            self.request.detector.description = self.detector_settings_widget.descriptionLineEdit.toPlainText()
-            self.request.detector.type = \
+            self.request.default_detector.name = \
+                self.detector_settings_widget.nameLineEdit.text()
+            self.request.default_detector.description = \
+                self.detector_settings_widget.descriptionLineEdit.toPlainText()
+            self.request.default_detector.detector_type = \
                 self.detector_settings_widget.typeComboBox.currentText()
             self.calibration_settings.set_settings(
                 self.detector_settings_widget)
-            self.request.detector.calibration = self.calibration_settings
+            self.request.default_detector.calibration = self.calibration_settings
             # Detector foils
             self.calculate_distance()
-            self.request.detector.foils = self.tmp_foil_info
+            self.request.default_detector.foils = self.tmp_foil_info
             # Tof foils
-            self.request.detector.tof_foils = self.tof_foils
+            self.request.default_detector.tof_foils = self.tof_foils
 
-            self.request.detector.to_file(
-                self.request.default_folder + os.sep + "Detector" + os.sep +
-                "Default.detector")
+            self.request.default_detector.to_file(os.path.join(
+                self.request.default_detector_folder, "Default.detector"))
 
             # Simulation settings
             self.request.default_simulation.name = self.simulation_settings_widget.nameLineEdit.text()

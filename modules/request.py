@@ -69,7 +69,6 @@ class Request:
         self.samples = Samples(self)
 
         self.default_run = Run()
-        self.default_detector = Detector()
         self.default_target = Target()
 
         self.__tabs = tabs
@@ -91,8 +90,9 @@ class Request:
         self.default_detector_folder = os.path.join(self.default_folder,
                                                     "Detector")
         # TODO: Add folder creation as a function call
-        self.detector = Detector(self)
-        self.detector.create_folder_structure(self.default_detector_folder)
+        self.default_detector = Detector(
+            os.path.join(self.default_detector_folder, "Default.detector"))
+        self.default_detector.create_folder_structure(self.default_detector_folder)
         # self.detector.to_file(os.path.join(directory, "default.detector"))
         # self.detector.save_settings(self.default_folder + os.sep + "
         # Detector" + os.sep + self.detector.name)
