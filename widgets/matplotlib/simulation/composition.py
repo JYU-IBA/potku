@@ -41,7 +41,6 @@ class _CompositionWidget(MatplotlibWidget):
 
         self.__icon_manager = icon_manager
         self.__fork_toolbar_buttons()
-        self.__layer_colors = []
         self.layers = []
         self.on_draw()
 
@@ -111,30 +110,21 @@ class _CompositionWidget(MatplotlibWidget):
         dialog = LayerPropertiesDialog()
 
         if dialog.layer:
-            layer_color = dialog.layer_color
             self.layers.append(dialog.layer)
-            self.__layer_colors.append(layer_color)
             self.__update_figure()
 
     def __update_figure(self):
         next_layer_position = 0
+        is_next_color_dark = True
         for idx, layer in enumerate(self.layers):
             layer_patch = matplotlib.patches.Rectangle(
                 (next_layer_position, 0),
                 layer.thickness, 1,
-                color = self.__layer_colors[idx]
+                color = (0.85, 0.85, 0.85) if is_next_color_dark else (0.9, 0.9, 0.9)
             )
+            if is_next_color_dark: is_next_color_dark = False
+            else: is_next_color_dark = True
             self.axes.add_patch(layer_patch)
-
-            # Don't add a line before the first layer.
-            if next_layer_position != 0:
-                # Add a line between layers.
-                layer_line = matplotlib.patches.ConnectionPatch(
-                    (next_layer_position, 0),
-                    (next_layer_position, 1),
-                    coordsA="data"
-                )
-                self.axes.add_line(layer_line)
 
             # Put annotation in the middle of the rectangular patch.
             self.axes.annotate(layer.name,
