@@ -423,14 +423,23 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.element_manager.remove_element_simulation(element_simulation)
 
     def remove_current_element(self):
-        element_simulation = self.element_manager\
-            .get_element_simulation_with_radio_button(
-                self.radios.checkedButton())
-        self.remove_element(element_simulation)
-        # TODO: Don't show points when there is no element selected
-        self.current_recoil_element = None
-        self.update_plot()
-        return
+        confirm_box = QtWidgets.QMessageBox()
+        confirm_box.setIcon(QtWidgets.QMessageBox.Warning)
+        yes_button = confirm_box.addButton(QtWidgets.QMessageBox.Yes)
+        confirm_box.addButton(QtWidgets.QMessageBox.Cancel)
+        confirm_box.setText("Are you sure you want to remove the element?")
+        confirm_box.setWindowTitle("Confirm")
+
+        confirm_box.exec()
+        if confirm_box.clickedButton() == yes_button:
+            element_simulation = self.element_manager\
+                .get_element_simulation_with_radio_button(
+                    self.radios.checkedButton())
+            self.remove_element(element_simulation)
+            self.current_recoil_element = None
+            self.update_plot()
+        else:
+            return
 
     def import_elements(self):
         for layer in self.target.layers:
