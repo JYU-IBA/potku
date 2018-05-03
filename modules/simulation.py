@@ -107,7 +107,7 @@ class Simulation:
         self.tab_id = tab_id
         self.name = name
         self.description = description
-        self.element_simulations = {}
+        self.element_simulations = []
 
         self.run = run
         self.target = Target()
@@ -144,13 +144,14 @@ class Simulation:
         # Rename any simulation related files.
         pass
 
-    def add_element_simulation(self, element):
+    def add_element_simulation(self, recoil_element):
         """Adds ElementSimulation to Simulation.
 
         Args:
-            element: Element that is simulated.
+            recoil_element: RecoilElement that is simulated.
         """
-        element_simulation = ElementSimulation(element, self.run.beam,
+        element_simulation = ElementSimulation(recoil_element, self.run.beam,
                                                self.target,
                                                self.detector, self.run)
-        self.element_simulations[element.symbol] = element_simulation
+        self.element_simulations.append(element_simulation)
+        return element_simulation

@@ -32,12 +32,12 @@ class ElementSimulation:
                 "minimum_scattering_angle", \
                 "minimum_main_scattering_angle", "minimum_energy", \
                 "simulation_mode", "seed_number", \
-                "element", "recoil_atoms", "mcerd_objects", "get_espe", \
+                "recoil_element", "recoil_atoms", "mcerd_objects", "get_espe", \
                 "channel_width", "reference_density", "beam", "target", \
                 "detector", "__command", "__process", "settings", \
                 "espe_settings", "description", "run"
 
-    def __init__(self, element, beam, target, detector, run, name="",
+    def __init__(self, recoil_element, beam, target, detector, run, name="",
                  description="",
                  modification_time=datetime.datetime.now(),
                  simulation_type="rec",
@@ -68,7 +68,7 @@ class ElementSimulation:
             channel_width: Channel width.
             reference_density: Reference density.
         """
-        self.element = element
+        self.recoil_element = recoil_element
         self.beam = beam
         self.target = target
         self.detector = detector
@@ -188,19 +188,31 @@ class ElementSimulation:
         cls(type, element, profile, name, description, modification_time)
         # TODO: update the cls call above
 
-    def to_file(self, file_path):
-
+    def to_file(self, directory):
+        file_path = os.path.join(directory, self.recoil_element.get_element().symbol + ".rec")
         # Convert datetime object to string. Put the string in ISO 8601 format
         #  without information about the timezone. TODO: Add timezone
+        element = self.recoil_element.get_element()
+        if element.isotope:
+            name = str(element.isotope) + element.symbol
+        else:
+            name = element.symbol
         obj = {
-            "name": self.name,
+            "name": name,
             "description": self.description,
             "modification_time": datetime.datetime.now().isoformat(
                 timespec="seconds"),
             "type": self.simulation_type,
-            "element": self.element,
-            "profile": []  # TODO: Finish this.
+            "element": self.recoil_element.get_element().symbol,
+            "profile": []
         }
+
+        for point in self.recoil_element.get_points():
+            point_obj = {
+                "Point": str(round(point.get_x(), 2)) + " " +
+                         str(round(point.get_y(), 4))
+            }
+            obj["profile"].append(point_obj)
 
         with open(file_path, "w") as file:
             json.dump(obj, file, indent=4)
@@ -225,3 +237,6 @@ class ElementSimulation:
         Calculate the energy spectrum from the mcred result file.
         """
         self.get_espe = GetEspe(self.espe_settings, self.mcerd_objects)
+
+    def get_recoil_element(self):
+        return self.recoil_element
