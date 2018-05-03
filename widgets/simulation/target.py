@@ -50,23 +50,18 @@ class TargetWidget(QtWidgets.QWidget):
                                                           self.simulation,
                                                           self.target,
                                                           icon_manager)
+
+        icon_manager.set_icon(self.ui.editPushButton, "edit.svg")
+        self.ui.editPushButton.setToolTip("Edit")
         self.ui.recoilListWidget.hide()
         self.ui.editLockPushButton.hide()
+        self.ui.elementInfoWidget.hide()
 
         self.ui.exportElementsButton.clicked.connect(
             self.recoil_widget.import_elements)
 
-        self.ui.targetRadioButton.clicked.connect(
-            lambda: {self.ui.stackedWidget.setCurrentIndex(0),
-                     self.ui.recoilListWidget.hide(),
-                     self.ui.editLockPushButton.hide(),
-                     self.ui.exportElementsButton.show()})
-        self.ui.recoilRadioButton.clicked.connect(
-            lambda: {self.ui.stackedWidget.setCurrentIndex(1),
-                     self.ui.recoilListWidget.show(),
-                     self.ui.editLockPushButton.show(),
-                     self.ui.exportElementsButton.hide(),
-                     self.recoil_widget.update_layer_borders()})
+        self.ui.targetRadioButton.clicked.connect(self.switch_to_target)
+        self.ui.recoilRadioButton.clicked.connect(self.switch_to_recoil)
 
         self.ui.targetRadioButton.setChecked(True)
         self.ui.stackedWidget.setCurrentIndex(0)
@@ -78,6 +73,21 @@ class TargetWidget(QtWidgets.QWidget):
         self.del_points = None
 
         self.set_shortcuts()
+
+    def switch_to_target(self):
+        self.ui.stackedWidget.setCurrentIndex(0)
+        self.ui.recoilListWidget.hide()
+        self.ui.editLockPushButton.hide()
+        self.ui.exportElementsButton.show()
+        self.ui.elementInfoWidget.hide()
+
+    def switch_to_recoil(self):
+        self.ui.stackedWidget.setCurrentIndex(1)
+        self.recoil_widget.update_layer_borders()
+        self.ui.exportElementsButton.hide()
+        self.ui.recoilListWidget.show()
+        self.ui.editLockPushButton.show()
+        self.ui.elementInfoWidget.show()
 
     def __save_target_and_recoils(self):
         target_name = "temp"

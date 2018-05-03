@@ -87,7 +87,6 @@ class ElementSimulation:
         self.minimum_energy = minimum_energy
         self.seed_number = seed_number
         self.channel_width = channel_width
-        self.reference_density = reference_density
 
         self.__command = os.path.join("external", "Potku-bin", "mcerd" +
                                       (".exe" if platform.system() == "Windows"
@@ -119,7 +118,7 @@ class ElementSimulation:
             "detector": self.detector,
             "target": self.target,
             "ch": self.channel_width,
-            "reference_density": self.reference_density,
+            "reference_density": self.recoil_element.get_reference_density(),
             "fluence": self.run.fluence,
             "timeres": self.detector.timeres,
             "solid": self.calculate_solid()

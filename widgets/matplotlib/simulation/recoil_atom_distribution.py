@@ -20,6 +20,7 @@ from widgets.matplotlib.base import MatplotlibWidget
 from dialogs.element_selection import ElementSelectionDialog
 from dialogs.simulation.recoil_element_selection import \
     RecoilElementSelectionDialog
+from dialogs.simulation.recoil_info_dialog import RecoilInfoDialog
 import modules.general_functions as general
 import modules.element
 
@@ -73,12 +74,24 @@ class RecoilElement:
             points: List of Point class objects.
         """
         self._element = element
+        self._name = ""
+        self._description = ""
+        self._reference_density = 4.98e22
         self._points = sorted(points)
         self._widget = widget
         self._edit_lock_on = True
 
     def get_element(self):
         return self._element
+
+    def get_name(self):
+        return self._name
+
+    def get_reference_density(self):
+        return self._reference_density
+
+    def get_description(self):
+        return self._description
 
     def delete_widget(self):
         self._widget.deleteLater()
@@ -288,29 +301,32 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.target = target
         self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
 
+        self.parent_ui = parent.ui
         # Setting up the element scroll area
         widget = QtWidgets.QWidget()
         self.recoil_vertical_layout = QtWidgets.QVBoxLayout()
         widget.setLayout(self.recoil_vertical_layout)
 
         scroll_vertical_layout = QtWidgets.QVBoxLayout()
-        parent.ui.recoilScrollAreaContents.setLayout(scroll_vertical_layout)
+        self.parent_ui.recoilScrollAreaContents.setLayout(scroll_vertical_layout)
 
         scroll_vertical_layout.addWidget(widget)
         scroll_vertical_layout.addItem(
             QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum,
                                   QtWidgets.QSizePolicy.Expanding))
 
-        parent.ui.addPushButton.clicked.connect(self.add_element)
-        self.remove_push_button = parent.ui.removePushButton
+        self.parent_ui.addPushButton.clicked.connect(self.add_element)
+        self.remove_push_button = self.parent_ui.removePushButton
         self.remove_push_button.clicked.connect(self.remove_current_element)
 
         self.radios = QtWidgets.QButtonGroup(self)
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
             self.choose_element)
 
+        self.parent_ui.editPushButton.clicked.connect(self.testaa)
+
         # TODO: Set lock on only when simulation has been run
-        self.edit_lock_push_button = parent.ui.editLockPushButton
+        self.edit_lock_push_button = self.parent_ui.editLockPushButton
         self.edit_lock_push_button.setEnabled(False)
         self.edit_lock_push_button.clicked.connect(self.unlock_edit)
         self.edit_lock_on = True
@@ -359,6 +375,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.on_draw()
 
+    def testaa(self):
+        dialog = RecoilInfoDialog()
+        print("jaa")
+
     def save_recoils(self, directory):
         for element_simulation in self.element_manager\
                 .get_element_simulations():
@@ -387,8 +407,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
     def choose_element(self, button, checked):
         if checked:
-            self.current_recoil_element = self.element_manager\
-                .get_element_simulation_with_radio_button(button)\
+            current_element_simulation = self\
+                .element_manager\
+                .get_element_simulation_with_radio_button(button)
+            self.current_recoil_element = current_element_simulation\
                 .get_recoil_element()
             if self.current_recoil_element.get_edit_lock_on():
                 self.edit_lock_on = True
@@ -398,6 +420,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.edit_lock_on = False
                 self.edit_lock_push_button.setText("Full edit unlocked")
                 self.edit_lock_push_button.setEnabled(False)
+
+            self.parent_ui.nameLabel.setText(
+                "Name: " + self.current_recoil_element.get_name())
+            self.parent_ui.referenceDensityLabel.setText(
+                "Reference density: " +
+                str(self.current_recoil_element.get_reference_density()))
             self.dragged_points.clear()
             self.selected_points.clear()
             self.update_plot()
