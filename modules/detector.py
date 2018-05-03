@@ -162,7 +162,7 @@ class Detector:
         obj = {
             "name": self.name,
             "description": self.description,
-            "date": self.date,
+            "modification_time": str(self.modification_time),
             "type": self.type,
             "foils": [],
             "tof_foils": self.tof_foils,

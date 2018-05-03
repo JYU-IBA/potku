@@ -499,12 +499,17 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 self.request.default_measurement.target_fii = self.measurement_settings_widget.targetFiiLineEdit.text()
 
                 self.request.default_measurement.save_settings(
-                    self.request.default_folder + os.sep + "Default")
+                    self.request.default_folder + os.sep +
+                    "Default")
+                # TODO Implement to_file for Measurement
+#                self.request.default_measurement.to_file(
+#                    self.request.default_folder + os.sep +
+#                    "Default.measurement")
 
             # Detector settings
             self.request.detector.name = self.detector_settings_widget.nameLineEdit.text()
             self.request.detector.description = self.detector_settings_widget.descriptionLineEdit.toPlainText()
-            self.request.detector.detector_type = \
+            self.request.detector.type = \
                 self.detector_settings_widget.typeComboBox.currentText()
             self.calibration_settings.set_settings(
                 self.detector_settings_widget)
@@ -515,8 +520,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             # Tof foils
             self.request.detector.tof_foils = self.tof_foils
 
-            self.request.detector.save_settings(
-                self.request.default_folder + os.sep + "Detector" + os.sep + "Default")
+            self.request.detector.to_file(
+                self.request.default_folder + os.sep + "Detector" + os.sep +
+                "Default.detector")
 
             # Simulation settings
             self.request.default_simulation.name = self.simulation_settings_widget.nameLineEdit.text()
@@ -535,8 +541,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.no_of_recoils = self.simulation_settings_widget.noOfRecoilsLineEdit.text()
             self.request.default_simulation.no_of_scaling = self.simulation_settings_widget.noOfScalingLineEdit.text()
 
-            self.request.default_simulation.save_settings(
-                self.request.default_folder + os.sep + "Default")
+            # TODO Simulation doesn't have to_file method yet.
+#            self.request.default_simulation.to_file(
+#                self.request.default_folder + os.sep + "Default.mcsimu")
 
             # Depth profile settings
             self.depth_profile_settings.set_settings(
