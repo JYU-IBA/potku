@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 11.4.2018
+Updated on 4.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -26,8 +26,9 @@ along with this program (file named 'LICENCE').
 import json
 from os import path
 
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
-             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
+             "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
 import datetime
@@ -67,7 +68,7 @@ class Measurements:
         return len(self.measurements) == 0
 
     def get_key_value(self, key):
-        if not key in self.measurements:
+        if key not in self.measurements:
             return None
         return self.measurements[key]
 
@@ -91,23 +92,34 @@ class Measurements:
             # Check if measurement on the same name already exists.
             keys = sample.measurements.measurements.keys()
             for key in keys:
-                if sample.measurements.measurements[key].measurement_file == file_name:
+                if sample.measurements.measurements[key].measurement_file \
+                        == file_name:
                     return None
 
             # Create new Measurement object.
-            measurement = Measurement(self.request, tab_id=tab_id, name=measurement_name[0])
+            measurement = Measurement(self.request, tab_id=tab_id,
+                                      name=measurement_name[0])
             measurement.serial_number = sample.get_running_int_measurement()
             # TODO Can increasing the int be handled by sample?
             sample.increase_running_int_measurement_by_1()
 
             # Create path for measurement directory.
-            measurement_directory = os.path.join(self.request.directory, sample.directory, measurement.name_prefix
-                                                 + "%02d" % measurement.serial_number + "-" + measurement.name)
+            measurement_directory = os.path.join(self.request.directory,
+                                                 sample.directory,
+                                                 measurement.name_prefix
+                                                 + "%02d" %
+                                                 measurement.serial_number +
+                                                 "-" + measurement.name)
 
-            # Create path for measurement file used by the program and create folder structure.
-            new_measurement_file = os.path.join(measurement_directory, "Data", measurement_filename)
-            measurement.create_folder_structure(measurement_directory, new_measurement_file)
-            if file_directory != os.path.join(measurement.directory, measurement.directory_data) and file_directory:
+            # Create path for measurement file used by the program and create
+            # folder structure.
+            new_measurement_file = os.path.join(measurement_directory,
+                                                "Data", measurement_filename)
+            measurement.create_folder_structure(measurement_directory,
+                                                new_measurement_file)
+            if file_directory != os.path.join(measurement.directory,
+                                              measurement.directory_data) and \
+                    file_directory:
                 measurement.copy_file_into_measurement(measurement_file)
 
             # Add Measurement to  Measurements.
@@ -183,24 +195,33 @@ class Measurement:
     """Measurement class to handle one measurement data.
     """
 
-    __slots__ = "request", "name", "description", "date", "ion", "energy", "charge", "spot_size", "divergence", \
-                "profile", "energy_dist", "fluence", "current", "beam_time", "detector_theta", "detector_fii", \
-                "target_theta", "target_fii", "data", "statusbar", "color_scheme", "measurement_file", \
-                "name_prefix", "directory", "directory_cuts", "directory_elemloss", "__request_settings", \
-                "measurement_settings", "selector", "defaultlog", "errorlog", "tab_id", \
-                "directory_composition_changes", "directory_energy_spectra", "directory_depth_profiles", \
+    __slots__ = "request", "name", "description", "date", "ion", "energy", \
+                "charge", "spot_size", "divergence", \
+                "profile", "energy_dist", "fluence", "current", "beam_time", \
+                "detector_theta", "detector_fii", \
+                "target_theta", "target_fii", "data", "statusbar", \
+                "color_scheme", "measurement_file", \
+                "name_prefix", "directory", "directory_cuts", \
+                "directory_elemloss", "__request_settings", \
+                "measurement_settings", "selector", "defaultlog", \
+                "errorlog", "tab_id", \
+                "directory_composition_changes", "directory_energy_spectra", \
+                "directory_depth_profiles", \
                 "directory_data", "tab_id", "serial_number"
 
-    def __init__(self, request, tab_id=-1, name="", description="", date=datetime.date.today(), ion=None, energy=10.0,
-                 charge=4,
-                 spot_size=[3.0, 5.0], divergence=0, profile=MeasurementProfile.Uniform, energy_dist=0,
-                 fluence=1000000000000, current=1.07, beam_time=600, detector_theta=40, detector_fii=0, target_theta=70,
+    def __init__(self, request, tab_id=-1, name="", description="",
+                 date=datetime.date.today(), ion=None, energy=10.0,
+                 charge=4, spot_size=[3.0, 5.0], divergence=0,
+                 profile=MeasurementProfile.Uniform, energy_dist=0,
+                 fluence=1000000000000, current=1.07, beam_time=600,
+                 detector_theta=40, detector_fii=0, target_theta=70,
                  target_fii=0):
         """Inits measurement.
 
         Args:
             request: Request class object.
         """
+        # TODO: Add missing attributes listed in class definition.
         self.tab_id = tab_id
 
         self.request = request  # To which request be belong to
@@ -257,7 +278,8 @@ class Measurement:
             measurement_folder: Path of the measurement folder.
             measurement_file: Path of the measurement file. (under Data)
         """
-        measurement_data_folder, measurement_name = os.path.split(measurement_file)
+        measurement_data_folder, measurement_name = \
+            os.path.split(measurement_file)
         self.measurement_file = measurement_name  # With extension
 
         self.directory = measurement_folder
@@ -317,17 +339,21 @@ class Measurement:
             extension = os.path.splitext(self.measurement_file)[1]
             extension = extension.lower()
             if extension == ".asc":
-                file_to_open = os.path.join(self.directory, self.directory_data, self.name + extension)
+                file_to_open = os.path.join(self.directory,
+                                            self.directory_data,
+                                            self.name + extension)
                 with open(file_to_open, "r") as fp:
                     for line in fp:
                         n += 1  # Event number
-                        # TODO: Figure good way to split into columns. REGEX too slow.
+                        # TODO: Figure good way to split into columns.
+                        # REGEX too slow.
                         split = line.split()
                         split_len = len(split)
                         if split_len == 2:  # At least two columns
                             self.data.append([int(split[0]), int(split[1]), n])
                         if split_len == 3:
-                            self.data.append([int(split[0]), int(split[1]), int(split[2]), n])
+                            self.data.append([int(split[0]), int(split[1]),
+                                              int(split[2]), n])
             self.selector.measurement = self
         except IOError as e:
             error_log = "Error while loading the {0} {1}. {2}".format(
@@ -338,7 +364,8 @@ class Measurement:
             logging.getLogger('request').error(error_log)
             logging.getLogger('request').error(error_log_2)
         except Exception as e:
-            error_log = "Unexpected error: [{0}] {1}".format(e.errno, e.strerror)
+            error_log = "Unexpected error: [{0}] {1}".format(e.errno,
+                                                             e.strerror)
             logging.getLogger('request').error(error_log)
         # pr.disable()
         # ps = pstats.Stats(pr)
@@ -350,11 +377,13 @@ class Measurement:
         """
         if new_name is None:
             return
-        rename_file(os.path.join(self.directory, self.directory_data, self.measurement_file), new_name + ".asc")
+        rename_file(os.path.join(self.directory, self.directory_data,
+                                 self.measurement_file), new_name + ".asc")
         self.measurement_file = new_name + ".asc"
 
     def save_settings(self, filepath=None):
-        """Saves parameters from Measurement object in JSON format in .measurement file.
+        """Saves parameters from Measurement object
+        in JSON format in .measurement file.
 
         Args:
             filepath: Filepath including name of the file.
@@ -383,14 +412,17 @@ class Measurement:
                                                          'errors.log'))
         self.errorlog.setLevel(logging.ERROR)
 
-        # Set the formatter which will be used to log messages. Here you can edit
-        # the format so it will be deprived to all log messages.
-        defaultformat = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+        # Set the formatter which will be used to log messages. Here you can
+        # edit the format so it will be deprived to all log messages.
+        defaultformat = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S')
 
         requestlog = logging.FileHandler(os.path.join(self.request.directory,
                                                       'request.log'))
-        requestlogformat = logging.Formatter('%(asctime)s - %(levelname)s - [Measurement : %(name)s] - %(message)s',
-                                             datefmt='%Y-%m-%d %H:%M:%S')
+        requestlogformat = logging.Formatter(
+            '%(asctime)s - %(levelname)s - [Measurement : '
+            '%(name)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
         # Set the formatters to the logs.
         requestlog.setFormatter(requestlogformat)
@@ -440,7 +472,8 @@ class Measurement:
             logging.getLogger(self.name).info(log_msg)
 
     def add_point(self, point, canvas):
-        """ Add point into selection or create new selection if first or all closed.
+        """ Add point into selection or create new selection if first or all
+        closed.
         
         Args:
             point: Point (x, y) to be added to selection.
@@ -466,7 +499,8 @@ class Measurement:
         return self.selector.undo_point()
 
     def purge_selection(self):
-        """ Purges (removes) all open selections and allows new selection to be made.
+        """ Purges (removes) all open selections and allows new selection to be
+        made.
         """
         self.selector.purge()
 
@@ -484,7 +518,8 @@ class Measurement:
         """ End last open selection.
         
         Ends last open selection. If selection is open, it will show dialog to 
-        select element information and draws into canvas before opening the dialog.
+        select element information and draws into canvas before opening the
+        dialog.
         
         Args:
             canvas: Matplotlib's FigureCanvas
@@ -499,7 +534,8 @@ class Measurement:
         """ Select a selection based on point.
         
         Args:
-            cursorpoint: Point (x, y) which is clicked on the graph to select selection.
+            cursorpoint: Point (x, y) which is clicked on the graph to select
+                         selection.
             highlight: Boolean to determine whether to highlight just this 
                        selection.
 
@@ -540,7 +576,8 @@ class Measurement:
         """
         if self.selector.is_empty():
             return 0
-        if not os.path.exists(os.path.join(self.directory, self.directory_cuts)):
+        if not os.path.exists(os.path.join(self.directory,
+                                           self.directory_cuts)):
             self.__make_directories(self.directory_cuts)
 
         progress_bar = QtWidgets.QProgressBar()
@@ -563,7 +600,8 @@ class Measurement:
             if n % 5000 == 0:
                 # Do not always update UI to make it faster.
                 progress_bar.setValue((n / data_count) * 90)
-                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+                QtCore.QCoreApplication.processEvents(
+                    QtCore.QEventLoop.AllEvents)
                 # Mac requires event processing to show progress bar and its
                 # process.
             point = self.data[n]
@@ -586,7 +624,8 @@ class Measurement:
         for points in points_in_selection:
             if points:  # If not empty selection -> save
                 selection = self.selector.get_at(dirtyinteger)
-                cut_file = CutFile(os.path.join(self.directory, self.directory_cuts))
+                cut_file = CutFile(os.path.join(self.directory,
+                                                self.directory_cuts))
                 cut_file.set_info(selection, points)
                 cut_file.save()
             dirtyinteger += 1
@@ -598,14 +637,17 @@ class Measurement:
         self.statusbar.removeWidget(progress_bar)
         progress_bar.hide()
 
-        log_msg = "Saving finished in {0} seconds.".format(time.time() - starttime)
+        log_msg = "Saving finished in {0} seconds.".format(time.time() -
+                                                           starttime)
         logging.getLogger(self.name).info(log_msg)
 
     def __remove_old_cut_files(self):
         self.__unlink_files(os.path.join(self.directory, self.directory_cuts))
-        if not os.path.exists(os.path.join(self.directory, self.directory_composition_changes)):
+        if not os.path.exists(os.path.join(self.directory,
+                                           self.directory_composition_changes)):
             self.__make_directories(self.directory_composition_changes)
-        self.__unlink_files(os.path.join(self.directory, self.directory_composition_changes))
+        self.__unlink_files(os.path.join(self.directory,
+                                         self.directory_composition_changes))
 
     def __unlink_files(self, directory):
         for the_file in os.listdir(directory):
@@ -623,18 +665,24 @@ class Measurement:
         Return:
             Returns a list of cut files in measurement.
         """
-        cuts = [f for f in os.listdir(os.path.join(self.directory, self.directory_cuts))
-                if os.path.isfile(os.path.join(self.directory, self.directory_cuts, f))]
-        elemloss = [f for f in os.listdir(os.path.join(self.directory, self.directory_composition_changes))
-                    if os.path.isfile(os.path.join(self.directory, self.directory_composition_changes, f))]
+        cuts = [f for f in os.listdir(os.path.join(self.directory,
+                                                   self.directory_cuts))
+                if os.path.isfile(os.path.join(self.directory,
+                                               self.directory_cuts, f))]
+        elemloss = [f for f in os.listdir(os.path.join(
+            self.directory, self.directory_composition_changes))
+                    if os.path.isfile(os.path.join(
+                self.directory, self.directory_composition_changes, f))]
         return cuts, elemloss
 
-    def fill_cuts_treewidget(self, treewidget, use_elemloss=False, checked_files=[]):
+    def fill_cuts_treewidget(self, treewidget, use_elemloss=False,
+                             checked_files=[]):
         """ Fill QTreeWidget with cut files.
         
         Args:
             treewidget: A QtGui.QTreeWidget, where cut files are added to.
-            use_elemloss: A boolean representing whether to add elemental losses.
+            use_elemloss: A boolean representing whether to add elemental
+                          losses.
             checked_files: A list of previously checked files.
         """
         treewidget.clear()
@@ -652,7 +700,8 @@ class Measurement:
             elem_root = QtWidgets.QTreeWidgetItem(["Elemental Losses"])
             for elemloss in cuts_elemloss:
                 item = QtWidgets.QTreeWidgetItem([elemloss])
-                item.directory = os.path.join(self.directory, self.directory_composition_changes)
+                item.directory = os.path.join(
+                    self.directory, self.directory_composition_changes)
                 item.file_name = elemloss
                 if item.file_name in checked_files:
                     item.setCheckState(0, QtCore.Qt.Checked)
@@ -667,7 +716,8 @@ class Measurement:
         Removes all current selections and loads selections from given filename.
         
         Args:
-            filename: String representing (full) directory to selection file_path.
+            filename: String representing (full) directory to selection
+            file_path.
         """
         self.selector.load(filename)
 
@@ -718,7 +768,8 @@ class Measurement:
         str_cross = "Cross section: {0}\n".format(flag_cross)
         # Cross Sections: 1=Rutherford, 2=L'Ecuyer, 3=Andersen
 
-        str_num_iterations = "Number of iterations: {0}\n".format(global_settings.get_num_iterations())
+        str_num_iterations = "Number of iterations: {0}\n".format(
+            global_settings.get_num_iterations())
 
         # Efficiency directory
         # TODO Efficiency directory should be measurement's detector's
@@ -727,15 +778,19 @@ class Measurement:
         str_eff_dir = "Efficiency directory: {0}".format(eff_directory)
 
         # Combine strings
-        measurement = str_beam + str_energy + str_detector + str_target + str_toflen + str_carbon + str_density
+        measurement = str_beam + str_energy + str_detector + str_target + \
+                      str_toflen + str_carbon + str_density
         calibration = "TOF calibration: {0} {1}\n".format(
             use_settings.calibration_settings.slope,
             use_settings.calibration_settings.offset)
-        anglecalib = "Angle calibration: {0} {1}\n".format(use_settings.calibration_settings.angleslope,
-                                                           use_settings.calibration_settings.angleoffset)
-        depthprofile = str_depthnumber + str_depthstop + str_depthout + str_depthscale
+        anglecalib = "Angle calibration: {0} {1}\n".format(
+            use_settings.calibration_settings.angleslope,
+            use_settings.calibration_settings.angleoffset)
+        depthprofile = str_depthnumber + str_depthstop + str_depthout + \
+                       str_depthscale
 
-        tof_in = measurement + calibration + anglecalib + depthprofile + str_cross + str_num_iterations + str_eff_dir
+        tof_in = measurement + calibration + anglecalib + depthprofile + \
+                 str_cross + str_num_iterations + str_eff_dir
 
         # Get md5 of file and new settings
         md5 = hashlib.md5()
@@ -751,8 +806,8 @@ class Measurement:
         if digest_file != digest:
             # Try to back up old file.
             try:
-                new_file = "{0}_{1}.bak".format(tof_in_file,
-                                                time.strftime("%Y-%m-%d_%H.%M.%S"))
+                new_file = "{0}_{1}.bak".format(tof_in_file, time.strftime(
+                    "%Y-%m-%d_%H.%M.%S"))
                 shutil.copyfile(tof_in_file, new_file)
                 back_up_msg = "Backed up old tof.in file to {0}".format(
                     os.path.realpath(new_file))
@@ -760,12 +815,16 @@ class Measurement:
             except:
                 import traceback
                 err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
-                str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + traceback._some_str(sys.exc_info()[1]),
-                                     err_file, str(sys.exc_info()[2].tb_lineno)])
-                error_msg = "Unexpected error when generating tof.in: {0}".format(str_err)
+                str_err = ", ".join([sys.exc_info()[0].__name__ + ": " +
+                                     traceback._some_str(sys.exc_info()[1]),
+                                     err_file, str(sys.exc_info()[2].tb_lineno)]
+                                    )
+                error_msg = "Unexpected error when generating tof.in: {0}".\
+                    format(str_err)
                 logging.getLogger(self.name).error(error_msg)
             # Write new settings to the file.
             with open(tof_in_file, "wt+") as fp:
                 fp.write(tof_in)
-            str_logmsg = "Generated tof.in with params> {0}".format(tof_in.replace("\n", "; "))
+            str_logmsg = "Generated tof.in with params> {0}".\
+                format(tof_in.replace("\n", "; "))
             logging.getLogger(self.name).info(str_logmsg)
