@@ -89,6 +89,9 @@ class Request:
 
         self.default_detector_folder = os.path.join(self.default_folder,
                                                     "Detector")
+        if not os.path.exists(self.default_detector_folder):
+            os.makedirs(self.default_detector_folder)  # Create a Detector
+            # folder
         # TODO: Add folder creation as a function call
         self.default_detector = Detector(
             os.path.join(self.default_detector_folder, "Default.detector"))
