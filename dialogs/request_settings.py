@@ -216,11 +216,17 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.exec_()
 
     def _add_new_foil(self, layout):
+        """
+        Add a new foil to given layer. Default CircularFoil.
+
+        Args:
+             layout: Layout in which the new foil is added.
+        """
         foil_widget = FoilWidget(self)
         new_foil = CircularFoil("Foil", layers=[])
         self.tmp_foil_info.append(new_foil)
         foil_widget.ui.foilButton.clicked.connect(
-            lambda: self._open_composition_dialog())
+            lambda: self._open_foil_dialog())
         foil_widget.ui.timingFoilCheckBox.stateChanged.connect(
             lambda: self._check_and_add())
         foil_widget.ui.distanceEdit.setText(str(new_foil.distance))
@@ -232,6 +238,12 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         return foil_widget
 
     def _add_default_foils(self):
+        """
+        Add default foils into a layout.
+
+        Return:
+            Returns the layout that has default FoilWidgets.
+        """
         layout = QtWidgets.QHBoxLayout()
         target = QtWidgets.QLabel("Target")
         layout.addWidget(target)
@@ -243,6 +255,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         return layout
 
     def _check_and_add(self):
+        """
+        Check if foil needs to be added or deleted from tof foils and update
+        the list and enabled cehckboxes accordingly.
+        """
         check_box = self.sender()
         for i in range(len(self.detector_structure_widgets)):
             if self.detector_structure_widgets[i].\
@@ -264,17 +280,26 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 break
 
     def _disable_checkboxes(self):
+        """
+        Disable all but tof foil checkboxes.
+        """
         for i in range(len(self.detector_structure_widgets)):
             if i not in self.tof_foils:
                 widget = self.detector_structure_widgets[i]
                 widget.ui.timingFoilCheckBox.setEnabled(False)
 
     def _enable_checkboxes(self):
+        """
+        Enable all checkboxes.
+        """
         for i in range(len(self.detector_structure_widgets)):
             widget = self.detector_structure_widgets[i]
             widget.ui.timingFoilCheckBox.setEnabled(True)
 
-    def _open_composition_dialog(self):
+    def _open_foil_dialog(self):
+        """
+        Open FoilDialog, with which the foil info can be updated.
+        """
         foil_name = self.sender().text()
         foil_object_index = -1
         for i in range(len(self.tmp_foil_info)):
@@ -312,12 +337,18 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_detector.get_efficiency_files())
 
     def __open_calibration_dialog(self):
+        """
+        Open a CalibrationDialog.
+        """
         measurements = [self.request.measurements.get_key_value(key)
                         for key in
                         self.request.samples.measurements.measurements.keys()]
         CalibrationDialog(measurements, self.settings, self)
 
     def show_settings(self):
+        """
+        Show settings in the dialog.
+        """
         if self.request.default_measurement.ion:
             self.measurement_settings_widget.ui.beamIonButton.setText(
                 self.request.default_measurement.ion.name)
@@ -362,7 +393,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             str(self.request.default_measurement.target_fii))
 
     def __load_file(self, settings_type):
-        """Opens file dialog and loads and shows selected ini file's values.
+        """ Opens file dialog and loads and shows selected ini file's values.
 
         Args:
             settings_type: (string) selects which settings file type will be
@@ -428,6 +459,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 settings.save_settings(filename)
 
     def calculate_distance(self):
+        """
+        Calculate distance from target for each foil.
+        """
         distance = 0
         for i in range(len(self.detector_structure_widgets)):
             widget = self.detector_structure_widgets[i]
@@ -435,13 +469,16 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.tmp_foil_info[i].distance = distance
 
     def delete_foil(self, foil_widget):
+        """
+        Delete a foil.
+
+        Args:
+            foil_widget: Clicked FoilWidget.
+        """
         index_of_item_to_be_deleted = self.detector_structure_widgets.index(
             foil_widget)
         del (self.detector_structure_widgets[index_of_item_to_be_deleted])
         foil_to_be_deleted = self.tmp_foil_info[index_of_item_to_be_deleted]
-        # tof_foils = []
-        # for i in self.tof_foils:
-        #     tof_foils.append(self.tmp_foil_info[i])
         if index_of_item_to_be_deleted in self.tof_foils:
             self.tof_foils.remove(index_of_item_to_be_deleted)
             if 0 < len(self.tof_foils) < 2:
@@ -606,7 +643,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             raise TypeError
 
     def __change_element(self, button, combo_box):
-        """Opens element selection dialog and loads selected element's isotopes
+        """ Opens element selection dialog and loads selected element's isotopes
         to a combobox.
 
         Args:
@@ -622,6 +659,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                  self.measuring_unit_settings.element.isotope)
 
     def __enabled_element_information(self):
+        """
+        Change the UI accordingly when an element is selected.
+        """
         self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(True)
         self.measurement_settings_widget.ui.isotopeLabel.setEnabled(True)
         self.ui.OKButton.setEnabled(True)
