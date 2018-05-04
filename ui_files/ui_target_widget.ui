@@ -37,6 +37,67 @@
       </widget>
      </item>
      <item>
+      <spacer name="horizontalSpacer_3">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Fixed</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QWidget" name="elementInfoWidget" native="true">
+       <property name="minimumSize">
+        <size>
+         <width>100</width>
+         <height>0</height>
+        </size>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_8">
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
+        <item>
+         <widget class="QLabel" name="nameLabel">
+          <property name="text">
+           <string>Name:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLabel" name="referenceDensityLabel">
+          <property name="text">
+           <string>Reference density:</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="editPushButton">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="text">
+           <string/>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
       <spacer name="horizontalSpacer">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
@@ -58,11 +119,11 @@
      </item>
      <item>
       <widget class="QPushButton" name="exportElementsButton">
-       <property name="text">
-        <string>Export elements</string>
-       </property>
        <property name="toolTip">
         <string>Export layer elements to recoil atom distribution</string>
+       </property>
+       <property name="text">
+        <string>Export elements</string>
        </property>
       </widget>
      </item>
@@ -120,8 +181,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>176</width>
-             <height>364</height>
+             <width>180</width>
+             <height>390</height>
             </rect>
            </property>
           </widget>
