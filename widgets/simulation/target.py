@@ -52,6 +52,7 @@ class TargetWidget(QtWidgets.QWidget):
                                                           icon_manager)
 
         icon_manager.set_icon(self.ui.editPushButton, "edit.svg")
+        self.ui.editPushButton.setIconSize(QtCore.QSize(14,14))
         self.ui.editPushButton.setToolTip("Edit")
         self.ui.recoilListWidget.hide()
         self.ui.editLockPushButton.hide()
@@ -87,7 +88,7 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.exportElementsButton.hide()
         self.ui.recoilListWidget.show()
         self.ui.editLockPushButton.show()
-        self.ui.elementInfoWidget.show()
+        self.recoil_widget.recoil_element_info_on_switch()
 
     def __save_target_and_recoils(self):
         target_name = "temp"

@@ -101,7 +101,7 @@
            <x>0</x>
            <y>0</y>
            <width>234</width>
-           <height>660</height>
+           <height>579</height>
           </rect>
          </property>
          <property name="sizePolicy">
@@ -334,26 +334,6 @@
                      </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="pushButton_17">
-                      <property name="sizePolicy">
-                       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                        <horstretch>0</horstretch>
-                        <verstretch>0</verstretch>
-                       </sizepolicy>
-                      </property>
-                      <property name="toolTip">
-                       <string>Pause simulation</string>
-                      </property>
-                      <property name="text">
-                       <string/>
-                      </property>
-                      <property name="icon">
-                       <iconset>
-                        <normaloff>../ui_icons/reinhardt/player_pause.svg</normaloff>../ui_icons/reinhardt/player_pause.svg</iconset>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
                      <widget class="QPushButton" name="pushButton_18">
                       <property name="sizePolicy">
                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -374,19 +354,6 @@
                      </widget>
                     </item>
                    </layout>
-                  </item>
-                  <item>
-                   <widget class="QProgressBar" name="progressBar_5">
-                    <property name="value">
-                     <number>36</number>
-                    </property>
-                    <property name="textVisible">
-                     <bool>true</bool>
-                    </property>
-                    <property name="invertedAppearance">
-                     <bool>false</bool>
-                    </property>
-                   </widget>
                   </item>
                  </layout>
                 </widget>
@@ -472,26 +439,6 @@
                      </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="pushButton_14">
-                      <property name="sizePolicy">
-                       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                        <horstretch>0</horstretch>
-                        <verstretch>0</verstretch>
-                       </sizepolicy>
-                      </property>
-                      <property name="toolTip">
-                       <string>Pause simulation</string>
-                      </property>
-                      <property name="text">
-                       <string/>
-                      </property>
-                      <property name="icon">
-                       <iconset>
-                        <normaloff>../ui_icons/reinhardt/player_pause.svg</normaloff>../ui_icons/reinhardt/player_pause.svg</iconset>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
                      <widget class="QPushButton" name="pushButton_15">
                       <property name="sizePolicy">
                        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -512,19 +459,6 @@
                      </widget>
                     </item>
                    </layout>
-                  </item>
-                  <item>
-                   <widget class="QProgressBar" name="progressBar_4">
-                    <property name="value">
-                     <number>12</number>
-                    </property>
-                    <property name="textVisible">
-                     <bool>true</bool>
-                    </property>
-                    <property name="invertedAppearance">
-                     <bool>false</bool>
-                    </property>
-                   </widget>
                   </item>
                  </layout>
                 </widget>
@@ -607,29 +541,6 @@
                      </widget>
                     </item>
                     <item>
-                     <widget class="QPushButton" name="pushButton_5">
-                      <property name="enabled">
-                       <bool>false</bool>
-                      </property>
-                      <property name="sizePolicy">
-                       <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                        <horstretch>0</horstretch>
-                        <verstretch>0</verstretch>
-                       </sizepolicy>
-                      </property>
-                      <property name="toolTip">
-                       <string>Pause simulation</string>
-                      </property>
-                      <property name="text">
-                       <string/>
-                      </property>
-                      <property name="icon">
-                       <iconset>
-                        <normaloff>../ui_icons/reinhardt/player_pause.svg</normaloff>../ui_icons/reinhardt/player_pause.svg</iconset>
-                      </property>
-                     </widget>
-                    </item>
-                    <item>
                      <widget class="QPushButton" name="pushButton_6">
                       <property name="enabled">
                        <bool>false</bool>
@@ -653,19 +564,6 @@
                      </widget>
                     </item>
                    </layout>
-                  </item>
-                  <item>
-                   <widget class="QProgressBar" name="progressBar">
-                    <property name="value">
-                     <number>100</number>
-                    </property>
-                    <property name="textVisible">
-                     <bool>true</bool>
-                    </property>
-                    <property name="invertedAppearance">
-                     <bool>false</bool>
-                    </property>
-                   </widget>
                   </item>
                  </layout>
                 </widget>

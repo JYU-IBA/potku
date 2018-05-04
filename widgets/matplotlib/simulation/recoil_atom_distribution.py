@@ -76,7 +76,8 @@ class RecoilElement:
         self._element = element
         self._name = ""
         self._description = ""
-        self._reference_density = 4.98e22
+        # This is multiplied by 1e22
+        self._reference_density = 4.98
         self._points = sorted(points)
         self._widget = widget
         self._edit_lock_on = True
@@ -87,11 +88,20 @@ class RecoilElement:
     def get_name(self):
         return self._name
 
-    def get_reference_density(self):
-        return self._reference_density
+    def set_name(self, name):
+        self._name = name
 
     def get_description(self):
         return self._description
+
+    def set_description(self, description):
+        self._description = description
+
+    def get_reference_density(self):
+        return self._reference_density
+
+    def set_reference_density(self, reference_density):
+        self._reference_density = reference_density
 
     def delete_widget(self):
         self._widget.deleteLater()
@@ -323,7 +333,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
             self.choose_element)
 
-        self.parent_ui.editPushButton.clicked.connect(self.testaa)
+        self.parent_ui.editPushButton.clicked.connect(
+            self.open_recoil_element_info)
 
         # TODO: Set lock on only when simulation has been run
         self.edit_lock_push_button = self.parent_ui.editLockPushButton
@@ -375,14 +386,19 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.on_draw()
 
-    def testaa(self):
-        dialog = RecoilInfoDialog()
-        print("jaa")
+    def open_recoil_element_info(self):
+        dialog = RecoilInfoDialog(self.current_recoil_element)
+        if dialog.isOk:
+            self.current_recoil_element.set_name(dialog.name)
+            self.current_recoil_element.set_description(dialog.description)
+            self.current_recoil_element.set_reference_density(
+                dialog.reference_density)
+            self.update_recoil_element_info_labels()
 
     def save_recoils(self, directory):
         for element_simulation in self.element_manager\
                 .get_element_simulations():
-            element_simulation.to_file(directory)
+            element_simulation.recoil_to_file(directory)
 
     def unlock_edit(self):
         confirm_box = QtWidgets.QMessageBox()
@@ -390,7 +406,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         yes_button = confirm_box.addButton(QtWidgets.QMessageBox.Yes)
         confirm_box.addButton(QtWidgets.QMessageBox.Cancel)
         confirm_box.setText("Are you sure you want to unlock full edit for this"
-                            " element?\n All previous results of this element's"
+                            " element?\nAll previous results of this element's"
                             " simulation will be deleted!")
         confirm_box.setInformativeText("When full edit is unlocked, you can"
                                        " change the x coordinate of the"
@@ -412,6 +428,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 .get_element_simulation_with_radio_button(button)
             self.current_recoil_element = current_element_simulation\
                 .get_recoil_element()
+            self.parent_ui.elementInfoWidget.show()
             if self.current_recoil_element.get_edit_lock_on():
                 self.edit_lock_on = True
                 self.edit_lock_push_button.setText("Unlock full edit")
@@ -421,16 +438,27 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.edit_lock_push_button.setText("Full edit unlocked")
                 self.edit_lock_push_button.setEnabled(False)
 
-            self.parent_ui.nameLabel.setText(
-                "Name: " + self.current_recoil_element.get_name())
-            self.parent_ui.referenceDensityLabel.setText(
-                "Reference density: " +
-                str(self.current_recoil_element.get_reference_density()))
+            self.update_recoil_element_info_labels()
             self.dragged_points.clear()
             self.selected_points.clear()
             self.update_plot()
             # self.axes.relim()
             # self.axes.autoscale()
+
+    def update_recoil_element_info_labels(self):
+        self.parent_ui.nameLabel.setText(
+            "Name: " + self.current_recoil_element.get_name())
+        self.parent_ui.referenceDensityLabel.setText(
+            "Reference density: " + "{0:1.2f}".
+            format(self.current_recoil_element.get_reference_density())
+                   + "e22 at/cm\xb2"
+        )
+
+    def recoil_element_info_on_switch(self):
+        if self.current_recoil_element is None:
+            self.parent_ui.elementInfoWidget.hide()
+        else:
+            self.parent_ui.elementInfoWidget.show()
 
     def add_element(self):
         dialog = RecoilElementSelectionDialog(self)
@@ -446,6 +474,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if self.current_recoil_element is None:
                 self.current_recoil_element = element_simulation\
                     .get_recoil_element()
+                recoil_element_widget.get_radio_button().setChecked(True)
 
     def remove_element(self, element_simulation):
         self.element_manager.remove_element_simulation(element_simulation)
@@ -465,6 +494,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.radios.checkedButton())
             self.remove_element(element_simulation)
             self.current_recoil_element = None
+            self.parent_ui.elementInfoWidget.hide()
             self.update_plot()
         else:
             return

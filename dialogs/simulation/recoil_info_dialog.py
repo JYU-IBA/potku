@@ -17,7 +17,7 @@ class RecoilInfoDialog(QtWidgets.QDialog):
     of a recoil element.
     """
 
-    def __init__(self):
+    def __init__(self, recoil_element):
         """Inits a recoil info dialog.
         """
         super().__init__()
@@ -26,14 +26,25 @@ class RecoilInfoDialog(QtWidgets.QDialog):
 
         self.__ui.okPushButton.clicked.connect(self.__accept_settings)
         self.__ui.cancelPushButton.clicked.connect(self.close)
-        self.exec_()
 
+        self.name = ""
+        self.__ui.nameLineEdit.setText(recoil_element.get_name())
+        self.__ui.descriptionLineEdit.setPlainText(
+            recoil_element.get_description())
+        self.__ui.referenceDensityDoubleSpinBox.setValue(
+            recoil_element.get_reference_density())
+        self.description = ""
+        self.isOk = False
+
+        self.exec_()
 
     def __accept_settings(self):
         """Function for accepting the current settings and closing the dialog
         window.
         """
-        name = self.__ui.nameLineEdit.text()
-        description = self.__ui.descriptionLineEdit.text()
-        reference_density = self.__ui.referenceDensityDoubleSpinBox.getValue()
+        self.name = self.__ui.nameLineEdit.text()
+        self.description = self.__ui.descriptionLineEdit.toPlainText()
+        self.reference_density = self.__ui.referenceDensityDoubleSpinBox\
+            .value()
+        self.isOk = True
         self.close()

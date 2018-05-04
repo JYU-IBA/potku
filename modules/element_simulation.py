@@ -187,22 +187,23 @@ class ElementSimulation:
         cls(type, element, profile, name, description, modification_time)
         # TODO: update the cls call above
 
-    def to_file(self, directory):
+    def recoil_to_file(self, directory):
         file_path = os.path.join(directory, self.recoil_element.get_element().symbol + ".rec")
         # Convert datetime object to string. Put the string in ISO 8601 format
         #  without information about the timezone. TODO: Add timezone
         element = self.recoil_element.get_element()
         if element.isotope:
-            name = str(element.isotope) + element.symbol
+            element_str = str(element.isotope) + element.symbol
         else:
-            name = element.symbol
+            element_str = element.symbol
         obj = {
-            "name": name,
-            "description": self.description,
+            "name": self.recoil_element.get_name(),
+            "description": self.recoil_element.get_description(),
             "modification_time": datetime.datetime.now().isoformat(
                 timespec="seconds"),
             "type": self.simulation_type,
-            "element": self.recoil_element.get_element().symbol,
+            "element": element_str,
+            "density": self.recoil_element.get_reference_density() * 1e22,
             "profile": []
         }
 
