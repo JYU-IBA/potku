@@ -90,9 +90,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-188</y>
-        <width>448</width>
-        <height>672</height>
+        <y>0</y>
+        <width>444</width>
+        <height>511</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -284,7 +284,7 @@
             </sizepolicy>
            </property>
            <property name="title">
-            <string>General</string>
+            <string>General parameters</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>

@@ -40,7 +40,7 @@ class ElementSimulation:
     def __init__(self, recoil_element, beam, target, detector, run, name="",
                  description="",
                  modification_time=datetime.datetime.now(),
-                 simulation_type="rec",
+                 simulation_type="ERD",
                  number_of_ions=1000000, number_of_preions=100000,
                  number_of_scaling_ions=5, number_of_recoils=10,
                  minimum_main_scattering_angle=20,
@@ -188,10 +188,11 @@ class ElementSimulation:
         # TODO: update the cls call above
 
     def recoil_to_file(self, directory):
-        file_path = os.path.join(directory, self.recoil_element.get_element().symbol + ".rec")
+        element = self.recoil_element.get_element()
+        file_path = os.path.join(directory, element.symbol + "." +
+                                 self.recoil_element.get_type())
         # Convert datetime object to string. Put the string in ISO 8601 format
         #  without information about the timezone. TODO: Add timezone
-        element = self.recoil_element.get_element()
         if element.isotope:
             element_str = str(element.isotope) + element.symbol
         else:
@@ -201,7 +202,7 @@ class ElementSimulation:
             "description": self.recoil_element.get_description(),
             "modification_time": datetime.datetime.now().isoformat(
                 timespec="seconds"),
-            "type": self.simulation_type,
+            "type": self.recoil_element.get_type(),
             "element": element_str,
             "density": self.recoil_element.get_reference_density() * 1e22,
             "profile": []
