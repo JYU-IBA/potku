@@ -69,7 +69,8 @@ class RectangularFoil(Foil):
 
         Args:
             name:         Nama of the foil.
-            size:         Size of the rectangular foil in a tuple.
+            size_x:       Rectangular foil x width.
+            size_y:       Rectangular foil y height.
             distance:     Distance from the origin of the sample.
             layers:       Layers of the foil in a single list.
             transmission: Value that takes into account possible grids that

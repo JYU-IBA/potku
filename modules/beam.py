@@ -2,7 +2,7 @@
 # TODO: Add licence information
 """
 Created on 25.4.2018
-Updated on ...
+Updated on 4.5.2018
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
