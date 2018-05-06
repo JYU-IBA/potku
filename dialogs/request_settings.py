@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 4.5.2018
+Updated on 6.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -172,10 +172,14 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             double_validator)
         self.calibration_settings.show(self.detector_settings_widget)
 
+        # This makes a new detector object so all the changes to
+        # self.request.default_detector don't transfer to any simulations etc
+        #  which should use default detector values!!!
+        # TODO: read dafault detector from file somewhere else!
         self.request.default_detector = self.request.default_detector.from_file(
-            os.path.join(self.request.directory,
-                         self.request.default_detector_folder,
-                         "Default.detector"))
+             os.path.join(self.request.directory,
+                          self.request.default_detector_folder,
+                          "Default.detector"))
 
         # Add simulation settings view to the settings view
         self.simulation_settings_widget = SimulationSettingsWidget()

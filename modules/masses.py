@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 20.3.2013
-Updated on 3.5.2018
+Updated on 6.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -88,7 +88,7 @@ def load_isotopes(element, combobox, current_isotope=None):
                       key=lambda isotope: isotope[1],
                       reverse=True)
     dirtyinteger = 0
-    for isotope, tn in isotopes:
+    for isotope, tn, mass in isotopes:
         # We don't need rare isotopes to be shown
         if float(tn) > 0.0:
             combobox.addItem("{0} ({1}%)".format(isotope,

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 3.5.2018
+Updated on 6.5.2018
 """
 import math
 
@@ -161,7 +161,7 @@ class ElementSimulation:
                 solid_angle = math.pi * radius**2 / foil.distance**2
             else:
                 # TODO Foil.size[0] is tuple and breaks the math
-#                solid_angle = foil.size[0] * foil.size[1] / foil.distance**2
+                solid_angle = foil.size[0] * foil.size[1] / foil.distance**2
                 pass
             if smallest > solid_angle:
                 smallest = solid_angle
