@@ -88,7 +88,7 @@ class Samples:
         """
         all_samples_and_simulations = {}
         for sample in self.samples:
-            all_samples_and_simulations[sample] = sample.get_simulation_files()
+            all_samples_and_simulations[sample] = sample.get_simulation_dirs()
         return all_samples_and_simulations
 
 
@@ -154,39 +154,45 @@ class Sample:
                     self._running_int_measurement = \
                         int(item[measurement_name_start - 2
                                  :measurement_name_start - 1])
-                measurement_name = item[measurement_name_start+1:]
+                measurement_name = item[measurement_name_start + 1:]
                 if os.path.isfile(os.path.join(self.request.directory,
                                                self.directory, item, "Data",
                                                measurement_name + ".asc")):
                     all_measurements.append(measurement_name + ".asc")
         return all_measurements
 
-    def get_simulation_files(self):
-        """Get simulation files inside sample folder.
+    def get_simulation_dirs(self):
+        """Get simulation directories inside sample folder.
 
         Return:
-            A list of simulation file names.
+            A list of simulation directory paths.
         """
         all_simulations = []
-        for item in os.listdir(os.path.join(self.request.directory,
-                                            self.directory)):
-            if item.startswith("MC_simulation_"):
-                simulation_name_start = item.find('-')
-                # simulation needs to have a name.
-                if simulation_name_start == -1:
-                    return []
-                number_str = item[simulation_name_start - 2]
-                if number_str == "0":
-                    self._running_int_simulation = \
-                        int(item[simulation_name_start - 1])
-                else:
-                    self._running_int_simulation = \
-                        int(item[
-                            simulation_name_start - 2
-                            :simulation_name_start - 1])
-                all_simulations.append(os.path.join(self.request.directory,
-                                                    self.directory, item))
-        all_simulations.sort()
+        name_prefix = "MC_simulation_"
+        simulation_dirs = os.listdir(os.path.join(self.request.directory,
+                                                  self.directory))
+        simulation_dirs.sort()
+
+        for item in simulation_dirs:
+            # Only handle directories that start with name_prefix
+            if item.startswith(name_prefix):
+                try:
+                    # Check that simulation has a name after prefix.
+                    simulation_name_start = item.find('-')
+                    if simulation_name_start == -1:
+                        continue
+                    # Read simulation number from directory name
+                    self._running_int_simulation = int(
+                        item[len(name_prefix):len(name_prefix) + 2])
+                    all_simulations.append(os.path.join(self.request.directory,
+                                                        self.directory, item))
+                except ValueError:
+                    # Couldn't add simulation directory because the number
+                    # could not be read
+                    continue
+        # Increment running int so it's ready to use when creating new
+        # simulation under this sample
+        self.increase_running_int_simulation_by_1()
         return all_simulations
 
     def remove_obj(self, obj_removed):

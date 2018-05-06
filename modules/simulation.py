@@ -61,12 +61,18 @@ class Simulations:
         """
         simulation = None
         name_prefix = "MC_simulation_"
-        plain_name = re.sub('^MC_simulation_\d\d-', '', simulation_name)
+        if name_prefix in simulation_name:
+            plain_name = re.sub('^MC_simulation_\d\d-', '', simulation_name)
+            serial_number = int(simulation_name[len(name_prefix):len(
+                name_prefix)+2])
+        else:
+            plain_name = simulation_name
+            serial_number = sample.get_running_int_simulation()
+            sample.increase_running_int_simulation_by_1()
         simulation_folder = os.path.join(
             sample.request.directory, sample.directory, name_prefix +
-                                                        "%02d" % sample.get_running_int_simulation() + "-"
+                                                        "%02d" % serial_number + "-"
                                                         + plain_name)
-        sample.increase_running_int_simulation_by_1()
         try:
             keys = sample.simulations.simulations.keys()
             for key in keys:
@@ -77,6 +83,7 @@ class Simulations:
                                     run=self.request.default_run,
                                     detector=self.request.default_detector)
             simulation.create_folder_structure(simulation_folder)
+            simulation.serial_number = serial_number
             sample.simulations.simulations[tab_id] = simulation
             self.request.samples.simulations.simulations[tab_id] = simulation
         except:
