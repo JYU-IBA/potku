@@ -13,6 +13,9 @@ import platform
 import datetime
 import json
 import os
+import time
+
+from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 
 from modules.mcerd import MCERD
 from modules.get_espe import GetEspe
@@ -43,6 +46,7 @@ class ElementSimulation:
                  simulation_type="rec",
                  number_of_ions=1000000, number_of_preions=100000,
                  number_of_scaling_ions=5, number_of_recoils=10,
+                 minimum_scattering_angle=0.05,
                  minimum_main_scattering_angle=20,
                  simulation_mode="narrow", seed_number=101,
                  minimum_energy=1.0, channel_width=0.1,
@@ -69,27 +73,29 @@ class ElementSimulation:
             minimum_energy: Minimum energy.
             channel_width: Channel width.
             reference_density: Reference density.
-            number_of_ions_in_presimu: Number of ions in presimulation.
         """
+        self.name = name
+        self.description = description
+        self.modification_time = modification_time
+
         self.recoil_element = recoil_element
         self.beam = beam
         self.target = target
         self.detector = detector
         self.run = run
-        self.name = name
-        self.description = description
-        self.modification_time = modification_time
-
         self.simulation_type = simulation_type
+
         self.simulation_mode = simulation_mode
         self.number_of_ions = number_of_ions
         self.number_of_preions = number_of_preions
         self.number_of_scaling_ions = number_of_scaling_ions
         self.number_of_recoils = number_of_recoils
+        self.minimum_scattering_angle = minimum_scattering_angle
         self.minimum_main_scattering_angle = minimum_main_scattering_angle
         self.minimum_energy = minimum_energy
         self.seed_number = seed_number
         self.channel_width = channel_width
+        self.reference_density = reference_density
 
         self.__command = os.path.join("external", "Potku-bin", "mcerd" +
                                       (".exe" if platform.system() == "Windows"
@@ -158,10 +164,9 @@ class ElementSimulation:
             foil = self.detector.foils[i]
             if type(foil) is CircularFoil:
                 radius = foil.diameter / 2
-                solid_angle = math.pi * radius**2 / foil.distance**2
+                solid_angle = math.pi * radius ** 2 / foil.distance ** 2
             else:
-                # TODO Foil.size[0] is tuple and breaks the math
-#                solid_angle = foil.size[0] * foil.size[1] / foil.distance**2
+                solid_angle = foil.size[0] * foil.size[1] / foil.distance**2
                 pass
             if smallest > solid_angle:
                 smallest = solid_angle
@@ -170,30 +175,114 @@ class ElementSimulation:
         # hence the multiplication by 1000
 
     @classmethod
-    def from_file(cls, file_path):
+    def from_file(cls, mcsimu_file_path, rec_file_path, profile_file_path):
+        """Initialize ElementSimulation from JSON files.
 
-        obj = json.load(open(file_path))
+        Args:
+            mcsimu_file_path: A file path to JSON file containing the
+            simulation parameters.
+            rec_file_path: A file path to JSON file containing the recoil
+            parameters.
+            profile_file_path: A file path to JSON file containing the
+            channel width.
+        """
+
+        obj = json.load(open(mcsimu_file_path))
 
         name = obj["name"]
         description = obj["description"]
+        modification_time = obj["modification_time_unix"]
+        simulation_mode = obj["simulation_mode"]
+        number_of_ions = obj["number_of_ions"]
+        number_of_preions = obj["number_of_preions"]
+        seed_number = obj["seed_number"]
+        number_of_recoils = obj["number_of_recoils"]
+        number_of_scaling_ions = obj["number_of_scaling_ions"]
+        minimum_scattering_angle = obj["minimum_scattering_angle"]
+        minimum_main_scattering_angle = obj["minimum_main_scattering_angle"]
+        minimum_energy = obj["minimum_energy"]
 
-        # Convert string to datetime object. The string is assumed to be in
-        # ISO 8601 format, without information about the timezone.
-        # TODO: Add timezone.
-        modification_time = datetime.datetime.strptime(obj["modification_time"],
-                                                       "%Y-%m-%dT%H:%M:%S")
+        obj = json.load(open(rec_file_path))
+        simulation_type = obj["simulation_type"]
+        element = RecoilElement(obj["element"], obj["points"])
+        reference_density = obj["reference_density"]
 
-        type = obj["type"]
-        element = obj["element"]
-        profile = []  # TODO: Finish this.
+        obj = json.load(open(profile_file_path))
+        channel_width = obj["channel_width"]
 
-        cls(type, element, profile, name, description, modification_time)
-        # TODO: update the cls call above
+        cls(type, element, name, description, modification_time,
+            simulation_type, number_of_ions, number_of_preions,
+            number_of_scaling_ions, number_of_recoils, minimum_scattering_angle,
+            minimum_main_scattering_angle, simulation_mode, seed_number,
+            minimum_energy, channel_width, reference_density)
+
+    def to_file(self, mcsimu_file_path, rec_file_path, profile_file_path):
+        """Save element simulation settings to files.
+
+        Args:
+            mcsimu_file_path: File in which the simulation settings will be
+            saved.
+            rec_file_path: File in which the recoil settings will be saved.
+            profile_file_path: FIle in which channel width will be saved.
+        """
+        # Write .mcsimu file
+        obj = {
+            "name": self.name,
+            "description": self.description,
+            "modification_time": str(datetime.datetime.fromtimestamp(
+                time.time())),
+            "modification_time_unix": time.time(),
+            "simulation_mode": self.simulation_mode,
+            "number_of_ions": self.number_of_ions,
+            "number_of_preions": self.number_of_preions,
+            "seed_number": self.seed_number,
+            "number_of_recoils": self.number_of_recoils,
+            "number_of_scaling_ions": self.number_of_scaling_ions,
+            "minimum_scattering_angle": self.minimum_scattering_angle,
+            "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
+            "minimum_energy": self.minimum_energy
+        }
+
+        with open(mcsimu_file_path, "w") as file:
+            json.dump(obj, file, indent=4)
+
+        # Write .rec/.sct file
+        obj = {
+            "name": self.recoil_element.get_name(),
+            "description": self.recoil_element.get_description(),
+            "modification_time": str(datetime.datetime.fromtimestamp(
+                time.time())),
+            "modification_time_unix": time.time(),
+            "simulation_type": self.simulation_type,
+            "element": self.recoil_element.get_element().__str__(),
+            "reference_density": self.recoil_element.get_reference_density() *
+                                 1e22,
+            "profile": []
+        }
+
+        for point in self.recoil_element.get_points():
+            point_obj = {
+                "Point": str(round(point.get_x(), 2)) + " " +
+                         str(round(point.get_y(), 4))
+            }
+            obj["profile"].append(point_obj)
+
+        with open(rec_file_path, "w") as file:
+            json.dump(obj, file, indent=4)
+
+        # Read .profile to obj to update only channel width
+        # TODO When .profile is first created elsewhere, saving channel width
+        # should work.
+        # obj = json.load(open(profile_file_path))
+
+        # obj["channel_width"] = self.channel_width
+
+        # with open(profile_file_path, "w") as file:
+        #     json.dump(obj, file, indent=4)
 
     def recoil_to_file(self, directory):
-        file_path = os.path.join(directory, self.recoil_element.get_element().symbol + ".rec")
-        # Convert datetime object to string. Put the string in ISO 8601 format
-        #  without information about the timezone. TODO: Add timezone
+        file_path = os.path.join(directory,
+                                 self.recoil_element.get_element().symbol + ".rec")
         element = self.recoil_element.get_element()
         if element.isotope:
             element_str = str(element.isotope) + element.symbol
@@ -206,8 +295,7 @@ class ElementSimulation:
                 timespec="seconds"),
             "type": self.simulation_type,
             "element": element_str,
-            "density": self.recoil_element.get_reference_density() * 1e22,
-            "profile": []
+            "density": self.recoil_element.get_reference_density() * 1e22
         }
 
         for point in self.recoil_element.get_points():

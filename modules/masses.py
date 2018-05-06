@@ -88,7 +88,8 @@ def load_isotopes(element, combobox, current_isotope=None):
                       key=lambda isotope: isotope[1],
                       reverse=True)
     dirtyinteger = 0
-    for isotope, tn in isotopes:
+    # TODO What is the third index in isotopes list?
+    for isotope, tn, x in isotopes:
         # We don't need rare isotopes to be shown
         if float(tn) > 0.0:
             combobox.addItem("{0} ({1}%)".format(isotope,
