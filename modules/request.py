@@ -23,7 +23,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+from modules.beam import Beam
+from modules.element import Element
+from modules.element_simulation import ElementSimulation
 from modules.run import Run
+from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen " \
@@ -47,6 +51,7 @@ import re
 class Request:
     """Request class to handle all measurements.
     """
+
     def __init__(self, directory, name, statusbar, global_settings,
                  tabs):
         """ Initializes Request class.
@@ -103,10 +108,16 @@ class Request:
         self.default_measurement = Measurement(self, "Default")
         self.default_measurement.save_settings(os.path.join(
             self.default_folder, self.default_measurement.name))
-        self.default_simulation = Simulation(self, 1)  # TODO: Fix this.
+        self.default_simulation = Simulation(os.path.join(
+            self.default_folder, "Default.simulation"))
+        self.default_simulation.element_simulations.append(
+            ElementSimulation(self.default_folder,
+                              RecoilElement(Element("H"), [], None), Beam(),
+                              Target(),
+                              self.default_detector, Run(), name="Default"))
 
         self.__set_request_logger()
-        
+
         # Request file containing necessary information of the request.
         # If it exists, we assume old request is loaded.
         self.__request_information = configparser.ConfigParser()
@@ -116,7 +127,7 @@ class Request:
         stripped_tmp_dirname = tmp_dirname.replace(".potku", "")
         self.request_file = os.path.join(directory, "{0}.request".format(
             stripped_tmp_dirname))
-        
+
         # Defaults
         self.__request_information.add_section("meta")
         self.__request_information.add_section("open_measurements")
@@ -237,7 +248,7 @@ class Request:
         """ Load request.
         """
         self.__request_information.read(self.request_file)
-        self.__non_slaves = self.__request_information["meta"]["nonslave"]\
+        self.__non_slaves = self.__request_information["meta"]["nonslave"] \
             .split("|")
 
     def save(self):
@@ -260,7 +271,7 @@ class Request:
             for tab in tabs:
                 tab_name = tab.measurement.name
                 if tab.data_loaded and not tab_name in nonslaves and \
-                   tab_name != name:
+                        tab_name != name:
                     # No need to save same measurement twice.
                     tab.measurement.save_cuts()
 
@@ -279,7 +290,7 @@ class Request:
             for tab in tabs:
                 tab_name = tab.measurement.name
                 if tab.data_loaded and tab_name not in nonslaves and \
-                   tab_name != name:
+                        tab_name != name:
                     tab.measurement.selector.load(selection_file)
                     tab.histogram.matplotlib.on_draw()
 
@@ -303,13 +314,13 @@ class Request:
         """
         logger = logging.getLogger("request")
         logger.setLevel(logging.DEBUG)
-        
+
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - "
                                       "%(message)s",
-                                      datefmt="%Y-%m-%d %H:%M:%S")    
+                                      datefmt="%Y-%m-%d %H:%M:%S")
         requestlog = logging.FileHandler(os.path.join(self.directory,
                                                       "request.log"))
-        requestlog.setLevel(logging.INFO)   
+        requestlog.setLevel(logging.INFO)
         requestlog.setFormatter(formatter)
-        
+
         logger.addHandler(requestlog)

@@ -3,26 +3,21 @@
 Created on 1.3.2018
 Updated on 28.3.2018
 """
-from modules.element_simulation import ElementSimulation
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 
-import matplotlib
-import datetime
-import json
 import os
 
 from PyQt5 import QtCore, QtWidgets, QtGui
 from matplotlib.widgets import SpanSelector
 
-from widgets.matplotlib.base import MatplotlibWidget
-from dialogs.element_selection import ElementSelectionDialog
+import modules.element
+import modules.general_functions as general
 from dialogs.simulation.recoil_element_selection import \
     RecoilElementSelectionDialog
 from dialogs.simulation.recoil_info_dialog import RecoilInfoDialog
-import modules.general_functions as general
-import modules.element
+from widgets.matplotlib.base import MatplotlibWidget
 
 
 class Point:
@@ -398,7 +393,17 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def save_recoils(self, directory):
         for element_simulation in self.element_manager\
                 .get_element_simulations():
-            element_simulation.recoil_to_file(directory)
+            element_simulation.to_file(os.path.join(directory,
+                                                    element_simulation.name +
+                                                    ".mcsimu"),
+                                       os.path.join(directory,
+                                         element_simulation.get_recoil_element()
+                                                    .get_element().__str__()
+                                                    + ".rec"),
+                                       os.path.join(directory,
+                                         element_simulation.get_recoil_element()
+                                         .get_element().__str__()
+                                                    + ".profile"))
 
     def unlock_edit(self):
         confirm_box = QtWidgets.QMessageBox()
