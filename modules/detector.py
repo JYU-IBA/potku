@@ -33,7 +33,7 @@ class Detector:
 
     def __init__(self, path, name="Default", description="This a default "
                                                          "detector.",
-                 modification_time=time.time(), type="TOF",
+                 modification_time=time.time(), type="ToF",
                  calibration=CalibrationParameters(), foils=[CircularFoil(
                 "Default", 7.0, 256.0, [Layer("First", [Element("C", 12.011,
                                                                 1)], 0.1,
