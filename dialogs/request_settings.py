@@ -394,6 +394,15 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # Tof foils
         self.tof_foils = self.request.default_detector.tof_foils
 
+        # Simulation settings
+        self.simulation_settings_widget.nameLineEdit.setText(
+            self.request.default_simulation.name)
+        self.simulation_settings_widget.dateLabel.setText(str(
+            datetime.datetime.fromtimestamp(
+                self.request.default_detector.modification_time)))
+        self.simulation_settings_widget.descriptionLineEdit.setPlainText(
+            self.request.default_simulation.description)
+
     def __load_file(self, settings_type):
         """Opens file dialog and loads and shows selected ini file's values.
 
