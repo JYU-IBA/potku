@@ -189,7 +189,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         self.request.default_simulation = \
             self.request.default_simulation.from_file(
-            os.path.join(self.request.default_folder, "Default.simulation"))
+                os.path.join(self.request.default_folder, "Default.simulation"))
 
         # Add depth profile settings view to the settings view
         self.depth_profile_settings_widget = DepthProfileSettingsWidget()
@@ -600,31 +600,30 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.description = \
                 self.simulation_settings_widget.descriptionLineEdit. \
                     toPlainText()
-            self.request.default_simulation.mode = \
-                self.simulation_settings_widget.modeComboBox.currentText()
-            self.request.default_simulation.simulation_type = \
-                self.simulation_settings_widget \
-                    .typeOfSimulationComboBox.currentText()
-            self.request.default_simulation.scatter = \
-                self.simulation_settings_widget.scatterLineEdit.text()
-            self.request.default_simulation.main_scatter = \
-                self.simulation_settings_widget.mainScatterLineEdit.text()
-            self.request.default_simulation.energy = \
-                self.simulation_settings_widget.energyLineEdit.text()
-            self.request.default_simulation.no_of_ions = \
-                self.simulation_settings_widget.noOfIonsLineEdit.text()
-            self.request.default_simulation.no_of_preions = \
-                self.simulation_settings_widget.noOfPreionsLineEdit.text()
-            self.request.default_simulation.seed = \
-                self.simulation_settings_widget.seedLineEdit.text()
-            self.request.default_simulation.no_of_recoils = \
-                self.simulation_settings_widget.noOfRecoilsLineEdit.text()
-            self.request.default_simulation.no_of_scaling = \
-                self.simulation_settings_widget.noOfScalingLineEdit.text()
+#            self.request.default_simulation.mode = \
+#                self.simulation_settings_widget.modeComboBox.currentText()
+#            self.request.default_simulation.simulation_type = \
+#                self.simulation_settings_widget \
+#                    .typeOfSimulationComboBox.currentText()
+#            self.request.default_simulation.scatter = \
+#                self.simulation_settings_widget.scatterLineEdit.text()
+#            self.request.default_simulation.main_scatter = \
+#                self.simulation_settings_widget.mainScatterLineEdit.text()
+#            self.request.default_simulation.energy = \
+#                self.simulation_settings_widget.energyLineEdit.text()
+#            self.request.default_simulation.no_of_ions = \
+#                self.simulation_settings_widget.noOfIonsLineEdit.text()
+#            self.request.default_simulation.no_of_preions = \
+#                self.simulation_settings_widget.noOfPreionsLineEdit.text()
+#            self.request.default_simulation.seed = \
+#                self.simulation_settings_widget.seedLineEdit.text()
+#            self.request.default_simulation.no_of_recoils = \
+#                self.simulation_settings_widget.noOfRecoilsLineEdit.text()
+#            self.request.default_simulation.no_of_scaling = \
+#                self.simulation_settings_widget.noOfScalingLineEdit.text()
 
-            # TODO Simulation doesn't have to_file method yet.
-            #            self.request.default_simulation.to_file(
-            #                self.request.default_folder + os.sep + "Default.mcsimu")
+            self.request.default_simulation.to_file(os.path.join(
+                self.request.default_folder, "Default.simulation"))
 
             # Depth profile settings
             self.depth_profile_settings.set_settings(

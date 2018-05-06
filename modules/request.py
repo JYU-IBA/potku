@@ -104,7 +104,7 @@ class Request:
         self.default_measurement.save_settings(os.path.join(
             self.default_folder, self.default_measurement.name))
         self.default_simulation = Simulation(os.path.join(
-            self.default_folder, "Default.simulation"), self)
+            self.default_folder, "Default.simulation"))
 
         self.__set_request_logger()
         

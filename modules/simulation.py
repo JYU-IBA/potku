@@ -84,7 +84,6 @@ class Simulations:
                     return simulation  # simulation = None
             simulation = Simulation(os.path.join(simulation_folder,
                                                  plain_name + ".simulation"),
-                                    self.request,
                                     plain_name,
                                     run=self.request.default_run,
                                     detector=self.request.default_detector)
@@ -114,11 +113,20 @@ class Simulations:
 
 class Simulation:
 
-    def __init__(self, path, request, name="Default", tab_id=-1,
+    __slots__ = "path", "name", "tab_id", "description", \
+                "modification_time", "run", "detector", "target", \
+                "element_simulations", "name_prefix", "serial_number", \
+                "directory"
+
+    def __init__(self, path, name="Default",
                  description="This is a default simulation.",
-                 modification_time=time.time(), run=None,
+                 modification_time=time.time(), tab_id=-1, run=None,
                  detector=None):
-        self.request = request
+        """Initializes Simulation object.
+
+        Args:
+            path: Path to .simulation file.
+            """
         self.tab_id = tab_id
         self.path = path
         self.name = name
