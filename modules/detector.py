@@ -200,8 +200,8 @@ class Detector:
             "name": self.name,
             "description": self.description,
             "modification_time": str(datetime.datetime.fromtimestamp(
-                self.modification_time)),
-            "modification_time_unix": self.modification_time,
+                time.time())),
+            "modification_time_unix": time.time(),
             "detector_type": self.type,
             "foils": [],
             "tof_foils": self.tof_foils,

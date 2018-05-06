@@ -210,8 +210,8 @@ class Simulation:
             "name": self.name,
             "description": self.description,
             "modification_time": str(datetime.datetime.fromtimestamp(
-                self.modification_time)),
-            "modification_time_unix": self.modification_time
+                time.time())),
+            "modification_time_unix": time.time()
         }
 
         with open(file_path, "w") as file:
