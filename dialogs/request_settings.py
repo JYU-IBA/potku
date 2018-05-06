@@ -187,6 +187,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.simulation_settings_widget.ui.saveButton.clicked \
             .connect(lambda: self.__save_file("SIMULATION_SETTINGS"))
 
+        self.request.default_simulation = \
+            self.request.default_simulation.from_file(
+            os.path.join(self.request.default_folder, "Default.simulation"))
+
         # Add depth profile settings view to the settings view
         self.depth_profile_settings_widget = DepthProfileSettingsWidget()
         self.ui.tabs.addTab(self.depth_profile_settings_widget, "Profile")
