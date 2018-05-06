@@ -177,7 +177,8 @@ class Simulation:
         Args:
             recoil_element: RecoilElement that is simulated.
         """
-        element_simulation = ElementSimulation(recoil_element, self.run.beam,
+        element_simulation = ElementSimulation(self.directory, recoil_element,
+                                               self.run.beam,
                                                self.target,
                                                self.detector, self.run)
         self.element_simulations.append(element_simulation)

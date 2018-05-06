@@ -28,7 +28,7 @@ class ElementSimulation:
     MCERD objects, but only one GetEspe object.
     """
 
-    __slots__ = "name", \
+    __slots__ = "path", "name", \
                 "modification_time", \
                 "simulation_type", "number_of_ions", "number_of_preions", \
                 "number_of_scaling_ions", "number_of_recoils", \
@@ -40,7 +40,8 @@ class ElementSimulation:
                 "detector", "__command", "__process", "settings", \
                 "espe_settings", "description", "run"
 
-    def __init__(self, recoil_element, beam, target, detector, run, name="",
+    def __init__(self, path, recoil_element, beam, target, detector, run,
+                 name="",
                  description="",
                  modification_time=datetime.datetime.now(),
                  simulation_type="rec",
@@ -74,6 +75,7 @@ class ElementSimulation:
             channel_width: Channel width.
             reference_density: Reference density.
         """
+        self.path = path
         self.name = name
         self.description = description
         self.modification_time = modification_time
@@ -96,6 +98,10 @@ class ElementSimulation:
         self.seed_number = seed_number
         self.channel_width = channel_width
         self.reference_density = reference_density
+
+        self.to_file(os.path.join(self.path, self.name + ".mcsimu"),
+                     os.path.join(self.path, self.name + ".rec"),
+                     os.path.join(self.path, self.name + ".profile"))
 
         self.__command = os.path.join("external", "Potku-bin", "mcerd" +
                                       (".exe" if platform.system() == "Windows"

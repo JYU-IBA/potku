@@ -600,27 +600,27 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.description = \
                 self.simulation_settings_widget.descriptionLineEdit. \
                     toPlainText()
-#            self.request.default_simulation.mode = \
-#                self.simulation_settings_widget.modeComboBox.currentText()
-#            self.request.default_simulation.simulation_type = \
-#                self.simulation_settings_widget \
-#                    .typeOfSimulationComboBox.currentText()
-#            self.request.default_simulation.scatter = \
-#                self.simulation_settings_widget.scatterLineEdit.text()
-#            self.request.default_simulation.main_scatter = \
-#                self.simulation_settings_widget.mainScatterLineEdit.text()
-#            self.request.default_simulation.energy = \
-#                self.simulation_settings_widget.energyLineEdit.text()
-#            self.request.default_simulation.no_of_ions = \
-#                self.simulation_settings_widget.noOfIonsLineEdit.text()
-#            self.request.default_simulation.no_of_preions = \
-#                self.simulation_settings_widget.noOfPreionsLineEdit.text()
-#            self.request.default_simulation.seed = \
-#                self.simulation_settings_widget.seedLineEdit.text()
-#            self.request.default_simulation.no_of_recoils = \
-#                self.simulation_settings_widget.noOfRecoilsLineEdit.text()
-#            self.request.default_simulation.no_of_scaling = \
-#                self.simulation_settings_widget.noOfScalingLineEdit.text()
+            self.request.default_simulation.element_simulations[0].mode = \
+                self.simulation_settings_widget.modeComboBox.currentText()
+            self.request.default_simulation.element_simulations[0].simulation_type = \
+                self.simulation_settings_widget \
+                    .typeOfSimulationComboBox.currentText()
+            self.request.default_simulation.element_simulations[0].scatter = \
+                self.simulation_settings_widget.scatterLineEdit.text()
+            self.request.default_simulation.element_simulations[0].main_scatter = \
+                self.simulation_settings_widget.mainScatterLineEdit.text()
+            self.request.default_simulation.element_simulations[0].energy = \
+                self.simulation_settings_widget.energyLineEdit.text()
+            self.request.default_simulation.element_simulations[0].no_of_ions = \
+                self.simulation_settings_widget.noOfIonsLineEdit.text()
+            self.request.default_simulation.element_simulations[0].no_of_preions = \
+                self.simulation_settings_widget.noOfPreionsLineEdit.text()
+            self.request.default_simulation.element_simulations[0].seed = \
+                self.simulation_settings_widget.seedLineEdit.text()
+            self.request.default_simulation.element_simulations[0].no_of_recoils = \
+                self.simulation_settings_widget.noOfRecoilsLineEdit.text()
+            self.request.default_simulation.element_simulations[0].no_of_scaling = \
+                self.simulation_settings_widget.noOfScalingLineEdit.text()
 
             self.request.default_simulation.to_file(os.path.join(
                 self.request.default_folder, "Default.simulation"))
