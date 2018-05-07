@@ -395,31 +395,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             .get_element_simulation_with_recoil_element(
                 self.current_recoil_element)
         dialog = ElementSimulationSettingsDialog(current_element_simulation)
-        if dialog.isOk and not dialog.use_default:
-            current_element_simulation.name = \
-                dialog.temp_settings["name"]
-            current_element_simulation.description = \
-                dialog.temp_settings["description"]
-            current_element_simulation.simulation_mode = \
-                dialog.temp_settings["mode"]
-            current_element_simulation.simulation_type = \
-                dialog.temp_settings["simulation_type"]
-            current_element_simulation.minimum_scattering_angle = \
-                dialog.temp_settings["scatter"]
-            current_element_simulation.minimum_main_scattering_angle = \
-                dialog.temp_settings["main_scatter"]
-            current_element_simulation.minimum_energy = \
-                dialog.temp_settings["energy"]
-            current_element_simulation.number_of_ions = \
-                dialog.temp_settings["no_of_ions"]
-            current_element_simulation.number_of_preions = \
-                dialog.temp_settings["no_of_preions"]
-            current_element_simulation.seed_number = \
-                dialog.temp_settings["seed"]
-            current_element_simulation.number_of_recoils = \
-                dialog.temp_settings["no_of_recoils"]
-            current_element_simulation.number_of_scaling_ions = \
-                dialog.temp_settings["no_of_scaling"]
 
     def open_recoil_element_info(self):
         dialog = RecoilInfoDialog(self.current_recoil_element)
@@ -433,17 +408,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def save_mcsimu_rec_profile(self, directory):
         for element_simulation in self.element_manager\
                 .get_element_simulations():
-            element_simulation.to_file(os.path.join(directory,
-                                                    element_simulation.name +
-                                                    ".mcsimu"),
-                                       os.path.join(directory,
-                                         element_simulation.get_recoil_element()
-                                                    .get_element().__str__()
-                                                    + ".rec"),
-                                       os.path.join(directory,
-                                         element_simulation.get_recoil_element()
-                                         .get_element().__str__()
-                                                    + ".profile"))
+            element_simulation.mcsimu_to_file(
+                os.path.join(directory, element_simulation.name + ".mcsimu"))
+            element_simulation.recoil_to_file(
+                os.path.join(directory, element_simulation.get_recoil_element()
+                             .get_element().__str__() + ".rec"))
+            element_simulation.profile_to_file(
+                os.path.join(directory, element_simulation.get_recoil_element()
+                             .get_element().__str__() + ".profile"))
 
     def unlock_edit(self):
         confirm_box = QtWidgets.QMessageBox()

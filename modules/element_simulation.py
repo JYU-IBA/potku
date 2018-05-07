@@ -112,9 +112,10 @@ class ElementSimulation:
         self.seed_number = seed_number
         self.channel_width = channel_width
 
-        self.to_file(os.path.join(self.directory, self.name + ".mcsimu"),
-                     os.path.join(self.directory, self.name + ".rec"),
-                     os.path.join(self.directory, self.name + ".profile"))
+        self.mcsimu_to_file(os.path.join(self.directory, self.name + ".mcsimu"))
+        self.recoil_to_file(os.path.join(self.directory, self.name + ".rec"))
+        self.profile_to_file(os.path.join(self.directory,
+                                          self.name + ".profile"))
 
         self.__command = os.path.join("external", "Potku-bin", "mcerd" +
                                       (".exe" if platform.system() == "Windows"
@@ -252,16 +253,14 @@ class ElementSimulation:
                    channel_width=channel_width,
                    reference_density=reference_density)
 
-    def to_file(self, mcsimu_file_path, rec_file_path, profile_file_path):
-        """Save element simulation settings to files.
+    def mcsimu_to_file(self, file_path):
+        """Save mcsimu settings to file.
 
         Args:
-            mcsimu_file_path: File in which the simulation settings will be
-            saved.
+            file_path: File in which the mcsimu settings will be saved.
             rec_file_path: File in which the recoil settings will be saved.
             profile_file_path: FIle in which channel width will be saved.
         """
-        # Write .mcsimu file
         obj = {
             "name": self.name,
             "description": self.description,
@@ -279,62 +278,23 @@ class ElementSimulation:
             "minimum_energy": self.minimum_energy
         }
 
-        with open(mcsimu_file_path, "w") as file:
+        with open(file_path, "w") as file:
             json.dump(obj, file, indent=4)
 
-        # Write .rec/.sct file
+    def recoil_to_file(self, file_path):
+        """Save recoil settings to file.
+
+        Args:
+            file_path: File in which the recoil settings will be saved.
+        """
         obj = {
             "name": self.recoil_element.get_name(),
             "description": self.recoil_element.get_description(),
             "modification_time": str(datetime.datetime.fromtimestamp(
                 time.time())),
             "modification_time_unix": time.time(),
-            "simulation_type": self.simulation_type,
-            "element": self.recoil_element.get_element().__str__(),
-            "reference_density": self.recoil_element.get_reference_density() *
-                                 1e22,
-            "profile": []
-        }
-
-        for point in self.recoil_element.get_points():
-            point_obj = {
-                "Point": str(round(point.get_x(), 2)) + " " +
-                         str(round(point.get_y(), 4))
-            }
-            obj["profile"].append(point_obj)
-
-        with open(rec_file_path, "w") as file:
-            json.dump(obj, file, indent=4)
-
-        # Read .profile to obj to update only channel width
-        if os.path.exists(profile_file_path):
-            obj = json.load(open(profile_file_path))
-            obj["channel_width"] = self.channel_width
-        else:
-            obj = {
-                "channel_width": self.channel_width
-            }
-
-        with open(profile_file_path, "w") as file:
-            json.dump(obj, file, indent=4)
-
-    def recoil_to_file(self, directory):
-        element = self.recoil_element.get_element()
-        file_path = os.path.join(directory, element.symbol + "." +
-                                 self.recoil_element.get_type())
-        # Convert datetime object to string. Put the string in ISO 8601 format
-        #  without information about the timezone. TODO: Add timezone
-        if element.isotope:
-            element_str = str(element.isotope) + element.symbol
-        else:
-            element_str = element.symbol
-        obj = {
-            "name": self.recoil_element.get_name(),
-            "description": self.recoil_element.get_description(),
-            "modification_time": datetime.datetime.now().isoformat(
-                timespec="seconds"),
             "type": self.recoil_element.get_type(),
-            "element": element_str,
+            "element": self.recoil_element.get_element().__str__(),
             "density": self.recoil_element.get_reference_density() * 1e22,
             "profile": []
         }
@@ -345,6 +305,24 @@ class ElementSimulation:
                          str(round(point.get_y(), 4))
             }
             obj["profile"].append(point_obj)
+
+        with open(file_path, "w") as file:
+            json.dump(obj, file, indent=4)
+
+    def profile_to_file(self, file_path):
+        """Save profile settings (only channel width) to file.
+
+        Args:
+            file_path: File in which the channel width will be saved.
+        """
+        # Read .profile to obj to update only channel width
+        if os.path.exists(file_path):
+            obj = json.load(open(file_path))
+            obj["channel_width"] = self.channel_width
+        else:
+            obj = {
+                "channel_width": self.channel_width
+            }
 
         with open(file_path, "w") as file:
             json.dump(obj, file, indent=4)

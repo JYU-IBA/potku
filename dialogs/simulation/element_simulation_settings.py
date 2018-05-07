@@ -18,13 +18,12 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                                           "ui_element_simulation_settings.ui"),
                              self)
 
-        self.ui.okPushButton.clicked.connect(self.accept_settings)
+        self.ui.okPushButton.clicked.connect(self.update_settings_and_close)
+        self.ui.applyPushButton.clicked.connect(self.update_settings)
         self.ui.cancelPushButton.clicked.connect(self.close)
 
         self.element_simulation = element_simulation
         self.temp_settings = {}
-        self.isOk = False
-        self.use_default = True
 
         self.ui.useRequestSettingsValuesCheckBox.stateChanged.connect(
             self.toggle_settings)
@@ -112,43 +111,46 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             self.ui.generalParametersGroupBox.setEnabled(False)
             self.ui.physicalParametersGroupBox.setEnabled(False)
             self.import_default_settings()
-            self.use_default = True
         else:
             self.ui.generalParametersGroupBox.setEnabled(True)
             self.ui.physicalParametersGroupBox.setEnabled(True)
             self.import_specific_settings()
-            self.use_default = False
 
-    def accept_settings(self):
-        """Function for accepting the current settings and closing the dialog
-        window.
+    def update_settings_and_close(self):
+        """Updates settings and closes the dialog."""
+        self.update_settings()
+        self.close()
+
+    def update_settings(self):
+        """Reads values from dialog and updates them in the element simulation.
         """
-        self.temp_settings["name"] = \
+        self.element_simulation.name = \
             self.ui.nameLineEdit.text()
-        self.temp_settings["description"] = \
+        self.element_simulation.description = \
             self.ui.descriptionPlainTextEdit\
             .toPlainText()
-        self.temp_settings["mode"] = \
-            self.ui.modeComboBox.currentText()
-        self.temp_settings["simulation_type"] = \
+        self.element_simulation.simulation_type = \
             self.ui.typeOfSimulationComboBox.currentText()
-        self.temp_settings["no_of_ions"] = \
+        self.element_simulation.simulation_mode = \
+            self.ui.modeComboBox.currentText()
+        self.element_simulation.number_of_ions = \
             self.ui.numberOfIonsSpinBox.value()
-        self.temp_settings["no_of_preions"] = \
+        self.element_simulation.number_of_preions = \
             self.ui.numberOfPreIonsSpinBox\
             .value()
-        self.temp_settings["seed"] = \
+        self.element_simulation.seed_number = \
             self.ui.seedSpinBox.value()
-        self.temp_settings["no_of_recoils"] = \
+        self.element_simulation.number_of_recoils = \
             self.ui.numberOfRecoilsSpinBox.value()
-        self.temp_settings["no_of_scaling"] = \
+        self.element_simulation.number_of_scaling_ions = \
             self.ui.numberOfScalingIonsSpinBox.value()
-        self.temp_settings["scatter"] = \
+        self.element_simulation.minimum_scattering_angle = \
             self.ui.minimumScatterAngleDoubleSpinBox.value()
-        self.temp_settings["main_scatter"] = \
+        self.element_simulation.minimum_main_scattering_angle = \
             self.ui.minimumMainScatterAngleDoubleSpinBox.value()
-        self.temp_settings["energy"] = \
+        self.element_simulation.minimum_energy = \
             self.ui.minimumEnergyDoubleSpinBox.value()
 
-        self.isOk = True
-        self.close()
+        self.element_simulation.mcsimu_to_file(
+                os.path.join(self.element_simulation.directory,
+                             self.element_simulation.name + ".mcsimu"))
