@@ -236,6 +236,26 @@
             </property>
            </widget>
           </item>
+          <item>
+           <widget class="QPushButton" name="settingsPushButton">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="toolTip">
+             <string>Element simulation settings</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+            <property name="icon">
+             <iconset>
+              <normaloff>../ui_icons/reinhardt/gear.svg</normaloff>../ui_icons/reinhardt/gear.svg</iconset>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
        </layout>

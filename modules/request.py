@@ -23,7 +23,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+from modules.beam import Beam
+from modules.element import Element
+from modules.element_simulation import ElementSimulation
 from modules.run import Run
+from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen " \
@@ -47,6 +51,7 @@ import re
 class Request:
     """Request class to handle all measurements.
     """
+
     def __init__(self, directory, name, statusbar, global_settings,
                  tabs):
         """ Initializes Request class.
@@ -83,30 +88,42 @@ class Request:
         if not os.path.exists(directory):
             os.makedirs(directory)
 
+        # Create Default folder under request folder
         self.default_folder = os.path.join(self.directory, "Default")
         if not os.path.exists(self.default_folder):
-            os.makedirs(self.default_folder)  # Create a Default folder
+            os.makedirs(self.default_folder)
 
+        # Create Detector folder under Default folder
         self.default_detector_folder = os.path.join(self.default_folder,
                                                     "Detector")
         if not os.path.exists(self.default_detector_folder):
-            os.makedirs(self.default_detector_folder)  # Create a Detector
-            # folder
-        # TODO: Add folder creation as a function call
+            os.makedirs(self.default_detector_folder)
+
+        # Create default detector for request
         self.default_detector = Detector(
             os.path.join(self.default_detector_folder, "Default.detector"))
         self.default_detector.create_folder_structure(
             self.default_detector_folder)
-        # self.detector.to_file(os.path.join(directory, "default.detector"))
-        # self.detector.save_settings(self.default_folder + os.sep + "
-        # Detector" + os.sep + self.detector.name)
+
+        # Create default measurement for request
         self.default_measurement = Measurement(self, "Default")
         self.default_measurement.save_settings(os.path.join(
             self.default_folder, self.default_measurement.name))
-        self.default_simulation = Simulation(self, 1)  # TODO: Fix this.
+
+        # Create default simulation for request
+        self.default_simulation = Simulation(os.path.join(
+            self.default_folder, "Default.simulation"), self)
+        self.default_element_simulation = ElementSimulation(self.default_folder,
+                                                            self,
+                                                            RecoilElement(
+                                                                Element("H"),
+                                                                [], None),
+                                                            name="Default")
+        self.default_simulation.element_simulations.append(
+            self.default_element_simulation)
 
         self.__set_request_logger()
-        
+
         # Request file containing necessary information of the request.
         # If it exists, we assume old request is loaded.
         self.__request_information = configparser.ConfigParser()
@@ -116,7 +133,7 @@ class Request:
         stripped_tmp_dirname = tmp_dirname.replace(".potku", "")
         self.request_file = os.path.join(directory, "{0}.request".format(
             stripped_tmp_dirname))
-        
+
         # Defaults
         self.__request_information.add_section("meta")
         self.__request_information.add_section("open_measurements")
@@ -237,7 +254,7 @@ class Request:
         """ Load request.
         """
         self.__request_information.read(self.request_file)
-        self.__non_slaves = self.__request_information["meta"]["nonslave"]\
+        self.__non_slaves = self.__request_information["meta"]["nonslave"] \
             .split("|")
 
     def save(self):
@@ -260,7 +277,7 @@ class Request:
             for tab in tabs:
                 tab_name = tab.measurement.name
                 if tab.data_loaded and not tab_name in nonslaves and \
-                   tab_name != name:
+                        tab_name != name:
                     # No need to save same measurement twice.
                     tab.measurement.save_cuts()
 
@@ -279,7 +296,7 @@ class Request:
             for tab in tabs:
                 tab_name = tab.measurement.name
                 if tab.data_loaded and tab_name not in nonslaves and \
-                   tab_name != name:
+                        tab_name != name:
                     tab.measurement.selector.load(selection_file)
                     tab.histogram.matplotlib.on_draw()
 
@@ -303,13 +320,13 @@ class Request:
         """
         logger = logging.getLogger("request")
         logger.setLevel(logging.DEBUG)
-        
+
         formatter = logging.Formatter("%(asctime)s - %(levelname)s - "
                                       "%(message)s",
-                                      datefmt="%Y-%m-%d %H:%M:%S")    
+                                      datefmt="%Y-%m-%d %H:%M:%S")
         requestlog = logging.FileHandler(os.path.join(self.directory,
                                                       "request.log"))
-        requestlog.setLevel(logging.INFO)   
+        requestlog.setLevel(logging.INFO)
         requestlog.setFormatter(formatter)
-        
+
         logger.addHandler(requestlog)

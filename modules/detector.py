@@ -33,7 +33,7 @@ class Detector:
 
     def __init__(self, path, name="Default", description="This a default "
                                                          "detector.",
-                 modification_time=time.time(), type="TOF",
+                 modification_time=time.time(), type="ToF",
                  calibration=CalibrationParameters(), foils=[CircularFoil(
                 "Default", 7.0, 256.0, [Layer("First", [Element("C", 12.011,
                                                                 1)], 0.1,
@@ -200,8 +200,8 @@ class Detector:
             "name": self.name,
             "description": self.description,
             "modification_time": str(datetime.datetime.fromtimestamp(
-                self.modification_time)),
-            "modification_time_unix": self.modification_time,
+                time.time())),
+            "modification_time_unix": time.time(),
             "detector_type": self.type,
             "foils": [],
             "tof_foils": self.tof_foils,
@@ -224,15 +224,16 @@ class Detector:
             }
             if isinstance(foil, CircularFoil):
                 foil_obj["type"] = "circular"
-                foil_obj["diameter"] = str(foil.diameter)
+                foil_obj["diameter"] = foil.diameter
             else:
                 foil_obj["type"] = "rectangular"
-                foil_obj["size"] = str(foil.size)
+                foil_obj["size"] = foil.size
 
             for layer in foil.layers:
                 layer_obj = {
                     "name": layer.name,
-                    "elements": [str(element) for element in layer.elements],
+                    "elements": [element.__str__() for element in
+                                 layer.elements],
                     "thickness": layer.thickness,
                     "density": layer.density
                 }

@@ -98,7 +98,7 @@ class TargetWidget(QtWidgets.QWidget):
                                    ".target")
         self.target.to_file(target_path)
 
-        self.recoil_widget.save_recoils(self.simulation.directory)
+        self.recoil_widget.save_mcsimu_rec_profile(self.simulation.directory)
 
     def add_layer(self):
         """Adds a layer in the target composition.

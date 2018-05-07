@@ -8,7 +8,10 @@ Updated on 27.4.2018
 
 Simulation.py runs the MCERD simulation with a command file.
 """
+import datetime
+import json
 import re
+import time
 
 from modules.element_simulation import ElementSimulation
 from modules.target import Target
@@ -61,22 +64,31 @@ class Simulations:
         """
         simulation = None
         name_prefix = "MC_simulation_"
-        plain_name = re.sub('^MC_simulation_\d\d-', '', simulation_name)
+        if name_prefix in simulation_name:
+            plain_name = re.sub('^MC_simulation_\d\d-', '', simulation_name)
+            serial_number = int(simulation_name[len(name_prefix):len(
+                name_prefix) + 2])
+        else:
+            plain_name = simulation_name
+            serial_number = sample.get_running_int_simulation()
+            sample.increase_running_int_simulation_by_1()
         simulation_folder = os.path.join(
             sample.request.directory, sample.directory, name_prefix +
-                                                        "%02d" % sample.get_running_int_simulation() + "-"
+                                                        "%02d" % serial_number + "-"
                                                         + plain_name)
-        sample.increase_running_int_simulation_by_1()
         try:
             keys = sample.simulations.simulations.keys()
             for key in keys:
                 if sample.simulations.simulations[key].directory == \
                         plain_name:
                     return simulation  # simulation = None
-            simulation = Simulation(self.request, plain_name,
+            simulation = Simulation(os.path.join(simulation_folder,
+                                                 plain_name + ".simulation"),
+                                    self.request,
+                                    plain_name,
                                     run=self.request.default_run,
                                     detector=self.request.default_detector)
-            simulation.create_folder_structure(simulation_folder)
+            simulation.serial_number = serial_number
             sample.simulations.simulations[tab_id] = simulation
             self.request.samples.simulations.simulations[tab_id] = simulation
         except:
@@ -100,13 +112,26 @@ class Simulations:
 
 
 class Simulation:
+    __slots__ = "path", "request", "simulation_file", "name", "tab_id", \
+                "description", "modification_time", "run", "detector", \
+                "target", "element_simulations", "name_prefix", \
+                "serial_number", "directory"
 
-    def __init__(self, request, name, tab_id=-1, description="", run=None,
+    def __init__(self, path, request, name="Default",
+                 description="This is a default simulation.",
+                 modification_time=time.time(), tab_id=-1, run=None,
                  detector=None):
-        self.request = request
+        """Initializes Simulation object.
+
+        Args:
+            path: Path to .simulation file.
+            """
         self.tab_id = tab_id
+        self.path = path
+        self.request = request
         self.name = name
         self.description = description
+        self.modification_time = modification_time
         self.element_simulations = []
 
         self.run = run
@@ -115,19 +140,13 @@ class Simulation:
 
         self.name_prefix = "MC_simulation_"
         self.serial_number = 0
-        self.directory = None
 
-    def create_folder_structure(self, simulation_folder_path):
-        self.directory = simulation_folder_path
-        self.__make_directories(self.directory)
+        self.directory, self.simulation_file = os.path.split(self.path)
+        self.create_folder_structure()
 
-    def create_directory(self, simulation_folder):
-        """ Creates folder structure for the simulation.
+        self.to_file(self.path)
 
-        Args:
-            simulation_folder: Path of the simulation folder.
-        """
-        self.directory = os.path.join(simulation_folder, self.name)
+    def create_folder_structure(self):
         self.__make_directories(self.directory)
 
     def __make_directories(self, directory):
@@ -150,8 +169,49 @@ class Simulation:
         Args:
             recoil_element: RecoilElement that is simulated.
         """
-        element_simulation = ElementSimulation(recoil_element, self.run.beam,
-                                               self.target,
-                                               self.detector, self.run)
+        element_simulation = ElementSimulation(directory=self.directory,
+                                               request=self.request,
+                                               name=recoil_element.get_element().__str__(),
+                                               recoil_element=recoil_element,
+                                               beam=self.run.beam,
+                                               target=self.target,
+                                               detector=self.detector,
+                                               run=self.run)
         self.element_simulations.append(element_simulation)
         return element_simulation
+
+    @classmethod
+    def from_file(cls, request, file_path):
+        """Initialize Simulation from a JSON file.
+
+        Args:
+            request: Request which the Simulation belongs to.
+            file_path: A file path to JSON file containing the
+            simulation information.
+        """
+        obj = json.load(open(file_path))
+
+        # Below we do conversion from dictionary to Simulation object
+        name = obj["name"]
+        description = obj["description"]
+        modification_time = obj["modification_time_unix"]
+
+        return cls(request=request, path=file_path, name=name,
+                   description=description, modification_time=modification_time)
+
+    def to_file(self, file_path):
+        """Save simulation settings to a file.
+
+        Args:
+            file_path: File in which the simulation settings will be saved."""
+
+        obj = {
+            "name": self.name,
+            "description": self.description,
+            "modification_time": str(datetime.datetime.fromtimestamp(
+                time.time())),
+            "modification_time_unix": time.time()
+        }
+
+        with open(file_path, "w") as file:
+            json.dump(obj, file, indent=4)

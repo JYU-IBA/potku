@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 4.5.2018
+Updated on 6.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -25,6 +25,7 @@ along with this program (file named 'LICENCE').
 
 Dialog for the request settings
 """
+import datetime
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
@@ -123,8 +124,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
         self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
 
-        self.show_settings()
-
         # Add detector settings view to the settings view
         self.detector_settings_widget = DetectorSettingsWidget()
         self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
@@ -172,6 +171,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             double_validator)
         self.calibration_settings.show(self.detector_settings_widget)
 
+        # This makes a new detector object so all the changes to
+        # self.request.default_detector don't transfer to any simulations etc
+        #  which should use default detector values!!!
+        # TODO: read dafault detector from file somewhere else!
         self.request.default_detector = self.request.default_detector.from_file(
             os.path.join(self.request.directory,
                          self.request.default_detector_folder,
@@ -187,6 +190,23 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             "RBS")
         self.simulation_settings_widget.ui.saveButton.clicked \
             .connect(lambda: self.__save_file("SIMULATION_SETTINGS"))
+
+        self.request.default_simulation = \
+            self.request.default_simulation.from_file(self.request,
+                os.path.join(self.request.default_folder, "Default.simulation"))
+        self.request.default_element_simulation = self.request \
+            .default_element_simulation.from_file(self.request,
+                                                  os.path.join(
+                                                      self.request.default_folder,
+                                                      "Default.mcsimu"),
+                                                  os.path.join(
+                                                      self.request.default_folder,
+                                                      "Default.rec"),
+                                                  os.path.join(
+                                                      self.request.default_folder,
+                                                      "Default.profile"))
+        self.request.default_simulation.element_simulations.append(
+            self.request.default_element_simulation)
 
         # Add depth profile settings view to the settings view
         self.depth_profile_settings_widget = DepthProfileSettingsWidget()
@@ -212,6 +232,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.depth_profile_settings_widget.ui.\
             depthsForConcentrationScalingLineEdit_2.setValidator(
                 double_validator)
+
+        self.show_settings()
 
         self.exec_()
 
@@ -349,6 +371,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         """
         Show settings in the dialog.
         """
+        # Measurement settings
         if self.request.default_measurement.ion:
             self.measurement_settings_widget.ui.beamIonButton.setText(
                 self.request.default_measurement.ion.name)
@@ -391,6 +414,74 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             str(self.request.default_measurement.target_theta))
         self.measurement_settings_widget.targetFiiLineEdit.setText(
             str(self.request.default_measurement.target_fii))
+
+        # Detector settings
+        self.detector_settings_widget.nameLineEdit.setText(
+            self.request.default_detector.name)
+        self.detector_settings_widget.dateLabel.setText(str(
+            datetime.datetime.fromtimestamp(
+                self.request.default_detector.modification_time)))
+        self.detector_settings_widget.descriptionLineEdit.setPlainText(
+            self.request.default_detector.description)
+        self.detector_settings_widget.typeComboBox.setCurrentIndex(
+            self.detector_settings_widget.typeComboBox.findText(
+                self.request.default_detector.type))
+        self.detector_settings_widget.slopeLineEdit.setText(
+            str(self.calibration_settings.slope))
+        self.detector_settings_widget.offsetLineEdit.setText(
+            str(self.calibration_settings.offset))
+        self.detector_settings_widget.angleSlopeLineEdit.setText(
+            str(self.calibration_settings.angleslope))
+        self.detector_settings_widget.angleOffsetLineEdit.setText(
+            str(self.calibration_settings.angleoffset))
+
+        # Detector foils
+        self.calculate_distance()
+        self.tmp_foil_info = self.request.default_detector.foils
+
+        # Tof foils
+        self.tof_foils = self.request.default_detector.tof_foils
+
+        # Simulation settings
+        self.simulation_settings_widget.nameLineEdit.setText(
+            self.request.default_simulation.name)
+        self.simulation_settings_widget.dateLabel.setText(str(
+            datetime.datetime.fromtimestamp(
+                self.request.default_simulation.modification_time)))
+        self.simulation_settings_widget.descriptionLineEdit.setPlainText(
+            self.request.default_simulation.description)
+        self.simulation_settings_widget.modeComboBox.setCurrentIndex(
+            self.simulation_settings_widget.modeComboBox.findText(
+                self.request.default_simulation.element_simulations[
+                    0].simulation_mode))
+        self.simulation_settings_widget.typeOfSimulationComboBox \
+            .setCurrentIndex(
+            self.simulation_settings_widget.typeOfSimulationComboBox.findText(
+                self.request.default_simulation.element_simulations[
+                    0].simulation_type))
+        self.simulation_settings_widget.scatterLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[
+                0].minimum_scattering_angle))
+        self.simulation_settings_widget.mainScatterLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[
+                0].minimum_main_scattering_angle))
+        self.simulation_settings_widget.energyLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[
+                0].minimum_energy))
+        self.simulation_settings_widget.noOfIonsLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[
+                0].number_of_ions))
+        self.simulation_settings_widget.noOfPreionsLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[
+                0].number_of_preions))
+        self.simulation_settings_widget.seedLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[0].seed_number))
+        self.simulation_settings_widget.noOfRecoilsLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[
+                0].number_of_recoils))
+        self.simulation_settings_widget.noOfScalingLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[
+                0].number_of_scaling_ions))
 
     def __load_file(self, settings_type):
         """ Opens file dialog and loads and shows selected ini file's values.
@@ -565,9 +656,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     self.request.default_folder + os.sep +
                     "Default")
                 # TODO Implement to_file for Measurement
-#                self.request.default_measurement.to_file(
-#                    self.request.default_folder + os.sep +
-#                    "Default.measurement")
+                # self.request.default_measurement.to_file(
+                #   self.request.default_folder + os.sep +
+                #    "Default.measurement")
 
             # Detector settings
             self.request.default_detector.name = \
@@ -593,33 +684,40 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.name = \
                 self.simulation_settings_widget.nameLineEdit.text()
             self.request.default_simulation.description = \
-                self.simulation_settings_widget.descriptionLineEdit.\
-                toPlainText()
-            self.request.default_simulation.mode = \
-                self.simulation_settings_widget.modeComboBox.currentText()
-            self.request.default_simulation.simulation_type = \
-                self.simulation_settings_widget \
-                    .typeOfSimulationComboBox.currentText()
-            self.request.default_simulation.scatter = \
+                self.simulation_settings_widget.descriptionLineEdit. \
+                    toPlainText()
+            self.request.default_simulation.element_simulations[
+                0].simulation_mode = self.simulation_settings_widget \
+                .modeComboBox.currentText()
+            self.request.default_simulation.element_simulations[
+                0].simulation_type = self.simulation_settings_widget \
+                .typeOfSimulationComboBox.currentText()
+            self.request.default_simulation.element_simulations[
+                0].minimum_scattering_angle = \
                 self.simulation_settings_widget.scatterLineEdit.text()
-            self.request.default_simulation.main_scatter = \
+            self.request.default_simulation.element_simulations[
+                0].minimum_main_scattering_angle = \
                 self.simulation_settings_widget.mainScatterLineEdit.text()
-            self.request.default_simulation.energy = \
-                self.simulation_settings_widget.energyLineEdit.text()
-            self.request.default_simulation.no_of_ions = \
-                self.simulation_settings_widget.noOfIonsLineEdit.text()
-            self.request.default_simulation.no_of_preions = \
-                self.simulation_settings_widget.noOfPreionsLineEdit.text()
-            self.request.default_simulation.seed = \
-                self.simulation_settings_widget.seedLineEdit.text()
-            self.request.default_simulation.no_of_recoils = \
-                self.simulation_settings_widget.noOfRecoilsLineEdit.text()
-            self.request.default_simulation.no_of_scaling = \
-                self.simulation_settings_widget.noOfScalingLineEdit.text()
+            self.request.default_simulation.element_simulations[
+                0].minimum_energy = self.simulation_settings_widget \
+                .energyLineEdit.text()
+            self.request.default_simulation.element_simulations[
+                0].number_of_ions = self.simulation_settings_widget \
+                .noOfIonsLineEdit.text()
+            self.request.default_simulation.element_simulations[
+                0].number_of_preions = self.simulation_settings_widget \
+                .noOfPreionsLineEdit.text()
+            self.request.default_simulation.element_simulations[0].seed_number \
+                = self.simulation_settings_widget.seedLineEdit.text()
+            self.request.default_simulation.element_simulations[
+                0].number_of_recoils = self.simulation_settings_widget \
+                .noOfRecoilsLineEdit.text()
+            self.request.default_simulation.element_simulations[
+                0].number_of_scaling_ions = self.simulation_settings_widget \
+                .noOfScalingLineEdit.text()
 
-            # TODO Simulation doesn't have to_file method yet.
-#            self.request.default_simulation.to_file(
-#                self.request.default_folder + os.sep + "Default.mcsimu")
+            self.request.default_simulation.to_file(os.path.join(
+                self.request.default_folder, "Default.simulation"))
 
             # Depth profile settings
             self.depth_profile_settings.set_settings(
