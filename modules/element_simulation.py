@@ -51,7 +51,7 @@ class ElementSimulation:
                  name="Default",
                  description="",
                  modification_time=datetime.datetime.now(),
-                 simulation_type="rec",
+                 simulation_type="ERD",
                  number_of_ions=1000000, number_of_preions=100000,
                  number_of_scaling_ions=5, number_of_recoils=10,
                  minimum_scattering_angle=0.05,
@@ -77,7 +77,8 @@ class ElementSimulation:
             number_of_preions: Number of ions in presimulation.
             number_of_scaling_ions: Number of scaling ions.
             number_of_recoils: Number of recoils.
-            minimum_main_scattering_angle: Minimum angle of scattering.
+            minimum_scattering_angle: Minimum angle of scattering.
+            minimum_main_scattering_angle: Minimum main angle of scattering.
             simulation_mode: Mode of simulation.
             seed_number: Seed number to give unique value to one simulation.
             minimum_energy: Minimum energy.
@@ -93,7 +94,9 @@ class ElementSimulation:
         self.recoil_element = recoil_element
         self.beam = beam
         self.target = target
-        if not detector:
+        if detector:
+            self.detector = detector
+        else:
             self.detector = self.request.default_detector
         self.run = run
         self.simulation_type = simulation_type
@@ -108,7 +111,6 @@ class ElementSimulation:
         self.minimum_energy = minimum_energy
         self.seed_number = seed_number
         self.channel_width = channel_width
-        self.reference_density = reference_density
 
         self.to_file(os.path.join(self.directory, self.name + ".mcsimu"),
                      os.path.join(self.directory, self.name + ".rec"),
@@ -317,9 +319,11 @@ class ElementSimulation:
             json.dump(obj, file, indent=4)
 
     def recoil_to_file(self, directory):
-        file_path = os.path.join(directory,
-                                 self.recoil_element.get_element().symbol + ".rec")
         element = self.recoil_element.get_element()
+        file_path = os.path.join(directory, element.symbol + "." +
+                                 self.recoil_element.get_type())
+        # Convert datetime object to string. Put the string in ISO 8601 format
+        #  without information about the timezone. TODO: Add timezone
         if element.isotope:
             element_str = str(element.isotope) + element.symbol
         else:
@@ -329,9 +333,10 @@ class ElementSimulation:
             "description": self.recoil_element.get_description(),
             "modification_time": datetime.datetime.now().isoformat(
                 timespec="seconds"),
-            "type": self.simulation_type,
+            "type": self.recoil_element.get_type(),
             "element": element_str,
-            "density": self.recoil_element.get_reference_density() * 1e22
+            "density": self.recoil_element.get_reference_density() * 1e22,
+            "profile": []
         }
 
         for point in self.recoil_element.get_points():

@@ -112,7 +112,7 @@ class Request:
 
         # Create default simulation for request
         self.default_simulation = Simulation(os.path.join(
-            self.default_folder, "Default.simulation"))
+            self.default_folder, "Default.simulation"), self)
         self.default_element_simulation = ElementSimulation(self.default_folder,
                                                             self,
                                                             RecoilElement(
