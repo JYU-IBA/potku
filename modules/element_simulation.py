@@ -32,7 +32,7 @@ class ElementSimulation:
     MCERD objects, but only one GetEspe object.
     """
 
-    __slots__ = "path", "request", "name", \
+    __slots__ = "directory", "request", "name", \
                 "modification_time", \
                 "simulation_type", "number_of_ions", "number_of_preions", \
                 "number_of_scaling_ions", "number_of_recoils", \
@@ -44,7 +44,7 @@ class ElementSimulation:
                 "detector", "__command", "__process", "settings", \
                 "espe_settings", "description", "run"
 
-    def __init__(self, path, request, recoil_element, beam=Beam(),
+    def __init__(self, directory, request, recoil_element, beam=Beam(),
                  target=Target(),
                  detector=None,
                  run=Run(),
@@ -61,6 +61,7 @@ class ElementSimulation:
                  reference_density=4.98e22):
         """ Initializes ElementSimulation.
         Args:
+            directory: Folder of simulation that contains the ElementSimulation.
             request: Request object reference.
             recoil_element:
             beam: Beam object reference.
@@ -83,7 +84,7 @@ class ElementSimulation:
             channel_width: Channel width.
             reference_density: Reference density.
         """
-        self.path = path
+        self.directory = directory
         self.request = request
         self.name = name
         self.description = description
@@ -109,9 +110,9 @@ class ElementSimulation:
         self.channel_width = channel_width
         self.reference_density = reference_density
 
-        self.to_file(os.path.join(self.path, self.name + ".mcsimu"),
-                     os.path.join(self.path, self.name + ".rec"),
-                     os.path.join(self.path, self.name + ".profile"))
+        self.to_file(os.path.join(self.directory, self.name + ".mcsimu"),
+                     os.path.join(self.directory, self.name + ".rec"),
+                     os.path.join(self.directory, self.name + ".profile"))
 
         self.__command = os.path.join("external", "Potku-bin", "mcerd" +
                                       (".exe" if platform.system() == "Windows"
@@ -170,30 +171,36 @@ class ElementSimulation:
             Smallest solid angle. (unit millisteradian)
         """
         foil = self.detector.foils[0]
-        if type(foil) is CircularFoil:
-            radius = foil.diameter / 2
-            smallest = math.pi * radius ** 2 / foil.distance ** 2
-        else:
-            smallest = foil.size[0] * foil.size[1] / foil.distance ** 2
-        i = 1
-        while i in range(len(self.detector.foils)):
-            foil = self.detector.foils[i]
+        try:
             if type(foil) is CircularFoil:
                 radius = foil.diameter / 2
-                solid_angle = math.pi * radius ** 2 / foil.distance ** 2
+                smallest = math.pi * radius ** 2 / foil.distance ** 2
             else:
-                solid_angle = foil.size[0] * foil.size[1] / foil.distance ** 2
-                pass
-            if smallest > solid_angle:
-                smallest = solid_angle
-            i += 1
-        return smallest * 1000  # usually the unit is millisteradian,
-        # hence the multiplication by 1000
+                smallest = foil.size[0] * foil.size[1] / foil.distance ** 2
+            i = 1
+            while i in range(len(self.detector.foils)):
+                foil = self.detector.foils[i]
+                if type(foil) is CircularFoil:
+                    radius = foil.diameter / 2
+                    solid_angle = math.pi * radius ** 2 / foil.distance ** 2
+                else:
+                    solid_angle = foil.size[0] * foil.size[1] / foil.distance ** 2
+                    pass
+                if smallest > solid_angle:
+                    smallest = solid_angle
+                i += 1
+            return smallest * 1000  # usually the unit is millisteradian,
+            # hence the multiplication by 1000
+        except ZeroDivisionError:
+            return 0
 
-    def from_file(self, mcsimu_file_path, rec_file_path, profile_file_path):
+    @classmethod
+    def from_file(cls, request, mcsimu_file_path, rec_file_path,
+                  profile_file_path):
         """Initialize ElementSimulation from JSON files.
 
         Args:
+            request: Request that ElementSimulation belongs to.
             mcsimu_file_path: A file path to JSON file containing the
             simulation parameters.
             rec_file_path: A file path to JSON file containing the recoil
@@ -225,21 +232,23 @@ class ElementSimulation:
         obj = json.load(open(profile_file_path))
         channel_width = obj["channel_width"]
 
-        return ElementSimulation(self.path, self.request, element,
-                                 description=description,
-                                 modification_time=modification_time, name=name,
-                                 simulation_type=simulation_type,
-                                 number_of_ions=number_of_ions,
-                                 number_of_preions=number_of_preions,
-                                 number_of_scaling_ions=number_of_scaling_ions,
-                                 number_of_recoils=number_of_recoils,
-                                 minimum_scattering_angle=minimum_scattering_angle,
-                                 minimum_main_scattering_angle=minimum_main_scattering_angle,
-                                 simulation_mode=simulation_mode,
-                                 seed_number=seed_number,
-                                 minimum_energy=minimum_energy,
-                                 channel_width=channel_width,
-                                 reference_density=reference_density)
+        simulation_folder, filename = os.path.split(mcsimu_file_path)
+
+        return cls(simulation_folder, request, element,
+                   description=description,
+                   modification_time=modification_time, name=name,
+                   simulation_type=simulation_type,
+                   number_of_ions=number_of_ions,
+                   number_of_preions=number_of_preions,
+                   number_of_scaling_ions=number_of_scaling_ions,
+                   number_of_recoils=number_of_recoils,
+                   minimum_scattering_angle=minimum_scattering_angle,
+                   minimum_main_scattering_angle=minimum_main_scattering_angle,
+                   simulation_mode=simulation_mode,
+                   seed_number=seed_number,
+                   minimum_energy=minimum_energy,
+                   channel_width=channel_width,
+                   reference_density=reference_density)
 
     def to_file(self, mcsimu_file_path, rec_file_path, profile_file_path):
         """Save element simulation settings to files.
@@ -298,8 +307,11 @@ class ElementSimulation:
         # Read .profile to obj to update only channel width
         if os.path.exists(profile_file_path):
             obj = json.load(open(profile_file_path))
-
-        obj["channel_width"] = self.channel_width
+            obj["channel_width"] = self.channel_width
+        else:
+            obj = {
+                "channel_width": self.channel_width
+            }
 
         with open(profile_file_path, "w") as file:
             json.dump(obj, file, indent=4)

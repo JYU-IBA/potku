@@ -194,11 +194,19 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.request.default_simulation = \
             self.request.default_simulation.from_file(
                 os.path.join(self.request.default_folder, "Default.simulation"))
+        self.request.default_element_simulation = self.request \
+            .default_element_simulation.from_file(self.request,
+                                                  os.path.join(
+                                                      self.request.default_folder,
+                                                      "Default.mcsimu"),
+                                                  os.path.join(
+                                                      self.request.default_folder,
+                                                      "Default.rec"),
+                                                  os.path.join(
+                                                      self.request.default_folder,
+                                                      "Default.profile"))
         self.request.default_simulation.element_simulations.append(
-            self.request.default_element_simulation.from_file(os.path.join(
-                self.request.default_folder, "Default.mcsimu"), os.path.join(
-                self.request.default_folder, "Default.rec"), os.path.join(
-                self.request.default_folder, "Default.profile")))
+            self.request.default_element_simulation)
 
         # Add depth profile settings view to the settings view
         self.depth_profile_settings_widget = DepthProfileSettingsWidget()
@@ -413,8 +421,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.description)
         self.simulation_settings_widget.modeComboBox.setCurrentIndex(
             self.simulation_settings_widget.modeComboBox.findText(
-            self.request.default_simulation.element_simulations[
-                0].simulation_mode))
+                self.request.default_simulation.element_simulations[
+                    0].simulation_mode))
         self.simulation_settings_widget.typeOfSimulationComboBox \
             .setCurrentIndex(
             self.simulation_settings_widget.typeOfSimulationComboBox.findText(
@@ -654,21 +662,21 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 0].minimum_main_scattering_angle = \
                 self.simulation_settings_widget.mainScatterLineEdit.text()
             self.request.default_simulation.element_simulations[
-                0].minimum_energy = self.simulation_settings_widget\
+                0].minimum_energy = self.simulation_settings_widget \
                 .energyLineEdit.text()
             self.request.default_simulation.element_simulations[
-                0].number_of_ions = self.simulation_settings_widget\
+                0].number_of_ions = self.simulation_settings_widget \
                 .noOfIonsLineEdit.text()
             self.request.default_simulation.element_simulations[
-                0].number_of_preions = self.simulation_settings_widget\
+                0].number_of_preions = self.simulation_settings_widget \
                 .noOfPreionsLineEdit.text()
-            self.request.default_simulation.element_simulations[0].seed_number\
+            self.request.default_simulation.element_simulations[0].seed_number \
                 = self.simulation_settings_widget.seedLineEdit.text()
             self.request.default_simulation.element_simulations[
-                0].number_of_recoils = self.simulation_settings_widget\
+                0].number_of_recoils = self.simulation_settings_widget \
                 .noOfRecoilsLineEdit.text()
             self.request.default_simulation.element_simulations[
-                0].number_of_scaling_ions = self.simulation_settings_widget\
+                0].number_of_scaling_ions = self.simulation_settings_widget \
                 .noOfScalingLineEdit.text()
 
             self.request.default_simulation.to_file(os.path.join(
