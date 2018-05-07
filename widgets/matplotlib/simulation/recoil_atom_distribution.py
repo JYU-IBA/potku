@@ -395,7 +395,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             .get_element_simulation_with_recoil_element(
                 self.current_recoil_element)
         dialog = ElementSimulationSettingsDialog(current_element_simulation)
-        if dialog.isOk:
+        if dialog.isOk and not dialog.use_default:
             current_element_simulation.name = \
                 dialog.temp_settings["name"]
             current_element_simulation.description = \
