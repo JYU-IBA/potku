@@ -394,9 +394,35 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def open_element_simulation_settings(self):
         if not self.current_recoil_element:
             return
-        dialog = ElementSimulationSettingsDialog(
-            self.element_manager.get_element_simulation_with_recoil_element(
-                self.current_recoil_element))
+        current_element_simulation = self.element_manager\
+            .get_element_simulation_with_recoil_element(
+                self.current_recoil_element)
+        dialog = ElementSimulationSettingsDialog(current_element_simulation)
+        if dialog.isOk:
+            current_element_simulation.name = \
+                dialog.temp_settings["name"]
+            current_element_simulation.description = \
+                dialog.temp_settings["description"]
+            current_element_simulation.simulation_mode = \
+                dialog.temp_settings["mode"]
+            current_element_simulation.simulation_type = \
+                dialog.temp_settings["simulation_type"]
+            current_element_simulation.minimum_scattering_angle = \
+                dialog.temp_settings["scatter"]
+            current_element_simulation.minimum_main_scattering_angle = \
+                dialog.temp_settings["main_scatter"]
+            current_element_simulation.minimum_energy = \
+                dialog.temp_settings["energy"]
+            current_element_simulation.number_of_ions = \
+                dialog.temp_settings["no_of_ions"]
+            current_element_simulation.number_of_preions = \
+                dialog.temp_settings["no_of_preions"]
+            current_element_simulation.seed_number = \
+                dialog.temp_settings["seed"]
+            current_element_simulation.number_of_recoils = \
+                dialog.temp_settings["no_of_recoils"]
+            current_element_simulation.number_of_scaling_ions = \
+                dialog.temp_settings["no_of_scaling"]
 
     def open_recoil_element_info(self):
         dialog = RecoilInfoDialog(self.current_recoil_element)
