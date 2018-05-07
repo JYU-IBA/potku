@@ -67,7 +67,7 @@ class Simulations:
         if name_prefix in simulation_name:
             plain_name = re.sub('^MC_simulation_\d\d-', '', simulation_name)
             serial_number = int(simulation_name[len(name_prefix):len(
-                name_prefix)+2])
+                name_prefix) + 2])
         else:
             plain_name = simulation_name
             serial_number = sample.get_running_int_simulation()
@@ -112,9 +112,8 @@ class Simulations:
 
 
 class Simulation:
-
     __slots__ = "path", "request", "simulation_file", "name", "tab_id", \
-                "description", "modification_time", "run", "detector",\
+                "description", "modification_time", "run", "detector", \
                 "target", "element_simulations", "name_prefix", \
                 "serial_number", "directory"
 
@@ -170,8 +169,9 @@ class Simulation:
         Args:
             recoil_element: RecoilElement that is simulated.
         """
-        element_simulation = ElementSimulation(path=self.directory,
+        element_simulation = ElementSimulation(directory=self.directory,
                                                request=self.request,
+                                               name=recoil_element.get_element().__str__(),
                                                recoil_element=recoil_element,
                                                beam=self.run.beam,
                                                target=self.target,
@@ -181,10 +181,11 @@ class Simulation:
         return element_simulation
 
     @classmethod
-    def from_file(cls, file_path):
+    def from_file(cls, request, file_path):
         """Initialize Simulation from a JSON file.
 
         Args:
+            request: Request which the Simulation belongs to.
             file_path: A file path to JSON file containing the
             simulation information.
         """
@@ -195,7 +196,8 @@ class Simulation:
         description = obj["description"]
         modification_time = obj["modification_time_unix"]
 
-        return cls(file_path, name, description, modification_time)
+        return cls(request=request, path=file_path, name=name,
+                   description=description, modification_time=modification_time)
 
     def to_file(self, file_path):
         """Save simulation settings to a file.

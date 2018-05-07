@@ -192,7 +192,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             .connect(lambda: self.__save_file("SIMULATION_SETTINGS"))
 
         self.request.default_simulation = \
-            self.request.default_simulation.from_file(
+            self.request.default_simulation.from_file(self.request,
                 os.path.join(self.request.default_folder, "Default.simulation"))
         self.request.default_element_simulation = self.request \
             .default_element_simulation.from_file(self.request,
