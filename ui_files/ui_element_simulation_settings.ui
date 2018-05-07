@@ -32,7 +32,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>RequestSimulationSettings</string>
+   <string>Element Simulation Settings</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="2" column="0">
@@ -79,6 +79,9 @@
       <layout class="QVBoxLayout" name="verticalLayout_2">
        <item>
         <widget class="QGroupBox" name="settingsGroupBox">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="title">
           <string>Element simulation settings</string>
          </property>
@@ -218,9 +221,6 @@
           </item>
           <item>
            <widget class="QGroupBox" name="generalParametersGroupBox">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
@@ -487,9 +487,6 @@
           </item>
           <item>
            <widget class="QGroupBox" name="physicalParametersGroupBox">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
