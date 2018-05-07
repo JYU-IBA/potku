@@ -4,77 +4,55 @@
 Created on 27.3.2018
 Updated on 30.4.2018
 """
-from enum import Enum
-from json import JSONEncoder
 
 import datetime
+
+from modules.element import Element
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
 import json
-import os
+import time
 
 from modules.layer import Layer
-
-
-class TargetEncoder(JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Target):
-            layers = []
-            target_dict = {
-                "name": obj.name,
-                "description": obj.description,
-                "date": str(obj.date),
-                "type": obj.target_type.name,
-                "image_size": obj.image_size,
-                "image_file": obj.image_file,
-                "layers": []
-            }
-            for l in obj.layers:
-                layers.append(l)
-            target_dict["layers"] = layers
-            return target_dict
-        return super(TargetEncoder, self).default(obj)
-
-
-class TargetType(Enum):
-    AFM = 0
 
 
 class Target:
     """Target object describes the target.
     """
 
-    __slots__ = "name", "date", "description", "target_type", "image_size",\
-                "image_file", "layers", "target_fii", "target_theta"
+    __slots__ = "name", "modification_time", "description", "target_type", \
+                "image_size", "image_file", "scattering_element", "layers", \
+                "target_fii", "target_theta"
 
-    def __init__(self, name="", date=datetime.date.today(), description="",
-                 target_type=TargetType.AFM, image_size=(1024,1024),
-                 image_file="", target_fii=0.0, target_theta=70.0, layers=[]):
+    def __init__(self, name="", modification_time=time.time(), description="",
+                 target_type="AFM", image_size=(1024, 1024),
+                 image_file="", scattering_element=Element.from_string("4He 3.0"),
+                 target_fii=0.0, target_theta=70.0, layers=[]):
         """Initialize a target.
 
         Args:
             name: Target name.
-            date: Date of creation.
+            modification_time: Modification time.
             description: Target description.
             target_type: Target type.
             image_size: Target image size.
             image_file: Target image file.
-            scattering: Scattering element.
+            scattering_element: Scattering element.
             target_fii: Target angle
             target_theta: Target angle # TODO: check how the other is
             calculated from the other,
             layers: Target layers.
-
         """
         self.name = name
-        self.date = date
+        self.modification_time = modification_time
         self.description = description
         self.target_type = target_type
         self.image_size = image_size
         self.image_file = image_file
+        self.scattering_element = scattering_element
         self.target_fii = target_fii
         self.target_theta = target_theta
         self.layers = layers
@@ -91,8 +69,15 @@ class Target:
         obj = json.load(open(file_path))
 
         # Below we do conversion from dictionary to Target object
-        name = os.path.splitext(os.path.split(file_path)[1])[0]
-        angle = obj["angle"]
+        name = obj["name"]
+        description = obj["description"]
+        modification_time_unix = obj["modification_time_unix"]
+        target_type = obj["target_type"]
+        scattering_element = Element.from_string(obj["scattering_element"])
+        image_size = obj["image_size"]
+        image_file = obj["image_file"]
+        target_fii = obj["target_fii"]
+        target_theta = obj["target_theta"]
         layers = []
 
         for layer in obj["layers"]:
@@ -100,7 +85,12 @@ class Target:
                                 layer["thickness"],
                                 layer["density"]))
 
-        return cls(name, angle, layers)  # TODO: this needs to be updated
+        return cls(name=name, description=description,
+                   modification_time=modification_time_unix,
+                   target_type=target_type,
+                   image_size=image_size, image_file=image_file,
+                   scattering_element=scattering_element, target_fii=target_fii,
+                   target_theta=target_theta, layers=layers)
 
     def to_file(self, file_path):
         """
@@ -112,8 +102,11 @@ class Target:
         obj = {
             "name": self.name,
             "description": self.description,
-            "date": str(self.date),
-            "target_type": self.target_type.name,
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
+                time.time())),
+            "modification_time_unix": time.time(),
+            "target_type": self.target_type,
+            "scattering_element": self.scattering_element.__str__(),
             "image_size": self.image_size,
             "image_file": self.image_file,
             "target_fii": self.target_fii,
@@ -124,7 +117,7 @@ class Target:
         for layer in self.layers:
             layer_obj = {
                 "name": layer.name,
-                "elements": [str(element) for element in layer.elements],
+                "elements": [element.__str__() for element in layer.elements],
                 "thickness": layer.thickness,
                 "density": layer.density
             }

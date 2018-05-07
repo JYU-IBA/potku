@@ -88,7 +88,7 @@ class Samples:
         """
         all_samples_and_simulations = {}
         for sample in self.samples:
-            all_samples_and_simulations[sample] = sample.get_simulation_dirs()
+            all_samples_and_simulations[sample] = sample.get_simulation_files()
         return all_samples_and_simulations
 
 
@@ -161,31 +161,31 @@ class Sample:
                     all_measurements.append(measurement_name + ".asc")
         return all_measurements
 
-    def get_simulation_dirs(self):
-        """Get simulation directories inside sample folder.
+    def get_simulation_files(self):
+        """Get .simulation files inside simulation directories.
 
         Return:
-            A list of simulation directory paths.
+            A list of .simulation file paths.
         """
         all_simulations = []
         name_prefix = "MC_simulation_"
-        simulation_dirs = os.listdir(os.path.join(self.request.directory,
-                                                  self.directory))
-        simulation_dirs.sort()
+        all_dirs = os.listdir(os.path.join(self.request.directory,
+                                           self.directory))
+        all_dirs.sort()
 
-        for item in simulation_dirs:
+        for directory in all_dirs:
             # Only handle directories that start with name_prefix
-            if item.startswith(name_prefix):
+            if directory.startswith(name_prefix):
                 try:
-                    # Check that simulation has a name after prefix.
-                    simulation_name_start = item.find('-')
-                    if simulation_name_start == -1:
-                        continue
                     # Read simulation number from directory name
                     self._running_int_simulation = int(
-                        item[len(name_prefix):len(name_prefix) + 2])
-                    all_simulations.append(os.path.join(self.request.directory,
-                                                        self.directory, item))
+                        directory[len(name_prefix):len(name_prefix) + 2])
+                    for file in os.listdir(os.path.join(
+                            self.request.directory, self.directory, directory)):
+                        if file.endswith(".simulation"):
+                            all_simulations.append(os.path.join(
+                                self.request.directory, self.directory,
+                                directory, file))
                 except ValueError:
                     # Couldn't add simulation directory because the number
                     # could not be read
