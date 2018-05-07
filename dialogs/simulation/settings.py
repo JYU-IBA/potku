@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on ....
+Updated on 7.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -17,9 +17,9 @@ from widgets.measurement.settings import MeasurementSettingsWidget
 from modules.input_validator import InputValidator
 from dialogs.element_selection import ElementSelectionDialog
 from widgets.detector_settings import DetectorSettingsWidget
-from dialogs.measurement.calibration import CalibrationDialog
 from widgets.foil import FoilWidget
 from modules.foil import CircularFoil
+from dialogs.simulation.foil import FoilDialog
 
 
 class SimulationSettingsDialog(QtWidgets.QDialog):
@@ -37,13 +37,20 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         super().__init__()
         self.simulation = simulation
         self.icon_manager = icon_manager
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_settings.ui"), self)
+        self.ui = uic.loadUi(os.path.join("ui_files",
+                                          "ui_simulation_settings.ui"), self)
         self.ui.setWindowTitle("Simulation Settings")
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         screen_geometry = QtWidgets.QDesktopWidget.availableGeometry(
             QtWidgets.QApplication.desktop())
         self.resize(self.geometry().width(), screen_geometry.size().height()
                     * 0.8)
+        self.ui.simulationSettingsCheckBox.stateChanged.connect(
+            lambda: self.__change_used_settings())
+        self.ui.OKButton.clicked.connect(lambda:
+                                         self.__save_settings_and_close())
+        self.ui.applyButton.clicked.connect(lambda: self.__save_settings())
+        self.ui.cancelButton.clicked.connect(self.close)
 
         double_validator = InputValidator()
         positive_double_validator = InputValidator(bottom=0)
@@ -72,6 +79,11 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
         # Add detector settings view to the settings view
         self.detector_settings_widget = DetectorSettingsWidget()
+        # 2 is calibration tab that is not needed
+        calib_tab_widget = self.detector_settings_widget.ui.tabs.widget(2)
+        self.detector_settings_widget.ui.tabs.removeTab(2)
+        calib_tab_widget.deleteLater()
+
         self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
 
         # Temporary foils list which holds all the information given in the
@@ -100,14 +112,6 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.detector_settings_widget.ui.removeEfficiencyButton.clicked.connect(
             lambda: self.__remove_efficiency())
 
-        # Calibration settings
-        self.detector_settings_widget.ui.executeCalibrationButton.clicked. \
-            connect(self.__open_calibration_dialog)
-        self.detector_settings_widget.ui.slopeLineEdit.setValidator(
-            double_validator)
-        self.detector_settings_widget.ui.offsetLineEdit.setValidator(
-            double_validator)
-
         self.exec()
 
     def _add_new_foil(self, layout):
@@ -121,7 +125,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         new_foil = CircularFoil("Foil", layers=[])
         self.tmp_foil_info.append(new_foil)
         foil_widget.ui.foilButton.clicked.connect(
-            lambda: self._open_composition_dialog())
+            lambda: self._open_foil_dialog())
         foil_widget.ui.timingFoilCheckBox.stateChanged.connect(
             lambda: self._check_and_add())
         foil_widget.ui.distanceEdit.setText(str(new_foil.distance))
@@ -147,6 +151,55 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.__enabled_element_information()
             masses.load_isotopes(dialog.element, combo_box)
 
+    def __change_used_settings(self):
+        check_box = self.sender()
+        if check_box.isChecked():
+            self.ui.tabs.setEnabled(False)
+        else:
+            self.ui.tabs.setEnabled(True)
+
+    def _check_and_add(self):
+        """
+        Check if foil needs to be added or deleted from tof foils and update
+        the list and enabled cehckboxes accordingly.
+        """
+        check_box = self.sender()
+        for i in range(len(self.detector_structure_widgets)):
+            if self.detector_structure_widgets[i].\
+                    ui.timingFoilCheckBox is self.sender():
+                if check_box.isChecked():
+                    if self.tof_foils:
+                        if self.tof_foils[0] > i:
+                            self.tof_foils.insert(0, i)
+                        else:
+                            self.tof_foils.append(i)
+                        if len(self.tof_foils) >= 2:
+                            self._disable_checkboxes()
+                    else:
+                        self.tof_foils.append(i)
+                else:
+                    self.tof_foils.remove(i)
+                    if 0 < len(self.tof_foils) < 2:
+                        self._enable_checkboxes()
+                break
+
+    def _disable_checkboxes(self):
+        """
+        Disable all but tof foil checkboxes.
+        """
+        for i in range(len(self.detector_structure_widgets)):
+            if i not in self.tof_foils:
+                widget = self.detector_structure_widgets[i]
+                widget.ui.timingFoilCheckBox.setEnabled(False)
+
+    def _enable_checkboxes(self):
+        """
+        Enable all checkboxes.
+        """
+        for i in range(len(self.detector_structure_widgets)):
+            widget = self.detector_structure_widgets[i]
+            widget.ui.timingFoilCheckBox.setEnabled(True)
+
     def __enabled_element_information(self):
         """
         Change the UI accordingly when an element is selected.
@@ -155,14 +208,18 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.measurement_settings_widget.ui.isotopeLabel.setEnabled(True)
         self.ui.OKButton.setEnabled(True)
 
-    def __open_calibration_dialog(self):
+    def _open_foil_dialog(self):
         """
-        Open a CalibrationDialog.
+        Open FoilDialog, with which the foil info can be updated.
         """
-        measurements = [self.request.measurements.get_key_value(key)
-                        for key in
-                        self.request.samples.measurements.measurements.keys()]
-        CalibrationDialog(measurements, self.settings, self)
+        foil_name = self.sender().text()
+        foil_object_index = -1
+        for i in range(len(self.tmp_foil_info)):
+            if foil_name == self.tmp_foil_info[i].name:
+                foil_object_index = i
+                break
+        FoilDialog(self.tmp_foil_info, foil_object_index, self.icon_manager)
+        self.sender().setText(self.tmp_foil_info[foil_object_index].name)
 
     def __read_foils(self):
         """
@@ -176,3 +233,16 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         target = QtWidgets.QLabel("Target")
         layout.addWidget(target)
         return layout
+
+    def __save_settings(self):
+        check_box = self.ui.simulationSettingsCheckBox
+        if check_box.isChecked():
+            self.simulation.run = self.simulation.request.default_run
+            self.simulation.detector = None
+            # TODO: delete possible simulation specific files.
+        else:
+            pass
+
+    def __save_settings_and_close(self):
+        self.__save_settings()
+        self.close()
