@@ -84,6 +84,7 @@ class Simulations:
                     return simulation  # simulation = None
             simulation = Simulation(os.path.join(simulation_folder,
                                                  plain_name + ".simulation"),
+                                    self.request,
                                     plain_name,
                                     run=self.request.default_run,
                                     detector=self.request.default_detector)
@@ -112,12 +113,12 @@ class Simulations:
 
 class Simulation:
 
-    __slots__ = "path", "simulation_file", "name", "tab_id", "description", \
-                "modification_time", "run", "detector", "target", \
-                "element_simulations", "name_prefix", "serial_number", \
-                "directory"
+    __slots__ = "path", "request", "simulation_file", "name", "tab_id", \
+                "description", "modification_time", "run", "detector",\
+                "target", "element_simulations", "name_prefix", \
+                "serial_number", "directory"
 
-    def __init__(self, path, name="Default",
+    def __init__(self, path, request, name="Default",
                  description="This is a default simulation.",
                  modification_time=time.time(), tab_id=-1, run=None,
                  detector=None):
@@ -128,6 +129,7 @@ class Simulation:
             """
         self.tab_id = tab_id
         self.path = path
+        self.request = request
         self.name = name
         self.description = description
         self.modification_time = modification_time
@@ -168,10 +170,13 @@ class Simulation:
         Args:
             recoil_element: RecoilElement that is simulated.
         """
-        element_simulation = ElementSimulation(self.directory, recoil_element,
-                                               self.run.beam,
-                                               self.target,
-                                               self.detector, self.run)
+        element_simulation = ElementSimulation(path=self.directory,
+                                               request=self.request,
+                                               recoil_element=recoil_element,
+                                               beam=self.run.beam,
+                                               target=self.target,
+                                               detector=self.detector,
+                                               run=self.run)
         self.element_simulations.append(element_simulation)
         return element_simulation
 
