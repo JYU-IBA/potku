@@ -87,7 +87,6 @@ class Simulations:
                                     plain_name,
                                     run=self.request.default_run,
                                     detector=self.request.default_detector)
-            simulation.create_folder_structure(simulation_folder)
             simulation.serial_number = serial_number
             sample.simulations.simulations[tab_id] = simulation
             self.request.samples.simulations.simulations[tab_id] = simulation
@@ -113,7 +112,7 @@ class Simulations:
 
 class Simulation:
 
-    __slots__ = "path", "name", "tab_id", "description", \
+    __slots__ = "path", "simulation_file", "name", "tab_id", "description", \
                 "modification_time", "run", "detector", "target", \
                 "element_simulations", "name_prefix", "serial_number", \
                 "directory"
@@ -140,21 +139,13 @@ class Simulation:
 
         self.name_prefix = "MC_simulation_"
         self.serial_number = 0
-        self.directory = None
 
-        self.to_file(os.path.join(self.path))
+        self.directory, self.simulation_file = os.path.split(self.path)
+        self.create_folder_structure()
 
-    def create_folder_structure(self, simulation_folder_path):
-        self.directory = simulation_folder_path
-        self.__make_directories(self.directory)
+        self.to_file(self.path)
 
-    def create_directory(self, simulation_folder):
-        """ Creates folder structure for the simulation.
-
-        Args:
-            simulation_folder: Path of the simulation folder.
-        """
-        self.directory = os.path.join(simulation_folder, self.name)
+    def create_folder_structure(self):
         self.__make_directories(self.directory)
 
     def __make_directories(self, directory):
