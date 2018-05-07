@@ -5,6 +5,10 @@ Updated on 6.5.2018
 """
 import math
 
+from modules.beam import Beam
+from modules.run import Run
+from modules.target import Target
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
@@ -28,7 +32,7 @@ class ElementSimulation:
     MCERD objects, but only one GetEspe object.
     """
 
-    __slots__ = "path", "name", \
+    __slots__ = "path", "request", "name", \
                 "modification_time", \
                 "simulation_type", "number_of_ions", "number_of_preions", \
                 "number_of_scaling_ions", "number_of_recoils", \
@@ -40,8 +44,11 @@ class ElementSimulation:
                 "detector", "__command", "__process", "settings", \
                 "espe_settings", "description", "run"
 
-    def __init__(self, path, recoil_element, beam, target, detector, run,
-                 name="",
+    def __init__(self, path, request, recoil_element, beam=Beam(),
+                 target=Target(),
+                 detector=None,
+                 run=Run(),
+                 name="Default",
                  description="",
                  modification_time=datetime.datetime.now(),
                  simulation_type="rec",
@@ -49,11 +56,12 @@ class ElementSimulation:
                  number_of_scaling_ions=5, number_of_recoils=10,
                  minimum_scattering_angle=0.05,
                  minimum_main_scattering_angle=20,
-                 simulation_mode="narrow", seed_number=101,
+                 simulation_mode="Narrow", seed_number=101,
                  minimum_energy=1.0, channel_width=0.1,
                  reference_density=4.98e22):
         """ Initializes ElementSimulation.
         Args:
+            request: Request object reference.
             recoil_element:
             beam: Beam object reference.
             target: Target object reference.
@@ -76,6 +84,7 @@ class ElementSimulation:
             reference_density: Reference density.
         """
         self.path = path
+        self.request = request
         self.name = name
         self.description = description
         self.modification_time = modification_time
@@ -83,7 +92,8 @@ class ElementSimulation:
         self.recoil_element = recoil_element
         self.beam = beam
         self.target = target
-        self.detector = detector
+        if not detector:
+            self.detector = self.request.default_detector
         self.run = run
         self.simulation_type = simulation_type
 
@@ -172,7 +182,7 @@ class ElementSimulation:
                 radius = foil.diameter / 2
                 solid_angle = math.pi * radius ** 2 / foil.distance ** 2
             else:
-                solid_angle = foil.size[0] * foil.size[1] / foil.distance**2
+                solid_angle = foil.size[0] * foil.size[1] / foil.distance ** 2
                 pass
             if smallest > solid_angle:
                 smallest = solid_angle
@@ -180,8 +190,7 @@ class ElementSimulation:
         return smallest * 1000  # usually the unit is millisteradian,
         # hence the multiplication by 1000
 
-    @classmethod
-    def from_file(cls, mcsimu_file_path, rec_file_path, profile_file_path):
+    def from_file(self, mcsimu_file_path, rec_file_path, profile_file_path):
         """Initialize ElementSimulation from JSON files.
 
         Args:
@@ -210,17 +219,27 @@ class ElementSimulation:
 
         obj = json.load(open(rec_file_path))
         simulation_type = obj["simulation_type"]
-        element = RecoilElement(obj["element"], obj["points"])
+        element = RecoilElement(obj["element"], obj["profile"])
         reference_density = obj["reference_density"]
 
         obj = json.load(open(profile_file_path))
         channel_width = obj["channel_width"]
 
-        cls(type, element, name, description, modification_time,
-            simulation_type, number_of_ions, number_of_preions,
-            number_of_scaling_ions, number_of_recoils, minimum_scattering_angle,
-            minimum_main_scattering_angle, simulation_mode, seed_number,
-            minimum_energy, channel_width, reference_density)
+        return ElementSimulation(self.path, self.request, element,
+                                 description=description,
+                                 modification_time=modification_time, name=name,
+                                 simulation_type=simulation_type,
+                                 number_of_ions=number_of_ions,
+                                 number_of_preions=number_of_preions,
+                                 number_of_scaling_ions=number_of_scaling_ions,
+                                 number_of_recoils=number_of_recoils,
+                                 minimum_scattering_angle=minimum_scattering_angle,
+                                 minimum_main_scattering_angle=minimum_main_scattering_angle,
+                                 simulation_mode=simulation_mode,
+                                 seed_number=seed_number,
+                                 minimum_energy=minimum_energy,
+                                 channel_width=channel_width,
+                                 reference_density=reference_density)
 
     def to_file(self, mcsimu_file_path, rec_file_path, profile_file_path):
         """Save element simulation settings to files.
@@ -277,14 +296,13 @@ class ElementSimulation:
             json.dump(obj, file, indent=4)
 
         # Read .profile to obj to update only channel width
-        # TODO When .profile is first created elsewhere, saving channel width
-        # should work.
-        # obj = json.load(open(profile_file_path))
+        if os.path.exists(profile_file_path):
+            obj = json.load(open(profile_file_path))
 
-        # obj["channel_width"] = self.channel_width
+        obj["channel_width"] = self.channel_width
 
-        # with open(profile_file_path, "w") as file:
-        #     json.dump(obj, file, indent=4)
+        with open(profile_file_path, "w") as file:
+            json.dump(obj, file, indent=4)
 
     def recoil_to_file(self, directory):
         file_path = os.path.join(directory,

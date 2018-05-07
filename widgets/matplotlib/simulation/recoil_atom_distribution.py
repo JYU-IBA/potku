@@ -61,7 +61,7 @@ class RecoilElement:
     """An element that has a list of points and a widget. The points are kept
     in ascending order by their x coordinate.
     """
-    def __init__(self, element, points, widget):
+    def __init__(self, element, points, widget=None):
         """Inits element.
 
         Args:

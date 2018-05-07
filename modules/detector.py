@@ -224,15 +224,16 @@ class Detector:
             }
             if isinstance(foil, CircularFoil):
                 foil_obj["type"] = "circular"
-                foil_obj["diameter"] = str(foil.diameter)
+                foil_obj["diameter"] = foil.diameter
             else:
                 foil_obj["type"] = "rectangular"
-                foil_obj["size"] = str(foil.size)
+                foil_obj["size"] = foil.size
 
             for layer in foil.layers:
                 layer_obj = {
                     "name": layer.name,
-                    "elements": [str(element) for element in layer.elements],
+                    "elements": [element.__str__() for element in
+                                 layer.elements],
                     "thickness": layer.thickness,
                     "density": layer.density
                 }

@@ -176,9 +176,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         #  which should use default detector values!!!
         # TODO: read dafault detector from file somewhere else!
         self.request.default_detector = self.request.default_detector.from_file(
-             os.path.join(self.request.directory,
-                          self.request.default_detector_folder,
-                          "Default.detector"))
+            os.path.join(self.request.directory,
+                         self.request.default_detector_folder,
+                         "Default.detector"))
 
         # Add simulation settings view to the settings view
         self.simulation_settings_widget = SimulationSettingsWidget()
@@ -194,6 +194,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.request.default_simulation = \
             self.request.default_simulation.from_file(
                 os.path.join(self.request.default_folder, "Default.simulation"))
+        self.request.default_simulation.element_simulations.append(
+            self.request.default_element_simulation.from_file(os.path.join(
+                self.request.default_folder, "Default.mcsimu"), os.path.join(
+                self.request.default_folder, "Default.rec"), os.path.join(
+                self.request.default_folder, "Default.profile")))
 
         # Add depth profile settings view to the settings view
         self.depth_profile_settings_widget = DepthProfileSettingsWidget()
@@ -403,9 +408,41 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.name)
         self.simulation_settings_widget.dateLabel.setText(str(
             datetime.datetime.fromtimestamp(
-                self.request.default_detector.modification_time)))
+                self.request.default_simulation.modification_time)))
         self.simulation_settings_widget.descriptionLineEdit.setPlainText(
             self.request.default_simulation.description)
+        self.simulation_settings_widget.modeComboBox.setCurrentIndex(
+            self.simulation_settings_widget.modeComboBox.findText(
+            self.request.default_simulation.element_simulations[
+                0].simulation_mode))
+        self.simulation_settings_widget.typeOfSimulationComboBox \
+            .setCurrentIndex(
+            self.simulation_settings_widget.typeOfSimulationComboBox.findText(
+                self.request.default_simulation.element_simulations[
+                    0].simulation_type))
+        self.simulation_settings_widget.scatterLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[
+                0].minimum_scattering_angle))
+        self.simulation_settings_widget.mainScatterLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[
+                0].minimum_main_scattering_angle))
+        self.simulation_settings_widget.energyLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[
+                0].minimum_energy))
+        self.simulation_settings_widget.noOfIonsLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[
+                0].number_of_ions))
+        self.simulation_settings_widget.noOfPreionsLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[
+                0].number_of_preions))
+        self.simulation_settings_widget.seedLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[0].seed_number))
+        self.simulation_settings_widget.noOfRecoilsLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[
+                0].number_of_recoils))
+        self.simulation_settings_widget.noOfScalingLineEdit.setText(str(
+            self.request.default_simulation.element_simulations[
+                0].number_of_scaling_ions))
 
     def __load_file(self, settings_type):
         """Opens file dialog and loads and shows selected ini file's values.
@@ -604,27 +641,35 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.description = \
                 self.simulation_settings_widget.descriptionLineEdit. \
                     toPlainText()
-            self.request.default_simulation.element_simulations[0].mode = \
-                self.simulation_settings_widget.modeComboBox.currentText()
-            self.request.default_simulation.element_simulations[0].simulation_type = \
-                self.simulation_settings_widget \
-                    .typeOfSimulationComboBox.currentText()
-            self.request.default_simulation.element_simulations[0].scatter = \
+            self.request.default_simulation.element_simulations[
+                0].simulation_mode = self.simulation_settings_widget \
+                .modeComboBox.currentText()
+            self.request.default_simulation.element_simulations[
+                0].simulation_type = self.simulation_settings_widget \
+                .typeOfSimulationComboBox.currentText()
+            self.request.default_simulation.element_simulations[
+                0].minimum_scattering_angle = \
                 self.simulation_settings_widget.scatterLineEdit.text()
-            self.request.default_simulation.element_simulations[0].main_scatter = \
+            self.request.default_simulation.element_simulations[
+                0].minimum_main_scattering_angle = \
                 self.simulation_settings_widget.mainScatterLineEdit.text()
-            self.request.default_simulation.element_simulations[0].energy = \
-                self.simulation_settings_widget.energyLineEdit.text()
-            self.request.default_simulation.element_simulations[0].no_of_ions = \
-                self.simulation_settings_widget.noOfIonsLineEdit.text()
-            self.request.default_simulation.element_simulations[0].no_of_preions = \
-                self.simulation_settings_widget.noOfPreionsLineEdit.text()
-            self.request.default_simulation.element_simulations[0].seed = \
-                self.simulation_settings_widget.seedLineEdit.text()
-            self.request.default_simulation.element_simulations[0].no_of_recoils = \
-                self.simulation_settings_widget.noOfRecoilsLineEdit.text()
-            self.request.default_simulation.element_simulations[0].no_of_scaling = \
-                self.simulation_settings_widget.noOfScalingLineEdit.text()
+            self.request.default_simulation.element_simulations[
+                0].minimum_energy = self.simulation_settings_widget\
+                .energyLineEdit.text()
+            self.request.default_simulation.element_simulations[
+                0].number_of_ions = self.simulation_settings_widget\
+                .noOfIonsLineEdit.text()
+            self.request.default_simulation.element_simulations[
+                0].number_of_preions = self.simulation_settings_widget\
+                .noOfPreionsLineEdit.text()
+            self.request.default_simulation.element_simulations[0].seed_number\
+                = self.simulation_settings_widget.seedLineEdit.text()
+            self.request.default_simulation.element_simulations[
+                0].number_of_recoils = self.simulation_settings_widget\
+                .noOfRecoilsLineEdit.text()
+            self.request.default_simulation.element_simulations[
+                0].number_of_scaling_ions = self.simulation_settings_widget\
+                .noOfScalingLineEdit.text()
 
             self.request.default_simulation.to_file(os.path.join(
                 self.request.default_folder, "Default.simulation"))

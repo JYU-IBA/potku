@@ -88,33 +88,39 @@ class Request:
         if not os.path.exists(directory):
             os.makedirs(directory)
 
+        # Create Default folder under request folder
         self.default_folder = os.path.join(self.directory, "Default")
         if not os.path.exists(self.default_folder):
-            os.makedirs(self.default_folder)  # Create a Default folder
+            os.makedirs(self.default_folder)
 
+        # Create Detector folder under Default folder
         self.default_detector_folder = os.path.join(self.default_folder,
                                                     "Detector")
         if not os.path.exists(self.default_detector_folder):
-            os.makedirs(self.default_detector_folder)  # Create a Detector
-            # folder
-        # TODO: Add folder creation as a function call
+            os.makedirs(self.default_detector_folder)
+
+        # Create default detector for request
         self.default_detector = Detector(
             os.path.join(self.default_detector_folder, "Default.detector"))
         self.default_detector.create_folder_structure(
             self.default_detector_folder)
-        # self.detector.to_file(os.path.join(directory, "default.detector"))
-        # self.detector.save_settings(self.default_folder + os.sep + "
-        # Detector" + os.sep + self.detector.name)
+
+        # Create default measurement for request
         self.default_measurement = Measurement(self, "Default")
         self.default_measurement.save_settings(os.path.join(
             self.default_folder, self.default_measurement.name))
+
+        # Create default simulation for request
         self.default_simulation = Simulation(os.path.join(
             self.default_folder, "Default.simulation"))
+        self.default_element_simulation = ElementSimulation(self.default_folder,
+                                                            self,
+                                                            RecoilElement(
+                                                                Element("H"),
+                                                                [], None),
+                                                            name="Default")
         self.default_simulation.element_simulations.append(
-            ElementSimulation(self.default_folder,
-                              RecoilElement(Element("H"), [], None), Beam(),
-                              Target(),
-                              self.default_detector, Run(), name="Default"))
+            self.default_element_simulation)
 
         self.__set_request_logger()
 
