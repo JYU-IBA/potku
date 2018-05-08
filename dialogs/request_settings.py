@@ -89,8 +89,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Add measurement settings view to the settings view
         self.measurement_settings_widget = MeasurementSettingsWidget(
-            self.request.default_measurement, self.request.default_detector,
-            self.request.default_target)
+            self.request.default_measurement)
         self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
         if self.measuring_unit_settings.element:
@@ -533,6 +532,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         try:
             self.measurement_settings_widget.update_settings()
 
+
             # Detector settings
             self.request.default_detector.name = \
                 self.detector_settings_widget.nameLineEdit.text()
@@ -627,8 +627,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             button.setText(dialog.element)
             # Enabled settings once element is selected
             self.__enabled_element_information()
-            masses.load_isotopes(dialog.element, combo_box,
-                                 self.measuring_unit_settings.element.isotope)
+            masses.load_isotopes(dialog.element, combo_box)
 
     def __enabled_element_information(self):
         self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(True)

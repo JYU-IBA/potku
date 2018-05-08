@@ -78,7 +78,7 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-259</y>
+        <y>-95</y>
         <width>363</width>
         <height>749</height>
        </rect>
@@ -395,7 +395,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QDoubleSpinBox" name="spotSizeYdoubleSpinBox_2">
+                 <widget class="QDoubleSpinBox" name="spotSizeYdoubleSpinBox">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                     <horstretch>3</horstretch>

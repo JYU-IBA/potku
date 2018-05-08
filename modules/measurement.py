@@ -170,14 +170,17 @@ class Measurement:
     #             "reference_cut", "number_of_splits", "normalization"
 
     def __init__(self, request, tab_id=-1, name="Default", description="",
-                 modification_time=time.time(), run=Run(),
+                 modification_time=time.time(), run=None, detector=None,
                  target=Target(), profile_name="Default",
                  profile_description="", profile_modification_time=time.time(),
                  reference_density=3.5, number_of_depth_steps=40,
                  depth_step_for_stopping=50, depth_step_for_output=50,
                  depth_for_concentration_from=800,
                  depth_for_concentration_to=1500, channel_width=0.1,
-                 reference_cut="", number_of_splits=10, normalization="first"):
+                 reference_cut="", number_of_splits=10, normalization="first",
+                 measurement_setting_file_name=None,
+                 measurement_setting_file_description=None
+                 ):
         """Initializes a measurement.
 
         Args:
@@ -192,8 +195,12 @@ class Measurement:
         self.modification_time = modification_time
 
         self.run = run
-        self.detector = request.default_detector
+        self.detector = detector
         self.target = target
+
+        self.measurement_setting_file_name = measurement_setting_file_name
+        self.measurement_setting_file_description = \
+            measurement_setting_file_description
 
         self.profile_name = profile_name
         self.profile_description = profile_description
@@ -314,8 +321,9 @@ class Measurement:
         obj_profile["energy_spectra"] = {}
         obj_profile["composition_changes"] = {}
 
-        obj_measurement["general"]["name"] = self.name
-        obj_measurement["general"]["description"] = self.description
+        obj_measurement["general"]["name"] = self.measurement_setting_file_name
+        obj_measurement["general"]["description"] = \
+            self.measurement_setting_file_description
         obj_measurement["general"]["modification_time"] = self.modification_time
 
         obj_measurement["beam"]["ion"] = str(self.run.beam.ion)
@@ -360,10 +368,10 @@ class Measurement:
             self.number_of_splits
         obj_profile["composition_changes"]["normalization"] = self.normalization
 
-        with open("measurement_file_path", "w") as file:
+        with open(measurement_file_path, "w") as file:
             json.dump(obj_measurement, file, indent=4)
 
-        with open("profile_file_path", "w") as file:
+        with open(profile_file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
 
     def create_folder_structure(self, measurement_folder, measurement_file):
