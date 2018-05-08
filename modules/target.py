@@ -76,8 +76,6 @@ class Target:
         scattering_element = Element.from_string(obj["scattering_element"])
         image_size = obj["image_size"]
         image_file = obj["image_file"]
-        target_fii = obj["target_fii"]
-        target_theta = obj["target_theta"]
         layers = []
 
         for layer in obj["layers"]:
@@ -89,8 +87,8 @@ class Target:
                    modification_time=modification_time_unix,
                    target_type=target_type,
                    image_size=image_size, image_file=image_file,
-                   scattering_element=scattering_element, target_fii=target_fii,
-                   target_theta=target_theta, layers=layers)
+                   scattering_element=scattering_element,
+                   layers=layers)
 
     def to_file(self, file_path):
         """
