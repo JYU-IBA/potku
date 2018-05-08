@@ -6,6 +6,7 @@ Updated on 30.4.2018
 """
 
 import datetime
+import os
 
 from modules.element import Element
 
@@ -58,15 +59,17 @@ class Target:
         self.layers = layers
 
     @classmethod
-    def from_file(cls, file_path):
+    def from_file(cls, target_file_path: object, measurement_file_path: object) -> object:
         """Initialize target from a JSON file.
 
         Args:
-            file_path: A file path to JSON file containing the target
-                       parameters.
+            target_file_path: A file path to JSON file containing the target
+            parameters.
+            measurement_file_path: A file path to JSON file containing target
+            angles.
         """
 
-        obj = json.load(open(file_path))
+        obj = json.load(open(target_file_path))
 
         # Below we do conversion from dictionary to Target object
         name = obj["name"]
@@ -83,19 +86,25 @@ class Target:
                                 layer["thickness"],
                                 layer["density"]))
 
+        obj = json.load(open(measurement_file_path))
+        target_theta = obj["target_theta"]
+        target_fii = obj["target_fii"]
+
         return cls(name=name, description=description,
                    modification_time=modification_time_unix,
                    target_type=target_type,
                    image_size=image_size, image_file=image_file,
                    scattering_element=scattering_element,
+                   target_fii=target_fii, target_theta=target_theta,
                    layers=layers)
 
-    def to_file(self, file_path):
+    def to_file(self, target_file_path, measurement_file_path):
         """
-        Save target parameters into a file.
+        Save target parameters into files.
 
         Args:
-            file_path: File in which the target params will be saved.
+            target_file_path: File in which the target params will be saved.
+            measurement_file_path: File in which target angles will be saved.
         """
         obj = {
             "name": self.name,
@@ -119,5 +128,19 @@ class Target:
             }
             obj["layers"].append(layer_obj)
 
-        with open(file_path, "w") as file:
+        with open(target_file_path, "w") as file:
+            json.dump(obj, file, indent=4)
+
+        # Read .measurement to obj to update only target angles
+        if os.path.exists(measurement_file_path):
+            obj = json.load(open(measurement_file_path))
+            obj["target_fii"] = self.target_fii
+            obj["target_theta"] = self.target_theta
+        else:
+            obj = {
+                "target_fii": self.target_fii,
+                "target_theta": self.target_theta
+            }
+
+        with open(measurement_file_path, "w") as file:
             json.dump(obj, file, indent=4)

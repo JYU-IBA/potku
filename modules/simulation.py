@@ -80,7 +80,9 @@ class Simulations:
             for file in os.listdir(simulation_folder_path):
                 if file.endswith(target_extension):
                     simulation.target = Target.from_file(os.path.join(
-                        simulation_folder_path, file))
+                        simulation_folder_path, file), os.path.join(
+                        simulation_folder_path, simulation.name +
+                                                ".measurement"))
                     break
 
         # Create a new simulation
