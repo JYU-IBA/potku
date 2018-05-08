@@ -51,7 +51,7 @@ class ElementSimulation:
                  name="Default",
                  description="",
                  modification_time=datetime.datetime.now(),
-                 simulation_type="ERD",
+                 simulation_type="REC",
                  number_of_ions=1000000, number_of_preions=100000,
                  number_of_scaling_ions=5, number_of_recoils=10,
                  minimum_scattering_angle=0.05,
@@ -267,6 +267,7 @@ class ElementSimulation:
             "modification_time": str(datetime.datetime.fromtimestamp(
                 time.time())),
             "modification_time_unix": time.time(),
+            "simulation_type": self.simulation_type,
             "simulation_mode": self.simulation_mode,
             "number_of_ions": self.number_of_ions,
             "number_of_preions": self.number_of_preions,

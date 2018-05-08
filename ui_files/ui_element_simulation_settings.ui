@@ -470,12 +470,12 @@
                  </property>
                  <item>
                   <property name="text">
-                   <string>ERD</string>
+                   <string>REC</string>
                   </property>
                  </item>
                  <item>
                   <property name="text">
-                   <string>RBS</string>
+                   <string>SCT</string>
                   </property>
                  </item>
                 </widget>

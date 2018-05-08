@@ -90,9 +90,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-200</y>
-        <width>445</width>
-        <height>676</height>
+        <y>0</y>
+        <width>444</width>
+        <height>505</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -485,12 +485,12 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>ERD</string>
+                  <string>REC</string>
                  </property>
                 </item>
                 <item>
                  <property name="text">
-                  <string>RBS</string>
+                  <string>SCT</string>
                  </property>
                 </item>
                </widget>

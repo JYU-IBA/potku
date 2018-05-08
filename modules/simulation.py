@@ -16,6 +16,7 @@ import time
 from modules.element_simulation import ElementSimulation
 from modules.general_functions import rename_file
 from modules.target import Target
+from modules.run import Run
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
