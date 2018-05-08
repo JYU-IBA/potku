@@ -712,8 +712,15 @@ class Potku(QtWidgets.QMainWindow):
 
             sample_item = (self.tree_widget.findItems(sample_name,
                                                       Qt.MatchEndsWith, 0))[0]
-            self.__add_new_tab("simulation", dialog.name, sample_item.obj,
-                               progress_bar, load_data=False)
+
+            serial_number = sample_item.obj.get_running_int_simulation()
+            sample_item.obj.increase_running_int_simulation_by_1()
+
+            self.__add_new_tab("simulation", os.path.join(
+                self.request.directory, sample_item.obj.directory,
+                "MC_simulation_" + "%02d" % serial_number + "-" + dialog.name,
+                dialog.name + ".simulation"), sample_item.obj, progress_bar,
+                               load_data=False)
             self.__remove_info_tab()
             self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
@@ -853,17 +860,16 @@ class Potku(QtWidgets.QMainWindow):
         parent_item.addChild(tree_item)
         parent_item.setExpanded(True)
 
-    def __add_new_tab(self, tab_type, filename, sample, progress_bar=None,
+    def __add_new_tab(self, tab_type, filepath, sample, progress_bar=None,
                       file_current=0, file_count=1, load_data=False):
         """Add new tab into TabWidget.
-        TODO: Simulation included. Should be changed.
 
-        Adds a new tab into program's tabWidget. Makes a new measurement for
-        said tab.
+        Adds a new tab into program's tabWidget. Makes a new measurement or
+        simulation for said tab.
 
         Args:
             tab_type: Either "measurement" or "simulation".
-            filename: A string representing measurement file.
+            filepath: A string representing measurement or simulation file path.
             sample: The sample under which the measurement or simulation is put.
             progress_bar: A QtWidgets.QProgressBar to be updated.
             file_current: An integer representing which number is currently
@@ -880,7 +886,7 @@ class Potku(QtWidgets.QMainWindow):
         if tab_type == "measurement":
             measurement = \
                 self.request.samples.measurements.add_measurement_file(sample,
-                                                                       filename,
+                                                                       filepath,
                                                                        self.
                                                                        tab_id)
             if measurement:  # TODO: Finish this (load_data)
@@ -913,11 +919,10 @@ class Potku(QtWidgets.QMainWindow):
                 self.tab_id += 1
 
         if tab_type == "simulation":
-            sample_dir, simulation_name = os.path.split(filename)
             simulation = self.request.samples.simulations.add_simulation_file(
-                sample, simulation_name, self.tab_id)
+                         sample, filepath, self.tab_id)
 
-            if simulation:  # TODO: Finish this (load_data)
+            if simulation:
                 tab = SimulationTabWidget(self.request, self.tab_id, simulation,
                                           self.icon_manager)
                 tab.issueMaster.connect(self.__master_issue_commands)

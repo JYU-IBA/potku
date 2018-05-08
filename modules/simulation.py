@@ -14,6 +14,7 @@ import re
 import time
 
 from modules.element_simulation import ElementSimulation
+from modules.general_functions import rename_file
 from modules.target import Target
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
@@ -51,50 +52,61 @@ class Simulations:
             return None
         return self.simulations[key]
 
-    def add_simulation_file(self, sample, simulation_name, tab_id):
+    def add_simulation_file(self, sample, simulation_path, tab_id):
         """Add a new file to simulations.
 
         Args:
             sample: The sample under which the simulation is put.
-            simulation_name: Name of the simulation (not a path)
+            simulation_path: Path of the .simulation file.
             tab_id: Integer representing identifier for simulation's tab.
 
         Return:
             Returns new simulation or None if it wasn't added
         """
         simulation = None
-        name_prefix = "MC_simulation_"
-        if name_prefix in simulation_name:
-            plain_name = re.sub('^MC_simulation_\d\d-', '', simulation_name)
-            serial_number = int(simulation_name[len(name_prefix):len(
-                name_prefix) + 2])
-        else:
-            plain_name = simulation_name
-            serial_number = sample.get_running_int_simulation()
-            sample.increase_running_int_simulation_by_1()
-        simulation_folder = os.path.join(
-            sample.request.directory, sample.directory, name_prefix +
-                                                        "%02d" % serial_number + "-"
-                                                        + plain_name)
-        try:
-            keys = sample.simulations.simulations.keys()
-            for key in keys:
-                if sample.simulations.simulations[key].directory == \
-                        plain_name:
-                    return simulation  # simulation = None
-            simulation = Simulation(os.path.join(simulation_folder,
-                                                 plain_name + ".simulation"),
-                                    self.request,
-                                    plain_name,
-                                    run=self.request.default_run,
-                                    detector=self.request.default_detector)
+
+        simulation_folder_path, simulation_file = os.path.split(simulation_path)
+        sample_folder, simulation_folder = os.path.split(simulation_folder_path)
+        directory_prefix = "MC_simulation_"
+        target_extension = ".target"
+
+        # Create simulation from file
+        if os.path.exists(simulation_path):
+            simulation = Simulation.from_file(sample.request,
+                                              simulation_path)
+            serial_number = int(simulation_folder[len(directory_prefix):len(
+                directory_prefix) + 2])
             simulation.serial_number = serial_number
-            sample.simulations.simulations[tab_id] = simulation
-            self.request.samples.simulations.simulations[tab_id] = simulation
-        except:
-            log = "Something went wrong while adding a new simulation."
-            logging.getLogger("request").critical(log)
-            print(sys.exc_info())  # TODO: Remove this.
+            for file in os.listdir(simulation_folder_path):
+                if file.endswith(target_extension):
+                    simulation.target = Target.from_file(os.path.join(
+                        simulation_folder_path, file), os.path.join(
+                        simulation_folder_path, simulation.name +
+                                                ".measurement"))
+                    break
+
+        # Create a new simulation
+        else:
+            # Not stripping the extension
+            simulation_name, extension = os.path.splitext(simulation_file)
+            try:
+                keys = sample.simulations.simulations.keys()
+                for key in keys:
+                    if sample.simulations.simulations[key].directory == \
+                            simulation_name:
+                        return simulation  # simulation = None
+                simulation = Simulation(simulation_path, self.request,
+                                        name=simulation_name, tab_id=tab_id)
+                serial_number = int(simulation_folder[len(directory_prefix):len(
+                    directory_prefix) + 2])
+                simulation.serial_number = serial_number
+                sample.simulations.simulations[tab_id] = simulation
+                self.request.samples.simulations.simulations[
+                    tab_id] = simulation
+            except:
+                log = "Something went wrong while adding a new simulation."
+                logging.getLogger("request").critical(log)
+                print(sys.exc_info())
         return simulation
 
     def remove_by_tab_id(self, tab_id):
@@ -120,7 +132,7 @@ class Simulation:
     def __init__(self, path, request, name="Default",
                  description="This is a default simulation.",
                  modification_time=time.time(), tab_id=-1, run=None,
-                 detector=None):
+                 detector=None, target=Target()):
         """Initializes Simulation object.
 
         Args:
@@ -135,7 +147,7 @@ class Simulation:
         self.element_simulations = []
 
         self.run = run
-        self.target = Target()
+        self.target = target
         self.detector = detector
 
         self.name_prefix = "MC_simulation_"
@@ -160,8 +172,11 @@ class Simulation:
         """
         if new_name is None:
             return
-        # Rename any simulation related files.
-        pass
+        rename_file(os.path.join(self.directory, self.simulation_file),
+                    new_name + ".simulation")
+        self.simulation_file = new_name + ".simulation"
+        self.path = os.path.join(self.directory, self.simulation_file)
+        self.to_file(self.path)
 
     def add_element_simulation(self, recoil_element):
         """Adds ElementSimulation to Simulation.
