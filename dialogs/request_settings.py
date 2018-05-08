@@ -112,13 +112,13 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 self.measurement_settings_widget.ui.beamIonButton,
                 self.measurement_settings_widget.ui.isotopeComboBox))
 
-        self.measurement_settings_widget.ui.energyLineEdit.setValidator(
-            positive_double_validator)
+        # self.measurement_settings_widget.ui.energyLineEdit.setValidator(
+        #     positive_double_validator)
         double_angle_validator = InputValidator(0, 90, 10)
-        self.measurement_settings_widget.ui.detectorThetaLineEdit.setValidator(
-            double_angle_validator)
-        self.measurement_settings_widget.ui.targetThetaLineEdit.setValidator(
-            double_angle_validator)
+        # self.measurement_settings_widget.ui.detectorThetaLineEdit.setValidator(
+        #     double_angle_validator)
+        # self.measurement_settings_widget.ui.targetThetaLineEdit.setValidator(
+        #     double_angle_validator)
 
         self.measurement_settings_widget.ui.picture.setScaledContents(True)
         pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
@@ -358,36 +358,36 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         self.measurement_settings_widget.nameLineEdit.setText(
             self.request.default_measurement.name)
-        self.measurement_settings_widget.descriptionLineEdit.setPlainText(
+        self.measurement_settings_widget.descriptionPlainTextEdit.setPlainText(
             self.request.default_measurement.description)
-        self.measurement_settings_widget.energyLineEdit.setText(
-            str(self.request.default_measurement.energy))
-        self.measurement_settings_widget.chargeLineEdit.setText(
-            str(self.request.default_measurement.charge))
-        self.measurement_settings_widget.spotSizeXLineEdit.setText(
-            str(self.request.default_measurement.spot_size[0]))
-        self.measurement_settings_widget.spotSizeYLineEdit.setText(
-            str(self.request.default_measurement.spot_size[1]))
-        self.measurement_settings_widget.divergenceLineEdit.setText(
-            str(self.request.default_measurement.divergence))
+        self.measurement_settings_widget.energyDoubleSpinBox.setValue(
+            self.request.default_measurement.energy)
+        self.measurement_settings_widget.energyDistDoubleSpinBox.setValue(
+            self.request.default_measurement.energy_dist)
+        self.measurement_settings_widget.beamChargeSpinBox.setValue(
+            self.request.default_measurement.charge)
+        self.measurement_settings_widget.spotSizeXdoubleSpinBox.setValue(
+            self.request.default_measurement.spot_size[0])
+        self.measurement_settings_widget.spotSizeXdoubleSpinBox.setValue(
+            self.request.default_measurement.spot_size[1])
+        self.measurement_settings_widget.divergenceDoubleSpinBox.setValue(
+            self.request.default_measurement.divergence)
         self.measurement_settings_widget.profileComboBox.setCurrentIndex(
             self.request.default_measurement.profile.value)
-        self.measurement_settings_widget.energyDistLineEdit.setText(
-            str(self.request.default_measurement.energy_dist))
-        self.measurement_settings_widget.fluenceLineEdit.setText(
-            str(self.request.default_measurement.fluence))
-        self.measurement_settings_widget.currentLineEdit.setText(
-            str(self.request.default_measurement.current))
-        self.measurement_settings_widget.timeLineEdit.setText(
-            str(self.request.default_measurement.beam_time))
-        self.measurement_settings_widget.detectorThetaLineEdit.setText(
-            str(self.request.default_measurement.detector_theta))
-        self.measurement_settings_widget.detectorFiiLineEdit.setText(
-            str(self.request.default_measurement.detector_fii))
-        self.measurement_settings_widget.targetThetaLineEdit.setText(
-            str(self.request.default_measurement.target_theta))
-        self.measurement_settings_widget.targetFiiLineEdit.setText(
-            str(self.request.default_measurement.target_fii))
+        self.measurement_settings_widget.fluenceDoubleSpinBox.setValue(
+            self.request.default_measurement.fluence)
+        self.measurement_settings_widget.currentDoubleSpinBox.setValue(
+            self.request.default_measurement.current)
+        self.measurement_settings_widget.timeDoubleSpinBox.setValue(
+            self.request.default_measurement.beam_time)
+        self.measurement_settings_widget.detectorThetaDoubleSpinBox.setValue(
+            self.request.default_measurement.detector_theta)
+        self.measurement_settings_widget.detectorFiiDoubleSpinBox.setValue(
+            self.request.default_measurement.detector_fii)
+        self.measurement_settings_widget.targetThetaDoubleSpinBox.setValue(
+            self.request.default_measurement.target_theta)
+        self.measurement_settings_widget.targetFiiDoubleSpinBox.setValue(
+            self.request.default_measurement.target_fii)
 
         # Detector settings
         self.detector_settings_widget.nameLineEdit.setText(
@@ -587,37 +587,47 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 self.request.default_measurement.measurement_name = \
                     self.measurement_settings_widget.nameLineEdit.text()
                 self.request.default_measurement.description = \
-                    self.measurement_settings_widget.descriptionLineEdit. \
+                    self.measurement_settings_widget.descriptionPlainTextEdit. \
                         toPlainText()
                 self.request.default_measurement.energy = \
-                    self.measurement_settings_widget.energyLineEdit.text()
+                    self.measurement_settings_widget.energyDoubleSpinBox.value()
+                self.request.default_measurement.energy_dist = \
+                    self.measurement_settings_widget\
+                        .energyDistDoubleSpinBox.value()
                 self.request.default_measurement.charge = \
-                    self.measurement_settings_widget.chargeLineEdit.text()
+                    self.measurement_settings_widget.beamChargeSpinBox.value()
                 self.request.default_measurement.spot_size = [
-                    self.measurement_settings_widget.spotSizeXLineEdit.text(),
-                    self.measurement_settings_widget.spotSizeYLineEdit.text()]
+                    self.measurement_settings_widget
+                        .spotSizeXdoubleSpinBox.value(),
+                    self.measurement_settings_widget
+                        .spotSizeYdoubleSpinBox.value()]
                 self.request.default_measurement.divergence = \
-                    self.measurement_settings_widget.divergenceLineEdit.text()
+                    self.measurement_settings_widget\
+                        .divergenceDoubleSpinBox.value()
                 self.request.default_measurement.profile = MeasurementProfile(
                     self.measurement_settings_widget.profileComboBox.
                         currentIndex())
-                self.request.default_measurement.energy_dist = \
-                    self.measurement_settings_widget.energyDistLineEdit.text()
                 self.request.default_measurement.fluence = \
-                    self.measurement_settings_widget.fluenceLineEdit.text()
+                    self.measurement_settings_widget\
+                        .fluenceDoubleSpinBox.value()
                 self.request.default_measurement.current = \
-                    self.measurement_settings_widget.currentLineEdit.text()
+                    self.measurement_settings_widget\
+                        .currentDoubleSpinBox.value()
                 self.request.default_measurement.beam_time = \
-                    self.measurement_settings_widget.timeLineEdit.text()
+                    self.measurement_settings_widget.timeDoubleSpinBox.value()
                 self.request.default_measurement.detector_theta = \
-                    self.measurement_settings_widget.detectorThetaLineEdit. \
-                        text()
+                    self.measurement_settings_widget\
+                        .detectorThetaDoubleSpinBox.value()
                 self.request.default_measurement.detector_fii = \
-                    self.measurement_settings_widget.detectorFiiLineEdit.text()
+                    self.measurement_settings_widget\
+                        .detectorFiiDoubleSpinBox.value()
                 self.request.default_measurement.target_theta = \
-                    self.measurement_settings_widget.targetThetaLineEdit.text()
+                    self.measurement_settings_widget\
+                        .targetThetaDoubleSpinBox.value()
                 self.request.default_measurement.target_fii = \
-                    self.measurement_settings_widget.targetFiiLineEdit.text()
+                    self.measurement_settings_widget.\
+                        targetFiiDoubleSpinBox.value()
+                # TODO: Add handling for the charge under Run
 
                 self.request.default_measurement.save_settings(
                     self.request.default_folder + os.sep +
