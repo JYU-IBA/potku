@@ -300,9 +300,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
     def _open_composition_dialog(self):
         foil_widget = self.sender().parent()
         foil = foil_widget.foil
+        foil_index = self.tmp_foil_info.index(foil)
 
-        FoilDialog(self.tmp_foil_info, self.tmp_foil_info.index(foil),
+        FoilDialog(self.tmp_foil_info, foil_index,
                    self.icon_manager)
+        foil_widget.foil = self.tmp_foil_info[foil_index]
         self.sender().setText(foil.name)
 
     def __add_efficiency(self):
