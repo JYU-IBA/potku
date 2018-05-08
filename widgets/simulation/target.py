@@ -53,7 +53,9 @@ class TargetWidget(QtWidgets.QWidget):
 
         icon_manager.set_icon(self.ui.editPushButton, "edit.svg")
         self.ui.editPushButton.setIconSize(QtCore.QSize(14, 14))
-        self.ui.editPushButton.setToolTip("Edit")
+        self.ui.editPushButton.setToolTip(
+            "Edit name, description and reference density "
+            "of this recoil element")
         self.ui.recoilListWidget.hide()
         self.ui.editLockPushButton.hide()
         self.ui.elementInfoWidget.hide()

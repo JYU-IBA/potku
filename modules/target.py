@@ -82,7 +82,8 @@ class Target:
         layers = []
 
         for layer in obj["layers"]:
-            layers.append(Layer(layer["elements"],
+            layers.append(Layer(layer["name"],
+                                layer["elements"],
                                 layer["thickness"],
                                 layer["density"]))
 

@@ -651,37 +651,38 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.name = \
                 self.simulation_settings_widget.nameLineEdit.text()
             self.request.default_simulation.description = \
-                self.simulation_settings_widget.descriptionLineEdit. \
+                self.simulation_settings_widget.descriptionPlainTextEdit. \
                     toPlainText()
-            self.request.default_simulation.element_simulations[
-                0].simulation_mode = self.simulation_settings_widget \
-                .modeComboBox.currentText()
             self.request.default_simulation.element_simulations[
                 0].simulation_type = self.simulation_settings_widget \
                 .typeOfSimulationComboBox.currentText()
             self.request.default_simulation.element_simulations[
-                0].minimum_scattering_angle = \
-                self.simulation_settings_widget.scatterLineEdit.text()
-            self.request.default_simulation.element_simulations[
-                0].minimum_main_scattering_angle = \
-                self.simulation_settings_widget.mainScatterLineEdit.text()
-            self.request.default_simulation.element_simulations[
-                0].minimum_energy = self.simulation_settings_widget \
-                .energyLineEdit.text()
+                0].simulation_mode = self.simulation_settings_widget \
+                .modeComboBox.currentText()
             self.request.default_simulation.element_simulations[
                 0].number_of_ions = self.simulation_settings_widget \
-                .noOfIonsLineEdit.text()
+                .numberOfIonsSpinBox.value()
             self.request.default_simulation.element_simulations[
                 0].number_of_preions = self.simulation_settings_widget \
-                .noOfPreionsLineEdit.text()
+                .numberOfPreIonsSpinBox.value()
             self.request.default_simulation.element_simulations[0].seed_number \
-                = self.simulation_settings_widget.seedLineEdit.text()
+                = self.simulation_settings_widget.seedSpinBox.value()
             self.request.default_simulation.element_simulations[
                 0].number_of_recoils = self.simulation_settings_widget \
-                .noOfRecoilsLineEdit.text()
+                .numberOfRecoilsSpinBox.value()
             self.request.default_simulation.element_simulations[
                 0].number_of_scaling_ions = self.simulation_settings_widget \
-                .noOfScalingLineEdit.text()
+                .numberOfScalingIonsSpinBox.value()
+            self.request.default_simulation.element_simulations[
+                0].minimum_scattering_angle = self.simulation_settings_widget\
+                .minimumScatterAngleDoubleSpinBox.value()
+            self.request.default_simulation.element_simulations[
+                0].minimum_main_scattering_angle = self\
+                .simulation_settings_widget\
+                .minimumMainScatterAngleDoubleSpinBox.value()
+            self.request.default_simulation.element_simulations[
+                0].minimum_energy = self.simulation_settings_widget \
+                .minimumEnergyDoubleSpinBox.value()
 
             self.request.default_simulation.to_file(os.path.join(
                 self.request.default_folder, "Default.simulation"))
