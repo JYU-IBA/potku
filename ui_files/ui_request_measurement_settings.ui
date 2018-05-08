@@ -21,7 +21,7 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>400</width>
+    <width>0</width>
     <height>0</height>
    </size>
   </property>
@@ -79,8 +79,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>367</width>
-        <height>981</height>
+        <width>364</width>
+        <height>1014</height>
        </rect>
       </property>
       <property name="sizePolicy">

@@ -184,6 +184,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.simulation_settings_widget = SimulationSettingsWidget()
         self.ui.tabs.addTab(self.simulation_settings_widget, "Simulation")
 
+        self.simulation_settings_widget.ui.generalParametersGroupBox\
+            .setEnabled(True)
+        self.simulation_settings_widget.ui.physicalParametersGroupBox\
+            .setEnabled(True)
         self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem(
             "ERD")
         self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem(
@@ -239,13 +243,14 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
     def _add_new_foil(self, layout):
         foil_widget = FoilWidget(self)
-        new_foil = CircularFoil("Foil", layers=[])
+        new_foil = CircularFoil()
         self.tmp_foil_info.append(new_foil)
+        foil_widget.ui.foilButton.setText(new_foil.name)
+        foil_widget.ui.distanceEdit.setText(str(new_foil.distance))
         foil_widget.ui.foilButton.clicked.connect(
             lambda: self._open_composition_dialog())
         foil_widget.ui.timingFoilCheckBox.stateChanged.connect(
             lambda: self._check_and_add())
-        foil_widget.ui.distanceEdit.setText(str(new_foil.distance))
         self.detector_structure_widgets.append(foil_widget)
         layout.addWidget(foil_widget)
 
@@ -417,40 +422,39 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.simulation_settings_widget.dateLabel.setText(str(
             datetime.datetime.fromtimestamp(
                 self.request.default_simulation.modification_time)))
-        self.simulation_settings_widget.descriptionLineEdit.setPlainText(
+        self.simulation_settings_widget.descriptionPlainTextEdit.setPlainText(
             self.request.default_simulation.description)
         self.simulation_settings_widget.modeComboBox.setCurrentIndex(
             self.simulation_settings_widget.modeComboBox.findText(
                 self.request.default_simulation.element_simulations[
                     0].simulation_mode))
         self.simulation_settings_widget.typeOfSimulationComboBox \
-            .setCurrentIndex(
-            self.simulation_settings_widget.typeOfSimulationComboBox.findText(
-                self.request.default_simulation.element_simulations[
-                    0].simulation_type))
-        self.simulation_settings_widget.scatterLineEdit.setText(str(
+            .setCurrentIndex(self.simulation_settings_widget
+            .typeOfSimulationComboBox.findText(self.request
+            .default_simulation.element_simulations[0].simulation_type))
+        self.simulation_settings_widget.minimumScatterAngleDoubleSpinBox\
+            .setValue(self.request.default_simulation.element_simulations[
+                0].minimum_scattering_angle)
+        self.simulation_settings_widget.minimumMainScatterAngleDoubleSpinBox\
+            .setValue(self.request.default_simulation.element_simulations[
+                0].minimum_main_scattering_angle)
+        self.simulation_settings_widget.minimumEnergyDoubleSpinBox.setValue(
             self.request.default_simulation.element_simulations[
-                0].minimum_scattering_angle))
-        self.simulation_settings_widget.mainScatterLineEdit.setText(str(
+                0].minimum_energy)
+        self.simulation_settings_widget.numberOfIonsSpinBox.setValue(
             self.request.default_simulation.element_simulations[
-                0].minimum_main_scattering_angle))
-        self.simulation_settings_widget.energyLineEdit.setText(str(
+                0].number_of_ions)
+        self.simulation_settings_widget.numberOfPreIonsSpinBox.setValue(
             self.request.default_simulation.element_simulations[
-                0].minimum_energy))
-        self.simulation_settings_widget.noOfIonsLineEdit.setText(str(
+                0].number_of_preions)
+        self.simulation_settings_widget.seedSpinBox.setValue(
+            self.request.default_simulation.element_simulations[0].seed_number)
+        self.simulation_settings_widget.numberOfRecoilsSpinBox.setValue(
             self.request.default_simulation.element_simulations[
-                0].number_of_ions))
-        self.simulation_settings_widget.noOfPreionsLineEdit.setText(str(
+                0].number_of_recoils)
+        self.simulation_settings_widget.numberOfScalingIonsSpinBox.setValue(
             self.request.default_simulation.element_simulations[
-                0].number_of_preions))
-        self.simulation_settings_widget.seedLineEdit.setText(str(
-            self.request.default_simulation.element_simulations[0].seed_number))
-        self.simulation_settings_widget.noOfRecoilsLineEdit.setText(str(
-            self.request.default_simulation.element_simulations[
-                0].number_of_recoils))
-        self.simulation_settings_widget.noOfScalingLineEdit.setText(str(
-            self.request.default_simulation.element_simulations[
-                0].number_of_scaling_ions))
+                0].number_of_scaling_ions)
 
     def __load_file(self, settings_type):
         """Opens file dialog and loads and shows selected ini file's values.

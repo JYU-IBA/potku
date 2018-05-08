@@ -293,9 +293,10 @@ class ElementSimulation:
             "modification_time": str(datetime.datetime.fromtimestamp(
                 time.time())),
             "modification_time_unix": time.time(),
-            "type": self.recoil_element.get_type(),
+            "simulation_type": self.recoil_element.get_type(),
             "element": self.recoil_element.get_element().__str__(),
-            "density": self.recoil_element.get_reference_density() * 1e22,
+            "reference_density": self.recoil_element.get_reference_density() *
+                              1e22,
             "profile": []
         }
 
