@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 7.5.2018
+Updated on 8.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -61,13 +61,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.measurement_settings_widget.ui.beamIonButton.setText("Select")
         self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(False)
 
-        self.measurement_settings_widget.ui.energyLineEdit.setValidator(
-            positive_double_validator)
+        # self.measurement_settings_widget.ui.energyLineEdit.setValidator(
+        #     positive_double_validator)
         double_angle_validator = InputValidator(0, 90, 10)
-        self.measurement_settings_widget.ui.detectorThetaLineEdit.setValidator(
-            double_angle_validator)
-        self.measurement_settings_widget.ui.targetThetaLineEdit.setValidator(
-            double_angle_validator)
+        # self.measurement_settings_widget.ui.detectorThetaLineEdit.setValidator(
+        #     double_angle_validator)
+        # self.measurement_settings_widget.ui.targetThetaLineEdit.setValidator(
+        #     double_angle_validator)
         self.measurement_settings_widget.ui.picture.setScaledContents(True)
         pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
         self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
@@ -105,8 +105,12 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             lambda: self._add_new_foil(self.foils_layout))
 
         # Efficiency files
-        self.detector_settings_widget.ui.efficiencyListWidget.addItems(
-            self.simulation.detector.get_efficiency_files())
+        if self.simulation.detector:
+            self.detector_settings_widget.ui.efficiencyListWidget.addItems(
+                self.simulation.detector.get_efficiency_files())
+        else:
+            self.detector_settings_widget.ui.efficiencyListWidget.addItems(
+                self.simulation.request.default_detector.get_efficiency_files())
         self.detector_settings_widget.ui.addEfficiencyButton.clicked.connect(
             lambda: self.__add_efficiency())
         self.detector_settings_widget.ui.removeEfficiencyButton.clicked.connect(
@@ -241,6 +245,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.simulation.detector = None
             # TODO: delete possible simulation specific files.
         else:
+            # TODO: update settings for run, target angle, and detector
+            # measurement_file = os.path.join(self.simulation.directory)
+            # self.simulation.run.to_file(measurement_file)
             pass
 
     def __save_settings_and_close(self):
