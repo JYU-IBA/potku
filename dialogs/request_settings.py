@@ -215,8 +215,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # Add depth profile settings view to the settings view
         self.depth_profile_settings_widget = DepthProfileSettingsWidget()
         self.ui.tabs.addTab(self.depth_profile_settings_widget, "Profile")
-        self.depth_profile_settings_widget.ui.normalizationComboBox.addItem(
-            "First")
 
         self.depth_profile_settings.show(self.depth_profile_settings_widget)
 
@@ -225,17 +223,17 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.depth_profile_settings_widget.ui.saveButton.clicked.connect(
             lambda: self.__save_file("DEPTH_PROFILE_SETTINGS"))
 
-        self.depth_profile_settings_widget.ui.depthStepForStoppingLineEdit. \
-            setValidator(double_validator)
-        self.depth_profile_settings_widget.ui.depthStepForOutputLineEdit. \
-            setValidator(double_validator)
-
-        self.depth_profile_settings_widget.ui. \
-            depthsForConcentrationScalingLineEdit_1.setValidator(
-            double_validator)
-        self.depth_profile_settings_widget.ui. \
-            depthsForConcentrationScalingLineEdit_2.setValidator(
-            double_validator)
+        # self.depth_profile_settings_widget.ui.depthStepForStoppingLineEdit. \
+        #     setValidator(double_validator)
+        # self.depth_profile_settings_widget.ui.depthStepForOutputLineEdit. \
+        #     setValidator(double_validator)
+        #
+        # self.depth_profile_settings_widget.ui. \
+        #     depthsForConcentrationScalingLineEdit_1.setValidator(
+        #     double_validator)
+        # self.depth_profile_settings_widget.ui. \
+        #     depthsForConcentrationScalingLineEdit_2.setValidator(
+        #     double_validator)
 
         self.show_settings()
 
