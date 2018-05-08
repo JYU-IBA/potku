@@ -160,17 +160,17 @@ class Measurement:
     """Measurement class to handle one measurement data.
     """
 
-    __slots__ = "request", "tab_id", "name", "description",\
-                "modification_time", "run", "detector", "target", \
-                "profile_name", "profile_description", \
-                "profile_modification_time", "reference_density", \
-                "number_of_depth_steps", "depth_step_for_stopping",\
-                "depth_step_for_output", "depth_for_concentration_from", \
-                "depth_for_concentration_to", "channel_width", \
-                "reference_cut", "number_of_splits", "normalization"
+    # __slots__ = "request", "tab_id", "name", "description",\
+    #             "modification_time", "run", "detector", "target", \
+    #             "profile_name", "profile_description", \
+    #             "profile_modification_time", "reference_density", \
+    #             "number_of_depth_steps", "depth_step_for_stopping",\
+    #             "depth_step_for_output", "depth_for_concentration_from", \
+    #             "depth_for_concentration_to", "channel_width", \
+    #             "reference_cut", "number_of_splits", "normalization"
 
     def __init__(self, request, tab_id=-1, name="Default", description="",
-                 modification_time=time.time(), run=Run(), detector=Detector(),
+                 modification_time=time.time(), run=Run(),
                  target=Target(), profile_name="Default",
                  profile_description="", profile_modification_time=time.time(),
                  reference_density=3.5, number_of_depth_steps=40,
@@ -192,7 +192,7 @@ class Measurement:
         self.modification_time = modification_time
 
         self.run = run
-        self.detector = detector
+        self.detector = request.default_detector
         self.target = target
 
         self.profile_name = profile_name
@@ -305,11 +305,20 @@ class Measurement:
         obj_measurement = {}
         obj_profile = {}
 
+        obj_measurement["general"] = {}
+        obj_measurement["beam"] = {}
+        obj_measurement["run"] = {}
+        obj_measurement["geometry"] = {}
+        obj_profile["general"] = {}
+        obj_profile["depth_profiles"] = {}
+        obj_profile["energy_spectra"] = {}
+        obj_profile["composition_changes"] = {}
+
         obj_measurement["general"]["name"] = self.name
         obj_measurement["general"]["description"] = self.description
         obj_measurement["general"]["modification_time"] = self.modification_time
 
-        obj_measurement["beam"]["ion"] = self.run.beam.ion
+        obj_measurement["beam"]["ion"] = str(self.run.beam.ion)
         obj_measurement["beam"]["energy"] = self.run.beam.energy
         obj_measurement["beam"]["energy_distribution"] = \
             self.run.beam.energy_distribution
@@ -466,15 +475,6 @@ class Measurement:
         rename_file(os.path.join(self.directory, self.directory_data,
                                  self.measurement_file), new_name + ".asc")
         self.measurement_file = new_name + ".asc"
-
-    def save_settings(self, filepath=None):
-        """Saves parameters from Measurement object
-        in JSON format in .measurement file.
-
-        Args:
-            filepath: Filepath including name of the file.
-        """
-        save_settings(self, ".measurement", MeasurementEncoder, filepath)
 
     def set_loggers(self):
         """Sets the loggers for this specified measurement.

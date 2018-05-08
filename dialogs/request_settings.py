@@ -47,7 +47,6 @@ from modules.foil import CircularFoil
 from modules.general_functions import open_file_dialog
 from modules.general_functions import save_file_dialog
 from modules.input_validator import InputValidator
-from modules.measurement import MeasurementProfile
 from modules.measuring_settings import MeasuringSettings
 from widgets.depth_profile_settings import DepthProfileSettingsWidget
 from widgets.detector_settings import DetectorSettingsWidget
@@ -344,9 +343,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
     def show_settings(self):
         # Measurement settings
-        if self.request.default_measurement.ion:
+        if self.request.default_measurement.run.beam.ion:
             self.measurement_settings_widget.ui.beamIonButton.setText(
-                self.request.default_measurement.ion.name)
+                self.request.default_measurement.run.beam.ion.symbol)
             # TODO Check that the isotope is also set.
             self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(True)
         else:
@@ -359,33 +358,41 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.measurement_settings_widget.descriptionPlainTextEdit.setPlainText(
             self.request.default_measurement.description)
         self.measurement_settings_widget.energyDoubleSpinBox.setValue(
-            self.request.default_measurement.energy)
+            self.request.default_measurement.run.beam.energy)
         self.measurement_settings_widget.energyDistDoubleSpinBox.setValue(
-            self.request.default_measurement.energy_dist)
+            self.request.default_measurement.run.beam.energy_distribution)
         self.measurement_settings_widget.beamChargeSpinBox.setValue(
-            self.request.default_measurement.charge)
+            self.request.default_measurement.run.beam.charge)
         self.measurement_settings_widget.spotSizeXdoubleSpinBox.setValue(
-            self.request.default_measurement.spot_size[0])
+            self.request.default_measurement.run.beam.spot_size[0])
         self.measurement_settings_widget.spotSizeXdoubleSpinBox.setValue(
-            self.request.default_measurement.spot_size[1])
+            self.request.default_measurement.run.beam.spot_size[1])
         self.measurement_settings_widget.divergenceDoubleSpinBox.setValue(
-            self.request.default_measurement.divergence)
+            self.request.default_measurement.run.beam.divergence)
         self.measurement_settings_widget.profileComboBox.setCurrentIndex(
-            self.request.default_measurement.profile.value)
+            self.measurement_settings_widget.profileComboBox.findText(
+                self.request.default_measurement.run.beam.profile))
         self.measurement_settings_widget.fluenceDoubleSpinBox.setValue(
-            self.request.default_measurement.fluence)
+            self.request.default_measurement.run.fluence)
         self.measurement_settings_widget.currentDoubleSpinBox.setValue(
-            self.request.default_measurement.current)
+            self.request.default_measurement.run.current)
         self.measurement_settings_widget.timeDoubleSpinBox.setValue(
-            self.request.default_measurement.beam_time)
+            self.request.default_measurement.run.time)
         self.measurement_settings_widget.detectorThetaDoubleSpinBox.setValue(
-            self.request.default_measurement.detector_theta)
+            self.request.default_detector.detector_theta)
+        # TODO: Fix the angle links to correct values
         self.measurement_settings_widget.detectorFiiDoubleSpinBox.setValue(
-            self.request.default_measurement.detector_fii)
+            self.request.default_detector.detector_theta + 180)
         self.measurement_settings_widget.targetThetaDoubleSpinBox.setValue(
-            self.request.default_measurement.target_theta)
+            self.request.default_target.target_theta)
         self.measurement_settings_widget.targetFiiDoubleSpinBox.setValue(
-            self.request.default_measurement.target_fii)
+            self.request.default_target.target_theta + 180)
+
+        self.link_angle_values(self.measurement_settings_widget.detectorThetaDoubleSpinBox,
+                               self.measurement_settings_widget.detectorFiiDoubleSpinBox)
+        self.link_angle_values(self.measurement_settings_widget.targetThetaDoubleSpinBox,
+                               self.measurement_settings_widget.targetFiiDoubleSpinBox)
+
 
         # Detector settings
         self.detector_settings_widget.nameLineEdit.setText(
@@ -453,6 +460,19 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.simulation_settings_widget.numberOfScalingIonsSpinBox.setValue(
             self.request.default_simulation.element_simulations[
                 0].number_of_scaling_ions)
+
+    def link_angle_values(self, theta, fii):
+        """A function to link angle spinbox values to each other.
+        """
+        # TODO: Fix the angle links to correct values
+        theta.valueChanged.connect(
+            lambda: fii.setValue(
+                theta.value() + 180
+            ))
+        fii.valueChanged.connect(
+            lambda: theta.setValue(
+                fii.value() - 180
+            ))
 
     def __load_file(self, settings_type):
         """Opens file dialog and loads and shows selected ini file's values.
@@ -602,9 +622,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 self.request.default_measurement.divergence = \
                     self.measurement_settings_widget\
                         .divergenceDoubleSpinBox.value()
-                self.request.default_measurement.profile = MeasurementProfile(
-                    self.measurement_settings_widget.profileComboBox.
-                        currentIndex())
+                self.request.default_measurement.profile = \
+                    self.measurement_settings_widget\
+                        .profileComboBox.currentText()
                 self.request.default_measurement.fluence = \
                     self.measurement_settings_widget\
                         .fluenceDoubleSpinBox.value()
@@ -616,16 +636,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 self.request.default_measurement.detector_theta = \
                     self.measurement_settings_widget\
                         .detectorThetaDoubleSpinBox.value()
-                self.request.default_measurement.detector_fii = \
-                    self.measurement_settings_widget\
-                        .detectorFiiDoubleSpinBox.value()
                 self.request.default_measurement.target_theta = \
                     self.measurement_settings_widget\
                         .targetThetaDoubleSpinBox.value()
-                self.request.default_measurement.target_fii = \
-                    self.measurement_settings_widget.\
-                        targetFiiDoubleSpinBox.value()
-                # TODO: Add handling for the charge under Run
 
                 self.request.default_measurement.save_settings(
                     self.request.default_folder + os.sep +

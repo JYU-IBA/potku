@@ -107,8 +107,9 @@ class Request:
 
         # Create default measurement for request
         self.default_measurement = Measurement(self, "Default")
-        self.default_measurement.save_settings(os.path.join(
-            self.default_folder, self.default_measurement.name))
+        self.default_measurement.to_file(os.path.join(
+            self.default_folder, self.default_measurement.name), os.path.join(
+            self.default_folder, self.default_measurement.profile_name))
 
         # Create default simulation for request
         self.default_simulation = Simulation(os.path.join(
