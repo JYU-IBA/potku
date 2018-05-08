@@ -142,12 +142,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Add foil widgets and foil objects
         self.detector_structure_widgets = []
-        self.foils_layout = self._add_foils(self.request.default_detector.foils,
-            self.request.default_detector.tof_foils)
-        self.detector_settings_widget.ui.detectorScrollAreaContents.layout() \
-            .addLayout(self.foils_layout)
         self.detector_settings_widget.ui.newFoilButton.clicked.connect(
-            lambda: self._add_new_foil(self.foils_layout))
+            lambda: self._add_new_foil())
 
         # Efficiency files
         self.detector_settings_widget.ui.efficiencyListWidget.addItems(
@@ -185,9 +181,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.simulation_settings_widget = SimulationSettingsWidget()
         self.ui.tabs.addTab(self.simulation_settings_widget, "Simulation")
 
-        self.simulation_settings_widget.ui.generalParametersGroupBox\
+        self.simulation_settings_widget.ui.generalParametersGroupBox \
             .setEnabled(True)
-        self.simulation_settings_widget.ui.physicalParametersGroupBox\
+        self.simulation_settings_widget.ui.physicalParametersGroupBox \
             .setEnabled(True)
         self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem(
             "ERD")
@@ -198,7 +194,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         self.request.default_simulation = \
             self.request.default_simulation.from_file(self.request,
-                os.path.join(self.request.default_folder, "Default.simulation"))
+                                                      os.path.join(
+                                                          self.request.default_folder,
+                                                          "Default.simulation"))
         self.request.default_element_simulation = self.request \
             .default_element_simulation.from_file(self.request,
                                                   os.path.join(
@@ -242,9 +240,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         self.exec_()
 
-    def _add_new_foil(self, foil, layout):
+    def _add_new_foil(self, foil):
         foil_widget = FoilWidget(self)
-#        new_foil = CircularFoil()
+        foil_widget.foil = foil
+        #        new_foil = CircularFoil()
         self.tmp_foil_info.append(foil)
         foil_widget.ui.foilButton.setText(foil.name)
         foil_widget.ui.distanceEdit.setText(str(foil.distance))
@@ -253,22 +252,21 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         foil_widget.ui.timingFoilCheckBox.stateChanged.connect(
             lambda: self._check_and_add())
         self.detector_structure_widgets.append(foil_widget)
-        layout.addWidget(foil_widget)
+        self.detector_settings_widget.ui.foilsLayout.addWidget(
+            foil_widget)
 
         if len(self.tof_foils) >= 2:
             foil_widget.ui.timingFoilCheckBox.setEnabled(False)
         return foil_widget
 
     def _add_foils(self, foils, tof_foils):
-        layout = QtWidgets.QHBoxLayout()
         target_label = QtWidgets.QLabel("Target")
-        layout.addWidget(target_label)
+        self.detector_settings_widget.ui.foilsLayout.addWidget(target_label)
         for i in range(len(foils)):
-            foil_widget = self._add_new_foil(foils[i], layout)
+            foil_widget = self._add_new_foil(foils[i])
             for index in tof_foils:
                 if index == i:
                     foil_widget.ui.timingFoilCheckBox.setChecked(True)
-        return layout
 
     def _check_and_add(self):
         check_box = self.sender()
@@ -303,14 +301,12 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             widget.ui.timingFoilCheckBox.setEnabled(True)
 
     def _open_composition_dialog(self):
-        foil_name = self.sender().text()
-        foil_object_index = -1
-        for i in range(len(self.tmp_foil_info)):
-            if foil_name == self.tmp_foil_info[i].name:
-                foil_object_index = i
-                break
-        FoilDialog(self.tmp_foil_info, foil_object_index, self.icon_manager)
-        self.sender().setText(self.tmp_foil_info[foil_object_index].name)
+        foil_widget = self.sender().parent()
+        foil = foil_widget.foil
+
+        FoilDialog(self.tmp_foil_info, self.tmp_foil_info.index(foil),
+                   self.icon_manager)
+        self.sender().setText(foil.name)
 
     def __add_efficiency(self):
         """Adds efficiency file in detector's efficiency directory and
@@ -417,6 +413,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # Tof foils
         self.tof_foils = self.request.default_detector.tof_foils
 
+        self._add_foils(self.request.default_detector.foils,
+                        self.request.default_detector.tof_foils)
+
         # Simulation settings
         self.simulation_settings_widget.nameLineEdit.setText(
             self.request.default_simulation.name)
@@ -431,14 +430,15 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     0].simulation_mode))
         self.simulation_settings_widget.typeOfSimulationComboBox \
             .setCurrentIndex(self.simulation_settings_widget
-            .typeOfSimulationComboBox.findText(self.request
-            .default_simulation.element_simulations[0].simulation_type))
-        self.simulation_settings_widget.minimumScatterAngleDoubleSpinBox\
+                             .typeOfSimulationComboBox.findText(self.request
+                                                                .default_simulation.element_simulations[
+                                                                    0].simulation_type))
+        self.simulation_settings_widget.minimumScatterAngleDoubleSpinBox \
             .setValue(self.request.default_simulation.element_simulations[
-                0].minimum_scattering_angle)
-        self.simulation_settings_widget.minimumMainScatterAngleDoubleSpinBox\
+                          0].minimum_scattering_angle)
+        self.simulation_settings_widget.minimumMainScatterAngleDoubleSpinBox \
             .setValue(self.request.default_simulation.element_simulations[
-                0].minimum_main_scattering_angle)
+                          0].minimum_main_scattering_angle)
         self.simulation_settings_widget.minimumEnergyDoubleSpinBox.setValue(
             self.request.default_simulation.element_simulations[
                 0].minimum_energy)
@@ -661,11 +661,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 0].simulation_type = self.simulation_settings_widget \
                 .typeOfSimulationComboBox.currentText()
             self.request.default_simulation.element_simulations[
-                0].minimum_scattering_angle = self.simulation_settings_widget\
-                    .minimumScatterAngleDoubleSpinBox.value()
+                0].minimum_scattering_angle = self.simulation_settings_widget \
+                .minimumScatterAngleDoubleSpinBox.value()
             self.request.default_simulation.element_simulations[
                 0].minimum_main_scattering_angle = \
-                self.simulation_settings_widget\
+                self.simulation_settings_widget \
                     .minimumMainScatterAngleDoubleSpinBox.value()
             self.request.default_simulation.element_simulations[
                 0].minimum_energy = self.simulation_settings_widget \
