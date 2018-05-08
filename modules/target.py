@@ -59,7 +59,7 @@ class Target:
         self.layers = layers
 
     @classmethod
-    def from_file(cls, target_file_path: object, measurement_file_path: object) -> object:
+    def from_file(cls, target_file_path, measurement_file_path):
         """Initialize target from a JSON file.
 
         Args:

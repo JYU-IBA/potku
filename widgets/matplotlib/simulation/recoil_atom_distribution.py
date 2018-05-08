@@ -3,13 +3,14 @@
 Created on 1.3.2018
 Updated on 28.3.2018
 """
+from PyQt5.QtWidgets import QWidget
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 
 import os
 
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5 import QtCore, QtWidgets, QtGui, uic
 from matplotlib.widgets import SpanSelector
 
 import modules.element
@@ -292,7 +293,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                   2: "zoom rect"  # Matplotlib's zoom
                   }
 
-    def __init__(self, parent, simulation, target, icon_manager):
+    def __init__(self, parent, simulation, target, tab, icon_manager):
         """Inits recoil atom distribution widget.
 
         Args:
@@ -305,6 +306,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.fmt_xdata = lambda x: "{0:1.2f}".format(x)
         self.axes.fmt_ydata = lambda y: "{0:1.4f}".format(y)
         self.__icon_manager = icon_manager
+        self.tab = tab
 
         self.current_recoil_element = None
         self.element_manager = ElementManager(self.__icon_manager, simulation)
@@ -480,8 +482,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def add_element(self):
         dialog = RecoilElementSelectionDialog(self)
         if dialog.isOk:
+            # Create new ElementSimulation
             element_simulation = self.element_manager.add_element_simulation(
                 modules.element.Element(dialog.element, dialog.isotope))
+            # Add simulation controls widget
+            simulation_controls_widget = QWidget()
+            simulation_controls_widget.ui = uic.loadUi(os.path.join(
+                "ui_files", "ui_simulation_controls_widget.ui"), self)
+            self.tab.ui.simulationControlsLayout.layout().addWidget(
+                simulation_controls_widget)
+
             recoil_element_widget = element_simulation.get_recoil_element()\
                 .get_widget()
 

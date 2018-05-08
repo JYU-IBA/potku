@@ -189,10 +189,8 @@ class Simulation:
                                                request=self.request,
                                                name=recoil_element.get_element().__str__(),
                                                recoil_element=recoil_element,
-                                               beam=self.run.beam,
                                                target=self.target,
-                                               detector=self.detector,
-                                               run=self.run)
+                                               detector=self.detector)
         self.element_simulations.append(element_simulation)
         return element_simulation
 
