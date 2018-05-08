@@ -81,16 +81,101 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-34</y>
-        <width>402</width>
-        <height>512</height>
+        <y>-61</y>
+        <width>398</width>
+        <height>551</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_4">
          <item>
-          <widget class="QGroupBox" name="groupBox_4">
+          <widget class="QGroupBox" name="generalGroupBox">
+           <property name="title">
+            <string>General</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_7">
+            <item>
+             <layout class="QFormLayout" name="formLayout">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_31">
+                <property name="text">
+                 <string>Name:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QLineEdit" name="nameLineEdit">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="minimumSize">
+                 <size>
+                  <width>0</width>
+                  <height>0</height>
+                 </size>
+                </property>
+                <property name="maximumSize">
+                 <size>
+                  <width>16777215</width>
+                  <height>16777215</height>
+                 </size>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_33">
+                <property name="text">
+                 <string>Date:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QLabel" name="dateLabel_2">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="text">
+                 <string>TextLabel</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_32">
+                <property name="text">
+                 <string>Description:</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QPlainTextEdit" name="descriptionPlainTextEdit">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="sizeAdjustPolicy">
+                 <enum>QAbstractScrollArea::AdjustToContents</enum>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="depthProfileGroupBox">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
              <horstretch>0</horstretch>
@@ -98,7 +183,7 @@
             </sizepolicy>
            </property>
            <property name="title">
-            <string>General</string>
+            <string>Depth profile</string>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>
@@ -111,12 +196,12 @@
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QLineEdit" name="referenceDensityLineEdit">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
+               <widget class="QDoubleSpinBox" name="referenceDensityDoubleSpinBox">
+                <property name="maximum">
+                 <double>100000000000000000620008645040778319495168.000000000000000</double>
+                </property>
+                <property name="value">
+                 <double>3.500000000000000</double>
                 </property>
                </widget>
               </item>
@@ -128,24 +213,12 @@
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QLineEdit" name="numberOfDepthStepsLineEdit">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
+               <widget class="QSpinBox" name="numberOfDepthStepsSpinBox">
+                <property name="maximum">
+                 <number>999999999</number>
                 </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>0</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>16777215</height>
-                 </size>
+                <property name="value">
+                 <number>40</number>
                 </property>
                </widget>
               </item>
@@ -157,53 +230,29 @@
                </widget>
               </item>
               <item row="2" column="1">
-               <widget class="QLineEdit" name="depthStepForStoppingLineEdit">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
+               <widget class="QSpinBox" name="depthStepForStoppingSpinBox">
+                <property name="maximum">
+                 <number>999999999</number>
                 </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>0</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>16777215</height>
-                 </size>
+                <property name="value">
+                 <number>50</number>
                 </property>
                </widget>
               </item>
               <item row="3" column="0">
-               <widget class="QLabel" name="label_22">
+               <widget class="QLabel" name="stepForOutputLabel">
                 <property name="text">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Bin width [1e15 at./cm&lt;span style=&quot; vertical-align:super;&quot;&gt;2&lt;/span&gt;]:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                 <string>Step for output [1e15 at./cm2]:</string>
                 </property>
                </widget>
               </item>
               <item row="3" column="1">
-               <widget class="QLineEdit" name="depthStepForOutputLineEdit">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
+               <widget class="QSpinBox" name="depthStepForOutputSpinBox">
+                <property name="maximum">
+                 <number>999999999</number>
                 </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>0</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>16777215</height>
-                 </size>
+                <property name="value">
+                 <number>50</number>
                 </property>
                </widget>
               </item>
@@ -214,42 +263,26 @@
               <property name="title">
                <string>Concentration scaling 100 % [1e15 at./cm²]</string>
               </property>
-              <layout class="QFormLayout" name="formLayout_2">
-               <item row="0" column="0">
-                <layout class="QHBoxLayout" name="horizontalLayout_4">
+              <layout class="QHBoxLayout" name="horizontalLayout_4">
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_3">
                  <item>
                   <widget class="QLabel" name="label_2">
                    <property name="text">
-                    <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;From:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                    <string>From:</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="depthsForConcentrationScalingLineEdit_1">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
+                  <widget class="QDoubleSpinBox" name="depthForConcentrationFromDoubleSpinBox">
+                   <property name="maximum">
+                    <double>10000000000000000139372116959414099130712064.000000000000000</double>
                    </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>70</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>16777215</height>
-                    </size>
+                   <property name="value">
+                    <double>800.000000000000000</double>
                    </property>
                   </widget>
                  </item>
-                </layout>
-               </item>
-               <item row="0" column="1">
-                <layout class="QHBoxLayout" name="horizontalLayout_2">
                  <item>
                   <widget class="QLabel" name="label_3">
                    <property name="text">
@@ -258,24 +291,12 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QLineEdit" name="depthsForConcentrationScalingLineEdit_2">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
+                  <widget class="QDoubleSpinBox" name="depthForConcentrationToDoubleSpinBox">
+                   <property name="maximum">
+                    <double>1000000000000000042420637374017961984.000000000000000</double>
                    </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>70</width>
-                     <height>0</height>
-                    </size>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>16777215</width>
-                     <height>16777215</height>
-                    </size>
+                   <property name="value">
+                    <double>1500.000000000000000</double>
                    </property>
                   </widget>
                  </item>
@@ -298,17 +319,82 @@
               <item row="0" column="0">
                <widget class="QLabel" name="label">
                 <property name="text">
-                 <string>Channel width:</string>
+                 <string>Channel width [MeV]:</string>
                 </property>
                </widget>
               </item>
               <item row="0" column="1">
-               <widget class="QLineEdit" name="channelWidthLineEdit">
+               <widget class="QDoubleSpinBox" name="channelWidthDoubleSpinBox">
+                <property name="maximum">
+                 <double>1000000000000000044885712678075916785549312.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.100000000000000</double>
+                </property>
+                <property name="value">
+                 <double>0.100000000000000</double>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="compositionChangesGroupBox">
+           <property name="title">
+            <string>Composition changes</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <item>
+             <layout class="QFormLayout" name="formLayout_4">
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_6">
+                <property name="text">
+                 <string>Reference cut:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="1">
+               <widget class="QLineEdit" name="referenceCutLineEdit"/>
+              </item>
+              <item row="1" column="0">
+               <widget class="QLabel" name="label_7">
+                <property name="text">
+                 <string>Number of splits:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="0">
+               <widget class="QLabel" name="label_8">
+                <property name="text">
+                 <string>Normalization:</string>
+                </property>
+               </widget>
+              </item>
+              <item row="2" column="1">
+               <widget class="QComboBox" name="normalizationComboBox">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>First</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QSpinBox" name="numberOfSplitsSpinBox">
+                <property name="maximum">
+                 <number>999999999</number>
+                </property>
+                <property name="value">
+                 <number>10</number>
                 </property>
                </widget>
               </item>
@@ -318,56 +404,6 @@
           </widget>
          </item>
         </layout>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="compositionChangesGroupBox">
-         <property name="title">
-          <string>Composition changes</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_3">
-          <item>
-           <layout class="QFormLayout" name="formLayout_4">
-            <item row="0" column="0">
-             <widget class="QLabel" name="label_6">
-              <property name="text">
-               <string>Reference cut:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QLineEdit" name="referenceCutLineEdit"/>
-            </item>
-            <item row="1" column="0">
-             <widget class="QLabel" name="label_7">
-              <property name="text">
-               <string>Number of splits:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QLineEdit" name="numberOfSplitsLineEdit"/>
-            </item>
-            <item row="2" column="0">
-             <widget class="QLabel" name="label_8">
-              <property name="text">
-               <string>Normalization:</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="1">
-             <widget class="QComboBox" name="normalizationComboBox">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </widget>
        </item>
        <item>
         <spacer name="verticalSpacer">
