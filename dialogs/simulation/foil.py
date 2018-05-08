@@ -107,20 +107,20 @@ class FoilDialog(QtWidgets.QDialog):
             if self.foil_type is CircularFoil:
                 new_foil = RectangularFoil(self.ui.nameEdit.text(),
                                            layers=self.foil.layers)
-                new_foil.size = (self.first_dimension_edit.text(),
-                                 self.second_dimension_edit.text())
+                new_foil.size = (float(self.first_dimension_edit.text()),
+                                 float(self.second_dimension_edit.text()))
             else:
                 new_foil = CircularFoil(self.ui.nameEdit.text(),
                                         layers=self.foil.layers)
-                new_foil.diameter = self.first_dimension_edit.text()
-            new_foil.distance = self.foils[self.index].distance
+                new_foil.diameter = float(self.first_dimension_edit.text())
+            new_foil.distance = float(self.foils[self.index].distance)
             self.foils[self.index] = new_foil
         else:
             self.foil.name = self.ui.nameEdit.text()
-            self.foil.transmission = self.ui.transmissionEdit.text()
+            self.foil.transmission = float(self.ui.transmissionEdit.text())
             if self.foil_type is CircularFoil:
-                self.foil.diameter = self.first_dimension_edit.text()
+                self.foil.diameter = float(self.first_dimension_edit.text())
             else:
-                self.foil.size = (self.first_dimension_edit.text(),
-                                  self.second_dimension_edit.text())
+                self.foil.size = (float(self.first_dimension_edit.text()),
+                                  float(self.second_dimension_edit.text()))
         self.close()

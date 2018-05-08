@@ -142,11 +142,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Add foil widgets and foil objects
         self.detector_structure_widgets = []
-        self.foils_layout = self._add_default_foils()
-        self.detector_settings_widget.ui.detectorScrollAreaContents.layout() \
-            .addLayout(self.foils_layout)
         self.detector_settings_widget.ui.newFoilButton.clicked.connect(
-            lambda: self._add_new_foil(self.foils_layout))
+            lambda: self._add_new_foil())
 
         # Efficiency files
         self.detector_settings_widget.ui.efficiencyListWidget.addItems(
@@ -239,33 +236,34 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         self.exec_()
 
-    def _add_new_foil(self, layout):
+    def _add_new_foil(self, foil=None):
         foil_widget = FoilWidget(self)
-        new_foil = CircularFoil()
-        self.tmp_foil_info.append(new_foil)
-        foil_widget.ui.foilButton.setText(new_foil.name)
-        foil_widget.ui.distanceEdit.setText(str(new_foil.distance))
+        if not foil:
+            foil = CircularFoil()
+        foil_widget.foil = foil
+        self.tmp_foil_info.append(foil)
+        foil_widget.ui.foilButton.setText(foil.name)
+        foil_widget.ui.distanceEdit.setText(str(foil.distance))
         foil_widget.ui.foilButton.clicked.connect(
             lambda: self._open_composition_dialog())
         foil_widget.ui.timingFoilCheckBox.stateChanged.connect(
             lambda: self._check_and_add())
         self.detector_structure_widgets.append(foil_widget)
-        layout.addWidget(foil_widget)
+        self.detector_settings_widget.ui.foilsLayout.addWidget(
+            foil_widget)
 
         if len(self.tof_foils) >= 2:
             foil_widget.ui.timingFoilCheckBox.setEnabled(False)
         return foil_widget
 
-    def _add_default_foils(self):
-        layout = QtWidgets.QHBoxLayout()
-        target = QtWidgets.QLabel("Target")
-        layout.addWidget(target)
-        for i in range(4):
-            foil_widget = self._add_new_foil(layout)
-            for index in self.request.default_detector.tof_foils:
+    def _add_foils(self, foils, tof_foils):
+        target_label = QtWidgets.QLabel("Target")
+        self.detector_settings_widget.ui.foilsLayout.addWidget(target_label)
+        for i in range(len(foils)):
+            foil_widget = self._add_new_foil(foils[i])
+            for index in tof_foils:
                 if index == i:
                     foil_widget.ui.timingFoilCheckBox.setChecked(True)
-        return layout
 
     def _check_and_add(self):
         check_box = self.sender()
@@ -300,14 +298,12 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             widget.ui.timingFoilCheckBox.setEnabled(True)
 
     def _open_composition_dialog(self):
-        foil_name = self.sender().text()
-        foil_object_index = -1
-        for i in range(len(self.tmp_foil_info)):
-            if foil_name == self.tmp_foil_info[i].name:
-                foil_object_index = i
-                break
-        FoilDialog(self.tmp_foil_info, foil_object_index, self.icon_manager)
-        self.sender().setText(self.tmp_foil_info[foil_object_index].name)
+        foil_widget = self.sender().parent()
+        foil = foil_widget.foil
+
+        FoilDialog(self.tmp_foil_info, self.tmp_foil_info.index(foil),
+                   self.icon_manager)
+        self.sender().setText(foil.name)
 
     def __add_efficiency(self):
         """Adds efficiency file in detector's efficiency directory and
@@ -409,7 +405,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Detector foils
         self.calculate_distance()
-        self.tmp_foil_info = self.request.default_detector.foils
+
+        self._add_foils(self.request.default_detector.foils,
+                        self.request.default_detector.tof_foils)
 
         # Tof foils
         self.tof_foils = self.request.default_detector.tof_foils
@@ -528,23 +526,28 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.tmp_foil_info[i].distance = distance
 
     def delete_foil(self, foil_widget):
-        index_of_item_to_be_deleted = self.detector_structure_widgets.index(
-            foil_widget)
-        del (self.detector_structure_widgets[index_of_item_to_be_deleted])
-        foil_to_be_deleted = self.tmp_foil_info[index_of_item_to_be_deleted]
-        # tof_foils = []
-        # for i in self.tof_foils:
-        #     tof_foils.append(self.tmp_foil_info[i])
-        if index_of_item_to_be_deleted in self.tof_foils:
-            self.tof_foils.remove(index_of_item_to_be_deleted)
+        index_of_item_to_be_deleted = self.detector_structure_widgets.index(foil_widget)
+        self.detector_structure_widgets.remove(foil_widget)
+
+        # Handle ToF foil list and checkboxes
+        if index_of_item_to_be_deleted != -1:
+            try:
+                self.tof_foils.remove(index_of_item_to_be_deleted)
+            except ValueError:
+                # Foil not in ToF list
+                pass
             if 0 < len(self.tof_foils) < 2:
                 self._enable_checkboxes()
-        self.tmp_foil_info.remove(foil_to_be_deleted)
+
+        self.tmp_foil_info.remove(foil_widget.foil)
+
+        # Update ToF indexes
         for i in range(len(self.tof_foils)):
             if self.tof_foils[i] > index_of_item_to_be_deleted:
                 self.tof_foils[i] = self.tof_foils[i] - 1
 
-        self.foils_layout.removeWidget(foil_widget)
+        # Remove widget and Foil object
+        self.detector_settings_widget.ui.foilsLayout.removeWidget(foil_widget)
         foil_widget.deleteLater()
 
     def update_and_close_settings(self):
