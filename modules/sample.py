@@ -190,9 +190,10 @@ class Sample:
                     # Couldn't add simulation directory because the number
                     # could not be read
                     continue
-        # Increment running int so it's ready to use when creating new
-        # simulation under this sample
-        self.increase_running_int_simulation_by_1()
+        if all_simulations:
+            # Increment running int so it's ready to use when creating new
+            # simulation under this sample
+            self.increase_running_int_simulation_by_1()
         return all_simulations
 
     def remove_obj(self, obj_removed):

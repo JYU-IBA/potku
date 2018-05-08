@@ -109,8 +109,6 @@ class Target:
             "scattering_element": self.scattering_element.__str__(),
             "image_size": self.image_size,
             "image_file": self.image_file,
-            "target_fii": self.target_fii,
-            "target_theta": self.target_theta,
             "layers": []
         }
 

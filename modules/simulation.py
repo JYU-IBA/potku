@@ -51,55 +51,59 @@ class Simulations:
             return None
         return self.simulations[key]
 
-    def add_simulation_file(self, sample, simulation_name, tab_id):
+    def add_simulation_file(self, sample, simulation_path, tab_id):
         """Add a new file to simulations.
 
         Args:
             sample: The sample under which the simulation is put.
-            simulation_name: Name of the simulation (not a path)
+            simulation_path: Path of the .simulation file.
             tab_id: Integer representing identifier for simulation's tab.
 
         Return:
             Returns new simulation or None if it wasn't added
         """
         simulation = None
-        name_prefix = "MC_simulation_"
-        extension = ".simulation"
-        # TODO simulation name on .simulation
-        if name_prefix in simulation_name:
-            simulation_folder = os.path.join(
-                sample.request.directory, sample.directory, simulation_name)
-            simulation = Simulation.from_file(simulation_folder)
-            simulation.target = Target.from_file(os.path.join(
-                simulation_folder, ".target"))
-        else:
-            plain_name = simulation_name
-            serial_number = sample.get_running_int_simulation()
-            sample.increase_running_int_simulation_by_1()
 
-            simulation_folder = os.path.join(
-                sample.request.directory, sample.directory, name_prefix +
-                                                            "%02d" % serial_number + "-"
-                                                            + plain_name)
+        simulation_folder_path, simulation_file = os.path.split(simulation_path)
+        sample_folder, simulation_folder = os.path.split(simulation_folder_path)
+        directory_prefix = "MC_simulation_"
+        target_extension = ".target"
+
+        # Create simulation from file
+        if os.path.exists(simulation_path):
+            simulation = Simulation.from_file(sample.request,
+                                              simulation_path)
+            serial_number = int(simulation_folder[len(directory_prefix):len(
+                directory_prefix) + 2])
+            simulation.serial_number = serial_number
+            for file in os.listdir(simulation_folder_path):
+                if file.endswith(target_extension):
+                    simulation.target = Target.from_file(os.path.join(
+                        simulation_folder_path, file))
+                    break
+
+        # Create a new simulation
+        else:
+            # Not stripping the extension
+            simulation_name, extension = os.path.splitext(simulation_file)
             try:
                 keys = sample.simulations.simulations.keys()
                 for key in keys:
                     if sample.simulations.simulations[key].directory == \
-                            plain_name:
+                            simulation_name:
                         return simulation  # simulation = None
-                simulation = Simulation(os.path.join(simulation_folder,
-                                                     plain_name + ".simulation"),
-                                        self.request,
-                                        plain_name,
-                                        run=self.request.default_run,
-                                        detector=self.request.default_detector)
+                simulation = Simulation(simulation_path, self.request,
+                                        name=simulation_name, tab_id=tab_id)
+                serial_number = int(simulation_folder[len(directory_prefix):len(
+                    directory_prefix) + 2])
                 simulation.serial_number = serial_number
                 sample.simulations.simulations[tab_id] = simulation
-                self.request.samples.simulations.simulations[tab_id] = simulation
+                self.request.samples.simulations.simulations[
+                    tab_id] = simulation
             except:
                 log = "Something went wrong while adding a new simulation."
                 logging.getLogger("request").critical(log)
-                print(sys.exc_info())  # TODO: Remove this.
+                print(sys.exc_info())
         return simulation
 
     def remove_by_tab_id(self, tab_id):
