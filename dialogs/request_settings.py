@@ -142,7 +142,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Add foil widgets and foil objects
         self.detector_structure_widgets = []
-        self.foils_layout = self._add_default_foils()
+        self.foils_layout = self._add_foils(self.request.default_detector.foils,
+            self.request.default_detector.tof_foils)
         self.detector_settings_widget.ui.detectorScrollAreaContents.layout() \
             .addLayout(self.foils_layout)
         self.detector_settings_widget.ui.newFoilButton.clicked.connect(
@@ -241,12 +242,12 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         self.exec_()
 
-    def _add_new_foil(self, layout):
+    def _add_new_foil(self, foil, layout):
         foil_widget = FoilWidget(self)
-        new_foil = CircularFoil()
-        self.tmp_foil_info.append(new_foil)
-        foil_widget.ui.foilButton.setText(new_foil.name)
-        foil_widget.ui.distanceEdit.setText(str(new_foil.distance))
+#        new_foil = CircularFoil()
+        self.tmp_foil_info.append(foil)
+        foil_widget.ui.foilButton.setText(foil.name)
+        foil_widget.ui.distanceEdit.setText(str(foil.distance))
         foil_widget.ui.foilButton.clicked.connect(
             lambda: self._open_composition_dialog())
         foil_widget.ui.timingFoilCheckBox.stateChanged.connect(
@@ -258,13 +259,13 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             foil_widget.ui.timingFoilCheckBox.setEnabled(False)
         return foil_widget
 
-    def _add_default_foils(self):
+    def _add_foils(self, foils, tof_foils):
         layout = QtWidgets.QHBoxLayout()
-        target = QtWidgets.QLabel("Target")
-        layout.addWidget(target)
-        for i in range(4):
-            foil_widget = self._add_new_foil(layout)
-            for index in self.request.default_detector.tof_foils:
+        target_label = QtWidgets.QLabel("Target")
+        layout.addWidget(target_label)
+        for i in range(len(foils)):
+            foil_widget = self._add_new_foil(foils[i], layout)
+            for index in tof_foils:
                 if index == i:
                     foil_widget.ui.timingFoilCheckBox.setChecked(True)
         return layout
@@ -651,7 +652,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.name = \
                 self.simulation_settings_widget.nameLineEdit.text()
             self.request.default_simulation.description = \
-                self.simulation_settings_widget.descriptionLineEdit. \
+                self.simulation_settings_widget.descriptionPlainTextEdit. \
                     toPlainText()
             self.request.default_simulation.element_simulations[
                 0].simulation_mode = self.simulation_settings_widget \
@@ -660,28 +661,29 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 0].simulation_type = self.simulation_settings_widget \
                 .typeOfSimulationComboBox.currentText()
             self.request.default_simulation.element_simulations[
-                0].minimum_scattering_angle = \
-                self.simulation_settings_widget.scatterLineEdit.text()
+                0].minimum_scattering_angle = self.simulation_settings_widget\
+                    .minimumScatterAngleDoubleSpinBox.value()
             self.request.default_simulation.element_simulations[
                 0].minimum_main_scattering_angle = \
-                self.simulation_settings_widget.mainScatterLineEdit.text()
+                self.simulation_settings_widget\
+                    .minimumMainScatterAngleDoubleSpinBox.value()
             self.request.default_simulation.element_simulations[
                 0].minimum_energy = self.simulation_settings_widget \
-                .energyLineEdit.text()
+                .minimumEnergyDoubleSpinBox.value()
             self.request.default_simulation.element_simulations[
                 0].number_of_ions = self.simulation_settings_widget \
-                .noOfIonsLineEdit.text()
+                .numberOfIonsSpinBox.value()
             self.request.default_simulation.element_simulations[
                 0].number_of_preions = self.simulation_settings_widget \
-                .noOfPreionsLineEdit.text()
+                .numberOfPreIonsSpinBox.value()
             self.request.default_simulation.element_simulations[0].seed_number \
-                = self.simulation_settings_widget.seedLineEdit.text()
+                = self.simulation_settings_widget.seedSpinBox.value()
             self.request.default_simulation.element_simulations[
                 0].number_of_recoils = self.simulation_settings_widget \
-                .noOfRecoilsLineEdit.text()
+                .numberOfRecoilsSpinBox.value()
             self.request.default_simulation.element_simulations[
                 0].number_of_scaling_ions = self.simulation_settings_widget \
-                .noOfScalingLineEdit.text()
+                .numberOfScalingIonsSpinBox.value()
 
             self.request.default_simulation.to_file(os.path.join(
                 self.request.default_folder, "Default.simulation"))
