@@ -3,7 +3,7 @@
 Created on 1.3.2018
 Updated on 28.3.2018
 """
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QPushButton, QSizePolicy
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
@@ -485,12 +485,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # Create new ElementSimulation
             element_simulation = self.element_manager.add_element_simulation(
                 modules.element.Element(dialog.element, dialog.isotope))
+
             # Add simulation controls widget
-            simulation_controls_widget = QWidget()
-            simulation_controls_widget.ui = uic.loadUi(os.path.join(
-                "ui_files", "ui_simulation_controls_widget.ui"), self)
-            self.tab.ui.simulationControlsLayout.layout().addWidget(
-                simulation_controls_widget)
+            simulation_controls_widget = SimulationControlsWidget()
+            self.tab.ui.simulationControlsLayout.addWidget(simulation_controls_widget)
 
             recoil_element_widget = element_simulation.get_recoil_element()\
                 .get_widget()
@@ -1022,3 +1020,42 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 sel_points.append(point)
         self.selected_points = sel_points
         self.update_plot()
+
+
+class SimulationControlsWidget(QtWidgets.QWidget):
+    """Class for creating simulation controls widget for the element simulation.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+        main_layout = QtWidgets.QHBoxLayout()
+
+        controls_group_box = QtWidgets.QGroupBox("Element Name")
+        controls_group_box.setSizePolicy(QSizePolicy.Preferred,
+                                         QSizePolicy.Preferred)
+
+        state_layout = QtWidgets.QHBoxLayout()
+        state_layout.addWidget(QtWidgets.QLabel("State: "))
+        state_label = QtWidgets.QLabel("Not started")
+        state_layout.addWidget(state_label)
+        state_widget = QtWidgets.QWidget()
+        state_widget.setLayout(state_layout)
+
+        controls_layout = QtWidgets.QHBoxLayout()
+        run_button = QtWidgets.QPushButton("Start")
+        stop_button = QtWidgets.QPushButton("Stop")
+        controls_layout.addWidget(run_button)
+        controls_layout.addWidget(stop_button)
+        controls_widget = QtWidgets.QWidget()
+        controls_widget.setLayout(controls_layout)
+
+        state_and_controls_layout = QtWidgets.QVBoxLayout()
+        state_and_controls_layout.addWidget(state_widget)
+        state_and_controls_layout.addWidget(controls_widget)
+
+        controls_group_box.setLayout(state_and_controls_layout)
+
+        main_layout.addWidget(controls_group_box)
+
+        self.setLayout(main_layout)
