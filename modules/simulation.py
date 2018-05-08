@@ -14,6 +14,7 @@ import re
 import time
 
 from modules.element_simulation import ElementSimulation
+from modules.general_functions import rename_file
 from modules.target import Target
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
@@ -169,8 +170,11 @@ class Simulation:
         """
         if new_name is None:
             return
-        # Rename any simulation related files.
-        pass
+        rename_file(os.path.join(self.directory, self.simulation_file),
+                    new_name + ".simulation")
+        self.simulation_file = new_name + ".simulation"
+        self.path = os.path.join(self.directory, self.simulation_file)
+        self.to_file(self.path)
 
     def add_element_simulation(self, recoil_element):
         """Adds ElementSimulation to Simulation.
