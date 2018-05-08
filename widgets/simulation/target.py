@@ -52,8 +52,10 @@ class TargetWidget(QtWidgets.QWidget):
                                                           icon_manager)
 
         icon_manager.set_icon(self.ui.editPushButton, "edit.svg")
-        self.ui.editPushButton.setIconSize(QtCore.QSize(14,14))
-        self.ui.editPushButton.setToolTip("Edit")
+        self.ui.editPushButton.setIconSize(QtCore.QSize(14, 14))
+        self.ui.editPushButton.setToolTip(
+            "Edit name, description and reference density "
+            "of this recoil element")
         self.ui.recoilListWidget.hide()
         self.ui.editLockPushButton.hide()
         self.ui.elementInfoWidget.hide()
@@ -67,7 +69,7 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.targetRadioButton.setChecked(True)
         self.ui.stackedWidget.setCurrentIndex(0)
 
-        self.ui.setWindowTitle("Otsikko") # TODO: Change title
+        self.ui.setWindowTitle("Otsikko")  # TODO: Change title
         self.ui.saveButton.clicked.connect(lambda:
                                            self.__save_target_and_recoils())
 
@@ -96,7 +98,10 @@ class TargetWidget(QtWidgets.QWidget):
             target_name = self.target.name
         target_path = os.path.join(self.simulation.directory, target_name +
                                    ".target")
-        self.target.to_file(target_path)
+        measurement_path = os.path.join(self.simulation.directory,
+                                        self.simulation.name +
+                                        ".measurement")
+        self.target.to_file(target_path, measurement_path)
 
         self.recoil_widget.save_mcsimu_rec_profile(self.simulation.directory)
 

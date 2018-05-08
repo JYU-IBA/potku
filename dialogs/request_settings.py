@@ -112,13 +112,13 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 self.measurement_settings_widget.ui.beamIonButton,
                 self.measurement_settings_widget.ui.isotopeComboBox))
 
-        self.measurement_settings_widget.ui.energyLineEdit.setValidator(
-            positive_double_validator)
+        # self.measurement_settings_widget.ui.energyLineEdit.setValidator(
+        #     positive_double_validator)
         double_angle_validator = InputValidator(0, 90, 10)
-        self.measurement_settings_widget.ui.detectorThetaLineEdit.setValidator(
-            double_angle_validator)
-        self.measurement_settings_widget.ui.targetThetaLineEdit.setValidator(
-            double_angle_validator)
+        # self.measurement_settings_widget.ui.detectorThetaLineEdit.setValidator(
+        #     double_angle_validator)
+        # self.measurement_settings_widget.ui.targetThetaLineEdit.setValidator(
+        #     double_angle_validator)
 
         self.measurement_settings_widget.ui.picture.setScaledContents(True)
         pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
@@ -184,6 +184,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.simulation_settings_widget = SimulationSettingsWidget()
         self.ui.tabs.addTab(self.simulation_settings_widget, "Simulation")
 
+        self.simulation_settings_widget.ui.generalParametersGroupBox\
+            .setEnabled(True)
+        self.simulation_settings_widget.ui.physicalParametersGroupBox\
+            .setEnabled(True)
         self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem(
             "ERD")
         self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem(
@@ -245,13 +249,14 @@ class RequestSettingsDialog(QtWidgets.QDialog):
              layout: Layout in which the new foil is added.
         """
         foil_widget = FoilWidget(self)
-        new_foil = CircularFoil("Foil", layers=[])
+        new_foil = CircularFoil()
         self.tmp_foil_info.append(new_foil)
+        foil_widget.ui.foilButton.setText(new_foil.name)
+        foil_widget.ui.distanceEdit.setText(str(new_foil.distance))
         foil_widget.ui.foilButton.clicked.connect(
             lambda: self._open_foil_dialog())
         foil_widget.ui.timingFoilCheckBox.stateChanged.connect(
             lambda: self._check_and_add())
-        foil_widget.ui.distanceEdit.setText(str(new_foil.distance))
         self.detector_structure_widgets.append(foil_widget)
         layout.addWidget(foil_widget)
 
@@ -384,36 +389,36 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         self.measurement_settings_widget.nameLineEdit.setText(
             self.request.default_measurement.name)
-        self.measurement_settings_widget.descriptionLineEdit.setPlainText(
+        self.measurement_settings_widget.descriptionPlainTextEdit.setPlainText(
             self.request.default_measurement.description)
-        self.measurement_settings_widget.energyLineEdit.setText(
-            str(self.request.default_measurement.energy))
-        self.measurement_settings_widget.chargeLineEdit.setText(
-            str(self.request.default_measurement.charge))
-        self.measurement_settings_widget.spotSizeXLineEdit.setText(
-            str(self.request.default_measurement.spot_size[0]))
-        self.measurement_settings_widget.spotSizeYLineEdit.setText(
-            str(self.request.default_measurement.spot_size[1]))
-        self.measurement_settings_widget.divergenceLineEdit.setText(
-            str(self.request.default_measurement.divergence))
+        self.measurement_settings_widget.energyDoubleSpinBox.setValue(
+            self.request.default_measurement.energy)
+        self.measurement_settings_widget.energyDistDoubleSpinBox.setValue(
+            self.request.default_measurement.energy_dist)
+        self.measurement_settings_widget.beamChargeSpinBox.setValue(
+            self.request.default_measurement.charge)
+        self.measurement_settings_widget.spotSizeXdoubleSpinBox.setValue(
+            self.request.default_measurement.spot_size[0])
+        self.measurement_settings_widget.spotSizeXdoubleSpinBox.setValue(
+            self.request.default_measurement.spot_size[1])
+        self.measurement_settings_widget.divergenceDoubleSpinBox.setValue(
+            self.request.default_measurement.divergence)
         self.measurement_settings_widget.profileComboBox.setCurrentIndex(
             self.request.default_measurement.profile.value)
-        self.measurement_settings_widget.energyDistLineEdit.setText(
-            str(self.request.default_measurement.energy_dist))
-        self.measurement_settings_widget.fluenceLineEdit.setText(
-            str(self.request.default_measurement.fluence))
-        self.measurement_settings_widget.currentLineEdit.setText(
-            str(self.request.default_measurement.current))
-        self.measurement_settings_widget.timeLineEdit.setText(
-            str(self.request.default_measurement.beam_time))
-        self.measurement_settings_widget.detectorThetaLineEdit.setText(
-            str(self.request.default_measurement.detector_theta))
-        self.measurement_settings_widget.detectorFiiLineEdit.setText(
-            str(self.request.default_measurement.detector_fii))
-        self.measurement_settings_widget.targetThetaLineEdit.setText(
-            str(self.request.default_measurement.target_theta))
-        self.measurement_settings_widget.targetFiiLineEdit.setText(
-            str(self.request.default_measurement.target_fii))
+        self.measurement_settings_widget.fluenceDoubleSpinBox.setValue(
+            self.request.default_measurement.fluence)
+        self.measurement_settings_widget.currentDoubleSpinBox.setValue(
+            self.request.default_measurement.current)
+        self.measurement_settings_widget.timeDoubleSpinBox.setValue(
+            self.request.default_measurement.beam_time)
+        self.measurement_settings_widget.detectorThetaDoubleSpinBox.setValue(
+            self.request.default_measurement.detector_theta)
+        self.measurement_settings_widget.detectorFiiDoubleSpinBox.setValue(
+            self.request.default_measurement.detector_fii)
+        self.measurement_settings_widget.targetThetaDoubleSpinBox.setValue(
+            self.request.default_measurement.target_theta)
+        self.measurement_settings_widget.targetFiiDoubleSpinBox.setValue(
+            self.request.default_measurement.target_fii)
 
         # Detector settings
         self.detector_settings_widget.nameLineEdit.setText(
@@ -448,40 +453,39 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.simulation_settings_widget.dateLabel.setText(str(
             datetime.datetime.fromtimestamp(
                 self.request.default_simulation.modification_time)))
-        self.simulation_settings_widget.descriptionLineEdit.setPlainText(
+        self.simulation_settings_widget.descriptionPlainTextEdit.setPlainText(
             self.request.default_simulation.description)
         self.simulation_settings_widget.modeComboBox.setCurrentIndex(
             self.simulation_settings_widget.modeComboBox.findText(
                 self.request.default_simulation.element_simulations[
                     0].simulation_mode))
         self.simulation_settings_widget.typeOfSimulationComboBox \
-            .setCurrentIndex(
-            self.simulation_settings_widget.typeOfSimulationComboBox.findText(
-                self.request.default_simulation.element_simulations[
-                    0].simulation_type))
-        self.simulation_settings_widget.scatterLineEdit.setText(str(
+            .setCurrentIndex(self.simulation_settings_widget
+            .typeOfSimulationComboBox.findText(self.request
+            .default_simulation.element_simulations[0].simulation_type))
+        self.simulation_settings_widget.minimumScatterAngleDoubleSpinBox\
+            .setValue(self.request.default_simulation.element_simulations[
+                0].minimum_scattering_angle)
+        self.simulation_settings_widget.minimumMainScatterAngleDoubleSpinBox\
+            .setValue(self.request.default_simulation.element_simulations[
+                0].minimum_main_scattering_angle)
+        self.simulation_settings_widget.minimumEnergyDoubleSpinBox.setValue(
             self.request.default_simulation.element_simulations[
-                0].minimum_scattering_angle))
-        self.simulation_settings_widget.mainScatterLineEdit.setText(str(
+                0].minimum_energy)
+        self.simulation_settings_widget.numberOfIonsSpinBox.setValue(
             self.request.default_simulation.element_simulations[
-                0].minimum_main_scattering_angle))
-        self.simulation_settings_widget.energyLineEdit.setText(str(
+                0].number_of_ions)
+        self.simulation_settings_widget.numberOfPreIonsSpinBox.setValue(
             self.request.default_simulation.element_simulations[
-                0].minimum_energy))
-        self.simulation_settings_widget.noOfIonsLineEdit.setText(str(
+                0].number_of_preions)
+        self.simulation_settings_widget.seedSpinBox.setValue(
+            self.request.default_simulation.element_simulations[0].seed_number)
+        self.simulation_settings_widget.numberOfRecoilsSpinBox.setValue(
             self.request.default_simulation.element_simulations[
-                0].number_of_ions))
-        self.simulation_settings_widget.noOfPreionsLineEdit.setText(str(
+                0].number_of_recoils)
+        self.simulation_settings_widget.numberOfScalingIonsSpinBox.setValue(
             self.request.default_simulation.element_simulations[
-                0].number_of_preions))
-        self.simulation_settings_widget.seedLineEdit.setText(str(
-            self.request.default_simulation.element_simulations[0].seed_number))
-        self.simulation_settings_widget.noOfRecoilsLineEdit.setText(str(
-            self.request.default_simulation.element_simulations[
-                0].number_of_recoils))
-        self.simulation_settings_widget.noOfScalingLineEdit.setText(str(
-            self.request.default_simulation.element_simulations[
-                0].number_of_scaling_ions))
+                0].number_of_scaling_ions)
 
     def __load_file(self, settings_type):
         """ Opens file dialog and loads and shows selected ini file's values.
@@ -620,37 +624,47 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 self.request.default_measurement.measurement_name = \
                     self.measurement_settings_widget.nameLineEdit.text()
                 self.request.default_measurement.description = \
-                    self.measurement_settings_widget.descriptionLineEdit.\
-                    toPlainText()
+                    self.measurement_settings_widget.descriptionPlainTextEdit.\
+                        toPlainText()
                 self.request.default_measurement.energy = \
-                    self.measurement_settings_widget.energyLineEdit.text()
+                    self.measurement_settings_widget.energyDoubleSpinBox.value()
+                self.request.default_measurement.energy_dist = \
+                    self.measurement_settings_widget\
+                        .energyDistDoubleSpinBox.value()
                 self.request.default_measurement.charge = \
-                    self.measurement_settings_widget.chargeLineEdit.text()
+                    self.measurement_settings_widget.beamChargeSpinBox.value()
                 self.request.default_measurement.spot_size = [
-                    self.measurement_settings_widget.spotSizeXLineEdit.text(),
-                    self.measurement_settings_widget.spotSizeYLineEdit.text()]
+                    self.measurement_settings_widget
+                        .spotSizeXdoubleSpinBox.value(),
+                    self.measurement_settings_widget
+                        .spotSizeYdoubleSpinBox.value()]
                 self.request.default_measurement.divergence = \
-                    self.measurement_settings_widget.divergenceLineEdit.text()
+                    self.measurement_settings_widget\
+                        .divergenceDoubleSpinBox.value()
                 self.request.default_measurement.profile = MeasurementProfile(
                     self.measurement_settings_widget.profileComboBox.
-                    currentIndex())
-                self.request.default_measurement.energy_dist = \
-                    self.measurement_settings_widget.energyDistLineEdit.text()
+                        currentIndex())
                 self.request.default_measurement.fluence = \
-                    self.measurement_settings_widget.fluenceLineEdit.text()
+                    self.measurement_settings_widget\
+                        .fluenceDoubleSpinBox.value()
                 self.request.default_measurement.current = \
-                    self.measurement_settings_widget.currentLineEdit.text()
+                    self.measurement_settings_widget\
+                        .currentDoubleSpinBox.value()
                 self.request.default_measurement.beam_time = \
-                    self.measurement_settings_widget.timeLineEdit.text()
+                    self.measurement_settings_widget.timeDoubleSpinBox.value()
                 self.request.default_measurement.detector_theta = \
-                    self.measurement_settings_widget.detectorThetaLineEdit.\
-                    text()
+                    self.measurement_settings_widget\
+                        .detectorThetaDoubleSpinBox.value()
                 self.request.default_measurement.detector_fii = \
-                    self.measurement_settings_widget.detectorFiiLineEdit.text()
+                    self.measurement_settings_widget\
+                        .detectorFiiDoubleSpinBox.value()
                 self.request.default_measurement.target_theta = \
-                    self.measurement_settings_widget.targetThetaLineEdit.text()
+                    self.measurement_settings_widget\
+                        .targetThetaDoubleSpinBox.value()
                 self.request.default_measurement.target_fii = \
-                    self.measurement_settings_widget.targetFiiLineEdit.text()
+                    self.measurement_settings_widget.\
+                        targetFiiDoubleSpinBox.value()
+                # TODO: Add handling for the charge under Run
 
                 self.request.default_measurement.save_settings(
                     self.request.default_folder + os.sep +
@@ -684,37 +698,38 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_simulation.name = \
                 self.simulation_settings_widget.nameLineEdit.text()
             self.request.default_simulation.description = \
-                self.simulation_settings_widget.descriptionLineEdit. \
+                self.simulation_settings_widget.descriptionPlainTextEdit. \
                     toPlainText()
-            self.request.default_simulation.element_simulations[
-                0].simulation_mode = self.simulation_settings_widget \
-                .modeComboBox.currentText()
             self.request.default_simulation.element_simulations[
                 0].simulation_type = self.simulation_settings_widget \
                 .typeOfSimulationComboBox.currentText()
             self.request.default_simulation.element_simulations[
-                0].minimum_scattering_angle = \
-                self.simulation_settings_widget.scatterLineEdit.text()
-            self.request.default_simulation.element_simulations[
-                0].minimum_main_scattering_angle = \
-                self.simulation_settings_widget.mainScatterLineEdit.text()
-            self.request.default_simulation.element_simulations[
-                0].minimum_energy = self.simulation_settings_widget \
-                .energyLineEdit.text()
+                0].simulation_mode = self.simulation_settings_widget \
+                .modeComboBox.currentText()
             self.request.default_simulation.element_simulations[
                 0].number_of_ions = self.simulation_settings_widget \
-                .noOfIonsLineEdit.text()
+                .numberOfIonsSpinBox.value()
             self.request.default_simulation.element_simulations[
                 0].number_of_preions = self.simulation_settings_widget \
-                .noOfPreionsLineEdit.text()
+                .numberOfPreIonsSpinBox.value()
             self.request.default_simulation.element_simulations[0].seed_number \
-                = self.simulation_settings_widget.seedLineEdit.text()
+                = self.simulation_settings_widget.seedSpinBox.value()
             self.request.default_simulation.element_simulations[
                 0].number_of_recoils = self.simulation_settings_widget \
-                .noOfRecoilsLineEdit.text()
+                .numberOfRecoilsSpinBox.value()
             self.request.default_simulation.element_simulations[
                 0].number_of_scaling_ions = self.simulation_settings_widget \
-                .noOfScalingLineEdit.text()
+                .numberOfScalingIonsSpinBox.value()
+            self.request.default_simulation.element_simulations[
+                0].minimum_scattering_angle = self.simulation_settings_widget\
+                .minimumScatterAngleDoubleSpinBox.value()
+            self.request.default_simulation.element_simulations[
+                0].minimum_main_scattering_angle = self\
+                .simulation_settings_widget\
+                .minimumMainScatterAngleDoubleSpinBox.value()
+            self.request.default_simulation.element_simulations[
+                0].minimum_energy = self.simulation_settings_widget \
+                .minimumEnergyDoubleSpinBox.value()
 
             self.request.default_simulation.to_file(os.path.join(
                 self.request.default_folder, "Default.simulation"))
