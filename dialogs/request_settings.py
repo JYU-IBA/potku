@@ -240,10 +240,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         self.exec_()
 
-    def _add_new_foil(self, foil):
+    def _add_new_foil(self, foil=None):
         foil_widget = FoilWidget(self)
+        if not foil:
+            foil = CircularFoil()
         foil_widget.foil = foil
-        #        new_foil = CircularFoil()
         self.tmp_foil_info.append(foil)
         foil_widget.ui.foilButton.setText(foil.name)
         foil_widget.ui.distanceEdit.setText(str(foil.distance))
@@ -408,13 +409,12 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Detector foils
         self.calculate_distance()
-        self.tmp_foil_info = self.request.default_detector.foils
-
-        # Tof foils
-        self.tof_foils = self.request.default_detector.tof_foils
 
         self._add_foils(self.request.default_detector.foils,
                         self.request.default_detector.tof_foils)
+
+        # Tof foils
+        self.tof_foils = self.request.default_detector.tof_foils
 
         # Simulation settings
         self.simulation_settings_widget.nameLineEdit.setText(
@@ -531,23 +531,28 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.tmp_foil_info[i].distance = distance
 
     def delete_foil(self, foil_widget):
-        index_of_item_to_be_deleted = self.detector_structure_widgets.index(
-            foil_widget)
-        del (self.detector_structure_widgets[index_of_item_to_be_deleted])
-        foil_to_be_deleted = self.tmp_foil_info[index_of_item_to_be_deleted]
-        # tof_foils = []
-        # for i in self.tof_foils:
-        #     tof_foils.append(self.tmp_foil_info[i])
-        if index_of_item_to_be_deleted in self.tof_foils:
-            self.tof_foils.remove(index_of_item_to_be_deleted)
+        index_of_item_to_be_deleted = self.detector_structure_widgets.index(foil_widget)
+        self.detector_structure_widgets.remove(foil_widget)
+
+        # Handle ToF foil list and checkboxes
+        if index_of_item_to_be_deleted != -1:
+            try:
+                self.tof_foils.remove(index_of_item_to_be_deleted)
+            except ValueError:
+                # Foil not in ToF list
+                pass
             if 0 < len(self.tof_foils) < 2:
                 self._enable_checkboxes()
-        self.tmp_foil_info.remove(foil_to_be_deleted)
+
+        self.tmp_foil_info.remove(foil_widget.foil)
+
+        # Update ToF indexes
         for i in range(len(self.tof_foils)):
             if self.tof_foils[i] > index_of_item_to_be_deleted:
                 self.tof_foils[i] = self.tof_foils[i] - 1
 
-        self.foils_layout.removeWidget(foil_widget)
+        # Remove widget and Foil object
+        self.detector_settings_widget.ui.foilsLayout.removeWidget(foil_widget)
         foil_widget.deleteLater()
 
     def update_and_close_settings(self):
