@@ -1,7 +1,7 @@
 # coding=utf-8
 '''
 Created on 20.3.2013
-Updated on 17.4.2018
+Updated on 6.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -28,7 +28,7 @@ Reads data of the elements isotopes from masses.dat
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
-__versio__ = "2.0"
+__version__ = "2.0"
 
 import csv
 
@@ -40,7 +40,9 @@ for line in csv.reader(open(__FILE_PATH), delimiter=" ", skipinitialspace=True):
     if line:  # skips empty lines
         if line[3] not in __isotopes:
             __isotopes[line[3]] = []
-        __isotopes[line[3]].append((line[2], line[5]))
+        __isotopes[line[3]].append((line[2], line[5], line[4]))
+        # line[2] isotope number, line[5] natural abundance, line[4] exact mass
+
 
 def __get_isotopes(element):
     '''Get isotopes of given element.
@@ -53,6 +55,21 @@ def __get_isotopes(element):
         isotopes = []
     return isotopes
 
+
+def find_mass_of_isotope(element):
+    """
+    Find the mass of the Element object (isotope).
+    Args:
+         element: Element object.
+    Return:
+         Returns the mass of the wanted element.
+    """
+    isotopes = __get_isotopes(element.symbol)
+    for isotope in isotopes:
+        if element.isotope == isotope[0]:
+            return isotope[2]
+
+
 def load_isotopes(element, combobox, current_isotope=None):
     '''Load isotopes into given combobox.
 
@@ -63,15 +80,15 @@ def load_isotopes(element, combobox, current_isotope=None):
         current_isotope: Current isotope to select it on combobox by default
                          (string).
     '''
-    if element == None:
+    if not element:
         return
     combobox.clear()
-    # Sort isotopes based on their commonness
+    # Sort isotopes based on their natural abundance
     isotopes = sorted(__get_isotopes(element),
                       key=lambda isotope: isotope[1],
                       reverse=True)
     dirtyinteger = 0
-    for isotope, tn in isotopes:
+    for isotope, tn, mass in isotopes:
         # We don't need rare isotopes to be shown
         if float(tn) > 0.0:
             combobox.addItem("{0} ({1}%)".format(isotope,
@@ -80,6 +97,7 @@ def load_isotopes(element, combobox, current_isotope=None):
             if isotope == str(current_isotope):
                 combobox.setCurrentIndex(dirtyinteger)
         dirtyinteger += 1
+
 
 def get_standard_isotope(element):
     '''Calculate standard element weight.
@@ -93,6 +111,7 @@ def get_standard_isotope(element):
         # Has to have float() on both, else we crash.
         standard += float(isotope[0]) * float(isotope[1])
     return standard / 100.0
+
 
 def get_most_common_isotope(element):
     '''Get the most common isotope for an element.
@@ -109,4 +128,3 @@ def get_most_common_isotope(element):
                       key=lambda isotope: isotope[1],
                       reverse=True)
     return int(isotopes[0][0]), float(isotopes[0][1])
-

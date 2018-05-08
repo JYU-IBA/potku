@@ -1,4 +1,3 @@
-
 # coding=utf-8
 """
 Created on 11.4.2013
@@ -36,6 +35,7 @@ from PyQt5 import uic, QtWidgets
 class RequestNewDialog(QtWidgets.QDialog):
     """Dialog creating a new request.
     """
+
     def __init__(self, parent):
         """Inits energy spectrum dialog.
         
@@ -46,36 +46,26 @@ class RequestNewDialog(QtWidgets.QDialog):
         self.parent = parent
         self.folder = None  # Temporary for browsing folder
         self.directory = None
-        
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_new_request.ui"), self)
-        self.default_directory_used = True
+
+        self.ui = uic.loadUi(
+            os.path.join("ui_files", "ui_new_request.ui"), self)
         self.ui.requestDirectoryLineEdit.setText(
-                                     self.parent.settings.get_request_directory())
-        
+            self.parent.settings.get_request_directory())
+
         # Connect buttons
-        self.ui.pushOk.clicked.connect(self.__create_request) 
-        self.ui.pushCancel.clicked.connect(self.close) 
+        self.ui.pushOk.clicked.connect(self.__create_request)
+        self.ui.pushCancel.clicked.connect(self.close)
         self.ui.browseFolderButton.clicked.connect(self.__browser_folder)
-        self.ui.useDefaultCheckBox.clicked.connect(self.__change_directory)
-        
+
         self.exec_()
-    
-    
-    def __change_directory(self):
-        self.default_directory_used = not self.default_directory_used 
-        if self.default_directory_used:
-            self.ui.prequestDirectoryLineEdit.setText(
-                                     self.parent.settings.get_request_directory())
-    
-    
+
     def __browser_folder(self):
         folder = QtWidgets.QFileDialog.getExistingDirectory(self,
-                                     self.ui.browseFolderButton.text())
+                                              self.ui.browseFolderButton.text())
         if folder:
             self.folder = folder
             self.ui.requestDirectoryLineEdit.setText(folder)
-        
-        
+
     def __create_request(self):
         self.folder = self.ui.requestDirectoryLineEdit.text()
         self.name = self.ui.requestNameLineEdit.text().replace(" ", "_")
@@ -83,10 +73,10 @@ class RequestNewDialog(QtWidgets.QDialog):
         # This does not include the actual request folder, replace below.
         # TODO: check for valid folder needed
         # TODO: Get rid of print -> message window perhaps
-        if not self.folder:  
+        if not self.folder:
             print("Request folder required!")
             return
-        if not self.name: 
+        if not self.name:
             print("Request name required!")
             return
         try:

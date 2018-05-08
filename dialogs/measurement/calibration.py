@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.4.2013
-Updated on 3.7.2013
+Updated on 26.4.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -23,7 +23,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
+             "Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
 import os
@@ -51,11 +52,11 @@ class CalibrationDialog(QtWidgets.QDialog):
         """
         super().__init__()
         self.measurements = measurements
-        # TODO: Settings should be loaded from the measurement depending on is the 
-        # calibration dialog opened from the request settings (measurement's
-        # request settings is loaded) or the measurement specific settings
-        # (measurement's measurement settings is loaded). This has to be done for
-        # better architecture.
+        # TODO: Settings should be loaded from the measurement depending on
+        # is the calibration dialog opened from the request settings
+        # (measurement's request settings is loaded) or the measurement
+        # specific settings(measurement's measurement settings is loaded).
+        # This has to be done for better architecture.
         self.settings = settings 
         self.__cut_file = CutFile()
         self.__cut_files = {}
@@ -89,21 +90,25 @@ class CalibrationDialog(QtWidgets.QDialog):
         for column in range(0, self.ui.cutFilesTreeWidget.columnCount()):
             self.ui.cutFilesTreeWidget.resizeColumnToContents(column)
 
-        self.curveFittingWidget = CalibrationCurveFittingWidget(self,
-                                                    self.__cut_file,
-                                                    self.tof_calibration,
-                                                    self.settings,
-                                                    self.ui.binWidthSpinBox.value(),
-                                                    1)
+        self.curveFittingWidget = \
+            CalibrationCurveFittingWidget(self,
+                                          self.__cut_file,
+                                          self.tof_calibration,
+                                          self.settings,
+                                          self.ui.binWidthSpinBox.value(), 1)
         
         old_params = None
-        if parent_settings_dialog.detector_settings:  # Get old parameters from the parent dialog
+        # Get old parameters from the parent dialog
+        if parent_settings_dialog.detector_settings:
             try:
-                f1 = float(self.parent_settings_dialog.detector_settings.ui.slopeLineEdit.text())
-                f2 = float(self.parent_settings_dialog.detector_settings.ui.offsetLineEdit.text())
+                f1 = float(self.parent_settings_dialog.detector_settings.
+                           ui.slopeLineEdit.text())
+                f2 = float(self.parent_settings_dialog.detector_settings.
+                           ui.offsetLineEdit.text())
                 old_params = f1, f2
             except:
-                m = "Can't get old calibration parameters from the settings dialog."
+                m = "Can't get old calibration parameters from the settings " \
+                    "dialog."
                 print(m)
                 
         self.linearFittingWidget = CalibrationLinearFittingWidget(self,
@@ -134,8 +139,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         
         self.timer = QtCore.QTimer(interval=1500, timeout=self.timeout)
         self.exec_()
-    
-    
+
     def remove_selected_points(self):
         """Remove selected items from point tree widget
         """
@@ -148,8 +152,7 @@ class CalibrationDialog(QtWidgets.QDialog):
             (item.parent() or root).removeChild(item)
         if removed_something:
             self.__change_selected_points()
-            
-    
+
     def set_calibration_point(self, tof):
         """Set Cut file front edge estimation to specific value.
         
@@ -157,25 +160,24 @@ class CalibrationDialog(QtWidgets.QDialog):
             tof: Float representing front edge of linear fit estimation.
         """
         self.curveFittingWidget.matplotlib.set_calibration_point_externally(tof)
-    
-    
+
     def set_calibration_parameters_to_parent(self):
         """Set calibration parameters to parent dialog's calibration parameters 
         fields.
         """
         if self.parent_settings_dialog.detector_settings:
-            self.parent_settings_dialog.detector_settings.ui.slopeLineEdit.setText(
-                                                 self.ui.slopeLineEdit.text())
-            self.parent_settings_dialog.detector_settings.ui.offsetLineEdit.setText(
-                                                 self.ui.offsetLineEdit.text())
+            self.parent_settings_dialog.detector_settings.ui.\
+                slopeLineEdit.setText(self.ui.slopeLineEdit.text())
+            self.parent_settings_dialog.detector_settings.ui.offsetLineEdit.\
+                setText(self.ui.offsetLineEdit.text())
             return True
         return False
-    
-    
+
     def accept_calibration(self):
         """Accept calibration (parameters).
         """
-        calib_ok = "Calibration parameters accepted.\nYou can now close the window."
+        calib_ok = "Calibration parameters accepted.\nYou can now close the " \
+                   "window."
         calib_no = "Couldn't set parameters to\nthe settings dialog."
         calib_inv = "Invalid calibration parameters."
         results = self.tof_calibration.get_fit_parameters()
@@ -186,39 +188,37 @@ class CalibrationDialog(QtWidgets.QDialog):
                 self.ui.acceptCalibrationLabel.setText(calib_no)
         else:
             self.ui.acceptCalibrationLabel.setText(calib_inv)
-        
-        
+
     def change_current_cut(self, current_item):
         """Changes the current cut file drawn to the curve fitting widget.
         
         Args:
-            current_item: QtWidgets.QTreeWidgetItem of CutFile which was selected.
+            current_item: QtWidgets.QTreeWidgetItem of CutFile which was
+            selected.
         """
         self.__change_accept_point_label("")
         if current_item and hasattr(current_item, "directory") and \
         hasattr(current_item, "file_name"):
             self.__set_current_cut(current_item)        
             self.__update_curve_fit()
-        
-    
-    
+
     def __set_current_cut(self, current_item):
         """Sets the current open cut file in the calibration dialog.
         
         Args:
-            current_item: QtWidgets.QTreeWidgetItem of CutFile which was selected.
+            current_item: QtWidgets.QTreeWidgetItem of CutFile which was
+            selected.
         """
         self.__cut_file = self.__cut_files[current_item.file_name]
 
-    
     def __update_curve_fit(self):
-        """Redraws everything in the curve fitting graph. Updates the bin width too.
+        """Redraws everything in the curve fitting graph. Updates the bin width
+        too.
         """
         bin_width = self.ui.binWidthSpinBox.value()
         self.curveFittingWidget.matplotlib.change_bin_width(bin_width)
         self.curveFittingWidget.matplotlib.change_cut(self.__cut_file)
-    
-    
+
     def __set_state_for_point(self, tree_item):
         """Sets if the tof calibration point is drawn to the linear fit graph
         
@@ -229,13 +229,12 @@ class CalibrationDialog(QtWidgets.QDialog):
             tree_item.point.point_used = tree_item.checkState(0)
             self.__change_selected_points()
             self.__enable_accept_calibration_button()
-        
-    
+
     def __accept_point(self):
         """ Called when 'accept point' button is clicked.
         
-        Adds the calibration point to the point set for linear fitting and updates
-        the treewidget of points.
+        Adds the calibration point to the point set for linear fitting and
+        updates the treewidget of points.
         """
         point = self.curveFittingWidget.matplotlib.tof_calibration_point
         if point and not self.tof_calibration.point_exists(point):
@@ -246,8 +245,7 @@ class CalibrationDialog(QtWidgets.QDialog):
             self.__change_accept_point_label("Point accepted.")
         else:
             self.__change_accept_point_label("Point already exists.")
-    
-    
+
     def __change_accept_point_label(self, text):
         """Sets text for the 'acceptPointLabel' label 
         and starts timer.
@@ -257,23 +255,20 @@ class CalibrationDialog(QtWidgets.QDialog):
         """
         self.ui.acceptPointLabel.setText(text)
         self.timer.start()
-        
-        
+
     def timeout(self):
         """Timeout eventmethod to remove label text.
         """
         self.ui.acceptPointLabel.setText("")
         self.timer.stop()
-    
-    
+
     def __enable_accept_calibration_button(self):
         # Let press accept calibration only if there are parameters available.
         if self.tof_calibration.slope or self.tof_calibration.offset: 
             self.ui.acceptCalibrationButton.setEnabled(True)
         else:
             self.ui.acceptCalibrationButton.setEnabled(False)
-    
-    
+
     def __add_point_to_tree(self, tof_calibration_point):
         """Adds a ToF Calibration point to the pointsTreeWidget and sets the 
         QTreeWidgetItem's attribute 'point' as the given TOFCalibrationPoint. 
@@ -283,14 +278,11 @@ class CalibrationDialog(QtWidgets.QDialog):
         item.setCheckState(0, QtCore.Qt.Checked)
         self.ui.pointsTreeWidget.addTopLevelItem(item)
 
-    
     def __change_selected_points(self):
         """Redraws the linear fitting graph.
         """
         self.linearFittingWidget.matplotlib.on_draw()  # Redraw
     
-        
-
 
 class CalibrationCurveFittingWidget(QtWidgets.QWidget):
     """Widget class for holding MatplotlibCalibrationCurveFittingWidget.
@@ -309,22 +301,21 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_tof_curve_fitting_widget.ui"), self)
+                                          "ui_tof_curve_fitting_widget.ui"),
+                             self)
         # NOTE: One of these should always be there. Could probably use "else"
         if hasattr(dialog.parent_settings_dialog, "request"):
             self.img_dir = dialog.parent_settings_dialog.request.directory
         elif hasattr(dialog.parent_settings_dialog, "measurement"):
             self.img_dir = dialog.parent_settings_dialog.measurement.directory
-        self.matplotlib = MatplotlibCalibrationCurveFittingWidget(self,
-                                                                  settings,
-                                                                  tof_calibration,
-                                                                  cut,
-                                                                  bin_width,
-                                                                  column,
-                                                                  dialog)
-        
-        
-        
+        self.matplotlib = \
+            MatplotlibCalibrationCurveFittingWidget(self, settings,
+                                                    tof_calibration,
+                                                    cut,
+                                                    bin_width,
+                                                    column,
+                                                    dialog)
+
             
 class CalibrationLinearFittingWidget(QtWidgets.QWidget):
     """Widget class for holding MatplotlibCalibrationLinearFittingWidget.
@@ -339,12 +330,13 @@ class CalibrationLinearFittingWidget(QtWidgets.QWidget):
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_tof_linear_fitting_widget.ui"), self)
+                                          "ui_tof_linear_fitting_widget.ui"),
+                             self)
         # NOTE: One of these should always be there. Could probably use "else"
         if hasattr(dialog.parent_settings_dialog, "request"):
             self.img_dir = dialog.parent_settings_dialog.request.directory
         elif hasattr(dialog.parent_settings_dialog, "measurement"):
             self.img_dir = dialog.parent_settings_dialog.measurement.directory
-        self.matplotlib = MatplotlibCalibrationLinearFittingWidget(self, tof_calibration, dialog=dialog,
-                                                                   old_params=old_params)
+        self.matplotlib = MatplotlibCalibrationLinearFittingWidget(
+            self, tof_calibration, dialog=dialog, old_params=old_params)
     

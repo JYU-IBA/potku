@@ -30,7 +30,8 @@ from os import path
 from PyQt5 import QtCore, uic, QtGui, QtWidgets
 
 from dialogs.measurement.import_measurement import CoincTiming
-from widgets.matplotlib.measurement.tofe_histogram import MatplotlibHistogramWidget
+from widgets.matplotlib.measurement.tofe_histogram import \
+    MatplotlibHistogramWidget
 
 
 class GlobalSettingsDialog(QtWidgets.QDialog):
@@ -41,33 +42,31 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.settings = settings
         self.__added_timings = {}  # Placeholder for timings
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        self.ui = uic.loadUi(path.join("ui_files", "ui_global_settings.ui"), self)
-        
+        self.ui = uic.loadUi(path.join("ui_files", "ui_global_settings.ui"),
+                             self)
+
         # Connect UI buttons
         self.ui.OKButton.clicked.connect(self.__accept_changes)
         self.ui.cancelButton.clicked.connect(self.close)
         self.ui.loadRequestPathButton.clicked.connect(
-                                                  self.__change_request_directory)
-        self.ui.loadEffPathButton.clicked.connect(
-                                              self.__change_efficiency_directory)
+            self.__change_request_directory)
         buttons = self.ui.findChild(QtWidgets.QButtonGroup, "elementButtons")
         buttons.buttonClicked.connect(self.__change_element_color)
         self.line_coinc_count.setValidator(QtGui.QIntValidator(0, 1000000))
-        
+
         self.__set_values()
         self.exec_()
-        
-    
+
     def __set_values(self):
         """Set settings values to dialog.
         """
-        self.ui.requestPathLineEdit.setText(self.settings.get_request_directory())
-        self.ui.lineEdit_eff_directory.setText(
-                                       self.settings.get_efficiency_directory())
+        self.ui.requestPathLineEdit.setText(
+            self.settings.get_request_directory())
         for button in self.ui.groupBox_3.findChildren(QtWidgets.QPushButton):
             self.__set_button_color(button,
-                                    self.settings.get_element_color(button.text()))
-            
+                                    self.settings.get_element_color(
+                                        button.text()))
+
         label_adc = QtWidgets.QLabel("ADC")
         label_low = QtWidgets.QLabel("Low")
         label_high = QtWidgets.QLabel("High")
@@ -83,14 +82,18 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
             self.ui.grid_timing.addWidget(label, 0, i + 1)
             self.ui.grid_timing.addWidget(spin_low, 1, i + 1)
             self.ui.grid_timing.addWidget(spin_high, 2, i + 1)
-        self.line_coinc_count.setText(str(self.settings.get_import_coinc_count()))
+        self.line_coinc_count.setText(
+            str(self.settings.get_import_coinc_count()))
         self.__set_cross_sections()
         self.check_es_output.setChecked(self.settings.is_es_output_saved())
-        
+
         # ToF-E graph settings
-        self.ui.check_tofe_invert_x.setChecked(self.settings.get_tofe_invert_x())
-        self.ui.check_tofe_invert_y.setChecked(self.settings.get_tofe_invert_y())
-        self.ui.check_tofe_transpose.setChecked(self.settings.get_tofe_transposed())
+        self.ui.check_tofe_invert_x.setChecked(
+            self.settings.get_tofe_invert_x())
+        self.ui.check_tofe_invert_y.setChecked(
+            self.settings.get_tofe_invert_y())
+        self.ui.check_tofe_transpose.setChecked(
+            self.settings.get_tofe_transposed())
         tofe_bin_mode = self.settings.get_tofe_bin_range_mode()
         self.ui.radio_tofe_bin_auto.setChecked(tofe_bin_mode == 0)
         self.ui.radio_tofe_bin_manual.setChecked(tofe_bin_mode == 1)
@@ -101,10 +104,11 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.ui.spin_tofe_bin_y_max.setValue(y_range_max)
         self.ui.spin_tofe_bin_y_min.setValue(y_range_min)
         self.ui.spin_tofe_compression_x.setValue(
-                                           self.settings.get_tofe_compression_x())
+            self.settings.get_tofe_compression_x())
         self.ui.spin_tofe_compression_y.setValue(
-                                           self.settings.get_tofe_compression_y())
-        self.ui.spin_depth_iterations.setValue(self.settings.get_num_iterations())
+            self.settings.get_tofe_compression_y())
+        self.ui.spin_depth_iterations.setValue(
+            self.settings.get_num_iterations())
         dirtyinteger = 0
         colors = sorted(MatplotlibHistogramWidget.color_scheme.items())
         for key, unused_value in colors:
@@ -112,8 +116,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
             if key == self.settings.get_tofe_color():
                 self.ui.combo_tofe_colors.setCurrentIndex(dirtyinteger)
             dirtyinteger += 1
-    
-    
+
     def __create_spinbox(self, default):
         spinbox = QtWidgets.QSpinBox()
         spinbox.stepBy(1)
@@ -121,14 +124,11 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         spinbox.setMaximum(1000)
         spinbox.setValue(int(default))
         return spinbox
-    
-    
+
     def __accept_changes(self):
         """Accept changed settings and save.
         """
         self.settings.set_request_directory(self.ui.requestPathLineEdit.text())
-        self.settings.set_efficiency_directory(
-                                           self.ui.lineEdit_eff_directory.text())
         for button in self.ui.groupBox_3.findChildren(QtWidgets.QPushButton):
             self.settings.set_element_color(button.text(), button.color)
         for key in self.__added_timings.keys():
@@ -137,7 +137,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
                                             coinc_timing.low.value(),
                                             coinc_timing.high.value())
         self.settings.set_import_coinc_count(self.line_coinc_count.text())
-        
+
         # Save cross sections
         if self.ui.radio_cross_1.isChecked():
             flag_cross = 1
@@ -147,15 +147,16 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
             flag_cross = 3
         self.settings.set_cross_sections(flag_cross)
         self.settings.set_es_output_saved(self.check_es_output.isChecked())
-        
+
         # ToF-E graph settings
         self.settings.set_tofe_invert_x(self.ui.check_tofe_invert_x.isChecked())
         self.settings.set_tofe_invert_y(self.ui.check_tofe_invert_y.isChecked())
-        self.settings.set_tofe_transposed(self.ui.check_tofe_transpose.isChecked())
+        self.settings.set_tofe_transposed(
+            self.ui.check_tofe_transpose.isChecked())
         self.settings.set_tofe_color(self.ui.combo_tofe_colors.currentText())
-        if self.ui.radio_tofe_bin_auto.isChecked():    
+        if self.ui.radio_tofe_bin_auto.isChecked():
             self.settings.set_tofe_bin_range_mode(0)
-        elif self.ui.radio_tofe_bin_manual.isChecked():    
+        elif self.ui.radio_tofe_bin_manual.isChecked():
             self.settings.set_tofe_bin_range_mode(1)
         x_r_min = self.ui.spin_tofe_bin_x_min.value()
         x_r_max = self.ui.spin_tofe_bin_x_max.value()
@@ -174,24 +175,16 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         # Save config and close
         self.settings.save_config()
         self.close()
-        
+
     def __change_request_directory(self):
         """Change default request directory.
         """
-        folder = QtWidgets.QFileDialog.getExistingDirectory(self, "Select default request directory",
-                                                            directory=self.ui.requestPathLineEdit.text())
+        folder = QtWidgets.QFileDialog\
+            .getExistingDirectory(self, "Select default request directory",
+                                  directory=self.ui.requestPathLineEdit.text())
         if folder:
             self.ui.requestPathLineEdit.setText(folder)
-    
-    def __change_efficiency_directory(self):
-        """Change efficiency file directory.
-        """
-        folder = QtWidgets.QFileDialog.getExistingDirectory(self, "Select efficiency file directory", 
-                                                            directory=self.ui.lineEdit_eff_directory.text())
-        if folder:
-            self.ui.lineEdit_eff_directory.setText(folder)
-        
-        
+
     def __change_element_color(self, button):
         """Change color of element button.
         
@@ -202,11 +195,10 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.color = dialog.getColor(QtGui.QColor(button.color),
                                      self,
                                      "Select Color for Element: {0}".format(
-                                                                button.text()))
+                                         button.text()))
         if self.color.isValid():
             self.__set_button_color(button, self.color.name())
-    
-    
+
     def __set_button_color(self, button, color_name):
         """Change button text color.
         
@@ -224,7 +216,8 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         if not button.isEnabled():
             return  # Do not set color for disabled buttons.
         button.setStyleSheet("background-color: {0}; color: {1};".format(
-                                                     color.name(), text_color))
+            color.name(), text_color))
+
     def __set_cross_sections(self):
         """Set cross sections to UI.
         """
@@ -232,4 +225,3 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.ui.radio_cross_1.setChecked(flag == 1)
         self.ui.radio_cross_2.setChecked(flag == 2)
         self.ui.radio_cross_3.setChecked(flag == 3)
-        

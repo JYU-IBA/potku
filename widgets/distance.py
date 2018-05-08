@@ -2,7 +2,8 @@
 """
 Created on 12.4.2018
 """
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
+             "Sinikka Siironen"
 __version__ = "2.0"
 
 import os
@@ -14,4 +15,5 @@ class DistanceWidget(QtWidgets.QWidget):
     """
     def __init__(self):
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_distance_widget.ui"), self)
+        self.ui = uic.loadUi(os.path.join("ui_files", "ui_distance_widget.ui"),
+                             self)

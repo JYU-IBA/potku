@@ -1,9 +1,10 @@
 # coding=utf-8
-'''
+"""
 Created on 1.3.2018
-Updated on 11.4.2018
-'''
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+Updated on 27.4.2018
+"""
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
+             "\n Sinikka Siironen"
 __version__ = "2.0"
 
 import os, logging, sys
@@ -16,9 +17,9 @@ from modules.element import Element
 from modules.general_functions import read_espe_file
 from modules.null import Null
 from modules.ui_log_handlers import customLogHandler
-from modules.simulation import CallMCERD, CallGetEspe
 from widgets.log import LogWidget
 from widgets.simulation.energy_spectrum import SimulationEnergySpectrumWidget
+
 
 class SimulationTabWidget(QtWidgets.QWidget):
     """Tab widget where simulation stuff is added.
@@ -36,8 +37,9 @@ class SimulationTabWidget(QtWidgets.QWidget):
         super().__init__()
         self.request = request
         self.tab_id = tab_id
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_simulation_tab.ui"), self)
-        self.simulation = simulation
+        self.ui = uic.loadUi(os.path.join("ui_files", "ui_simulation_tab.ui"),
+                             self)
+        self.obj = simulation
         self.icon_manager = icon_manager
 
         self.simulation_depth_profile = None
@@ -52,13 +54,16 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
 
         # Set up settings and energy spectra connections within the tab UI
-        self.ui.detectorSettingsButton.clicked.connect(self.open_detector_settings)
-        self.ui.mcSimulationButton.clicked.connect(lambda: self.start_mcsimulation(self))
+        self.ui.detectorSettingsButton.clicked.connect(
+            self.open_detector_settings)
+        self.ui.mcSimulationButton.clicked.connect(
+            lambda: self.start_mcsimulation(self))
 
         self.simulation_started = False
         self.stop_simulation_button = None
 
-    def add_widget(self, widget, minimized=None, has_close_button=True, icon=None):
+    def add_widget(self, widget, minimized=None, has_close_button=True,
+                   icon=None):
         """ Adds a new widget to current simulation tab.
         
         Args:
@@ -69,8 +74,10 @@ class SimulationTabWidget(QtWidgets.QWidget):
         if has_close_button:
             subwindow = self.ui.mdiArea.addSubWindow(widget)
         else:
-            subwindow = self.ui.mdiArea.addSubWindow(widget, QtCore.Qt.CustomizeWindowHint | QtCore.Qt.WindowTitleHint |
-                                                     QtCore.Qt.WindowMinMaxButtonsHint)
+            subwindow = self.ui.mdiArea.addSubWindow(
+                widget, QtCore.Qt.CustomizeWindowHint |
+                        QtCore.Qt.WindowTitleHint |
+                        QtCore.Qt.WindowMinMaxButtonsHint)
         if icon:
             subwindow.setWindowIcon(icon)
         subwindow.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -83,17 +90,20 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.__set_icons()
 
     def add_simulation_depth_profile(self):
-        """ Adds depth profile for modifying the elements into tab if it doesn't have one already.
+        """ Adds depth profile for modifying the elements into tab if it
+        doesn't have one already.
         """
-        self.simulation_depth_profile = TargetWidget(self.icon_manager)
+        self.simulation_depth_profile = TargetWidget(self,
+                                                     self.obj, self.obj.target,
+                                                     self.icon_manager)
         self.add_widget(self.simulation_depth_profile, has_close_button=False)
         # TODO: Do all the necessary operations so that the widget can be used.
 
     def add_log(self):        
         """ Add the simulation log to simulation tab widget.
         
-        Checks also if there's already some logging for this measurement and appends 
-        the text field of the user interface with this log.
+        Checks also if there's already some logging for this measurement
+        and appends the text field of the user interface with this log.
         """
         # TODO: Perhaps add a simulation log.
         self.log = LogWidget()
@@ -101,19 +111,19 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.add_UI_logger(self.log)
         
         # Checks for log file and appends it to the field.
-        log_default = os.path.join(self.simulation.directory, 'default.log')
-        log_error = os.path.join(self.simulation.directory, 'errors.log')
+        log_default = os.path.join(self.obj.directory, 'default.log')
+        log_error = os.path.join(self.obj.directory, 'errors.log')
         self.__read_log_file(log_default, 1)
         self.__read_log_file(log_error, 0)
     
     def add_UI_logger(self, log_widget):
-        """ Adds handlers to simulation logger so the logger can log the events to
-        the user interface too.
+        """ Adds handlers to simulation logger so the logger can log the events
+        to the user interface too.
         
-        log_widget specifies which ui element will handle the logging. That should 
-        be the one which is added to this SimulationTabWidget.
+        log_widget specifies which ui element will handle the logging. That
+        should be the one which is added to this SimulationTabWidget.
         """
-        logger = logging.getLogger(self.simulation.simulation.name)
+        logger = logging.getLogger(self.obj.simulation.name)
         defaultformat = logging.Formatter(
                                   '%(asctime)s - %(levelname)s - %(message)s',
                                   datefmt='%Y-%m-%d %H:%M:%S')
@@ -123,67 +133,72 @@ class SimulationTabWidget(QtWidgets.QWidget):
         logger.addHandler(widgetlogger_default)
     
     def check_previous_state_files(self, progress_bar=Null(), directory=None):
-        '''Check if saved state for Elemental Losses, Energy Spectrum or Depth 
+        """Check if saved state for Elemental Losses, Energy Spectrum or Depth
         Profile exists. If yes, load them also.
-        
+
         Args:
             progress_bar: A QtWidgets.QProgressBar where loading of previous
                           graph can be shown.
-        '''
+        """
         if not directory:
-            directory = self.simulation.directory
-        self.make_elemental_losses(directory, self.simulation.name)
+            directory = self.obj.directory
+        self.make_elemental_losses(directory, self.obj.name)
         progress_bar.setValue(66)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-        self.make_energy_spectrum(directory, self.simulation.name)
+        self.make_energy_spectrum(directory, self.obj.name)
         progress_bar.setValue(82)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-        self.make_depth_profile(directory, self.simulation.name)
+        self.make_depth_profile(directory, self.obj.name)
         progress_bar.setValue(98)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
 
     def start_mcsimulation(self, parent):
-        """ Start the Monte Carlo simulation and draw energy spectrum based on it.
+        """ Start the Monte Carlo simulation and draw energy spectrum based on
+        it.
         Args:
             parent: Parent of the energy spectrum widget.
         """
-        if self.simulation_started:
-            return
-        mcerd_path = os.path.join(self.request.directory, "35Cl-85-LiMnO_Li")
-        self.simulation.callMCERD = CallMCERD(mcerd_path)
-        self.simulation.callMCERD.run_simulation()
-        self.simulation_started = True
-
-        self.stop_simulation_button = QtWidgets.QPushButton("Stop the simulation")
-        self.stop_simulation_button.clicked.connect(self.stop_mcsimulation)
-        self.ui.verticalLayout_6.addWidget(self.stop_simulation_button)
+        pass
+        # if self.simulation_started:
+        #     return
+        # mcerd_path = os.path.join(self.request.directory, "35Cl-85-LiMnO_Li")
+        # self.obj.callMCERD = CallMCERD(mcerd_path)
+        # self.obj.callMCERD.run_simulation()
+        # self.simulation_started = True
+        #
+        # self.stop_simulation_button = QtWidgets.QPushButton("Stop the "
+        #                                                     "simulation")
+        # self.stop_simulation_button.clicked.connect(self.stop_mcsimulation)
+        # self.ui.verticalLayout_6.addWidget(self.stop_simulation_button)
 
     def stop_mcsimulation(self):
-        self.simulation.callMCERD.stop_simulation()
-        self.simulation_started = False
-
-        self.ui.verticalLayout_6.removeWidget(self.stop_simulation_button)
-        self.stop_simulation_button.deleteLater()
-
-        self.simulation.call_get_espe = CallGetEspe(self.request.directory)
-        self.simulation.call_get_espe.run_get_espe()
-
-        self.make_energy_spectrum(self.request.directory, self.simulation.call_get_espe.output_file)
-        # TODO: if there is already an energy spectrum, it should be removed
-        self.add_widget(self.energy_spectrum_widget)
+        pass
+        # self.obj.callMCERD.stop_simulation()
+        # self.simulation_started = False
+        #
+        # self.ui.verticalLayout_6.removeWidget(self.stop_simulation_button)
+        # self.stop_simulation_button.deleteLater()
+        #
+        # self.obj.call_get_espe = CallGetEspe(self.request.directory)
+        # self.obj.call_get_espe.run_get_espe()
+        #
+        # self.make_energy_spectrum(self.request.directory,
+        #                           self.obj.call_get_espe.output_file)
+        # # TODO: if there is already an energy spectrum, it should be removed
+        # self.add_widget(self.energy_spectrum_widget)
             
     def del_widget(self, widget):
-        '''Delete a widget from current (measurement) tab.
-        
+        """Delete a widget from current (measurement) tab.
+
         Args:
             widget: QWidget to be removed.
-        '''
+        """
         try:
             self.ui.mdiArea.removeSubWindow(widget.subwindow)
             widget.delete()
@@ -221,14 +236,15 @@ class SimulationTabWidget(QtWidgets.QWidget):
         lines = self.__load_file(file)
         if not lines:
             return
-        m_name = self.simulation.name
+        m_name = self.obj.name
         try:
             output_dir = self.__confirm_filepath(lines[0].strip(), name, m_name)
             use_cuts = self.__confirm_filepath(
                                    lines[2].strip().split("\t"), name, m_name)
             cut_names = [os.path.basename(cut) for cut in use_cuts]
             elements_string = lines[1].strip().split("\t")
-            elements = [Element.from_string(element) for element in elements_string]
+            elements = [Element.from_string(element)
+                        for element in elements_string]
             x_unit = lines[3].strip()
             line_zero = False
             line_scale = False
@@ -265,11 +281,13 @@ class SimulationTabWidget(QtWidgets.QWidget):
         lines = self.__load_file(file)
         if not lines:
             return
-        m_name = self.simulation.name
+        m_name = self.obj.name
         try:
-            reference_cut = self.__confirm_filepath(lines[0].strip(), name, m_name)
+            reference_cut = self.__confirm_filepath(lines[0].strip(), name,
+                                                    m_name)
             checked_cuts = self.__confirm_filepath(
-                                        lines[1].strip().split("\t"), name, m_name)
+                lines[1].strip().split("\t"), name,
+                m_name)
             cut_names = [os.path.basename(cut) for cut in checked_cuts]
             split_count = int(lines[2])
             y_scale = int(lines[3])
@@ -297,7 +315,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
         """
         try:
             data = read_espe_file(directory, name)
-            self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self, data)
+            self.energy_spectrum_widget = SimulationEnergySpectrumWidget(self,
+                                                                         data)
             icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
         except:  # We do not need duplicate error logs, log in widget instead
             print(sys.exc_info())  # TODO: Remove this.
@@ -305,8 +324,11 @@ class SimulationTabWidget(QtWidgets.QWidget):
     def open_detector_settings(self):
         """ Open the detector settings dialog.
         """
-        QtWidgets.QMessageBox.critical(self, "Error", "Detector or other settings dialogs not yet implemented!",
-                                           QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+        QtWidgets.QMessageBox.critical(self, "Error",
+                                       "Detector or other settings dialogs not "
+                                       "yet implemented!",
+                                       QtWidgets.QMessageBox.Ok,
+                                       QtWidgets.QMessageBox.Ok)
     
     def __confirm_filepath(self, filepath, name, m_name):
         """Confirm whether filepath exist and changes it accordingly.
@@ -314,7 +336,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
         Args:
             filepath: A string representing a filepath.
             name: A string representing origin measurement's name.
-            m_name: A string representing measurement's name where graph is created.
+            m_name: A string representing measurement's name where graph is
+            created.
         """
         if type(filepath) == str:
             # Replace two for measurement and cut file's name. Not all, in case 
@@ -325,7 +348,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
                     pass
                 return filepath
             except:
-                return os.path.join(self.simulation.directory, filepath)
+                return os.path.join(self.obj.directory, filepath)
         elif type(filepath) == list:
             newfiles = []
             for file in filepath:
@@ -335,7 +358,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
                         pass
                     newfiles.append(file)
                 except:
-                    newfiles.append(os.path.join(self.simulation.directory, file))
+                    newfiles.append(os.path.join(self.obj.directory, file))
             return newfiles
 
     def __read_log_file(self, file, state=1):
