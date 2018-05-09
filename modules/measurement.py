@@ -23,23 +23,30 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-import json
-from os import path
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import datetime
-from enum import Enum
-import logging, os, shutil, sys, time, hashlib
+import json
+import logging
+
+import hashlib
+import os
+import shutil
+import sys
+import time
 from PyQt5 import QtCore, QtWidgets
 
+from modules.beam import Beam
 from modules.cut_file import CutFile
+from modules.detector import Detector
 from modules.general_functions import md5_for_file, save_settings, rename_file
+from modules.run import Run
 from modules.selection import Selector
 from modules.settings import Settings
+from modules.target import Target
 
 
 class Measurements:
@@ -90,8 +97,7 @@ class Measurements:
             file_directory, file_name = os.path.split(measurement_file)
 
             # Check if measurement on the same name already exists.
-            keys = sample.measurements.measurements.keys()
-            for key in keys:
+            for key in sample.measurements.measurements.keys():
                 if sample.measurements.measurements[key].measurement_file \
                         == file_name:
                     return None
@@ -150,73 +156,35 @@ class Measurements:
         self.measurements = remove_key(self.measurements, tab_id)
 
 
-class MeasurementProfile(Enum):
-    Uniform = 0
-    Gaussian = 1
-
-
-class MeasurementEncoder(json.JSONEncoder):
-    """Custom class to encode Measurement to JSON format.
-    """
-
-    def default(self, obj):
-        if isinstance(obj, Measurement):
-            measurement_dict = {
-                "name": obj.name,
-                "description": obj.description,
-                "date": obj.date.isoformat(),
-                "energy": obj.energy,
-                "charge": obj.charge,
-                "spot_size": obj.spot_size,
-                "divergence": obj.divergence,
-                "profile": obj.profile.value,
-                "energy_dist": obj.energy_dist,
-                "fluence": obj.fluence,
-                "current": obj.current,
-                "beam_time": obj.beam_time,
-                "detector_theta": obj.detector_theta,
-                "detector_fii": obj.detector_fii,
-                "target_theta": obj.detector_theta,
-                "target_fii": obj.detector_fii
-            }
-
-            if obj.ion is None:
-                measurement_dict["ion"] = ""
-                measurement_dict["isotope"] = ""
-                return measurement_dict
-
-            measurement_dict["ion"] = obj.ion.name,
-            measurement_dict["isotope"] = str(obj.ion.isotope)
-            return measurement_dict
-        return super(MeasurementEncoder, self).default(obj)
-
-
 class Measurement:
     """Measurement class to handle one measurement data.
     """
 
-    __slots__ = "request", "name", "description", "date", "ion", "energy", \
-                "charge", "spot_size", "divergence", \
-                "profile", "energy_dist", "fluence", "current", "beam_time", \
-                "detector_theta", "detector_fii", \
-                "target_theta", "target_fii", "data", "statusbar", \
-                "color_scheme", "measurement_file", \
-                "name_prefix", "directory", "directory_cuts", \
-                "directory_elemloss", "__request_settings", \
-                "measurement_settings", "selector", "defaultlog", \
-                "errorlog", "tab_id", \
-                "directory_composition_changes", "directory_energy_spectra", \
-                "directory_depth_profiles", \
-                "directory_data", "tab_id", "serial_number"
+    # __slots__ = "request", "tab_id", "name", "description",\
+    #             "modification_time", "run", "detector", "target", \
+    #             "profile_name", "profile_description", \
+    #             "profile_modification_time", "reference_density", \
+    #             "number_of_depth_steps", "depth_step_for_stopping",\
+    #             "depth_step_for_output", "depth_for_concentration_from", \
+    #             "depth_for_concentration_to", "channel_width", \
+    #             "reference_cut", "number_of_splits", "normalization"
 
-    def __init__(self, request, tab_id=-1, name="", description="",
-                 date=datetime.date.today(), ion=None, energy=10.0,
-                 charge=4, spot_size=[3.0, 5.0], divergence=0,
-                 profile=MeasurementProfile.Uniform, energy_dist=0,
-                 fluence=1000000000000, current=1.07, beam_time=600,
-                 detector_theta=40, detector_fii=0, target_theta=70,
-                 target_fii=0):
-        """Inits measurement.
+    def __init__(self, request, tab_id=-1, name="Default",
+                 description="This a default measurement.",
+                 modification_time=time.time(), run=None, detector=None,
+                 target=Target(), profile_name="Default",
+                 profile_description="This is a default profile setting file.",
+                 profile_modification_time=time.time(),
+                 reference_density=3.5, number_of_depth_steps=40,
+                 depth_step_for_stopping=50, depth_step_for_output=50,
+                 depth_for_concentration_from=800,
+                 depth_for_concentration_to=1500, channel_width=0.1,
+                 reference_cut="", number_of_splits=10, normalization="first",
+                 measurement_setting_file_name="Default",
+                 measurement_setting_file_description=
+                 "This a default measurement setting file."
+                 ):
+        """Initializes a measurement.
 
         Args:
             request: Request class object.
@@ -227,24 +195,29 @@ class Measurement:
         self.request = request  # To which request be belong to
         self.name = name
         self.description = description
-        self.date = date
+        self.modification_time = modification_time
 
-        self.ion = ion
-        self.energy = energy
-        self.charge = charge
+        self.run = run
+        self.detector = detector
+        self.target = target
 
-        self.spot_size = spot_size
-        self.divergence = divergence
-        self.profile = profile
-        self.fluence = fluence
-        self.energy_dist = energy_dist
-        self.current = current
-        self.beam_time = beam_time
+        self.measurement_setting_file_name = measurement_setting_file_name
+        self.measurement_setting_file_description = \
+            measurement_setting_file_description
 
-        self.detector_theta = detector_theta
-        self.detector_fii = detector_fii
-        self.target_theta = target_theta
-        self.target_fii = target_fii
+        self.profile_name = profile_name
+        self.profile_description = profile_description
+        self.profile_modification_time = profile_modification_time
+        self.reference_density = reference_density
+        self.number_of_depth_steps = number_of_depth_steps
+        self.depth_step_for_stopping = depth_step_for_stopping
+        self.depth_step_for_output = depth_step_for_output
+        self.depth_for_concentration_from = depth_for_concentration_from
+        self.depth_for_concentration_to = depth_for_concentration_to
+        self.channel_width = channel_width
+        self.reference_cut = reference_cut
+        self.number_of_splits = number_of_splits
+        self.normalization = normalization
 
         self.data = []
 
@@ -270,6 +243,139 @@ class Measurement:
 
         self.errorlog = None
         self.defaultlog = None
+
+    @classmethod
+    def from_file(cls, file_path, request):
+
+        obj_measurement = json.load(open(file_path))
+        obj_profile = json.load(open(file_path))
+
+        name = obj_measurement["general"]["name"]
+        description = obj_measurement["general"]["description"]
+        modification_time = obj_measurement["general"]["modification_time"]
+
+        ion = obj_measurement["beam"]["ion"]
+        energy = obj_measurement["beam"]["energy"]
+        energy_distribution = obj_measurement["beam"]["energy_distribution"]
+        beam_charge = obj_measurement["beam"]["charge"]
+
+        spot_size = obj_measurement["run"]["spot_size"]
+        divergence = obj_measurement["run"]["divergence"]
+        profile = obj_measurement["run"]["profile"]
+        fluence = obj_measurement["run"]["fluence"]
+        current = obj_measurement["run"]["current"]
+        run_charge = obj_measurement["run"]["charge"]
+        run_time = obj_measurement["run"]["time"]
+
+        detector_theta = obj_measurement["geometry"]["detector_theta"]
+        target_theta = obj_measurement["geometry"]["target_theta"]
+
+        profile_name = obj_profile["general"]["name"]
+        profile_description = obj_profile["general"]["description"]
+        profile_modification_time = obj_profile["general"]["modification_time"]
+
+        reference_density = obj_profile["depth_profiles"]["reference_density"]
+        number_of_depth_steps = \
+            obj_profile["depth_profiles"]["number_of_depth_steps"]
+        depth_step_for_stopping = \
+            obj_profile["depth_profiles"]["depth_step_for_stopping"]
+        depth_step_for_output = \
+            obj_profile["depth_profiles"]["depth_step_for_output"]
+        depth_for_concentration_from = \
+            obj_profile["depth_profiles"]["depth_for_concentration_from"]
+        depth_for_concentration_to = \
+            obj_profile["depth_profiles"]["depth_for_concentration_to"]
+
+        channel_width = obj_profile["energy_spectra"]["channel_width"]
+
+        reference_cut = obj_profile["composition_changes"]["reference_cut"]
+        number_of_splits = \
+            obj_profile["composition_changes"]["number_of_splits"]
+        normalization = obj_profile["composition_changes"]["normalization"]
+
+        beam = Beam(ion, energy, beam_charge, energy_distribution, spot_size,
+                    divergence, profile)
+        run = Run(beam, fluence, current, run_charge, run_time)
+
+        detector = request.default_detector
+        detector.detector_theta = detector_theta
+
+        target = request.default_target
+        target.target_theta = target_theta
+
+        cls(request, -1, name, description, modification_time, run, detector,
+            target, profile_name, profile_description,
+            profile_modification_time, number_of_depth_steps,
+            depth_step_for_stopping, depth_step_for_output,
+            depth_for_concentration_from, depth_for_concentration_to,
+            channel_width, reference_cut, number_of_splits, normalization)
+
+    def to_file(self, measurement_file_path, profile_file_path):
+
+        obj_measurement = {}
+        obj_profile = {}
+
+        obj_measurement["general"] = {}
+        obj_measurement["beam"] = {}
+        obj_measurement["run"] = {}
+        obj_measurement["geometry"] = {}
+        obj_profile["general"] = {}
+        obj_profile["depth_profiles"] = {}
+        obj_profile["energy_spectra"] = {}
+        obj_profile["composition_changes"] = {}
+
+        obj_measurement["general"]["name"] = self.measurement_setting_file_name
+        obj_measurement["general"]["description"] = \
+            self.measurement_setting_file_description
+        obj_measurement["general"]["modification_time"] = self.modification_time
+
+        obj_measurement["beam"]["ion"] = str(self.run.beam.ion)
+        obj_measurement["beam"]["energy"] = self.run.beam.energy
+        obj_measurement["beam"]["energy_distribution"] = \
+            self.run.beam.energy_distribution
+        obj_measurement["beam"]["charge"] = self.run.beam.charge
+        obj_measurement["run"]["spot_size"] = self.run.beam.spot_size
+        obj_measurement["run"]["divergence"] = self.run.beam.divergence
+        obj_measurement["run"]["profile"] = self.run.beam.profile
+        obj_measurement["run"]["fluence"] = self.run.fluence
+        obj_measurement["run"]["current"] = self.run.current
+        obj_measurement["run"]["charge"] = self.run.charge
+        obj_measurement["run"]["time"] = self.run.time
+
+        obj_measurement["geometry"]["detector_theta"] = \
+            self.request.default_detector.detector_theta
+        obj_measurement["geometry"]["target_theta"] = \
+            self.request.default_target.target_theta
+
+        obj_profile["general"]["name"] = self.profile_name
+        obj_profile["general"]["description"] = \
+            self.profile_description
+        obj_profile["general"]["modification_time"] = \
+            self.profile_modification_time
+
+        obj_profile["depth_profiles"]["reference_density"] = \
+            self.reference_density
+        obj_profile["depth_profiles"]["number_of_depth_steps"] = \
+            self.number_of_depth_steps
+        obj_profile["depth_profiles"]["depth_step_for_stopping"] = \
+            self.depth_step_for_stopping
+        obj_profile["depth_profiles"]["depth_step_for_output"] = \
+            self.depth_step_for_output
+        obj_profile["depth_profiles"]["depth_for_concentration_from"] = \
+            self.depth_for_concentration_from
+        obj_profile["depth_profiles"]["depth_for_concentration_to"] = \
+            self.depth_for_concentration_to
+        obj_profile["energy_spectra"]["channel_width"] = self.channel_width
+        obj_profile["composition_changes"]["reference_cut"] = self.reference_cut
+        obj_profile["composition_changes"]["number_of_splits"] = \
+            self.number_of_splits
+        obj_profile["composition_changes"]["normalization"] = self.normalization
+
+        with open(measurement_file_path, "w") as file:
+            json.dump(obj_measurement, file, indent=4)
+
+        with open(profile_file_path, "w") as file:
+            json.dump(obj_profile, file, indent=4)
 
     def create_folder_structure(self, measurement_folder, measurement_file):
         """ Creates folder structure for the measurement.
@@ -380,15 +486,6 @@ class Measurement:
         rename_file(os.path.join(self.directory, self.directory_data,
                                  self.measurement_file), new_name + ".asc")
         self.measurement_file = new_name + ".asc"
-
-    def save_settings(self, filepath=None):
-        """Saves parameters from Measurement object
-        in JSON format in .measurement file.
-
-        Args:
-            filepath: Filepath including name of the file.
-        """
-        save_settings(self, ".measurement", MeasurementEncoder, filepath)
 
     def set_loggers(self):
         """Sets the loggers for this specified measurement.
@@ -819,12 +916,12 @@ class Measurement:
                                      traceback._some_str(sys.exc_info()[1]),
                                      err_file, str(sys.exc_info()[2].tb_lineno)]
                                     )
-                error_msg = "Unexpected error when generating tof.in: {0}".\
+                error_msg = "Unexpected error when generating tof.in: {0}". \
                     format(str_err)
                 logging.getLogger(self.name).error(error_msg)
             # Write new settings to the file.
             with open(tof_in_file, "wt+") as fp:
                 fp.write(tof_in)
-            str_logmsg = "Generated tof.in with params> {0}".\
+            str_logmsg = "Generated tof.in with params> {0}". \
                 format(tof_in.replace("\n", "; "))
             logging.getLogger(self.name).info(str_logmsg)

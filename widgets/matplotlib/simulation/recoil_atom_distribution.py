@@ -73,8 +73,8 @@ class RecoilElement:
             widget: An ElementWidget class object.
         """
         self._element = element
-        self._name = ""
-        self._description = ""
+        self._name = "Default"
+        self._description = "This is a default rec setting file."
         self._type = "rec"
         # This is multiplied by 1e22
         self._reference_density = 4.98

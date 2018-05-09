@@ -106,9 +106,17 @@ class Request:
             self.default_detector_folder)
 
         # Create default measurement for request
-        self.default_measurement = Measurement(self, "Default")
-        self.default_measurement.save_settings(os.path.join(
-            self.default_folder, self.default_measurement.name))
+        self.default_measurement = Measurement(self, "Default",
+                                               run=self.default_run,
+                                               detector=self.default_detector,
+                                               measurement_setting_file_name=
+                                               "Default")
+        self.default_measurement.to_file(os.path.join(
+            self.default_folder,
+            self.default_measurement.measurement_setting_file_name
+            + ".measurement"),
+            os.path.join(self.default_folder,
+                         self.default_measurement.profile_name + ".profile"))
 
         # Create default simulation for request
         self.default_simulation = Simulation(os.path.join(

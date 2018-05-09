@@ -15,7 +15,7 @@ class Beam:
 
     def __init__(self, ion=Element("Cl", 35), energy=10, charge=4,
                  energy_distribution=0, spot_size=(3.0, 5.0), divergence=0,
-                 profile="uniform"):
+                 profile="Uniform"):
 
         self.ion = ion
         self.energy = energy

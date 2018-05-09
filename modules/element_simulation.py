@@ -49,7 +49,7 @@ class ElementSimulation:
                  detector=None,
                  run=Run(),
                  name="Default",
-                 description="",
+                 description="This is a default mcsimu setting file.",
                  modification_time=datetime.datetime.now(),
                  simulation_type="REC",
                  number_of_ions=1000000, number_of_preions=100000,
@@ -233,7 +233,7 @@ class ElementSimulation:
         reference_density = obj["reference_density"]
 
         obj = json.load(open(profile_file_path))
-        channel_width = obj["channel_width"]
+        channel_width = obj["energy_spectra"]["channel_width"]
 
         simulation_folder, filename = os.path.split(mcsimu_file_path)
 
