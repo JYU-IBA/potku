@@ -1,14 +1,12 @@
 # coding=utf-8
 """
-Created on 21.3.2013
-Updated on 26.4.2018
-
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -18,14 +16,13 @@ of the License, or (at your option) any later version.
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMenu, QTreeWidgetItem, QAbstractItemView, QDesktopWidget, QApplication
+from PyQt5.QtWidgets import QMenu, QTreeWidgetItem, QAbstractItemView
 
 from dialogs.measurement.load_measurement import LoadMeasurementDialog
 from modules.measurement import Measurement

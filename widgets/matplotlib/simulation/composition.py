@@ -1,7 +1,24 @@
 # coding=utf-8
 """
-Created on 26.3.2018
-Updated on 3.5.2018
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -24,13 +41,13 @@ class _CompositionWidget(MatplotlibWidget):
     the layers of the target or the foil. This class should not be used
     as such.
     """
-
     def __init__(self, parent, layers, icon_manager):
         """Initialize a CompositionWidget.
 
         Args:
             parent:       Either a TargetWidget or FoilWidget object, which
                           works as a parent of this Matplotlib widget.
+            layers:       Layers of the target or the foil.
             icon_manager: An icon manager class object.
         """
         super().__init__(parent)
@@ -42,8 +59,10 @@ class _CompositionWidget(MatplotlibWidget):
 
         self.__icon_manager = icon_manager
         self.__fork_toolbar_buttons()
+
         self.layers = layers
         self.on_draw()
+
         if self.layers:
             self.__update_figure()
 
@@ -58,6 +77,7 @@ class _CompositionWidget(MatplotlibWidget):
         self.canvas.draw()
 
     def __toggle_tool_drag(self):
+        """Toggles the drag tool."""
         if self.__button_drag.isChecked():
             self.mpl_toolbar.mode_tool = 1
         else:
@@ -65,6 +85,7 @@ class _CompositionWidget(MatplotlibWidget):
         self.canvas.draw_idle()
 
     def __toggle_tool_zoom(self):
+        """Toggles the zoom tool."""
         if self.__button_zoom.isChecked():
             self.mpl_toolbar.mode_tool = 2
         else:
@@ -110,32 +131,45 @@ class _CompositionWidget(MatplotlibWidget):
         """Adds a new layer to the list of layers.
 
         Args:
-            position: A position where the layer should be added. If -1 is
-                      given, the layer is added at the end of the list.
+            position: A position where the layer should be added. If negative
+                      value is given, the layer is added to the end of the list.
         """
-        if position < -1:
-            raise ValueError("No negative values other than -1 are allowed.")
         if position > len(self.layers):
             ValueError("There are not that many layers.")
 
         dialog = LayerPropertiesDialog()
 
-        if dialog.layer:
+        if dialog.layer and position < 0:
             self.layers.append(dialog.layer)
+            self.__update_figure()
+        elif dialog.layer:
+            self.layers.insert(position, dialog.layer)
             self.__update_figure()
 
     def __update_figure(self):
-        next_layer_position = 0
+        """Updates the figure to match the information of the layers."""
+        next_layer_position = 0 # Position where the next layer will be drawn.
+
+        # This variable is used to alternate between the darker and lighter
+        # colors of grey.
         is_next_color_dark = True
-        for idx, layer in enumerate(self.layers):
+
+        # Draw the layers.
+        for layer in self.layers:
+
+            # Draw a rectangular patch that will have the thickness of the
+            # layer and a height of 1.
             layer_patch = matplotlib.patches.Rectangle(
                 (next_layer_position, 0),
                 layer.thickness, 1,
                 color = (0.85, 0.85, 0.85) if is_next_color_dark else
                 (0.9, 0.9, 0.9)
             )
+
+            # Alternate the color.
             if is_next_color_dark: is_next_color_dark = False
             else: is_next_color_dark = True
+
             self.axes.add_patch(layer_patch)
 
             # Put annotation in the middle of the rectangular patch.
@@ -151,24 +185,35 @@ class _CompositionWidget(MatplotlibWidget):
         self.mpl_toolbar.update()
 
 
-class TargetCompositionWidget(_CompositionWidget):
 
+class TargetCompositionWidget(_CompositionWidget):
+    """This widget is used to display the visual presentation of the target
+    layers to the user. Using this widget user can also modify the layers of the
+    target.
+    """
     def __init__(self, parent, target, icon_manager):
         """Initializes a TargetCompositionWidget object.
 
         Args:
             parent:       A TargetWidget object, which works as a parent of this
                           widget.
+            target:       A Target object. This is needed in order to get
+                          the current state of the target layers.
             icon_manager: An icon manager class object.
         """
-        self.foil_layers = target.layers
-        _CompositionWidget.__init__(self, parent, self.foil_layers,
+        _CompositionWidget.__init__(self, parent, target.layers,
                                     icon_manager)
 
+        self.layers = target.layers
         self.canvas.manager.set_title("Target composition")
 
 
+
 class FoilCompositionWidget(_CompositionWidget):
+    """This widget is used to display the visual presentation of the foil
+    layers to the user. Using this widget user can also modify the layers of the
+    foil.
+    """
 
     def __init__(self, parent, foil, icon_manager):
         """Initializes a FoilCompositionWidget object.
@@ -176,11 +221,14 @@ class FoilCompositionWidget(_CompositionWidget):
         Args:
             parent:       A FoilDialog object, which works as a parent of this
                           widget.
+            foil:         A foil object. This is needed in order to get the
+                          current state of the foil layers.
             icon_manager: An icon manager class object.
         """
 
-        self.foil_layers = foil.layers
-        _CompositionWidget.__init__(self, parent, self.foil_layers,
+        _CompositionWidget.__init__(self, parent, foil.layers,
                                     icon_manager)
 
+        self.layers = foil.layers
         self.canvas.manager.set_title("Foil composition")
+
