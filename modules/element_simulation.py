@@ -51,12 +51,12 @@ class ElementSimulation:
                  name="Default",
                  description="",
                  modification_time=datetime.datetime.now(),
-                 simulation_type="REC",
+                 simulation_type="ERD",
                  number_of_ions=1000000, number_of_preions=100000,
                  number_of_scaling_ions=5, number_of_recoils=10,
                  minimum_scattering_angle=0.05,
                  minimum_main_scattering_angle=20,
-                 simulation_mode="Narrow", seed_number=101,
+                 simulation_mode="narrow", seed_number=101,
                  minimum_energy=1.0, channel_width=0.1,
                  reference_density=4.98e22):
         """ Initializes ElementSimulation.
@@ -132,6 +132,7 @@ class ElementSimulation:
             "number_of_ions_in_presimu": self.number_of_preions,
             "number_of_scaling_ions": self.number_of_scaling_ions,
             "number_of_recoils": self.number_of_recoils,
+            "minimum_scattering_angle": self.minimum_scattering_angle,
             "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
             "minimum_energy_of_ions": self.minimum_energy,
             "simulation_mode": self.simulation_mode,

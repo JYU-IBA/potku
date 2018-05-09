@@ -487,8 +487,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 modules.element.Element(dialog.element, dialog.isotope))
 
             # Add simulation controls widget
-            simulation_controls_widget = SimulationControlsWidget()
-            self.tab.ui.simulationControlsLayout.addWidget(simulation_controls_widget)
+            simulation_controls_widget = SimulationControlsWidget(
+                element_simulation)
+            simulation_controls_widget.element_simulation = element_simulation
+            self.tab.ui.contentsLayout.addWidget(simulation_controls_widget)
 
             recoil_element_widget = element_simulation.get_recoil_element()\
                 .get_widget()
@@ -1024,14 +1026,19 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
 class SimulationControlsWidget(QtWidgets.QWidget):
     """Class for creating simulation controls widget for the element simulation.
+
+    Args:
+        element_simulation: ElementSimulation object.
     """
 
-    def __init__(self):
+    def __init__(self, element_simulation):
         super().__init__()
+
+        self.element_simulation = element_simulation
 
         main_layout = QtWidgets.QHBoxLayout()
 
-        controls_group_box = QtWidgets.QGroupBox("Element Name")
+        controls_group_box = QtWidgets.QGroupBox(self.element_simulation.name)
         controls_group_box.setSizePolicy(QSizePolicy.Preferred,
                                          QSizePolicy.Preferred)
 
@@ -1044,7 +1051,9 @@ class SimulationControlsWidget(QtWidgets.QWidget):
 
         controls_layout = QtWidgets.QHBoxLayout()
         run_button = QtWidgets.QPushButton("Start")
+        run_button.clicked.connect(self.__start_simulation)
         stop_button = QtWidgets.QPushButton("Stop")
+        stop_button.clicked.connect(self.__stop_simulation)
         controls_layout.addWidget(run_button)
         controls_layout.addWidget(stop_button)
         controls_widget = QtWidgets.QWidget()
@@ -1059,3 +1068,13 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         main_layout.addWidget(controls_group_box)
 
         self.setLayout(main_layout)
+
+    def __start_simulation(self):
+        """ Calls ElementSimulation's start method.
+        """
+        self.element_simulation.start()
+
+    def __stop_simulation(self):
+        """ Calls ElementSimulation's stop method.
+        """
+        self.element_simulation.stop()

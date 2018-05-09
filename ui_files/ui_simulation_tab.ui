@@ -112,7 +112,7 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_12">
           <item>
-           <layout class="QVBoxLayout" name="ToolLayout">
+           <layout class="QVBoxLayout" name="contentsLayout">
             <item>
              <layout class="QVBoxLayout" name="verticalLayout_4">
               <property name="spacing">
