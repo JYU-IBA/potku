@@ -169,17 +169,20 @@ class Measurement:
     #             "depth_for_concentration_to", "channel_width", \
     #             "reference_cut", "number_of_splits", "normalization"
 
-    def __init__(self, request, tab_id=-1, name="Default", description="",
+    def __init__(self, request, tab_id=-1, name="Default",
+                 description="This a default measurement.",
                  modification_time=time.time(), run=None, detector=None,
                  target=Target(), profile_name="Default",
-                 profile_description="", profile_modification_time=time.time(),
+                 profile_description="This is a default profile setting file.",
+                 profile_modification_time=time.time(),
                  reference_density=3.5, number_of_depth_steps=40,
                  depth_step_for_stopping=50, depth_step_for_output=50,
                  depth_for_concentration_from=800,
                  depth_for_concentration_to=1500, channel_width=0.1,
                  reference_cut="", number_of_splits=10, normalization="first",
-                 measurement_setting_file_name=None,
-                 measurement_setting_file_description=None
+                 measurement_setting_file_name="Default",
+                 measurement_setting_file_description=
+                 "This a default measurement setting file."
                  ):
         """Initializes a measurement.
 

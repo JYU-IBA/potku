@@ -98,13 +98,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             self.obj.target.target_theta = self\
                 .targetThetaDoubleSpinBox.value()
 
-            self.obj.to_file(os.path.join(
-                self.obj.directory, self.obj.measurement_setting_file_name +
-                ".measurement"),
-                os.path.join(
-                    self.obj.directory, self.obj.profile_name + ".profile"))
-
-
 def link_angle_values(theta, fii):
     """A function to link angle spinbox values to each other.
     """

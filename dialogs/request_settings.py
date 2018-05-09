@@ -532,6 +532,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         try:
             self.measurement_settings_widget.update_settings()
 
+            self.request.default_measurement.to_file(os.path.join(
+                self.request.default_measurement.directory,
+                "Default.measurement"), os.path.join(
+                self.request.default_measurement.directory, "Default.profile"))
 
             # Detector settings
             self.request.default_detector.name = \
@@ -592,6 +596,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
             self.request.default_simulation.to_file(os.path.join(
                 self.request.default_folder, "Default.simulation"))
+            # TODO: The .mcsimu file should be saved here
 
             # Depth profile settings
             self.depth_profile_settings.set_settings(

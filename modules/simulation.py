@@ -132,7 +132,7 @@ class Simulation:
                 "measurement_setting_file_description"
 
     def __init__(self, path, request, name="Default",
-                 description="This is a default simulation.",
+                 description="This is a default simulation setting file.",
                  modification_time=time.time(), tab_id=-1, run=None,
                  detector=None, target=Target(),
                  measurement_setting_file_name=None,
