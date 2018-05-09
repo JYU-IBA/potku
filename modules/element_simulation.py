@@ -49,7 +49,7 @@ class ElementSimulation:
                  detector=None,
                  run=Run(),
                  name="Default",
-                 description="",
+                 description="This is a default mcsimu setting file.",
                  modification_time=datetime.datetime.now(),
                  simulation_type="REC",
                  number_of_ions=1000000, number_of_preions=100000,

@@ -17,7 +17,7 @@ from modules.general_functions import open_file_dialog
 
 
 class DetectorSettingsWidget(QtWidgets.QWidget):
-    """Class for creating a request wide simulation settings tab.
+    """Class for creating a detector settings tab.
     """
     def __init__(self, obj, icon_manager):
         super().__init__()

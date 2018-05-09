@@ -135,10 +135,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             .setEnabled(True)
         self.simulation_settings_widget.ui.physicalParametersGroupBox\
             .setEnabled(True)
-        self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem(
-            "ERD")
-        self.simulation_settings_widget.ui.typeOfSimulationComboBox.addItem(
-            "RBS")
         self.simulation_settings_widget.ui.saveButton.clicked \
             .connect(lambda: self.__save_file("SIMULATION_SETTINGS"))
 
