@@ -7,6 +7,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinik
 import os
 from PyQt5 import uic, QtWidgets
 from modules.element import Element
+import modules.masses as masses
 
 
 class MeasurementSettingsWidget(QtWidgets.QWidget):
@@ -22,10 +23,14 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         
     def show_settings(self):
         if self.obj.run.beam.ion:
-            self.beamIonButton.setText(
+            self.ui.beamIonButton.setText(
                 self.obj.run.beam.ion.symbol)
             # TODO Check that the isotope is also set.
             self.isotopeComboBox.setEnabled(True)
+
+            masses.load_isotopes(self.obj.run.beam.ion.symbol,
+                                 self.ui.isotopeComboBox,
+                                 str(self.obj.run.beam.ion.isotope))
         else:
             self.beamIonButton.setText("Select")
             self.isotopeComboBox.setEnabled(
@@ -75,9 +80,10 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         # Measurement settings
         isotope_index = self.isotopeComboBox. \
             currentIndex()
+        # TODO: Show a message box, don't just quietly do nothing
         if isotope_index != -1:
             isotope_data = self.isotopeComboBox.itemData(isotope_index)
-            self.obj.ion = Element(self.beamIonButton.text(),
+            self.obj.run.beam.ion = Element(self.beamIonButton.text(),
                 isotope_data[0])
             self.obj.measurement_setting_file_name = self.nameLineEdit.text()
             self.obj.measurement_setting_file_description = self\
