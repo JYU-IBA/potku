@@ -19,11 +19,12 @@ from modules.general_functions import open_file_dialog
 class DetectorSettingsWidget(QtWidgets.QWidget):
     """Class for creating a detector settings tab.
     """
-    def __init__(self, obj, icon_manager):
+    def __init__(self, obj, request, icon_manager):
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_request_detector_settings.ui"), self)
 
         self.obj = obj
+        self.request = request
         self.icon_manager = icon_manager
 
         # Temporary foils list which holds all the information given in the

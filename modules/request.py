@@ -98,12 +98,18 @@ class Request:
                                                     "Detector")
         if not os.path.exists(self.default_detector_folder):
             os.makedirs(self.default_detector_folder)
-
-        # Create default detector for request
-        self.default_detector = Detector(
-            os.path.join(self.default_detector_folder, "Default.detector"))
+            # Create default detector for request
+            self.default_detector = Detector(
+                os.path.join(self.default_detector_folder, "Default.detector"))
+        else:
+            self.default_detector = Detector.from_file(
+                os.path.join(self.directory,
+                             self.default_detector_folder,
+                             "Default.detector"))
         self.default_detector.create_folder_structure(
             self.default_detector_folder)
+
+
 
         # Create default measurement for request
         self.default_measurement = Measurement(self, "Default",
