@@ -246,9 +246,21 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             # TODO: delete possible simulation specific files.
         else:
             # TODO: update settings for run, target angle, and detector
-            # measurement_file = os.path.join(self.simulation.directory)
-            # self.simulation.run.to_file(measurement_file)
-            pass
+            try:
+                self.measurement_settings_widget.update_settings()
+                self.request.default_measurement.to_file(os.path.join(
+                    self.request.default_measurement.directory,
+                    "Default.measurement"), os.path.join(
+                    self.request.default_measurement.directory,
+                    "Default.profile"))
+            except TypeError:
+                QtWidgets.QMessageBox.question(self, "Warning",
+                                               "Some of the setting values "
+                                               "have not been set.\n" +
+                                               "Please input setting values to "
+                                               "save them.",
+                                               QtWidgets.QMessageBox.Ok,
+                                               QtWidgets.QMessageBox.Ok)
 
     def __save_settings_and_close(self):
         self.__save_settings()
