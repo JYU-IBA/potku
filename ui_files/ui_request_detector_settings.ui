@@ -83,7 +83,7 @@
         <x>0</x>
         <y>0</y>
         <width>462</width>
-        <height>585</height>
+        <height>580</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -256,11 +256,15 @@
                      <rect>
                       <x>0</x>
                       <y>0</y>
-                      <width>412</width>
-                      <height>174</height>
+                      <width>414</width>
+                      <height>210</height>
                      </rect>
                     </property>
-                    <layout class="QHBoxLayout" name="horizontalLayout_4"/>
+                    <layout class="QHBoxLayout" name="horizontalLayout_4">
+                     <item>
+                      <layout class="QHBoxLayout" name="foilsLayout"/>
+                     </item>
+                    </layout>
                    </widget>
                   </widget>
                  </item>

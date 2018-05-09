@@ -96,16 +96,14 @@ class DepthProfileSettings:
             dialog: QDialog whose fields are updated with the depth profile 
                     parameters.
         """
-        dialog.depthStepForStoppingLineEdit.setText(
-                                           str(self.depth_step_for_stopping))
-        dialog.depthStepForOutputLineEdit.setText(
-                                           str(self.depth_step_for_output))
-        dialog.numberOfDepthStepsLineEdit.setText(
-                                            str(self.number_of_depth_steps))
-        dialog.depthsForConcentrationScalingLineEdit_1.setText(
-                                           str(self.depths_for_concentration_from))
-        dialog.depthsForConcentrationScalingLineEdit_2.setText(
-                                           str(self.depths_for_concentration_to))
+        dialog.numberOfDepthStepsSpinBox.setValue(self.number_of_depth_steps)
+        dialog.depthStepForStoppingSpinBox.setValue(
+            self.depth_step_for_stopping)
+        dialog.depthStepForOutputSpinBox.setValue(self.depth_step_for_output)
+        dialog.depthForConcentrationFromDoubleSpinBox.setValue(
+            self.depths_for_concentration_from)
+        dialog.depthForConcentrationToDoubleSpinBox.setValue(
+            self.depths_for_concentration_to)
         
         
     def set_settings(self, dialog, used_settings=None):
@@ -120,15 +118,14 @@ class DepthProfileSettings:
         else:
             self.use_settings = used_settings
         
-        self.number_of_depth_steps = int(dialog.numberOfDepthStepsLineEdit.text())
-        self.depth_step_for_stopping = float(
-                             dialog.depthStepForStoppingLineEdit.text())
-        self.depth_step_for_output = float(
-                             dialog.depthStepForOutputLineEdit.text())
-        self.depths_for_concentration_from = float(
-                             dialog.depthsForConcentrationScalingLineEdit_1.text())
-        self.depths_for_concentration_to = float(
-                             dialog.depthsForConcentrationScalingLineEdit_2.text())
+        self.number_of_depth_steps = dialog.numberOfDepthStepsSpinBox.value()
+        self.depth_step_for_stopping = \
+            dialog.depthStepForStoppingSpinBox.value()
+        self.depth_step_for_output = dialog.depthStepForOutputSpinBox.value()
+        self.depths_for_concentration_from = \
+            dialog.depthForConcentrationFromDoubleSpinBox.value()
+        self.depths_for_concentration_to = \
+            dialog.depthForConcentrationToDoubleSpinBox.value()
         
         
     def load_settings(self, filepath):

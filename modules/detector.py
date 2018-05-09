@@ -29,10 +29,10 @@ class Detector:
                 "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
                 "angle_slope", "angle_offset", "path", "modification_time",\
                 "efficiencies", "efficiency_directory", "timeres", \
-                "detector_theta", "detector_fii"
+                "detector_theta"
 
-    def __init__(self, path, name="Default", description="This a default "
-                                                         "detector.",
+    def __init__(self, path, name="Default",
+                 description="This a default detector setting file.",
                  modification_time=time.time(), type="ToF",
                  calibration=CalibrationParameters(), foils=[CircularFoil(
                 "Default", 7.0, 256.0, [Layer("First", [Element("C", 12.011,
@@ -49,7 +49,7 @@ class Detector:
                                                      3.44)])], tof_foils=[
                 1, 2], virtual_size=(2.0, 5.0), tof_slope=1e-11,
                  tof_offset=1e-9, angle_slope=0, angle_offset=0,
-                 timeres=250.0, detector_fii=0, detector_theta=40):
+                 timeres=250.0, detector_theta=40):
         """Initialize a detector.
 
         Args:
@@ -78,7 +78,6 @@ class Detector:
         self.tof_offset = tof_offset
         self.angle_slope = angle_slope
         self.angle_offset = angle_offset
-        self.detector_fii = detector_fii
         self.detector_theta = detector_theta
         self.foils = foils
         self.tof_foils = tof_foils
@@ -158,7 +157,6 @@ class Detector:
         tof_offset = obj["tof_offset"]
         angle_slope = obj["angle_slope"]
         angle_offset = obj["angle_offset"]
-        detector_fii = obj["detector_fii"]
         detector_theta = obj["detector_theta"]
         tof_foils = obj["tof_foils"]
         foils = []
@@ -188,7 +186,7 @@ class Detector:
                    detector_type, calibration, foils, tof_foils,
                    virtual_size, tof_slope,
                    tof_offset, angle_slope, angle_offset,
-                   timeres, detector_fii, detector_theta)
+                   timeres, detector_theta)
 
     def to_file(self, file_path):
         """Save detector settings to a file.
@@ -211,7 +209,6 @@ class Detector:
             "tof_offset": self.tof_offset,
             "angle_slope": self.angle_slope,
             "angle_offset": self.angle_offset,
-            "detector_fii": self.detector_fii,
             "detector_theta": self.detector_theta
         }
 

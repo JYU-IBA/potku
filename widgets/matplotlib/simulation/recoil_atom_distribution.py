@@ -65,15 +65,16 @@ class RecoilElement:
     in ascending order by their x coordinate.
     """
     def __init__(self, element, points, widget=None):
-        """Inits element.
+        """Inits recoil element.
 
         Args:
-            name: Name of the element. Usually the symbol of the element.
-            points: List of Point class objects.
+            element: An Element class object.
+            points: A list of Point class objects.
+            widget: An ElementWidget class object.
         """
         self._element = element
-        self._name = ""
-        self._description = ""
+        self._name = "Default"
+        self._description = "This is a default rec setting file."
         self._type = "rec"
         # This is multiplied by 1e22
         self._reference_density = 4.98
@@ -251,29 +252,6 @@ class ElementManager:
     def get_radio_button(self, element_simulation):
         return element_simulation.get_recoil_element().get_widget()\
             .get_radio_button()
-
-# xs = (100 * numpy.random.rand(20)).tolist()
-# ys = (100 * numpy.random.rand(20)).tolist()
-# xys = list(zip(xs, ys))
-# points = []
-# p = Point((0, 0))
-# points.append(p)
-# for xy in xys:
-#     points.append(Point(xy))
-# elements = [Element("He", points)]
-# coords = []
-# for point in elements[0].get_points():
-#     coords.append(point.get_coordinates())
-# print(coords)
-# elements[0].add_point(Point((25, 10)))
-# coords2 = []
-# for point in elements[0].get_points():
-#     coords2.append(point.get_coordinates())
-# print(coords2)
-# try:
-#     print(elements[0].get_right_neighbor(p).get_coordinates())
-# except:
-#     print("Ei löydy")
 
 
 class RecoilAtomDistributionWidget(MatplotlibWidget):

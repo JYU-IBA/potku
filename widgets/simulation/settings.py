@@ -11,7 +11,7 @@ from PyQt5 import uic, QtWidgets
 
 
 class SimulationSettingsWidget(QtWidgets.QWidget):
-    """Class for creating a request wide simulation settings tab.
+    """Class for creating a simulation settings tab.
     """
     def __init__(self):
         super().__init__()

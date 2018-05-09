@@ -128,12 +128,15 @@ class Simulation:
     __slots__ = "path", "request", "simulation_file", "name", "tab_id", \
                 "description", "modification_time", "run", "detector", \
                 "target", "element_simulations", "name_prefix", \
-                "serial_number", "directory"
+                "serial_number", "directory", "measurement_setting_file_name", \
+                "measurement_setting_file_description"
 
     def __init__(self, path, request, name="Default",
-                 description="This is a default simulation.",
+                 description="This is a default simulation setting file.",
                  modification_time=time.time(), tab_id=-1, run=None,
-                 detector=None, target=Target()):
+                 detector=None, target=Target(),
+                 measurement_setting_file_name=None,
+                 measurement_setting_file_description=None):
         """Initializes Simulation object.
 
         Args:
@@ -144,6 +147,9 @@ class Simulation:
         self.request = request
         self.name = name
         self.description = description
+        self.measurement_setting_file_name = measurement_setting_file_name
+        self.measurement_setting_file_description = \
+            measurement_setting_file_description
         self.modification_time = modification_time
         self.element_simulations = []
 
@@ -189,10 +195,8 @@ class Simulation:
                                                request=self.request,
                                                name=recoil_element.get_element().__str__(),
                                                recoil_element=recoil_element,
-                                               beam=self.run.beam,
                                                target=self.target,
-                                               detector=self.detector,
-                                               run=self.run)
+                                               detector=self.detector)
         self.element_simulations.append(element_simulation)
         return element_simulation
 
