@@ -1,13 +1,13 @@
 # coding=utf-8
-'''
+"""
 Created on 20.3.2013
 Updated on 6.5.2018
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
 Miika Raunio
 
 This program is free software; you can redistribute it and/or
@@ -24,7 +24,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 
 Reads data of the elements isotopes from masses.dat
-'''
+"""
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
@@ -46,13 +46,13 @@ for line in csv.reader(open(__FILE_PATH), delimiter=" ", skipinitialspace=True):
 
 
 def __get_isotopes(element):
-    '''Get isotopes of given element.
+    """Get isotopes of given element.
 
     Args:
         element: String representing element's symbol, e.g. "He".
     Return:
         Returns a list of element's isotopes.
-    '''
+    """
     try:
         isotopes = __isotopes[element]
     except:
@@ -71,11 +71,11 @@ def find_mass_of_isotope(element):
     isotopes = __get_isotopes(element.symbol)
     for isotope in isotopes:
         if element.isotope == isotope[0]:
-            return isotope[2]
+            return isotope[2]/1000000
 
 
 def load_isotopes(element, combobox, current_isotope=None):
-    '''Load isotopes into given combobox.
+    """Load isotopes into given combobox.
 
     Args:
         element: A two letter symbol representing selected element of which
@@ -83,7 +83,7 @@ def load_isotopes(element, combobox, current_isotope=None):
         combobox: QComboBox to which items are added.
         current_isotope: Current isotope to select it on combobox by default
                          (string).
-    '''
+    """
     if not element:
         return
     combobox.clear()
@@ -104,12 +104,12 @@ def load_isotopes(element, combobox, current_isotope=None):
 
 
 def get_standard_isotope(element):
-    '''Calculate standard element weight.
+    """Calculate standard element weight.
     Args:
         element: A two letter symbol representing an element, e.g. 'He'
     Return:
         Returns standard weight of given element (float).
-    '''
+    """
     standard = 0.0
     for isotope in __get_isotopes(element):
         # Has to have float() on both, else we crash.
@@ -118,16 +118,16 @@ def get_standard_isotope(element):
 
 
 def get_most_common_isotope(element):
-    '''Get the most common isotope for an element.
+    """Get the most common isotope for an element.
 
     Args:
         element: String representing element.
 
     Return:
         Returns the most common isotope for the element (int)
-        and the propability (commonness) of the isotope (float)
+        and the probability (commonness) of the isotope (float)
         as a tuple(int, float).
-    '''
+    """
     isotopes = sorted(__get_isotopes(element),
                       key=lambda isotope: isotope[1],
                       reverse=True)

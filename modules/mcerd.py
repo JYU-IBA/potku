@@ -110,8 +110,7 @@ class MCERD:
                        str(self.__settings["minimum_energy_of_ions"]) + "\n")
 
             file.write("Average number of recoils per primary ion: " +
-                       str(self.__settings["number_of_recoils"] /
-                           self.__settings["number_of_ions"]) + "\n")
+                       str(self.__settings["number_of_recoils"]) + "\n")
 
             file.write("Recoil angle width (wide or narrow): " +
                        self.__settings["simulation_mode"] + "\n")
@@ -120,27 +119,26 @@ class MCERD:
                        presimulation_file + "\n")
 
             file.write("Number of real ions per each scaling ion: " +
-                       str(self.__settings["number_of_ions"] /
-                           self.__settings["number_of_scaling_ions"]) + "\n")
+                       str(self.__settings["number_of_scaling_ions"]) + "\n")
 
             file.write("Number of ions: " +
                        str(self.__settings["number_of_ions"]) + "\n")
 
-            file.write("Number of ions in presimulation: " +
+            file.write("Number of ions in the presimulation: " +
                        str(self.__settings["number_of_ions_in_presimu"]) + "\n")
 
             file.write("Seed number of the random number generator: " +
                        str(self.__settings["seed_number"]) + "\n")
 
-#            file.write("Beam divergence: " + str(beam.divergence) + "\n")
+            file.write("Beam divergence: " + str(beam.divergence) + "\n")
 
-#            file.write("Beam profile: " + str(beam.profile) + "\n")
+            file.write("Beam profile: " + str(beam.profile) + "\n")
 
-#            file.write("Surface topography file: " + target.image_file + "\n")
+            file.write("Surface topography file: " + target.image_file + "\n")
 
-#            file.write("Side length of the surface topography image: "
-#                       + "%0.1f %0.1f" % (target.image_size[0],
-#                                          target.image_size[1]) + "\n")
+            file.write("Side length of the surface topography image: "
+                       + "%0.1f %0.1f" % (target.image_size[0],
+                                          target.image_size[1]) + "\n")
 
         # Create the MCERD detector file
         with open(detector_file, "w") as file_det:
@@ -205,7 +203,6 @@ class MCERD:
                     mass = masses.find_mass_of_isotope(element_obj)
                     file_target.write("%0.2f %s" % (mass,
                                                     element_obj.symbol) + "\n")
-
             count = 0
             for layer in target.layers:
                 file_target.write("\n")
@@ -222,22 +219,23 @@ class MCERD:
         # Create the MCERD foils file
         with open(foils_file, "w") as file_foils:
             for foil in detector.foils:
-                for layer in foil.layers:
-                    for element in layer.elements:
-                        file_foils.write("%0.2f %s" % (element.isotope,
-                                                       element.symbol) +
+                for layers in foil.layers:
+                    for element in layers.elements:
+#                        element_obj = element.from_string(element)
+                        mass = masses.find_mass_of_isotope(element)
+                        file_foils.write("%0.2f %s" % (mass, element.symbol) +
                                          "\n")
-            count = 0
-            for foil in detector.foils:
-                for layer in foil.layers:
+                count = 0
+                for layer in target.layers:
                     file_foils.write("\n")
                     file_foils.write(str(layer.thickness) + " nm" + "\n")
                     file_foils.write("ZBL" + "\n")
                     file_foils.write("ZBL" + "\n")
                     file_foils.write(str(layer.density) + " g/cm3" + "\n")
                     for element in layer.elements:
+                        element_obj = Element.from_string(element)
                         file_foils.write(str(count) +
-                                         (" %0.3f" % element.amount) + "\n")
+                                         (" %0.3f" % element_obj.amount) + "\n")
                         count += 1
 
         with open(recoil_file, "w") as file_rec:
