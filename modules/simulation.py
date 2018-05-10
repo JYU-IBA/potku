@@ -191,9 +191,15 @@ class Simulation:
         Args:
             recoil_element: RecoilElement that is simulated.
         """
+        element = recoil_element.element
+        if element.isotope:
+            element_str = "{0}{1}".format(element.isotope, element.symbol)
+        else:
+            element_str = element.symbol
+
         element_simulation = ElementSimulation(directory=self.directory,
                                                request=self.request,
-                                               name=recoil_element.get_element().__str__(),
+                                               name=element_str,
                                                recoil_element=recoil_element,
                                                target=self.target,
                                                detector=self.detector)

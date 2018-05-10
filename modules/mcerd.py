@@ -93,7 +93,7 @@ class MCERD:
         beam = self.__settings["beam"]
         target = self.__settings["target"]
         detector = self.__settings["detector"]
-        recoil_element = self.__settings["recoil_element"].get_element()
+        recoil_element = self.__settings["recoil_element"].element
 
         # Create the main MCERD command file
         with open(command_file) as file:

@@ -147,7 +147,7 @@ class ElementSimulation:
             "detector": self.detector,
             "target": self.target,
             "ch": self.channel_width,
-            "reference_density": self.recoil_element.get_reference_density(),
+            "reference_density": self.recoil_element.reference_density,
             "fluence": self.run.fluence,
             "timeres": self.detector.timeres,
             "solid": self.calculate_solid()
@@ -288,15 +288,21 @@ class ElementSimulation:
         Args:
             file_path: File in which the recoil settings will be saved.
         """
+        element = self.recoil_element.element
+        if element.isotope:
+            element_str = "{0}{1}".format(element.isotope, element.symbol)
+        else:
+            element_str = element.symbol
+
         obj = {
-            "name": self.recoil_element.get_name(),
-            "description": self.recoil_element.get_description(),
+            "name": self.recoil_element.name,
+            "description": self.recoil_element.description,
             "modification_time": str(datetime.datetime.fromtimestamp(
                 time.time())),
             "modification_time_unix": time.time(),
-            "simulation_type": self.recoil_element.get_type(),
-            "element": self.recoil_element.get_element().__str__(),
-            "reference_density": self.recoil_element.get_reference_density() *
+            "simulation_type": self.recoil_element.type,
+            "element": element_str,
+            "reference_density": self.recoil_element.reference_density *
                               1e22,
             "profile": []
         }
@@ -349,6 +355,3 @@ class ElementSimulation:
         Calculate the energy spectrum from the mcred result file.
         """
         self.get_espe = GetEspe(self.espe_settings, self.mcerd_objects)
-
-    def get_recoil_element(self):
-        return self.recoil_element

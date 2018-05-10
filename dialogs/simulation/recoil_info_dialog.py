@@ -28,11 +28,11 @@ class RecoilInfoDialog(QtWidgets.QDialog):
         self.__ui.cancelPushButton.clicked.connect(self.close)
 
         self.name = ""
-        self.__ui.nameLineEdit.setText(recoil_element.get_name())
+        self.__ui.nameLineEdit.setText(recoil_element.name)
         self.__ui.descriptionLineEdit.setPlainText(
-            recoil_element.get_description())
+            recoil_element.description)
         self.__ui.referenceDensityDoubleSpinBox.setValue(
-            recoil_element.get_reference_density())
+            recoil_element.reference_density)
         self.description = ""
         self.isOk = False
 
