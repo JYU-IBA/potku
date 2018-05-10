@@ -1,19 +1,38 @@
 # coding=utf-8
 """
-Created on 25.4.2018
-Updated on 3.5.2018
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import hashlib
-import os
 import platform
 import subprocess
+
+import hashlib
+import os
 import tempfile
-from modules.foil import CircularFoil
+
 import modules.masses as masses
+from modules.foil import CircularFoil
 
 
 class MCERD:
@@ -27,24 +46,31 @@ class MCERD:
         self.__settings = settings
 
         # OS specific directory where temporary MCERD files will be stored.
+        # In case of Linux and Mac this will be /tmp and in Windows this will
+        # be the C:\Users\<username>\AppData\Local\Temp.
         self.__tmp = tempfile.gettempdir()
 
         # Create a unique hash for the temporary MCERD files. The name needs
         # to be unique because there can be several MCERD processes.
         self.__hash = hashlib.sha1(str(settings).encode("utf-8")).hexdigest()
 
+        # The recoil file and erd file are later passed to get_espe.
         self.recoil_file = self.__create_mcerd_files()
+        self.erd_file = os.path.join(self.__tmp, self.__hash + "." +
+                                     str(self.__settings["seed_number"]) +
+                                     ".erd")
 
+        # The command that is used to start the MCERD process.
         command = os.path.join("external", "Potku-bin", "mcerd" +
                                (".exe " if platform.system() == "Windows"
                                 else " ") +
-                               os.path.join(self.__tmp, self.__hash, ".main"))
+                               os.path.join(self.__tmp, self.__hash))
 
         # TODO: MCERD needs to be fixed so we can get rid of this ulimit.
         ulimit = "" if platform.system() == "Windows" else "ulimit -s 64000; "
-        self.__process = subprocess.Popen(ulimit + command, shell=True)
 
-        self.result_file = os.path.join(self.__tmp, self.__hash, ".erd")
+        # Start the MCERD process.
+        self.__process = subprocess.Popen(ulimit + command, shell=True)
 
     def __del__(self):
         """Stop the MCERD process and delete the MCERD object."""
@@ -52,11 +78,13 @@ class MCERD:
 
     def __create_mcerd_files(self):
         """
-        Creates the files needed for running MCERD.
+        Creates the temporary files needed for running MCERD. These files
+        are placed to the directory of the temporary files of the operating
+        system.
+
         Return: Path of the recoil file.
         """
-
-        command_file = os.path.join(self.__tmp, self.__hash + ".main")
+        command_file = os.path.join(self.__tmp, self.__hash)
         target_file = os.path.join(self.__tmp, self.__hash + ".target")
         detector_file = os.path.join(self.__tmp, self.__hash, ".detector")
         foils_file = os.path.join(self.__tmp, self.__hash, ".foil")

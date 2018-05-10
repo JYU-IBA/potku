@@ -108,18 +108,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
         self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
 
-        # This makes a new detector object so all the changes to
-        # self.request.default_detector don't transfer to any simulations etc
-        #  which should use default detector values!!!
-        # TODO: read dafault detector from file somewhere else!
-        self.request.default_detector = self.request.default_detector.from_file(
-            os.path.join(self.request.directory,
-                         self.request.default_detector_folder,
-                         "Default.detector"))
-
         # Add detector settings view to the settings view
         self.detector_settings_widget = DetectorSettingsWidget(
-            self.request.default_detector, self.icon_manager)
+            self.request.default_detector, self.request, self.icon_manager)
         self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
 
         self.detector_settings_widget.ui.saveButton.clicked \
