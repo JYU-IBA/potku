@@ -23,9 +23,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-# TODO: Add licence information
 
 from modules.beam import Beam
+from modules.element import Element
 import os
 import json
 
@@ -91,3 +91,36 @@ class Run:
 
         with open(measurement_file_path, "w") as file:
             json.dump(obj, file, indent=4)
+
+    @classmethod
+    def from_file(cls, measurement_file_path):
+        """
+        Reads parameter sfrom file and makes a Run object from them.
+        Args:
+             measurement_file_path: Filepath of the .measurement file.
+
+        Return:
+            Returns the created Run object.
+        """
+        obj = json.load(open(measurement_file_path))
+        run = obj["run"]
+        beam = obj["beam"]
+
+        fluence = float(run["fluence"])
+        current = float(run["current"])
+        charge = float(run["charge"])
+        time = int(run["time"])
+
+        ion = Element.from_string(beam["ion"])
+        energy = beam["energy"]
+        b_charge = beam["charge"]
+        energy_distribution = beam["energy_distribution"]
+        spot_size = beam["spot_size"]
+        divergence = beam["divergence"]
+        profile = beam["profile"]
+
+        beam_object = Beam(ion, energy, b_charge, energy_distribution,
+                           spot_size, divergence, profile)
+
+        return cls(beam=beam_object, fluence=fluence, current=current,
+                   charge=charge, time=time)

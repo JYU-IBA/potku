@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 3.5.2018
+Updated on 10.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -96,20 +96,21 @@ class Request:
         # Create Detector folder under Default folder
         self.default_detector_folder = os.path.join(self.default_folder,
                                                     "Detector")
+        default_measurement_file_path = os.path.join(self.default_folder,
+                                                     "Default.measurement")
         if not os.path.exists(self.default_detector_folder):
             os.makedirs(self.default_detector_folder)
             # Create default detector for request
             self.default_detector = Detector(
-                os.path.join(self.default_detector_folder, "Default.detector"))
+                os.path.join(self.default_detector_folder,
+                             "Default.detector"), default_measurement_file_path)
         else:
             self.default_detector = Detector.from_file(
                 os.path.join(self.directory,
                              self.default_detector_folder,
-                             "Default.detector"))
+                             "Default.detector"), default_measurement_file_path)
         self.default_detector.create_folder_structure(
             self.default_detector_folder)
-
-
 
         # Create default measurement for request
         self.default_measurement = Measurement(self, "Default",
@@ -127,13 +128,9 @@ class Request:
         # Create default simulation for request
         self.default_simulation = Simulation(os.path.join(
             self.default_folder, "Default.simulation"), self)
-        self.default_element_simulation = ElementSimulation(self.default_folder,
-                                                            self,
-                                                            RecoilElement(
-                                                                Element.from_string(
-                                                                    "4He 3.0"),
-                                                                [], None),
-                                                            name="Default")
+        self.default_element_simulation = ElementSimulation(
+            self.default_folder, self, RecoilElement(
+                Element.from_string("4He 3.0"), [], None), name="Default")
         self.default_simulation.element_simulations.append(
             self.default_element_simulation)
 

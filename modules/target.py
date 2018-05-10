@@ -2,7 +2,7 @@
 # TODO: Add licence information
 """
 Created on 27.3.2018
-Updated on 8.5.2018
+Updated on 10.5.2018
 """
 
 import datetime
@@ -30,8 +30,8 @@ class Target:
 
     def __init__(self, name="", modification_time=time.time(), description="",
                  target_type="AFM", image_size=(1024, 1024),
-                 image_file="", scattering_element=Element.from_string("4He 3.0"),
-                 target_theta=70.0, layers=[]):
+                 image_file="", scattering_element=Element.from_string(
+                "4He 3.0"), target_theta=70.0, layers=[]):
         """Initialize a target.
 
         Args:
@@ -65,6 +65,9 @@ class Target:
             parameters.
             measurement_file_path: A file path to JSON file containing target
             angles.
+
+        Return:
+            Returns a Target object with parameters read from files.
         """
 
         obj = json.load(open(target_file_path))
@@ -86,7 +89,7 @@ class Target:
                                 layer["density"]))
 
         obj = json.load(open(measurement_file_path))
-        target_theta = obj["target_theta"]
+        target_theta = obj["geometry"]["target_theta"]
 
         return cls(name=name, description=description,
                    modification_time=modification_time_unix,
@@ -132,10 +135,17 @@ class Target:
         # Read .measurement to obj to update only target angles
         if os.path.exists(measurement_file_path):
             obj = json.load(open(measurement_file_path))
-            obj["target_theta"] = self.target_theta
+            try:
+                obj["geometry"]["target_theta"] = self.target_theta
+            except KeyError:
+                obj["geometry"] = {
+                    "target_theta": self.target_theta
+                }
         else:
             obj = {
-                "target_theta": self.target_theta,
+                "geometry": {
+                    "target_theta": self.target_theta
+                }
             }
 
         with open(measurement_file_path, "w") as file:

@@ -12,15 +12,16 @@ from PyQt5 import QtWidgets
 from PyQt5 import QtGui
 from PyQt5 import QtCore
 import os
-import datetime
 import modules.masses as masses
 from widgets.measurement.settings import MeasurementSettingsWidget
 from modules.input_validator import InputValidator
 from dialogs.element_selection import ElementSelectionDialog
 from widgets.detector_settings import DetectorSettingsWidget
-from widgets.foil import FoilWidget
-from modules.foil import CircularFoil
-from dialogs.simulation.foil import FoilDialog
+from modules.run import Run
+from modules.detector import Detector
+import json
+import datetime
+import time
 
 
 class SimulationSettingsDialog(QtWidgets.QDialog):
@@ -50,7 +51,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             lambda: self.__change_used_settings())
         self.ui.OKButton.clicked.connect(lambda:
                                          self.__save_settings_and_close())
-        self.ui.applyButton.clicked.connect(lambda: self.__save_settings())
+        self.ui.applyButton.clicked.connect(lambda: self.__update_parameters())
         self.ui.cancelButton.clicked.connect(self.close)
 
         double_validator = InputValidator()
@@ -81,7 +82,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
         # Add detector settings view to the settings view
         if self.simulation.detector:
-            detector_object = self.detector
+            detector_object = self.simulation.detector
         else:
             detector_object = self.simulation.request.default_detector
         self.detector_settings_widget = DetectorSettingsWidget(
@@ -92,6 +93,17 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         calib_tab_widget.deleteLater()
 
         self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
+
+        if self.simulation.detector is not None:
+            self.ui.simulationSettingsCheckBox.setCheckState(0)
+            self.measurement_settings_widget.ui.nameLineEdit.setText(
+                self.simulation.measurement_setting_file_name)
+            self.measurement_settings_widget.ui.descriptionPlainTextEdit\
+                .setPlainText(
+                    self.simulation.measurement_setting_file_description)
+            self.measurement_settings_widget.ui.dateLabel.setText(str(
+                datetime.datetime.fromtimestamp(
+                    self.simulation.modification_time)))
 
         self.exec()
 
@@ -125,18 +137,91 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.measurement_settings_widget.ui.isotopeLabel.setEnabled(True)
         self.ui.OKButton.setEnabled(True)
 
-    def __save_settings(self):
+    def __update_parameters(self):
+        """
+         Update Simulation's Run, Detector and Target objects. If simulation
+         specific parameters are in use, save them into a file.
+        """
         check_box = self.ui.simulationSettingsCheckBox
         if check_box.isChecked():
             self.simulation.run = self.simulation.request.default_run
             self.simulation.detector = None
             # TODO: delete possible simulation specific files.
         else:
-            # TODO: update settings for run, target angle, and detector
             try:
+                if self.simulation.measurement_setting_file_name is None:
+                    file_name = "temp"
+                else:
+                    file_name = self.simulation.measurement_setting_file_name
+                measurement_settings_file_path = os.path.join(
+                    self.simulation.directory, file_name + ".measurement")
+                target_file_path = os.path.join(self.simulation.directory,
+                                                self.simulation.target.name +
+                                                ".target")
+                det_folder_path = os.path.join(self.simulation.directory,
+                                               "Detector")
+                if self.simulation.run is None:
+                    self.simulation.run = Run()
+                if self.simulation.detector is None:
+                    detector_file_path = os.path.join(det_folder_path,
+                                                      "Default.detector")
+                    if not os.path.exists(det_folder_path):
+                        os.makedirs(det_folder_path)
+                    self.simulation.detector = Detector(
+                        detector_file_path, measurement_settings_file_path)
+                else:
+                    detector_file_path = self.simulation.detector.path
+                self.detector_settings_widget.obj = self.simulation.detector
+
                 self.measurement_settings_widget.update_settings()
-                self.simulation.run.to_file(os.path.join(
-                    self.simulation.directory, ".measurement"))
+                self.detector_settings_widget.update_settings()
+                self.simulation.detector.path = \
+                    os.path.join(det_folder_path,
+                                 self.simulation.detector.name + ".detector")
+
+                # Save general measurement settings parameters.
+                new_measurement_settings_file_path = os.path.join(
+                    self.simulation.directory,
+                    self.simulation.measurement_setting_file_name +
+                    ".measurement")
+                gen_obj = {
+                        "name": self.simulation.measurement_setting_file_name,
+                        "description": self.simulation.
+                        measurement_setting_file_description,
+                        "modification_time": str(
+                            datetime.datetime.fromtimestamp(time.time(
+
+                            ))),
+                        "modification_time_unix": time.time()
+                }
+                if os.path.exists(new_measurement_settings_file_path):
+                    obj = json.load(open(new_measurement_settings_file_path))
+                    obj["general"] = gen_obj
+                else:
+                    obj = {
+                        "general": gen_obj
+                    }
+
+                # Delete possible extra .measurement files
+                filename_to_remove = ""
+                for f in os.listdir(self.simulation.directory):
+                    if f.endswith(".measurement"):
+                        filename_to_remove = f
+                        break
+                if filename_to_remove:
+                    os.remove(os.path.join(self.simulation.directory,
+                                           filename_to_remove))
+
+                with open(new_measurement_settings_file_path, "w") as file:
+                    json.dump(obj, file, indent=4)
+
+                self.simulation.run.to_file(new_measurement_settings_file_path)
+                self.simulation.detector.\
+                    to_file(self.simulation.detector.path,
+                            new_measurement_settings_file_path)
+                self.simulation.target.\
+                    to_file(target_file_path,
+                            new_measurement_settings_file_path)
             except TypeError:
                 QtWidgets.QMessageBox.question(self, "Warning",
                                                "Some of the setting values "
@@ -147,5 +232,5 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                                QtWidgets.QMessageBox.Ok)
 
     def __save_settings_and_close(self):
-        self.__save_settings()
+        self.__update_parameters()
         self.close()
