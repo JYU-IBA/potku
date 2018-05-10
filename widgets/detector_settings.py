@@ -1,8 +1,10 @@
 # coding=utf-8
 """
 Created on 12.4.2018
+Updated on 10.5.2018
 """
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
+             "\n Sinikka Siironen"
 __version__ = "2.0"
 
 import os
@@ -21,7 +23,9 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
     """
     def __init__(self, obj, request, icon_manager):
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_request_detector_settings.ui"), self)
+        self.ui = uic.loadUi(os.path.join("ui_files",
+                                          "ui_request_detector_settings.ui"),
+                             self)
 
         self.obj = obj
         self.request = request
@@ -115,12 +119,12 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         # Tof foils
         self.obj.tof_foils = self.tof_foils
 
-    def _add_new_foil(self, layout):
+    def _add_new_foil(self, layout, new_foil=CircularFoil()):
         foil_widget = FoilWidget(self)
-        new_foil = CircularFoil()
         self.tmp_foil_info.append(new_foil)
         foil_widget.ui.foilButton.setText(new_foil.name)
-        foil_widget.ui.distanceEdit.setText(str(new_foil.distance))
+        foil_widget.ui.distanceEdit.setText("0.0")
+        foil_widget.ui.distanceLabel.setText(str(new_foil.distance))
         foil_widget.ui.foilButton.clicked.connect(
             lambda: self._open_composition_dialog())
         foil_widget.ui.timingFoilCheckBox.stateChanged.connect(
@@ -136,11 +140,18 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         layout = QtWidgets.QHBoxLayout()
         target = QtWidgets.QLabel("Target")
         layout.addWidget(target)
-        for i in range(4):
-            foil_widget = self._add_new_foil(layout)
+
+        foils = self.obj.foils
+        for i in range(len(foils)):
+            foil_widget = self._add_new_foil(layout, foils[i])
             for index in self.obj.tof_foils:
                 if index == i:
                     foil_widget.ui.timingFoilCheckBox.setChecked(True)
+            if i != 0:
+                distance = foils[i].distance - foils[i - 1].distance
+                foil_widget.ui.distanceEdit.setText(str(distance))
+            else:
+                foil_widget.ui.distanceEdit.setText(str(foils[i].distance))
         return layout
 
     def _check_and_add(self):
