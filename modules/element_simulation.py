@@ -3,11 +3,6 @@
 Created on 25.4.2018
 Updated on 6.5.2018
 """
-import math
-
-from modules.beam import Beam
-from modules.run import Run
-from modules.target import Target
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
@@ -17,10 +12,15 @@ import platform
 import datetime
 import json
 import os
+import math
 import time
 
 from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 
+from modules.beam import Beam
+from modules.element import Element
+from modules.run import Run
+from modules.target import Target
 from modules.mcerd import MCERD
 from modules.get_espe import GetEspe
 from modules.foil import CircularFoil
@@ -230,7 +230,8 @@ class ElementSimulation:
 
         obj = json.load(open(rec_file_path))
         simulation_type = obj["simulation_type"]
-        element = RecoilElement(obj["element"], obj["profile"])
+        element = RecoilElement(Element.from_string(obj["element"]),
+                                obj["profile"])
         reference_density = obj["reference_density"]
 
         obj = json.load(open(profile_file_path))
