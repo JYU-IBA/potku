@@ -149,6 +149,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.simulation.detector = None
             self.simulation.measurement_setting_file_name = None
             self.simulation.measurement_setting_file_description = None
+            self.simulation.target.target_theta = \
+                self.simulation.request.default_target.target_theta
             # TODO: delete possible simulation specific files.
             det_folder_path =os.path.join(self.simulation.directory,
                                            "Detector")
