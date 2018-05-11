@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 10.5.2018
+Updated on 11.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -61,7 +61,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             run_object.beam.charge)
         self.spotSizeXdoubleSpinBox.setValue(
             run_object.beam.spot_size[0])
-        self.spotSizeXdoubleSpinBox.setValue(
+        self.spotSizeYdoubleSpinBox.setValue(
             run_object.beam.spot_size[1])
         self.divergenceDoubleSpinBox.setValue(
             run_object.beam.divergence)
@@ -112,7 +112,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             self.obj.run.beam.profile = self.profileComboBox.currentText()
             self.obj.run.fluence = self.fluenceDoubleSpinBox.value()
             self.obj.run.current = self.currentDoubleSpinBox.value()
-            self.obj.run.beam_time = self.timeDoubleSpinBox.value()
+            self.obj.run.time = self.timeDoubleSpinBox.value()
             self.obj.detector.detector_theta = self\
                 .detectorThetaDoubleSpinBox.value()
             self.obj.target.target_theta = self\

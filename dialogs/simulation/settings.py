@@ -22,6 +22,7 @@ from modules.detector import Detector
 import json
 import datetime
 import time
+import shutil
 
 
 class SimulationSettingsDialog(QtWidgets.QDialog):
@@ -144,9 +145,23 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         """
         check_box = self.ui.simulationSettingsCheckBox
         if check_box.isChecked():
-            self.simulation.run = self.simulation.request.default_run
+            self.simulation.run = None
             self.simulation.detector = None
+            self.simulation.measurement_setting_file_name = None
+            self.simulation.measurement_setting_file_description = None
             # TODO: delete possible simulation specific files.
+            det_folder_path =os.path.join(self.simulation.directory,
+                                           "Detector")
+            if os.path.exists(det_folder_path):
+                shutil.rmtree(det_folder_path)
+            filename_to_remove = ""
+            for file in os.listdir(self.simulation.directory):
+                if file.endswith(".measurement"):
+                    filename_to_remove = file
+                    break
+            if filename_to_remove:
+                os.remove(os.path.join(self.simulation.directory,
+                                       filename_to_remove))
         else:
             try:
                 if self.simulation.measurement_setting_file_name is None:
@@ -206,9 +221,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
                 # Delete possible extra .measurement files
                 filename_to_remove = ""
-                for f in os.listdir(self.simulation.directory):
-                    if f.endswith(".measurement"):
-                        filename_to_remove = f
+                for file in os.listdir(self.simulation.directory):
+                    if file.endswith(".measurement"):
+                        filename_to_remove = file
                         break
                 if filename_to_remove:
                     os.remove(os.path.join(self.simulation.directory,

@@ -2,7 +2,7 @@
 # TODO: Add licence information
 """
 Created on 27.3.2018
-Updated on 10.5.2018
+Updated on 11.5.2018
 """
 
 import datetime
@@ -57,7 +57,7 @@ class Target:
         self.layers = layers
 
     @classmethod
-    def from_file(cls, target_file_path, measurement_file_path):
+    def from_file(cls, target_file_path, measurement_file_path, request):
         """Initialize target from a JSON file.
 
         Args:
@@ -65,6 +65,7 @@ class Target:
             parameters.
             measurement_file_path: A file path to JSON file containing target
             angles.
+            request: Request object which has default target angles.
 
         Return:
             Returns a Target object with parameters read from files.
@@ -88,8 +89,11 @@ class Target:
                                 layer["thickness"],
                                 layer["density"]))
 
-        obj = json.load(open(measurement_file_path))
-        target_theta = obj["geometry"]["target_theta"]
+        if measurement_file_path.endswith(".measurement"):
+            obj = json.load(open(measurement_file_path))
+            target_theta = obj["geometry"]["target_theta"]
+        else:
+            target_theta = request.default_target.target_theta
 
         return cls(name=name, description=description,
                    modification_time=modification_time_unix,

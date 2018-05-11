@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 10.5.2018
+Updated on 11.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -164,7 +164,7 @@ class Detector:
             pass
 
     @classmethod
-    def from_file(cls, detector_file_path, measurement_file_path):
+    def from_file(cls, detector_file_path, measurement_file_path, request):
         """Initialize Detector from a JSON file.
 
         Args:
@@ -172,6 +172,7 @@ class Detector:
                                 detector parameters.
             measurement_file_path: A file path to measurement settings file
                                    which has detector angles.
+            request: Request object which has default detector angles.
         """
         obj = json.load(open(detector_file_path))
 
@@ -211,8 +212,11 @@ class Detector:
                                     (foil["size"])[1],
                                     distance, layers, foil["transmission"]))
 
-        mes_obj = json.load(open(measurement_file_path))
-        detector_theta = mes_obj["geometry"]["detector_theta"]
+        if measurement_file_path.endswith(".measurement"):
+            mes_obj = json.load(open(measurement_file_path))
+            detector_theta = mes_obj["geometry"]["detector_theta"]
+        else:
+            detector_theta = request.default_detector.detector_theta
 
         return cls(path=detector_file_path,
                    measurement_settings_file_path=measurement_file_path,

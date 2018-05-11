@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 10.5.2018
+Updated on 11.5.2018
 
 #TODO Description of Potku and copyright
 #TODO Licence
@@ -112,7 +112,7 @@ class Simulations:
                     simulation.target = Target.from_file(os.path.join(
                         simulation_folder_path, file), os.path.join(
                         simulation_folder_path,
-                        measurement_settings_file))
+                        measurement_settings_file), self.request)
                 if file.startswith("Detector"):
                     det_folder = os.path.join(simulation_folder_path,
                                                      "Detector")
@@ -121,7 +121,8 @@ class Simulations:
                             simulation.detector = Detector.from_file(
                                 os.path.join(det_folder, f),
                                 os.path.join(simulation.directory,
-                                             measurement_settings_file))
+                                             measurement_settings_file),
+                                self.request)
 
         # Create a new simulation
         else:
