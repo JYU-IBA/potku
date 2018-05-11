@@ -304,12 +304,20 @@ class Measurement:
         target = request.default_target
         target.target_theta = target_theta
 
-        cls(request, -1, name, description, modification_time, run, detector,
-            target, profile_name, profile_description,
-            profile_modification_time, number_of_depth_steps,
-            depth_step_for_stopping, depth_step_for_output,
-            depth_for_concentration_from, depth_for_concentration_to,
-            channel_width, reference_cut, number_of_splits, normalization,
+        cls(request=request, name=name, description=description,
+            modification_time=modification_time,
+            run=run, detector=detector,
+            target=target, profile_name=profile_name,
+            profile_description=profile_description,
+            profile_modification_time=profile_modification_time,
+            number_of_depth_steps=number_of_depth_steps,
+            depth_step_for_stopping=depth_step_for_stopping,
+            depth_step_for_output=depth_step_for_output,
+            depth_for_concentration_from=depth_for_concentration_from,
+            depth_for_concentration_to=depth_for_concentration_to,
+            channel_width=channel_width, reference_cut=reference_cut,
+            number_of_splits=number_of_splits,
+            normalization=normalization,
             reference_density=reference_density)
 
     def to_file(self, measurement_file_path, profile_file_path):
