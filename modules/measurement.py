@@ -275,7 +275,8 @@ class Measurement:
 
         profile_name = obj_profile["general"]["name"]
         profile_description = obj_profile["general"]["description"]
-        profile_modification_time = obj_profile["general"]["modification_time"]
+        profile_modification_time = obj_profile["general"][
+            "modification_time_unix"]
 
         reference_density = obj_profile["depth_profiles"]["reference_density"]
         number_of_depth_steps = \
