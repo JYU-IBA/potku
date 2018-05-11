@@ -96,7 +96,7 @@ class MCERD:
         beam = self.__settings["beam"]
         target = self.__settings["target"]
         detector = self.__settings["detector"]
-        recoil_element = self.__settings["recoil_element"]
+        recoil_element = (self.__settings["recoil_element"])
 
         # Create the main MCERD command file
         with open(command_file, "w") as file:
@@ -113,8 +113,11 @@ class MCERD:
 
             file.write("Detector description file: " + detector_file + "\n")
 
-            file.write("Recoiling atom: " + str(recoil_element.isotope) +
-                       recoil_element.symbol)
+            if recoil_element.element.isotope is None:
+                isotope = masses.get_most_common_isotope(recoil_element
+                                                         .element.symbol)[0]
+            file.write("Recoiling atom: " + str(isotope) + recoil_element
+                       .element.symbol + "\n")
 
             file.write("Recoiling material distribution: " + recoil_file + "\n")
 
@@ -225,10 +228,9 @@ class MCERD:
         with open(target_file, "w") as file_target:
             for layer in target.layers:
                 for element in layer.elements:
-                    element_obj = Element.from_string(element)
-                    mass = masses.find_mass_of_isotope(element_obj)
+                    mass = masses.find_mass_of_isotope(element)
                     file_target.write("%0.2f %s" % (mass,
-                                                    element_obj.symbol) + "\n")
+                                                    element.symbol) + "\n")
             count = 0
             for layer in target.layers:
                 file_target.write("\n")
@@ -237,29 +239,29 @@ class MCERD:
                 file_target.write("ZBL" + "\n")
                 file_target.write(str(layer.density) + " g/cm3" + "\n")
                 for element in layer.elements:
-                    element_obj = Element.from_string(element)
                     file_target.write(str(count) +
-                                      (" %0.3f" % element_obj.amount) + "\n")
+                                      (" %0.3f" % element.amount) + "\n")
                     count += 1
 
         # Create the MCERD foils file
         with open(foils_file, "w") as file_foils:
             for foil in detector.foils:
-                for layers in foil.layers:
-                    for element in layers:
-                        file_foils.write("%0.2f %s" % (element.mass,
-                                                       element.symbol))
-                count = 0
-                for layer in target.layers:
-                    file_foils.write("\n")
-                    file_foils.write(str(layer.thickness) + " nm")
-                    file_foils.write("ZBL")
-                    file_foils.write("ZBL")
-                    file_foils.write(str(layer.density) + " g/cm3")
+                for layer in foil.layers:
                     for element in layer.elements:
-                        file_foils.write(str(count) +
-                                         (" %0.3f" % element.amount))
-                        count += 1
+                        mass = masses.find_mass_of_isotope(element)
+                        file_foils.write("%0.2f %s" % (mass,
+                                                       element.symbol) + "\n")
+            count = 0
+            for layer in target.layers:
+                file_foils.write("\n")
+                file_foils.write(str(layer.thickness) + " nm" + "\n")
+                file_foils.write("ZBL" + "\n")
+                file_foils.write("ZBL" + "\n")
+                file_foils.write(str(layer.density) + " g/cm3" + "\n")
+                for element in layer.elements:
+                    file_foils.write(str(count) +
+                                     (" %0.3f" % element.amount) + "\n")
+                    count += 1
 
         with open(recoil_file, "w") as file_rec:
             for point in recoil_element.get_points():

@@ -441,7 +441,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
             # Add recoil element widget
             recoil_element_widget = element_simulation.recoil_element\
-                .widget()
+                .widget
 
             self.radios.addButton(recoil_element_widget.get_radio_button())
             self.recoil_vertical_layout.addWidget(recoil_element_widget)
@@ -986,8 +986,8 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         main_layout = QtWidgets.QHBoxLayout()
 
         controls_group_box = QtWidgets.QGroupBox(self.element_simulation.name)
-        controls_group_box.setSizePolicy(QSizePolicy.Preferred,
-                                         QSizePolicy.Preferred)
+        controls_group_box.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
+                                         QtWidgets.QSizePolicy.Preferred)
 
         state_layout = QtWidgets.QHBoxLayout()
         state_layout.addWidget(QtWidgets.QLabel("State: "))
