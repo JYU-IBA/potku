@@ -991,8 +991,8 @@ class SimulationControlsWidget(QtWidgets.QWidget):
 
         state_layout = QtWidgets.QHBoxLayout()
         state_layout.addWidget(QtWidgets.QLabel("State: "))
-        state_label = QtWidgets.QLabel("Not started")
-        state_layout.addWidget(state_label)
+        self.state_label = QtWidgets.QLabel("Not started")
+        state_layout.addWidget(self.state_label)
         state_widget = QtWidgets.QWidget()
         state_widget.setLayout(state_layout)
 
@@ -1020,8 +1020,10 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         """ Calls ElementSimulation's start method.
         """
         self.element_simulation.start()
+        self.state_label.setText("Running")
 
     def __stop_simulation(self):
         """ Calls ElementSimulation's stop method.
         """
         self.element_simulation.stop()
+        self.state_label.setText("Stopped")
