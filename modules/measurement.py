@@ -23,6 +23,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+import datetime
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
@@ -245,14 +246,14 @@ class Measurement:
         self.defaultlog = None
 
     @classmethod
-    def from_file(cls, file_path, request):
+    def from_file(cls, measurement_file_path, profile_file_path, request):
 
-        obj_measurement = json.load(open(file_path))
-        obj_profile = json.load(open(file_path))
+        obj_measurement = json.load(open(measurement_file_path))
+        obj_profile = json.load(open(profile_file_path))
 
         name = obj_measurement["general"]["name"]
         description = obj_measurement["general"]["description"]
-        modification_time = obj_measurement["general"]["modification_time"]
+        modification_time = obj_measurement["general"]["modification_time_unix"]
 
         ion = obj_measurement["beam"]["ion"]
         energy = obj_measurement["beam"]["energy"]
@@ -308,7 +309,8 @@ class Measurement:
             profile_modification_time, number_of_depth_steps,
             depth_step_for_stopping, depth_step_for_output,
             depth_for_concentration_from, depth_for_concentration_to,
-            channel_width, reference_cut, number_of_splits, normalization)
+            channel_width, reference_cut, number_of_splits, normalization,
+            reference_density=reference_density)
 
     def to_file(self, measurement_file_path, profile_file_path):
 
@@ -327,7 +329,9 @@ class Measurement:
         obj_measurement["general"]["name"] = self.measurement_setting_file_name
         obj_measurement["general"]["description"] = \
             self.measurement_setting_file_description
-        obj_measurement["general"]["modification_time"] = self.modification_time
+        obj_measurement["general"]["modification_time"] = str(datetime.datetime.fromtimestamp(
+            time.time()))
+        obj_measurement["general"]["modification_time_unix"] = time.time()
 
         obj_measurement["beam"]["ion"] = str(self.run.beam.ion)
         obj_measurement["beam"]["energy"] = self.run.beam.energy
