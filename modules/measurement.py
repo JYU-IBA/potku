@@ -25,6 +25,8 @@ along with this program (file named 'LICENCE').
 """
 import datetime
 
+from modules.element import Element
+
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
@@ -255,7 +257,7 @@ class Measurement:
         description = obj_measurement["general"]["description"]
         modification_time = obj_measurement["general"]["modification_time_unix"]
 
-        ion = obj_measurement["beam"]["ion"]
+        ion = Element.from_string(obj_measurement["beam"]["ion"])
         energy = obj_measurement["beam"]["energy"]
         energy_distribution = obj_measurement["beam"]["energy_distribution"]
         beam_charge = obj_measurement["beam"]["charge"]
@@ -362,7 +364,9 @@ class Measurement:
         obj_profile["general"]["name"] = self.profile_name
         obj_profile["general"]["description"] = \
             self.profile_description
-        obj_profile["general"]["modification_time"] = \
+        obj_profile["general"]["modification_time"] = str(
+            datetime.datetime.fromtimestamp(time.time()))
+        obj_profile["general"]["modification_time_unix"] = \
             self.profile_modification_time
 
         obj_profile["depth_profiles"]["reference_density"] = \
