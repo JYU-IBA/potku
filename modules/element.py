@@ -77,9 +77,10 @@ class Element:
             Returns element, isotope and amount in string format.
         '''
         if self.isotope and self.amount:
-            return "{0}{1} {2}".format(self.isotope, self.symbol, self.amount)
+            return "{0}{1} {2}".format(int(round(self.isotope)), self.symbol,
+                                       self.amount)
         if self.isotope:
-            return "{0}{1}".format(self.isotope, self.symbol)
+            return "{0}{1}".format(int(round(self.isotope)), self.symbol)
         if self.amount:
             return "{0} {1}".format(self.symbol, self.amount)
         return self.symbol

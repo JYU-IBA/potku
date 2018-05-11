@@ -3,11 +3,6 @@
 Created on 25.4.2018
 Updated on 6.5.2018
 """
-import math
-
-from modules.beam import Beam
-from modules.run import Run
-from modules.target import Target
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
@@ -17,10 +12,15 @@ import platform
 import datetime
 import json
 import os
+import math
 import time
 
 from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 
+from modules.beam import Beam
+from modules.element import Element
+from modules.run import Run
+from modules.target import Target
 from modules.mcerd import MCERD
 from modules.get_espe import GetEspe
 from modules.foil import CircularFoil
@@ -51,12 +51,12 @@ class ElementSimulation:
                  name="Default",
                  description="This is a default mcsimu setting file.",
                  modification_time=datetime.datetime.now(),
-                 simulation_type="REC",
+                 simulation_type="ERD",
                  number_of_ions=1000000, number_of_preions=100000,
                  number_of_scaling_ions=5, number_of_recoils=10,
                  minimum_scattering_angle=0.05,
                  minimum_main_scattering_angle=20,
-                 simulation_mode="Narrow", seed_number=101,
+                 simulation_mode="narrow", seed_number=101,
                  minimum_energy=1.0, channel_width=0.1,
                  reference_density=4.98e22):
         """ Initializes ElementSimulation.
@@ -132,6 +132,7 @@ class ElementSimulation:
             "number_of_ions_in_presimu": self.number_of_preions,
             "number_of_scaling_ions": self.number_of_scaling_ions,
             "number_of_recoils": self.number_of_recoils,
+            "minimum_scattering_angle": self.minimum_scattering_angle,
             "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
             "minimum_energy_of_ions": self.minimum_energy,
             "simulation_mode": self.simulation_mode,
@@ -147,7 +148,7 @@ class ElementSimulation:
             "detector": self.detector,
             "target": self.target,
             "ch": self.channel_width,
-            "reference_density": self.recoil_element.get_reference_density(),
+            "reference_density": self.recoil_element.reference_density,
             "fluence": self.run.fluence,
             "timeres": self.detector.timeres,
             "solid": self.calculate_solid()
@@ -229,7 +230,8 @@ class ElementSimulation:
 
         obj = json.load(open(rec_file_path))
         simulation_type = obj["simulation_type"]
-        element = RecoilElement(obj["element"], obj["profile"])
+        element = RecoilElement(Element.from_string(obj["element"]),
+                                obj["profile"])
         reference_density = obj["reference_density"]
 
         obj = json.load(open(profile_file_path))
@@ -288,15 +290,21 @@ class ElementSimulation:
         Args:
             file_path: File in which the recoil settings will be saved.
         """
+        element = self.recoil_element.element
+        if element.isotope:
+            element_str = "{0}{1}".format(element.isotope, element.symbol)
+        else:
+            element_str = element.symbol
+
         obj = {
-            "name": self.recoil_element.get_name(),
-            "description": self.recoil_element.get_description(),
+            "name": self.recoil_element.name,
+            "description": self.recoil_element.description,
             "modification_time": str(datetime.datetime.fromtimestamp(
                 time.time())),
             "modification_time_unix": time.time(),
-            "simulation_type": self.recoil_element.get_type(),
-            "element": self.recoil_element.get_element().__str__(),
-            "reference_density": self.recoil_element.get_reference_density() *
+            "simulation_type": self.recoil_element.type,
+            "element": element_str,
+            "reference_density": self.recoil_element.reference_density *
                               1e22,
             "profile": []
         }
@@ -319,15 +327,15 @@ class ElementSimulation:
         """
         # Read .profile to obj to update only channel width
         if os.path.exists(file_path):
-            obj = json.load(open(file_path))
-            obj["channel_width"] = self.channel_width
+            obj_profile = json.load(open(file_path))
+            obj_profile["energy_spectra"]["channel_width"] = self.channel_width
         else:
-            obj = {
-                "channel_width": self.channel_width
-            }
+            obj_profile = {}
+            obj_profile["energy_spectra"] = {}
+            obj_profile["energy_spectra"]["channel_width"] = self.channel_width
 
         with open(file_path, "w") as file:
-            json.dump(obj, file, indent=4)
+            json.dump(obj_profile, file, indent=4)
 
     def start(self):
         """ Start the simulation."""
@@ -336,8 +344,9 @@ class ElementSimulation:
 
     def stop(self):
         """ Stop the simulation."""
-        for sim in self.mcerd_objects:
-            del sim
+        for sim in list(self.mcerd_objects.keys()):
+            self.mcerd_objects[sim].stop_process()
+            del(self.mcerd_objects[sim])
 
     def pause(self):
         """Pause the simulation."""
@@ -349,6 +358,3 @@ class ElementSimulation:
         Calculate the energy spectrum from the mcred result file.
         """
         self.get_espe = GetEspe(self.espe_settings, self.mcerd_objects)
-
-    def get_recoil_element(self):
-        return self.recoil_element

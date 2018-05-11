@@ -23,6 +23,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+import datetime
+
+from modules.element import Element
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
@@ -245,21 +248,21 @@ class Measurement:
         self.defaultlog = None
 
     @classmethod
-    def from_file(cls, file_path, request):
+    def from_file(cls, measurement_file_path, profile_file_path, request):
 
-        obj_measurement = json.load(open(file_path))
-        obj_profile = json.load(open(file_path))
+        obj_measurement = json.load(open(measurement_file_path))
+        obj_profile = json.load(open(profile_file_path))
 
         name = obj_measurement["general"]["name"]
         description = obj_measurement["general"]["description"]
-        modification_time = obj_measurement["general"]["modification_time"]
+        modification_time = obj_measurement["general"]["modification_time_unix"]
 
-        ion = obj_measurement["beam"]["ion"]
+        ion = Element.from_string(obj_measurement["beam"]["ion"])
         energy = obj_measurement["beam"]["energy"]
         energy_distribution = obj_measurement["beam"]["energy_distribution"]
         beam_charge = obj_measurement["beam"]["charge"]
 
-        spot_size = obj_measurement["run"]["spot_size"]
+        spot_size = tuple(obj_measurement["run"]["spot_size"])
         divergence = obj_measurement["run"]["divergence"]
         profile = obj_measurement["run"]["profile"]
         fluence = obj_measurement["run"]["fluence"]
@@ -272,7 +275,8 @@ class Measurement:
 
         profile_name = obj_profile["general"]["name"]
         profile_description = obj_profile["general"]["description"]
-        profile_modification_time = obj_profile["general"]["modification_time"]
+        profile_modification_time = obj_profile["general"][
+            "modification_time_unix"]
 
         reference_density = obj_profile["depth_profiles"]["reference_density"]
         number_of_depth_steps = \
@@ -303,12 +307,21 @@ class Measurement:
         target = request.default_target
         target.target_theta = target_theta
 
-        cls(request, -1, name, description, modification_time, run, detector,
-            target, profile_name, profile_description,
-            profile_modification_time, number_of_depth_steps,
-            depth_step_for_stopping, depth_step_for_output,
-            depth_for_concentration_from, depth_for_concentration_to,
-            channel_width, reference_cut, number_of_splits, normalization)
+        return cls(request=request, name=name, description=description,
+            modification_time=modification_time,
+            run=run, detector=detector,
+            target=target, profile_name=profile_name,
+            profile_description=profile_description,
+            profile_modification_time=profile_modification_time,
+            number_of_depth_steps=number_of_depth_steps,
+            depth_step_for_stopping=depth_step_for_stopping,
+            depth_step_for_output=depth_step_for_output,
+            depth_for_concentration_from=depth_for_concentration_from,
+            depth_for_concentration_to=depth_for_concentration_to,
+            channel_width=channel_width, reference_cut=reference_cut,
+            number_of_splits=number_of_splits,
+            normalization=normalization,
+            reference_density=reference_density)
 
     def to_file(self, measurement_file_path, profile_file_path):
 
@@ -327,7 +340,9 @@ class Measurement:
         obj_measurement["general"]["name"] = self.measurement_setting_file_name
         obj_measurement["general"]["description"] = \
             self.measurement_setting_file_description
-        obj_measurement["general"]["modification_time"] = self.modification_time
+        obj_measurement["general"]["modification_time"] = str(datetime.datetime.fromtimestamp(
+            time.time()))
+        obj_measurement["general"]["modification_time_unix"] = time.time()
 
         obj_measurement["beam"]["ion"] = str(self.run.beam.ion)
         obj_measurement["beam"]["energy"] = self.run.beam.energy
@@ -350,7 +365,9 @@ class Measurement:
         obj_profile["general"]["name"] = self.profile_name
         obj_profile["general"]["description"] = \
             self.profile_description
-        obj_profile["general"]["modification_time"] = \
+        obj_profile["general"]["modification_time"] = str(
+            datetime.datetime.fromtimestamp(time.time()))
+        obj_profile["general"]["modification_time_unix"] = \
             self.profile_modification_time
 
         obj_profile["depth_profiles"]["reference_density"] = \
