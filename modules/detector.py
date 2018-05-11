@@ -169,7 +169,7 @@ class Detector:
         detector_type = obj["detector_type"]
         calibration = None  # TODO
         timeres = obj["timeres"]
-        virtual_size = obj["virtual_size"]
+        virtual_size = tuple(obj["virtual_size"])
         tof_slope = obj["tof_slope"]
         tof_offset = obj["tof_offset"]
         angle_slope = obj["angle_slope"]
@@ -184,8 +184,13 @@ class Detector:
             layers = []
 
             for layer in foil["layers"]:
+                elements = []
+                elements_str = layer["elements"]
+                for element_str in elements_str:
+                    elements.append(Element.from_string(element_str))
+
                 layers.append(Layer(layer["name"],
-                                    layer["elements"],
+                                    elements,
                                     float(layer["thickness"]),
                                     float(layer["density"])))
 

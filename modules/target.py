@@ -80,8 +80,12 @@ class Target:
         layers = []
 
         for layer in obj["layers"]:
+            elements = []
+            elements_str = layer["elements"]
+            for element_str in elements_str:
+                elements.append(Element.from_string(element_str))
             layers.append(Layer(layer["name"],
-                                layer["elements"],
+                                elements,
                                 layer["thickness"],
                                 layer["density"]))
 
