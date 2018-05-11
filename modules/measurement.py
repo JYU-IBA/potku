@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 4.5.2018
+Updated on 11.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -262,9 +262,9 @@ class Measurement:
         energy_distribution = obj_measurement["beam"]["energy_distribution"]
         beam_charge = obj_measurement["beam"]["charge"]
 
-        spot_size = tuple(obj_measurement["run"]["spot_size"])
-        divergence = obj_measurement["run"]["divergence"]
-        profile = obj_measurement["run"]["profile"]
+        spot_size = tuple(obj_measurement["beam"]["spot_size"])
+        divergence = obj_measurement["beam"]["divergence"]
+        profile = obj_measurement["beam"]["profile"]
         fluence = obj_measurement["run"]["fluence"]
         current = obj_measurement["run"]["current"]
         run_charge = obj_measurement["run"]["charge"]
@@ -343,24 +343,6 @@ class Measurement:
         obj_measurement["general"]["modification_time"] = str(datetime.datetime.fromtimestamp(
             time.time()))
         obj_measurement["general"]["modification_time_unix"] = time.time()
-
-        obj_measurement["beam"]["ion"] = str(self.run.beam.ion)
-        obj_measurement["beam"]["energy"] = self.run.beam.energy
-        obj_measurement["beam"]["energy_distribution"] = \
-            self.run.beam.energy_distribution
-        obj_measurement["beam"]["charge"] = self.run.beam.charge
-        obj_measurement["run"]["spot_size"] = self.run.beam.spot_size
-        obj_measurement["run"]["divergence"] = self.run.beam.divergence
-        obj_measurement["run"]["profile"] = self.run.beam.profile
-        obj_measurement["run"]["fluence"] = self.run.fluence
-        obj_measurement["run"]["current"] = self.run.current
-        obj_measurement["run"]["charge"] = self.run.charge
-        obj_measurement["run"]["time"] = self.run.time
-
-        obj_measurement["geometry"]["detector_theta"] = \
-            self.request.default_detector.detector_theta
-        obj_measurement["geometry"]["target_theta"] = \
-            self.request.default_target.target_theta
 
         obj_profile["general"]["name"] = self.profile_name
         obj_profile["general"]["description"] = \

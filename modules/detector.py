@@ -269,8 +269,7 @@ class Detector:
             "tof_slope": self.tof_slope,
             "tof_offset": self.tof_offset,
             "angle_slope": self.angle_slope,
-            "angle_offset": self.angle_offset,
-            "detector_theta": self.detector_theta
+            "angle_offset": self.angle_offset
         }
 
         for foil in self.foils:

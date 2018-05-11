@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 9.5.2018
+Updated on 11.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -306,16 +306,24 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         try:
             self.measurement_settings_widget.update_settings()
 
-            self.request.default_measurement.to_file(os.path.join(
+            default_measurement_settings_file = os.path.join(
                 self.request.default_measurement.directory,
-                "Default.measurement"), os.path.join(
-                self.request.default_measurement.directory, "Default.profile"))
+                "Default.measurement")
+            self.request.default_measurement.to_file(
+                default_measurement_settings_file, os.path.join(
+                    self.request.default_measurement.directory,
+                    "Default.profile"))
+            self.request.default_measurement.run.to_file(
+                default_measurement_settings_file)
+            self.request.default_target.to_file(
+                None, default_measurement_settings_file)
 
             # Detector settings
             self.detector_settings_widget.update_settings()
 
             self.request.default_detector.to_file(os.path.join(
-                self.request.default_detector_folder, "Default.detector"))
+                self.request.default_detector_folder, "Default.detector"),
+                default_measurement_settings_file)
 
             # Simulation settings
             self.request.default_simulation.name = \
