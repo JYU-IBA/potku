@@ -53,7 +53,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             self.obj.run.beam.charge)
         self.spotSizeXdoubleSpinBox.setValue(
             self.obj.run.beam.spot_size[0])
-        self.spotSizeXdoubleSpinBox.setValue(
+        self.spotSizeYdoubleSpinBox.setValue(
             self.obj.run.beam.spot_size[1])
         self.divergenceDoubleSpinBox.setValue(
             self.obj.run.beam.divergence)
