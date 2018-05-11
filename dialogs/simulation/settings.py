@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 10.5.2018
+Updated on 11.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -169,6 +169,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                         os.makedirs(det_folder_path)
                     self.simulation.detector = Detector(
                         detector_file_path, measurement_settings_file_path)
+                    self.simulation.detector.create_folder_structure(
+                        det_folder_path)
                 else:
                     detector_file_path = self.simulation.detector.path
                 self.detector_settings_widget.obj = self.simulation.detector
