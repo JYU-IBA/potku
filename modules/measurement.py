@@ -260,7 +260,7 @@ class Measurement:
         energy_distribution = obj_measurement["beam"]["energy_distribution"]
         beam_charge = obj_measurement["beam"]["charge"]
 
-        spot_size = obj_measurement["run"]["spot_size"]
+        spot_size = tuple(obj_measurement["run"]["spot_size"])
         divergence = obj_measurement["run"]["divergence"]
         profile = obj_measurement["run"]["profile"]
         fluence = obj_measurement["run"]["fluence"]
