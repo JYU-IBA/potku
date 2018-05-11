@@ -327,15 +327,15 @@ class ElementSimulation:
         """
         # Read .profile to obj to update only channel width
         if os.path.exists(file_path):
-            obj = json.load(open(file_path))
-            obj["channel_width"] = self.channel_width
+            obj_profile = json.load(open(file_path))
+            obj_profile["energy_spectra"]["channel_width"] = self.channel_width
         else:
-            obj = {
-                "channel_width": self.channel_width
-            }
+            obj_profile = {}
+            obj_profile["energy_spectra"] = {}
+            obj_profile["energy_spectra"]["channel_width"] = self.channel_width
 
         with open(file_path, "w") as file:
-            json.dump(obj, file, indent=4)
+            json.dump(obj_profile, file, indent=4)
 
     def start(self):
         """ Start the simulation."""
