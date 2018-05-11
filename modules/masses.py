@@ -69,8 +69,9 @@ def find_mass_of_isotope(element):
          Returns the mass of the wanted element.
     """
     isotopes = __get_isotopes(element.symbol)
+    element_isotope = int(round(element.isotope))
     for isotope in isotopes:
-        if element.isotope == isotope[0]:
+        if element_isotope == isotope[0]:
             return isotope[2]/1000000
 
 
