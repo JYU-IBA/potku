@@ -49,6 +49,7 @@ class TargetWidget(QtWidgets.QWidget):
         self.recoil_widget = RecoilAtomDistributionWidget(self,
                                                           self.simulation,
                                                           self.target,
+                                                          tab,
                                                           icon_manager)
 
         icon_manager.set_icon(self.ui.editPushButton, "edit.svg")

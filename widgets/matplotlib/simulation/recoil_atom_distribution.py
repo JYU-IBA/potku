@@ -9,7 +9,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 
 import os
 
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5 import QtCore, QtWidgets, QtGui, uic
 from matplotlib.widgets import SpanSelector
 
 import modules.element
@@ -237,7 +237,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                   2: "zoom rect"  # Matplotlib's zoom
                   }
 
-    def __init__(self, parent, simulation, target, icon_manager):
+    def __init__(self, parent, simulation, target, tab, icon_manager):
         """Inits recoil atom distribution widget.
 
         Args:
@@ -250,6 +250,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.fmt_xdata = lambda x: "{0:1.2f}".format(x)
         self.axes.fmt_ydata = lambda y: "{0:1.4f}".format(y)
         self.__icon_manager = icon_manager
+        self.tab = tab
 
         self.current_recoil_element = None
         self.element_manager = ElementManager(self.__icon_manager, simulation)
@@ -428,9 +429,19 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def add_element(self):
         dialog = RecoilElementSelectionDialog(self)
         if dialog.isOk:
+            # Create new ElementSimulation
             element_simulation = self.element_manager.add_element_simulation(
                 modules.element.Element(dialog.element, dialog.isotope))
-            recoil_element_widget = element_simulation.recoil_element.widget
+
+            # Add simulation controls widget
+            simulation_controls_widget = SimulationControlsWidget(
+                element_simulation)
+            simulation_controls_widget.element_simulation = element_simulation
+            self.tab.ui.contentsLayout.addWidget(simulation_controls_widget)
+
+            # Add recoil element widget
+            recoil_element_widget = element_simulation.recoil_element\
+                .widget()
 
             self.radios.addButton(recoil_element_widget.get_radio_button())
             self.recoil_vertical_layout.addWidget(recoil_element_widget)
@@ -958,3 +969,59 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 sel_points.append(point)
         self.selected_points = sel_points
         self.update_plot()
+
+
+class SimulationControlsWidget(QtWidgets.QWidget):
+    """Class for creating simulation controls widget for the element simulation.
+
+    Args:
+        element_simulation: ElementSimulation object.
+    """
+
+    def __init__(self, element_simulation):
+        super().__init__()
+
+        self.element_simulation = element_simulation
+
+        main_layout = QtWidgets.QHBoxLayout()
+
+        controls_group_box = QtWidgets.QGroupBox(self.element_simulation.name)
+        controls_group_box.setSizePolicy(QSizePolicy.Preferred,
+                                         QSizePolicy.Preferred)
+
+        state_layout = QtWidgets.QHBoxLayout()
+        state_layout.addWidget(QtWidgets.QLabel("State: "))
+        state_label = QtWidgets.QLabel("Not started")
+        state_layout.addWidget(state_label)
+        state_widget = QtWidgets.QWidget()
+        state_widget.setLayout(state_layout)
+
+        controls_layout = QtWidgets.QHBoxLayout()
+        run_button = QtWidgets.QPushButton("Start")
+        run_button.clicked.connect(self.__start_simulation)
+        stop_button = QtWidgets.QPushButton("Stop")
+        stop_button.clicked.connect(self.__stop_simulation)
+        controls_layout.addWidget(run_button)
+        controls_layout.addWidget(stop_button)
+        controls_widget = QtWidgets.QWidget()
+        controls_widget.setLayout(controls_layout)
+
+        state_and_controls_layout = QtWidgets.QVBoxLayout()
+        state_and_controls_layout.addWidget(state_widget)
+        state_and_controls_layout.addWidget(controls_widget)
+
+        controls_group_box.setLayout(state_and_controls_layout)
+
+        main_layout.addWidget(controls_group_box)
+
+        self.setLayout(main_layout)
+
+    def __start_simulation(self):
+        """ Calls ElementSimulation's start method.
+        """
+        self.element_simulation.start()
+
+    def __stop_simulation(self):
+        """ Calls ElementSimulation's stop method.
+        """
+        self.element_simulation.stop()

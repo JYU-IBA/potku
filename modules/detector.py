@@ -47,9 +47,10 @@ class Detector:
                 "efficiencies", "efficiency_directory", "timeres", \
                 "detector_theta"
 
-    def __init__(self, path, name="Default",
-                 description="This a default detector setting file.",
-                 modification_time=time.time(), type="ToF",
+    def __init__(self, path, name="Default", description="This a default "
+                                                         "detector setting "
+                                                         "file.",
+                 modification_time=time.time(), type="TOF",
                  calibration=CalibrationParameters(), foils=[CircularFoil(
                 "Default", 7.0, 256.0, [Layer("First", [Element("C", 12.011,
                                                                 1)], 0.1,
