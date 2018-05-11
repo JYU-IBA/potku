@@ -307,7 +307,7 @@ class Measurement:
         target = request.default_target
         target.target_theta = target_theta
 
-        cls(request=request, name=name, description=description,
+        return cls(request=request, name=name, description=description,
             modification_time=modification_time,
             run=run, detector=detector,
             target=target, profile_name=profile_name,
