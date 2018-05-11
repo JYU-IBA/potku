@@ -337,8 +337,9 @@ class ElementSimulation:
 
     def stop(self):
         """ Stop the simulation."""
-        for sim in self.mcerd_objects:
-            del sim
+        for sim in list(self.mcerd_objects.keys()):
+            self.mcerd_objects[sim].stop_process()
+            del(self.mcerd_objects[sim])
 
     def pause(self):
         """Pause the simulation."""

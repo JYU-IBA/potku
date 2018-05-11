@@ -44,13 +44,14 @@ class MCERD:
 
         # TODO: MCERD needs to be fixed so we can get rid of this ulimit.
         ulimit = "" if platform.system() == "Windows" else "ulimit -s 64000; "
-        self.__process = subprocess.Popen(ulimit + command, shell=True)
+        exec = "" if platform.system() == "Windows" else "exec "
+        self.__process = subprocess.Popen(ulimit + exec + command, shell=True)
 
         self.result_file = os.path.join(self.__tmp, self.__hash + ".erd")
 
-    def __del__(self):
+    def stop_process(self):
         """Stop the MCERD process and delete the MCERD object."""
-        self.__process.kill()
+        self._MCERD__process.kill()
 
     def __create_mcerd_files(self):
         """
@@ -130,15 +131,17 @@ class MCERD:
             file.write("Seed number of the random number generator: " +
                        str(self.__settings["seed_number"]) + "\n")
 
-            file.write("Beam divergence: " + str(beam.divergence) + "\n")
+            # MCERD doesn't use these parameters and they break the command
+            # file.
+#            file.write("Beam divergence: " + str(beam.divergence) + "\n")
 
-            file.write("Beam profile: " + str(beam.profile) + "\n")
+#            file.write("Beam profile: " + str(beam.profile) + "\n")
 
-            file.write("Surface topography file: " + target.image_file + "\n")
+#            file.write("Surface topography file: " + target.image_file + "\n")
 
-            file.write("Side length of the surface topography image: "
-                       + "%0.1f %0.1f" % (target.image_size[0],
-                                          target.image_size[1]) + "\n")
+#            file.write("Side length of the surface topography image: "
+#                       + "%0.1f %0.1f" % (target.image_size[0],
+#                                          target.image_size[1]) + "\n")
 
         # Create the MCERD detector file
         with open(detector_file, "w") as file_det:
@@ -225,18 +228,18 @@ class MCERD:
                         mass = masses.find_mass_of_isotope(element)
                         file_foils.write("%0.2f %s" % (mass, element.symbol) +
                                          "\n")
-                count = 0
-                for layer in target.layers:
-                    file_foils.write("\n")
-                    file_foils.write(str(layer.thickness) + " nm" + "\n")
-                    file_foils.write("ZBL" + "\n")
-                    file_foils.write("ZBL" + "\n")
-                    file_foils.write(str(layer.density) + " g/cm3" + "\n")
-                    for element in layer.elements:
-                        element_obj = Element.from_string(element)
-                        file_foils.write(str(count) +
-                                         (" %0.3f" % element_obj.amount) + "\n")
-                        count += 1
+            count = 0
+            for layer in target.layers:
+                file_foils.write("\n")
+                file_foils.write(str(layer.thickness) + " nm" + "\n")
+                file_foils.write("ZBL" + "\n")
+                file_foils.write("ZBL" + "\n")
+                file_foils.write(str(layer.density) + " g/cm3" + "\n")
+                for element in layer.elements:
+                    element_obj = Element.from_string(element)
+                    file_foils.write(str(count) +
+                                     (" %0.3f" % element_obj.amount) + "\n")
+                    count += 1
 
         with open(recoil_file, "w") as file_rec:
             for point in recoil_element.get_points():
