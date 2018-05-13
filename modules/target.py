@@ -2,7 +2,7 @@
 # TODO: Add licence information
 """
 Created on 27.3.2018
-Updated on 11.5.2018
+Updated on 13.5.2018
 """
 
 import datetime
@@ -93,7 +93,8 @@ class Target:
                                 layer["thickness"],
                                 layer["density"]))
 
-        if measurement_file_path.endswith(".measurement"):
+        if measurement_file_path.endswith(".measurement") and \
+                os.path.exists(measurement_file_path):
             obj = json.load(open(measurement_file_path))
             target_theta = obj["geometry"]["target_theta"]
         else:

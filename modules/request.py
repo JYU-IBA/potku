@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 11.5.2018
+Updated on 13.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -151,6 +151,15 @@ class Request:
                 self.default_folder,
                 self.default_measurement.measurement_setting_file_name +
                 ".measurement"))
+            self.default_detector.to_file(os.path.join(self.default_folder,
+                                                       "Detector",
+                                                       "Default.detector"),
+                                          default_measurement_file_path)
+
+        self.default_target.to_file(os.path.join(self.default_folder,
+                                                 self.default_target.name
+                                                 + ".target"),
+                                    default_measurement_file_path)
 
         try:
             self.default_simulation = Simulation.from_file(self,

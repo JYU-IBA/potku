@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 11.5.2018
+Updated on 13.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -44,8 +44,7 @@ from PyQt5 import QtCore, QtWidgets
 
 from modules.beam import Beam
 from modules.cut_file import CutFile
-from modules.detector import Detector
-from modules.general_functions import md5_for_file, save_settings, rename_file
+from modules.general_functions import md5_for_file, rename_file
 from modules.run import Run
 from modules.selection import Selector
 from modules.settings import Settings
@@ -308,20 +307,20 @@ class Measurement:
         target.target_theta = target_theta
 
         return cls(request=request, name=name, description=description,
-            modification_time=modification_time,
-            run=run, detector=detector,
-            target=target, profile_name=profile_name,
-            profile_description=profile_description,
-            profile_modification_time=profile_modification_time,
-            number_of_depth_steps=number_of_depth_steps,
-            depth_step_for_stopping=depth_step_for_stopping,
-            depth_step_for_output=depth_step_for_output,
-            depth_for_concentration_from=depth_for_concentration_from,
-            depth_for_concentration_to=depth_for_concentration_to,
-            channel_width=channel_width, reference_cut=reference_cut,
-            number_of_splits=number_of_splits,
-            normalization=normalization,
-            reference_density=reference_density)
+                   modification_time=modification_time,
+                   run=run, detector=detector,
+                   target=target, profile_name=profile_name,
+                   profile_description=profile_description,
+                   profile_modification_time=profile_modification_time,
+                   number_of_depth_steps=number_of_depth_steps,
+                   depth_step_for_stopping=depth_step_for_stopping,
+                   depth_step_for_output=depth_step_for_output,
+                   depth_for_concentration_from=depth_for_concentration_from,
+                   depth_for_concentration_to=depth_for_concentration_to,
+                   channel_width=channel_width, reference_cut=reference_cut,
+                   number_of_splits=number_of_splits,
+                   normalization=normalization,
+                   reference_density=reference_density)
 
     def to_file(self, measurement_file_path, profile_file_path):
 
@@ -340,8 +339,8 @@ class Measurement:
         obj_measurement["general"]["name"] = self.measurement_setting_file_name
         obj_measurement["general"]["description"] = \
             self.measurement_setting_file_description
-        obj_measurement["general"]["modification_time"] = str(datetime.datetime.fromtimestamp(
-            time.time()))
+        obj_measurement["general"]["modification_time"] = \
+            str(datetime.datetime.fromtimestamp(time.time()))
         obj_measurement["general"]["modification_time_unix"] = time.time()
 
         obj_profile["general"]["name"] = self.profile_name
@@ -875,7 +874,7 @@ class Measurement:
 
         # Combine strings
         measurement = str_beam + str_energy + str_detector + str_target + \
-                      str_toflen + str_carbon + str_density
+            str_toflen + str_carbon + str_density
         calibration = "TOF calibration: {0} {1}\n".format(
             use_settings.calibration_settings.slope,
             use_settings.calibration_settings.offset)
@@ -886,7 +885,7 @@ class Measurement:
                        str_depthscale
 
         tof_in = measurement + calibration + anglecalib + depthprofile + \
-                 str_cross + str_num_iterations + str_eff_dir
+            str_cross + str_num_iterations + str_eff_dir
 
         # Get md5 of file and new settings
         md5 = hashlib.md5()
