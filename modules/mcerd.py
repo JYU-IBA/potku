@@ -116,8 +116,8 @@ class MCERD:
             if recoil_element.element.isotope is None:
                 isotope = masses.get_most_common_isotope(recoil_element
                                                          .element.symbol)[0]
-            file.write("Recoiling atom: " + str(isotope) + recoil_element
-                       .element.symbol + "\n")
+            file.write("Recoiling atom: " + str(recoil_element.element.isotope)
+                       + recoil_element.element.symbol + "\n")
 
             file.write("Recoiling material distribution: " + recoil_file + "\n")
 
