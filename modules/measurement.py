@@ -256,22 +256,6 @@ class Measurement:
         description = obj_measurement["general"]["description"]
         modification_time = obj_measurement["general"]["modification_time_unix"]
 
-        ion = Element.from_string(obj_measurement["beam"]["ion"])
-        energy = obj_measurement["beam"]["energy"]
-        energy_distribution = obj_measurement["beam"]["energy_distribution"]
-        beam_charge = obj_measurement["beam"]["charge"]
-
-        spot_size = tuple(obj_measurement["beam"]["spot_size"])
-        divergence = obj_measurement["beam"]["divergence"]
-        profile = obj_measurement["beam"]["profile"]
-        fluence = obj_measurement["run"]["fluence"]
-        current = obj_measurement["run"]["current"]
-        run_charge = obj_measurement["run"]["charge"]
-        run_time = obj_measurement["run"]["time"]
-
-        detector_theta = obj_measurement["geometry"]["detector_theta"]
-        target_theta = obj_measurement["geometry"]["target_theta"]
-
         profile_name = obj_profile["general"]["name"]
         profile_description = obj_profile["general"]["description"]
         profile_modification_time = obj_profile["general"][
@@ -296,20 +280,10 @@ class Measurement:
             obj_profile["composition_changes"]["number_of_splits"]
         normalization = obj_profile["composition_changes"]["normalization"]
 
-        beam = Beam(ion, energy, beam_charge, energy_distribution, spot_size,
-                    divergence, profile)
-        run = Run(beam, fluence, current, run_charge, run_time)
-
-        detector = request.default_detector
-        detector.detector_theta = detector_theta
-
-        target = request.default_target
-        target.target_theta = target_theta
-
         return cls(request=request, name=name, description=description,
                    modification_time=modification_time,
-                   run=run, detector=detector,
-                   target=target, profile_name=profile_name,
+                   run=None, detector=None,
+                   target=Target(), profile_name=profile_name,
                    profile_description=profile_description,
                    profile_modification_time=profile_modification_time,
                    number_of_depth_steps=number_of_depth_steps,
@@ -323,7 +297,13 @@ class Measurement:
                    reference_density=reference_density)
 
     def to_file(self, measurement_file_path, profile_file_path):
+        """
+        Save all Measurement parameters into files.
 
+        Args:
+            measurement_file_path: Path to .measurement file.
+            profile_file_path: Path to -profile file.
+        """
         obj_measurement = {}
         obj_profile = {}
 
@@ -415,6 +395,12 @@ class Measurement:
         self.color_scheme = "Default color"
 
     def __make_directories(self, directory):
+        """
+        Make directories.
+
+        Args:
+            directory: Directory to be made under measurement.
+        """
         new_dir = os.path.join(self.directory, directory)
         if not os.path.exists(new_dir):
             os.makedirs(new_dir)
