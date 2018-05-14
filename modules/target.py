@@ -140,21 +140,22 @@ class Target:
         with open(target_file_path, "w") as file:
             json.dump(obj, file, indent=4)
 
-        # Read .measurement to obj to update only target angles
-        if os.path.exists(measurement_file_path):
-            obj = json.load(open(measurement_file_path))
-            try:
-                obj["geometry"]["target_theta"] = self.target_theta
-            except KeyError:
-                obj["geometry"] = {
-                    "target_theta": self.target_theta
+        if measurement_file_path is not None:
+            # Read .measurement to obj to update only target angles
+            if os.path.exists(measurement_file_path):
+                obj = json.load(open(measurement_file_path))
+                try:
+                    obj["geometry"]["target_theta"] = self.target_theta
+                except KeyError:
+                    obj["geometry"] = {
+                        "target_theta": self.target_theta
+                    }
+            else:
+                obj = {
+                    "geometry": {
+                        "target_theta": self.target_theta
+                    }
                 }
-        else:
-            obj = {
-                "geometry": {
-                    "target_theta": self.target_theta
-                }
-            }
 
-        with open(measurement_file_path, "w") as file:
-            json.dump(obj, file, indent=4)
+            with open(measurement_file_path, "w") as file:
+                json.dump(obj, file, indent=4)

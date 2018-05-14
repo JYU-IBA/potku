@@ -264,8 +264,11 @@ class MCERD:
                     count += 1
 
         with open(recoil_file, "w") as file_rec:
+            file_rec.write(
+                "0.00 0.000001\n10.00 0.000001\n")
             for point in recoil_element.get_points():
                 file_rec.write(
-                    str(point.get_x()) + " " + str(point.get_y()) + "\n")
+                    str(round(point.get_x() + 10.01, 2)) + " " +
+                    str(round(point.get_y(), 4)) + "\n")
 
         return recoil_file
