@@ -3,6 +3,9 @@
 Created on 25.4.2018
 Updated on 6.5.2018
 """
+from dialogs.energy_spectrum import EnergySpectrumWidget, \
+    EnergySpectrumParamsDialog
+from modules.energy_spectrum import EnergySpectrum
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
@@ -355,6 +358,12 @@ class ElementSimulation:
 
     def calculate_espe(self):
         """
-        Calculate the energy spectrum from the mcred result file.
+        Calculate the energy spectrum from the MCERD result file.
         """
         self.get_espe = GetEspe(self.espe_settings, self.mcerd_objects)
+
+    def plot_spectrum(self):
+        """
+        Plots simulated energy spectrum.
+        """
+        EnergySpectrumParamsDialog(self)
