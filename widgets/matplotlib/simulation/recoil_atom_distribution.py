@@ -156,6 +156,8 @@ class ElementWidget(QtWidgets.QWidget):
     def __init__(self, element, icon_manager):
         super().__init__()
 
+        self.icon_manager = icon_manager
+
         horizontal_layout = QtWidgets.QHBoxLayout()
 
         self._radio_button = QtWidgets.QRadioButton()
@@ -188,9 +190,9 @@ class ElementWidget(QtWidgets.QWidget):
         for file in self.element_simulation.spectra:
             data = general.read_espe_file(file)
             self.energy_spectrum_widget = EnergySpectrumWidget(
-                self,
-                data,
-                self.element_simulation.bin_width)
+                parent=self,
+                width=self.element_simulation.bin_width,
+                energy_spectrum_data=data)
 
 
 class ElementManager:

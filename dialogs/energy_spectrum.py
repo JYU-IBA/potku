@@ -41,7 +41,7 @@ from modules.element import Element
 from modules.energy_spectrum import EnergySpectrum
 from modules.null import Null
 from widgets.matplotlib.measurement.energy_spectrum import \
-    MatplotlibEnergySpectrumWidget
+    MatplotlibEnergySpectrumWidget as MeasurementMatplotlibEnergySpectrumWidget
 
 
 class EnergySpectrumParamsDialog(QtWidgets.QDialog):
@@ -106,7 +106,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.spectra = []
             for file in os.listdir(self.parent.directory):
                 if file.endswith(".erd"):
-                    item = QtWidgets.QTreeWidgetItem()
+                    item = QtWidgets.QTreeWidgetItem(t status)
                     item.setText(0, file)
                     item.setCheckState(0, QtCore.Qt.Unchecked)
                     self.ui.treeWidget.addTopLevelItem(item)
@@ -293,8 +293,14 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                         key = "{0}.{1}.{2}".format(split[1], split[2], split[3])
                         rbs_list[key] = get_scatter_element(cut)
 
+                # Graph in matplotlib widget and add to window
+                self.matplotlib = MatplotlibEnergySpectrumWidget(
+                    self,
+                    self.energy_spectrum_data,
+                    rbs_list)
+
             # Graph in matplotlib widget and add to window
-            self.matplotlib = MatplotlibEnergySpectrumWidget(
+            self.matplotlib = widgets.simulation.MatplotlibEnergySpectrumWidget(
                 self,
                 self.energy_spectrum_data,
                 rbs_list)
