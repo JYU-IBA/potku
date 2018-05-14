@@ -5,6 +5,8 @@ Updated on 28.3.2018
 """
 from PyQt5.QtGui import QIcon
 
+from dialogs.energy_spectrum import EnergySpectrumWidget
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 
@@ -169,7 +171,7 @@ class ElementWidget(QtWidgets.QWidget):
         draw_spectrum_button = QtWidgets.QPushButton()
         draw_spectrum_button.setIcon(QIcon(
             "ui_icons/potku/energy_spectrum_icon.svg"))
-        draw_spectrum_button.sizePolicy(QtWidgets.QSizePolicy.Fixed,
+        draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                         QtWidgets.QSizePolicy.Fixed)
         draw_spectrum_button.clicked.connect(self.plot_spectrum)
 
@@ -183,6 +185,12 @@ class ElementWidget(QtWidgets.QWidget):
 
     def plot_spectrum(self):
         self.element_simulation.plot_spectrum()
+        for file in self.element_simulation.spectra:
+            data = general.read_espe_file(file)
+            self.energy_spectrum_widget = EnergySpectrumWidget(
+                self,
+                data,
+                self.element_simulation.bin_width)
 
 
 class ElementManager:

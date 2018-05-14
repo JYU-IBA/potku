@@ -101,9 +101,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             header_item.setText(0, "Calculated energy spectra")
             self.ui.treeWidget.setHeaderItem(header_item)
 
-            self.ui.pushButton_OK.clicked.connect(self.close)
+            self.ui.pushButton_OK.clicked.connect(self.__get_selected_spectra)
 
-            for file in os.listdir(parent.directory):
+            self.spectra = []
+            for file in os.listdir(self.parent.directory):
                 if file.endswith(".erd"):
                     item = QtWidgets.QTreeWidgetItem()
                     item.setText(0, file)
@@ -111,6 +112,20 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     self.ui.treeWidget.addTopLevelItem(item)
 
             self.exec_()
+
+    def __get_selected_spectra(self):
+        """Reads selected spectra from dialog.
+        """
+        root = self.ui.treeWidget.invisibleRootItem()
+        child_count = root.childCount()
+        for i in range(child_count):
+            item = root.child(i)
+            if item.checkState(0):
+                self.spectra.append(os.path.join(self.parent.directory,
+                                                 item.text(0)))
+        self.bin_width = self.ui.histogramTicksDoubleSpinBox.value()
+
+        self.close()
 
     def __accept_params(self):
         """Accept given parameters and cut files.
@@ -223,8 +238,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     """
     save_file = "widget_energy_spectrum.save"
 
-    def __init__(self, parent=None, use_cuts=None, width=None, simulation=None,
-                 data=None):
+    def __init__(self, parent=None, use_cuts=None, width=None,
+                 energy_spectrum_data=None):
         """Inits widget.
         
         Args:
@@ -236,43 +251,47 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             super().__init__()
             self.parent = parent
             self.icon_manager = parent.icon_manager
-            self.measurement = self.parent.measurement
-            self.use_cuts = use_cuts
             self.width = width
-            if self.measurement.statusbar:
-                self.progress_bar = QtWidgets.QProgressBar()
-                self.measurement.statusbar.addWidget(self.progress_bar, 1)
-                self.progress_bar.show()
-                QtCore.QCoreApplication.processEvents(
-                    QtCore.QEventLoop.AllEvents)
-                # Mac requires event processing to show progress bar and its 
-                # process.
-            else:
-                self.progress_bar = None
+            self.energy_spectrum_data = energy_spectrum_data
+
             self.ui = uic.loadUi(os.path.join("ui_files",
                                               "ui_energy_spectrum.ui"),
                                  self)
             title = "{0} - Bin Width: {1}".format(self.ui.windowTitle(), width)
             self.ui.setWindowTitle(title)
-
-            # Generate new tof.in file for external programs
-            self.measurement.generate_tof_in()
-            # Do energy spectrum stuff on this
-            self.energy_spectrum = EnergySpectrum(self.measurement,
-                                                  use_cuts,
-                                                  width,
-                                                  progress_bar=self.progress_bar)
-            self.energy_spectrum_data = self.energy_spectrum.calculate_spectrum()
-
-            # Check for RBS selections.
             rbs_list = {}
-            for cut in self.use_cuts:
-                filename = os.path.basename(cut)
-                split = filename.split(".")
-                if is_rbs(cut):
-                    # This should work for regular cut and split.
-                    key = "{0}.{1}.{2}".format(split[1], split[2], split[3])
-                    rbs_list[key] = get_scatter_element(cut)
+
+            if hasattr(self.parent, "measurement"):
+                self.measurement = self.parent.measurement
+                self.use_cuts = use_cuts
+                if self.measurement.statusbar:
+                    self.progress_bar = QtWidgets.QProgressBar()
+                    self.measurement.statusbar.addWidget(self.progress_bar, 1)
+                    self.progress_bar.show()
+                    QtCore.QCoreApplication.processEvents(
+                        QtCore.QEventLoop.AllEvents)
+                    # Mac requires event processing to show progress bar and its
+                    # process.
+                else:
+                    self.progress_bar = None
+
+                # Generate new tof.in file for external programs
+                self.measurement.generate_tof_in()
+                # Do energy spectrum stuff on this
+                self.energy_spectrum = EnergySpectrum(self.measurement,
+                                                      use_cuts,
+                                                      width,
+                                                      progress_bar=self.progress_bar)
+                self.energy_spectrum_data = self.energy_spectrum.calculate_spectrum()
+
+                # Check for RBS selections.
+                for cut in self.use_cuts:
+                    filename = os.path.basename(cut)
+                    split = filename.split(".")
+                    if is_rbs(cut):
+                        # This should work for regular cut and split.
+                        key = "{0}.{1}.{2}".format(split[1], split[2], split[3])
+                        rbs_list[key] = get_scatter_element(cut)
 
             # Graph in matplotlib widget and add to window
             self.matplotlib = MatplotlibEnergySpectrumWidget(
@@ -292,7 +311,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
         finally:
-            if self.progress_bar:
+            if hasattr(self, "progress_bar"):
                 self.measurement.statusbar.removeWidget(self.progress_bar)
                 self.progress_bar.hide()
 
