@@ -152,7 +152,7 @@ class ElementWidget(QtWidgets.QWidget):
 
         horizontal_layout = QtWidgets.QHBoxLayout()
 
-        self._radio_button = QtWidgets.QRadioButton()
+        self.radio_button = QtWidgets.QRadioButton()
 
         if element.isotope:
             isotope_superscript = general.to_superscript(str(element.isotope))
@@ -160,18 +160,15 @@ class ElementWidget(QtWidgets.QWidget):
         else:
             button_text = element.symbol
 
-        self._radio_button.setText(button_text)
+        self.radio_button.setText(button_text)
 
         spinbox = QtWidgets.QSpinBox()
         spinbox.setToolTip("Number of processes used in simulation")
 
-        horizontal_layout.addWidget(self._radio_button)
+        horizontal_layout.addWidget(self.radio_button)
         horizontal_layout.addWidget(spinbox)
 
         self.setLayout(horizontal_layout)
-
-    def get_radio_button(self):
-        return self._radio_button
 
 
 class ElementManager:
@@ -218,7 +215,7 @@ class ElementManager:
 
     def get_radio_button(self, element_simulation):
         return element_simulation.recoil_element.widget\
-            .get_radio_button()
+            .radio_button
 
 
 class RecoilAtomDistributionWidget(MatplotlibWidget):
@@ -271,7 +268,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum,
                                   QtWidgets.QSizePolicy.Expanding))
 
-        self.parent_ui.addPushButton.clicked.connect(self.add_element)
+        self.parent_ui.addPushButton.clicked.connect(self.add_element_with_dialog)
         self.parent_ui.removePushButton.clicked.connect(
             self.remove_current_element)
         self.parent_ui.settingsPushButton.clicked.connect(
@@ -426,29 +423,36 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         else:
             self.parent_ui.elementInfoWidget.show()
 
-    def add_element(self):
+    def add_element_with_dialog(self):
         dialog = RecoilElementSelectionDialog(self)
         if dialog.isOk:
-            # Create new ElementSimulation
-            element_simulation = self.element_manager.add_element_simulation(
-                modules.element.Element(dialog.element, dialog.isotope))
-
-            # Add simulation controls widget
-            simulation_controls_widget = SimulationControlsWidget(
-                element_simulation)
-            simulation_controls_widget.element_simulation = element_simulation
-            self.tab.ui.contentsLayout.addWidget(simulation_controls_widget)
-
-            # Add recoil element widget
-            recoil_element_widget = element_simulation.recoil_element\
-                .widget
-
-            self.radios.addButton(recoil_element_widget.get_radio_button())
-            self.recoil_vertical_layout.addWidget(recoil_element_widget)
+            element_simulation = self.add_element(modules.element.Element(
+                dialog.element, dialog.isotope))
 
             if self.current_recoil_element is None:
                 self.current_recoil_element = element_simulation.recoil_element
-                recoil_element_widget.get_radio_button().setChecked(True)
+                element_simulation.recoil_element.widget.radio_button\
+                    .setChecked(True)
+
+    def add_element(self, element):
+        # Create new ElementSimulation
+        element_simulation = self.element_manager\
+            .add_element_simulation(element)
+
+        # Add simulation controls widget
+        simulation_controls_widget = SimulationControlsWidget(
+            element_simulation)
+        simulation_controls_widget.element_simulation = element_simulation
+        self.tab.ui.contentsLayout.addWidget(simulation_controls_widget)
+
+        # Add recoil element widget
+        recoil_element_widget = element_simulation.recoil_element\
+            .widget
+
+        self.radios.addButton(recoil_element_widget.radio_button)
+        self.recoil_vertical_layout.addWidget(recoil_element_widget)
+
+        return element_simulation
 
     def remove_element(self, element_simulation):
         self.element_manager.remove_element_simulation(element_simulation)
@@ -486,15 +490,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                         already_exists = True
                         break
                 if not already_exists:
-                    new_element_simulation = self.element_manager\
-                        .add_element_simulation(layer_element)
-                    new_recoil_element_widget = new_element_simulation\
-                        .recoil_element.widget
-
-                    self.radios.addButton(new_recoil_element_widget
-                                          .get_radio_button())
-                    self.recoil_vertical_layout.addWidget(
-                        new_recoil_element_widget)
+                    self.add_element(layer_element)
 
     def on_draw(self):
         """Draw method for matplotlib.
