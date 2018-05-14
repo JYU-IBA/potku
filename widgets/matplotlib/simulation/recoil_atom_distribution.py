@@ -167,7 +167,10 @@ class ElementWidget(QtWidgets.QWidget):
         self._radio_button.setText(button_text)
 
         draw_spectrum_button = QtWidgets.QPushButton()
-        draw_spectrum_button.setIcon(QIcon("ui_icons/potku/energy_spectrum.svg"))
+        draw_spectrum_button.setIcon(QIcon(
+            "ui_icons/potku/energy_spectrum_icon.svg"))
+        draw_spectrum_button.sizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                        QtWidgets.QSizePolicy.Fixed)
         draw_spectrum_button.clicked.connect(self.plot_spectrum)
 
         horizontal_layout.addWidget(self._radio_button)
