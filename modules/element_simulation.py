@@ -45,7 +45,7 @@ class ElementSimulation:
                 "recoil_element", "recoil_atoms", "mcerd_objects", "get_espe", \
                 "channel_width", "reference_density", "beam", "target", \
                 "detector", "__command", "__process", "settings", \
-                "espe_settings", "description", "run"
+                "espe_settings", "description", "run", "spectra", "bin_width"
 
     def __init__(self, directory, request, recoil_element, beam=Beam(),
                  target=Target(),
@@ -128,6 +128,8 @@ class ElementSimulation:
         # simulations that belong together (with different seed numbers)
         self.mcerd_objects = {}
         self.get_espe = None
+        self.spectra = []
+        self.bin_width = 0.1
 
         self.settings = {
             "simulation_type": self.simulation_type,
@@ -367,4 +369,6 @@ class ElementSimulation:
         """
         Plots simulated energy spectrum.
         """
-        EnergySpectrumParamsDialog(self)
+        dialog = EnergySpectrumParamsDialog(self)
+        self.spectra = dialog.spectra
+        self.bin_width = dialog.bin_width
