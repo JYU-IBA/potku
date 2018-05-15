@@ -3,6 +3,8 @@
 Created on 27.4.2018
 Updated on 2.5.2018
 """
+import subprocess
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
@@ -67,30 +69,33 @@ class GetEspe:
                 value.recoil_file) - 3] + "simu"
             # output file has the same name as recoil file
 
-        self.__beam = self.__settings["beam"]
-        self.__detector = self.__settings["detector"]
-        self.__target = self.__settings["target"]
-        self.__channel_width = self.__settings["ch"]
-        self.__fluence = self.__settings["fluence"]  # from Run object
-        self.__timeres = self.__settings["timeres"]
-        self.__density = self.__settings["reference_density"]
-        self.__solid = self.__settings["solid"]
+        self.__beam = settings["beam"]
+        self.__detector = settings["detector"]
+        self.__target = settings["target"]
+        self.__channel_width = settings["ch"]
+        self.__fluence = settings["fluence"]  # from Run object
+        self.__timeres = settings["timeres"]
+        self.__density = settings["reference_density"]
+        self.__solid = settings["solid"]
 
-        toflen = self.__detector.foils[self.__detector.tof_foils[0]].distance
-        toflen -= self.__detector.foils[self.__detector.tof_foils[1]].distance
+        toflen = self.__detector.foils[self.__detector.tof_foils[1]].distance
+        toflen -= self.__detector.foils[self.__detector.tof_foils[0]].distance
 
-        self.__params = "-ch " + str(self.__channel_width) + " -dist " + \
-                        self.__recoil_file + " -timeres" + self.__timeres +\
-                        " -toflen " + str(toflen) + \
-                        " -beam " + str(self.__beam.ion.isotope) + \
-                        self.__beam.ion.symbol + "-dose " + str(self.__fluence)\
-                        + " -energy " + str(self.__beam.energy) + " -theta " + \
-                        str(self.__detector.detector_theta) + " -tangle " + \
-                        str(self.__target.target_theta) + " -solid" + \
-                        self.__solid + " -density " + \
-                        self.__density
+        self.__params = "-ch " + str(self.__channel_width) + " -dist " \
+                        + self.__recoil_file + " -timeres " \
+                        + str(self.__timeres) \
+                        + " -toflen " + str(toflen) + " -beam " \
+                        + str(self.__beam.ion.isotope) \
+                        + self.__beam.ion.symbol \
+                        + " -dose " + str(self.__fluence) + " -energy " \
+                        + str(self.__beam.energy) + " -theta " \
+                        + str(self.__detector.detector_theta) + " -tangle " \
+                        + str(self.__target.target_theta) + " -solid " \
+                        + str(self.__solid) + " -density " + str(self.__density)
 
-    def run(self):
+        self.run_get_espe()
+
+    def run_get_espe(self):
         command = ("type " if platform.system() == "Windows" else "cat ") + \
                   self.__result_files + "| " + os.path.join(
             "external", "Potku-bin", "get_espe" +
@@ -100,4 +105,4 @@ class GetEspe:
                                       else "_mac ")) + self.__params + " > " + \
                   self.output_file
 
-        os.subprocess.call(command, shell=True)
+        subprocess.call(command, shell=True)

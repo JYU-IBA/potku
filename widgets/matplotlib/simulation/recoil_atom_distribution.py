@@ -5,6 +5,9 @@ Updated on 28.3.2018
 """
 from PyQt5.QtGui import QIcon
 
+from dialogs.energy_spectrum import EnergySpectrumParamsDialog, \
+    EnergySpectrumWidget
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 
@@ -149,10 +152,15 @@ class RecoilElement:
 
 
 class ElementWidget(QtWidgets.QWidget):
-    """Class for creating an element widget for the recoil atom distribution."""
+    """Class for creating an element widget for the recoil atom distribution.
+    Args:
+        parent: A SimulationTabWidget.
+        """
 
-    def __init__(self, element, icon_manager):
+    def __init__(self, parent, element, icon_manager):
         super().__init__()
+
+        self.parent = parent
 
         horizontal_layout = QtWidgets.QHBoxLayout()
 
@@ -169,7 +177,7 @@ class ElementWidget(QtWidgets.QWidget):
         draw_spectrum_button = QtWidgets.QPushButton()
         draw_spectrum_button.setIcon(QIcon(
             "ui_icons/potku/energy_spectrum_icon.svg"))
-        draw_spectrum_button.sizePolicy(QtWidgets.QSizePolicy.Fixed,
+        draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                         QtWidgets.QSizePolicy.Fixed)
         draw_spectrum_button.clicked.connect(self.plot_spectrum)
 
@@ -182,7 +190,12 @@ class ElementWidget(QtWidgets.QWidget):
         return self._radio_button
 
     def plot_spectrum(self):
-        self.element_simulation.plot_spectrum()
+        dialog = EnergySpectrumParamsDialog(self.parent)
+        if dialog.result_files:
+            self.parent.energy_spectrum_widget = EnergySpectrumWidget(
+                parent=self.parent, use_cuts=dialog.result_files,
+                bin_width=dialog.bin_width)
+            self.parent.add_widget(self.parent.energy_spectrum_widget)
 
 
 class ElementManager:
@@ -191,9 +204,13 @@ class ElementManager:
     A Simulation can have 0...n ElementSimulations.
     Each ElementSimulation has 1 RecoilElement.
     Each RecoilElement has 1 Element, 1 ElementWidget and 2...n Points.
+
+    Args:
+        parent: A RecoilAtomDistributionWidget.
     """
 
-    def __init__(self, icon_manager, simulation):
+    def __init__(self, parent, icon_manager, simulation):
+        self.parent = parent
         self.icon_manager = icon_manager
         self.simulation = simulation
         self.element_simulations = self.simulation.element_simulations
@@ -217,7 +234,7 @@ class ElementManager:
         for xy in xys:
             points.append(Point(xy))
 
-        widget = ElementWidget(element, self.icon_manager)
+        widget = ElementWidget(self.parent, element, self.icon_manager)
         recoil_element = RecoilElement(element, points, widget)
         element_simulation = self.simulation.add_element_simulation(
             recoil_element)
@@ -266,7 +283,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.tab = tab
 
         self.current_recoil_element = None
-        self.element_manager = ElementManager(self.__icon_manager, simulation)
+        self.element_manager = ElementManager(self.tab, self.__icon_manager,
+                                              simulation)
         self.target = target
         self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
 

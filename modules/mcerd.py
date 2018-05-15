@@ -58,8 +58,8 @@ class MCERD:
 
         # The recoil file and erd file are later passed to get_espe.
         self.recoil_file = self.__create_mcerd_files()
-        self.erd_file = os.path.join(self.__tmp, self.__hash + "." +
-                                     str(self.__settings["seed_number"]) +
+        self.result_file = os.path.join(self.__tmp, self.__hash + "." +
+                                        str(self.__settings["seed_number"]) +
                                      ".erd")
 
         # The command that is used to start the MCERD process.
