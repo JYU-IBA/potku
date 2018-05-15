@@ -80,18 +80,21 @@ class GetEspe:
 
         toflen = self.__detector.foils[self.__detector.tof_foils[1]].distance
         toflen -= self.__detector.foils[self.__detector.tof_foils[0]].distance
+        toflen_in_meters = toflen / 1000
 
-        self.__params = "-ch " + str(self.__channel_width) + " -dist " \
-                        + self.__recoil_file + " -timeres " \
-                        + str(self.__timeres) \
-                        + " -toflen " + str(toflen) + " -beam " \
-                        + str(self.__beam.ion.isotope) \
-                        + self.__beam.ion.symbol \
-                        + " -dose " + str(self.__fluence) + " -energy " \
-                        + str(self.__beam.energy) + " -theta " \
-                        + str(self.__detector.detector_theta) + " -tangle " \
-                        + str(self.__target.target_theta) + " -solid " \
-                        + str(self.__solid) + " -density " + str(self.__density)
+        self.__params = "-beam " + str(self.__beam.ion.isotope) + \
+                         self.__beam.ion.symbol \
+                        + " -energy " + str(self.__beam.energy) \
+                        + " -theta " + str(self.__detector.detector_theta) \
+                        + " -tangle " + str(self.__target.target_theta) \
+                        + " -timeres " + str(self.__timeres) \
+                        + " -toflen " + str(toflen_in_meters) \
+                        + " -solid " + str(self.__solid) \
+                        + " -dose " + str(self.__fluence) \
+                        + " -avemass" \
+                        + " -density " + str(self.__density) \
+                        + " -dist " + self.__recoil_file \
+                        + " -ch " + str(self.__channel_width) \
 
         self.run_get_espe()
 
