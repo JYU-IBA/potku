@@ -221,7 +221,7 @@ def read_espe_file(espe_file):
     lines = load_file(espe_file)
     if not lines:
         # TODO Handle exception when file can not be read.
-        return
+        return []
     data = []
     for line in lines:
         data_point = line.strip().split()
