@@ -34,14 +34,15 @@ from PyQt5 import QtCore, uic, QtWidgets
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog, EnergySpectrumWidget
 from dialogs.measurement.depth_profile import DepthProfileDialog, DepthProfileWidget
 from dialogs.measurement.element_losses import ElementLossesDialog, ElementLossesWidget
-from dialogs.measurement.settings import CalibrationSettings
-from dialogs.measurement.settings import DepthProfileSettings
-from dialogs.measurement.settings import MeasurementUnitSettings
+from dialogs.measurement.settings_old import CalibrationSettings
+from dialogs.measurement.settings_old import DepthProfileSettings
+from dialogs.measurement.settings_old import MeasurementUnitSettings
 from modules.element import Element
 from modules.null import Null
 from modules.ui_log_handlers import customLogHandler
 from widgets.log import LogWidget
 from widgets.measurement.tofe_histogram import TofeHistogramWidget
+from dialogs.measurement.settings import MeasurementSettingsDialog
 
 
 class MeasurementTabWidget(QtWidgets.QWidget):
@@ -71,9 +72,6 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         self.depth_profile_widget = Null()
         # self.check_previous_state_files()  # For above three.
 
-        # Hide the measurement specific settings buttons
-        self.ui.settingsFrame.setVisible(False)
-
         self.ui.saveCutsButton.clicked.connect(self.measurement_save_cuts)
         self.ui.analyzeElementLossesButton.clicked.connect(
             lambda: self.open_element_losses(self))
@@ -81,13 +79,9 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             lambda: self.open_energy_spectrum(self))
         self.ui.createDepthProfileButton.clicked.connect(
             lambda: self.open_depth_profile(self))
-        self.ui.measuringUnitSettingsButton.clicked.connect(
-            self.open_measuring_unit_settings)
-        self.ui.depthProfileSettingsButton.clicked.connect(
-            self.open_depth_profile_settings)
-        self.ui.calibrationSettingsButton.clicked.connect(
-            self.open_calibration_settings)
         self.ui.command_master.clicked.connect(self.__master_issue_commands)
+        self.ui.openSettingsButton.clicked.connect(lambda:
+                                                   self.__open_settings())
 
         self.data_loaded = False
         self.panel_shown = True
@@ -349,20 +343,10 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         # Do for all slaves if master.
         self.obj.request.save_cuts(self.obj)
 
-    def open_measuring_unit_settings(self):
+    def __open_settings(self):
         """Opens measurement settings dialog.
         """
-        MeasurementUnitSettings(self.obj.measurement_settings)
-
-    def open_depth_profile_settings(self):
-        """Opens depth profile settings dialog.
-        """
-        DepthProfileSettings(self.obj.measurement_settings)
-
-    def open_calibration_settings(self):
-        """Opens calibration settings dialog.
-        """
-        CalibrationSettings(self.obj)
+        MeasurementSettingsDialog(self.obj, self.icon_manager)
 
     def open_depth_profile(self, parent):
         """Opens depth profile dialog.
@@ -501,11 +485,6 @@ class MeasurementTabWidget(QtWidgets.QWidget):
     def __set_icons(self):
         """Adds icons to UI elements.
         """
-        self.icon_manager.set_icon(self.ui.measuringUnitSettingsButton,
-                                   "measuring_unit_settings.svg")
-        self.icon_manager.set_icon(self.ui.calibrationSettingsButton,
-                                   "calibration_settings.svg")
-        self.icon_manager.set_icon(self.ui.depthProfileSettingsButton, "gear.svg")
         self.icon_manager.set_icon(self.ui.makeSelectionsButton,
                                    "amarok_edit.svg", size=(30, 30))
         self.icon_manager.set_icon(self.ui.saveCutsButton,
@@ -516,7 +495,5 @@ class MeasurementTabWidget(QtWidgets.QWidget):
                                    "energy_spectrum_icon.svg", size=(30, 30))
         self.icon_manager.set_icon(self.ui.createDepthProfileButton,
                                    "depth_profile.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.hideShowSettingsButton,
-                                   "show_icon.svg", size=(30, 30))
         self.icon_manager.set_icon(self.ui.command_master,
                                    "editcut.svg", size=(30, 30))

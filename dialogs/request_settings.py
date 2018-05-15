@@ -44,7 +44,7 @@ from modules.general_functions import open_file_dialog
 from modules.general_functions import save_file_dialog
 from modules.input_validator import InputValidator
 from modules.measuring_settings import MeasuringSettings
-from widgets.depth_profile_settings import DepthProfileSettingsWidget
+from widgets.profile_settings import ProfileSettingsWidget
 from widgets.detector_settings import DetectorSettingsWidget
 from widgets.measurement.settings import MeasurementSettingsWidget
 from widgets.simulation.settings import SimulationSettingsWidget
@@ -87,10 +87,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_measurement)
         self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
-        self.measurement_settings_widget.ui.loadButton.clicked \
-            .connect(lambda: self.__load_file("MEASURING_UNIT_SETTINGS"))
-        self.measurement_settings_widget.ui.saveButton.clicked \
-            .connect(lambda: self.__save_file("MEASUREMENT_SETTINGS"))
         self.measurement_settings_widget.ui.beamIonButton.clicked.connect(
             lambda: self.__change_element(
                 self.measurement_settings_widget.ui.beamIonButton,
@@ -145,15 +141,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_element_simulation)
 
         # Add depth profile settings view to the settings view
-        self.depth_profile_settings_widget = DepthProfileSettingsWidget()
+        self.depth_profile_settings_widget = ProfileSettingsWidget(
+            self.request.default_measurement)
         self.ui.tabs.addTab(self.depth_profile_settings_widget, "Profile")
 
         self.depth_profile_settings.show(self.depth_profile_settings_widget)
-
-        self.depth_profile_settings_widget.ui.loadButton.clicked.connect(
-            lambda: self.__load_file("DEPTH_PROFILE_SETTINGS"))
-        self.depth_profile_settings_widget.ui.saveButton.clicked.connect(
-            lambda: self.__save_file("DEPTH_PROFILE_SETTINGS"))
 
         # self.depth_profile_settings_widget.ui.depthStepForStoppingLineEdit. \
         #     setValidator(double_validator)
@@ -306,9 +298,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         try:
             self.measurement_settings_widget.update_settings()
 
-            self.request.default_measurement.to_file(os.path.join(
+            self.request.default_measurement.measurement_to_file(os.path.join(
                 self.request.default_measurement.directory,
-                "Default.measurement"), os.path.join(
+                "Default.measurement"))
+            self.request.default_measurement.profile_to_file(os.path.join(
                 self.request.default_measurement.directory, "Default.profile"))
 
             # Detector settings

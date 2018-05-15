@@ -129,12 +129,13 @@ class Request:
                                                    detector=self.default_detector,
                                                    measurement_setting_file_name=
                                                    "Default")
-            self.default_measurement.to_file(os.path.join(
+            self.default_measurement.measurement_to_file(os.path.join(
                 self.default_folder,
                 self.default_measurement.measurement_setting_file_name
-                + ".measurement"),
-                os.path.join(self.default_folder,
-                             self.default_measurement.profile_name + ".profile"))
+                + ".measurement"))
+            self.default_measurement.profile_to_file(os.path.join(
+                self.default_folder,
+                self.default_measurement.profile_name + ".profile"))
 
         try:
             self.default_simulation = Simulation.from_file(self,

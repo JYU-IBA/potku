@@ -182,7 +182,7 @@ class Measurement:
                  depth_step_for_stopping=50, depth_step_for_output=50,
                  depth_for_concentration_from=800,
                  depth_for_concentration_to=1500, channel_width=0.1,
-                 reference_cut="", number_of_splits=10, normalization="first",
+                 reference_cut="", number_of_splits=10, normalization="First",
                  measurement_setting_file_name="Default",
                  measurement_setting_file_description=
                  "This a default measurement setting file."
@@ -323,19 +323,13 @@ class Measurement:
             normalization=normalization,
             reference_density=reference_density)
 
-    def to_file(self, measurement_file_path, profile_file_path):
-
+    def measurement_to_file(self, measurement_file_path):
         obj_measurement = {}
-        obj_profile = {}
 
         obj_measurement["general"] = {}
         obj_measurement["beam"] = {}
         obj_measurement["run"] = {}
         obj_measurement["geometry"] = {}
-        obj_profile["general"] = {}
-        obj_profile["depth_profiles"] = {}
-        obj_profile["energy_spectra"] = {}
-        obj_profile["composition_changes"] = {}
 
         obj_measurement["general"]["name"] = self.measurement_setting_file_name
         obj_measurement["general"]["description"] = \
@@ -362,6 +356,17 @@ class Measurement:
         obj_measurement["geometry"]["target_theta"] = \
             self.request.default_target.target_theta
 
+        with open(measurement_file_path, "w") as file:
+            json.dump(obj_measurement, file, indent=4)
+
+    def profile_to_file(self, profile_file_path):
+        obj_profile = {}
+
+        obj_profile["general"] = {}
+        obj_profile["depth_profiles"] = {}
+        obj_profile["energy_spectra"] = {}
+        obj_profile["composition_changes"] = {}
+
         obj_profile["general"]["name"] = self.profile_name
         obj_profile["general"]["description"] = \
             self.profile_description
@@ -387,9 +392,6 @@ class Measurement:
         obj_profile["composition_changes"]["number_of_splits"] = \
             self.number_of_splits
         obj_profile["composition_changes"]["normalization"] = self.normalization
-
-        with open(measurement_file_path, "w") as file:
-            json.dump(obj_measurement, file, indent=4)
 
         with open(profile_file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
