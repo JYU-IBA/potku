@@ -1,5 +1,8 @@
 # coding=utf-8
 """
+Created on 23.3.2018
+Updated on 11.5.2018
+
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
@@ -45,11 +48,10 @@ class Detector:
                 "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
                 "angle_slope", "angle_offset", "path", "modification_time",\
                 "efficiencies", "efficiency_directory", "timeres", \
-                "detector_theta"
+                "detector_theta", "__measurement_settings_file_path"
 
-    def __init__(self, path, name="Default", description="This a default "
-                                                         "detector setting "
-                                                         "file.",
+    def __init__(self, path, measurement_settings_file_path, name="Default",
+                 description="This a default detector setting file.",
                  modification_time=time.time(), type="TOF",
                  calibration=CalibrationParameters(), foils=[CircularFoil(
                 "Default", 7.0, 256.0, [Layer("First", [Element("C", 12.011,
@@ -71,20 +73,28 @@ class Detector:
 
         Args:
             name: Detector name.
+            measurement_settings_file_path: Path to measurement settings file
+                                            which has detector angles.
             description: Detector description.
             modification_time: Modification time of detector file in Unix time.
             type: Type of detector.
             calibration: Calibration parameters for detector.
             foils: Detector foils.
             tof_foils: List of indexes of ToF foils in foils list.
+            virtual_size: Virtual size of the detector.
+            tof_slope: Tof slope.
+            tof_offset: Tof offset.
+            angle_slope: Angle slope.
+            angle_offset: Angle offset.
             timeres: Time resolution.
-
+            detector_theta: Angle of the detector.
         """
         # With this we get the path of the folder where the
         # .json file needs to go.
         self.path = path
 
         self.name = name
+        self.__measurement_settings_file_path = measurement_settings_file_path
         self.description = description
         self.modification_time = modification_time
         self.type = type
@@ -102,7 +112,8 @@ class Detector:
         self.efficiencies = []
         self.efficiency_directory = None
 
-        self.to_file(os.path.join(self.path))
+        self.to_file(os.path.join(self.path),
+                     self.__measurement_settings_file_path)
 
     def create_folder_structure(self, directory):
         """
@@ -153,14 +164,17 @@ class Detector:
             pass
 
     @classmethod
-    def from_file(cls, file_path):
+    def from_file(cls, detector_file_path, measurement_file_path, request):
         """Initialize Detector from a JSON file.
 
         Args:
-            file_path: A file path to JSON file containing the
-            detector parameters.
+            detector_file_path: A file path to JSON file containing the
+                                detector parameters.
+            measurement_file_path: A file path to measurement settings file
+                                   which has detector angles.
+            request: Request object which has default detector angles.
         """
-        obj = json.load(open(file_path))
+        obj = json.load(open(detector_file_path))
 
         # Below we do conversion from dictionary to Detector object
         name = obj["name"]
@@ -174,7 +188,6 @@ class Detector:
         tof_offset = obj["tof_offset"]
         angle_slope = obj["angle_slope"]
         angle_offset = obj["angle_offset"]
-        detector_theta = obj["detector_theta"]
         tof_foils = obj["tof_foils"]
         foils = []
 
@@ -204,17 +217,43 @@ class Detector:
                                     (foil["size"])[1],
                                     distance, layers, foil["transmission"]))
 
-        return cls(file_path, name, description, modification_time,
-                   detector_type, calibration, foils, tof_foils,
-                   virtual_size, tof_slope,
-                   tof_offset, angle_slope, angle_offset,
-                   timeres, detector_theta)
+        if measurement_file_path.endswith(".measurement"):
+            mes_obj = json.load(open(measurement_file_path))
+            detector_theta = mes_obj["geometry"]["detector_theta"]
+        else:
+            detector_theta = request.default_detector.detector_theta
 
-    def to_file(self, file_path):
+        return cls(path=detector_file_path,
+                   measurement_settings_file_path=measurement_file_path,
+                   name=name,
+                   description=description,
+                   modification_time=modification_time,
+                   type=detector_type, calibration=calibration, foils=foils,
+                   tof_foils=tof_foils,
+                   virtual_size=virtual_size, tof_slope=tof_slope,
+                   tof_offset=tof_offset, angle_slope=angle_slope,
+                   angle_offset=angle_offset,
+                   timeres=timeres, detector_theta=detector_theta)
+
+    def to_file(self, detector_file_path, measurement_file_path):
         """Save detector settings to a file.
 
         Args:
-            file_path: File in which the detector settings will be saved."""
+            detector_file_path: File in which the detector settings will be
+                                saved.
+            measurement_file_path: File in which the detector_theta angle is
+                                   saved.
+        """
+
+        #  Delete possible extra .detector files
+        det_folder = os.path.split(detector_file_path)[0]
+        filename_to_remove = ""
+        for file in os.listdir(det_folder):
+            if file.endswith(".detector"):
+                filename_to_remove = file
+                break
+        if filename_to_remove:
+            os.remove(os.path.join(det_folder, filename_to_remove))
 
         obj = {
             "name": self.name,
@@ -260,7 +299,26 @@ class Detector:
 
             obj["foils"].append(foil_obj)
 
-        with open(file_path, "w") as file:
+        with open(detector_file_path, "w") as file:
+            json.dump(obj, file, indent=4)
+
+        # Read .measurement to obj to update only detector angles
+        if os.path.exists(measurement_file_path):
+            obj = json.load(open(measurement_file_path))
+            try:
+                obj["geometry"]["detector_theta"] = self.detector_theta
+            except KeyError:
+                obj["geometry"] = {
+                    "detector_theta": self.detector_theta
+                }
+        else:
+            obj = {
+                "geometry": {
+                    "detector_theta": self.detector_theta
+                }
+            }
+
+        with open(measurement_file_path, "w") as file:
             json.dump(obj, file, indent=4)
 
 # class ToFDetector(Detector):

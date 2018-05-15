@@ -1,8 +1,11 @@
 # coding=utf-8
 """
 Created on 10.4.2018
+Updated on 11.5.2018
 """
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
+             "\n Sinikka Siironen"
+__version__ = "2.0"
 
 import os
 from PyQt5 import uic, QtWidgets
@@ -16,21 +19,26 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
     def __init__(self, obj):
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
-                                  "ui_request_measurement_settings.ui"), self)
+                                          "ui_request_measurement_settings.ui"),
+                             self)
         self.obj = obj
 
         self.show_settings()
         
     def show_settings(self):
-        if self.obj.run.beam.ion:
+        if self.obj.run:
+            run_object = self.obj.run
+        else:
+            run_object = self.obj.request.default_run
+        if run_object.beam.ion:
             self.ui.beamIonButton.setText(
-                self.obj.run.beam.ion.symbol)
+                run_object.beam.ion.symbol)
             # TODO Check that the isotope is also set.
             self.isotopeComboBox.setEnabled(True)
 
-            masses.load_isotopes(self.obj.run.beam.ion.symbol,
+            masses.load_isotopes(run_object.beam.ion.symbol,
                                  self.ui.isotopeComboBox,
-                                 str(self.obj.run.beam.ion.isotope))
+                                 str(run_object.beam.ion.isotope))
         else:
             self.beamIonButton.setText("Select")
             self.isotopeComboBox.setEnabled(
@@ -46,31 +54,37 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.descriptionPlainTextEdit.setPlainText(
             self.obj.measurement_setting_file_description)
         self.energyDoubleSpinBox.setValue(
-            self.obj.run.beam.energy)
+            run_object.beam.energy)
         self.energyDistDoubleSpinBox.setValue(
-            self.obj.run.beam.energy_distribution)
+            run_object.beam.energy_distribution)
         self.beamChargeSpinBox.setValue(
-            self.obj.run.beam.charge)
+            run_object.beam.charge)
         self.spotSizeXdoubleSpinBox.setValue(
-            self.obj.run.beam.spot_size[0])
+            run_object.beam.spot_size[0])
         self.spotSizeYdoubleSpinBox.setValue(
-            self.obj.run.beam.spot_size[1])
+            run_object.beam.spot_size[1])
         self.divergenceDoubleSpinBox.setValue(
-            self.obj.run.beam.divergence)
+            run_object.beam.divergence)
         self.profileComboBox.setCurrentIndex(
             self.profileComboBox.findText(
-                self.obj.run.beam.profile))
+                run_object.beam.profile))
         self.fluenceDoubleSpinBox.setValue(
-            self.obj.run.fluence)
+            run_object.fluence)
         self.currentDoubleSpinBox.setValue(
-            self.obj.run.current)
+            run_object.current)
         self.timeDoubleSpinBox.setValue(
-            self.obj.run.time)
+            run_object.time)
+
+        if self.obj.detector:
+            detector_object = self.obj.detector
+        else:
+            detector_object = self.obj.request.default_detector
         self.detectorThetaDoubleSpinBox.setValue(
-            self.obj.detector.detector_theta)
+            detector_object.detector_theta)
         # TODO: Fix the angle links to correct values
         self.detectorFiiDoubleSpinBox.setValue(
-            self.obj.detector.detector_theta + 180)
+            detector_object.detector_theta + 180)
+
         self.targetThetaDoubleSpinBox.setValue(
             self.obj.target.target_theta)
         self.targetFiiDoubleSpinBox.setValue(
@@ -98,7 +112,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             self.obj.run.beam.profile = self.profileComboBox.currentText()
             self.obj.run.fluence = self.fluenceDoubleSpinBox.value()
             self.obj.run.current = self.currentDoubleSpinBox.value()
-            self.obj.run.beam_time = self.timeDoubleSpinBox.value()
+            self.obj.run.time = self.timeDoubleSpinBox.value()
             self.obj.detector.detector_theta = self\
                 .detectorThetaDoubleSpinBox.value()
             self.obj.target.target_theta = self\

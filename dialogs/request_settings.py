@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 6.5.2018
+Updated on 13.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -116,8 +116,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.detector_settings_widget.ui.saveButton.clicked \
             .connect(lambda: self.__save_file("DETECTOR_SETTINGS"))
 
-
-
         # Add simulation settings view to the settings view
         self.simulation_settings_widget = SimulationSettingsWidget()
         self.ui.tabs.addTab(self.simulation_settings_widget, "Simulation")
@@ -215,7 +213,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 0].number_of_scaling_ions)
 
     def __load_file(self, settings_type):
-        """Opens file dialog and loads and shows selected ini file's values.
+        """ Opens file dialog and loads and shows selected ini file's values.
 
         Args:
             settings_type: (string) selects which settings file type will be
@@ -317,7 +315,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.detector_settings_widget.update_settings()
 
             self.request.default_detector.to_file(os.path.join(
-                self.request.default_detector_folder, "Default.detector"))
+                self.request.default_detector_folder, "Default.detector"),
+                os.path.join(self.request.default_measurement.directory,
+                             "Default.measurement"))
 
             # Simulation settings
             self.request.default_simulation.name = \
@@ -382,7 +382,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             raise TypeError
 
     def __change_element(self, button, combo_box):
-        """Opens element selection dialog and loads selected element's isotopes
+        """ Opens element selection dialog and loads selected element's isotopes
         to a combobox.
 
         Args:
@@ -397,6 +397,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             masses.load_isotopes(dialog.element, combo_box)
 
     def __enabled_element_information(self):
+        """
+        Change the UI accordingly when an element is selected.
+        """
         self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(True)
         self.measurement_settings_widget.ui.isotopeLabel.setEnabled(True)
         self.ui.OKButton.setEnabled(True)

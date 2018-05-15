@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 3.5.2018
+Updated on 11.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -93,78 +93,82 @@ class Request:
         if not os.path.exists(self.default_folder):
             # Create Default folder under request folder
             os.makedirs(self.default_folder)
+
         # Try reading default objects from Default folder.
-        else:
-            self.default_detector_folder = os.path.join(self.default_folder,
-                                                        "Detector")
-            try:
-                self.default_detector = Detector.from_file(
-                    os.path.join(self.directory,
-                                 self.default_detector_folder,
-                                 "Default.detector"))
-            except FileNotFoundError:
-                # Create Detector folder under Default folder
-                if not os.path.exists(self.default_detector_folder):
-                    os.makedirs(self.default_detector_folder)
-                # Create default detector for request
-                self.default_detector = Detector(
-                    os.path.join(self.default_detector_folder,
-                                 "Default.detector"))
-                self.default_detector.create_folder_structure(
-                    self.default_detector_folder)
+        self.default_detector_folder = os.path.join(self.default_folder,
+                                                    "Detector")
+        default_measurement_file_path = os.path.join(self.default_folder,
+                                                     "Default.measurement")
+        try:
+            self.default_detector = Detector.from_file(
+                os.path.join(self.directory,
+                             self.default_detector_folder,
+                             "Default.detector"),
+                default_measurement_file_path, self)
+        except FileNotFoundError:
+            # Create Detector folder under Default folder
+            if not os.path.exists(self.default_detector_folder):
+                os.makedirs(self.default_detector_folder)
+            # Create default detector for request
+            self.default_detector = Detector(
+                os.path.join(self.default_detector_folder,
+                             "Default.detector"),
+                default_measurement_file_path)
+            self.default_detector.create_folder_structure(
+                self.default_detector_folder)
 
-            try:
-                self.default_measurement = Measurement.from_file(
-                    os.path.join(self.default_folder, "Default.measurement"),
-                    os.path.join(self.default_folder, "Default.profile"),
-                    self)
-            except FileNotFoundError:
-                # Create default measurement for request
-                self.default_measurement = Measurement(self, "Default",
-                                                       run=self.default_run,
-                                                       detector=self.default_detector,
-                                                       measurement_setting_file_name=
-                                                       "Default")
-                self.default_measurement.to_file(os.path.join(
-                    self.default_folder,
-                    self.default_measurement.measurement_setting_file_name
-                    + ".measurement"),
-                    os.path.join(self.default_folder,
-                                 self.default_measurement.profile_name + ".profile"))
+        try:
+            self.default_measurement = Measurement.from_file(
+                os.path.join(self.default_folder, "Default.measurement"),
+                os.path.join(self.default_folder, "Default.profile"),
+                self)
+        except FileNotFoundError:
+            # Create default measurement for request
+            self.default_measurement = Measurement(self, "Default",
+                                                   run=self.default_run,
+                                                   detector=self.default_detector,
+                                                   measurement_setting_file_name=
+                                                   "Default")
+            self.default_measurement.to_file(os.path.join(
+                self.default_folder,
+                self.default_measurement.measurement_setting_file_name
+                + ".measurement"),
+                os.path.join(self.default_folder,
+                             self.default_measurement.profile_name + ".profile"))
 
-            try:
-                self.default_simulation = Simulation.from_file(self,
-                                                               os.path.join(
-                                                                   self.default_folder,
-                                                                   "Default.simulation"))
-            except FileNotFoundError:
-                # Create default simulation for request
-                self.default_simulation = Simulation(os.path.join(
-                    self.default_folder, "Default.simulation"), self)
+        try:
+            self.default_simulation = Simulation.from_file(self,
+                                                           os.path.join(
+                                                               self.default_folder,
+                                                               "Default.simulation"))
+        except FileNotFoundError:
+            # Create default simulation for request
+            self.default_simulation = Simulation(os.path.join(
+                self.default_folder, "Default.simulation"), self)
 
-            try:
-                self.default_element_simulation = \
-                    ElementSimulation.from_file(self,
-                                                os.path.join(
-                                                    self.default_folder,
-                                                    "Default.mcsimu"),
-                                                os.path.join(
-                                                    self.default_folder,
-                                                    "Default.rec"),
-                                                os.path.join(
-                                                    self.default_folder,
-                                                    "Default.profile"))
-            except FileNotFoundError:
-                self.default_element_simulation = ElementSimulation(
-                    self.default_folder,
-                    self,
-                    RecoilElement(
-                        Element.from_string(
-                            "4He 3.0"),
-                        [], None),
-                    name="Default")
-                self.default_simulation.element_simulations.append(
-                    self.default_element_simulation)
+        try:
+            self.default_element_simulation = \
+                ElementSimulation.from_file(self,
+                                            os.path.join(
+                                                self.default_folder,
+                                                "Default.mcsimu"),
+                                            os.path.join(
+                                                self.default_folder,
+                                                "Default.rec"),
+                                            os.path.join(
+                                                self.default_folder,
+                                                "Default.profile"))
+        except FileNotFoundError:
+            self.default_element_simulation = ElementSimulation(
+                self.default_folder,
+                self,
+                RecoilElement(
+                    Element.from_string(
+                        "4He 3.0"),
+                    [], None),
+                name="Default")
+            self.default_simulation.element_simulations.append(
+                self.default_element_simulation)
 
         self.__set_request_logger()
 

@@ -29,7 +29,6 @@ from dialogs.simulation.element_simulation_settings import \
 
 class Point:
     """A 2D point with x and y coordinates."""
-
     def __init__(self, xy):
         """Inits point.
 
@@ -69,7 +68,6 @@ class RecoilElement:
     """An element that has a list of points and a widget. The points are kept
     in ascending order by their x coordinate.
     """
-
     def __init__(self, element, points, widget=None):
         """Inits recoil element.
 
@@ -164,7 +162,7 @@ class ElementWidget(QtWidgets.QWidget):
 
         horizontal_layout = QtWidgets.QHBoxLayout()
 
-        self._radio_button = QtWidgets.QRadioButton()
+        self.radio_button = QtWidgets.QRadioButton()
 
         if element.isotope:
             isotope_superscript = general.to_superscript(str(element.isotope))
@@ -172,7 +170,7 @@ class ElementWidget(QtWidgets.QWidget):
         else:
             button_text = element.symbol
 
-        self._radio_button.setText(button_text)
+        self.radio_button.setText(button_text)
 
         draw_spectrum_button = QtWidgets.QPushButton()
         draw_spectrum_button.setIcon(QIcon(
@@ -181,13 +179,10 @@ class ElementWidget(QtWidgets.QWidget):
                                         QtWidgets.QSizePolicy.Fixed)
         draw_spectrum_button.clicked.connect(self.plot_spectrum)
 
-        horizontal_layout.addWidget(self._radio_button)
+        horizontal_layout.addWidget(self.radio_button)
         horizontal_layout.addWidget(draw_spectrum_button)
 
         self.setLayout(horizontal_layout)
-
-    def get_radio_button(self):
-        return self._radio_button
 
     def plot_spectrum(self):
         dialog = EnergySpectrumParamsDialog(self.parent)
@@ -247,8 +242,8 @@ class ElementManager:
         self.element_simulations.remove(element_simulation)
 
     def get_radio_button(self, element_simulation):
-        return element_simulation.recoil_element.widget \
-            .get_radio_button()
+        return element_simulation.recoil_element.widget\
+            .radio_button
 
 
 class RecoilAtomDistributionWidget(MatplotlibWidget):
@@ -303,7 +298,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum,
                                   QtWidgets.QSizePolicy.Expanding))
 
-        self.parent_ui.addPushButton.clicked.connect(self.add_element)
+        self.parent_ui.addPushButton.clicked.connect(self.add_element_with_dialog)
         self.parent_ui.removePushButton.clicked.connect(
             self.remove_current_element)
         self.parent_ui.settingsPushButton.clicked.connect(
@@ -422,7 +417,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
     def choose_element(self, button, checked):
         if checked:
-            current_element_simulation = self.element_manager \
+            current_element_simulation = self.element_manager\
                 .get_element_simulation_with_radio_button(button)
             self.current_recoil_element = \
                 current_element_simulation.recoil_element
@@ -449,7 +444,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.parent_ui.referenceDensityLabel.setText(
             "Reference density: " + "{0:1.2f}".
             format(self.current_recoil_element.reference_density)
-            + "e22 at/cm\xb2"
+                   + "e22 at/cm\xb2"
         )
 
     def recoil_element_info_on_switch(self):
@@ -458,29 +453,36 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         else:
             self.parent_ui.elementInfoWidget.show()
 
-    def add_element(self):
+    def add_element_with_dialog(self):
         dialog = RecoilElementSelectionDialog(self)
         if dialog.isOk:
-            # Create new ElementSimulation
-            element_simulation = self.element_manager.add_element_simulation(
-                modules.element.Element(dialog.element, dialog.isotope))
-
-            # Add simulation controls widget
-            simulation_controls_widget = SimulationControlsWidget(
-                element_simulation)
-            simulation_controls_widget.element_simulation = element_simulation
-            self.tab.ui.contentsLayout.addWidget(simulation_controls_widget)
-
-            # Add recoil element widget
-            recoil_element_widget = element_simulation.recoil_element \
-                .widget
-
-            self.radios.addButton(recoil_element_widget.get_radio_button())
-            self.recoil_vertical_layout.addWidget(recoil_element_widget)
+            element_simulation = self.add_element(modules.element.Element(
+                dialog.element, dialog.isotope))
 
             if self.current_recoil_element is None:
                 self.current_recoil_element = element_simulation.recoil_element
-                recoil_element_widget.get_radio_button().setChecked(True)
+                element_simulation.recoil_element.widget.radio_button\
+                    .setChecked(True)
+
+    def add_element(self, element):
+        # Create new ElementSimulation
+        element_simulation = self.element_manager\
+            .add_element_simulation(element)
+
+        # Add simulation controls widget
+        simulation_controls_widget = SimulationControlsWidget(
+            element_simulation)
+        simulation_controls_widget.element_simulation = element_simulation
+        self.tab.ui.contentsLayout.addWidget(simulation_controls_widget)
+
+        # Add recoil element widget
+        recoil_element_widget = element_simulation.recoil_element \
+            .widget
+
+        self.radios.addButton(recoil_element_widget.radio_button)
+        self.recoil_vertical_layout.addWidget(recoil_element_widget)
+
+        return element_simulation
 
     def remove_element(self, element_simulation):
         self.element_manager.remove_element_simulation(element_simulation)
@@ -518,15 +520,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                         already_exists = True
                         break
                 if not already_exists:
-                    new_element_simulation = self.element_manager \
-                        .add_element_simulation(layer_element)
-                    new_recoil_element_widget = new_element_simulation \
-                        .recoil_element.widget
-
-                    self.radios.addButton(new_recoil_element_widget
-                                          .get_radio_button())
-                    self.recoil_vertical_layout.addWidget(
-                        new_recoil_element_widget)
+                    self.add_element(layer_element)
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -667,7 +661,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             else:
                 leftmost_sel_point.set_x(left_neighbor.get_x() + self.x_res)
         elif left_neighbor.get_x() < x < right_neighbor.get_x():
-            leftmost_sel_point.set_x(x)
+                leftmost_sel_point.set_x(x)
         elif left_neighbor.get_x() >= x:
             leftmost_sel_point.set_x(left_neighbor.get_x() + self.x_res)
         elif right_neighbor.get_x() <= x:
@@ -742,7 +736,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                              for i in range(0, len(self.dragged_points) - 1)]
         self.lowest_dr_p_i = 0
         for i in range(1, len(self.dragged_points)):
-            if self.dragged_points[i].get_y() \
+            if self.dragged_points[i].get_y()\
                     < self.dragged_points[self.lowest_dr_p_i].get_y():
                 self.lowest_dr_p_i = i
         self.y_dist_lowest = [self.dragged_points[i].get_y()
@@ -812,7 +806,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 selected_ys.append(point.get_y())
             self.markers_selected.set_data(selected_xs, selected_ys)
             if self.selected_points[0] == \
-                    self.current_recoil_element.get_points()[-1] \
+                    self.current_recoil_element.get_points()[-1]\
                     and self.edit_lock_on:
                 self.x_coordinate_box.setEnabled(False)
             else:
@@ -907,23 +901,23 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if new_coords[-1][0] >= right_neighbor.get_x() - self.x_res:
                 new_coords[-1][0] = right_neighbor.get_x() - self.x_res
                 for i in range(0, len(dr_ps) - 1):
-                    new_coords[i][0] = right_neighbor.get_x() \
+                    new_coords[i][0] = right_neighbor.get_x()\
                                        - self.x_res - self.x_dist_right[i]
         elif right_neighbor is None and left_neighbor is not None:
             if new_coords[0][0] <= left_neighbor.get_x() + self.x_res:
                 new_coords[0][0] = left_neighbor.get_x() + self.x_res
                 for i in range(1, len(dr_ps)):
-                    new_coords[i][0] = left_neighbor.get_x() + self.x_res \
+                    new_coords[i][0] = left_neighbor.get_x() + self.x_res\
                                        + self.x_dist_left[i - 1]
         elif left_neighbor.get_x() + self.x_res >= new_coords[0][0]:
             new_coords[0][0] = left_neighbor.get_x() + self.x_res
             for i in range(1, len(dr_ps)):
-                new_coords[i][0] = left_neighbor.get_x() + self.x_res \
+                new_coords[i][0] = left_neighbor.get_x() + self.x_res\
                                    + self.x_dist_left[i - 1]
         elif right_neighbor.get_x() - self.x_res <= new_coords[-1][0]:
             new_coords[-1][0] = right_neighbor.get_x() - self.x_res
             for i in range(0, len(dr_ps) - 1):
-                new_coords[i][0] = right_neighbor.get_x() - self.x_res \
+                new_coords[i][0] = right_neighbor.get_x() - self.x_res\
                                    - self.x_dist_right[i]
 
         # Check for axis limit collisions:

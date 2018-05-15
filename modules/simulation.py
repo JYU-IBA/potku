@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 27.4.2018
+Updated on 11.5.2018
 
 #TODO Description of Potku and copyright
 #TODO Licence
@@ -25,6 +25,7 @@ __version__ = "2.0"
 import logging
 import os
 import sys
+from modules.detector import Detector
 
 
 class Simulations:
@@ -49,6 +50,13 @@ class Simulations:
         return len(self.simulations) == 0
 
     def get_key_value(self, key):
+        """
+        Args:
+            key: Key of simulation dictionary.
+
+        Return:
+            VReturns value corresponding to key.
+        """
         if key not in self.simulations:
             return None
         return self.simulations[key]
@@ -70,6 +78,9 @@ class Simulations:
         sample_folder, simulation_folder = os.path.split(simulation_folder_path)
         directory_prefix = "MC_simulation_"
         target_extension = ".target"
+        measurement_extension = ".measurement"
+        detector_extension = ".detector"
+        measurement_settings_file = ""
 
         # Create simulation from file
         if os.path.exists(simulation_path):
@@ -78,13 +89,40 @@ class Simulations:
             serial_number = int(simulation_folder[len(directory_prefix):len(
                 directory_prefix) + 2])
             simulation.serial_number = serial_number
+
+            for f in os.listdir(simulation_folder_path):
+                if f.endswith(measurement_extension):
+                    measurement_settings_file = f
+                    simulation.run = Run.from_file(
+                        os.path.join(
+                            simulation.directory, measurement_settings_file))
+                    obj = json.load(open(os.path.join(
+                            simulation.directory, measurement_settings_file)))
+                    simulation.measurement_setting_file_name = obj[
+                        "general"]["name"]
+                    simulation.measurement_setting_file_description = obj[
+                        "general"]["description"]
+                    simulation.modification_time = obj["general"][
+                        "modification_time_unix"]
+                    break
+
+            # Read Detector anf Target information from file.
             for file in os.listdir(simulation_folder_path):
                 if file.endswith(target_extension):
                     simulation.target = Target.from_file(os.path.join(
                         simulation_folder_path, file), os.path.join(
-                        simulation_folder_path, simulation.name +
-                                                ".measurement"))
-                    break
+                        simulation_folder_path,
+                        measurement_settings_file), self.request)
+                if file.startswith("Detector"):
+                    det_folder = os.path.join(simulation_folder_path,
+                                                     "Detector")
+                    for f in os.listdir(det_folder):
+                        if f.endswith(detector_extension):
+                            simulation.detector = Detector.from_file(
+                                os.path.join(det_folder, f),
+                                os.path.join(simulation.directory,
+                                             measurement_settings_file),
+                                self.request)
 
         # Create a new simulation
         else:
