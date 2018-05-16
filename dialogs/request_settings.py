@@ -28,6 +28,8 @@ Dialog for the request settings
 import datetime
 import time
 
+from PyQt5.QtCore import Qt
+
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
@@ -121,16 +123,18 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.simulation_settings_widget = SimulationSettingsWidget()
         self.ui.tabs.addTab(self.simulation_settings_widget, "Simulation")
 
-        self.simulation_settings_widget.ui.generalParametersGroupBox\
+        self.simulation_settings_widget.ui.generalParametersGroupBox \
             .setEnabled(True)
-        self.simulation_settings_widget.ui.physicalParametersGroupBox\
+        self.simulation_settings_widget.ui.physicalParametersGroupBox \
             .setEnabled(True)
         self.simulation_settings_widget.ui.saveButton.clicked \
             .connect(lambda: self.__save_file("SIMULATION_SETTINGS"))
 
         self.request.default_simulation = \
             self.request.default_simulation.from_file(self.request,
-                os.path.join(self.request.default_folder, "Default.simulation"))
+                                                      os.path.join(
+                                                          self.request.default_folder,
+                                                          "Default.simulation"))
         self.request.default_element_simulation = self.request \
             .default_element_simulation.from_file(self.request,
                                                   os.path.join(
@@ -174,42 +178,39 @@ class RequestSettingsDialog(QtWidgets.QDialog):
     def show_settings(self):
         # Simulation settings
         self.simulation_settings_widget.nameLineEdit.setText(
-            self.request.default_simulation.name)
-        self.simulation_settings_widget.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
-                self.request.default_simulation.modification_time)))
+            self.request.default_element_simulation.name)
+        self.simulation_settings_widget.dateLabel.setText(
+            time.strftime("%c %z %Z", time.localtime(
+                self.request.default_element_simulation.modification_time)))
         self.simulation_settings_widget.descriptionPlainTextEdit.setPlainText(
-            self.request.default_simulation.description)
+            self.request.default_element_simulation.description)
         self.simulation_settings_widget.modeComboBox.setCurrentIndex(
             self.simulation_settings_widget.modeComboBox.findText(
-                self.request.default_simulation.element_simulations[
-                    0].simulation_mode))
+                self.request.default_element_simulation.simulation_mode,
+                Qt.MatchFixedString))
         self.simulation_settings_widget.typeOfSimulationComboBox \
             .setCurrentIndex(self.simulation_settings_widget
-            .typeOfSimulationComboBox.findText(self.request
-            .default_simulation.element_simulations[0].simulation_type))
-        self.simulation_settings_widget.minimumScatterAngleDoubleSpinBox\
-            .setValue(self.request.default_simulation.element_simulations[
-                0].minimum_scattering_angle)
-        self.simulation_settings_widget.minimumMainScatterAngleDoubleSpinBox\
-            .setValue(self.request.default_simulation.element_simulations[
-                0].minimum_main_scattering_angle)
+                             .typeOfSimulationComboBox.findText(self.request
+                                    .default_element_simulation.simulation_type,
+                                                           Qt.MatchFixedString))
+        self.simulation_settings_widget.minimumScatterAngleDoubleSpinBox \
+            .setValue(self.request.default_element_simulation
+                      .minimum_scattering_angle)
+        self.simulation_settings_widget.minimumMainScatterAngleDoubleSpinBox \
+            .setValue(self.request.default_element_simulation
+                      .minimum_main_scattering_angle)
         self.simulation_settings_widget.minimumEnergyDoubleSpinBox.setValue(
-            self.request.default_simulation.element_simulations[
-                0].minimum_energy)
+            self.request.default_element_simulation.minimum_energy)
         self.simulation_settings_widget.numberOfIonsSpinBox.setValue(
-            self.request.default_simulation.element_simulations[
-                0].number_of_ions)
+            self.request.default_element_simulation.number_of_ions)
         self.simulation_settings_widget.numberOfPreIonsSpinBox.setValue(
-            self.request.default_simulation.element_simulations[
-                0].number_of_preions)
+            self.request.default_element_simulation.number_of_preions)
         self.simulation_settings_widget.seedSpinBox.setValue(
-            self.request.default_simulation.element_simulations[0].seed_number)
+            self.request.default_element_simulation.seed_number)
         self.simulation_settings_widget.numberOfRecoilsSpinBox.setValue(
-            self.request.default_simulation.element_simulations[
-                0].number_of_recoils)
+            self.request.default_element_simulation.number_of_recoils)
         self.simulation_settings_widget.numberOfScalingIonsSpinBox.setValue(
-            self.request.default_simulation.element_simulations[
-                0].number_of_scaling_ions)
+            self.request.default_element_simulation.number_of_scaling_ions)
 
     def __load_file(self, settings_type):
         """ Opens file dialog and loads and shows selected ini file's values.
@@ -319,44 +320,46 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                              "Default.measurement"))
 
             # Simulation settings
-            self.request.default_simulation.name = \
+            self.request.default_element_simulation.name = \
                 self.simulation_settings_widget.nameLineEdit.text()
-            self.request.default_simulation.description = \
+            self.request.default_element_simulation.description = \
                 self.simulation_settings_widget.descriptionPlainTextEdit. \
                     toPlainText()
-            self.request.default_simulation.element_simulations[
-                0].simulation_type = self.simulation_settings_widget \
-                .typeOfSimulationComboBox.currentText()
-            self.request.default_simulation.element_simulations[
-                0].simulation_mode = self.simulation_settings_widget \
-                .modeComboBox.currentText()
-            self.request.default_simulation.element_simulations[
-                0].number_of_ions = self.simulation_settings_widget \
+            self.request.default_element_simulation \
+                .simulation_type = self.simulation_settings_widget \
+                .typeOfSimulationComboBox.currentText().lower()
+            self.request.default_element_simulation \
+                .simulation_mode = self.simulation_settings_widget \
+                .modeComboBox.currentText().lower()
+            self.request.default_element_simulation \
+                .number_of_ions = self.simulation_settings_widget \
                 .numberOfIonsSpinBox.value()
-            self.request.default_simulation.element_simulations[
-                0].number_of_preions = self.simulation_settings_widget \
+            self.request.default_element_simulation \
+                .number_of_preions = self.simulation_settings_widget \
                 .numberOfPreIonsSpinBox.value()
-            self.request.default_simulation.element_simulations[0].seed_number \
+            self.request.default_element_simulation.seed_number \
                 = self.simulation_settings_widget.seedSpinBox.value()
-            self.request.default_simulation.element_simulations[
-                0].number_of_recoils = self.simulation_settings_widget \
+            self.request.default_element_simulation \
+                .number_of_recoils = self.simulation_settings_widget \
                 .numberOfRecoilsSpinBox.value()
-            self.request.default_simulation.element_simulations[
-                0].number_of_scaling_ions = self.simulation_settings_widget \
+            self.request.default_element_simulation \
+                .number_of_scaling_ions = self.simulation_settings_widget \
                 .numberOfScalingIonsSpinBox.value()
-            self.request.default_simulation.element_simulations[
-                0].minimum_scattering_angle = self.simulation_settings_widget\
+            self.request.default_element_simulation \
+                .minimum_scattering_angle = self.simulation_settings_widget \
                 .minimumScatterAngleDoubleSpinBox.value()
-            self.request.default_simulation.element_simulations[
-                0].minimum_main_scattering_angle = self\
-                .simulation_settings_widget\
+            self.request.default_element_simulation \
+                .minimum_main_scattering_angle = self \
+                .simulation_settings_widget \
                 .minimumMainScatterAngleDoubleSpinBox.value()
-            self.request.default_simulation.element_simulations[
-                0].minimum_energy = self.simulation_settings_widget \
+            self.request.default_element_simulation \
+                .minimum_energy = self.simulation_settings_widget \
                 .minimumEnergyDoubleSpinBox.value()
 
             self.request.default_simulation.to_file(os.path.join(
                 self.request.default_folder, "Default.simulation"))
+            self.request.default_element_simulation.mcsimu_to_file(
+                os.path.join(self.request.default_folder, "Default.mcsimu"))
             # TODO: The .mcsimu file should be saved here
 
             # TODO Values should be checked.
