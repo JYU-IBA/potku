@@ -137,8 +137,9 @@ class Target:
             }
             obj["layers"].append(layer_obj)
 
-        with open(target_file_path, "w") as file:
-            json.dump(obj, file, indent=4)
+        if target_file_path is not None:
+            with open(target_file_path, "w") as file:
+                json.dump(obj, file, indent=4)
 
         if measurement_file_path is not None:
             # Read .measurement to obj to update only target angles

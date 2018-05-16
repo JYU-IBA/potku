@@ -154,6 +154,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_measurement)
         self.ui.tabs.addTab(self.depth_profile_settings_widget, "Profile")
 
+        self.depth_profile_settings.show(self.depth_profile_settings_widget)
+
         self.depth_profile_settings_widget.ui.loadButton.clicked.connect(
             lambda: self.__load_file("DEPTH_PROFILE_SETTINGS"))
         self.depth_profile_settings_widget.ui.saveButton.clicked.connect(
@@ -306,18 +308,24 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.measurement_settings_widget.update_settings()
             self.depth_profile_settings_widget.update_settings()
 
-            self.request.default_measurement.to_file(os.path.join(
+            default_measurement_settings_file = os.path.join(
                 self.request.default_measurement.directory,
-                "Default.measurement"), os.path.join(
-                self.request.default_measurement.directory, "Default.profile"))
+                "Default.measurement")
+            self.request.default_measurement.to_file(
+                default_measurement_settings_file, os.path.join(
+                    self.request.default_measurement.directory,
+                    "Default.profile"))
+            self.request.default_measurement.run.to_file(
+                default_measurement_settings_file)
+            self.request.default_target.to_file(
+                None, default_measurement_settings_file)
 
             # Detector settings
             self.detector_settings_widget.update_settings()
 
             self.request.default_detector.to_file(os.path.join(
                 self.request.default_detector_folder, "Default.detector"),
-                os.path.join(self.request.default_measurement.directory,
-                             "Default.measurement"))
+                default_measurement_settings_file)
 
             # Simulation settings
             self.request.default_element_simulation.name = \
