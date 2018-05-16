@@ -501,7 +501,7 @@ class Selection:
     
     def __init__(self, axes, element_colormap, settings, element=None, isotope=None,
                  element_type="ERD", color=None, points=None, scatter=None,
-                 weight_factor=1, transposed=False):
+                 weight_factor=1.0, transposed=False):
         """Inits Selection class.
         
         Args:
@@ -533,6 +533,10 @@ class Selection:
         self.type = element_type
         self.element = Element(element, isotope)
         self.weight_factor = weight_factor
+        if scatter and scatter != "":
+            self.element_scatter = Element(scatter)
+        else:
+            self.element_scatter = ""
 
         self.events_counted = False
         self.event_count = 0
@@ -747,11 +751,12 @@ class Selection:
             String representing current selection object.
         """
         if self.element:
-            save_string = "{0}    {1}    {2}    {3}    {4}    {5}".format(
+            save_string = "{0}    {1}    {2}    {3}    {4}    {5}    {6}".format(
                 self.type,
                 self.element.symbol,
-                str(self.element.isotope),
+                (str(self.element.isotope) if self.element.isotope else ""),
                 self.weight_factor,
+                self.element_scatter,
                 self.default_color,
                 self.__save_points(is_transposed))
         return save_string

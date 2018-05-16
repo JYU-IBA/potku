@@ -556,7 +556,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         '''
         filename = open_file_dialog(self, self.measurement.directory,
                                     "Load Element Selection",
-                                    "Selection file (*.sel)")
+                                    "Selection file (*.selections)")
         if filename:
             self.measurement.load_selection(filename)
             self.on_draw()

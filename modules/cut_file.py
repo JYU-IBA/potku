@@ -142,7 +142,9 @@ class CutFile:
         """
         if self.element and self.directory and self.data:
             measurement_name_with_prefix = str(pathlib.Path(self.directory).parents[1])
-            measurement_name_start = measurement_name_with_prefix.find('-')
+            # First "-" is in sample name, second in measurement name
+            measurement_name_start = measurement_name_with_prefix.find(
+                "-", measurement_name_with_prefix.find("-") + 1)
             measurement_name = measurement_name_with_prefix[measurement_name_start + 1:]
             if self.is_elem_loss:
                 if not os.path.exists(self.directory):
