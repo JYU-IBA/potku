@@ -52,9 +52,9 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
                                self.targetFiiDoubleSpinBox)
 
         self.nameLineEdit.setText(
-            self.obj.measurement_setting_file_name)
+            self.obj.name)
         self.descriptionPlainTextEdit.setPlainText(
-            self.obj.measurement_setting_file_description)
+            self.obj.description)
         self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             self.obj.modification_time)))
         self.energyDoubleSpinBox.setValue(
@@ -103,8 +103,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             isotope_data = self.isotopeComboBox.itemData(isotope_index)
             self.obj.run.beam.ion = Element(self.beamIonButton.text(),
                 isotope_data[0])
-            self.obj.measurement_setting_file_name = self.nameLineEdit.text()
-            self.obj.measurement_setting_file_description = self\
+            self.obj.name = self.nameLineEdit.text()
+            self.obj.description = self\
                 .descriptionPlainTextEdit.toPlainText()
             self.obj.run.beam.energy = self.energyDoubleSpinBox.value()
             self.obj.run.beam.energy_dist = self.energyDistDoubleSpinBox.value()

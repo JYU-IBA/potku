@@ -182,11 +182,7 @@ class Measurement:
                  depth_step_for_stopping=50, depth_step_for_output=50,
                  depth_for_concentration_from=800,
                  depth_for_concentration_to=1500, channel_width=0.1,
-                 reference_cut="", number_of_splits=10, normalization="first",
-                 measurement_setting_file_name="Default",
-                 measurement_setting_file_description=
-                 "This a default measurement setting file."
-                 ):
+                 reference_cut="", number_of_splits=10, normalization="first"):
         """Initializes a measurement.
 
         Args:
@@ -203,10 +199,6 @@ class Measurement:
         self.run = run
         self.detector = detector
         self.target = target
-
-        self.measurement_setting_file_name = measurement_setting_file_name
-        self.measurement_setting_file_description = \
-            measurement_setting_file_description
 
         self.profile_name = profile_name
         self.profile_description = profile_description
@@ -328,9 +320,9 @@ class Measurement:
         obj_measurement = {}
         obj_profile = {}
 
-        obj_measurement["name"] = self.measurement_setting_file_name
+        obj_measurement["name"] = self.name
         obj_measurement["description"] = \
-            self.measurement_setting_file_description
+            self.description
         obj_measurement["modification_time"] = time.strftime("%c %z %Z",
                                                              time.localtime(
                                                                  time.time()))

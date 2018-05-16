@@ -126,12 +126,10 @@ class Request:
             # Create default measurement for request
             self.default_measurement = Measurement(self, "Default",
                                                    run=self.default_run,
-                                                   detector=self.default_detector,
-                                                   measurement_setting_file_name=
-                                                   "Default")
+                                                 detector=self.default_detector)
             self.default_measurement.to_file(os.path.join(
                 self.default_folder,
-                self.default_measurement.measurement_setting_file_name
+                self.default_measurement.name
                 + ".measurement"),
                 os.path.join(self.default_folder,
                              self.default_measurement.profile_name + ".profile"))
