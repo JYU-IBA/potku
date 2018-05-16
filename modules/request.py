@@ -74,7 +74,7 @@ class Request:
         self.samples = Samples(self)
 
         self.default_run = Run()
-        self.default_target = Target()
+        # self.default_target = Target()
 
         self.__tabs = tabs
         self.__master_measurement = None
@@ -117,6 +117,17 @@ class Request:
             self.default_detector.create_folder_structure(
                 self.default_detector_folder)
 
+        target_path = ""
+        for file in os.listdir(self.default_folder):
+            if file.endswith(".target"):
+                target_path = os.path.join(self.default_folder, file)
+                break
+        if target_path:
+            self.default_target = Target.from_file(
+                target_path, default_measurement_file_path, self)
+        else:
+            self.default_target = Target()
+
         try:
             self.default_measurement = Measurement.from_file(
                 os.path.join(self.default_folder, "Default.measurement"),
@@ -126,13 +137,20 @@ class Request:
             # Create default measurement for request
             self.default_measurement = Measurement(self, "Default",
                                                    run=self.default_run,
-                                                 detector=self.default_detector)
+                                                   detector=self.default_detector,
+                                                   measurement_setting_file_name=
+                                                   "Default")
             self.default_measurement.to_file(os.path.join(
                 self.default_folder,
-                self.default_measurement.name
-                + ".measurement"),
+                self.default_measurement.measurement_setting_file_name +
+                ".measurement"),
                 os.path.join(self.default_folder,
-                             self.default_measurement.profile_name + ".profile"))
+                             self.default_measurement.profile_name +
+                             ".profile"))
+            self.default_measurement.run.to_file(os.path.join(
+                self.default_folder,
+                self.default_measurement.measurement_setting_file_name +
+                ".measurement"))
 
         try:
             self.default_simulation = Simulation.from_file(self,
