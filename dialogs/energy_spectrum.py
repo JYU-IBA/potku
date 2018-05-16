@@ -337,7 +337,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
         """Reimplemented method when closing widget.
         """
         self.parent.energy_spectrum_widget = Null()
-        file = os.path.join(self.measurement.directory, self.save_file)
+        file = os.path.join(self.parent.obj.directory, self.save_file)
         try:
             if os.path.isfile(file):
                 os.unlink(file)
