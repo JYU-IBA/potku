@@ -146,10 +146,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_element_simulation)
 
         # Add depth profile settings view to the settings view
-        self.depth_profile_settings_widget = DepthProfileSettingsWidget()
+        self.depth_profile_settings_widget = DepthProfileSettingsWidget(
+            self.request.default_measurement)
         self.ui.tabs.addTab(self.depth_profile_settings_widget, "Profile")
-
-        self.depth_profile_settings.show(self.depth_profile_settings_widget)
 
         self.depth_profile_settings_widget.ui.loadButton.clicked.connect(
             lambda: self.__load_file("DEPTH_PROFILE_SETTINGS"))
@@ -233,8 +232,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                  str(settings.element.isotope))
             settings.show(self)
         elif settings_type == "DEPTH_PROFILE_SETTINGS":
-            settings = DepthProfileSettings()
-            settings.show(self)
+            pass
         elif settings_type == "CALIBRATION_SETTINGS":
             settings = CalibrationParameters()
             settings.show(self.detector_settings_widget)
@@ -247,7 +245,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         if settings_type == "MEASURING_UNIT_SETTINGS":
             settings = MeasuringSettings()
         elif settings_type == "DEPTH_PROFILE_SETTINGS":
-            settings = DepthProfileSettings()
+            pass
         elif settings_type == "CALIBRATION_SETTINGS":
             settings = CalibrationParameters()
         elif settings_type == "DETECTOR_SETTINGS":
@@ -305,6 +303,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # TODO: Proper checking for all setting values
         try:
             self.measurement_settings_widget.update_settings()
+            self.depth_profile_settings_widget.update_settings()
 
             self.request.default_measurement.to_file(os.path.join(
                 self.request.default_measurement.directory,
