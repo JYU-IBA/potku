@@ -3,6 +3,8 @@
 Created on 10.4.2018
 Updated on 11.5.2018
 """
+import time
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
@@ -53,6 +55,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             self.obj.measurement_setting_file_name)
         self.descriptionPlainTextEdit.setPlainText(
             self.obj.measurement_setting_file_description)
+        self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+            self.obj.modification_time)))
         self.energyDoubleSpinBox.setValue(
             run_object.beam.energy)
         self.energyDistDoubleSpinBox.setValue(

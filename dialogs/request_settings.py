@@ -26,6 +26,7 @@ along with this program (file named 'LICENCE').
 Dialog for the request settings
 """
 import datetime
+import time
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
@@ -175,8 +176,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # Simulation settings
         self.simulation_settings_widget.nameLineEdit.setText(
             self.request.default_simulation.name)
-        self.simulation_settings_widget.dateLabel.setText(str(
-            datetime.datetime.fromtimestamp(
+        self.simulation_settings_widget.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
                 self.request.default_simulation.modification_time)))
         self.simulation_settings_widget.descriptionPlainTextEdit.setPlainText(
             self.request.default_simulation.description)
