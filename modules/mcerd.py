@@ -61,6 +61,8 @@ class MCERD:
         self.result_file = os.path.join(self.__tmp, self.__hash + "." +
                                         str(self.__settings["seed_number"]) +
                                      ".erd")
+        self.espe_file_name = Element.__str__(
+            settings["recoil_element"].element) + ".simu"
 
         # The command that is used to start the MCERD process.
         command = os.path.join("external", "Potku-bin", "mcerd" +
