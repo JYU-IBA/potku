@@ -341,7 +341,7 @@ class ElementSimulation:
             obj_profile["modification_time_unix"] = time.time()
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
         else:
-            obj_profile = {}
+            obj_profile = {"energy_spectra": {}}
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
 
         with open(file_path, "w") as file:
