@@ -5,6 +5,8 @@ Updated on 2.5.2018
 """
 import subprocess
 
+from modules.element import Element
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
@@ -59,14 +61,14 @@ class GetEspe:
         #                  (at/cm^2)
 
         self.__result_files = ""
-        for key, value in mcerd_objects.items():
-            self.__result_files += value.result_file + " "
+        for key, mcerd in mcerd_objects.items():
+            self.__result_files += mcerd.result_file + " "
             # All the mcerd processes should have the same recoil
             # distribution, so it shouldn't matter which of the files is used.
             # TODO: WRONG, this needs to be fixed!
-            self.__recoil_file = value.recoil_file
-            self.output_file = value.recoil_file[:len(
-                value.recoil_file) - 3] + "simu"
+            self.__recoil_file = mcerd.recoil_file
+            self.output_file = os.path.join(settings["result_directory"],
+                                            mcerd.espe_file_name)
             # output file has the same name as recoil file
 
         self.__beam = settings["beam"]

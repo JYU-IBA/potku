@@ -156,7 +156,8 @@ class ElementSimulation:
             "reference_density": self.recoil_element.reference_density,
             "fluence": self.run.fluence,
             "timeres": self.detector.timeres,
-            "solid": self.calculate_solid()
+            "solid": self.calculate_solid(),
+            "result_directory": self.directory
         }
 
     def calculate_solid(self):
