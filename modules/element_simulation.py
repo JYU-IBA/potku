@@ -194,7 +194,8 @@ class ElementSimulation:
                     radius = foil.diameter / 2
                     solid_angle = math.pi * radius ** 2 / foil.distance ** 2
                 else:
-                    solid_angle = foil.size[0] * foil.size[1] / foil.distance ** 2
+                    solid_angle = foil.size[0] * foil.size[
+                        1] / foil.distance ** 2
                     pass
                 if smallest > solid_angle:
                     smallest = solid_angle
@@ -241,7 +242,7 @@ class ElementSimulation:
         reference_density = obj["reference_density"]
 
         obj = json.load(open(profile_file_path))
-        channel_width = obj["energy_spectra"]["channel_width"]
+        channel_width = obj["channel_width"]
 
         simulation_folder, filename = os.path.split(mcsimu_file_path)
 
@@ -272,7 +273,7 @@ class ElementSimulation:
         obj = {
             "name": self.name,
             "description": self.description,
-            "modification_time": str(datetime.datetime.fromtimestamp(
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
                 time.time())),
             "modification_time_unix": time.time(),
             "simulation_type": self.simulation_type,
@@ -305,13 +306,13 @@ class ElementSimulation:
         obj = {
             "name": self.recoil_element.name,
             "description": self.recoil_element.description,
-            "modification_time": str(datetime.datetime.fromtimestamp(
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
                 time.time())),
             "modification_time_unix": time.time(),
             "simulation_type": self.recoil_element.type,
             "element": element_str,
             "reference_density": self.recoil_element.reference_density *
-                              1e22,
+                                 1e22,
             "profile": []
         }
 
@@ -334,11 +335,14 @@ class ElementSimulation:
         # Read .profile to obj to update only channel width
         if os.path.exists(file_path):
             obj_profile = json.load(open(file_path))
-            obj_profile["energy_spectra"]["channel_width"] = self.channel_width
+            obj_profile["modification_time"] = time.strftime("%c %z %Z",
+                                                             time.localtime(
+                                                                 time.time()))
+            obj_profile["modification_time_unix"] = time.time()
+            obj_profile["channel_width"] = self.channel_width
         else:
             obj_profile = {}
-            obj_profile["energy_spectra"] = {}
-            obj_profile["energy_spectra"]["channel_width"] = self.channel_width
+            obj_profile["channel_width"] = self.channel_width
 
         with open(file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
@@ -353,7 +357,7 @@ class ElementSimulation:
         for sim in list(self.mcerd_objects.keys()):
             self.mcerd_objects[sim].stop_process()
             self.calculate_espe()
-            del(self.mcerd_objects[sim])
+            del (self.mcerd_objects[sim])
 
     def pause(self):
         """Pause the simulation."""

@@ -272,9 +272,9 @@ class Simulation:
         obj = {
             "name": self.name,
             "description": self.description,
-            "modification_time": str(datetime.datetime.fromtimestamp(
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
                 time.time())),
-            "modification_time_unix": time.time()
+            "modification_time_unix": time.time(),
         }
 
         with open(file_path, "w") as file:

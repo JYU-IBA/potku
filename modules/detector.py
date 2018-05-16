@@ -218,8 +218,8 @@ class Detector:
                                     distance, layers, foil["transmission"]))
 
         if measurement_file_path.endswith(".measurement"):
-            mes_obj = json.load(open(measurement_file_path))
-            detector_theta = mes_obj["geometry"]["detector_theta"]
+            measurement_obj = json.load(open(measurement_file_path))
+            detector_theta = measurement_obj["detector_theta"]
         else:
             detector_theta = request.default_detector.detector_theta
 
@@ -258,7 +258,7 @@ class Detector:
         obj = {
             "name": self.name,
             "description": self.description,
-            "modification_time": str(datetime.datetime.fromtimestamp(
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
                 time.time())),
             "modification_time_unix": time.time(),
             "detector_type": self.type,
@@ -305,17 +305,10 @@ class Detector:
         # Read .measurement to obj to update only detector angles
         if os.path.exists(measurement_file_path):
             obj = json.load(open(measurement_file_path))
-            try:
-                obj["geometry"]["detector_theta"] = self.detector_theta
-            except KeyError:
-                obj["geometry"] = {
-                    "detector_theta": self.detector_theta
-                }
+            obj["detector_theta"] = self.detector_theta
         else:
             obj = {
-                "geometry": {
-                    "detector_theta": self.detector_theta
-                }
+                "detector_theta": self.detector_theta
             }
 
         with open(measurement_file_path, "w") as file:

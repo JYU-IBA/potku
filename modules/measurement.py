@@ -253,49 +253,49 @@ class Measurement:
         obj_measurement = json.load(open(measurement_file_path))
         obj_profile = json.load(open(profile_file_path))
 
-        name = obj_measurement["general"]["name"]
-        description = obj_measurement["general"]["description"]
-        modification_time = obj_measurement["general"]["modification_time_unix"]
+        name = obj_measurement["name"]
+        description = obj_measurement["description"]
+        modification_time = obj_measurement["modification_time_unix"]
 
-        ion = Element.from_string(obj_measurement["beam"]["ion"])
-        energy = obj_measurement["beam"]["energy"]
-        energy_distribution = obj_measurement["beam"]["energy_distribution"]
-        beam_charge = obj_measurement["beam"]["charge"]
+        ion = Element.from_string(obj_measurement["beam_ion"])
+        energy = obj_measurement["beam_energy"]
+        energy_distribution = obj_measurement["beam_energy_distribution"]
+        beam_charge = obj_measurement["beam_charge"]
 
-        spot_size = tuple(obj_measurement["run"]["spot_size"])
-        divergence = obj_measurement["run"]["divergence"]
-        profile = obj_measurement["run"]["profile"]
-        fluence = obj_measurement["run"]["fluence"]
-        current = obj_measurement["run"]["current"]
-        run_charge = obj_measurement["run"]["charge"]
-        run_time = obj_measurement["run"]["time"]
+        spot_size = tuple(obj_measurement["spot_size"])
+        divergence = obj_measurement["divergence"]
+        profile = obj_measurement["profile"]
+        fluence = obj_measurement["fluence"]
+        current = obj_measurement["current"]
+        run_charge = obj_measurement["run_charge"]
+        run_time = obj_measurement["time"]
 
-        detector_theta = obj_measurement["geometry"]["detector_theta"]
-        target_theta = obj_measurement["geometry"]["target_theta"]
+        detector_theta = obj_measurement["detector_theta"]
+        target_theta = obj_measurement["target_theta"]
 
-        profile_name = obj_profile["general"]["name"]
-        profile_description = obj_profile["general"]["description"]
-        profile_modification_time = obj_profile["general"][
+        profile_name = obj_profile["name"]
+        profile_description = obj_profile["description"]
+        profile_modification_time = obj_profile[
             "modification_time_unix"]
 
-        reference_density = obj_profile["depth_profiles"]["reference_density"]
+        reference_density = obj_profile["reference_density"]
         number_of_depth_steps = \
-            obj_profile["depth_profiles"]["number_of_depth_steps"]
+            obj_profile["number_of_depth_steps"]
         depth_step_for_stopping = \
-            obj_profile["depth_profiles"]["depth_step_for_stopping"]
+            obj_profile["depth_step_for_stopping"]
         depth_step_for_output = \
-            obj_profile["depth_profiles"]["depth_step_for_output"]
+            obj_profile["depth_step_for_output"]
         depth_for_concentration_from = \
-            obj_profile["depth_profiles"]["depth_for_concentration_from"]
+            obj_profile["depth_for_concentration_from"]
         depth_for_concentration_to = \
-            obj_profile["depth_profiles"]["depth_for_concentration_to"]
+            obj_profile["depth_for_concentration_to"]
 
-        channel_width = obj_profile["energy_spectra"]["channel_width"]
+        channel_width = obj_profile["channel_width"]
 
-        reference_cut = obj_profile["composition_changes"]["reference_cut"]
+        reference_cut = obj_profile["reference_cut"]
         number_of_splits = \
-            obj_profile["composition_changes"]["number_of_splits"]
-        normalization = obj_profile["composition_changes"]["normalization"]
+            obj_profile["number_of_splits"]
+        normalization = obj_profile["normalization"]
 
         beam = Beam(ion, energy, beam_charge, energy_distribution, spot_size,
                     divergence, profile)
@@ -308,85 +308,74 @@ class Measurement:
         target.target_theta = target_theta
 
         return cls(request=request, name=name, description=description,
-            modification_time=modification_time,
-            run=run, detector=detector,
-            target=target, profile_name=profile_name,
-            profile_description=profile_description,
-            profile_modification_time=profile_modification_time,
-            number_of_depth_steps=number_of_depth_steps,
-            depth_step_for_stopping=depth_step_for_stopping,
-            depth_step_for_output=depth_step_for_output,
-            depth_for_concentration_from=depth_for_concentration_from,
-            depth_for_concentration_to=depth_for_concentration_to,
-            channel_width=channel_width, reference_cut=reference_cut,
-            number_of_splits=number_of_splits,
-            normalization=normalization,
-            reference_density=reference_density)
+                   modification_time=modification_time,
+                   run=run, detector=detector,
+                   target=target, profile_name=profile_name,
+                   profile_description=profile_description,
+                   profile_modification_time=profile_modification_time,
+                   number_of_depth_steps=number_of_depth_steps,
+                   depth_step_for_stopping=depth_step_for_stopping,
+                   depth_step_for_output=depth_step_for_output,
+                   depth_for_concentration_from=depth_for_concentration_from,
+                   depth_for_concentration_to=depth_for_concentration_to,
+                   channel_width=channel_width, reference_cut=reference_cut,
+                   number_of_splits=number_of_splits,
+                   normalization=normalization,
+                   reference_density=reference_density)
 
     def to_file(self, measurement_file_path, profile_file_path):
 
         obj_measurement = {}
         obj_profile = {}
 
-        obj_measurement["general"] = {}
-        obj_measurement["beam"] = {}
-        obj_measurement["run"] = {}
-        obj_measurement["geometry"] = {}
-        obj_profile["general"] = {}
-        obj_profile["depth_profiles"] = {}
-        obj_profile["energy_spectra"] = {}
-        obj_profile["composition_changes"] = {}
-
-        obj_measurement["general"]["name"] = self.measurement_setting_file_name
-        obj_measurement["general"]["description"] = \
+        obj_measurement["name"] = self.measurement_setting_file_name
+        obj_measurement["description"] = \
             self.measurement_setting_file_description
-        obj_measurement["general"]["modification_time"] = str(datetime.datetime.fromtimestamp(
-            time.time()))
-        obj_measurement["general"]["modification_time_unix"] = time.time()
+        obj_measurement["modification_time"] = time.strftime("%c %z %Z",
+                                                             time.localtime(
+                                                                 time.time()))
+        obj_measurement["modification_time_unix"] = time.time()
 
-        obj_measurement["beam"]["ion"] = str(self.run.beam.ion)
-        obj_measurement["beam"]["energy"] = self.run.beam.energy
-        obj_measurement["beam"]["energy_distribution"] = \
+        obj_measurement["beam_ion"] = str(self.run.beam.ion)
+        obj_measurement["beam_energy"] = self.run.beam.energy
+        obj_measurement["beam_energy_distribution"] = \
             self.run.beam.energy_distribution
-        obj_measurement["beam"]["charge"] = self.run.beam.charge
-        obj_measurement["run"]["spot_size"] = self.run.beam.spot_size
-        obj_measurement["run"]["divergence"] = self.run.beam.divergence
-        obj_measurement["run"]["profile"] = self.run.beam.profile
-        obj_measurement["run"]["fluence"] = self.run.fluence
-        obj_measurement["run"]["current"] = self.run.current
-        obj_measurement["run"]["charge"] = self.run.charge
-        obj_measurement["run"]["time"] = self.run.time
+        obj_measurement["beam_charge"] = self.run.beam.charge
+        obj_measurement["spot_size"] = self.run.beam.spot_size
+        obj_measurement["divergence"] = self.run.beam.divergence
+        obj_measurement["profile"] = self.run.beam.profile
+        obj_measurement["fluence"] = self.run.fluence
+        obj_measurement["current"] = self.run.current
+        obj_measurement["run_charge"] = self.run.charge
+        obj_measurement["time"] = self.run.time
 
-        obj_measurement["geometry"]["detector_theta"] = \
+        obj_measurement["detector_theta"] = \
             self.request.default_detector.detector_theta
-        obj_measurement["geometry"]["target_theta"] = \
+        obj_measurement["target_theta"] = \
             self.request.default_target.target_theta
 
-        obj_profile["general"]["name"] = self.profile_name
-        obj_profile["general"]["description"] = \
+        obj_profile["name"] = self.profile_name
+        obj_profile["description"] = \
             self.profile_description
-        obj_profile["general"]["modification_time"] = str(
-            datetime.datetime.fromtimestamp(time.time()))
-        obj_profile["general"]["modification_time_unix"] = \
+        obj_profile["modification_time"] = time.strftime("%c %z %Z",
+                                                         time.localtime(
+                                                             time.time()))
+        obj_profile["modification_time_unix"] = \
             self.profile_modification_time
 
-        obj_profile["depth_profiles"]["reference_density"] = \
-            self.reference_density
-        obj_profile["depth_profiles"]["number_of_depth_steps"] = \
-            self.number_of_depth_steps
-        obj_profile["depth_profiles"]["depth_step_for_stopping"] = \
-            self.depth_step_for_stopping
-        obj_profile["depth_profiles"]["depth_step_for_output"] = \
-            self.depth_step_for_output
-        obj_profile["depth_profiles"]["depth_for_concentration_from"] = \
+        obj_profile["reference_density"] = self.reference_density
+        obj_profile["number_of_depth_steps"] = self.number_of_depth_steps
+        obj_profile["depth_step_for_stopping"] = self.depth_step_for_stopping
+        obj_profile["depth_step_for_output"] = self.depth_step_for_output
+        obj_profile["depth_for_concentration_from"] = \
             self.depth_for_concentration_from
-        obj_profile["depth_profiles"]["depth_for_concentration_to"] = \
+        obj_profile["depth_for_concentration_to"] = \
             self.depth_for_concentration_to
-        obj_profile["energy_spectra"]["channel_width"] = self.channel_width
-        obj_profile["composition_changes"]["reference_cut"] = self.reference_cut
-        obj_profile["composition_changes"]["number_of_splits"] = \
+        obj_profile["channel_width"] = self.channel_width
+        obj_profile["reference_cut"] = self.reference_cut
+        obj_profile["number_of_splits"] = \
             self.number_of_splits
-        obj_profile["composition_changes"]["normalization"] = self.normalization
+        obj_profile["normalization"] = self.normalization
 
         with open(measurement_file_path, "w") as file:
             json.dump(obj_measurement, file, indent=4)
