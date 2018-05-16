@@ -109,7 +109,7 @@ class MCERD:
             file.write(
                 "Beam ion: " + str(beam.ion.isotope) + beam.ion.symbol + "\n")
 
-            file.write("Beam energy: " + str(beam.energy) + "\n")
+            file.write("Beam energy: " + str(beam.energy) + " MeV\n")
 
             file.write("Target description file: " + target_file + "\n")
 
@@ -123,20 +123,22 @@ class MCERD:
 
             file.write("Recoiling material distribution: " + recoil_file + "\n")
 
-            file.write("Target angle: " + str(target.target_theta) + "\n")
+            file.write("Target angle: " + str(target.target_theta) + " deg\n")
 
             file.write(
                 "Beam spot size: " + ("%0.1f %0.1f mm" % beam.spot_size) + "\n")
 
             file.write("Minimum angle of scattering: " +
-                       str(self.__settings["minimum_scattering_angle"]) + "\n")
+                       str(self.__settings["minimum_scattering_angle"])
+                       + "deg\n")
 
             file.write("Minimum main scattering angle: " +
                        str(self.__settings["minimum_main_scattering_angle"]) +
-                       "\n")
+                       " deg\n")
 
             file.write("Minimum energy of ions: " +
-                       str(self.__settings["minimum_energy_of_ions"]) + "\n")
+                       str(self.__settings["minimum_energy_of_ions"])
+                       + " MeV \n")
 
             file.write("Average number of recoils per primary ion: " +
                        str(self.__settings["number_of_recoils"]) + "\n")
