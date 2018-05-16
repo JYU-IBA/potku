@@ -61,10 +61,10 @@ class ElementLossesDialog(QtWidgets.QDialog):
         # self.ui.referenceCut.currentIndexChanged.connect(self.__load_targets) # Annoying
 
         # TODO: Read cut files twice. Requires Refactor.
-        m_name = self.parent.measurement.measurement_name
+        m_name = self.parent.obj.name
         if not m_name in ElementLossesDialog.reference_cut.keys():
             ElementLossesDialog.reference_cut[m_name] = None
-        cuts, unused_elemloss = parent.measurement.get_cut_files()
+        cuts, unused_elemloss = parent.obj.get_cut_files()
         dirtyinteger = 0
         for cut in cuts:
             self.cuts.append(cut)
@@ -75,7 +75,7 @@ class ElementLossesDialog(QtWidgets.QDialog):
                 
         if not m_name in ElementLossesDialog.checked_cuts.keys():
             ElementLossesDialog.checked_cuts[m_name] = []
-        parent.measurement.fill_cuts_treewidget(
+        parent.obj.fill_cuts_treewidget(
             self.ui.targetCutTree,
             True,
             ElementLossesDialog.checked_cuts[m_name])
@@ -90,8 +90,8 @@ class ElementLossesDialog(QtWidgets.QDialog):
         """Called when OK button is pressed. Creates a elementlosses widget and
         adds it to the parent (mdiArea).
         """
-        cut_dir = self.parent.measurement.directory_cuts
-        cut_elo = self.parent.measurement.directory_composition_changes
+        cut_dir = self.parent.obj.directory_cuts
+        cut_elo = self.parent.obj.directory_composition_changes
         y_axis_0_scale = self.ui.radioButton_0max.isChecked()
         unused_y_axis_min_scale = self.ui.radioButton_minmax.isChecked()
         reference_cut = os.path.join(cut_dir, self.ui.referenceCut.currentText())
@@ -99,7 +99,7 @@ class ElementLossesDialog(QtWidgets.QDialog):
         checked_cuts = []
         root = self.ui.targetCutTree.invisibleRootItem()
         root_child_count = root.childCount()
-        m_name = self.parent.measurement.measurement_name
+        m_name = self.parent.obj.name
         ElementLossesDialog.checked_cuts[m_name].clear()
         for i in range(root_child_count):
             item = root.child(i)
@@ -136,7 +136,7 @@ class ElementLossesDialog(QtWidgets.QDialog):
             icon = self.parent.icon_manager.get_icon("elemental_losses_icon_16.png")
             self.parent.add_widget(self.parent.elemental_losses_widget, icon=icon)
             
-            measurement_name = self.parent.measurement.measurement_name
+            measurement_name = self.parent.obj.name
             msg = "Created Element Losses. Splits: {0} {1} {2}".format(
                     split_count,
                     "Reference cut: {0}".format(reference_cut),
@@ -173,7 +173,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
             super().__init__()
             self.parent = parent
             self.icon_manager = parent.icon_manager
-            self.measurement = self.parent.measurement
+            self.measurement = self.parent.obj
             self.reference_cut_file = reference_cut_file
             self.checked_cuts = checked_cuts
             self.partition_count = partition_count
@@ -230,7 +230,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
             str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + traceback._some_str(sys.exc_info()[1]), err_file,
                                 str(sys.exc_info()[2].tb_lineno)])
             msg += str_err
-            logging.getLogger(self.measurement.measurement_name).error(msg)
+            logging.getLogger(self.measurement.name).error(msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
         finally:
@@ -268,7 +268,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
         """Reimplemented method when closing widget.
         """
         self.parent.elemental_losses_widget = Null()
-        file = os.path.join(self.parent.measurement.directory, self.save_file)
+        file = os.path.join(self.parent.obj.directory, self.save_file)
         try:
             if os.path.isfile(file):
                 os.unlink(file)
@@ -280,11 +280,11 @@ class ElementLossesWidget(QtWidgets.QWidget):
         """Save object information to file.
         """
         reference = self.reference_cut_file.replace(
-                self.parent.measurement.directory + "\\", "")
-        files = "\t".join([tmp.replace(self.parent.measurement.directory + "\\",
+                self.parent.obj.directory + "\\", "")
+        files = "\t".join([tmp.replace(self.parent.obj.directory + "\\",
                                        "") 
                            for tmp in self.checked_cuts])
-        file = os.path.join(self.parent.measurement.directory_composition_changes, self.save_file)
+        file = os.path.join(self.parent.obj.directory_composition_changes, self.save_file)
         fh = open(file, "wt")
         fh.write("{0}\n".format(reference))
         fh.write("{0}\n".format(files))

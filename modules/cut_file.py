@@ -238,7 +238,7 @@ class CutFile:
         """
         self.directory = new_dir
         self.data = data
-        self.element = Element(cut_file.element)
+        self.element = cut_file.element
         self.count = len(data)
         self.type = cut_file.type
         self.weight_factor = cut_file.weight_factor * additional_weight_factor

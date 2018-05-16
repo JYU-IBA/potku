@@ -131,7 +131,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         if key == "total":
             return -1
         element_object = Element(key)
-        element, isotope = element_object.get_element_and_isotope()
+        element = element_object.element.symbol
+        isotope = element_object.element.isotope
         mass = str(isotope)
         if not mass:
             mass = masses.get_standard_isotope(element)

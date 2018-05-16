@@ -374,7 +374,8 @@ class Selector:
         """
         color_dict = {}
         for sel in self.selections:
-            element, isotope = sel.element.get_element_and_isotope()
+            element = sel.element.symbol
+            isotope = sel.element.isotope
             if sel.type == "RBS":
                 element, isotope = sel.element, sel.element.isotope
             dirtyinteger = 0
@@ -432,7 +433,8 @@ class Selector:
                 sel = Selection(self.axes, self.element_colormap,
                                 element_type=split[0],
                                 element=split[1],
-                                isotope=split[2],
+                                isotope=(split[2] if split[2] == ""
+                                         else int(split[2])),
                                 weight_factor=float(split[3]),
                                 scatter=split[4],
                                 color=split[5],

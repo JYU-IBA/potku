@@ -408,11 +408,14 @@ class Measurement:
         self.measurement_file = measurement_name  # With extension
 
         self.directory = measurement_folder
-        self.directory_data = "Data"
+        self.directory_data = measurement_data_folder
         self.directory_cuts = os.path.join(self.directory_data, "Cuts")
-        self.directory_composition_changes = os.path.join("Composition_changes")
-        self.directory_depth_profiles = os.path.join("Depth_profiles")
-        self.directory_energy_spectra = os.path.join("Energy spectra")
+        self.directory_composition_changes = os.path.join(self.directory,
+                                                          "Composition_changes")
+        self.directory_depth_profiles = os.path.join(self.directory,
+                                                     "Depth_profiles")
+        self.directory_energy_spectra = os.path.join(self.directory,
+                                                     "Energy spectra")
 
         self.__make_directories(self.directory)
         self.__make_directories(self.directory_data)

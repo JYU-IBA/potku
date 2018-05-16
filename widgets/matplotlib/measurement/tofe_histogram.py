@@ -301,6 +301,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             dirtyinteger = 0
             key_string = "{0}{1}".format(element.symbol, dirtyinteger)
             while key_string in selection_legend.keys():
+                key_string = "{0}{1}".format(element.symbol,
+                                             dirtyinteger)
                 dirtyinteger += 1
 
             if element.isotope:

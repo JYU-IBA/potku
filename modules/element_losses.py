@@ -156,9 +156,7 @@ class ElementLosses:
     
     
     def __count_element_cuts(self):
-        '''Counts the number of sublists' elements to another list and puts it under
-        corresponding dictionary's key value.
-        
+        '''
         Counts the number of sublists' elements to another list and puts it 
         under corresponding dictionary's key value. For example: 
         cuts['H'] = [[13,4,25,6],[1,3,4,1],[2,3,2]] --> 

@@ -91,27 +91,29 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
     def __sortt(self, key):
         cut_file = key.split('.')
         element_object = Element(cut_file[0].strip())
-        element, isotope = element_object.get_element_and_isotope()
+        element = element_object.symbol
+        isotope = element_object.isotope
         mass = str(isotope)
         if not mass:
             mass = masses.get_standard_isotope(element)
         else:
             mass = float(mass)
         return mass
-    
-    
+
+
     def on_draw(self):
         '''Draw method for matplotlib.
         '''
         self.axes.clear()  # Clear old stuff
-        
+
         # keys = sorted(self.split.keys())
         keys = [item[0] for item in sorted(self.split.items(),
                                            key=lambda x: self.__sortt(x[0]))]
         for key in keys:
             cut_file = key.split('.')
             element_object = Element(cut_file[0].strip())
-            element, isotope = element_object.get_element_and_isotope()
+            element = element_object.symbol
+            isotope = element_object.isotope
             if key in self.__ignore_elements:
                 continue
             # Check RBS selection
@@ -119,12 +121,14 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
             if len(cut_file) == 2:
                 if key + ".cut" in self.__rbs_list.keys():
                     element_object = self.__rbs_list[key + ".cut"]
-                    element, isotope = element_object.get_element_and_isotope()
+                    element = element_object.symbol
+                    isotope = element_object.isotope
                     rbs_string = "*"
             else:
                 if key + cut_file[2] in self.__rbs_list.keys():
                     element_object = self.__rbs_list[key + cut_file[2]]
-                    element, isotope = element_object.get_element_and_isotope()
+                    element = element_object.symbol
+                    isotope = element_object.isotope
                     rbs_string = "*"
             
             # Get color for selection
