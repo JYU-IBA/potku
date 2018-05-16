@@ -78,9 +78,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-259</y>
-        <width>363</width>
-        <height>749</height>
+        <y>0</y>
+        <width>395</width>
+        <height>866</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -137,7 +137,7 @@
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QLabel" name="dateLabel_2">
+               <widget class="QLabel" name="dateLabel">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                   <horstretch>0</horstretch>
@@ -395,7 +395,7 @@
                  </widget>
                 </item>
                 <item>
-                 <widget class="QDoubleSpinBox" name="spotSizeYdoubleSpinBox_2">
+                 <widget class="QDoubleSpinBox" name="spotSizeYdoubleSpinBox">
                   <property name="sizePolicy">
                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
                     <horstretch>3</horstretch>

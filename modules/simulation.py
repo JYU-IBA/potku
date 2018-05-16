@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 27.4.2018
+Updated on 11.5.2018
 
 #TODO Description of Potku and copyright
 #TODO Licence
@@ -25,6 +25,7 @@ __version__ = "2.0"
 import logging
 import os
 import sys
+from modules.detector import Detector
 
 
 class Simulations:
@@ -49,6 +50,13 @@ class Simulations:
         return len(self.simulations) == 0
 
     def get_key_value(self, key):
+        """
+        Args:
+            key: Key of simulation dictionary.
+
+        Return:
+            VReturns value corresponding to key.
+        """
         if key not in self.simulations:
             return None
         return self.simulations[key]
@@ -70,6 +78,9 @@ class Simulations:
         sample_folder, simulation_folder = os.path.split(simulation_folder_path)
         directory_prefix = "MC_simulation_"
         target_extension = ".target"
+        measurement_extension = ".measurement"
+        detector_extension = ".detector"
+        measurement_settings_file = ""
 
         # Create simulation from file
         if os.path.exists(simulation_path):
@@ -78,13 +89,40 @@ class Simulations:
             serial_number = int(simulation_folder[len(directory_prefix):len(
                 directory_prefix) + 2])
             simulation.serial_number = serial_number
+
+            for f in os.listdir(simulation_folder_path):
+                if f.endswith(measurement_extension):
+                    measurement_settings_file = f
+                    simulation.run = Run.from_file(
+                        os.path.join(
+                            simulation.directory, measurement_settings_file))
+                    obj = json.load(open(os.path.join(
+                            simulation.directory, measurement_settings_file)))
+                    simulation.measurement_setting_file_name = obj[
+                        "general"]["name"]
+                    simulation.measurement_setting_file_description = obj[
+                        "general"]["description"]
+                    simulation.modification_time = obj["general"][
+                        "modification_time_unix"]
+                    break
+
+            # Read Detector anf Target information from file.
             for file in os.listdir(simulation_folder_path):
                 if file.endswith(target_extension):
                     simulation.target = Target.from_file(os.path.join(
                         simulation_folder_path, file), os.path.join(
-                        simulation_folder_path, simulation.name +
-                                                ".measurement"))
-                    break
+                        simulation_folder_path,
+                        measurement_settings_file), self.request)
+                if file.startswith("Detector"):
+                    det_folder = os.path.join(simulation_folder_path,
+                                                     "Detector")
+                    for f in os.listdir(det_folder):
+                        if f.endswith(detector_extension):
+                            simulation.detector = Detector.from_file(
+                                os.path.join(det_folder, f),
+                                os.path.join(simulation.directory,
+                                             measurement_settings_file),
+                                self.request)
 
         # Create a new simulation
         else:
@@ -128,12 +166,15 @@ class Simulation:
     __slots__ = "path", "request", "simulation_file", "name", "tab_id", \
                 "description", "modification_time", "run", "detector", \
                 "target", "element_simulations", "name_prefix", \
-                "serial_number", "directory"
+                "serial_number", "directory", "measurement_setting_file_name", \
+                "measurement_setting_file_description"
 
     def __init__(self, path, request, name="Default",
-                 description="This is a default simulation.",
+                 description="This is a default simulation setting file.",
                  modification_time=time.time(), tab_id=-1, run=None,
-                 detector=None, target=Target()):
+                 detector=None, target=Target(),
+                 measurement_setting_file_name=None,
+                 measurement_setting_file_description=""):
         """Initializes Simulation object.
 
         Args:
@@ -144,6 +185,11 @@ class Simulation:
         self.request = request
         self.name = name
         self.description = description
+        if not measurement_setting_file_name:
+            self.measurement_setting_file_name = name
+        self.measurement_setting_file_name = measurement_setting_file_name
+        self.measurement_setting_file_description = \
+            measurement_setting_file_description
         self.modification_time = modification_time
         self.element_simulations = []
 
@@ -185,9 +231,15 @@ class Simulation:
         Args:
             recoil_element: RecoilElement that is simulated.
         """
+        element = recoil_element.element
+        if element.isotope:
+            element_str = "{0}{1}".format(element.isotope, element.symbol)
+        else:
+            element_str = element.symbol
+
         element_simulation = ElementSimulation(directory=self.directory,
                                                request=self.request,
-                                               name=recoil_element.get_element().__str__(),
+                                               name=element_str,
                                                recoil_element=recoil_element,
                                                target=self.target,
                                                detector=self.detector)
@@ -222,9 +274,9 @@ class Simulation:
         obj = {
             "name": self.name,
             "description": self.description,
-            "modification_time": str(datetime.datetime.fromtimestamp(
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
                 time.time())),
-            "modification_time_unix": time.time()
+            "modification_time_unix": time.time(),
         }
 
         with open(file_path, "w") as file:

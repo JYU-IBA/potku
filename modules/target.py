@@ -2,7 +2,7 @@
 # TODO: Add licence information
 """
 Created on 27.3.2018
-Updated on 30.4.2018
+Updated on 11.5.2018
 """
 
 import datetime
@@ -26,12 +26,12 @@ class Target:
 
     __slots__ = "name", "modification_time", "description", "target_type", \
                 "image_size", "image_file", "scattering_element", "layers", \
-                "target_fii", "target_theta"
+                "target_theta"
 
     def __init__(self, name="", modification_time=time.time(), description="",
                  target_type="AFM", image_size=(1024, 1024),
-                 image_file="", scattering_element=Element.from_string("4He 3.0"),
-                 target_fii=0.0, target_theta=70.0, layers=[]):
+                 image_file="", scattering_element=Element.from_string(
+                "4He 3.0"), target_theta=70.0, layers=[]):
         """Initialize a target.
 
         Args:
@@ -42,7 +42,6 @@ class Target:
             image_size: Target image size.
             image_file: Target image file.
             scattering_element: Scattering element.
-            target_fii: Target angle
             target_theta: Target angle # TODO: check how the other is
             calculated from the other,
             layers: Target layers.
@@ -54,12 +53,11 @@ class Target:
         self.image_size = image_size
         self.image_file = image_file
         self.scattering_element = scattering_element
-        self.target_fii = target_fii
         self.target_theta = target_theta
         self.layers = layers
 
     @classmethod
-    def from_file(cls, target_file_path: object, measurement_file_path: object) -> object:
+    def from_file(cls, target_file_path, measurement_file_path, request):
         """Initialize target from a JSON file.
 
         Args:
@@ -67,6 +65,10 @@ class Target:
             parameters.
             measurement_file_path: A file path to JSON file containing target
             angles.
+            request: Request object which has default target angles.
+
+        Return:
+            Returns a Target object with parameters read from files.
         """
 
         obj = json.load(open(target_file_path))
@@ -82,21 +84,27 @@ class Target:
         layers = []
 
         for layer in obj["layers"]:
+            elements = []
+            elements_str = layer["elements"]
+            for element_str in elements_str:
+                elements.append(Element.from_string(element_str))
             layers.append(Layer(layer["name"],
-                                layer["elements"],
+                                elements,
                                 layer["thickness"],
                                 layer["density"]))
 
-        obj = json.load(open(measurement_file_path))
-        target_theta = obj["target_theta"]
-        target_fii = obj["target_fii"]
+        if measurement_file_path.endswith(".measurement"):
+            obj = json.load(open(measurement_file_path))
+            target_theta = obj["geometry"]["target_theta"]
+        else:
+            target_theta = request.default_target.target_theta
 
         return cls(name=name, description=description,
                    modification_time=modification_time_unix,
                    target_type=target_type,
                    image_size=image_size, image_file=image_file,
                    scattering_element=scattering_element,
-                   target_fii=target_fii, target_theta=target_theta,
+                   target_theta=target_theta,
                    layers=layers)
 
     def to_file(self, target_file_path, measurement_file_path):
@@ -129,19 +137,21 @@ class Target:
             }
             obj["layers"].append(layer_obj)
 
-        with open(target_file_path, "w") as file:
-            json.dump(obj, file, indent=4)
+        if target_file_path is not None:
+            with open(target_file_path, "w") as file:
+                json.dump(obj, file, indent=4)
 
-        # Read .measurement to obj to update only target angles
-        if os.path.exists(measurement_file_path):
-            obj = json.load(open(measurement_file_path))
-            obj["target_fii"] = self.target_fii
-            obj["target_theta"] = self.target_theta
-        else:
-            obj = {
-                "target_fii": self.target_fii,
-                "target_theta": self.target_theta
-            }
+        if measurement_file_path is not None:
+            # Read .measurement to obj to update only target angles
+            if os.path.exists(measurement_file_path):
+                obj = json.load(open(measurement_file_path))
+                obj["geometry"]["target_theta"] = self.target_theta
+            else:
+                obj = {
+                    "geometry": {
+                        "target_theta": self.target_theta
+                    }
+                }
 
-        with open(measurement_file_path, "w") as file:
-            json.dump(obj, file, indent=4)
+            with open(measurement_file_path, "w") as file:
+                json.dump(obj, file, indent=4)

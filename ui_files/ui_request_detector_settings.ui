@@ -213,7 +213,7 @@
                 </property>
                 <item>
                  <property name="text">
-                  <string>ToF</string>
+                  <string>TOF</string>
                  </property>
                 </item>
                </widget>

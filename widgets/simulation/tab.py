@@ -1,17 +1,23 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 27.4.2018
+Updated on 4.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import os, logging, sys
-from PyQt5 import QtCore, uic, QtWidgets
+import os
+import logging
+import sys
+from PyQt5 import QtCore
+from PyQt5 import uic
+from PyQt5 import QtWidgets
 
-from dialogs.measurement.element_losses import ElementLossesDialog, ElementLossesWidget
-from dialogs.measurement.depth_profile import DepthProfileDialog, DepthProfileWidget
+from dialogs.measurement.element_losses import ElementLossesDialog
+from dialogs.measurement.element_losses import ElementLossesWidget
+from dialogs.measurement.depth_profile import DepthProfileDialog
+from dialogs.measurement.depth_profile import DepthProfileWidget
 from widgets.simulation.target import TargetWidget
 from modules.element import Element
 from modules.general_functions import read_espe_file
@@ -19,6 +25,7 @@ from modules.null import Null
 from modules.ui_log_handlers import customLogHandler
 from widgets.log import LogWidget
 from widgets.simulation.energy_spectrum import SimulationEnergySpectrumWidget
+from dialogs.simulation.settings import SimulationSettingsDialog
 
 
 class SimulationTabWidget(QtWidgets.QWidget):
@@ -30,37 +37,29 @@ class SimulationTabWidget(QtWidgets.QWidget):
         """ Init simulation tab class.
         
         Args:
-            tab_id: An integer representing ID of the tabwidget.
+            request: Request that has the simulation object.
+            tab_id: An integer representing ID of the tab widget.
             simulation: A simulation class object.
-            icon_manager: An iconmanager class object.
+            icon_manager: An icon manager class object.
         """
         super().__init__()
         self.request = request
         self.tab_id = tab_id
+        self.simulation = simulation
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_simulation_tab.ui"),
                              self)
         self.obj = simulation
         self.icon_manager = icon_manager
 
-        self.simulation_depth_profile = None
+        self.simulation_target = None
         self.energy_spectrum_widget = None
         self.log = None
-
-        # Hide the simulation specific settings buttons
-        self.ui.settingsFrame.setVisible(False)
         
         self.data_loaded = False
         self.panel_shown = True
         self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
-
-        # Set up settings and energy spectra connections within the tab UI
-        self.ui.detectorSettingsButton.clicked.connect(
-            self.open_detector_settings)
-        self.ui.mcSimulationButton.clicked.connect(
-            lambda: self.start_mcsimulation(self))
-
-        self.simulation_started = False
-        self.stop_simulation_button = None
+        self.ui.openSettingsButton.clicked.connect(lambda:
+                                                   self.__open_settings())
 
     def add_widget(self, widget, minimized=None, has_close_button=True,
                    icon=None):
@@ -69,7 +68,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
         Args:
             widget: QWidget to be added into simulation tab widget.
             minimized: Boolean representing if widget should be minimized.
-            icon: QtGui.QIcon for the subwindow. 
+            has_close_button: Will the widget have a close button or not.
+            icon: QtGui.QIcon for the sub window.
         """
         if has_close_button:
             subwindow = self.ui.mdiArea.addSubWindow(widget)
@@ -89,14 +89,13 @@ class SimulationTabWidget(QtWidgets.QWidget):
             widget.show()
         self.__set_icons()
 
-    def add_simulation_depth_profile(self):
+    def add_simulation_target_and_recoil(self):
         """ Adds depth profile for modifying the elements into tab if it
         doesn't have one already.
         """
-        self.simulation_depth_profile = TargetWidget(self,
-                                                     self.obj, self.obj.target,
-                                                     self.icon_manager)
-        self.add_widget(self.simulation_depth_profile, has_close_button=False)
+        self.simulation_target = TargetWidget(self, self.obj, self.obj.target,
+                                              self.icon_manager)
+        self.add_widget(self.simulation_target, has_close_button=False)
         # TODO: Do all the necessary operations so that the widget can be used.
 
     def add_log(self):        
@@ -157,41 +156,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-
-    def start_mcsimulation(self, parent):
-        """ Start the Monte Carlo simulation and draw energy spectrum based on
-        it.
-        Args:
-            parent: Parent of the energy spectrum widget.
-        """
-        pass
-        # if self.simulation_started:
-        #     return
-        # mcerd_path = os.path.join(self.request.directory, "35Cl-85-LiMnO_Li")
-        # self.obj.callMCERD = CallMCERD(mcerd_path)
-        # self.obj.callMCERD.run_simulation()
-        # self.simulation_started = True
-        #
-        # self.stop_simulation_button = QtWidgets.QPushButton("Stop the "
-        #                                                     "simulation")
-        # self.stop_simulation_button.clicked.connect(self.stop_mcsimulation)
-        # self.ui.verticalLayout_6.addWidget(self.stop_simulation_button)
-
-    def stop_mcsimulation(self):
-        pass
-        # self.obj.callMCERD.stop_simulation()
-        # self.simulation_started = False
-        #
-        # self.ui.verticalLayout_6.removeWidget(self.stop_simulation_button)
-        # self.stop_simulation_button.deleteLater()
-        #
-        # self.obj.call_get_espe = CallGetEspe(self.request.directory)
-        # self.obj.call_get_espe.run_get_espe()
-        #
-        # self.make_energy_spectrum(self.request.directory,
-        #                           self.obj.call_get_espe.output_file)
-        # # TODO: if there is already an energy spectrum, it should be removed
-        # self.add_widget(self.energy_spectrum_widget)
             
     def del_widget(self, widget):
         """Delete a widget from current (measurement) tab.
@@ -321,14 +285,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
         except:  # We do not need duplicate error logs, log in widget instead
             print(sys.exc_info())  # TODO: Remove this.
 
-    def open_detector_settings(self):
-        """ Open the detector settings dialog.
-        """
-        QtWidgets.QMessageBox.critical(self, "Error",
-                                       "Detector or other settings dialogs not "
-                                       "yet implemented!",
-                                       QtWidgets.QMessageBox.Ok,
-                                       QtWidgets.QMessageBox.Ok)
+    def __open_settings(self):
+        SimulationSettingsDialog(self.simulation, self.icon_manager)
     
     def __confirm_filepath(self, filepath, name, m_name):
         """Confirm whether filepath exist and changes it accordingly.
@@ -391,5 +349,3 @@ class SimulationTabWidget(QtWidgets.QWidget):
         """Adds icons to UI elements.
         """
         # TODO: Add icons.
-
-

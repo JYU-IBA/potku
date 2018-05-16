@@ -49,6 +49,7 @@ class TargetWidget(QtWidgets.QWidget):
         self.recoil_widget = RecoilAtomDistributionWidget(self,
                                                           self.simulation,
                                                           self.target,
+                                                          tab,
                                                           icon_manager)
 
         icon_manager.set_icon(self.ui.editPushButton, "edit.svg")
@@ -101,7 +102,7 @@ class TargetWidget(QtWidgets.QWidget):
         measurement_path = os.path.join(self.simulation.directory,
                                         self.simulation.name +
                                         ".measurement")
-        self.target.to_file(target_path, measurement_path)
+        self.target.to_file(target_path, None)
 
         self.recoil_widget.save_mcsimu_rec_profile(self.simulation.directory)
 

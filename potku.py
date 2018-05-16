@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 26.4.2018
+Updated on 4.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -18,15 +19,15 @@ of the License, or (at your option) any later version.
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMenu, QTreeWidgetItem, QAbstractItemView, QDesktopWidget, QApplication
-
+from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QTreeWidgetItem
+from PyQt5.QtWidgets import QAbstractItemView
 from dialogs.measurement.load_measurement import LoadMeasurementDialog
 from modules.measurement import Measurement
 
@@ -43,7 +44,9 @@ from datetime import datetime, timedelta
 
 import os
 import shutil
-from PyQt5 import QtWidgets, QtCore, uic
+from PyQt5 import QtWidgets
+from PyQt5 import QtCore
+from PyQt5 import uic
 
 from dialogs.about import AboutDialog
 from dialogs.global_settings import GlobalSettingsDialog
@@ -177,6 +180,7 @@ class Potku(QtWidgets.QMainWindow):
         """Opens the right click menu in tree view.
         """
         indexes = self.tree_widget.selectedIndexes()
+        level = 0
         if len(indexes) > 0:
             level = 0
             index = indexes[0]
@@ -222,7 +226,8 @@ class Potku(QtWidgets.QMainWindow):
                                                " on name " + new_name,
                                                QtWidgets.QMessageBox.Ok,
                                                QtWidgets.QMessageBox.Ok)
-                # Block edit event from tree view when changing the name back to original.
+                # Block edit event from tree view when changing the name back
+                # to original.
                 self.tree_widget.blockSignals(True)
                 clicked_item.setText(0, clicked_item.obj.name)
                 self.tree_widget.blockSignals(False)
@@ -463,7 +468,7 @@ class Potku(QtWidgets.QMainWindow):
                 if not tab.data_loaded:
                     tab.data_loaded = True
                     # tab.simulation.load_data()
-                    tab.add_simulation_depth_profile()
+                    tab.add_simulation_target_and_recoil()
                     self.__change_tab_icon(clicked_item)
             else:
                 raise TabError("No such tab widget")
@@ -609,7 +614,7 @@ class Potku(QtWidgets.QMainWindow):
         for sample, simulations in samples_with_simulations.items():
             for simulation_file in simulations:
                 self.__add_new_tab("simulation", simulation_file, sample,
-                                   progress_bar,dirtyinteger, count,
+                                   progress_bar, dirtyinteger, count,
                                    load_data=load_data)
                 dirtyinteger += 1
 
@@ -933,7 +938,7 @@ class Potku(QtWidgets.QMainWindow):
                 tab.data_loaded = load_data
                 if load_data:
                     simulation.load_data()
-                    tab.add_simulation_depth_profile()
+                    tab.add_simulation_target_and_recoil()
                     self.ui.tabs.addTab(tab, simulation.name)
                     self.ui.tabs.setCurrentWidget(tab)
 
