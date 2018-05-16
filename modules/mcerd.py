@@ -268,11 +268,22 @@ class MCERD:
                     count += 1
 
         with open(recoil_file, "w") as file_rec:
+            # MCERD requires the recoil atom distribution to start with these
+            # points
             file_rec.write(
                 "0.00 0.000001\n10.00 0.000001\n")
+
             for point in recoil_element.get_points():
                 file_rec.write(
                     str(round(point.get_x() + 10.01, 2)) + " " +
                     str(round(point.get_y(), 4)) + "\n")
+
+            # MCERD requires the recoil atom distribution to end with these
+            # points
+            file_rec.write(
+                str(round(recoil_element.get_points()[-1].get_x() + 10.02, 2)) +
+                " 0.0\n" +
+                str(round(recoil_element.get_points()[-1].get_x() + 10.03, 2)) +
+                " 0.0\n")
 
         return recoil_file
