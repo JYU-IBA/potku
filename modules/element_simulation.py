@@ -242,7 +242,7 @@ class ElementSimulation:
         reference_density = obj["reference_density"]
 
         obj = json.load(open(profile_file_path))
-        channel_width = obj["channel_width"]
+        channel_width = obj["energy_spectra"]["channel_width"]
 
         simulation_folder, filename = os.path.split(mcsimu_file_path)
 
@@ -339,10 +339,10 @@ class ElementSimulation:
                                                              time.localtime(
                                                                  time.time()))
             obj_profile["modification_time_unix"] = time.time()
-            obj_profile["channel_width"] = self.channel_width
+            obj_profile["energy_spectra"]["channel_width"] = self.channel_width
         else:
             obj_profile = {}
-            obj_profile["channel_width"] = self.channel_width
+            obj_profile["energy_spectra"]["channel_width"] = self.channel_width
 
         with open(file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)

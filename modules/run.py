@@ -84,10 +84,10 @@ class Run:
 
         if os.path.exists(measurement_file_path):
             obj = json.load(open(measurement_file_path))
-            obj["modification_time"] = time.strftime("%c %z %Z",
+            obj["general"]["modification_time"] = time.strftime("%c %z %Z",
                                                      time.localtime(
                                                          time.time()))
-            obj["modification_time_unix"] = time.time()
+            obj["general"]["modification_time_unix"] = time.time()
             obj["run"] = run_obj
             obj["beam"] = beam_obj
         else:

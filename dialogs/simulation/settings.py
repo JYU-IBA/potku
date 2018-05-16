@@ -147,8 +147,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         if check_box.isChecked():
             self.simulation.run = None
             self.simulation.detector = None
-            self.simulation.measurement_setting_file_name = None
-            self.simulation.measurement_setting_file_description = None
+            self.simulation.measurement_setting_file_name = \
+                self.simulation.name
+            self.simulation.measurement_setting_file_description = ""
             self.simulation.target.target_theta = \
                 self.simulation.request.default_target.target_theta
             # TODO: delete possible simulation specific files.
@@ -166,12 +167,10 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                        filename_to_remove))
         else:
             try:
-                if self.simulation.measurement_setting_file_name is None:
-                    file_name = "temp"
-                else:
-                    file_name = self.simulation.measurement_setting_file_name
                 measurement_settings_file_path = os.path.join(
-                    self.simulation.directory, file_name + ".measurement")
+                    self.simulation.directory,
+                    self.simulation.measurement_setting_file_name
+                    + ".measurement")
                 target_file_path = os.path.join(self.simulation.directory,
                                                 self.simulation.target.name +
                                                 ".target")

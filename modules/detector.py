@@ -219,7 +219,7 @@ class Detector:
 
         if measurement_file_path.endswith(".measurement"):
             measurement_obj = json.load(open(measurement_file_path))
-            detector_theta = measurement_obj["detector_theta"]
+            detector_theta = measurement_obj["geometry"]["detector_theta"]
         else:
             detector_theta = request.default_detector.detector_theta
 
@@ -304,10 +304,12 @@ class Detector:
         # Read .measurement to obj to update only detector angles
         if os.path.exists(measurement_file_path):
             obj = json.load(open(measurement_file_path))
-            obj["detector_theta"] = self.detector_theta
+            obj["geometry"]["detector_theta"] = self.detector_theta
         else:
             obj = {
-                "detector_theta": self.detector_theta
+                "geometry": {
+                    "detector_theta": self.detector_theta
+                }
             }
 
         with open(measurement_file_path, "w") as file:

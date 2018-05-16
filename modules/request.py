@@ -117,16 +117,15 @@ class Request:
             self.default_detector.create_folder_structure(
                 self.default_detector_folder)
 
-        target_path = ""
-        for file in os.listdir(self.default_folder):
-            if file.endswith(".target"):
-                target_path = os.path.join(self.default_folder, file)
-                break
-        if target_path:
-            self.default_target = Target.from_file(
-                target_path, default_measurement_file_path, self)
-        else:
-            self.default_target = Target()
+        try:
+            self.default_target = Target.from_file(os.path.join(
+                self.default_folder, "Default.target"),
+                default_measurement_file_path, self)
+        except FileNotFoundError:
+            self.default_target = Target(name="Default")
+            self.default_target.to_file(os.path.join(self.default_folder,
+                                                     "Default.target"),
+                                        default_measurement_file_path)
 
         try:
             self.default_measurement = Measurement.from_file(

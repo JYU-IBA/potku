@@ -174,7 +174,7 @@ class Simulation:
                  modification_time=time.time(), tab_id=-1, run=None,
                  detector=None, target=Target(),
                  measurement_setting_file_name=None,
-                 measurement_setting_file_description=None):
+                 measurement_setting_file_description=""):
         """Initializes Simulation object.
 
         Args:
@@ -185,6 +185,8 @@ class Simulation:
         self.request = request
         self.name = name
         self.description = description
+        if not measurement_setting_file_name:
+            self.measurement_setting_file_name = name
         self.measurement_setting_file_name = measurement_setting_file_name
         self.measurement_setting_file_description = \
             measurement_setting_file_description
