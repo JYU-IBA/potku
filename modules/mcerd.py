@@ -239,6 +239,14 @@ class MCERD:
                     mass = masses.find_mass_of_isotope(element)
                     file_target.write("%0.2f %s" % (mass,
                                                     element.symbol) + "\n")
+
+            # First layer is used for target surface calculation.
+            file_target.write("\n"
+                              "0.01 nm \n"
+                              "ZBL \n"
+                              "ZBL \n"
+                              "0.000001 g/cm3 \n"
+                              "0 1.0 \n")
             count = 0
             for layer in target.layers:
                 file_target.write("\n")
@@ -260,16 +268,17 @@ class MCERD:
                         file_foils.write("%0.2f %s" % (mass,
                                                        element.symbol) + "\n")
             count = 0
-            for layer in target.layers:
-                file_foils.write("\n")
-                file_foils.write(str(layer.thickness) + " nm" + "\n")
-                file_foils.write("ZBL" + "\n")
-                file_foils.write("ZBL" + "\n")
-                file_foils.write(str(layer.density) + " g/cm3" + "\n")
-                for element in layer.elements:
-                    file_foils.write(str(count) +
-                                     (" %0.3f" % element.amount) + "\n")
-                    count += 1
+            for foil in detector.foils:
+                for layer in foil.layers:
+                    file_foils.write("\n")
+                    file_foils.write(str(layer.thickness) + " nm" + "\n")
+                    file_foils.write("ZBL" + "\n")
+                    file_foils.write("ZBL" + "\n")
+                    file_foils.write(str(layer.density) + " g/cm3" + "\n")
+                    for element in layer.elements:
+                        file_foils.write(str(count) +
+                                         (" %0.3f" % element.amount) + "\n")
+                        count += 1
 
         with open(recoil_file, "w") as file_rec:
             # MCERD requires the recoil atom distribution to start with these
