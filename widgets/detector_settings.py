@@ -5,6 +5,8 @@ Updated on 10.5.2018
 """
 import time
 
+from PyQt5.QtCore import Qt
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
@@ -58,21 +60,15 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.ui.removeEfficiencyButton.clicked.connect(
             lambda: self.__remove_efficiency())
 
-        # TODO: Calibration settings
         # Calibration settings
-        # self.ui.loadCalibrationParametersButton. \
-        #     clicked.connect(lambda: self.__load_file("CALIBRATION_SETTINGS"))
-        # self.ui.saveCalibrationParametersButton. \
-        #     clicked.connect(lambda: self.__save_file("CALIBRATION_SETTINGS"))
-        # self.ui.executeCalibrationButton.clicked. \
-        #     connect(self.__open_calibration_dialog)
-        # self.ui.executeCalibrationButton.setEnabled(
-        #     not self.request.samples.measurements.is_empty())
-        # self.ui.slopeLineEdit.setValidator(
-        #     double_validator)
-        # self.ui.offsetLineEdit.setValidator(
-        #     double_validator)
-        # self.calibration_settings.show(self.detector_settings_widget)
+        self.ui.loadCalibrationParametersButton. \
+            clicked.connect(lambda: self.__load_file("CALIBRATION_SETTINGS"))
+        self.ui.saveCalibrationParametersButton. \
+            clicked.connect(lambda: self.__save_file("CALIBRATION_SETTINGS"))
+        self.ui.executeCalibrationButton.clicked. \
+            connect(self.__open_calibration_dialog)
+        self.ui.executeCalibrationButton.setEnabled(
+            not self.request.samples.measurements.is_empty())
 
         self.show_settings()
 
@@ -83,15 +79,15 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             self.obj.modification_time)))
         self.descriptionLineEdit.setPlainText(self.obj.description)
         self.typeComboBox.setCurrentIndex(self.typeComboBox.findText(
-            self.obj.type))
-        # self.slopeLineEdit.setText(
-        #     str(self.calibration_settings.slope))
-        # self.offsetLineEdit.setText(
-        #     str(self.calibration_settings.offset))
-        # self.angleSlopeLineEdit.setText(
-        #     str(self.calibration_settings.angleslope))
-        # self.angleOffsetLineEdit.setText(
-        #     str(self.calibration_settings.angleoffset))
+            self.obj.type, Qt.MatchFixedString))
+        self.angleSlopeLineEdit.setText(
+            str(self.obj.angle_slope))
+        self.angleOffsetLineEdit.setText(
+            str(self.obj.angle_offset))
+        self.slopeLineEdit.setText(
+            str(self.obj.tof_slope))
+        self.offsetLineEdit.setText(
+            str(self.obj.tof_offset))
 
         # Detector foils
         self.calculate_distance()
@@ -107,10 +103,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             self.descriptionLineEdit.toPlainText()
         self.obj.type = \
             self.typeComboBox.currentText()
-        # self.calibration_settings.set_settings(
-        #     self.detector_settings_widget)
-        # self.obj.calibration = \
-        #     self.calibration_settings
+        self.obj.angle_offset = self.angleOffsetLineEdit.text()
+        self.obj.angle_slope = self.angleSlopeLineEdit.text()
+        self.obj.tof_offset = self.offsetLineEdit.text()
+        self.obj.tof_slope = self.slopeLineEdit.text()
         # Detector foils
         self.calculate_distance()
         self.obj.foils = self.tmp_foil_info
@@ -222,10 +218,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             self.obj.get_efficiency_files())
 
     def __open_calibration_dialog(self):
-        measurements = [self.request.measurements.get_key_value(key)
+        measurements = [self.request.samples.measurements.get_key_value(key)
                         for key in
                         self.request.samples.measurements.measurements.keys()]
-        CalibrationDialog(measurements, self.settings, self)
+        CalibrationDialog(measurements, self.obj, self)
 
     def calculate_distance(self):
         distance = 0
