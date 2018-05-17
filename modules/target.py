@@ -96,7 +96,9 @@ class Target:
         try:
             obj = json.load(open(measurement_file_path))
             target_theta = obj["geometry"]["target_theta"]
-        except KeyError:
+        # If keys do not exist or measurement_file_path is empty or file
+        # doesn't exist:
+        except (KeyError, IsADirectoryError, FileNotFoundError):
             target_theta = request.default_target.target_theta
 
         return cls(name=name, description=description,
