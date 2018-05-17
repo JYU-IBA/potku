@@ -28,8 +28,8 @@ class Target:
                 "image_size", "image_file", "scattering_element", "layers", \
                 "target_theta"
 
-    def __init__(self, name="", modification_time=time.time(), description="",
-                 target_type="AFM", image_size=(1024, 1024),
+    def __init__(self, name="Default", modification_time=time.time(),
+                 description="", target_type="AFM", image_size=(1024, 1024),
                  image_file="", scattering_element=Element.from_string(
                 "4He 3.0"), target_theta=70.0, layers=[]):
         """Initialize a target.
