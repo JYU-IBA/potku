@@ -101,13 +101,16 @@ class GetEspe:
         self.run_get_espe()
 
     def run_get_espe(self):
-        command = ("type " if platform.system() == "Windows" else "cat ") + \
-                  self.__result_files + "| " + os.path.join(
+        get_espe_command = self.__result_files + "| " + os.path.join(
             "external", "Potku-bin", "get_espe" +
                                      (".exe " if platform.system() == "Windows"
                                       else "_linux "
                                       if platform.system() == "Linux"
                                       else "_mac ")) + self.__params + " > " + \
                   self.output_file
+        # Echo the command for debug purposes
+        command = "echo " + '"' + get_espe_command + '" & ' + \
+                  ("type " if platform.system() == "Windows" else "cat ") + \
+                  get_espe_command
 
         subprocess.call(command, shell=True)
