@@ -28,4 +28,5 @@ class FoilWidget(QtWidgets.QWidget):
         self.parent.calculate_distance()
 
     def __calculate_distance(self):
-        line_edit = self.sender()
+        spin_box = self.sender()
+        self.parent.calculate_distance()
