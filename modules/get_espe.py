@@ -77,7 +77,7 @@ class GetEspe:
         self.__channel_width = settings["ch"]
         self.__fluence = settings["fluence"]  # from Run object
         self.__timeres = settings["timeres"]
-        self.__density = settings["reference_density"]
+        self.__density = settings["reference_density"] * 1e16
         self.__solid = settings["solid"]
 
         toflen = self.__detector.foils[self.__detector.tof_foils[1]].distance

@@ -82,7 +82,7 @@ class MCERD:
 
     def stop_process(self):
         """Stop the MCERD process and delete the MCERD object."""
-        self._MCERD__process.kill()
+        self.__process.kill()
 
     def __create_mcerd_files(self):
         """
