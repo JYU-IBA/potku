@@ -35,12 +35,16 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout_2">
        <item>
-        <widget class="QLineEdit" name="distanceEdit"/>
+        <widget class="QDoubleSpinBox" name="distanceDoubleSpinBox">
+         <property name="maximum">
+          <double>99999999999999996881384047029926983435371269061279689406644211752791525136670645395254002395395884805259264.000000000000000</double>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QLabel" name="label">
          <property name="text">
-          <string>nm</string>
+          <string>cm</string>
          </property>
         </widget>
        </item>
