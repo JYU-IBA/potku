@@ -89,6 +89,7 @@ class Simulations:
             serial_number = int(simulation_folder[len(directory_prefix):len(
                 directory_prefix) + 2])
             simulation.serial_number = serial_number
+            simulation.tab_id = tab_id
 
             for f in os.listdir(simulation_folder_path):
                 if f.endswith(measurement_extension):
@@ -139,14 +140,22 @@ class Simulations:
                 serial_number = int(simulation_folder[len(directory_prefix):len(
                     directory_prefix) + 2])
                 simulation.serial_number = serial_number
-                sample.simulations.simulations[tab_id] = simulation
                 self.request.samples.simulations.simulations[
                     tab_id] = simulation
             except:
                 log = "Something went wrong while adding a new simulation."
                 logging.getLogger("request").critical(log)
                 print(sys.exc_info())
+        sample.simulations.simulations[tab_id] = simulation
         return simulation
+
+    def remove_obj(self, removed_obj):
+        """Removes given simulation.
+
+        Args:
+            removed_obj: Simulation to remove.
+        """
+        self.simulations.pop(removed_obj.tab_id)
 
     def remove_by_tab_id(self, tab_id):
         """Removes simulation from simulations by tab id
