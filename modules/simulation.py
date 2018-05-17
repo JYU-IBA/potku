@@ -173,7 +173,7 @@ class Simulation:
                  description="This is a default simulation setting file.",
                  modification_time=time.time(), tab_id=-1, run=None,
                  detector=None, target=Target(),
-                 measurement_setting_file_name=None,
+                 measurement_setting_file_name="",
                  measurement_setting_file_description=""):
         """Initializes Simulation object.
 
@@ -183,14 +183,17 @@ class Simulation:
         self.tab_id = tab_id
         self.path = path
         self.request = request
+
         self.name = name
         self.description = description
-        if not measurement_setting_file_name:
-            self.measurement_setting_file_name = name
+        self.modification_time = modification_time
+
         self.measurement_setting_file_name = measurement_setting_file_name
+        if not self.measurement_setting_file_name:
+            self.measurement_setting_file_name = name
         self.measurement_setting_file_description = \
             measurement_setting_file_description
-        self.modification_time = modification_time
+
         self.element_simulations = []
 
         self.run = run

@@ -183,7 +183,7 @@ class Measurement:
                  depth_for_concentration_from=800,
                  depth_for_concentration_to=1500, channel_width=0.1,
                  reference_cut="", number_of_splits=10, normalization="first",
-                 measurement_setting_file_name="Default",
+                 measurement_setting_file_name="",
                  measurement_setting_file_description=
                  "This a default measurement setting file."
                  ):
@@ -205,6 +205,8 @@ class Measurement:
         self.target = target
 
         self.measurement_setting_file_name = measurement_setting_file_name
+        if not self.measurement_setting_file_name:
+            self.measurement_setting_file_name = name
         self.measurement_setting_file_description = \
             measurement_setting_file_description
 

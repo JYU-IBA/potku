@@ -143,12 +143,14 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
          Update Simulation's Run, Detector and Target objects. If simulation
          specific parameters are in use, save them into a file.
         """
+        if not self.simulation.measurement_setting_file_name:
+            self.simulation.measurement_setting_file_name = \
+                self.simulation.name
+
         check_box = self.ui.simulationSettingsCheckBox
         if check_box.isChecked():
             self.simulation.run = None
             self.simulation.detector = None
-            self.simulation.measurement_setting_file_name = \
-                self.simulation.name
             self.simulation.measurement_setting_file_description = ""
             self.simulation.target.target_theta = \
                 self.simulation.request.default_target.target_theta
