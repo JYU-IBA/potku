@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 4.5.2018
+Updated on 11.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -183,7 +183,7 @@ class Measurement:
                  depth_for_concentration_from=800,
                  depth_for_concentration_to=1500, channel_width=0.1,
                  reference_cut="", number_of_splits=10, normalization="First",
-                 measurement_setting_file_name="Default",
+                 measurement_setting_file_name="",
                  measurement_setting_file_description=
                  "This a default measurement setting file."
                  ):
@@ -205,6 +205,8 @@ class Measurement:
         self.target = target
 
         self.measurement_setting_file_name = measurement_setting_file_name
+        if not self.measurement_setting_file_name:
+            self.measurement_setting_file_name = name
         self.measurement_setting_file_description = \
             measurement_setting_file_description
 
@@ -262,9 +264,9 @@ class Measurement:
         energy_distribution = obj_measurement["beam"]["energy_distribution"]
         beam_charge = obj_measurement["beam"]["charge"]
 
-        spot_size = tuple(obj_measurement["run"]["spot_size"])
-        divergence = obj_measurement["run"]["divergence"]
-        profile = obj_measurement["run"]["profile"]
+        spot_size = tuple(obj_measurement["beam"]["spot_size"])
+        divergence = obj_measurement["beam"]["divergence"]
+        profile = obj_measurement["beam"]["profile"]
         fluence = obj_measurement["run"]["fluence"]
         current = obj_measurement["run"]["current"]
         run_charge = obj_measurement["run"]["charge"]
@@ -308,53 +310,36 @@ class Measurement:
         target.target_theta = target_theta
 
         return cls(request=request, name=name, description=description,
-            modification_time=modification_time,
-            run=run, detector=detector,
-            target=target, profile_name=profile_name,
-            profile_description=profile_description,
-            profile_modification_time=profile_modification_time,
-            number_of_depth_steps=number_of_depth_steps,
-            depth_step_for_stopping=depth_step_for_stopping,
-            depth_step_for_output=depth_step_for_output,
-            depth_for_concentration_from=depth_for_concentration_from,
-            depth_for_concentration_to=depth_for_concentration_to,
-            channel_width=channel_width, reference_cut=reference_cut,
-            number_of_splits=number_of_splits,
-            normalization=normalization,
-            reference_density=reference_density)
+                   modification_time=modification_time,
+                   run=run, detector=detector,
+                   target=target, profile_name=profile_name,
+                   profile_description=profile_description,
+                   profile_modification_time=profile_modification_time,
+                   number_of_depth_steps=number_of_depth_steps,
+                   depth_step_for_stopping=depth_step_for_stopping,
+                   depth_step_for_output=depth_step_for_output,
+                   depth_for_concentration_from=depth_for_concentration_from,
+                   depth_for_concentration_to=depth_for_concentration_to,
+                   channel_width=channel_width, reference_cut=reference_cut,
+                   number_of_splits=number_of_splits,
+                   normalization=normalization,
+                   reference_density=reference_density)
 
-    def measurement_to_file(self, measurement_file_path):
-        obj_measurement = {}
+    def measurement_to_file(self, measurement_file_path, profile_file_path):
+        if os.path.exists(measurement_file_path):
+            obj_measurement = json.load(open(measurement_file_path))
+        else:
+            obj_measurement = {}
 
         obj_measurement["general"] = {}
-        obj_measurement["beam"] = {}
-        obj_measurement["run"] = {}
-        obj_measurement["geometry"] = {}
 
         obj_measurement["general"]["name"] = self.measurement_setting_file_name
         obj_measurement["general"]["description"] = \
             self.measurement_setting_file_description
-        obj_measurement["general"]["modification_time"] = str(datetime.datetime.fromtimestamp(
-            time.time()))
+        obj_measurement["general"]["modification_time"] = time.strftime("%c %z %Z",
+                                                             time.localtime(
+                                                                 time.time()))
         obj_measurement["general"]["modification_time_unix"] = time.time()
-
-        obj_measurement["beam"]["ion"] = str(self.run.beam.ion)
-        obj_measurement["beam"]["energy"] = self.run.beam.energy
-        obj_measurement["beam"]["energy_distribution"] = \
-            self.run.beam.energy_distribution
-        obj_measurement["beam"]["charge"] = self.run.beam.charge
-        obj_measurement["run"]["spot_size"] = self.run.beam.spot_size
-        obj_measurement["run"]["divergence"] = self.run.beam.divergence
-        obj_measurement["run"]["profile"] = self.run.beam.profile
-        obj_measurement["run"]["fluence"] = self.run.fluence
-        obj_measurement["run"]["current"] = self.run.current
-        obj_measurement["run"]["charge"] = self.run.charge
-        obj_measurement["run"]["time"] = self.run.time
-
-        obj_measurement["geometry"]["detector_theta"] = \
-            self.request.default_detector.detector_theta
-        obj_measurement["geometry"]["target_theta"] = \
-            self.request.default_target.target_theta
 
         with open(measurement_file_path, "w") as file:
             json.dump(obj_measurement, file, indent=4)
@@ -362,16 +347,17 @@ class Measurement:
     def profile_to_file(self, profile_file_path):
         obj_profile = {}
 
-        obj_profile["general"] = {}
-        obj_profile["depth_profiles"] = {}
-        obj_profile["energy_spectra"] = {}
-        obj_profile["composition_changes"] = {}
+        obj_profile = {"general": {},
+                       "depth_profiles": {},
+                       "energy_spectra": {},
+                       "composition_changes": {}}
 
         obj_profile["general"]["name"] = self.profile_name
         obj_profile["general"]["description"] = \
             self.profile_description
-        obj_profile["general"]["modification_time"] = str(
-            datetime.datetime.fromtimestamp(time.time()))
+        obj_profile["general"]["modification_time"] = time.strftime("%c %z %Z",
+                                                             time.localtime(
+                                                                 time.time()))
         obj_profile["general"]["modification_time_unix"] = \
             self.profile_modification_time
 

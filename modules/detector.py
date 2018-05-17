@@ -217,10 +217,10 @@ class Detector:
                                     (foil["size"])[1],
                                     distance, layers, foil["transmission"]))
 
-        if measurement_file_path.endswith(".measurement"):
-            mes_obj = json.load(open(measurement_file_path))
-            detector_theta = mes_obj["geometry"]["detector_theta"]
-        else:
+        try:
+            measurement_obj = json.load(open(measurement_file_path))
+            detector_theta = measurement_obj["geometry"]["detector_theta"]
+        except KeyError:
             detector_theta = request.default_detector.detector_theta
 
         return cls(path=detector_file_path,
@@ -258,7 +258,7 @@ class Detector:
         obj = {
             "name": self.name,
             "description": self.description,
-            "modification_time": str(datetime.datetime.fromtimestamp(
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
                 time.time())),
             "modification_time_unix": time.time(),
             "detector_type": self.type,
@@ -269,8 +269,7 @@ class Detector:
             "tof_slope": self.tof_slope,
             "tof_offset": self.tof_offset,
             "angle_slope": self.angle_slope,
-            "angle_offset": self.angle_offset,
-            "detector_theta": self.detector_theta
+            "angle_offset": self.angle_offset
         }
 
         for foil in self.foils:
@@ -303,15 +302,10 @@ class Detector:
             json.dump(obj, file, indent=4)
 
         # Read .measurement to obj to update only detector angles
-        if os.path.exists(measurement_file_path):
+        try:
             obj = json.load(open(measurement_file_path))
-            try:
-                obj["geometry"]["detector_theta"] = self.detector_theta
-            except KeyError:
-                obj["geometry"] = {
-                    "detector_theta": self.detector_theta
-                }
-        else:
+            obj["geometry"]["detector_theta"] = self.detector_theta
+        except (KeyError, FileNotFoundError):
             obj = {
                 "geometry": {
                     "detector_theta": self.detector_theta

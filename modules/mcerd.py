@@ -58,9 +58,11 @@ class MCERD:
 
         # The recoil file and erd file are later passed to get_espe.
         self.recoil_file = self.__create_mcerd_files()
-        self.erd_file = os.path.join(self.__tmp, self.__hash + "." +
-                                     str(self.__settings["seed_number"]) +
+        self.result_file = os.path.join(self.__tmp, self.__hash + "." +
+                                        str(self.__settings["seed_number"]) +
                                      ".erd")
+        self.espe_file_name = Element.__str__(
+            settings["recoil_element"].element) + ".simu"
 
         # The command that is used to start the MCERD process.
         command = os.path.join("external", "Potku-bin", "mcerd" +
@@ -107,7 +109,7 @@ class MCERD:
             file.write(
                 "Beam ion: " + str(beam.ion.isotope) + beam.ion.symbol + "\n")
 
-            file.write("Beam energy: " + str(beam.energy) + "\n")
+            file.write("Beam energy: " + str(beam.energy) + " MeV\n")
 
             file.write("Target description file: " + target_file + "\n")
 
@@ -121,20 +123,22 @@ class MCERD:
 
             file.write("Recoiling material distribution: " + recoil_file + "\n")
 
-            file.write("Target angle: " + str(target.target_theta) + "\n")
+            file.write("Target angle: " + str(target.target_theta) + " deg\n")
 
             file.write(
                 "Beam spot size: " + ("%0.1f %0.1f mm" % beam.spot_size) + "\n")
 
             file.write("Minimum angle of scattering: " +
-                       str(self.__settings["minimum_scattering_angle"]) + "\n")
+                       str(self.__settings["minimum_scattering_angle"])
+                       + "deg\n")
 
             file.write("Minimum main scattering angle: " +
                        str(self.__settings["minimum_main_scattering_angle"]) +
-                       "\n")
+                       " deg\n")
 
             file.write("Minimum energy of ions: " +
-                       str(self.__settings["minimum_energy_of_ions"]) + "\n")
+                       str(self.__settings["minimum_energy_of_ions"])
+                       + " MeV \n")
 
             file.write("Average number of recoils per primary ion: " +
                        str(self.__settings["number_of_recoils"]) + "\n")
@@ -264,11 +268,22 @@ class MCERD:
                     count += 1
 
         with open(recoil_file, "w") as file_rec:
+            # MCERD requires the recoil atom distribution to start with these
+            # points
             file_rec.write(
                 "0.00 0.000001\n10.00 0.000001\n")
+
             for point in recoil_element.get_points():
                 file_rec.write(
                     str(round(point.get_x() + 10.01, 2)) + " " +
                     str(round(point.get_y(), 4)) + "\n")
+
+            # MCERD requires the recoil atom distribution to end with these
+            # points
+            file_rec.write(
+                str(round(recoil_element.get_points()[-1].get_x() + 10.02, 2)) +
+                " 0.0\n" +
+                str(round(recoil_element.get_points()[-1].get_x() + 10.03, 2)) +
+                " 0.0\n")
 
         return recoil_file

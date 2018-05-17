@@ -28,8 +28,8 @@ class Target:
                 "image_size", "image_file", "scattering_element", "layers", \
                 "target_theta"
 
-    def __init__(self, name="", modification_time=time.time(), description="",
-                 target_type="AFM", image_size=(1024, 1024),
+    def __init__(self, name="Default", modification_time=time.time(),
+                 description="", target_type="AFM", image_size=(1024, 1024),
                  image_file="", scattering_element=Element.from_string(
                 "4He 3.0"), target_theta=70.0, layers=[]):
         """Initialize a target.
@@ -93,10 +93,10 @@ class Target:
                                 layer["thickness"],
                                 layer["density"]))
 
-        if measurement_file_path.endswith(".measurement"):
+        try:
             obj = json.load(open(measurement_file_path))
             target_theta = obj["geometry"]["target_theta"]
-        else:
+        except KeyError:
             target_theta = request.default_target.target_theta
 
         return cls(name=name, description=description,
@@ -137,19 +137,15 @@ class Target:
             }
             obj["layers"].append(layer_obj)
 
-        with open(target_file_path, "w") as file:
-            json.dump(obj, file, indent=4)
+        if target_file_path is not None:
+            with open(target_file_path, "w") as file:
+                json.dump(obj, file, indent=4)
 
         if measurement_file_path is not None:
             # Read .measurement to obj to update only target angles
             if os.path.exists(measurement_file_path):
                 obj = json.load(open(measurement_file_path))
-                try:
-                    obj["geometry"]["target_theta"] = self.target_theta
-                except KeyError:
-                    obj["geometry"] = {
-                        "target_theta": self.target_theta
-                    }
+                obj["geometry"]["target_theta"] = self.target_theta
             else:
                 obj = {
                     "geometry": {

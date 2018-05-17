@@ -74,7 +74,7 @@ class Request:
         self.samples = Samples(self)
 
         self.default_run = Run()
-        self.default_target = Target()
+        # self.default_target = Target()
 
         self.__tabs = tabs
         self.__master_measurement = None
@@ -118,6 +118,16 @@ class Request:
                 self.default_detector_folder)
 
         try:
+            self.default_target = Target.from_file(os.path.join(
+                self.default_folder, "Default.target"),
+                default_measurement_file_path, self)
+        except FileNotFoundError:
+            self.default_target = Target(name="Default")
+            self.default_target.to_file(os.path.join(self.default_folder,
+                                                     "Default.target"),
+                                        default_measurement_file_path)
+
+        try:
             self.default_measurement = Measurement.from_file(
                 os.path.join(self.default_folder, "Default.measurement"),
                 os.path.join(self.default_folder, "Default.profile"),
@@ -136,6 +146,10 @@ class Request:
             self.default_measurement.profile_to_file(os.path.join(
                 self.default_folder,
                 self.default_measurement.profile_name + ".profile"))
+            self.default_measurement.run.to_file(os.path.join(
+                self.default_folder,
+                self.default_measurement.measurement_setting_file_name +
+                ".measurement"))
 
         try:
             self.default_simulation = Simulation.from_file(self,

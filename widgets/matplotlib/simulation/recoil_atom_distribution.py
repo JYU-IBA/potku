@@ -3,6 +3,10 @@
 Created on 1.3.2018
 Updated on 28.3.2018
 """
+from PyQt5.QtGui import QIcon
+
+from dialogs.energy_spectrum import EnergySpectrumParamsDialog, \
+    EnergySpectrumWidget
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
@@ -146,9 +150,15 @@ class RecoilElement:
 
 
 class ElementWidget(QtWidgets.QWidget):
-    """Class for creating an element widget for the recoil atom distribution."""
-    def __init__(self, element, icon_manager):
+    """Class for creating an element widget for the recoil atom distribution.
+    Args:
+        parent: A SimulationTabWidget.
+        """
+
+    def __init__(self, parent, element, icon_manager):
         super().__init__()
+
+        self.parent = parent
 
         horizontal_layout = QtWidgets.QHBoxLayout()
 
@@ -162,13 +172,25 @@ class ElementWidget(QtWidgets.QWidget):
 
         self.radio_button.setText(button_text)
 
-        spinbox = QtWidgets.QSpinBox()
-        spinbox.setToolTip("Number of processes used in simulation")
+        draw_spectrum_button = QtWidgets.QPushButton()
+        draw_spectrum_button.setIcon(QIcon(
+            "ui_icons/potku/energy_spectrum_icon.svg"))
+        draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                        QtWidgets.QSizePolicy.Fixed)
+        draw_spectrum_button.clicked.connect(self.plot_spectrum)
 
         horizontal_layout.addWidget(self.radio_button)
-        horizontal_layout.addWidget(spinbox)
+        horizontal_layout.addWidget(draw_spectrum_button)
 
         self.setLayout(horizontal_layout)
+
+    def plot_spectrum(self):
+        dialog = EnergySpectrumParamsDialog(self.parent)
+        if dialog.result_files:
+            self.parent.energy_spectrum_widget = EnergySpectrumWidget(
+                parent=self.parent, use_cuts=dialog.result_files,
+                bin_width=dialog.bin_width)
+            self.parent.add_widget(self.parent.energy_spectrum_widget)
 
 
 class ElementManager:
@@ -177,8 +199,13 @@ class ElementManager:
     A Simulation can have 0...n ElementSimulations.
     Each ElementSimulation has 1 RecoilElement.
     Each RecoilElement has 1 Element, 1 ElementWidget and 2...n Points.
+
+    Args:
+        parent: A RecoilAtomDistributionWidget.
     """
-    def __init__(self, icon_manager, simulation):
+
+    def __init__(self, parent, icon_manager, simulation):
+        self.parent = parent
         self.icon_manager = icon_manager
         self.simulation = simulation
         self.element_simulations = self.simulation.element_simulations
@@ -202,10 +229,11 @@ class ElementManager:
         for xy in xys:
             points.append(Point(xy))
 
-        widget = ElementWidget(element, self.icon_manager)
+        widget = ElementWidget(self.parent, element, self.icon_manager)
         recoil_element = RecoilElement(element, points, widget)
         element_simulation = self.simulation.add_element_simulation(
             recoil_element)
+        widget.element_simulation = element_simulation
 
         return element_simulation
 
@@ -250,7 +278,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.tab = tab
 
         self.current_recoil_element = None
-        self.element_manager = ElementManager(self.__icon_manager, simulation)
+        self.element_manager = ElementManager(self.tab, self.__icon_manager,
+                                              simulation)
         self.target = target
         self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
 
@@ -261,7 +290,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         widget.setLayout(self.recoil_vertical_layout)
 
         scroll_vertical_layout = QtWidgets.QVBoxLayout()
-        self.parent_ui.recoilScrollAreaContents.setLayout(scroll_vertical_layout)
+        self.parent_ui.recoilScrollAreaContents.setLayout(
+            scroll_vertical_layout)
 
         scroll_vertical_layout.addWidget(widget)
         scroll_vertical_layout.addItem(
@@ -334,9 +364,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def open_element_simulation_settings(self):
         if not self.current_recoil_element:
             return
-        current_element_simulation = self.element_manager\
+        current_element_simulation = self.element_manager \
             .get_element_simulation_with_recoil_element(
-                self.current_recoil_element)
+            self.current_recoil_element)
         dialog = ElementSimulationSettingsDialog(current_element_simulation)
 
     def open_recoil_element_info(self):
@@ -349,7 +379,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.update_recoil_element_info_labels()
 
     def save_mcsimu_rec_profile(self, directory):
-        for element_simulation in self.element_manager\
+        for element_simulation in self.element_manager \
                 .element_simulations:
             element = element_simulation.recoil_element.element
             if element.isotope:
@@ -446,7 +476,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.tab.ui.contentsLayout.addWidget(simulation_controls_widget)
 
         # Add recoil element widget
-        recoil_element_widget = element_simulation.recoil_element\
+        recoil_element_widget = element_simulation.recoil_element \
             .widget
 
         self.radios.addButton(recoil_element_widget.radio_button)
@@ -469,9 +499,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         confirm_box.exec()
         if confirm_box.clickedButton() == yes_button:
-            element_simulation = self.element_manager\
+            element_simulation = self.element_manager \
                 .get_element_simulation_with_radio_button(
-                    self.radios.checkedButton())
+                self.radios.checkedButton())
             self.remove_element(element_simulation)
             self.current_recoil_element = None
             self.parent_ui.elementInfoWidget.hide()
@@ -485,7 +515,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 already_exists = False
                 for existing_element_simulation in \
                         self.element_manager.element_simulations:
-                    if layer_element == existing_element_simulation\
+                    if layer_element == existing_element_simulation \
                             .recoil_element.element:
                         already_exists = True
                         break
@@ -523,7 +553,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                                     linestyle="None",
                                                     color='yellow',
                                                     visible=False)
-
 
         # self.text_axes = self.fig.add_axes([0.8, 0.05, 0.1, 0.075])
         # self.text_box = TextBox(self.text_axes, 'Coordinates', initial="Testi")
@@ -987,22 +1016,35 @@ class SimulationControlsWidget(QtWidgets.QWidget):
 
         state_layout = QtWidgets.QHBoxLayout()
         state_layout.addWidget(QtWidgets.QLabel("State: "))
-        state_label = QtWidgets.QLabel("Not started")
-        state_layout.addWidget(state_label)
+        self.state_label = QtWidgets.QLabel("Not started")
+        state_layout.addWidget(self.state_label)
         state_widget = QtWidgets.QWidget()
         state_widget.setLayout(state_layout)
 
         controls_layout = QtWidgets.QHBoxLayout()
         run_button = QtWidgets.QPushButton("Start")
+        run_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                 QtWidgets.QSizePolicy.Fixed)
         run_button.clicked.connect(self.__start_simulation)
         stop_button = QtWidgets.QPushButton("Stop")
+        stop_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                  QtWidgets.QSizePolicy.Fixed)
         stop_button.clicked.connect(self.__stop_simulation)
         controls_layout.addWidget(run_button)
         controls_layout.addWidget(stop_button)
         controls_widget = QtWidgets.QWidget()
         controls_widget.setLayout(controls_layout)
 
+        processes_layout = QtWidgets.QFormLayout()
+        processes_label = QtWidgets.QLabel("No. of processes: ")
+        processes_spinbox = QtWidgets.QSpinBox()
+        processes_spinbox.setToolTip("Number of processes used in simulation")
+        processes_layout.addRow(processes_label, processes_spinbox)
+        processes_widget = QtWidgets.QWidget()
+        processes_widget.setLayout(processes_layout)
+
         state_and_controls_layout = QtWidgets.QVBoxLayout()
+        state_and_controls_layout.addWidget(processes_widget)
         state_and_controls_layout.addWidget(state_widget)
         state_and_controls_layout.addWidget(controls_widget)
 
@@ -1016,8 +1058,10 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         """ Calls ElementSimulation's start method.
         """
         self.element_simulation.start()
+        self.state_label.setText("Running")
 
     def __stop_simulation(self):
         """ Calls ElementSimulation's stop method.
         """
         self.element_simulation.stop()
+        self.state_label.setText("Stopped")

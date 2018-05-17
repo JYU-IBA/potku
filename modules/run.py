@@ -23,6 +23,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+import time
 
 from modules.beam import Beam
 from modules.element import Element
@@ -66,23 +67,27 @@ class Run:
                                    parameters are written.
         """
         run_obj = {
-                   "fluence": self.fluence,
-                   "current": self.current,
-                   "charge": self.charge,
-                   "time": self.time
-                   }
+            "fluence": self.fluence,
+            "current": self.current,
+            "charge": self.charge,
+            "time": self.time
+        }
         beam_obj = {
-                   "ion": self.beam.ion.__str__(),
-                   "energy": self.beam.energy,
-                   "charge": self.beam.charge,
-                   "energy_distribution": self.beam.energy_distribution,
-                   "spot_size": self.beam.spot_size,
-                   "divergence": self.beam.divergence,
-                   "profile": self.beam.profile
-                   }
+            "ion": self.beam.ion.__str__(),
+            "energy": self.beam.energy,
+            "charge": self.beam.charge,
+            "energy_distribution": self.beam.energy_distribution,
+            "spot_size": self.beam.spot_size,
+            "divergence": self.beam.divergence,
+            "profile": self.beam.profile
+        }
 
         if os.path.exists(measurement_file_path):
             obj = json.load(open(measurement_file_path))
+            obj["general"]["modification_time"] = time.strftime("%c %z %Z",
+                                                     time.localtime(
+                                                         time.time()))
+            obj["general"]["modification_time_unix"] = time.time()
             obj["run"] = run_obj
             obj["beam"] = beam_obj
         else:

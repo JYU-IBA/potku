@@ -3,6 +3,8 @@
 Created on 12.4.2018
 Updated on 10.5.2018
 """
+import time
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
@@ -76,16 +78,12 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
 
     def show_settings(self):
         # Detector settings
-        self.nameLineEdit.setText(
-            self.obj.name)
-        self.dateLabel.setText(str(
-            datetime.datetime.fromtimestamp(
-                self.obj.modification_time)))
-        self.descriptionLineEdit.setPlainText(
-            self.obj.description)
-        self.typeComboBox.setCurrentIndex(
-            self.typeComboBox.findText(
-                self.obj.type))
+        self.nameLineEdit.setText(self.obj.name)
+        self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+            self.obj.modification_time)))
+        self.descriptionLineEdit.setPlainText(self.obj.description)
+        self.typeComboBox.setCurrentIndex(self.typeComboBox.findText(
+            self.obj.type))
         # self.slopeLineEdit.setText(
         #     str(self.calibration_settings.slope))
         # self.offsetLineEdit.setText(

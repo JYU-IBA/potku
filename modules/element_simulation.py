@@ -3,6 +3,9 @@
 Created on 25.4.2018
 Updated on 6.5.2018
 """
+from dialogs.energy_spectrum import EnergySpectrumWidget, \
+    EnergySpectrumParamsDialog
+from modules.energy_spectrum import EnergySpectrum
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
@@ -42,7 +45,7 @@ class ElementSimulation:
                 "recoil_element", "recoil_atoms", "mcerd_objects", "get_espe", \
                 "channel_width", "reference_density", "beam", "target", \
                 "detector", "__command", "__process", "settings", \
-                "espe_settings", "description", "run"
+                "espe_settings", "description", "run", "spectra", "bin_width"
 
     def __init__(self, directory, request, recoil_element, beam=Beam(),
                  target=Target(),
@@ -125,6 +128,8 @@ class ElementSimulation:
         # simulations that belong together (with different seed numbers)
         self.mcerd_objects = {}
         self.get_espe = None
+        self.spectra = []
+        self.bin_width = 0.1
 
         self.settings = {
             "simulation_type": self.simulation_type,
@@ -151,7 +156,8 @@ class ElementSimulation:
             "reference_density": self.recoil_element.reference_density,
             "fluence": self.run.fluence,
             "timeres": self.detector.timeres,
-            "solid": self.calculate_solid()
+            "solid": self.calculate_solid(),
+            "result_directory": self.directory
         }
 
     def calculate_solid(self):
@@ -188,7 +194,8 @@ class ElementSimulation:
                     radius = foil.diameter / 2
                     solid_angle = math.pi * radius ** 2 / foil.distance ** 2
                 else:
-                    solid_angle = foil.size[0] * foil.size[1] / foil.distance ** 2
+                    solid_angle = foil.size[0] * foil.size[
+                        1] / foil.distance ** 2
                     pass
                 if smallest > solid_angle:
                     smallest = solid_angle
@@ -266,7 +273,7 @@ class ElementSimulation:
         obj = {
             "name": self.name,
             "description": self.description,
-            "modification_time": str(datetime.datetime.fromtimestamp(
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
                 time.time())),
             "modification_time_unix": time.time(),
             "simulation_type": self.simulation_type,
@@ -299,13 +306,13 @@ class ElementSimulation:
         obj = {
             "name": self.recoil_element.name,
             "description": self.recoil_element.description,
-            "modification_time": str(datetime.datetime.fromtimestamp(
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
                 time.time())),
             "modification_time_unix": time.time(),
             "simulation_type": self.recoil_element.type,
             "element": element_str,
             "reference_density": self.recoil_element.reference_density *
-                              1e22,
+                                 1e22,
             "profile": []
         }
 
@@ -328,10 +335,13 @@ class ElementSimulation:
         # Read .profile to obj to update only channel width
         if os.path.exists(file_path):
             obj_profile = json.load(open(file_path))
+            obj_profile["modification_time"] = time.strftime("%c %z %Z",
+                                                             time.localtime(
+                                                                 time.time()))
+            obj_profile["modification_time_unix"] = time.time()
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
         else:
-            obj_profile = {}
-            obj_profile["energy_spectra"] = {}
+            obj_profile = {"energy_spectra": {}}
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
 
         with open(file_path, "w") as file:
@@ -346,7 +356,8 @@ class ElementSimulation:
         """ Stop the simulation."""
         for sim in list(self.mcerd_objects.keys()):
             self.mcerd_objects[sim].stop_process()
-            del(self.mcerd_objects[sim])
+            self.calculate_espe()
+            del (self.mcerd_objects[sim])
 
     def pause(self):
         """Pause the simulation."""
@@ -355,6 +366,14 @@ class ElementSimulation:
 
     def calculate_espe(self):
         """
-        Calculate the energy spectrum from the mcred result file.
+        Calculate the energy spectrum from the MCERD result file.
         """
         self.get_espe = GetEspe(self.espe_settings, self.mcerd_objects)
+
+    def plot_spectrum(self):
+        """
+        Plots simulated energy spectrum.
+        """
+        dialog = EnergySpectrumParamsDialog(self)
+        self.spectra = dialog.spectra
+        self.bin_width = dialog.bin_width
