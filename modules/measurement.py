@@ -325,7 +325,7 @@ class Measurement:
                    normalization=normalization,
                    reference_density=reference_density)
 
-    def measurement_to_file(self, measurement_file_path, profile_file_path):
+    def measurement_to_file(self, measurement_file_path):
         if os.path.exists(measurement_file_path):
             obj_measurement = json.load(open(measurement_file_path))
         else:

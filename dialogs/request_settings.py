@@ -145,24 +145,12 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.request.default_simulation.element_simulations.append(
             self.request.default_element_simulation)
 
-        # Add depth profile settings view to the settings view
+        # Add profile settings view to the settings view
         self.profile_settings_widget = ProfileSettingsWidget(
             self.request.default_measurement)
-        self.ui.tabs.addTab(self.depth_profile_settings_widget, "Profile")
+        self.ui.tabs.addTab(self.profile_settings_widget, "Profile")
 
-        self.depth_profile_settings.show(self.depth_profile_settings_widget)
-
-        # self.depth_profile_settings_widget.ui.depthStepForStoppingLineEdit. \
-        #     setValidator(double_validator)
-        # self.depth_profile_settings_widget.ui.depthStepForOutputLineEdit. \
-        #     setValidator(double_validator)
-        #
-        # self.depth_profile_settings_widget.ui. \
-        #     depthsForConcentrationScalingLineEdit_1.setValidator(
-        #     double_validator)
-        # self.depth_profile_settings_widget.ui. \
-        #     depthsForConcentrationScalingLineEdit_2.setValidator(
-        #     double_validator)
+        self.depth_profile_settings.show(self.profile_settings_widget)
 
         self.show_settings()
 
