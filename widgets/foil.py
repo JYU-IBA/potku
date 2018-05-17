@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2018
-Updated on 26.4.2018
+Updated on 17.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -20,7 +20,13 @@ class FoilWidget(QtWidgets.QWidget):
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_foil_widget.ui"),
                              self)
         self.ui.deleteButton.clicked.connect(lambda: self._delete_foil())
+        self.ui.distanceDoubleSpinBox.valueChanged.connect(lambda:
+                                              self.__calculate_distance())
 
     def _delete_foil(self):
         self.parent.delete_foil(self)
+        self.parent.calculate_distance()
+
+    def __calculate_distance(self):
+        spin_box = self.sender()
         self.parent.calculate_distance()
