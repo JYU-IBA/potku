@@ -407,6 +407,8 @@ class Measurement:
         self.__make_directories(self.directory_data)
         self.__make_directories(self.directory_cuts)
         self.__make_directories(self.directory_composition_changes)
+        self.__make_directories(os.path.join(self.directory_composition_changes,
+                                             "Changes"))
         self.__make_directories(self.directory_depth_profiles)
         self.__make_directories(self.directory_energy_spectra)
 
@@ -748,11 +750,11 @@ class Measurement:
 
     def __remove_old_cut_files(self):
         self.__unlink_files(os.path.join(self.directory, self.directory_cuts))
-        if not os.path.exists(os.path.join(self.directory,
-                                           self.directory_composition_changes)):
-            self.__make_directories(self.directory_composition_changes)
-        self.__unlink_files(os.path.join(self.directory,
-                                         self.directory_composition_changes))
+        directory_changes = os.path.join(
+                self.directory_composition_changes, "Changes")
+        if not os.path.exists(directory_changes):
+            self.__make_directories(directory_changes)
+        self.__unlink_files(directory_changes)
 
     def __unlink_files(self, directory):
         for the_file in os.listdir(directory):
@@ -775,9 +777,10 @@ class Measurement:
                 if os.path.isfile(os.path.join(self.directory,
                                                self.directory_cuts, f))]
         elemloss = [f for f in os.listdir(os.path.join(
-            self.directory, self.directory_composition_changes))
+            self.directory, self.directory_composition_changes, "Changes"))
                     if os.path.isfile(os.path.join(
-                self.directory, self.directory_composition_changes, f))]
+                self.directory, self.directory_composition_changes, "Changes",
+                f))]
         return cuts, elemloss
 
     def fill_cuts_treewidget(self, treewidget, use_elemloss=False,
@@ -806,7 +809,8 @@ class Measurement:
             for elemloss in cuts_elemloss:
                 item = QtWidgets.QTreeWidgetItem([elemloss])
                 item.directory = os.path.join(
-                    self.directory, self.directory_composition_changes)
+                    self.directory, self.directory_composition_changes,
+                    "Changes")
                 item.file_name = elemloss
                 if item.file_name in checked_files:
                     item.setCheckState(0, QtCore.Qt.Checked)

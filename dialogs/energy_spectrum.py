@@ -147,7 +147,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     item.file_name)
             child_count = item.childCount()
             if child_count > 0:  # Elemental Losses
-                dir_elo = self.measurement.directory_composition_changes
+                dir_elo = os.path.join(
+                    self.measurement.directory_composition_changes, "Changes")
                 for i in range(child_count):
                     item_child = item.child(i)
                     if item_child.checkState(0):

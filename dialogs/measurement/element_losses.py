@@ -91,7 +91,8 @@ class ElementLossesDialog(QtWidgets.QDialog):
         adds it to the parent (mdiArea).
         """
         cut_dir = self.parent.obj.directory_cuts
-        cut_elo = self.parent.obj.directory_composition_changes
+        cut_elo = os.path.join(self.parent.obj.directory_composition_changes,
+                               "Changes")
         y_axis_0_scale = self.ui.radioButton_0max.isChecked()
         unused_y_axis_min_scale = self.ui.radioButton_minmax.isChecked()
         reference_cut = os.path.join(cut_dir, self.ui.referenceCut.currentText())
@@ -284,7 +285,8 @@ class ElementLossesWidget(QtWidgets.QWidget):
         files = "\t".join([tmp.replace(self.parent.obj.directory + "\\",
                                        "") 
                            for tmp in self.checked_cuts])
-        file = os.path.join(self.parent.obj.directory_composition_changes, self.save_file)
+        file = os.path.join(self.parent.obj.directory_composition_changes,
+            self.save_file)
         fh = open(file, "wt")
         fh.write("{0}\n".format(reference))
         fh.write("{0}\n".format(files))

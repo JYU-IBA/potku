@@ -137,7 +137,9 @@ class DepthProfileDialog(QtWidgets.QDialog):
                         item_child = item.child(j)
                         if item_child.checkState(0):
                             name = item_child.file_name
-                            dir_e = self.parent.measurement.directory_composition_changes
+                            dir_e = os.path.join(
+                                self.parent.measurement
+                                    .directory_composition_changes, "Changes")
                             use_cut.append(os.path.join(dir_e, name))
                             element = Element.from_string(item_child.file_name.split(".")[1])
                             elements.append(element)
