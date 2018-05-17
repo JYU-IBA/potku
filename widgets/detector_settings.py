@@ -25,7 +25,7 @@ from modules.general_functions import open_file_dialog
 class DetectorSettingsWidget(QtWidgets.QWidget):
     """Class for creating a detector settings tab.
     """
-    def __init__(self, obj, request, icon_manager):
+    def __init__(self, obj, request, icon_manager, measurement=None):
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_request_detector_settings.ui"),
@@ -34,6 +34,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.obj = obj
         self.request = request
         self.icon_manager = icon_manager
+        self.measurement = measurement
 
         # Temporary foils list which holds all the information given in the
         # foil dialog
@@ -257,7 +258,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         measurements = [self.request.samples.measurements.get_key_value(key)
                         for key in
                         self.request.samples.measurements.measurements.keys()]
-        CalibrationDialog(measurements, self.obj, self)
+        CalibrationDialog(measurements, self.obj, self.measurement, self)
 
     def calculate_distance(self):
         """

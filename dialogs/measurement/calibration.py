@@ -41,36 +41,38 @@ import MatplotlibCalibrationLinearFittingWidget
 class CalibrationDialog(QtWidgets.QDialog):
     """A dialog for the time of flight calibration
     """
-    def __init__(self, measurements, settings, parent_settings_dialog=None):
+    def __init__(self, measurements, detector,
+                 measurement, parent_settings_widget=None):
         """Inits the calibration dialog class.
         
         Args:
             measurements: A string list representing measurements files.
-            settings: A Settings class object.
-            parent_settings_dialog: A representing from which dialog this was 
+            detector: A Detector class object.
+            parent_settings_widget: A representing from which widget this was
                                     opened from.
         """
         super().__init__()
         self.measurements = measurements
+        self.measurement = measurement
         # TODO: Settings should be loaded from the measurement depending on
         # is the calibration dialog opened from the request settings
         # (measurement's request settings is loaded) or the measurement
         # specific settings(measurement's measurement settings is loaded).
         # This has to be done for better architecture.
-        self.settings = settings 
+        self.detector = detector
         self.__cut_file = CutFile()
         self.__cut_files = {}
         
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_calibration_dialog.ui"), self)
-        self.parent_settings_dialog = parent_settings_dialog 
+        self.parent_settings_widget = parent_settings_widget
         self.tof_calibration = TOFCalibration()
         
         measurement = None
         
         # Go through all the measurements and their cut files and list them.
         for measurement in self.measurements:
-            item = QtWidgets.QTreeWidgetItem([measurement.measurement_name])
+            item = QtWidgets.QTreeWidgetItem([measurement.name])
             
             cuts, unused_cuts_elemloss = measurement.get_cut_files()
             # May also return a list of cut file's element losses 
@@ -94,17 +96,16 @@ class CalibrationDialog(QtWidgets.QDialog):
             CalibrationCurveFittingWidget(self,
                                           self.__cut_file,
                                           self.tof_calibration,
-                                          self.settings,
-                                          self.ui.binWidthSpinBox.value(), 1)
+                                          self.detector,
+                                          self.ui.binWidthSpinBox.value(), 1,
+                                          self.measurement)
         
         old_params = None
         # Get old parameters from the parent dialog
-        if parent_settings_dialog.detector_settings:
+        if parent_settings_widget:
             try:
-                f1 = float(self.parent_settings_dialog.detector_settings.
-                           ui.slopeLineEdit.text())
-                f2 = float(self.parent_settings_dialog.detector_settings.
-                           ui.offsetLineEdit.text())
+                f1 = float(self.parent_settings_widget.ui.slopeLineEdit.text())
+                f2 = float(self.parent_settings_widget.ui.offsetLineEdit.text())
                 old_params = f1, f2
             except:
                 m = "Can't get old calibration parameters from the settings " \
@@ -165,10 +166,10 @@ class CalibrationDialog(QtWidgets.QDialog):
         """Set calibration parameters to parent dialog's calibration parameters 
         fields.
         """
-        if self.parent_settings_dialog.detector_settings:
-            self.parent_settings_dialog.detector_settings.ui.\
+        if self.parent_settings_widget.detector_settings:
+            self.parent_settings_widget.detector_settings.ui.\
                 slopeLineEdit.setText(self.ui.slopeLineEdit.text())
-            self.parent_settings_dialog.detector_settings.ui.offsetLineEdit.\
+            self.parent_settings_widget.detector_settings.ui.offsetLineEdit.\
                 setText(self.ui.offsetLineEdit.text())
             return True
         return False
@@ -288,14 +289,14 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
     """Widget class for holding MatplotlibCalibrationCurveFittingWidget.
     """
     def __init__(self, dialog, cut, tof_calibration,
-                 settings, bin_width, column):
+                 detector, bin_width, column, measurement):
         """Inits widget.
         
         Args:
             dialog: Parent dialog.
             cut: CutFile class object.
             tof_calibration: TOFCalibration class object.
-            settings: Settings object
+            detector: Detector object
             bin_width: Float representing histogram's bin width.
             column: Integer representing which column number is used.
         """
@@ -304,17 +305,17 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
                                           "ui_tof_curve_fitting_widget.ui"),
                              self)
         # NOTE: One of these should always be there. Could probably use "else"
-        if hasattr(dialog.parent_settings_dialog, "request"):
-            self.img_dir = dialog.parent_settings_dialog.request.directory
-        elif hasattr(dialog.parent_settings_dialog, "measurement"):
-            self.img_dir = dialog.parent_settings_dialog.measurement.directory
+        if hasattr(dialog.parent_settings_widget, "request"):
+            self.img_dir = dialog.parent_settings_widget.request.directory
+        elif hasattr(dialog.parent_settings_widget, "measurement"):
+            self.img_dir = dialog.parent_settings_widget.measurement.directory
         self.matplotlib = \
-            MatplotlibCalibrationCurveFittingWidget(self, settings,
+            MatplotlibCalibrationCurveFittingWidget(self, detector,
                                                     tof_calibration,
                                                     cut,
                                                     bin_width,
                                                     column,
-                                                    dialog)
+                                                    dialog, measurement)
 
             
 class CalibrationLinearFittingWidget(QtWidgets.QWidget):
@@ -333,10 +334,10 @@ class CalibrationLinearFittingWidget(QtWidgets.QWidget):
                                           "ui_tof_linear_fitting_widget.ui"),
                              self)
         # NOTE: One of these should always be there. Could probably use "else"
-        if hasattr(dialog.parent_settings_dialog, "request"):
-            self.img_dir = dialog.parent_settings_dialog.request.directory
-        elif hasattr(dialog.parent_settings_dialog, "measurement"):
-            self.img_dir = dialog.parent_settings_dialog.measurement.directory
+        if hasattr(dialog.parent_settings_widget, "request"):
+            self.img_dir = dialog.parent_settings_widget.request.directory
+        elif hasattr(dialog.parent_settings_widget, "measurement"):
+            self.img_dir = dialog.parent_settings_widget.measurement.directory
         self.matplotlib = MatplotlibCalibrationLinearFittingWidget(
             self, tof_calibration, dialog=dialog, old_params=old_params)
     

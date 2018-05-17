@@ -358,25 +358,23 @@ class TOFCalibration:
             Returns Slope and Offset of calibration.
         '''
         return self.slope, self.offset
-        
-        
-        
+
 
 class TOFCalibrationPoint:
     """ Class for the calculation of a theoretical time of flight.
     """
-    def __init__(self, time_of_flight, cut, settings):
+    def __init__(self, time_of_flight, cut, detector, measurement):
         """ Inits the class.
         
         Args:
             time_of_flight: An integer representing time of flight channel.
             cut: A CutFile class object.
-            settings: A Settings class object.
+            detector: A Detector class object.
         """
         self.cut = cut
         self.type = cut.type
         self.point_used = True
-        measuring_settings = settings.measuring_unit_settings
+        measuring_settings = detector.measuring_unit_settings
                
         # Recoiled atoms' parameters
         element = self.cut.element.symbol
