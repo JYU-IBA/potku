@@ -217,10 +217,10 @@ class Detector:
                                     (foil["size"])[1],
                                     distance, layers, foil["transmission"]))
 
-        if measurement_file_path.endswith(".measurement"):
+        try:
             measurement_obj = json.load(open(measurement_file_path))
             detector_theta = measurement_obj["geometry"]["detector_theta"]
-        else:
+        except KeyError:
             detector_theta = request.default_detector.detector_theta
 
         return cls(path=detector_file_path,
@@ -302,10 +302,10 @@ class Detector:
             json.dump(obj, file, indent=4)
 
         # Read .measurement to obj to update only detector angles
-        if os.path.exists(measurement_file_path):
+        try:
             obj = json.load(open(measurement_file_path))
             obj["geometry"]["detector_theta"] = self.detector_theta
-        else:
+        except (KeyError, FileNotFoundError):
             obj = {
                 "geometry": {
                     "detector_theta": self.detector_theta

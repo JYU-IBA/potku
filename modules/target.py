@@ -93,10 +93,10 @@ class Target:
                                 layer["thickness"],
                                 layer["density"]))
 
-        if measurement_file_path.endswith(".measurement"):
+        try:
             obj = json.load(open(measurement_file_path))
             target_theta = obj["geometry"]["target_theta"]
-        else:
+        except KeyError:
             target_theta = request.default_target.target_theta
 
         return cls(name=name, description=description,
