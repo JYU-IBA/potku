@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 10.5.2018
+Updated on 17.5.2018
 """
 import time
 
@@ -121,7 +121,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         foil_widget = FoilWidget(self)
         self.tmp_foil_info.append(new_foil)
         foil_widget.ui.foilButton.setText(new_foil.name)
-        foil_widget.ui.distanceEdit.setText("0.0")
+        foil_widget.ui.distanceDoubleSpinBox.setValue(0.0)
         foil_widget.ui.distanceLabel.setText(str(new_foil.distance))
         foil_widget.ui.foilButton.clicked.connect(
             lambda: self._open_composition_dialog())
@@ -147,9 +147,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
                     foil_widget.ui.timingFoilCheckBox.setChecked(True)
             if i != 0:
                 distance = foils[i].distance - foils[i - 1].distance
-                foil_widget.ui.distanceEdit.setText(str(distance))
+                foil_widget.ui.distanceDoubleSpinBox.setValue(distance)
             else:
-                foil_widget.ui.distanceEdit.setText(str(foils[i].distance))
+                foil_widget.ui.distanceDoubleSpinBox.setValue(
+                    foils[i].distance)
         return layout
 
     def _check_and_add(self):
@@ -231,7 +232,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         distance = 0
         for i in range(len(self.detector_structure_widgets)):
             widget = self.detector_structure_widgets[i]
-            distance = distance + float(widget.ui.distanceEdit.text())
+            distance = distance + widget.ui.distanceDoubleSpinBox.value()
             self.tmp_foil_info[i].distance = distance
 
     def delete_foil(self, foil_widget):
