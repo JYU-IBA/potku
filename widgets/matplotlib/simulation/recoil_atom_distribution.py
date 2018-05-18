@@ -185,6 +185,7 @@ class ElementWidget(QtWidgets.QWidget):
         self.setLayout(horizontal_layout)
 
     def plot_spectrum(self):
+        self.element_simulation.calculate_espe()
         dialog = EnergySpectrumParamsDialog(self.parent)
         if dialog.result_files:
             self.parent.energy_spectrum_widget = EnergySpectrumWidget(

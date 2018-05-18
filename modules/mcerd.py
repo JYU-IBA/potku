@@ -20,6 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+import shutil
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
@@ -300,3 +301,11 @@ class MCERD:
                 " 0.0\n")
 
         return recoil_file
+
+    def copy_result(self, destination):
+        """Copies MCERD result file (.erd) into given destination.
+        """
+        try:
+            shutil.copy(self.result_file, destination)
+        except FileNotFoundError:
+            pass

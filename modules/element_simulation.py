@@ -356,6 +356,7 @@ class ElementSimulation:
         """ Stop the simulation."""
         for sim in list(self.mcerd_objects.keys()):
             self.mcerd_objects[sim].stop_process()
+            self.mcerd_objects[sim].copy_result(self.directory)
             self.calculate_espe()
             del (self.mcerd_objects[sim])
 
