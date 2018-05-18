@@ -76,7 +76,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         else:
             detector_object = self.measurement.request.default_detector
         self.detector_settings_widget = DetectorSettingsWidget(
-            detector_object, self.measurement.request, self.icon_manager)
+            detector_object, self.measurement.request, self.icon_manager,
+            self.measurement)
         # 2 is calibration tab that is not needed
         calib_tab_widget = self.detector_settings_widget.ui.tabs.widget(2)
         self.detector_settings_widget.ui.tabs.removeTab(2)

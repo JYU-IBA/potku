@@ -1,7 +1,7 @@
 # coding=utf-8
-'''
+"""
 Created on 18.4.2013
-Updated on 5.7.2013
+Updated on 18.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -22,9 +22,11 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+"""
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
+             "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 from PyQt5 import QtGui, QtWidgets
 
@@ -34,74 +36,73 @@ import modules.masses as masses
 
 
 class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
-    '''Energy spectrum widget
-    '''
-    def __init__(self, parent, settings, tof_calibration, cut,
+    """Energy spectrum widget
+    """
+    def __init__(self, parent, detector, tof_calibration, cut, measurement,
                  bin_width=2.0, column=1, dialog=None):
-        '''Inits Energy Spectrum widget.
+        """Inits Energy Spectrum widget.
         
         Args:
             parent: CalibrationCurveFittingWidget
-            settings: Settings class object.
+            detector: Detector class object.
             tof_calibration: TOFCalibration class object.
             cut: CutFile class object.
             bin_width: Histograms bin width
             column: Which column of the CutFile's data is used to create a 
                     histogram.
             dialog: parent's parent dialog.
-        '''
+        """
         super().__init__(parent)
         super().fork_toolbar_buttons()
         self.canvas.manager.set_title("ToF-E Calibration - curve fitting")
         self.__fork_toolbar_buttons()
         self.dialog = dialog
-        self.settings = settings
+        self.detector = detector
         self.cut = cut
         self.cut_standard_mass = 0
         self.cut_standard_scatter_mass = 0
         self.bin_width = bin_width
         self.use_column = column
+        self.measurement = measurement
+        self.tof_calibration = tof_calibration
         
         self.tof_histogram = None
-        self.tof_calibration_point = None 
+        self.tof_calibration_point = None
+        self.selected_tof = None
         self.selection_given_manually = False
         self.canvas.mpl_connect('button_press_event', self.onclick)
         self.on_draw()
 
-        
     def onclick(self, event):
-        ''' Handles clicks on the graph
+        """ Handles clicks on the graph
         
         Args:
             event: Mouse click event.
-        '''
+        """
         if not self.selection_given_manually:
             return
         if event.button == 1:
             self.__set_calibration_point(event.xdata)                                       
-            
-            
-            
+
     def __set_calibration_point(self, tof):
         self.selected_tof = tof
         self.tof_calibration_point = TOFCalibrationPoint(self.selected_tof,
                                                          self.cut,
-                                                         self.settings)
+                                                         self.detector,
+                                                         self.measurement)
         self.__update_dialog_values()
         self.on_draw()
-        
-        
+
     def set_calibration_point_externally(self, tof):
-        '''Set calibration point.
+        """Set calibration point.
         
         Args:
             tof: Integer representing x axis value Time of Flight [Channel].
-        '''
+        """
         state = self.selection_given_manually
         self.selection_given_manually = True
         self.__set_calibration_point(tof)
         self.selection_given_manually = state
-            
             
     def __update_dialog_values(self):
         """Updates the parent dialog's fields with the calculated values.
@@ -128,20 +129,18 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
             self.cut_standard_mass = masses.get_standard_isotope(
                                                         self.cut.element.symbol)
         self.on_draw()
-        
-        
+
     def change_bin_width(self, bin_width):
-        '''Change histogram bin width.
+        """Change histogram bin width.
         
         Args:
             bin_width: Float representing graph bin width.
-        '''
+        """
         self.bin_width = bin_width
-        
-    
+
     def on_draw(self):
-        '''Draw method for matplotlib.
-        '''
+        """Draw method for matplotlib.
+        """
         self.axes.clear()
         
         if self.selection_given_manually:
@@ -162,19 +161,17 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
                                                                       err_start)
             
             # Generate points for the fitted curve to be drawn.
-            fit_points_x, fit_points_y = self.tof_histogram.get_curve_fit_points(
-                                                                         params,
-                                                                         2000)
+            fit_points_x, fit_points_y = \
+                self.tof_histogram.get_curve_fit_points(params, 2000)
             self.axes.plot(fit_points_x, fit_points_y, "-")
-            
-            
+
             if not self.selection_given_manually:
                 # Set the now selected point to the generated one.
                 # x0 is the middle point of the rising curve.
                 self.selected_tof = params[0]  
-                self.tof_calibration_point = TOFCalibrationPoint(self.selected_tof,
-                                                                 self.cut,
-                                                                 self.settings)
+                self.tof_calibration_point = \
+                    TOFCalibrationPoint(self.selected_tof, self.cut,
+                                        self.detector, self.measurement)
                 # Update dialog and draw a vertical line
                 self.__update_dialog_values()
                 self.axes.axvline(x=self.selected_tof, color="red")
@@ -195,20 +192,20 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
 
         # Draw magic
         self.canvas.draw()
-        
-        
+
     def toggle_clicks(self):
-        '''Toggle between manual ToF channel (x axis) selection.
-        '''
+        """Toggle between manual ToF channel (x axis) selection.
+        """
         self.selection_given_manually = not self.selection_given_manually
-        
-        
+
     def __fork_toolbar_buttons(self):
-        '''Custom toolbar buttons be here.
-        '''
+        """Custom toolbar buttons be here.
+        """
         self.selectButton = QtWidgets.QToolButton(self)
         self.selectButton.clicked.connect(self.toggle_clicks)
         self.selectButton.setCheckable(True)
-        self.selectButton.setIcon(QtGui.QIcon("ui_icons/reinhardt/amarok_edit.svg"))  # TODO: Make this the new way
+        # TODO: Make this the new way
+        self.selectButton.setIcon(
+            QtGui.QIcon("ui_icons/reinhardt/amarok_edit.svg"))
         self.selectButton.setToolTip("Select the point manually.")
         self.mpl_toolbar.addWidget(self.selectButton)
