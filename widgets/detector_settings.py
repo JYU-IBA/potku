@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 17.5.2018
+Updated on 18.5.2018
 """
 import time
 
@@ -120,18 +120,21 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         # Tof foils
         self.obj.tof_foils = self.tof_foils
 
-    def _add_new_foil(self, layout, new_foil=CircularFoil()):
+    def _add_new_foil(self, layout, new_foil=None):
         """
         Add a new foil into detector.
          Args:
               layout: Layout into which the foil widget is added.
               new_foil: New Foil object to be added.
         """
+        if new_foil is None:
+            new_foil = CircularFoil()
         foil_widget = FoilWidget(self)
         self.tmp_foil_info.append(new_foil)
         foil_widget.ui.foilButton.setText(new_foil.name)
         foil_widget.ui.distanceDoubleSpinBox.setValue(0.0)
-        foil_widget.ui.distanceLabel.setText(str(new_foil.distance))
+        distance = new_foil.distance / 10
+        foil_widget.ui.distanceLabel.setText(str(distance))
         foil_widget.ui.foilButton.clicked.connect(
             lambda: self._open_foil_dialog())
         foil_widget.ui.timingFoilCheckBox.stateChanged.connect(
@@ -162,10 +165,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
                     foil_widget.ui.timingFoilCheckBox.setChecked(True)
             if i != 0:
                 distance = foils[i].distance - foils[i - 1].distance
-                foil_widget.ui.distanceDoubleSpinBox.setValue(distance)
+                foil_widget.ui.distanceDoubleSpinBox.setValue(distance / 10)
             else:
                 foil_widget.ui.distanceDoubleSpinBox.setValue(
-                    foils[i].distance)
+                    foils[i].distance / 10)
         return layout
 
     def _check_and_add(self):
@@ -267,8 +270,9 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         distance = 0
         for i in range(len(self.detector_structure_widgets)):
             widget = self.detector_structure_widgets[i]
-            distance = distance + widget.ui.distanceDoubleSpinBox.value()
-            widget.ui.distanceLabel.setText(str(distance))
+            dist_to_add = widget.ui.distanceDoubleSpinBox.value() * 10
+            distance = distance + dist_to_add
+            widget.ui.distanceLabel.setText(str(distance / 10))
             self.tmp_foil_info[i].distance = distance
 
     def delete_foil(self, foil_widget):
