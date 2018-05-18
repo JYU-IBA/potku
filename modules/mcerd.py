@@ -82,7 +82,16 @@ class MCERD:
 
     def stop_process(self):
         """Stop the MCERD process and delete the MCERD object."""
-        self.__process.kill()
+        used_os = platform.system()
+        if used_os == "Windows":
+            cmd = "TASKKILL /F /PID " + str(self.__process.pid) + " /T"
+            subprocess.Popen(cmd)
+            self.__process = None
+        elif used_os == "Linux" or used_os == "Darwin":
+            self.__process.kill()
+            self.__process = None
+        else:
+            print("It appears we do not support your OS.")
 
     def __create_mcerd_files(self):
         """
