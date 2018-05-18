@@ -514,3 +514,18 @@ def to_superscript(string):
             "9": "\u2079"}
 
     return ''.join(sups.get(char, char) for char in string)
+
+
+def check_text(input_field):
+    """Checks if the given QLineEdit input field contains text. If not,
+    field's background is set red.
+
+    Args:
+        input_field: QLineEdit object.
+    """
+    if not input_field.text():
+        input_field.setStyleSheet(
+            'QLineEdit { background-color: %s }' % "#f6989d")
+    else:
+        input_field.setStyleSheet(
+            'QLineEdit { background-color: %s }' % "#ffffff")
