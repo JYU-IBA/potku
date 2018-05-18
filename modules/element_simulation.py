@@ -18,7 +18,8 @@ import os
 import math
 import time
 
-from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
+from widgets.matplotlib.simulation.recoil_atom_distribution import \
+    RecoilElement, Point
 
 from modules.beam import Beam
 from modules.element import Element
@@ -237,8 +238,12 @@ class ElementSimulation:
 
         obj = json.load(open(rec_file_path))
         simulation_type = obj["simulation_type"]
+        points = []
+        for dictionary_point in obj["profile"]:
+            x, y = dictionary_point["Point"].split(" ")
+            points.append(Point((float(x), float(y))))
         element = RecoilElement(Element.from_string(obj["element"]),
-                                obj["profile"])
+                                points)
         reference_density = obj["reference_density"]
 
         obj = json.load(open(profile_file_path))

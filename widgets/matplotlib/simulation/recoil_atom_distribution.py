@@ -276,10 +276,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.fmt_ydata = lambda y: "{0:1.4f}".format(y)
         self.__icon_manager = icon_manager
         self.tab = tab
+        self.simulation = simulation
 
         self.current_recoil_element = None
         self.element_manager = ElementManager(self.tab, self.__icon_manager,
-                                              simulation)
+                                              self.simulation)
         self.target = target
         self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
 
@@ -298,7 +299,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum,
                                   QtWidgets.QSizePolicy.Expanding))
 
-        self.parent_ui.addPushButton.clicked.connect(self.add_element_with_dialog)
+        self.parent_ui.addPushButton.clicked.connect(
+            self.add_element_with_dialog)
         self.parent_ui.removePushButton.clicked.connect(
             self.remove_current_element)
         self.parent_ui.settingsPushButton.clicked.connect(
@@ -356,10 +358,17 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # This customizes the toolbar buttons
         self.__fork_toolbar_buttons()
 
-        self.name_y_axis = "Relative concentration"
-        self.name_x_axis = "Depth"
+        self.name_y_axis = "Relative Concentration"
+        self.name_x_axis = "Depth [nm]"
+
+        if self.simulation.element_simulations:
+            self.__update_figure()
 
         self.on_draw()
+
+    def __update_figure(self):
+        for element_simulation in self.simulation.element_simulations:
+            self.add_element(element_simulation.recoil_element.element)
 
     def open_element_simulation_settings(self):
         if not self.current_recoil_element:
@@ -527,8 +536,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         self.axes.clear()  # Clear old stuff
 
-        self.axes.set_ylabel(self.name_y_axis.title())
-        self.axes.set_xlabel(self.name_x_axis.title())
+        self.axes.set_ylabel(self.name_y_axis)
+        self.axes.set_xlabel(self.name_x_axis)
 
         if self.current_recoil_element:
             self.lines, = self.axes.plot(self.current_recoil_element.get_xs(),

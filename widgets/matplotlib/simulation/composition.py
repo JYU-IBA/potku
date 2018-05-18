@@ -126,7 +126,6 @@ class _CompositionWidget(MatplotlibWidget):
         self.__icon_manager.set_icon(action_add_layer, "add.png")
         self.mpl_toolbar.addAction(action_add_layer)
 
-
     def __add_layer(self, position = -1):
         """Adds a new layer to the list of layers.
 
@@ -185,7 +184,6 @@ class _CompositionWidget(MatplotlibWidget):
         self.mpl_toolbar.update()
 
 
-
 class TargetCompositionWidget(_CompositionWidget):
     """This widget is used to display the visual presentation of the target
     layers to the user. Using this widget user can also modify the layers of the
@@ -206,7 +204,6 @@ class TargetCompositionWidget(_CompositionWidget):
 
         self.layers = target.layers
         self.canvas.manager.set_title("Target composition")
-
 
 
 class FoilCompositionWidget(_CompositionWidget):
@@ -231,4 +228,3 @@ class FoilCompositionWidget(_CompositionWidget):
 
         self.layers = foil.layers
         self.canvas.manager.set_title("Foil composition")
-
