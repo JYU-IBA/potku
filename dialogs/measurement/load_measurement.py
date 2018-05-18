@@ -8,7 +8,8 @@ Updated on 6.4.2018
 
 """
 from dialogs.new_sample import NewSampleDialog
-from modules.general_functions import open_file_dialog, check_text
+from modules.general_functions import open_file_dialog, check_text, \
+    set_input_field_red, set_input_field_white
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
@@ -45,15 +46,13 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
                 "Sample " + "%02d" % sample.serial_number + " " + sample.name)
 
         if not samples:
-            self.ui.samplesComboBox.setStyleSheet(
-                'QComboBox { background-color: %s }' % "#f6989d")
+            set_input_field_red(self.ui.samplesComboBox)
 
-        self.ui.nameLineEdit.setStyleSheet(
-            'QLineEdit { background-color: %s }' % "#f6989d")
+        set_input_field_red(self.ui.nameLineEdit)
         self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
             self.ui.nameLineEdit))
-        self.ui.pathLineEdit.setStyleSheet(
-            'QLineEdit { background-color: %s }' % "#f6989d")
+
+        set_input_field_red(self.ui.pathLineEdit)
         self.ui.pathLineEdit.textChanged.connect(lambda: self.__check_text(
             self.ui.pathLineEdit))
 
@@ -65,8 +64,7 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
             self.ui.samplesComboBox.addItem(dialog.name)
             self.ui.samplesComboBox.setCurrentIndex(
                 self.ui.samplesComboBox.findText(dialog.name))
-            self.ui.samplesComboBox.setStyleSheet(
-                'QComboBox { background-color: %s }' % "#ffffff")
+            set_input_field_white(self.ui.samplesComboBox)
 
     def __load_measurement(self):
         self.path = self.ui.pathLineEdit.text()

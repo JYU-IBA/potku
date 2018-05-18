@@ -8,7 +8,8 @@ Updated on 6.4.2018
 
 """
 from dialogs.new_sample import NewSampleDialog
-from modules.general_functions import check_text
+from modules.general_functions import check_text, set_input_field_white, \
+    set_input_field_red
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
@@ -38,13 +39,12 @@ class SimulationNewDialog(QtWidgets.QDialog):
             self.ui.samplesComboBox.addItem("Sample " + "%02d" % sample.serial_number + " " + sample.name)
 
         if not samples:
-            self.ui.samplesComboBox.setStyleSheet(
-                'QComboBox { background-color: %s }' % "#f6989d")
+            set_input_field_red(self.ui.samplesComboBox)
 
-        self.ui.simulationNameLineEdit.setStyleSheet(
-            'QLineEdit { background-color: %s }' % "#f6989d")
+        set_input_field_red(self.ui.simulationNameLineEdit)
         self.ui.simulationNameLineEdit.textChanged.connect(
             lambda: self.__check_text(self.ui.simulationNameLineEdit))
+
         self.ui.addSampleButton.clicked.connect(self.__add_sample)
         self.ui.pushCreate.clicked.connect(self.__create_simulation)
         self.ui.pushCancel.clicked.connect(self.close)
@@ -59,8 +59,7 @@ class SimulationNewDialog(QtWidgets.QDialog):
             self.ui.samplesComboBox.addItem(dialog.name)
             self.ui.samplesComboBox.setCurrentIndex(self.ui.samplesComboBox
                                                     .findText(dialog.name))
-            self.ui.samplesComboBox.setStyleSheet(
-                'QComboBox { background-color: %s }' % "#ffffff")
+            set_input_field_white(self.ui.samplesComboBox)
 
     def __create_simulation(self):
         self.name = self.ui.simulationNameLineEdit.text().replace(" ", "_")

@@ -524,8 +524,24 @@ def check_text(input_field):
         input_field: QLineEdit object.
     """
     if not input_field.text():
-        input_field.setStyleSheet(
-            'QLineEdit { background-color: %s }' % "#f6989d")
+        set_input_field_red(input_field)
     else:
-        input_field.setStyleSheet(
-            'QLineEdit { background-color: %s }' % "#ffffff")
+        set_input_field_white(input_field)
+
+
+def set_input_field_red(input_field):
+    """Sets the background of given input field red.
+
+    Args:
+        input_field: Qt widget that supports Qt Style Sheets.
+    """
+    input_field.setStyleSheet("background-color: %s" % "#f6989d")
+
+
+def set_input_field_white(input_field):
+    """Sets the background of given input field white.
+
+    Args:
+        input_field: Qt widget that supports Qt Style Sheets.
+    """
+    input_field.setStyleSheet("background-color: %s" % "#ffffff")

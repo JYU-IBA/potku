@@ -7,7 +7,7 @@ Updated on 6.4.2018
 #TODO Licence
 
 """
-from modules.general_functions import check_text
+from modules.general_functions import check_text, set_input_field_red
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
@@ -27,10 +27,10 @@ class NewSampleDialog(QtWidgets.QDialog):
 
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_new_sample.ui"), self)
 
-        self.ui.nameLineEdit.setStyleSheet(
-            'QLineEdit { background-color: %s }' % "#f6989d")
+        set_input_field_red(self.ui.nameLineEdit)
         self.ui.nameLineEdit.textChanged.connect(
             lambda: self.__check_text(self.ui.nameLineEdit))
+
         self.ui.createButton.clicked.connect(self.__create_sample)
         self.ui.cancelButton.clicked.connect(self.close)
         self.name = ""
