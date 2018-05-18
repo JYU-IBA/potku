@@ -54,7 +54,7 @@ class SimulationNewDialog(QtWidgets.QDialog):
         self.exec_()
 
     def __add_sample(self):
-        dialog = NewSampleDialog(self.samples)
+        dialog = NewSampleDialog()
         if dialog.name:
             self.ui.samplesComboBox.addItem(dialog.name)
             self.ui.samplesComboBox.setCurrentIndex(self.ui.samplesComboBox
