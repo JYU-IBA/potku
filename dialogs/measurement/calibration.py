@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.4.2013
-Updated on 26.4.2018
+Updated on 18.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -24,8 +24,9 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
-             "Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import os
 from PyQt5 import QtCore, QtGui, uic, QtWidgets
@@ -67,8 +68,6 @@ class CalibrationDialog(QtWidgets.QDialog):
                                           "ui_calibration_dialog.ui"), self)
         self.parent_settings_widget = parent_settings_widget
         self.tof_calibration = TOFCalibration()
-        
-        measurement = None
         
         # Go through all the measurements and their cut files and list them.
         for measurement in self.measurements:
@@ -112,9 +111,8 @@ class CalibrationDialog(QtWidgets.QDialog):
                     "dialog."
                 print(m)
                 
-        self.linearFittingWidget = CalibrationLinearFittingWidget(self,
-                                                      self.tof_calibration,
-                                                      old_params)
+        self.linearFittingWidget = CalibrationLinearFittingWidget(
+            self, self.tof_calibration, old_params)
         
         self.ui.fittingResultsLayout.addWidget(self.curveFittingWidget)
         self.ui.calibrationResultsLayout.addWidget(self.linearFittingWidget)        
@@ -166,10 +164,10 @@ class CalibrationDialog(QtWidgets.QDialog):
         """Set calibration parameters to parent dialog's calibration parameters 
         fields.
         """
-        if self.parent_settings_widget.detector_settings:
-            self.parent_settings_widget.detector_settings.ui.\
-                slopeLineEdit.setText(self.ui.slopeLineEdit.text())
-            self.parent_settings_widget.detector_settings.ui.offsetLineEdit.\
+        if self.parent_settings_widget:
+            self.parent_settings_widget.ui.slopeLineEdit.\
+                setText(self.ui.slopeLineEdit.text())
+            self.parent_settings_widget.ui.offsetLineEdit.\
                 setText(self.ui.offsetLineEdit.text())
             return True
         return False
@@ -290,7 +288,7 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
     """
     def __init__(self, dialog, cut, tof_calibration,
                  detector, bin_width, column, measurement):
-        """Inits widget.
+        """Initializes widget.
         
         Args:
             dialog: Parent dialog.
@@ -307,22 +305,23 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
         # NOTE: One of these should always be there. Could probably use "else"
         if hasattr(dialog.parent_settings_widget, "request"):
             self.img_dir = dialog.parent_settings_widget.request.directory
-        elif hasattr(dialog.parent_settings_widget, "measurement"):
+        elif hasattr(dialog.parent_settings_widget, "measurement") and \
+                dialog.parent_settings_widget.measurement is not None:
             self.img_dir = dialog.parent_settings_widget.measurement.directory
         self.matplotlib = \
             MatplotlibCalibrationCurveFittingWidget(self, detector,
                                                     tof_calibration,
-                                                    cut,
+                                                    cut, measurement,
                                                     bin_width,
                                                     column,
-                                                    dialog, measurement)
+                                                    dialog)
 
             
 class CalibrationLinearFittingWidget(QtWidgets.QWidget):
     """Widget class for holding MatplotlibCalibrationLinearFittingWidget.
     """
     def __init__(self, dialog, tof_calibration, old_params):
-        """Inits widget.
+        """Initializes widget.
         
         Args:
             dialog: Parent dialog.
@@ -336,8 +335,8 @@ class CalibrationLinearFittingWidget(QtWidgets.QWidget):
         # NOTE: One of these should always be there. Could probably use "else"
         if hasattr(dialog.parent_settings_widget, "request"):
             self.img_dir = dialog.parent_settings_widget.request.directory
-        elif hasattr(dialog.parent_settings_widget, "measurement"):
+        elif hasattr(dialog.parent_settings_widget, "measurement") and \
+                dialog.parent_settings_widget.measurement is not None:
             self.img_dir = dialog.parent_settings_widget.measurement.directory
         self.matplotlib = MatplotlibCalibrationLinearFittingWidget(
             self, tof_calibration, dialog=dialog, old_params=old_params)
-    
