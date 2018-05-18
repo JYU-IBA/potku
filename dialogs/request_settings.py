@@ -109,7 +109,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Add detector settings view to the settings view
         self.detector_settings_widget = DetectorSettingsWidget(
-            self.request.default_detector, self.request, self.icon_manager)
+            self.request.default_detector, self.request, self.icon_manager,
+            self.request.default_measurement)
         self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
 
         self.detector_settings_widget.ui.saveButton.clicked \
