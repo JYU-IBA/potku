@@ -3,13 +3,10 @@
 Created on 1.3.2018
 Updated on 28.3.2018
 """
-from PyQt5.QtGui import QIcon
-
-from dialogs.energy_spectrum import EnergySpectrumParamsDialog, \
-    EnergySpectrumWidget
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
+__version__ = "2.0"
 
 import os
 
@@ -17,7 +14,6 @@ from PyQt5 import QtCore, QtWidgets, QtGui, uic
 from matplotlib.widgets import SpanSelector
 
 import modules.element
-import modules.general_functions as general
 
 from dialogs.simulation.recoil_element_selection import \
     RecoilElementSelectionDialog
@@ -25,172 +21,8 @@ from dialogs.simulation.recoil_info_dialog import RecoilInfoDialog
 from widgets.matplotlib.base import MatplotlibWidget
 from dialogs.simulation.element_simulation_settings import \
     ElementSimulationSettingsDialog
-
-
-class Point:
-    """A 2D point with x and y coordinates."""
-    def __init__(self, xy):
-        """Inits point.
-
-        Args:
-            xy: The x and y coordinates of the point. An ordered data structure
-             whose first element is the x coordinate and second element
-             the y coordinate.
-        """
-        # TODO: Precision
-        self._x = xy[0]
-        self._y = xy[1]
-
-    def __lt__(self, other):
-        return self.get_x() < other.get_x()
-
-    def get_coordinates(self):
-        return self._x, self._y
-
-    def get_x(self):
-        return self._x
-
-    def get_y(self):
-        return self._y
-
-    def set_x(self, x):
-        self._x = x
-
-    def set_y(self, y):
-        self._y = y
-
-    def set_coordinates(self, xy):
-        self._x = xy[0]
-        self._y = xy[1]
-
-
-class RecoilElement:
-    """An element that has a list of points and a widget. The points are kept
-    in ascending order by their x coordinate.
-    """
-    def __init__(self, element, points, widget=None):
-        """Inits recoil element.
-
-        Args:
-            element: An Element class object.
-            points: A list of Point class objects.
-            widget: An ElementWidget class object.
-        """
-        self.element = element
-        self.name = "Default"
-        self.description = "This is a default rec setting file."
-        self.type = "rec"
-        # This is multiplied by 1e22
-        self.reference_density = 4.98
-        self._points = sorted(points)
-        self.widget = widget
-        self._edit_lock_on = True
-
-    def delete_widget(self):
-        self.widget.deleteLater()
-
-    def lock_edit(self):
-        self._edit_lock_on = True
-
-    def unlock_edit(self):
-        self._edit_lock_on = False
-
-    def get_edit_lock_on(self):
-        return self._edit_lock_on
-
-    def _sort_points(self):
-        """Sorts the points in ascending order by their x coordinate."""
-        self._points.sort()
-        self._xs = [point.get_x() for point in self._points]
-        self._ys = [point.get_y() for point in self._points]
-
-    def get_xs(self):
-        """Returns a list of the x coordinates of the points."""
-        return [point.get_x() for point in self._points]
-
-    def get_ys(self):
-        """Returns a list of the y coordinates of the points."""
-        return [point.get_y() for point in self._points]
-
-    def get_point_by_i(self, i):
-        """Returns the i:th point."""
-        return self._points[i]
-
-    def get_points(self):
-        return self._points
-
-    def add_point(self, point):
-        """Adds a point and maintains sort order."""
-        self._points.append(point)
-        self._sort_points()
-
-    def remove_point(self, point):
-        """Removes the given point."""
-        self._points.remove(point)
-
-    def get_left_neighbor(self, point):
-        """Returns the point whose x coordinate is closest to but
-        less than the given point's.
-        """
-        ind = self._points.index(point)
-        if ind == 0:
-            return None
-        else:
-            return self._points[ind - 1]
-
-    def get_right_neighbor(self, point):
-        """Returns the point whose x coordinate is closest to but
-        greater than the given point's.
-        """
-        ind = self._points.index(point)
-        if ind == len(self._points) - 1:
-            return None
-        else:
-            return self._points[ind + 1]
-
-
-class ElementWidget(QtWidgets.QWidget):
-    """Class for creating an element widget for the recoil atom distribution.
-    Args:
-        parent: A SimulationTabWidget.
-        """
-
-    def __init__(self, parent, element, icon_manager):
-        super().__init__()
-
-        self.parent = parent
-
-        horizontal_layout = QtWidgets.QHBoxLayout()
-
-        self.radio_button = QtWidgets.QRadioButton()
-
-        if element.isotope:
-            isotope_superscript = general.to_superscript(str(element.isotope))
-            button_text = isotope_superscript + " " + element.symbol
-        else:
-            button_text = element.symbol
-
-        self.radio_button.setText(button_text)
-
-        draw_spectrum_button = QtWidgets.QPushButton()
-        draw_spectrum_button.setIcon(QIcon(
-            "ui_icons/potku/energy_spectrum_icon.svg"))
-        draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                        QtWidgets.QSizePolicy.Fixed)
-        draw_spectrum_button.clicked.connect(self.plot_spectrum)
-
-        horizontal_layout.addWidget(self.radio_button)
-        horizontal_layout.addWidget(draw_spectrum_button)
-
-        self.setLayout(horizontal_layout)
-
-    def plot_spectrum(self):
-        dialog = EnergySpectrumParamsDialog(self.parent)
-        if dialog.result_files:
-            self.parent.energy_spectrum_widget = EnergySpectrumWidget(
-                parent=self.parent, use_cuts=dialog.result_files,
-                bin_width=dialog.bin_width)
-            self.parent.add_widget(self.parent.energy_spectrum_widget)
+from modules.point import Point
+from modules.recoil_element import RecoilElement
 
 
 class ElementManager:
