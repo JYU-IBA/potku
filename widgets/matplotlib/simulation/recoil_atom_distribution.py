@@ -851,6 +851,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # Move the position where the next layer starts.
             next_layer_position += layer.thickness
 
+        self.axes.set_xlim(0, next_layer_position + 3)
         self.fig.canvas.draw_idle()
 
     def on_motion(self, event):
