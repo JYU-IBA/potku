@@ -147,7 +147,8 @@ class ElementSimulation:
             "detector": self.detector,
             "recoil_element": self.recoil_element
         }
-
+        element_str = Element.__str__(self.recoil_element.element) \
+                             .replace(" ", "_")
         self.espe_settings = {
             "beam": self.beam,
             "detector": self.detector,
@@ -157,7 +158,12 @@ class ElementSimulation:
             "fluence": self.run.fluence,
             "timeres": self.detector.timeres,
             "solid": self.calculate_solid(),
-            "result_directory": self.directory
+            "erd_file": os.path.join(self.directory, element_str + "." + str(
+                self.seed_number) + ".erd"),
+            "spectrum_file": os.path.join(self.directory, element_str +
+                                          "." + str(self.seed_number)
+                                          + ".simu"),
+            "recoil_file": os.path.join(self.directory, element_str + ".recoil")
         }
 
     def calculate_solid(self):
