@@ -207,6 +207,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # This is probably not the most effective way, or practical for 
         # that matter, to get all efficiency files from directory defined
         # in global settings that match the cut files of measurements.
+        # TODO: ask from measurement get_detector_or_default
         eff_files = self.measurement.detector.get_efficiency_files()
         eff_files_used = []
         root = self.ui.treeWidget.invisibleRootItem()

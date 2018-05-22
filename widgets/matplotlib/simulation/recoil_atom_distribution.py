@@ -1,221 +1,34 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 28.3.2018
+Updated on 22.5.2018
 """
+from PyQt5.QtGui import QIcon
+
+from dialogs.energy_spectrum import EnergySpectrumParamsDialog, \
+    EnergySpectrumWidget
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
+__version__ = "2.0"
 
 import os
 
 from PyQt5 import QtCore, QtWidgets, QtGui
-from PyQt5.QtGui import QIcon
 from matplotlib.widgets import SpanSelector
 
 from modules.element import Element
-import modules.general_functions as general
-from dialogs.energy_spectrum import EnergySpectrumParamsDialog, \
-    EnergySpectrumWidget
-from dialogs.simulation.element_simulation_settings import \
-    ElementSimulationSettingsDialog
+from widgets.matplotlib.simulation.element import ElementWidget
+
 from dialogs.simulation.recoil_element_selection import \
     RecoilElementSelectionDialog
 from dialogs.simulation.recoil_info_dialog import RecoilInfoDialog
 from widgets.matplotlib.base import MatplotlibWidget
-
-
-class Point:
-    """A 2D point with x and y coordinates."""
-    def __init__(self, xy):
-        """Inits point.
-
-        Args:
-            xy: The x and y coordinates of the point. An ordered data structure
-             whose first element is the x coordinate and second element
-             the y coordinate.
-        """
-        # TODO: Precision
-        self._x = xy[0]
-        self._y = xy[1]
-
-    def __lt__(self, other):
-        return self.get_x() < other.get_x()
-
-    def get_coordinates(self):
-        return self._x, self._y
-
-    def get_x(self):
-        return self._x
-
-    def get_y(self):
-        return self._y
-
-    def set_x(self, x):
-        self._x = x
-
-    def set_y(self, y):
-        self._y = y
-
-    def set_coordinates(self, xy):
-        self._x = xy[0]
-        self._y = xy[1]
-
-
-class RecoilElement:
-    """An element that has a list of points and a widget. The points are kept
-    in ascending order by their x coordinate.
-    """
-    def __init__(self, element, points, widget=None):
-        """Inits recoil element.
-
-        Args:
-            element: An Element class object.
-            points: A list of Point class objects.
-            widget: An ElementWidget class object.
-        """
-        self.element = element
-        self.name = "Default"
-        self.prefix = (Element.__str__(element)).split(" ")[0]
-        self.description = "This is a default rec setting file."
-        self.type = "rec"
-        # This is multiplied by 1e22
-        self.reference_density = 4.98
-        self._points = sorted(points)
-        self.widget = widget
-        self._edit_lock_on = True
-
-    def delete_widget(self):
-        self.widget.deleteLater()
-
-    def lock_edit(self):
-        self._edit_lock_on = True
-
-    def unlock_edit(self):
-        self._edit_lock_on = False
-
-    def get_edit_lock_on(self):
-        return self._edit_lock_on
-
-    def _sort_points(self):
-        """Sorts the points in ascending order by their x coordinate."""
-        self._points.sort()
-        self._xs = [point.get_x() for point in self._points]
-        self._ys = [point.get_y() for point in self._points]
-
-    def get_xs(self):
-        """Returns a list of the x coordinates of the points."""
-        return [point.get_x() for point in self._points]
-
-    def get_ys(self):
-        """Returns a list of the y coordinates of the points."""
-        return [point.get_y() for point in self._points]
-
-    def get_point_by_i(self, i):
-        """Returns the i:th point."""
-        return self._points[i]
-
-    def get_points(self):
-        return self._points
-
-    def add_point(self, point):
-        """Adds a point and maintains sort order."""
-        self._points.append(point)
-        self._sort_points()
-
-    def remove_point(self, point):
-        """Removes the given point."""
-        self._points.remove(point)
-
-    def get_left_neighbor(self, point):
-        """Returns the point whose x coordinate is closest to but
-        less than the given point's.
-        """
-        ind = self._points.index(point)
-        if ind == 0:
-            return None
-        else:
-            return self._points[ind - 1]
-
-    def get_right_neighbor(self, point):
-        """Returns the point whose x coordinate is closest to but
-        greater than the given point's.
-        """
-        ind = self._points.index(point)
-        if ind == len(self._points) - 1:
-            return None
-        else:
-            return self._points[ind + 1]
-
-    def write_recoil_file(self, recoil_file):
-        """Writes a file of points that is given to MCERD and get_espe.
-
-        Args:
-            recoil_file: File path to recoil file that ends with ".recoil".
-        """
-        with open(recoil_file, "w") as file_rec:
-            # MCERD requires the recoil atom distribution to start with these
-            # points
-            file_rec.write(
-                "0.00 0.000001\n10.00 0.000001\n")
-
-            for point in self.get_points():
-                file_rec.write(
-                    str(round(point.get_x() + 10.01, 2)) + " " +
-                    str(round(point.get_y(), 4)) + "\n")
-
-            # MCERD requires the recoil atom distribution to end with these
-            # points
-            file_rec.write(
-                str(round(self.get_points()[-1].get_x() + 10.02, 2)) +
-                " 0.0\n" +
-                str(round(self.get_points()[-1].get_x() + 10.03, 2)) +
-                " 0.0\n")
-
-
-class ElementWidget(QtWidgets.QWidget):
-    """Class for creating an element widget for the recoil atom distribution.
-    Args:
-        parent: A SimulationTabWidget.
-        """
-
-    def __init__(self, parent, element, icon_manager):
-        super().__init__()
-
-        self.parent = parent
-
-        horizontal_layout = QtWidgets.QHBoxLayout()
-
-        self.radio_button = QtWidgets.QRadioButton()
-
-        if element.isotope:
-            isotope_superscript = general.to_superscript(str(element.isotope))
-            button_text = isotope_superscript + " " + element.symbol
-        else:
-            button_text = element.symbol
-
-        self.radio_button.setText(button_text)
-
-        draw_spectrum_button = QtWidgets.QPushButton()
-        draw_spectrum_button.setIcon(QIcon(
-            "ui_icons/potku/energy_spectrum_icon.svg"))
-        draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                        QtWidgets.QSizePolicy.Fixed)
-        draw_spectrum_button.clicked.connect(self.plot_spectrum)
-
-        horizontal_layout.addWidget(self.radio_button)
-        horizontal_layout.addWidget(draw_spectrum_button)
-
-        self.setLayout(horizontal_layout)
-
-    def plot_spectrum(self):
-        self.element_simulation.calculate_espe()
-        dialog = EnergySpectrumParamsDialog(self.parent)
-        if dialog.result_files:
-            self.parent.energy_spectrum_widget = EnergySpectrumWidget(
-                parent=self.parent, use_cuts=dialog.result_files,
-                bin_width=dialog.bin_width)
-            self.parent.add_widget(self.parent.energy_spectrum_widget)
+from dialogs.simulation.element_simulation_settings import \
+    ElementSimulationSettingsDialog
+from modules.point import Point
+from modules.recoil_element import RecoilElement
+from widgets.simulation.controls import SimulationControlsWidget
 
 
 class ElementManager:
@@ -245,7 +58,16 @@ class ElementManager:
             if self.get_radio_button(element_simulation) == radio_button:
                 return element_simulation
 
-    def add_element_simulation(self, element):
+    def add_new_element_simulation(self, element):
+        """
+        Create a new ElementSimulation and RecoilElement with default points.
+
+        Args:
+             element: Element that tells the element to add.
+
+        Return:
+            Created ElementSimulation
+        """
         # Default points
         xs = [0.00, 35.00]
         ys = [1.0, 1.0]
@@ -261,6 +83,19 @@ class ElementManager:
         widget.element_simulation = element_simulation
 
         return element_simulation
+
+    def add_element_simulation(self, element_simulation):
+        """
+        Add an existing ElementSimulation.
+
+        Args:
+            element_simulation: ElementSimulation to be added.
+        """
+        widget = ElementWidget(self.parent,
+                               element_simulation.recoil_element.element,
+                               self.icon_manager)
+        element_simulation.recoil_element.widget = widget
+        widget.element_simulation = element_simulation
 
     def remove_element_simulation(self, element_simulation):
         element_simulation.recoil_element.delete_widget()
@@ -301,10 +136,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.fmt_ydata = lambda y: "{0:1.4f}".format(y)
         self.__icon_manager = icon_manager
         self.tab = tab
+        self.simulation = simulation
 
         self.current_element_simulation = None
         self.element_manager = ElementManager(self.tab, self.__icon_manager,
-                                              simulation)
+                                              self.simulation)
         self.target = target
         self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
 
@@ -323,7 +159,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum,
                                   QtWidgets.QSizePolicy.Expanding))
 
-        self.parent_ui.addPushButton.clicked.connect(self.add_element_with_dialog)
+        self.parent_ui.addPushButton.clicked.connect(
+            self.add_element_with_dialog)
         self.parent_ui.removePushButton.clicked.connect(
             self.remove_current_element)
         self.parent_ui.settingsPushButton.clicked.connect(
@@ -381,10 +218,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # This customizes the toolbar buttons
         self.__fork_toolbar_buttons()
 
-        self.name_y_axis = "Relative concentration"
-        self.name_x_axis = "Depth"
+        self.name_y_axis = "Relative Concentration"
+        self.name_x_axis = "Depth [nm]"
+
+        if self.simulation.element_simulations:
+            self.__update_figure()
 
         self.on_draw()
+
+    def __update_figure(self):
+        for element_simulation in self.simulation.element_simulations:
+            self.add_element(element_simulation.recoil_element.element,
+                             element_simulation)
 
     def open_element_simulation_settings(self):
         if not self.current_element_simulation:
@@ -496,10 +341,22 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 element_simulation.recoil_element.widget.radio_button\
                     .setChecked(True)
 
-    def add_element(self, element):
-        # Create new ElementSimulation
-        element_simulation = self.element_manager\
-            .add_element_simulation(element)
+    def add_element(self, element, eleme_sim=None):
+        """
+        Adds a new ElementSimulation based on the element. If elem_sim is
+         not None, only UI widgets need to be added.
+
+         Args:
+             element: Element that is added.
+             eleme_sim: ElementSimulation that needs the UI widgets.
+        """
+        if eleme_sim is None:
+            # Create new ElementSimulation
+            element_simulation = self.element_manager\
+                .add_new_element_simulation(element)
+        else:
+            element_simulation = eleme_sim
+            self.element_manager.add_element_simulation(element_simulation)
 
         # Add simulation controls widget
         simulation_controls_widget = SimulationControlsWidget(
@@ -508,8 +365,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.tab.ui.contentsLayout.addWidget(simulation_controls_widget)
 
         # Add recoil element widget
-        recoil_element_widget = element_simulation.recoil_element \
-            .widget
+        recoil_element_widget = element_simulation.recoil_element.widget
 
         self.radios.addButton(recoil_element_widget.radio_button)
         self.recoil_vertical_layout.addWidget(recoil_element_widget)
@@ -547,8 +403,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 already_exists = False
                 for existing_element_simulation in \
                         self.element_manager.element_simulations:
-                    if layer_element == existing_element_simulation \
-                            .recoil_element.element:
+                    if layer_element.isotope == existing_element_simulation \
+                            .recoil_element.element.isotope and \
+                            layer_element.symbol == existing_element_simulation\
+                            .recoil_element.element.symbol:
                         already_exists = True
                         break
                 if not already_exists:
@@ -559,8 +417,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         self.axes.clear()  # Clear old stuff
 
-        self.axes.set_ylabel(self.name_y_axis.title())
-        self.axes.set_xlabel(self.name_x_axis.title())
+        self.axes.set_ylabel(self.name_y_axis)
+        self.axes.set_xlabel(self.name_x_axis)
 
         if self.current_element_simulation:
             self.lines, = self.axes.plot(
@@ -1029,84 +887,3 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 sel_points.append(point)
         self.selected_points = sel_points
         self.update_plot()
-
-
-class SimulationControlsWidget(QtWidgets.QWidget):
-    """Class for creating simulation controls widget for the element simulation.
-
-    Args:
-        element_simulation: ElementSimulation object.
-    """
-
-    def __init__(self, element_simulation):
-        super().__init__()
-
-        self.element_simulation = element_simulation
-
-        main_layout = QtWidgets.QHBoxLayout()
-
-        controls_group_box = QtWidgets.QGroupBox(self.element_simulation.name)
-        controls_group_box.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
-                                         QtWidgets.QSizePolicy.Preferred)
-
-        state_layout = QtWidgets.QHBoxLayout()
-        state_layout.addWidget(QtWidgets.QLabel("State: "))
-        self.state_label = QtWidgets.QLabel("Not started")
-        state_layout.addWidget(self.state_label)
-        state_widget = QtWidgets.QWidget()
-        state_widget.setLayout(state_layout)
-
-        controls_layout = QtWidgets.QHBoxLayout()
-        run_button = QtWidgets.QPushButton("Start")
-        run_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                 QtWidgets.QSizePolicy.Fixed)
-        run_button.clicked.connect(self.__start_simulation)
-        stop_button = QtWidgets.QPushButton("Stop")
-        stop_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                  QtWidgets.QSizePolicy.Fixed)
-        stop_button.clicked.connect(self.__stop_simulation)
-        controls_layout.addWidget(run_button)
-        controls_layout.addWidget(stop_button)
-        controls_widget = QtWidgets.QWidget()
-        controls_widget.setLayout(controls_layout)
-
-        processes_layout = QtWidgets.QFormLayout()
-        processes_label = QtWidgets.QLabel("No. of processes: ")
-        processes_spinbox = QtWidgets.QSpinBox()
-        processes_spinbox.setToolTip("Number of processes used in simulation")
-        processes_layout.addRow(processes_label, processes_spinbox)
-        processes_widget = QtWidgets.QWidget()
-        processes_widget.setLayout(processes_layout)
-
-        state_and_controls_layout = QtWidgets.QVBoxLayout()
-        state_and_controls_layout.addWidget(processes_widget)
-        state_and_controls_layout.addWidget(state_widget)
-        state_and_controls_layout.addWidget(controls_widget)
-
-        controls_group_box.setLayout(state_and_controls_layout)
-
-        main_layout.addWidget(controls_group_box)
-
-        self.setLayout(main_layout)
-
-    def __start_simulation(self):
-        """ Calls ElementSimulation's start method.
-        """
-        self.element_simulation.start()
-        self.state_label.setText("Running")
-
-    def __stop_simulation(self):
-        """ Calls ElementSimulation's stop method.
-        """
-        try:
-            self.element_simulation.stop()
-        except FileNotFoundError:
-            # Either .erd or .recoil files were not found for generating
-            # energy spectrum.
-            error_box = QtWidgets.QMessageBox()
-            error_box.setIcon(QtWidgets.QMessageBox.Warning)
-            error_box.addButton(QtWidgets.QMessageBox.Ok)
-            error_box.setText("Energy spectrum data could not be generated.")
-            error_box.setWindowTitle("Error")
-            error_box.exec()
-        self.state_label.setText("Stopped")

@@ -81,6 +81,7 @@ class Simulations:
         measurement_extension = ".measurement"
         detector_extension = ".detector"
         measurement_settings_file = ""
+        element_simulation_extension = ".mcsimu"
 
         # Create simulation from file
         if os.path.exists(simulation_path):
@@ -124,6 +125,20 @@ class Simulations:
                                 os.path.join(simulation.directory,
                                              measurement_settings_file),
                                 self.request)
+                if file.endswith(element_simulation_extension):
+                    mcsimu_file_path = os.path.join(simulation.directory, file)
+                    file_name = file.split(".")[0]
+                    recoil_file_path = os.path.join(simulation.directory,
+                                                    file_name + ".rec")
+                    profile_file_path = os.path.join(simulation.directory,
+                                                     file_name + ".profile")
+                    if os.path.exists(recoil_file_path) and \
+                            os.path.exists(profile_file_path):
+                        element_simulation = ElementSimulation.from_file(
+                        self.request, mcsimu_file_path, recoil_file_path,
+                            profile_file_path)
+                        simulation.element_simulations.append(
+                            element_simulation)
 
         # Create a new simulation
         else:

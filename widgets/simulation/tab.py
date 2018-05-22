@@ -96,7 +96,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.simulation_target = TargetWidget(self, self.obj, self.obj.target,
                                               self.icon_manager)
         self.add_widget(self.simulation_target, has_close_button=False)
-        # TODO: Do all the necessary operations so that the widget can be used.
 
     def add_log(self):        
         """ Add the simulation log to simulation tab widget.
