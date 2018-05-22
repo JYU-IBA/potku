@@ -58,7 +58,16 @@ class ElementManager:
             if self.get_radio_button(element_simulation) == radio_button:
                 return element_simulation
 
-    def add_element_simulation(self, element):
+    def add_new_element_simulation(self, element):
+        """
+        Create a new ElementSimulation and RecoilElement with default points.
+
+        Args:
+             element: Element that tells the element to add.
+
+        Return:
+            Created ElementSimulation
+        """
         # Default points
         xs = [0.00, 35.00]
         ys = [1.0, 1.0]
@@ -74,6 +83,19 @@ class ElementManager:
         widget.element_simulation = element_simulation
 
         return element_simulation
+
+    def add_element_simulation(self, element_simulation):
+        """
+        Add an existing ElementSimulation.
+
+        Args:
+            element_simulation: ElementSimulation to be added.
+        """
+        widget = ElementWidget(self.parent,
+                               element_simulation.recoil_element.element,
+                               self.icon_manager)
+        element_simulation.recoil_element.widget = widget
+        widget.element_simulation = element_simulation
 
     def remove_element_simulation(self, element_simulation):
         element_simulation.recoil_element.delete_widget()
@@ -206,7 +228,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
     def __update_figure(self):
         for element_simulation in self.simulation.element_simulations:
-            self.add_element(element_simulation.recoil_element.element)
+            self.add_element(element_simulation.recoil_element.element,
+                             element_simulation)
 
     def open_element_simulation_settings(self):
         if not self.current_element_simulation:
@@ -318,10 +341,22 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 element_simulation.recoil_element.widget.radio_button\
                     .setChecked(True)
 
-    def add_element(self, element):
-        # Create new ElementSimulation
-        element_simulation = self.element_manager\
-            .add_element_simulation(element)
+    def add_element(self, element, eleme_sim=None):
+        """
+        Adds a new ElementSimulation based on the element. If elem_sim is
+         not None, only UI widgets need to be added.
+
+         Args:
+             element: Element that is added.
+             eleme_sim: ElementSimulation that needs the UI widgets.
+        """
+        if eleme_sim is None:
+            # Create new ElementSimulation
+            element_simulation = self.element_manager\
+                .add_new_element_simulation(element)
+        else:
+            element_simulation = eleme_sim
+            self.element_manager.add_element_simulation(element_simulation)
 
         # Add simulation controls widget
         simulation_controls_widget = SimulationControlsWidget(
@@ -330,8 +365,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.tab.ui.contentsLayout.addWidget(simulation_controls_widget)
 
         # Add recoil element widget
-        recoil_element_widget = element_simulation.recoil_element \
-            .widget
+        recoil_element_widget = element_simulation.recoil_element.widget
 
         self.radios.addButton(recoil_element_widget.radio_button)
         self.recoil_vertical_layout.addWidget(recoil_element_widget)
