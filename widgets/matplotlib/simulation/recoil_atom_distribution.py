@@ -372,8 +372,17 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             new_values = {"name": dialog.name,
                           "description": dialog.description,
                           "reference_density": dialog.reference_density}
-            self.current_element_simulation.update_recoil_element(new_values)
-            self.update_recoil_element_info_labels()
+            try:
+                self.current_element_simulation.update_recoil_element(new_values)
+                self.update_recoil_element_info_labels()
+            except KeyError:
+                error_box = QtWidgets.QMessageBox()
+                error_box.setIcon(QtWidgets.QMessageBox.Warning)
+                error_box.addButton(QtWidgets.QMessageBox.Ok)
+                error_box.setText("All recoil element information could not "
+                                  "be saved.")
+                error_box.setWindowTitle("Error")
+                error_box.exec()
 
     def save_mcsimu_rec_profile(self, directory):
         for element_simulation in self.element_manager \

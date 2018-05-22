@@ -196,6 +196,19 @@ class ElementSimulation:
     def remove_point(self, point):
         self.recoil_element.remove_point(point)
 
+    def update_recoil_element(self, new_values):
+        """Updates RecoilElement object with new values.
+
+        Args:
+            new_values: New values as a dictionary.
+        """
+        try:
+            self.recoil_element.name = new_values["name"]
+            self.recoil_element.description = new_values["description"]
+            self.recoil_element.reference_density = new_values["reference_density"]
+        except KeyError:
+            raise
+
     def calculate_solid(self):
         """
         Calculate the solid parameter.
