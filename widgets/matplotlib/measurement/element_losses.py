@@ -93,11 +93,10 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
         element_object = Element(cut_file[0].strip())
         element = element_object.symbol
         isotope = element_object.isotope
-        mass = str(isotope)
-        if not mass:
-            mass = masses.get_standard_isotope(element)
+        if isotope:
+            mass = float(isotope)
         else:
-            mass = float(mass)
+            mass = masses.get_standard_isotope(element)
         return mass
 
 
@@ -111,7 +110,7 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
                                            key=lambda x: self.__sortt(x[0]))]
         for key in keys:
             cut_file = key.split('.')
-            element_object = Element(cut_file[0].strip())
+            element_object = Element.from_string(cut_file[0].strip())
             element = element_object.symbol
             isotope = element_object.isotope
             if key in self.__ignore_elements:
@@ -137,7 +136,9 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
                 color = "red"
             else:
                 color = self.selection_colors[color_string]
-            
+
+            if not isotope:
+                isotope = ""
             # Set label text
             if len(cut_file) == 2:
                 label = r"$^{" + str(isotope) + "}$" + element + rbs_string
@@ -160,7 +161,7 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
                 self.axes.set_position([box.x0, box.y0,
                                         box.width * 0.9, box.height])
                 self.__initiated_box = True
-            
+
             handles, labels = self.axes.get_legend_handles_labels()
             leg = self.axes.legend(handles,
                                    labels,

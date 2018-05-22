@@ -147,7 +147,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     item.file_name)
             child_count = item.childCount()
             if child_count > 0:  # Elemental Losses
-                dir_elo = self.measurement.directory_composition_changes
+                dir_elo = os.path.join(
+                    self.measurement.directory_composition_changes, "Changes")
                 for i in range(child_count):
                     item_child = item.child(i)
                     if item_child.checkState(0):
@@ -207,8 +208,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # This is probably not the most effective way, or practical for 
         # that matter, to get all efficiency files from directory defined
         # in global settings that match the cut files of measurements.
-        # TODO: ask from measurement get_detector_or_default
-        eff_files = self.measurement.detector.get_efficiency_files()
+        if self.measurement.detector:
+            eff_files = self.measurement.detector.get_efficiency_files()
+        else:
+            eff_files = self.measurement.request.default_detector.get_efficiency_files()
         eff_files_used = []
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()
@@ -267,7 +270,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.ui.setWindowTitle(title)
 
             if isinstance(self.parent.obj, Measurement):
-                self.measurement = self.parent.measurement
+                self.measurement = self.parent.obj
                 if self.measurement.statusbar:
                     self.progress_bar = QtWidgets.QProgressBar()
                     self.measurement.statusbar.addWidget(self.progress_bar, 1)

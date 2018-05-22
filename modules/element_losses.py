@@ -96,7 +96,8 @@ class ElementLosses:
                 new_cut = CutFile(elem_loss=True,
                                   split_number=split_number,
                                   split_count=split_count)
-                new_dir = os.path.join(self.directory_composition_changes, "Changes")
+                new_dir = os.path.join(self.directory_composition_changes,
+                                       "Changes")
                 new_cut.copy_info(main_cut, new_dir, split, split_count)
                 new_cut.save(main_cut.element_number)
                 split_number += 1
@@ -130,13 +131,13 @@ class ElementLosses:
             cut = CutFile()
             cut.load_file(file)
             filename_split = file.split('.')
-            element = Element.from_string(filename_split[1])
-            if len(filename_split) == 4:  # Regular cut file
-                key = "{0}.{1}".format(element, filename_split[2])
+            element = Element.from_string(filename_split[2])
+            if len(filename_split) == 5:  # Regular cut file
+                key = "{0}.{1}".format(element, filename_split[3])
             else:  # Elemental Losses cut file
                 key = "{0}.{1}.{2}".format(element,
-                                           filename_split[2],
-                                           filename_split[3])
+                                           filename_split[3],
+                                           filename_split[4])
             self.cut_splits.add_splits(key, cut,
                                        cut.split(self.reference_cut,
                                                  self.partition_count,
@@ -145,8 +146,11 @@ class ElementLosses:
     
     
     def __element_losses_folder_clean_up(self):
-        for the_file in os.listdir(self.directory_composition_changes):
-            file_path = os.path.join(self.directory_composition_changes, the_file)
+        for the_file in os.listdir(
+                os.path.join(self.directory_composition_changes, "Changes")):
+            file_path = os.path.join(
+                os.path.join(self.directory_composition_changes, "Changes"),
+                the_file)
             try:
                 if os.path.isfile(file_path):
                     os.unlink(file_path)
