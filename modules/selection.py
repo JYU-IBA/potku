@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 6.4.2018
+Updated on 22.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -103,16 +103,19 @@ class Selector:
             element_colormap: Default colors for new element selections.
         """
         self.element_colormap = element_colormap
-        self.settings = measurement.measurement_settings
+        # self.settings = measurement.measurement_settings
+        self.measurement = measurement
         self.measurement_name = measurement.name
-        self.directory = os.path.join(measurement.directory, measurement.directory_data)
-        self.selection_file = os.path.join(self.directory,
-                                           "{0}.selections".format(self.measurement_name))
+        self.directory = os.path.join(measurement.directory,
+                                      measurement.directory_data)
+        self.selection_file = os.path.join(
+            self.directory,
+            "{0}.selections".format(self.measurement_name))
         # List is sufficient enough. TODO: Perhaps add a new class for it.
         self.selections = []
         self.new_selection_is_allowed = True
         self.is_transposed = False
-        self.looseness = 10  # Default 40, how loose the selection completion is.
+        self.looseness = 10  # Default 40, looeness of the selection completion.
         self.axes = None
         self.axes_limits = AxesLimits()
         self.selected_id = None
@@ -181,7 +184,7 @@ class Selector:
         """
         if self.new_selection_is_allowed:
             sel = Selection(self.axes, self.element_colormap,
-                            settings=self.settings)
+                            measurement=self.measurememt)
             self.grey_out_except(sel.id)
             self.selections.append(sel)
             # Do not allow new selections without closing/purging
@@ -440,7 +443,7 @@ class Selector:
                                 color=split[5],
                                 points=split[6],
                                 transposed=self.is_transposed,
-                                settings=self.settings)
+                                measurement=self.measurement)
                 self.selections.append(sel)
         self.update_axes_limits()
         self.draw()  # Draw all selections
@@ -501,7 +504,8 @@ class Selection:
     LINE_MARKER_SIZE = 3.0
     GLOBAL_ID = 0
     
-    def __init__(self, axes, element_colormap, settings, element=None, isotope=None,
+    def __init__(self, axes, element_colormap, measurement, element=None,
+                 isotope=None,
                  element_type="ERD", color=None, points=None, scatter=None,
                  weight_factor=1.0, transposed=False):
         """Inits Selection class.
@@ -509,8 +513,7 @@ class Selection:
         Args:
             axes: Matplotlib FigureCanvas's subplot
             element_colormap: Default colors for new element selections.
-            settings: Measurement's settings to which selector belongs. 
-                      (for selection dialog)
+            measurement: Measurement object.
             element: String representing element
             isotope: Integer representing isotope
             element_type: "ERD" or "RBS"
@@ -523,7 +526,7 @@ class Selection:
         """
         self.id = Selection.GLOBAL_ID
         self.element_colormap = element_colormap
-        self.settings = settings
+        self.measurement = measurement
 
         if color is not None:
             self.default_color = color

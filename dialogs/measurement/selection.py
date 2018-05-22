@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 20.8.2013
+Updated on 22.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -46,7 +46,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         """
         super().__init__()
         self.selection = selection
-        self.settings = selection.settings
+        self.measurement = selection.measurement
         self.element_colormap = self.selection.element_colormap
         self.ui = uic.loadUi(join("ui_files", "ui_selection_settings.ui"), self)
         self.__set_isotope_weight_factor()
@@ -441,7 +441,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
                 isotope_data = self.ui.sample_isotope_combobox.itemData(isotope_index)
                 isotope = int(isotope_data[0])
 
-        if self.selection.type == "RBS":
+        else:
             element = self.ui.rbs_element_button.text()
             if self.ui.rbs_isotope_radio.isChecked():
                 isotope_index = self.ui.rbs_isotope_combobox.currentIndex()
@@ -456,5 +456,3 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         self.selection.reset_color()
         self.isOk = True
         self.close()
-        
-

@@ -64,6 +64,8 @@ class Measurements:
         """
         self.request = request
         self.measurements = {}  # Dictionary<Measurement>
+        self.measuring_unit_settings = None
+        self.default_settings = None
         self.name_prefix = "Measurement_"
 
     def is_empty(self):
@@ -240,8 +242,6 @@ class Measurement:
         self.directory_energy_spectra = None
         self.directory_data = None
 
-        self.__request_settings = None
-        self.measurement_settings = None
         self.selector = None
 
         self.errorlog = None
@@ -834,18 +834,30 @@ class Measurement:
         tof_in_file = os.path.join(tof_in_directory, "tof.in")
 
         # Get settings 
-        use_settings = self.measurement_settings.get_measurement_settings()
+        # use_settings = self.measurement_settings.get_measurement_settings()
         global_settings = self.request.global_settings
 
+        if self.detector is None:
+            detector = self.request.default_detector
+        else:
+            detector = self.detector
+        if self.run is None:
+            run = self.request.default_run
+        else:
+            run = self.run
+        if self.target is None:
+            target = self.request.default_target
+        else:
+            target = self.target
         # Measurement settings
         str_beam = "Beam: {0}\n".format(
-            use_settings.measuring_unit_settings.element)
+            run.beam.element)
         str_energy = "Energy: {0}\n".format(
-            use_settings.measuring_unit_settings.energy)
+            run.beam.energy)
         str_detector = "Detector angle: {0}\n".format(
-            use_settings.measuring_unit_settings.detector_angle)
+            detector.detector_theta)
         str_target = "Target angle: {0}\n".format(
-            use_settings.measuring_unit_settings.target_angle)
+            target.target_theta)
         str_toflen = "Toflen: {0}\n".format(
             use_settings.measuring_unit_settings.time_of_flight_lenght)
         str_carbon = "Carbon foil thickness: {0}\n".format(

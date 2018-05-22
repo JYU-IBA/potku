@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 26.8.2013
+Updated on 22.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -31,12 +31,12 @@ import os
 import sys
 from PyQt5 import QtCore, uic, QtWidgets
 
-from dialogs.energy_spectrum import EnergySpectrumParamsDialog, EnergySpectrumWidget
-from dialogs.measurement.depth_profile import DepthProfileDialog, DepthProfileWidget
-from dialogs.measurement.element_losses import ElementLossesDialog, ElementLossesWidget
-from dialogs.measurement.settings_old import CalibrationSettings
-from dialogs.measurement.settings_old import DepthProfileSettings
-from dialogs.measurement.settings_old import MeasurementUnitSettings
+from dialogs.energy_spectrum import EnergySpectrumParamsDialog
+from dialogs.energy_spectrum import EnergySpectrumWidget
+from dialogs.measurement.depth_profile import DepthProfileDialog
+from dialogs.measurement.depth_profile import DepthProfileWidget
+from dialogs.measurement.element_losses import ElementLossesDialog
+from dialogs.measurement.element_losses import ElementLossesWidget
 from modules.element import Element
 from modules.null import Null
 from modules.ui_log_handlers import customLogHandler

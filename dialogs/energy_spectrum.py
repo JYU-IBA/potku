@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 10.4.2018
+Updated on 22.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -82,22 +82,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 EnergySpectrumParamsDialog.checked_cuts[m_name])
 
             self.__update_eff_files()
-
-            if not hasattr(self.measurement, "measurement_settings"):
-                QtWidgets.QMessageBox.question(self, "Warning",
-                                               "Settings have not been set. Please set settings before continuing.",
-                                               QtWidgets.QMessageBox.Ok,
-                                               QtWidgets.QMessageBox.Ok)
-            else:
-                if not self.measurement.measurement_settings.has_been_set():
-                    reply = QtWidgets.QMessageBox.question(self, "Warning",
-                                                           "Not all settings have been set. Do you want to continue?",
-                                                           QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                                                           QtWidgets.QMessageBox.No)
-                    if reply == QtWidgets.QMessageBox.No:
-                        self.close()
-                        return
-                self.exec_()
+            self.exec_()
 
         else:
             header_item = QtWidgets.QTreeWidgetItem()
@@ -171,7 +156,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             # Check that matplotlib attribute exists after creation of energy spectrum widget.
             # If it doesn't exists, that means that the widget hasn't been initialized properly
             # and the program should show an error dialog.
-            if hasattr(self.parent.energy_spectrum_widget, "matplotlib"):
+            if hasattr(self.parent.energy_spectrum_widget, "matplotlib_layout"):
                 icon = self.parent.icon_manager.get_icon(
                     "energy_spectrum_icon_16.png")
                 self.parent.add_widget(self.parent.energy_spectrum_widget,
