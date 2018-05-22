@@ -56,8 +56,8 @@ class MCERD:
         # Create a unique hash for the temporary MCERD files. The name needs
         # to be unique because there can be several MCERD processes.
         # self.__hash = hashlib.sha1(str(settings).encode("utf-8")).hexdigest()
-        self.__filename = Element.__str__(self.__settings["recoil_element"]
-                                          .element).split(" ")[0]
+        self.__filename = self.__settings["recoil_element"].prefix \
+                          + "-" + self.__settings["recoil_element"].name
 
         # The recoil file and erd file are later passed to get_espe.
         self.recoil_file = os.path.join(self.__tmp, self.__filename + ".recoil")
@@ -71,9 +71,9 @@ class MCERD:
 
         # The command that is used to start the MCERD process.
         mcerd_command = os.path.join("external", "Potku-bin", "mcerd" +
-                               (".exe " if platform.system() == "Windows"
-                                else " ") +
-                               os.path.join(self.__tmp, self.__filename))
+                                     (".exe " if platform.system() == "Windows"
+                                      else " ") +
+                                     os.path.join(self.__tmp, self.__filename))
 
         # Start the MCERD process.
         # TODO: MCERD needs to be fixed so we can get rid of this ulimit.

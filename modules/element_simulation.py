@@ -118,6 +118,7 @@ class ElementSimulation:
         self.mcsimu_to_file(os.path.join(self.directory,
                                          self.name + ".mcsimu"))
         self.recoil_to_file(os.path.join(self.directory,
+                                         self.recoil_element.prefix + "-" +
                                          self.recoil_element.name + ".rec"))
         self.profile_to_file(os.path.join(self.directory,
                                           self.name + ".profile"))
@@ -159,12 +160,18 @@ class ElementSimulation:
             "fluence": self.run.fluence,
             "timeres": self.detector.timeres,
             "solid": self.calculate_solid(),
-            "erd_file": os.path.join(self.directory, element_str + "." + str(
-                self.seed_number) + ".erd"),
-            "spectrum_file": os.path.join(self.directory, element_str +
-                                          "." + str(self.seed_number)
-                                          + ".simu"),
-            "recoil_file": os.path.join(self.directory, element_str + ".recoil")
+            "erd_file": os.path.join(self.directory,
+                                     self.recoil_element.prefix + "-" +
+                                     self.recoil_element.name + "." +
+                                     str(self.seed_number) + ".erd"),
+            "spectrum_file": os.path.join(self.directory,
+                                          self.recoil_element.prefix + "-" +
+                                          self.recoil_element.name + "." +
+                                          str(self.seed_number) + ".simu"),
+            "recoil_file": os.path.join(self.directory,
+                                        self.recoil_element.prefix + "-" +
+                                        self.recoil_element.name +
+                                        ".recoil")
         }
 
     def unlock_edit(self):
@@ -208,15 +215,19 @@ class ElementSimulation:
             self.recoil_element.description = new_values["description"]
             self.recoil_element.reference_density \
                 = new_values["reference_density"]
-            self.espe_settings["recoil_file"] = os.path\
-                .join(self.directory, self.recoil_element.name + ".recoil")
+            self.espe_settings["recoil_file"] = os.path \
+                .join(self.directory, self.recoil_element.prefix + "-" +
+                      self.recoil_element.name + ".recoil")
             self.espe_settings["spectrum_file"] = os.path \
-                .join(self.directory, self.recoil_element.name + "." +
-                      str(self.seed_number) + ".simu")
-            self.recoil_element.write_recoil_file(self.espe_settings["recoil_file"])
+                .join(self.directory, self.recoil_element.prefix + "-"
+                      + self.recoil_element.name + "."
+                      + str(self.seed_number) + ".simu")
+            self.recoil_element.write_recoil_file(
+                self.espe_settings["recoil_file"])
         except KeyError:
             raise
         self.recoil_to_file(os.path.join(self.directory,
+                                         self.recoil_element.prefix + "-" +
                                          self.recoil_element.name + ".rec"))
 
     def calculate_solid(self):
