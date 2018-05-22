@@ -56,9 +56,8 @@ class MCERD:
         # Create a unique hash for the temporary MCERD files. The name needs
         # to be unique because there can be several MCERD processes.
         # self.__hash = hashlib.sha1(str(settings).encode("utf-8")).hexdigest()
-        self.__filename = Element.__str__(self.__settings[
-                                              "recoil_element"].element) \
-            .replace(" ", "_")
+        self.__filename = Element.__str__(self.__settings["recoil_element"]
+                                          .element).split(" ")[0]
 
         # The recoil file and erd file are later passed to get_espe.
         self.recoil_file = os.path.join(self.__tmp, self.__filename + ".recoil")

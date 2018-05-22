@@ -149,8 +149,7 @@ class ElementSimulation:
             "detector": self.detector,
             "recoil_element": self.recoil_element
         }
-        element_str = Element.__str__(self.recoil_element.element) \
-                             .replace(" ", "_")
+        element_str = Element.__str__(self.recoil_element.element).split(" ")[0]
         self.espe_settings = {
             "beam": self.beam,
             "detector": self.detector,
@@ -207,7 +206,14 @@ class ElementSimulation:
         try:
             self.recoil_element.name = new_values["name"]
             self.recoil_element.description = new_values["description"]
-            self.recoil_element.reference_density = new_values["reference_density"]
+            self.recoil_element.reference_density \
+                = new_values["reference_density"]
+            self.espe_settings["recoil_file"] = os.path\
+                .join(self.directory, self.recoil_element.name + ".recoil")
+            self.espe_settings["spectrum_file"] = os.path \
+                .join(self.directory, self.recoil_element.name + "." +
+                      str(self.seed_number) + ".simu")
+            self.recoil_element.write_recoil_file(self.espe_settings["recoil_file"])
         except KeyError:
             raise
         self.recoil_to_file(os.path.join(self.directory,
