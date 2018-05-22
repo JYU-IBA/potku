@@ -883,7 +883,10 @@ class Measurement:
         # Efficiency directory
         # TODO Efficiency directory should be measurement's detector's
         # directory and not request's.
-        eff_directory = self.request.detector.efficiency_directory
+        if self.detector:
+            eff_directory = self.detector.efficiency_directory
+        else:
+            eff_directory = self.request.default_detector.efficiency_directory
         str_eff_dir = "Efficiency directory: {0}".format(eff_directory)
 
         # Combine strings
