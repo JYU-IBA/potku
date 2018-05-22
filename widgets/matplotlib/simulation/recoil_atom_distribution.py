@@ -75,7 +75,7 @@ class RecoilElement:
             widget: An ElementWidget class object.
         """
         self.element = element
-        self.name = Element.__str__(element)
+        self.name = (Element.__str__(element)).split(" ")[0]
         self.description = "This is a default rec setting file."
         self.type = "rec"
         # This is multiplied by 1e22
