@@ -115,8 +115,10 @@ class ElementSimulation:
         self.seed_number = seed_number
         self.channel_width = channel_width
 
-        self.mcsimu_to_file(os.path.join(self.directory, self.name + ".mcsimu"))
-        self.recoil_to_file(os.path.join(self.directory, self.name + ".rec"))
+        self.mcsimu_to_file(os.path.join(self.directory,
+                                         self.name + ".mcsimu"))
+        self.recoil_to_file(os.path.join(self.directory,
+                                         self.recoil_element.name + ".rec"))
         self.profile_to_file(os.path.join(self.directory,
                                           self.name + ".profile"))
 
@@ -208,6 +210,8 @@ class ElementSimulation:
             self.recoil_element.reference_density = new_values["reference_density"]
         except KeyError:
             raise
+        self.recoil_to_file(os.path.join(self.directory,
+                                         self.recoil_element.name + ".rec"))
 
     def calculate_solid(self):
         """
