@@ -133,13 +133,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                           self.request.default_folder,
                                                           "Default.simulation"))
         self.request.default_element_simulation = self.request \
-            .default_element_simulation.from_file(self.request,
+            .default_element_simulation.from_file(self.request, "",
+                                                  self.request.default_folder,
                                                   os.path.join(
                                                       self.request.default_folder,
                                                       "Default.mcsimu"),
-                                                  os.path.join(
-                                                      self.request.default_folder,
-                                                      "Default.rec"),
                                                   os.path.join(
                                                       self.request.default_folder,
                                                       "Default.profile"))

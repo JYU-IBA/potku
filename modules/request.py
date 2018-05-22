@@ -163,13 +163,10 @@ class Request:
 
         try:
             self.default_element_simulation = \
-                ElementSimulation.from_file(self,
+                ElementSimulation.from_file(self, "4He", self.default_folder,
                                             os.path.join(
                                                 self.default_folder,
                                                 "Default.mcsimu"),
-                                            os.path.join(
-                                                self.default_folder,
-                                                "Default.rec"),
                                             os.path.join(
                                                 self.default_folder,
                                                 "Default.profile"))

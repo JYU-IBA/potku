@@ -99,7 +99,7 @@ class Simulations:
                         os.path.join(
                             simulation.directory, measurement_settings_file))
                     obj = json.load(open(os.path.join(
-                            simulation.directory, measurement_settings_file)))
+                        simulation.directory, measurement_settings_file)))
                     simulation.measurement_setting_file_name = obj[
                         "general"]["name"]
                     simulation.measurement_setting_file_description = obj[
@@ -108,16 +108,18 @@ class Simulations:
                         "modification_time_unix"]
                     break
 
-            # Read Detector anf Target information from file.
             for file in os.listdir(simulation_folder_path):
+                # Read Target information from file.
                 if file.endswith(target_extension):
                     simulation.target = Target.from_file(os.path.join(
                         simulation_folder_path, file), os.path.join(
                         simulation_folder_path,
                         measurement_settings_file), self.request)
+
+                # Read Detector information from file.
                 if file.startswith("Detector"):
                     det_folder = os.path.join(simulation_folder_path,
-                                                     "Detector")
+                                              "Detector")
                     for f in os.listdir(det_folder):
                         if f.endswith(detector_extension):
                             simulation.detector = Detector.from_file(
@@ -125,20 +127,30 @@ class Simulations:
                                 os.path.join(simulation.directory,
                                              measurement_settings_file),
                                 self.request)
+
+                # Read read ElementSimulation information from files.
                 if file.endswith(element_simulation_extension):
+                    # .mcsimu file
                     mcsimu_file_path = os.path.join(simulation.directory, file)
-                    file_name = file.split(".")[0]
+
+                    element_str = file.split("-")[0]
+                    # .rec file
                     recoil_file_path = os.path.join(simulation.directory,
-                                                    file_name + ".rec")
+                                                    element_str + ".rec")
+                    # .profile file
                     profile_file_path = os.path.join(simulation.directory,
-                                                     file_name + ".profile")
+                                                     element_str + ".profile")
+
                     if os.path.exists(recoil_file_path) and \
                             os.path.exists(profile_file_path):
+                        # Create ElementSimulation from files
                         element_simulation = ElementSimulation.from_file(
-                        self.request, mcsimu_file_path, recoil_file_path,
+                            self.request, mcsimu_file_path, recoil_file_path,
                             profile_file_path)
                         simulation.element_simulations.append(
                             element_simulation)
+                        # Create RecoilElements from .rec files
+                        element_simulation.read_recoil_elements()
 
         # Create a new simulation
         else:
@@ -267,9 +279,10 @@ class Simulation:
         element_simulation = ElementSimulation(directory=self.directory,
                                                request=self.request,
                                                name=element_str,
-                                               recoil_element=recoil_element,
                                                target=self.target,
-                                               detector=self.detector)
+                                               detector=self.detector,
+                                               recoil_elements=[])
+        element_simulation.recoil_elements.append(recoil_element)
         self.element_simulations.append(element_simulation)
         return element_simulation
 

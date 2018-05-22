@@ -266,8 +266,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
             element_simulation.mcsimu_to_file(
                 os.path.join(directory, element_simulation.name + ".mcsimu"))
-            element_simulation.recoil_to_file(
-                os.path.join(directory, element_str + ".rec"))
+            element_simulation.recoil_to_file(directory)
             element_simulation.profile_to_file(
                 os.path.join(directory, element_str + ".profile"))
 
@@ -341,21 +340,21 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 element_simulation.recoil_element.widget.radio_button\
                     .setChecked(True)
 
-    def add_element(self, element, eleme_sim=None):
+    def add_element(self, element, element_simulation=None):
         """
         Adds a new ElementSimulation based on the element. If elem_sim is
          not None, only UI widgets need to be added.
 
          Args:
              element: Element that is added.
-             eleme_sim: ElementSimulation that needs the UI widgets.
+             element_simulation: ElementSimulation that needs the UI widgets.
         """
-        if eleme_sim is None:
+        if element_simulation is None:
             # Create new ElementSimulation
             element_simulation = self.element_manager\
                 .add_new_element_simulation(element)
         else:
-            element_simulation = eleme_sim
+            element_simulation = element_simulation
             self.element_manager.add_element_simulation(element_simulation)
 
         # Add simulation controls widget

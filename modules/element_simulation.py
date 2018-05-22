@@ -36,19 +36,17 @@ class ElementSimulation:
     MCERD objects, but only one GetEspe object.
     """
 
-    __slots__ = "directory", "request", "name", \
-                "modification_time", \
+    __slots__ = "directory", "request", "name", "modification_time", \
                 "simulation_type", "number_of_ions", "number_of_preions", \
                 "number_of_scaling_ions", "number_of_recoils", \
-                "minimum_scattering_angle", \
-                "minimum_main_scattering_angle", "minimum_energy", \
-                "simulation_mode", "seed_number", \
-                "recoil_element", "recoil_atoms", "mcerd_objects", "get_espe", \
-                "channel_width", "reference_density", "beam", "target", \
-                "detector", "__command", "__process", "settings", \
+                "minimum_scattering_angle", "minimum_main_scattering_angle", \
+                "minimum_energy", "simulation_mode", "seed_number", \
+                "recoil_elements", "recoil_atoms", "mcerd_objects", \
+                "get_espe", "channel_width", "reference_density", "beam", \
+                "target", "detector", "__command", "__process", "settings", \
                 "espe_settings", "description", "run", "spectra", "bin_width"
 
-    def __init__(self, directory, request, recoil_element, beam=Beam(),
+    def __init__(self, directory, request, recoil_elements, beam=Beam(),
                  target=Target(),
                  detector=None,
                  run=Run(),
@@ -67,7 +65,7 @@ class ElementSimulation:
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
             request: Request object reference.
-            recoil_element:
+            recoil_elements: List of RecoilElement objects.
             beam: Beam object reference.
             target: Target object reference.
             detector: Detector object reference.
@@ -95,7 +93,7 @@ class ElementSimulation:
         self.description = description
         self.modification_time = modification_time
 
-        self.recoil_element = recoil_element
+        self.recoil_elements = recoil_elements
         self.beam = beam
         self.target = target
         if detector:
@@ -118,9 +116,7 @@ class ElementSimulation:
 
         self.mcsimu_to_file(os.path.join(self.directory,
                                          self.name + ".mcsimu"))
-        self.recoil_to_file(os.path.join(self.directory,
-                                         self.recoil_element.prefix + "-" +
-                                         self.recoil_element.name + ".rec"))
+        self.recoil_to_file(self.directory)
         self.profile_to_file(os.path.join(self.directory,
                                           self.name + ".profile"))
 
@@ -135,101 +131,100 @@ class ElementSimulation:
         self.spectra = []
         self.bin_width = 0.1
 
-        self.settings = {
-            "simulation_type": self.simulation_type,
-            "number_of_ions": self.number_of_ions,
-            "number_of_ions_in_presimu": self.number_of_preions,
-            "number_of_scaling_ions": self.number_of_scaling_ions,
-            "number_of_recoils": self.number_of_recoils,
-            "minimum_scattering_angle": self.minimum_scattering_angle,
-            "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
-            "minimum_energy_of_ions": self.minimum_energy,
-            "simulation_mode": self.simulation_mode,
-            "seed_number": self.seed_number,
-            "beam": self.beam,
-            "target": self.target,
-            "detector": self.detector,
-            "recoil_element": self.recoil_element
-        }
-        element_str = Element.__str__(self.recoil_element.element).split(" ")[0]
-        self.espe_settings = {
-            "beam": self.beam,
-            "detector": self.detector,
-            "target": self.target,
-            "ch": self.channel_width,
-            "reference_density": self.recoil_element.reference_density,
-            "fluence": self.run.fluence,
-            "timeres": self.detector.timeres,
-            "solid": self.calculate_solid(),
-            "erd_file": os.path.join(self.directory,
-                                     self.recoil_element.prefix + "-" +
-                                     self.recoil_element.name + "." +
-                                     str(self.seed_number) + ".erd"),
-            "spectrum_file": os.path.join(self.directory,
-                                          self.recoil_element.prefix + "-" +
-                                          self.recoil_element.name + "." +
-                                          str(self.seed_number) + ".simu"),
-            "recoil_file": os.path.join(self.directory,
-                                        self.recoil_element.prefix + "-" +
-                                        self.recoil_element.name +
-                                        ".recoil")
-        }
+        # self.settings = {
+        #     "simulation_type": self.simulation_type,
+        #     "number_of_ions": self.number_of_ions,
+        #     "number_of_ions_in_presimu": self.number_of_preions,
+        #     "number_of_scaling_ions": self.number_of_scaling_ions,
+        #     "number_of_recoils": self.number_of_recoils,
+        #     "minimum_scattering_angle": self.minimum_scattering_angle,
+        #     "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
+        #     "minimum_energy_of_ions": self.minimum_energy,
+        #     "simulation_mode": self.simulation_mode,
+        #     "seed_number": self.seed_number,
+        #     "beam": self.beam,
+        #     "target": self.target,
+        #     "detector": self.detector,
+        #     "recoil_element": self.recoil_element
+        # }
 
-    def unlock_edit(self):
-        self.recoil_element.unlock_edit()
+        # self.espe_settings = {
+        #     "beam": self.beam,
+        #     "detector": self.detector,
+        #     "target": self.target,
+        #     "ch": self.channel_width,
+        #     "reference_density": self.recoil_element.reference_density,
+        #     "fluence": self.run.fluence,
+        #     "timeres": self.detector.timeres,
+        #     "solid": self.calculate_solid(),
+        #     "erd_file": os.path.join(self.directory,
+        #                              self.recoil_element.prefix + "-" +
+        #                              self.recoil_element.name + "." +
+        #                              str(self.seed_number) + ".erd"),
+        #     "spectrum_file": os.path.join(self.directory,
+        #                                   self.recoil_element.prefix + "-" +
+        #                                   self.recoil_element.name + "." +
+        #                                   str(self.seed_number) + ".simu"),
+        #     "recoil_file": os.path.join(self.directory,
+        #                                 self.recoil_element.prefix + "-" +
+        #                                 self.recoil_element.name +
+        #                                 ".recoil")
+        # }
 
-    def get_edit_lock_on(self):
-        self.recoil_element.get_edit_lock_on()
+    def unlock_edit(self, recoil_element):
+        recoil_element.unlock_edit()
 
-    def get_points(self):
-        return self.recoil_element.get_points()
+    def get_edit_lock_on(self, recoil_element):
+        recoil_element.get_edit_lock_on()
 
-    def get_xs(self):
-        return self.recoil_element.get_xs(),
+    def get_points(self, recoil_element):
+        return recoil_element.get_points()
 
-    def get_ys(self):
-        return self.recoil_element.get_ys(),
+    def get_xs(self, recoil_element):
+        return recoil_element.get_xs(),
 
-    def get_left_neighbor(self, point):
-        return self.recoil_element.get_left_neighbor(point)
+    def get_ys(self, recoil_element):
+        return recoil_element.get_ys(),
 
-    def get_right_neighbor(self, point):
-        return self.recoil_element.get_right_neighbor(point)
+    def get_left_neighbor(self, recoil_element, point):
+        return recoil_element.get_left_neighbor(point)
 
-    def get_point_by_i(self, i):
-        return self.recoil_element.get_point_by_i(i)
+    def get_right_neighbor(self, recoil_element, point):
+        return recoil_element.get_right_neighbor(point)
 
-    def add_point(self, new_point):
-        self.recoil_element.add_point(new_point)
+    def get_point_by_i(self, recoil_element, i):
+        return recoil_element.get_point_by_i(i)
 
-    def remove_point(self, point):
-        self.recoil_element.remove_point(point)
+    def add_point(self, recoil_element, new_point):
+        recoil_element.add_point(new_point)
 
-    def update_recoil_element(self, new_values):
+    def remove_point(self, recoil_element, point):
+        recoil_element.remove_point(point)
+
+    def update_recoil_element(self, recoil_element, new_values):
         """Updates RecoilElement object with new values.
 
         Args:
+            recoil_element: RecoilElement object to update.
             new_values: New values as a dictionary.
         """
         try:
-            self.recoil_element.name = new_values["name"]
-            self.recoil_element.description = new_values["description"]
-            self.recoil_element.reference_density \
+            recoil_element.name = new_values["name"]
+            recoil_element.description = new_values["description"]
+            recoil_element.reference_density \
                 = new_values["reference_density"]
             self.espe_settings["recoil_file"] = os.path \
-                .join(self.directory, self.recoil_element.prefix + "-" +
-                      self.recoil_element.name + ".recoil")
+                .join(self.directory, recoil_element.prefix + "-" +
+                      recoil_element.name + ".recoil")
             self.espe_settings["spectrum_file"] = os.path \
-                .join(self.directory, self.recoil_element.prefix + "-"
-                      + self.recoil_element.name + "."
+                .join(self.directory, recoil_element.prefix + "-"
+                      + recoil_element.name + "."
                       + str(self.seed_number) + ".simu")
-            self.recoil_element.write_recoil_file(
+            recoil_element.write_recoil_file(
                 self.espe_settings["recoil_file"])
         except KeyError:
             raise
-        self.recoil_to_file(os.path.join(self.directory,
-                                         self.recoil_element.prefix + "-" +
-                                         self.recoil_element.name + ".rec"))
+        self.recoil_to_file(self.directory)
 
     def calculate_solid(self):
         """
@@ -277,16 +272,18 @@ class ElementSimulation:
             return 0
 
     @classmethod
-    def from_file(cls, request, mcsimu_file_path, rec_file_path,
+    def from_file(cls, request, prefix, simulation_folder, mcsimu_file_path,
                   profile_file_path):
         """Initialize ElementSimulation from JSON files.
 
         Args:
             request: Request that ElementSimulation belongs to.
+            prefix: String that is used to prefix ".rec" files of this
+            ElementSimulation.
+            simulation_folder: A file path to simulation folder that contains
+            files ending with ".rec".
             mcsimu_file_path: A file path to JSON file containing the
             simulation parameters.
-            rec_file_path: A file path to JSON file containing the recoil
-            parameters.
             profile_file_path: A file path to JSON file containing the
             channel width.
         """
@@ -306,25 +303,29 @@ class ElementSimulation:
         minimum_main_scattering_angle = obj["minimum_main_scattering_angle"]
         minimum_energy = obj["minimum_energy"]
 
-        obj = json.load(open(rec_file_path))
-        simulation_type = obj["simulation_type"]
-        points = []
-        for dictionary_point in obj["profile"]:
-            x, y = dictionary_point["Point"].split(" ")
-            points.append(Point((float(x), float(y))))
-        element = RecoilElement(Element.from_string(obj["element"]),
-                                points)
-        reference_density = obj["reference_density"]
-
+        # Read channel width from .profile file.
         obj = json.load(open(profile_file_path))
         channel_width = obj["energy_spectra"]["channel_width"]
 
-        simulation_folder, filename = os.path.split(mcsimu_file_path)
+        # Read .rec files from simulation folder
+        recoil_elements = []
+        for file in os.listdir(simulation_folder):
+            if file.startswith(prefix) and file.endswith(".rec"):
+                obj = json.load(open(os.path.join(simulation_folder, file)))
+                points = []
+                for dictionary_point in obj["profile"]:
+                    x, y = dictionary_point["Point"].split(" ")
+                    points.append(Point((float(x), float(y))))
+                element = RecoilElement(Element.from_string(obj["element"]),
+                                        points)
+                element.reference_density = obj["reference_density"]
+                element.simulation_type = obj["simulation_type"]
+                element.channel_width = channel_width
+                recoil_elements.append(element)
 
-        return cls(simulation_folder, request, element,
+        return cls(simulation_folder, request, recoil_elements,
                    description=description,
                    modification_time=modification_time, name=name,
-                   simulation_type=simulation_type,
                    number_of_ions=number_of_ions,
                    number_of_preions=number_of_preions,
                    number_of_scaling_ions=number_of_scaling_ions,
@@ -333,17 +334,13 @@ class ElementSimulation:
                    minimum_main_scattering_angle=minimum_main_scattering_angle,
                    simulation_mode=simulation_mode,
                    seed_number=seed_number,
-                   minimum_energy=minimum_energy,
-                   channel_width=channel_width,
-                   reference_density=reference_density)
+                   minimum_energy=minimum_energy)
 
     def mcsimu_to_file(self, file_path):
         """Save mcsimu settings to file.
 
         Args:
             file_path: File in which the mcsimu settings will be saved.
-            rec_file_path: File in which the recoil settings will be saved.
-            profile_file_path: FIle in which channel width will be saved.
         """
         obj = {
             "name": self.name,
@@ -366,40 +363,43 @@ class ElementSimulation:
         with open(file_path, "w") as file:
             json.dump(obj, file, indent=4)
 
-    def recoil_to_file(self, file_path):
+    def recoil_to_file(self, simulation_folder):
         """Save recoil settings to file.
 
         Args:
-            file_path: File in which the recoil settings will be saved.
+            simulation_folder: Path to simulation folder in which ".rec"
+            files are stored.
         """
-        element = self.recoil_element.element
-        if element.isotope:
-            element_str = "{0}{1}".format(element.isotope, element.symbol)
-        else:
-            element_str = element.symbol
+        for recoil_element in self.recoil_elements:
+            recoil_file = os.path.join(simulation_folder, recoil_element.prefix +
+                                       "-" + recoil_element.name + ".rec")
+            if recoil_element.element.isotope:
+                element_str = "{0}{1}".format(recoil_element.element.isotope,
+                                              recoil_element.element.symbol)
+            else:
+                element_str = recoil_element.element.symbol
 
-        obj = {
-            "name": self.recoil_element.name,
-            "description": self.recoil_element.description,
-            "modification_time": time.strftime("%c %z %Z", time.localtime(
-                time.time())),
-            "modification_time_unix": time.time(),
-            "simulation_type": self.recoil_element.type,
-            "element": element_str,
-            "reference_density": self.recoil_element.reference_density *
-                                 1e22,
-            "profile": []
-        }
-
-        for point in self.recoil_element.get_points():
-            point_obj = {
-                "Point": str(round(point.get_x(), 2)) + " " +
-                         str(round(point.get_y(), 4))
+            obj = {
+                "name": recoil_element.name,
+                "description": recoil_element.description,
+                "modification_time": time.strftime("%c %z %Z", time.localtime(
+                    time.time())),
+                "modification_time_unix": time.time(),
+                "simulation_type": recoil_element.type,
+                "element": element_str,
+                "reference_density": recoil_element.reference_density * 1e22,
+                "profile": []
             }
-            obj["profile"].append(point_obj)
 
-        with open(file_path, "w") as file:
-            json.dump(obj, file, indent=4)
+            for point in recoil_element.get_points():
+                point_obj = {
+                    "Point": str(round(point.get_x(), 2)) + " " +
+                             str(round(point.get_y(), 4))
+                }
+                obj["profile"].append(point_obj)
+
+            with open(recoil_file, "w") as file:
+                json.dump(obj, file, indent=4)
 
     def profile_to_file(self, file_path):
         """Save profile settings (only channel width) to file.
