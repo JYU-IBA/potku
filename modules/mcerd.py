@@ -61,10 +61,11 @@ class MCERD:
             .replace(" ", "_")
 
         # The recoil file and erd file are later passed to get_espe.
-        self.recoil_file = self.__create_mcerd_files()
+        self.recoil_file = os.path.join(self.__tmp, self.__filename + ".recoil")
         self.result_file = os.path.join(self.__tmp, self.__filename + "." +
                                         str(self.__settings["seed_number"]) +
                                         ".erd")
+        self.__create_mcerd_files()
         # self.result_file = os.path.join(self.__tmp, self.__hash + "." +
         #                                str(self.__settings["seed_number"]) +
         #                             ".erd")
@@ -100,14 +101,11 @@ class MCERD:
         Creates the temporary files needed for running MCERD. These files
         are placed to the directory of the temporary files of the operating
         system.
-
-        Return: Path of the recoil file.
         """
         command_file = os.path.join(self.__tmp, self.__filename)
         target_file = os.path.join(self.__tmp, self.__filename + ".target")
         detector_file = os.path.join(self.__tmp, self.__filename + ".detector")
         foils_file = os.path.join(self.__tmp, self.__filename + ".foils")
-        recoil_file = os.path.join(self.__tmp, self.__filename + ".recoil")
         presimulation_file = os.path.join(self.__tmp, self.__filename + ".pre")
 
         beam = self.__settings["beam"]
@@ -133,7 +131,8 @@ class MCERD:
             file.write("Recoiling atom: " + str(recoil_element.element.isotope)
                        + recoil_element.element.symbol + "\n")
 
-            file.write("Recoiling material distribution: " + recoil_file + "\n")
+            file.write("Recoiling material distribution: " + self.recoil_file
+                       + "\n")
 
             file.write("Target angle: " + str(target.target_theta) + " deg\n")
 
@@ -172,18 +171,6 @@ class MCERD:
 
             file.write("Seed number of the random number generator: " +
                        str(self.__settings["seed_number"]) + "\n")
-
-            # MCERD doesn't use these parameters and they break the command
-            # file.
-        #            file.write("Beam divergence: " + str(beam.divergence) + "\n")
-
-        #            file.write("Beam profile: " + str(beam.profile) + "\n")
-
-        #            file.write("Surface topography file: " + target.image_file + "\n")
-
-        #            file.write("Side length of the surface topography image: "
-        #                       + "%0.1f %0.1f" % (target.image_size[0],
-        #                                          target.image_size[1]) + "\n")
 
         # Create the MCERD detector file
         with open(detector_file, "w") as file_det:
@@ -238,8 +225,6 @@ class MCERD:
                 file_det.write("Foil distance: " + str(last_foil.distance)
                                + "\n")
 
-        # There will be a list of all used elements at the top of the file,
-        # also duplicates (the count can be running)
         # Create the MCERD target file
         with open(target_file, "w") as file_target:
             for layer in target.layers:
@@ -255,6 +240,9 @@ class MCERD:
                               "ZBL \n"
                               "0.000001 g/cm3 \n"
                               "0 1.0 \n")
+
+            # An indexed list of all elements is written first.
+            # Then layers and their elements referencing the index.
             count = 0
             for layer in target.layers:
                 file_target.write("\n")
@@ -275,6 +263,9 @@ class MCERD:
                         mass = masses.find_mass_of_isotope(element)
                         file_foils.write("%0.2f %s" % (mass,
                                                        element.symbol) + "\n")
+
+            # An indexed list of all elements is written first.
+            # Then layers and their elements referencing the index.
             count = 0
             for foil in detector.foils:
                 for layer in foil.layers:
@@ -288,26 +279,7 @@ class MCERD:
                                          (" %0.3f" % element.amount) + "\n")
                         count += 1
 
-        with open(recoil_file, "w") as file_rec:
-            # MCERD requires the recoil atom distribution to start with these
-            # points
-            file_rec.write(
-                "0.00 0.000001\n10.00 0.000001\n")
-
-            for point in recoil_element.get_points():
-                file_rec.write(
-                    str(round(point.get_x() + 10.01, 2)) + " " +
-                    str(round(point.get_y(), 4)) + "\n")
-
-            # MCERD requires the recoil atom distribution to end with these
-            # points
-            file_rec.write(
-                str(round(recoil_element.get_points()[-1].get_x() + 10.02, 2)) +
-                " 0.0\n" +
-                str(round(recoil_element.get_points()[-1].get_x() + 10.03, 2)) +
-                " 0.0\n")
-
-        return recoil_file
+        recoil_element.write_recoil_file(self.recoil_file)
 
     def copy_result(self, destination):
         """Copies MCERD result file (.erd) into given destination.
@@ -317,3 +289,5 @@ class MCERD:
             shutil.copy(self.recoil_file, destination)
         except FileNotFoundError:
             pass
+            # raise
+            # TODO

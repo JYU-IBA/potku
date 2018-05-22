@@ -146,6 +146,31 @@ class RecoilElement:
         else:
             return self._points[ind + 1]
 
+    def write_recoil_file(self, recoil_file):
+        """Writes a file of points that is given to MCERD and get_espe.
+
+        Args:
+            recoil_file: File path to recoil file that ends with ".recoil".
+        """
+        with open(recoil_file, "w") as file_rec:
+            # MCERD requires the recoil atom distribution to start with these
+            # points
+            file_rec.write(
+                "0.00 0.000001\n10.00 0.000001\n")
+
+            for point in self.get_points():
+                file_rec.write(
+                    str(round(point.get_x() + 10.01, 2)) + " " +
+                    str(round(point.get_y(), 4)) + "\n")
+
+            # MCERD requires the recoil atom distribution to end with these
+            # points
+            file_rec.write(
+                str(round(self.get_points()[-1].get_x() + 10.02, 2)) +
+                " 0.0\n" +
+                str(round(self.get_points()[-1].get_x() + 10.03, 2)) +
+                " 0.0\n")
+
 
 class ElementWidget(QtWidgets.QWidget):
     """Class for creating an element widget for the recoil atom distribution.
