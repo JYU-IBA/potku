@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 13.5.2018
+Updated on 22.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -70,13 +70,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     screen_geometry.size().height() * 0.8)
 
         self.request = request
-        self.settings = request.settings
         self.icon_manager = icon_manager
-
-        # Creates object that loads and holds all the measuring data
-        self.measuring_unit_settings = self.settings.measuring_unit_settings
-        self.calibration_settings = self.settings.calibration_settings
-        self.depth_profile_settings = self.settings.depth_profile_settings
 
         # Connect buttons.
         self.ui.OKButton.clicked.connect(self.update_and_close_settings)
@@ -150,8 +144,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.profile_settings_widget = ProfileSettingsWidget(
             self.request.default_measurement)
         self.ui.tabs.addTab(self.profile_settings_widget, "Profile")
-
-        self.depth_profile_settings.show(self.profile_settings_widget)
 
         self.show_settings()
 
@@ -352,9 +344,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             # if not self.settings.has_been_set():
             #     raise TypeError
 
-            self.measuring_unit_settings.save_settings()
-            self.calibration_settings.save_settings()
-            self.depth_profile_settings.save_settings()
         except TypeError:
             QtWidgets.QMessageBox.question(self, "Warning",
                                            "Some of the setting values have "

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 11.5.2018
+Updated on 22.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -64,8 +64,6 @@ class Measurements:
         """
         self.request = request
         self.measurements = {}  # Dictionary<Measurement>
-        self.measuring_unit_settings = None
-        self.default_settings = None
         self.name_prefix = "Measurement_"
 
     def is_empty(self):
@@ -413,12 +411,6 @@ class Measurement:
         self.__make_directories(self.directory_energy_spectra)
 
         self.set_loggers()
-
-        # The settings that come from the request
-        self.__request_settings = self.request.settings
-        # The settings that are individually set for this measurement
-        self.measurement_settings = Settings(self.directory,
-                                             self.__request_settings)
 
         element_colors = self.request.global_settings.get_element_colors()
         self.selector = Selector(self, element_colors)
