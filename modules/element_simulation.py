@@ -409,8 +409,11 @@ class ElementSimulation:
         """ Stop the simulation."""
         for sim in list(self.mcerd_objects.keys()):
             self.mcerd_objects[sim].stop_process()
-            self.mcerd_objects[sim].copy_result(self.directory)
-            self.calculate_espe()
+            try:
+                self.mcerd_objects[sim].copy_result(self.directory)
+                self.calculate_espe()
+            except FileNotFoundError:
+                raise
             del (self.mcerd_objects[sim])
 
     def pause(self):

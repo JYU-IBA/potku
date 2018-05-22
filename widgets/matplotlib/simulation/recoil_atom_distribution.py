@@ -1097,5 +1097,15 @@ class SimulationControlsWidget(QtWidgets.QWidget):
     def __stop_simulation(self):
         """ Calls ElementSimulation's stop method.
         """
-        self.element_simulation.stop()
+        try:
+            self.element_simulation.stop()
+        except FileNotFoundError:
+            # Either .erd or .recoil files were not found for generating
+            # energy spectrum.
+            error_box = QtWidgets.QMessageBox()
+            error_box.setIcon(QtWidgets.QMessageBox.Warning)
+            error_box.addButton(QtWidgets.QMessageBox.Ok)
+            error_box.setText("Energy spectrum data could not be generated.")
+            error_box.setWindowTitle("Error")
+            error_box.exec()
         self.state_label.setText("Stopped")

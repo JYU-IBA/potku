@@ -288,6 +288,4 @@ class MCERD:
             shutil.copy(self.result_file, destination)
             shutil.copy(self.recoil_file, destination)
         except FileNotFoundError:
-            pass
-            # raise
-            # TODO
+            raise
