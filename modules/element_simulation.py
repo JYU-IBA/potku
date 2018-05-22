@@ -116,8 +116,10 @@ class ElementSimulation:
         self.seed_number = seed_number
         self.channel_width = channel_width
 
-        self.mcsimu_to_file(os.path.join(self.directory, self.name + ".mcsimu"))
-        self.recoil_to_file(os.path.join(self.directory, self.name + ".rec"))
+        self.mcsimu_to_file(os.path.join(self.directory,
+                                         self.name + ".mcsimu"))
+        self.recoil_to_file(os.path.join(self.directory,
+                                         self.recoil_element.name + ".rec"))
         self.profile_to_file(os.path.join(self.directory,
                                           self.name + ".profile"))
 
@@ -148,7 +150,8 @@ class ElementSimulation:
             "detector": self.detector,
             "recoil_element": self.recoil_element
         }
-
+        element_str = Element.__str__(self.recoil_element.element) \
+                             .replace(" ", "_")
         self.espe_settings = {
             "beam": self.beam,
             "detector": self.detector,
@@ -158,8 +161,58 @@ class ElementSimulation:
             "fluence": self.run.fluence,
             "timeres": self.detector.timeres,
             "solid": self.calculate_solid(),
-            "result_directory": self.directory
+            "erd_file": os.path.join(self.directory, element_str + "." + str(
+                self.seed_number) + ".erd"),
+            "spectrum_file": os.path.join(self.directory, element_str +
+                                          "." + str(self.seed_number)
+                                          + ".simu"),
+            "recoil_file": os.path.join(self.directory, element_str + ".recoil")
         }
+
+    def unlock_edit(self):
+        self.recoil_element.unlock_edit()
+
+    def get_edit_lock_on(self):
+        self.recoil_element.get_edit_lock_on()
+
+    def get_points(self):
+        return self.recoil_element.get_points()
+
+    def get_xs(self):
+        return self.recoil_element.get_xs(),
+
+    def get_ys(self):
+        return self.recoil_element.get_ys(),
+
+    def get_left_neighbor(self, point):
+        return self.recoil_element.get_left_neighbor(point)
+
+    def get_right_neighbor(self, point):
+        return self.recoil_element.get_right_neighbor(point)
+
+    def get_point_by_i(self, i):
+        return self.recoil_element.get_point_by_i(i)
+
+    def add_point(self, new_point):
+        self.recoil_element.add_point(new_point)
+
+    def remove_point(self, point):
+        self.recoil_element.remove_point(point)
+
+    def update_recoil_element(self, new_values):
+        """Updates RecoilElement object with new values.
+
+        Args:
+            new_values: New values as a dictionary.
+        """
+        try:
+            self.recoil_element.name = new_values["name"]
+            self.recoil_element.description = new_values["description"]
+            self.recoil_element.reference_density = new_values["reference_density"]
+        except KeyError:
+            raise
+        self.recoil_to_file(os.path.join(self.directory,
+                                         self.recoil_element.name + ".rec"))
 
     def calculate_solid(self):
         """
@@ -361,6 +414,7 @@ class ElementSimulation:
         """ Stop the simulation."""
         for sim in list(self.mcerd_objects.keys()):
             self.mcerd_objects[sim].stop_process()
+            self.mcerd_objects[sim].copy_result(self.directory)
             self.calculate_espe()
             del (self.mcerd_objects[sim])
 

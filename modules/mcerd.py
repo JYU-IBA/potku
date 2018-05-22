@@ -20,6 +20,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+import shutil
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
@@ -54,31 +55,32 @@ class MCERD:
 
         # Create a unique hash for the temporary MCERD files. The name needs
         # to be unique because there can be several MCERD processes.
-        self.__hash = hashlib.sha1(str(settings).encode("utf-8")).hexdigest()
+        # self.__hash = hashlib.sha1(str(settings).encode("utf-8")).hexdigest()
+        self.__filename = Element.__str__(self.__settings[
+                                              "recoil_element"].element) \
+            .replace(" ", "_")
 
         # The recoil file and erd file are later passed to get_espe.
         self.recoil_file = self.__create_mcerd_files()
-        self.result_file = os.path.join(self.__tmp, self.__hash + "." +
+        self.result_file = os.path.join(self.__tmp, self.__filename + "." +
                                         str(self.__settings["seed_number"]) +
-                                     ".erd")
-        element = settings["recoil_element"].element
-        if element.isotope:
-            element_str = str(element.isotope) + element.symbol
-        else:
-            element_str = element.symbol
-        self.espe_file_name = element_str + ".simu"
+                                        ".erd")
+        # self.result_file = os.path.join(self.__tmp, self.__hash + "." +
+        #                                str(self.__settings["seed_number"]) +
+        #                             ".erd")
 
         # The command that is used to start the MCERD process.
-        command = os.path.join("external", "Potku-bin", "mcerd" +
+        mcerd_command = os.path.join("external", "Potku-bin", "mcerd" +
                                (".exe " if platform.system() == "Windows"
                                 else " ") +
-                               os.path.join(self.__tmp, self.__hash))
+                               os.path.join(self.__tmp, self.__filename))
 
         # Start the MCERD process.
         # TODO: MCERD needs to be fixed so we can get rid of this ulimit.
         ulimit = "" if platform.system() == "Windows" else "ulimit -s 64000; "
-        exec = "" if platform.system() == "Windows" else "exec "
-        self.__process = subprocess.Popen(ulimit + exec + command, shell=True)
+        exec_command = "" if platform.system() == "Windows" else "exec "
+        self.__process = subprocess.Popen(ulimit + exec_command + mcerd_command,
+                                          shell=True)
 
     def stop_process(self):
         """Stop the MCERD process and delete the MCERD object."""
@@ -101,12 +103,12 @@ class MCERD:
 
         Return: Path of the recoil file.
         """
-        command_file = os.path.join(self.__tmp, self.__hash)
-        target_file = os.path.join(self.__tmp, self.__hash + ".target")
-        detector_file = os.path.join(self.__tmp, self.__hash + ".detector")
-        foils_file = os.path.join(self.__tmp, self.__hash + ".foils")
-        recoil_file = os.path.join(self.__tmp, self.__hash + ".recoil")
-        presimulation_file = os.path.join(self.__tmp, self.__hash + ".pre")
+        command_file = os.path.join(self.__tmp, self.__filename)
+        target_file = os.path.join(self.__tmp, self.__filename + ".target")
+        detector_file = os.path.join(self.__tmp, self.__filename + ".detector")
+        foils_file = os.path.join(self.__tmp, self.__filename + ".foils")
+        recoil_file = os.path.join(self.__tmp, self.__filename + ".recoil")
+        presimulation_file = os.path.join(self.__tmp, self.__filename + ".pre")
 
         beam = self.__settings["beam"]
         target = self.__settings["target"]
@@ -128,9 +130,6 @@ class MCERD:
 
             file.write("Detector description file: " + detector_file + "\n")
 
-            if recoil_element.element.isotope is None:
-                isotope = masses.get_most_common_isotope(recoil_element
-                                                         .element.symbol)[0]
             file.write("Recoiling atom: " + str(recoil_element.element.isotope)
                        + recoil_element.element.symbol + "\n")
 
@@ -176,15 +175,15 @@ class MCERD:
 
             # MCERD doesn't use these parameters and they break the command
             # file.
-#            file.write("Beam divergence: " + str(beam.divergence) + "\n")
+        #            file.write("Beam divergence: " + str(beam.divergence) + "\n")
 
-#            file.write("Beam profile: " + str(beam.profile) + "\n")
+        #            file.write("Beam profile: " + str(beam.profile) + "\n")
 
-#            file.write("Surface topography file: " + target.image_file + "\n")
+        #            file.write("Surface topography file: " + target.image_file + "\n")
 
-#            file.write("Side length of the surface topography image: "
-#                       + "%0.1f %0.1f" % (target.image_size[0],
-#                                          target.image_size[1]) + "\n")
+        #            file.write("Side length of the surface topography image: "
+        #                       + "%0.1f %0.1f" % (target.image_size[0],
+        #                                          target.image_size[1]) + "\n")
 
         # Create the MCERD detector file
         with open(detector_file, "w") as file_det:
@@ -309,3 +308,12 @@ class MCERD:
                 " 0.0\n")
 
         return recoil_file
+
+    def copy_result(self, destination):
+        """Copies MCERD result file (.erd) into given destination.
+        """
+        try:
+            shutil.copy(self.result_file, destination)
+            shutil.copy(self.recoil_file, destination)
+        except FileNotFoundError:
+            pass
