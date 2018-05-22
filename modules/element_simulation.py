@@ -166,6 +166,36 @@ class ElementSimulation:
             "recoil_file": os.path.join(self.directory, element_str + ".recoil")
         }
 
+    def unlock_edit(self):
+        self.recoil_element.unlock_edit()
+
+    def get_edit_lock_on(self):
+        self.recoil_element.get_edit_lock_on()
+
+    def get_points(self):
+        return self.recoil_element.get_points()
+
+    def get_xs(self):
+        return self.recoil_element.get_xs(),
+
+    def get_ys(self):
+        return self.recoil_element.get_ys(),
+
+    def get_left_neighbor(self, point):
+        return self.recoil_element.get_left_neighbor(point)
+
+    def get_right_neighbor(self, point):
+        return self.recoil_element.get_right_neighbor(point)
+
+    def get_point_by_i(self, i):
+        return self.recoil_element.get_point_by_i(i)
+
+    def add_point(self, new_point):
+        self.recoil_element.add_point(new_point)
+
+    def remove_point(self, point):
+        self.recoil_element.remove_point(point)
+
     def calculate_solid(self):
         """
         Calculate the solid parameter.
