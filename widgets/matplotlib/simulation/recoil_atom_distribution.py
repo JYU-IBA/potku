@@ -18,7 +18,7 @@ from PyQt5 import QtCore, QtWidgets, QtGui
 from matplotlib.widgets import SpanSelector
 
 from modules.element import Element
-from widgets.matplotlib.simulation.element_widget import ElementWidget
+from widgets.matplotlib.simulation.element import ElementWidget
 
 from dialogs.simulation.recoil_element_selection import \
     RecoilElementSelectionDialog
@@ -403,8 +403,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 already_exists = False
                 for existing_element_simulation in \
                         self.element_manager.element_simulations:
-                    if layer_element == existing_element_simulation \
-                            .recoil_element.element:
+                    if layer_element.isotope == existing_element_simulation \
+                            .recoil_element.element.isotope and \
+                            layer_element.symbol == existing_element_simulation\
+                            .recoil_element.element.symbol:
                         already_exists = True
                         break
                 if not already_exists:
