@@ -141,8 +141,11 @@ class Request:
 
         except FileNotFoundError:
             # Create default measurement for request
+            default_info_path = os.path.join(self.default_folder,
+                                             "Default.info")
             self.default_measurement = Measurement(
-                self, "Default", run=self.default_run,
+                self, path=default_info_path, name="Default",
+                run=self.default_run,
                 detector=self.default_detector,
                 measurement_setting_file_name="Default")
             self.default_measurement.measurement_to_file(os.path.join(

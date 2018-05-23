@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 22.5.2018
+Updated on 23.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -184,7 +184,7 @@ class Selector:
         """
         if self.new_selection_is_allowed:
             sel = Selection(self.axes, self.element_colormap,
-                            measurement=self.measurememt)
+                            measurement=self.measurement)
             self.grey_out_except(sel.id)
             self.selections.append(sel)
             # Do not allow new selections without closing/purging

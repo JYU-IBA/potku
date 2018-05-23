@@ -116,7 +116,7 @@ class Sample:
         self.simulations = Simulations(request)
 
         self._running_int_measurement = 1
-        self._running_int_measurement = 1
+        self._running_int_simulation = 1
 
     def get_running_int_measurement(self):
         return self._running_int_measurement
@@ -125,10 +125,10 @@ class Sample:
         self._running_int_measurement = self._running_int_measurement + 1
 
     def get_running_int_simulation(self):
-        return self._running_int_measurement
+        return self._running_int_simulation
 
     def increase_running_int_simulation_by_1(self):
-        self._running_int_measurement = self._running_int_measurement + 1
+        self._running_int_simulation = self._running_int_simulation + 1
 
     def get_measurements_files(self):
         """
