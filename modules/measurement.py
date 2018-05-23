@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 22.5.2018
+Updated on 23.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -44,11 +44,10 @@ from PyQt5 import QtCore, QtWidgets
 
 from modules.beam import Beam
 from modules.cut_file import CutFile
-from modules.detector import Detector
-from modules.general_functions import md5_for_file, save_settings, rename_file
+from modules.general_functions import md5_for_file
+from modules.general_functions import rename_file
 from modules.run import Run
 from modules.selection import Selector
-from modules.settings import Settings
 from modules.target import Target
 
 
@@ -94,6 +93,7 @@ class Measurements:
         Return:
             Returns new measurement or None if it wasn't added
         """
+        measurement = None
         try:
             measurement_filename = os.path.split(measurement_file)[1]
             measurement_name = os.path.splitext(measurement_filename)
@@ -192,7 +192,6 @@ class Measurement:
         Args:
             request: Request class object.
         """
-        # TODO: Add missing attributes listed in class definition.
         self.tab_id = tab_id
 
         self.request = request  # To which request be belong to
@@ -334,9 +333,8 @@ class Measurement:
         obj_measurement["general"]["name"] = self.measurement_setting_file_name
         obj_measurement["general"]["description"] = \
             self.measurement_setting_file_description
-        obj_measurement["general"]["modification_time"] = time.strftime("%c %z %Z",
-                                                             time.localtime(
-                                                                 time.time()))
+        obj_measurement["general"]["modification_time"] = \
+            time.strftime("%c %z %Z", time.localtime(time.time()))
         obj_measurement["general"]["modification_time_unix"] = time.time()
 
         with open(measurement_file_path, "w") as file:
@@ -353,9 +351,8 @@ class Measurement:
         obj_profile["general"]["name"] = self.profile_name
         obj_profile["general"]["description"] = \
             self.profile_description
-        obj_profile["general"]["modification_time"] = time.strftime("%c %z %Z",
-                                                             time.localtime(
-                                                                 time.time()))
+        obj_profile["general"]["modification_time"] = \
+            time.strftime("%c %z %Z", time.localtime(time.time()))
         obj_profile["general"]["modification_time_unix"] = \
             self.profile_modification_time
 
@@ -851,30 +848,43 @@ class Measurement:
             target = self.target
         # Measurement settings
         str_beam = "Beam: {0}\n".format(
-            run.beam.element)
+            run.beam.ion)
         str_energy = "Energy: {0}\n".format(
             run.beam.energy)
         str_detector = "Detector angle: {0}\n".format(
             detector.detector_theta)
         str_target = "Target angle: {0}\n".format(
             target.target_theta)
-        str_toflen = "Toflen: {0}\n".format(
-            use_settings.measuring_unit_settings.time_of_flight_lenght)
+
+        time_of_flight_length = 0
+        i = len(detector.tof_foils) - 1
+        while i - 1 >= 0:
+            time_of_flight_length = detector.foils[
+                                        detector.tof_foils[i]].distance - \
+                                    detector.foils[
+                                        detector.tof_foils[i - 1]].distance
+            i = i - 1
+        str_toflen = "Toflen: {0}\n".format(time_of_flight_length)
+
+        carbon_foil_thickness = 0
+        for layer in detector.foils[detector.tof_foils[0]].layers:
+            carbon_foil_thickness += layer.thickness
         str_carbon = "Carbon foil thickness: {0}\n".format(
-            use_settings.measuring_unit_settings.carbon_foil_thickness)
-        str_density = "Target density: {0}\n".format(
-            use_settings.measuring_unit_settings.target_density)
+            carbon_foil_thickness)
+
+        # TODO: should this be calculated from target layer densities?
+        str_density = "Target density: {0}\n".format(self.reference_density)
 
         # Depth Profile settings
         str_depthnumber = "Number of depth steps: {0}\n".format(
-            use_settings.depth_profile_settings.number_of_depth_steps)
+            self.number_of_depth_steps)
         str_depthstop = "Depth step for stopping: {0}\n".format(
-            use_settings.depth_profile_settings.depth_step_for_stopping)
+            self.depth_step_for_stopping)
         str_depthout = "Depth step for output: {0}\n".format(
-            use_settings.depth_profile_settings.depth_step_for_output)
+            self.depth_step_for_output)
         str_depthscale = "Depths for concentration scaling: {0} {1}\n".format(
-            use_settings.depth_profile_settings.depths_for_concentration_from,
-            use_settings.depth_profile_settings.depths_for_concentration_to)
+            self.depth_for_concentration_from,
+            self.depth_for_concentration_to)
 
         # Cross section
         flag_cross = global_settings.get_cross_sections()
@@ -897,11 +907,11 @@ class Measurement:
         measurement = str_beam + str_energy + str_detector + str_target + \
                       str_toflen + str_carbon + str_density
         calibration = "TOF calibration: {0} {1}\n".format(
-            use_settings.calibration_settings.slope,
-            use_settings.calibration_settings.offset)
+            detector.tof_slope,
+            detector.tof_offset)
         anglecalib = "Angle calibration: {0} {1}\n".format(
-            use_settings.calibration_settings.angleslope,
-            use_settings.calibration_settings.angleoffset)
+            detector.angle_slope,
+            detector.angle_offset)
         depthprofile = str_depthnumber + str_depthstop + str_depthout + \
                        str_depthscale
 
