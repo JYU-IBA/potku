@@ -286,22 +286,6 @@ class Measurement:
         measurement_settings_modification_time = \
             obj_measurement["general"]["modification_time_unix"]
 
-        ion = Element.from_string(obj_measurement["beam"]["ion"])
-        energy = obj_measurement["beam"]["energy"]
-        energy_distribution = obj_measurement["beam"]["energy_distribution"]
-        beam_charge = obj_measurement["beam"]["charge"]
-
-        spot_size = tuple(obj_measurement["beam"]["spot_size"])
-        divergence = obj_measurement["beam"]["divergence"]
-        profile = obj_measurement["beam"]["profile"]
-        fluence = obj_measurement["run"]["fluence"]
-        current = obj_measurement["run"]["current"]
-        run_charge = obj_measurement["run"]["charge"]
-        run_time = obj_measurement["run"]["time"]
-
-        detector_theta = obj_measurement["geometry"]["detector_theta"]
-        target_theta = obj_measurement["geometry"]["target_theta"]
-
         profile_name = obj_profile["general"]["name"]
         profile_description = obj_profile["general"]["description"]
         profile_modification_time = obj_profile["general"][
@@ -326,20 +310,10 @@ class Measurement:
             obj_profile["composition_changes"]["number_of_splits"]
         normalization = obj_profile["composition_changes"]["normalization"]
 
-        beam = Beam(ion, energy, beam_charge, energy_distribution, spot_size,
-                    divergence, profile)
-        run = Run(beam, fluence, current, run_charge, run_time)
-
-        detector = request.default_detector
-        detector.detector_theta = detector_theta
-
-        target = request.default_target
-        target.target_theta = target_theta
-
         return cls(request=request, name=name, description=description,
                    modification_time=modification_time,
-                   run=run, detector=detector,
-                   target=target, profile_name=profile_name,
+                   run=None, detector=None,
+                   target=Target(), profile_name=profile_name,
                    profile_description=profile_description,
                    profile_modification_time=profile_modification_time,
                    number_of_depth_steps=number_of_depth_steps,
@@ -353,7 +327,8 @@ class Measurement:
                    reference_density=reference_density,
                    measurement_setting_file_name=measurement_settings_name,
                    measurement_setting_file_description
-                   =measurement_settings_description)
+                   =measurement_settings_description
+                   )
 
     def measurement_to_file(self, measurement_file_path):
         if os.path.exists(measurement_file_path):
@@ -368,7 +343,7 @@ class Measurement:
         obj_measurement["general"]["description"] = \
             self.measurement_setting_file_description
         obj_measurement["general"]["modification_time"] = \
-            time.strftime("%c %z %Z", time.localtime(time.time()))
+            str(datetime.datetime.fromtimestamp(time.time()))
         obj_measurement["general"]["modification_time_unix"] = time.time()
 
         with open(measurement_file_path, "w") as file:
@@ -461,6 +436,12 @@ class Measurement:
         self.color_scheme = "Default color"
 
     def __make_directories(self, directory):
+        """
+        Make directories.
+
+        Args:
+            directory: Directory to be made under measurement.
+        """
         new_dir = os.path.join(self.directory, directory)
         if not os.path.exists(new_dir):
             os.makedirs(new_dir)
@@ -950,7 +931,7 @@ class Measurement:
 
         # Combine strings
         measurement = str_beam + str_energy + str_detector + str_target + \
-                      str_toflen + str_carbon + str_density
+            str_toflen + str_carbon + str_density
         calibration = "TOF calibration: {0} {1}\n".format(
             detector.tof_slope,
             detector.tof_offset)
@@ -961,7 +942,7 @@ class Measurement:
                        str_depthscale
 
         tof_in = measurement + calibration + anglecalib + depthprofile + \
-                 str_cross + str_num_iterations + str_eff_dir
+            str_cross + str_num_iterations + str_eff_dir
 
         # Get md5 of file and new settings
         md5 = hashlib.md5()
