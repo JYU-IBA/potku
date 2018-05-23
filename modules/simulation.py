@@ -133,24 +133,19 @@ class Simulations:
                     # .mcsimu file
                     mcsimu_file_path = os.path.join(simulation.directory, file)
 
-                    element_str = file.split("-")[0]
-                    # .rec file
-                    recoil_file_path = os.path.join(simulation.directory,
-                                                    element_str + ".rec")
+                    element_str = file.split(".")[0]
+
                     # .profile file
                     profile_file_path = os.path.join(simulation.directory,
                                                      element_str + ".profile")
 
-                    if os.path.exists(recoil_file_path) and \
-                            os.path.exists(profile_file_path):
+                    if os.path.exists(profile_file_path):
                         # Create ElementSimulation from files
                         element_simulation = ElementSimulation.from_file(
-                            self.request, mcsimu_file_path, recoil_file_path,
-                            profile_file_path)
+                            self.request, element_str, simulation_folder_path,
+                            mcsimu_file_path, profile_file_path)
                         simulation.element_simulations.append(
                             element_simulation)
-                        # Create RecoilElements from .rec files
-                        element_simulation.read_recoil_elements()
 
         # Create a new simulation
         else:

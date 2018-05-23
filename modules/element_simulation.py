@@ -93,6 +93,11 @@ class ElementSimulation:
         self.description = description
         self.modification_time = modification_time
 
+        # TODO RecoilAtomDistributionWidget should use the selected RecoilElement.
+        # Now ElementSimulation never has multiple recoil elements, only
+        # recoil_elements[0] is used. In the future, ElementSimulation should
+        # hold all recoil elements (= distributions) that are related to the
+        # simulation (e.g. .mcsimu and .erd files).
         self.recoil_elements = recoil_elements
         self.beam = beam
         self.target = target
@@ -127,49 +132,11 @@ class ElementSimulation:
         # This has all the mcerd objects so get_espe knows all the element
         # simulations that belong together (with different seed numbers)
         self.mcerd_objects = {}
+        self.settings = None
         self.get_espe = None
+        self.espe_settings = None
         self.spectra = []
         self.bin_width = 0.1
-
-        # self.settings = {
-        #     "simulation_type": self.simulation_type,
-        #     "number_of_ions": self.number_of_ions,
-        #     "number_of_ions_in_presimu": self.number_of_preions,
-        #     "number_of_scaling_ions": self.number_of_scaling_ions,
-        #     "number_of_recoils": self.number_of_recoils,
-        #     "minimum_scattering_angle": self.minimum_scattering_angle,
-        #     "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
-        #     "minimum_energy_of_ions": self.minimum_energy,
-        #     "simulation_mode": self.simulation_mode,
-        #     "seed_number": self.seed_number,
-        #     "beam": self.beam,
-        #     "target": self.target,
-        #     "detector": self.detector,
-        #     "recoil_element": self.recoil_element
-        # }
-
-        # self.espe_settings = {
-        #     "beam": self.beam,
-        #     "detector": self.detector,
-        #     "target": self.target,
-        #     "ch": self.channel_width,
-        #     "reference_density": self.recoil_element.reference_density,
-        #     "fluence": self.run.fluence,
-        #     "timeres": self.detector.timeres,
-        #     "solid": self.calculate_solid(),
-        #     "erd_file": os.path.join(self.directory,
-        #                              self.recoil_element.prefix + "-" +
-        #                              self.recoil_element.name + "." +
-        #                              str(self.seed_number) + ".erd"),
-        #     "spectrum_file": os.path.join(self.directory,
-        #                                   self.recoil_element.prefix + "-" +
-        #                                   self.recoil_element.name + "." +
-        #                                   str(self.seed_number) + ".simu"),
-        #     "recoil_file": os.path.join(self.directory,
-        #                                 self.recoil_element.prefix + "-" +
-        #                                 self.recoil_element.name +
-        #                                 ".recoil")
-        # }
 
     def unlock_edit(self, recoil_element):
         recoil_element.unlock_edit()
@@ -322,6 +289,10 @@ class ElementSimulation:
                 element.simulation_type = obj["simulation_type"]
                 element.channel_width = channel_width
                 recoil_elements.append(element)
+                # TODO For now, reading just the first matching .rec file.
+                # All .rec files that belong to this ElementSimulation should
+                #  be read and RecoilElement objects created from them.
+                break
 
         return cls(simulation_folder, request, recoil_elements,
                    description=description,
@@ -424,6 +395,22 @@ class ElementSimulation:
 
     def start(self):
         """ Start the simulation."""
+        self.settings = {
+            "simulation_type": self.simulation_type,
+            "number_of_ions": self.number_of_ions,
+            "number_of_ions_in_presimu": self.number_of_preions,
+            "number_of_scaling_ions": self.number_of_scaling_ions,
+            "number_of_recoils": self.number_of_recoils,
+            "minimum_scattering_angle": self.minimum_scattering_angle,
+            "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
+            "minimum_energy_of_ions": self.minimum_energy,
+            "simulation_mode": self.simulation_mode,
+            "seed_number": self.seed_number,
+            "beam": self.beam,
+            "target": self.target,
+            "detector": self.detector,
+            "recoil_element": self.recoil_elements[0]
+        }
         # TODO: fix this to have the real seed number
         self.mcerd_objects["seed number"] = MCERD(self.settings)
 
@@ -447,6 +434,28 @@ class ElementSimulation:
         """
         Calculate the energy spectrum from the MCERD result file.
         """
+        self.espe_settings = {
+            "beam": self.beam,
+            "detector": self.detector,
+            "target": self.target,
+            "ch": self.channel_width,
+            "reference_density": self.recoil_elements[0].reference_density,
+            "fluence": self.run.fluence,
+            "timeres": self.detector.timeres,
+            "solid": self.calculate_solid(),
+            "erd_file": os.path.join(self.directory,
+                                     self.recoil_elements[0].prefix + "-" +
+                                     self.recoil_elements[0].name + "." +
+                                     str(self.seed_number) + ".erd"),
+            "spectrum_file": os.path.join(self.directory,
+                                          self.recoil_elements[0].prefix + "-" +
+                                          self.recoil_elements[0].name + "." +
+                                          str(self.seed_number) + ".simu"),
+            "recoil_file": os.path.join(self.directory,
+                                        self.recoil_elements[0].prefix + "-" +
+                                        self.recoil_elements[0].name +
+                                        ".recoil")
+        }
         self.get_espe = GetEspe(self.espe_settings, self.mcerd_objects)
 
     def plot_spectrum(self):
