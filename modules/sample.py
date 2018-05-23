@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 30.3.2018
-Edited on 3.5.2018
+Edited on 23.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -116,7 +116,7 @@ class Sample:
         self.simulations = Simulations(request)
 
         self._running_int_measurement = 1
-        self._running_int_simulation = 1
+        self._running_int_measurement = 1
 
     def get_running_int_measurement(self):
         return self._running_int_measurement
@@ -125,10 +125,10 @@ class Sample:
         self._running_int_measurement = self._running_int_measurement + 1
 
     def get_running_int_simulation(self):
-        return self._running_int_simulation
+        return self._running_int_measurement
 
     def increase_running_int_simulation_by_1(self):
-        self._running_int_simulation = self._running_int_simulation + 1
+        self._running_int_measurement = self._running_int_measurement + 1
 
     def get_measurements_files(self):
         """
@@ -137,28 +137,33 @@ class Sample:
         Return:
             A list of measurement file names.
         """
-        # TODO: Possible for different formats (such as binary data .lst)
         all_measurements = []
-        for item in os.listdir(os.path.join(self.request.directory,
-                                            self.directory)):
-            if item.startswith("Measurement_"):
-                measurement_name_start = item.find('-')
-                # measurement needs to have a name.
-                if measurement_name_start == -1:
-                    return []
-                number_str = item[measurement_name_start - 2]
-                if number_str == "0":
-                    self._running_int_measurement = \
-                        int(item[measurement_name_start - 1])
-                else:
-                    self._running_int_measurement = \
-                        int(item[measurement_name_start - 2
-                                 :measurement_name_start - 1])
-                measurement_name = item[measurement_name_start + 1:]
-                if os.path.isfile(os.path.join(self.request.directory,
-                                               self.directory, item, "Data",
-                                               measurement_name + ".asc")):
-                    all_measurements.append(measurement_name + ".asc")
+        name_prefix = "Measurement_"
+        all_dirs = os.listdir(os.path.join(self.request.directory,
+                                           self.directory))
+        all_dirs.sort()
+
+        for directory in all_dirs:
+            # Only handle directories that start with name_prefix
+            if directory.startswith(name_prefix):
+                try:
+                    # Read measurment number from directory name
+                    self._running_int_measurement = int(
+                        directory[len(name_prefix):len(name_prefix) + 2])
+                    for file in os.listdir(os.path.join(
+                            self.request.directory, self.directory, directory)):
+                        if file.endswith(".info"):
+                            all_measurements.append(os.path.join(
+                                self.request.directory, self.directory,
+                                directory, file))
+                except ValueError:
+                    # Couldn't add measurement directory because the number
+                    # could not be read
+                    continue
+        if all_measurements:
+            # Increment running int so it's ready to use when creating new
+            # measurement under this sample
+            self.increase_running_int_measurement_by_1()
         return all_measurements
 
     def get_simulation_files(self):
@@ -178,7 +183,7 @@ class Sample:
             if directory.startswith(name_prefix):
                 try:
                     # Read simulation number from directory name
-                    self._running_int_simulation = int(
+                    self._running_int_measurement = int(
                         directory[len(name_prefix):len(name_prefix) + 2])
                     for file in os.listdir(os.path.join(
                             self.request.directory, self.directory, directory)):

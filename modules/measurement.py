@@ -81,29 +81,48 @@ class Measurements:
             return None
         return self.measurements[key]
 
-    def add_measurement_file(self, sample, measurement_file, tab_id):
+    def add_measurement_file(self, sample, info_path, tab_id):
         """Add a new file to measurements.
 
         Args:
             sample: The sample under which the measurement is put.
-            measurement_file: String representing file containing measurement
-                                  data.
+            info_path: Path of the .info measurement file
             tab_id: Integer representing identifier for measurement's tab.
 
         Return:
             Returns new measurement or None if it wasn't added
         """
+        directory_prefix = "Measurement_"
         measurement = None
         try:
-            measurement_filename = os.path.split(measurement_file)[1]
+            measurement_filename = os.path.split(info_path)[1]
             measurement_name = os.path.splitext(measurement_filename)
-            file_directory, file_name = os.path.split(measurement_file)
+            file_directory, file_name = os.path.split(info_path)
 
             # Check if measurement on the same name already exists.
             for key in sample.measurements.measurements.keys():
                 if sample.measurements.measurements[key].measurement_file \
                         == file_name:
                     return None
+
+            # Create Measurement from file
+            profile_file_path = None
+            measurement_file = None
+            for file in os.listdir(file_directory):
+                if file.endswith(".profile"):
+                    profile_file_path = os.path.join(file_directory, file)
+                elif file.endswith(".measurement"):
+                    measurement_file = os.path.join(file_directory, file)
+
+            if os.path.exists(info_path):
+                measurement = Measurement.from_file(info_path,
+                                                    measurement_file,
+                                                    profile_file_path,
+                                                    self.request)
+                serial_number = int(file_directory[len(directory_prefix):len(
+                    directory_prefix) + 2])
+                measurement.serial_number = serial_number
+                measurement.tab_id = tab_id
 
             # Create new Measurement object.
             measurement = Measurement(self.request, tab_id=tab_id,
@@ -129,7 +148,7 @@ class Measurements:
             if file_directory != os.path.join(measurement.directory,
                                               measurement.directory_data) and \
                     file_directory:
-                measurement.copy_file_into_measurement(measurement_file)
+                measurement.copy_file_into_measurement(info_path)
 
             # Add Measurement to  Measurements.
             sample.measurements.measurements[tab_id] = measurement
@@ -247,14 +266,25 @@ class Measurement:
         self.defaultlog = None
 
     @classmethod
-    def from_file(cls, measurement_file_path, profile_file_path, request):
+    def from_file(cls, measurement_info_path, measurement_file_path,
+                  profile_file_path,
+                  request):
 
-        obj_measurement = json.load(open(measurement_file_path))
-        obj_profile = json.load(open(profile_file_path))
+        obj_info = json.load(open(measurement_info_path))
+        if os.path.exists(measurement_file_path):
+            obj_measurement = json.load(open(measurement_file_path))
+        if os.path.exists(profile_file_path):
+            obj_profile = json.load(open(profile_file_path))
 
-        name = obj_measurement["general"]["name"]
-        description = obj_measurement["general"]["description"]
-        modification_time = obj_measurement["general"]["modification_time_unix"]
+        name = obj_info["name"]
+        description = obj_info["description"]
+        modification_time = obj_info["time"]
+
+        measurement_settings_name = obj_measurement["general"]["name"]
+        measurement_settings_description = \
+            obj_measurement["general"]["description"]
+        measurement_settings_modification_time = \
+            obj_measurement["general"]["modification_time_unix"]
 
         ion = Element.from_string(obj_measurement["beam"]["ion"])
         energy = obj_measurement["beam"]["energy"]
@@ -320,7 +350,10 @@ class Measurement:
                    channel_width=channel_width, reference_cut=reference_cut,
                    number_of_splits=number_of_splits,
                    normalization=normalization,
-                   reference_density=reference_density)
+                   reference_density=reference_density,
+                   measurement_setting_file_name=measurement_settings_name,
+                   measurement_setting_file_description
+                   =measurement_settings_description)
 
     def measurement_to_file(self, measurement_file_path):
         if os.path.exists(measurement_file_path):
@@ -329,6 +362,7 @@ class Measurement:
             obj_measurement = {}
 
         obj_measurement["general"] = {}
+        obj_measurement["beam"] = {}
 
         obj_measurement["general"]["name"] = self.measurement_setting_file_name
         obj_measurement["general"]["description"] = \
@@ -339,6 +373,17 @@ class Measurement:
 
         with open(measurement_file_path, "w") as file:
             json.dump(obj_measurement, file, indent=4)
+
+    def info_to_file(self, info_file_path):
+        obj_info = {
+            "name": self.name,
+            "description": self.description,
+            "modification_time": time.strftime("%c %z %Z",
+                                               time.localtime(time.time()))
+        }
+
+        with open(info_file_path) as file:
+            json.dump(obj_info, file, indent=4)
 
     def profile_to_file(self, profile_file_path):
         obj_profile = {}
