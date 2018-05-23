@@ -98,7 +98,6 @@ class Measurements:
         directory_prefix = "Measurement_"
         measurement = None
         measurement_filename = os.path.split(file_path)[1]
-        measurement_name = os.path.splitext(measurement_filename)
         file_directory, file_name = os.path.split(file_path)
 
         # Check if measurement on the same name already exists.
@@ -120,10 +119,13 @@ class Measurements:
                                                 measurement_file,
                                                 profile_file_path,
                                                 self.request)
-            serial_number = int(file_directory[len(directory_prefix):len(
-                directory_prefix) + 2])
+            measurement_folder_name = os.path.split(file_directory)[1]
+            serial_number = int(measurement_folder_name[
+                                len(directory_prefix):len(
+                                    directory_prefix) + 2])
             measurement.serial_number = serial_number
             measurement.tab_id = tab_id
+            measurement.update_folders_and_selector()
 
             if measurement_file:
                 measurement.run = Run.from_file(os.path.join(
@@ -209,6 +211,7 @@ class Measurements:
                 measurement.serial_number = serial_number
                 self.request.samples.measurements.measurements[tab_id] = \
                     measurement
+                measurement.measurement_file = measurement_filename
             except:
                 log = "Something went wrong while adding a new measurement."
                 logging.getLogger("request").critical(log)
@@ -326,6 +329,30 @@ class Measurement:
 
         self.errorlog = None
         self.defaultlog = None
+
+    def update_folders_and_selector(self):
+        for item in os.listdir(self.directory):
+            if item.startswith("Composition_changes"):
+                self.directory_composition_changes = os.path.join(
+                    self.directory, "Composition_changes")
+            if item.startswith("Data"):
+                self.directory_data = os.path.join(self.directory, "Data")
+            if item.startswith("Depth_profiles"):
+                self.directory_depth_profiles = os.path.join(self.directory,
+                                                             "Depth_profiles")
+            if item.startswith("Energy_spectra"):
+                self.directory_energy_spectra = os.path.join(self.directory,
+                                                             "Energy_spectra")
+        for file in os.listdir(self.directory_data):
+            if file.endswith(".asc"):
+                self.measurement_file = file
+            if file.startswith("Cuts"):
+                self.directory_cuts = os.path.join(self.directory_data, "Cuts")
+
+        self.set_loggers()
+
+        element_colors = self.request.global_settings.get_element_colors()
+        self.selector = Selector(self, element_colors)
 
     @classmethod
     def from_file(cls, measurement_info_path, measurement_file_path,
@@ -499,7 +526,7 @@ class Measurement:
         self.directory_depth_profiles = os.path.join(self.directory,
                                                      "Depth_profiles")
         self.directory_energy_spectra = os.path.join(self.directory,
-                                                     "Energy spectra")
+                                                     "Energy_spectra")
 
         self.__make_directories(self.directory)
         self.__make_directories(self.directory_data)
