@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 11.5.2018
+Updated on 23.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -142,7 +142,6 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.simulation.measurement_setting_file_description = ""
             self.simulation.target.target_theta = \
                 self.simulation.request.default_target.target_theta
-            # TODO: delete possible simulation specific files.
             det_folder_path =os.path.join(self.simulation.directory,
                                            "Detector")
             if os.path.exists(det_folder_path):
