@@ -268,7 +268,8 @@ class Measurement:
                  reference_cut="", number_of_splits=10, normalization="First",
                  measurement_setting_file_name="",
                  measurement_setting_file_description=
-                 "This a default measurement setting file."
+                 "This a default measurement setting file.",
+                 measurement_setting_modification_time = time.time()
                  ):
         """Initializes a measurement.
 
@@ -292,6 +293,8 @@ class Measurement:
             self.measurement_setting_file_name = name
         self.measurement_setting_file_description = \
             measurement_setting_file_description
+        self.measurement_setting_modification_time = \
+            measurement_setting_modification_time
 
         self.profile_name = profile_name
         self.profile_description = profile_description
@@ -365,11 +368,12 @@ class Measurement:
             measurement_settings_name = obj_measurement["general"]["name"]
             measurement_settings_description = \
                 obj_measurement["general"]["description"]
-            measurement_settings_modification_time = \
+            measurement_setting_modification_time = \
                 obj_measurement["general"]["modification_time_unix"]
         else:
             measurement_settings_name = ""
             measurement_settings_description = ""
+            measurement_setting_modification_time = time.time()
 
         if profile_file_path and os.path.exists(profile_file_path):
             obj_profile = json.load(open(profile_file_path))
@@ -417,7 +421,7 @@ class Measurement:
 
         name = obj_info["name"]
         description = obj_info["description"]
-        modification_time = obj_info["modification_time"]
+        modification_time = obj_info["modification_time_unix"]
 
         return cls(request=request, path=measurement_info_path, name=name,
                    description=description,
@@ -437,7 +441,9 @@ class Measurement:
                    reference_density=reference_density,
                    measurement_setting_file_name=measurement_settings_name,
                    measurement_setting_file_description
-                   =measurement_settings_description
+                   =measurement_settings_description,
+                   measurement_setting_modification_time =
+                   measurement_setting_modification_time
                    )
 
     def measurement_to_file(self, measurement_file_path):
@@ -453,7 +459,7 @@ class Measurement:
         obj_measurement["general"]["description"] = \
             self.measurement_setting_file_description
         obj_measurement["general"]["modification_time"] = \
-            str(datetime.datetime.fromtimestamp(time.time()))
+            time.strftime("%c %z %Z", time.localtime(time.time()))
         obj_measurement["general"]["modification_time_unix"] = time.time()
 
         with open(measurement_file_path, "w") as file:
@@ -464,7 +470,8 @@ class Measurement:
             "name": self.name,
             "description": self.description,
             "modification_time": time.strftime("%c %z %Z",
-                                               time.localtime(time.time()))
+                                               time.localtime(time.time())),
+            "modification_time_unix": time.time()
         }
 
         with open(info_file_path, "w") as file:
