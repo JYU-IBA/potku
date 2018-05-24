@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.3.2013
-Updated on 10.4.2018
+Updated on 24.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -72,6 +72,7 @@ class CutFile:
         """
         self.data = data
         self.element = selection.element
+        self.element_scatter = selection.element_scatter
         self.count = len(data)
         self.is_elem_loss = False
         self.type = selection.type
@@ -121,7 +122,7 @@ class CutFile:
                         elif key == "Detector Angle":
                             self.detector_angle = int(value)
                         elif key == "Scatter Element":
-                            self.element = Element(value)
+                            self.element_scatter = Element(value)
                         elif key == "Element losses":
                             self.is_elem_loss = bool(value)
                         elif key == "Split count":
@@ -176,7 +177,7 @@ class CutFile:
             my_file.write("Weight Factor: {0}\n".format(self.weight_factor))
             my_file.write("Energy: {0}\n".format(0))
             my_file.write("Detector Angle: {0}\n".format(0))
-            my_file.write("Scatter Element: {0}\n".format(self.element))
+            my_file.write("Scatter Element: {0}\n".format(self.element_scatter))
             my_file.write("Element losses: {0}\n".format(self.is_elem_loss))
             my_file.write("Split count: {0}\n".format(self.split_count))
             my_file.write("\n")

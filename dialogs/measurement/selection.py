@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 22.5.2018
+Updated on 24.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -77,6 +77,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         """Set parent's values into the dialog.
         """
         element = self.selection.element
+        isotope = self.selection.element.isotope
         if self.selection.type == "ERD":
 
             self.ui.groupBox_sample.setEnabled(True)
@@ -118,10 +119,45 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
 
         self.ui.sampleWeightFactor.setValue(self.selection.weight_factor)
 
+        # Selection Element
+        if element:
+            self.ui.sample_element_button.setText(element.symbol)
+            self.ui.colorButton.setText("Automatic [{0}]".format(element.symbol))
+
+        selection_isotope = None
+        if isotope:
+            self.ui.sample_isotope_radio.setChecked(True)
+            self.ui.sample_isotope_combobox.setEnabled(True)
+            selection_isotope = isotope
+        self.__enable_element_fields(element.symbol,
+                                     self.ui.sample_isotope_combobox,
+                                     self.ui.sample_isotope_radio,
+                                     self.ui.sample_standard_mass_radio,
+                                     self.ui.sample_standard_mass_label,
+                                     current_isotope=selection_isotope)
+
         # self.color = QtGui.QColor(self.selection.default_color)
         # Check if selection color is same as default color for "automatic" text.
         # self.__change_color_button_color(element.symbol)
-        self.ui.colorButton.setText("Automatic [{0}]".format(element.symbol))
+
+        # RBS Element
+        if self.selection.type == "RBS":
+            rbs_isotope = None
+            self.ui.groupBox_rbs.setEnabled(True)
+            self.ui.rbs_element_button.setText(Element.__str__(
+                self.selection.element_scatter))
+            if self.selection.element_scatter.isotope:
+                self.ui.rbs_isotope_radio.setChecked(True)
+                self.ui.rbs_isotope_combobox.setEnabled(True)
+                rbs_isotope = self.selection.element_scatter.isotope
+            self.__enable_element_fields(Element.__str__(
+                self.selection.element_scatter),
+                                         self.ui.rbs_isotope_combobox,
+                                         self.ui.rbs_isotope_radio,
+                                         self.ui.rbs_standard_mass_radio,
+                                         self.ui.rbs_standard_mass_label,
+                                         sample=False,
+                                         current_isotope=rbs_isotope)
 
         self.__check_if_settings_ok()
         
@@ -433,22 +469,29 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         """
         self.selection.type = self.ui.sampleType.currentText()
 
+        # For standard isotopes:
         isotope = None
+        rbs_isotope = None
+
+        symbol = self.ui.sample_element_button.text()
+
         if self.selection.type == "ERD":
-            element = self.ui.sample_element_button.text()
             if self.ui.sample_isotope_radio.isChecked():
                 isotope_index = self.ui.sample_isotope_combobox.currentIndex()
                 isotope_data = self.ui.sample_isotope_combobox.itemData(isotope_index)
                 isotope = int(isotope_data[0])
+                self.selection.element_scatter = Element("")
 
         else:
-            element = self.ui.rbs_element_button.text()
+            rbs_element = self.ui.rbs_element_button.text()
             if self.ui.rbs_isotope_radio.isChecked():
                 isotope_index = self.ui.rbs_isotope_combobox.currentIndex()
                 isotope_data = self.ui.rbs_isotope_combobox.itemData(isotope_index)
-                isotope = int(isotope_data[0])
+                rbs_isotope = int(isotope_data[0])
+                self.selection.element_scatter = Element(rbs_element,
+                                                         rbs_isotope)
 
-        self.selection.element = Element(element, isotope)
+        self.selection.element = Element(symbol, isotope)
         self.selection.type = self.ui.sampleType.currentText()
         self.selection.weight_factor = self.ui.sampleWeightFactor.value()
 

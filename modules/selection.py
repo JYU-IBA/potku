@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 23.5.2018
+Updated on 24.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -380,7 +380,8 @@ class Selector:
             element = sel.element.symbol
             isotope = sel.element.isotope
             if sel.type == "RBS":
-                element, isotope = sel.element, sel.element.isotope
+                element, isotope = sel.scatter_element.symbol, \
+                                   sel.scatter_element.isotope
             dirtyinteger = 0
             # Use dirtyinteger to differentiate multiple selections of same 
             # selection. This is roundabout method, but works as it should with

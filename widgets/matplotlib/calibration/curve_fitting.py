@@ -128,6 +128,8 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
             self.selection_given_manually = False
             self.cut_standard_mass = masses.get_standard_isotope(
                                                         self.cut.element.symbol)
+            self.cut_standard_scatter_mass = masses.get_standard_isotope(
+                self.cut.element_scatter.symbol)
         self.on_draw()
 
     def change_bin_width(self, bin_width):
