@@ -51,6 +51,7 @@ class CutFile:
         """
         self.directory = directory
         self.element = None
+        self.element_scatter = None
         self.count = 0
         self.is_elem_loss = elem_loss
         self.split_number = split_number
@@ -244,6 +245,7 @@ class CutFile:
         self.weight_factor = cut_file.weight_factor * additional_weight_factor
         self.energy = cut_file.energy
         self.detector_angle = cut_file.detector_angle
+        self.element_scatter = Element(cut_file.element_scatter)
 
 
 def is_rbs(file):
