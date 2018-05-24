@@ -174,10 +174,10 @@ class Request:
             self.default_element_simulation = ElementSimulation(
                 self.default_folder,
                 self,
-                RecoilElement(
+                [RecoilElement(
                     Element.from_string(
                         "4He 3.0"),
-                    [], None),
+                    [], None)],
                 name="Default")
             self.default_simulation.element_simulations.append(
                 self.default_element_simulation)
