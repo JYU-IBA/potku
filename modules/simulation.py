@@ -198,7 +198,7 @@ class Simulation:
                 "description", "modification_time", "run", "detector", \
                 "target", "element_simulations", "name_prefix", \
                 "serial_number", "directory", "measurement_setting_file_name", \
-                "measurement_setting_file_description"
+                "measurement_setting_file_description", "defaultlog", "errorlog"
 
     def __init__(self, path, request, name="Default",
                  description="This is a default simulation setting file.",
@@ -241,12 +241,13 @@ class Simulation:
 
     def create_folder_structure(self):
         self.__make_directories(self.directory)
+        self.set_loggers()
 
     def __make_directories(self, directory):
         if not os.path.exists(directory):
             os.makedirs(directory)
-            # log = "Created a directory {0}.".format(directory)
-            # logging.getLogger("request").info(log)
+            log = "Created a directory {0}.".format(directory)
+            logging.getLogger("request").info(log)
 
     def rename_data_file(self, new_name=None):
         """Renames the simulation files.
@@ -280,6 +281,50 @@ class Simulation:
         element_simulation.recoil_elements.append(recoil_element)
         self.element_simulations.append(element_simulation)
         return element_simulation
+
+    def set_loggers(self):
+        """Sets the loggers for this specified simulation.
+
+        The logs will be displayed in the simulations folder.
+        After this, the simulation logger can be called from anywhere of the
+        program, using logging.getLogger([simulation_name]).
+        """
+
+        # Initializes the logger for this simulation.
+        logger = logging.getLogger(self.name)
+        logger.setLevel(logging.DEBUG)
+
+        # Adds two loghandlers. The other one will be used to log info (and up)
+        # messages to a default.log file. The other one will log errors and
+        # criticals to the errors.log file.
+        self.defaultlog = logging.FileHandler(os.path.join(self.directory,
+                                                           'default.log'))
+        self.defaultlog.setLevel(logging.INFO)
+        self.errorlog = logging.FileHandler(os.path.join(self.directory,
+                                                         'errors.log'))
+        self.errorlog.setLevel(logging.ERROR)
+
+        # Set the formatter which will be used to log messages. Here you can
+        # edit the format so it will be deprived to all log messages.
+        defaultformat = logging.Formatter(
+            '%(asctime)s - %(levelname)s - %(message)s',
+            datefmt='%Y-%m-%d %H:%M:%S')
+
+        requestlog = logging.FileHandler(os.path.join(self.request.directory,
+                                                      'request.log'))
+        requestlogformat = logging.Formatter(
+            '%(asctime)s - %(levelname)s - [Measurement : '
+            '%(name)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
+
+        # Set the formatters to the logs.
+        requestlog.setFormatter(requestlogformat)
+        self.defaultlog.setFormatter(defaultformat)
+        self.errorlog.setFormatter(defaultformat)
+
+        # Add handlers to this simulation's logger.
+        logger.addHandler(self.defaultlog)
+        logger.addHandler(self.errorlog)
+        logger.addHandler(requestlog)
 
     @classmethod
     def from_file(cls, request, file_path):

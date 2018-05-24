@@ -24,6 +24,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+
+import logging
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QTreeWidgetItem
@@ -930,9 +932,9 @@ class Potku(QtWidgets.QMainWindow):
             if simulation:
                 tab = SimulationTabWidget(self.request, self.tab_id, simulation,
                                           self.icon_manager)
-                tab.issueMaster.connect(self.__master_issue_commands)
 
                 tab.setAttribute(QtCore.Qt.WA_DeleteOnClose)
+                tab.add_log()
                 self.tab_widgets[self.tab_id] = tab
                 # tab.add_log()
                 tab.data_loaded = load_data

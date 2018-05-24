@@ -100,7 +100,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
     def add_log(self):        
         """ Add the simulation log to simulation tab widget.
         
-        Checks also if there's already some logging for this measurement
+        Checks also if there's already some logging for this simulation
         and appends the text field of the user interface with this log.
         """
         # TODO: Perhaps add a simulation log.
@@ -121,7 +121,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         log_widget specifies which ui element will handle the logging. That
         should be the one which is added to this SimulationTabWidget.
         """
-        logger = logging.getLogger(self.obj.simulation.name)
+        logger = logging.getLogger(self.obj.name)
         defaultformat = logging.Formatter(
                                   '%(asctime)s - %(levelname)s - %(message)s',
                                   datefmt='%Y-%m-%d %H:%M:%S')
