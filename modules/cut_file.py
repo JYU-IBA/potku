@@ -119,7 +119,7 @@ class CutFile:
                             self.energy = float(value)
                         elif key == "Detector Angle":
                             self.detector_angle = int(value)
-                        elif key == "Element":
+                        elif key == "Scatter Element":
                             self.element = Element(value)
                         elif key == "Element losses":
                             self.is_elem_loss = bool(value)
@@ -175,7 +175,7 @@ class CutFile:
             my_file.write("Weight Factor: {0}\n".format(self.weight_factor))
             my_file.write("Energy: {0}\n".format(0))
             my_file.write("Detector Angle: {0}\n".format(0))
-            my_file.write("Element: {0}\n".format(self.element))
+            my_file.write("Scatter Element: {0}\n".format(self.element))
             my_file.write("Element losses: {0}\n".format(self.is_elem_loss))
             my_file.write("Split count: {0}\n".format(self.split_count))
             my_file.write("\n")
