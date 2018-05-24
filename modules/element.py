@@ -1,13 +1,13 @@
 # coding=utf-8
-'''
+"""
 Created on 10.4.2013
 Updated on 3.5.2018
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
 Miika Raunio
 
 This program is free software; you can redistribute it and/or
@@ -22,7 +22,7 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
+"""
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
@@ -46,13 +46,14 @@ class Element:
         self.amount = amount
 
     @classmethod
-    def from_string(cls, str):
+    def from_string(cls, element_str):
         """A function that initializes an element object from a string.
         Args:
-            str: A string from which the element information will be parsed.
+            element_str: A string from which the element information will be
+                         parsed.
         """
         m = re.match("(?P<isotope>[0-9]{0,3})(?P<symbol>[a-zA-Z]{1,2})"
-                     "(\s(?P<amount>\d*(\.?\d+)?))?", str.strip())
+                     "(\s(?P<amount>\d*(\.?\d+)?))?", element_str.strip())
         if m:
             symbol = m.group("symbol")
             isotope = m.group("isotope")
@@ -69,13 +70,12 @@ class Element:
         else:
             raise ValueError("Incorrect string given.")
 
-    
     def __str__(self):
-        '''Transform element into string.
-        
+        """Transform element into string.
+
         Return:
             Returns element, isotope and amount in string format.
-        '''
+        """
         if self.isotope and self.amount:
             return "{0}{1} {2}".format(int(round(self.isotope)), self.symbol,
                                        self.amount)
@@ -85,12 +85,13 @@ class Element:
             return "{0} {1}".format(self.symbol, self.amount)
         return self.symbol
 
-
-    def __eq__(self, other): 
-        '''Compare object.
-        '''
+    def __eq__(self, other):
+        """Compare object.
+        """
         return str(self) == str(other)
+
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()

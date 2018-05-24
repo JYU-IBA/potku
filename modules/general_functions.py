@@ -227,23 +227,6 @@ def read_espe_file(espe_file):
     return data
 
 
-# TODO This function is copied from MeasurementTabWidget.
-def load_file(file):
-    """Load file
-
-    Args:
-        file: A string representing full filepath to the file.
-    """
-    lines = []
-    try:
-        with open(file, "rt") as fp:
-            for line in fp:
-                lines.append(line)
-    except:
-        pass
-    return lines
-
-
 def tof_list(cut_file, directory, save_output=False):
     """ToF_list
 
@@ -513,7 +496,7 @@ def to_superscript(string):
             "8": "\u2078",
             "9": "\u2079"}
 
-    return ''.join(sups.get(char, char) for char in string)
+    return "".join(sups.get(char, char) for char in string)
 
 
 def check_text(input_field):

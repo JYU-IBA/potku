@@ -22,7 +22,7 @@ from widgets.simulation.target import TargetWidget
 from modules.element import Element
 from modules.general_functions import read_espe_file
 from modules.null import Null
-from modules.ui_log_handlers import customLogHandler
+from modules.ui_log_handlers import CustomLogHandler
 from widgets.log import LogWidget
 from widgets.simulation.energy_spectrum import SimulationEnergySpectrumWidget
 from dialogs.simulation.settings import SimulationSettingsDialog
@@ -125,7 +125,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         defaultformat = logging.Formatter(
                                   '%(asctime)s - %(levelname)s - %(message)s',
                                   datefmt='%Y-%m-%d %H:%M:%S')
-        widgetlogger_default = customLogHandler(logging.INFO,
+        widgetlogger_default = CustomLogHandler(logging.INFO,
                                                 defaultformat,
                                                 log_widget)
         logger.addHandler(widgetlogger_default)
