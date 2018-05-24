@@ -245,7 +245,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.progress_bar = None
             self.use_cuts = use_cuts
             self.bin_width = bin_width
-            self.energy_spectrum_data = []
+            self.energy_spectrum_data = {}
             rbs_list = {}
 
             self.ui = uic.loadUi(os.path.join("ui_files",
@@ -286,8 +286,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                         rbs_list[key] = get_scatter_element(cut)
 
             else:
-                for file in use_cuts:
-                    self.energy_spectrum_data.append(read_espe_file(file))
+                for file in use_cuts.keys():
+                    self.energy_spectrum_data[file] = read_espe_file(file)
 
             # Graph in matplotlib widget and add to window
             self.matplotlib = MatplotlibEnergySpectrumWidget(
@@ -303,7 +303,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 sys.exc_info()[1]), err_file,
                                  str(sys.exc_info()[2].tb_lineno)])
             msg += str_err
-            logging.getLogger(self.measurement.name).error(msg)
+            logging.getLogger(self.obj.name).error(msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
         finally:
