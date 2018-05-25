@@ -15,13 +15,13 @@ class RecoilElement:
     """An element that has a list of points and a widget. The points are kept
     in ascending order by their x coordinate.
     """
-    def __init__(self, element, points, widget=None):
+    def __init__(self, element, points):
         """Inits recoil element.
 
         Args:
             element: An Element class object.
             points: A list of Point class objects.
-            widget: An ElementWidget class object.
+            widgets: An ElementWidget class object.
         """
         self.element = element
         self.name = "Default"
@@ -31,11 +31,12 @@ class RecoilElement:
         # This is multiplied by 1e22
         self.reference_density = 4.98
         self._points = sorted(points)
-        self.widget = widget
+        self.widgets = []
         self._edit_lock_on = True
 
-    def delete_widget(self):
-        self.widget.deleteLater()
+    def delete_widgets(self):
+        for widget in self.widgets:
+            widget.deleteLater()
 
     def lock_edit(self):
         self._edit_lock_on = True

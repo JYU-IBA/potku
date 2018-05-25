@@ -278,7 +278,7 @@ class Simulation:
                                                name=element_str,
                                                target=self.target,
                                                detector=self.detector,
-                                               recoil_elements=[])
+                                               recoil_elements=[recoil_element])
         element_simulation.recoil_elements.append(recoil_element)
         self.element_simulations.append(element_simulation)
         return element_simulation

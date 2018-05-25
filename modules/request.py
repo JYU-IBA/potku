@@ -172,13 +172,8 @@ class Request:
                                                 "Default.profile"))
         except FileNotFoundError:
             self.default_element_simulation = ElementSimulation(
-                self.default_folder,
-                self,
-                [RecoilElement(
-                    Element.from_string(
-                        "4He 3.0"),
-                    [], None)],
-                name="Default")
+                self.default_folder, self, [RecoilElement(
+                    Element.from_string("4He 3.0"), [])], name="Default")
             self.default_simulation.element_simulations.append(
                 self.default_element_simulation)
 
