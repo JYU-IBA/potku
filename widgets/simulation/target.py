@@ -70,7 +70,6 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.targetRadioButton.setChecked(True)
         self.ui.stackedWidget.setCurrentIndex(0)
 
-        self.ui.setWindowTitle("Otsikko")  # TODO: Change title
         self.ui.saveButton.clicked.connect(lambda:
                                            self.__save_target_and_recoils())
 
