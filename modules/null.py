@@ -1,13 +1,13 @@
 # coding=utf-8
-'''
+"""
 Created on 13.5.2013
 Updated on 23.5.2013
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
 Miika Raunio
 
 This program is free software; you can redistribute it and/or
@@ -22,9 +22,11 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
+"""
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
+             "Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
+
 
 # http://code.activestate.com/recipes/68205-null-object-design-pattern/
 class Null:
@@ -43,37 +45,37 @@ class Null:
     """
 
     # object constructing
-    
+
     def __init__(self, *args, **kwargs):
-        "Ignore parameters."
+        """Ignore parameters."""
         return None
 
     # object calling
 
     def __call__(self, *args, **kwargs):
-        "Ignore method calls."
+        """Ignore method calls."""
         return self
 
     # attribute handling
 
     def __getattr__(self, mname):
-        "Ignore attribute requests."
+        """Ignore attribute requests."""
         return self
 
     def __setattr__(self, name, value):
-        "Ignore attribute setting."
+        """Ignore attribute setting."""
         return self
 
     def __delattr__(self, name):
-        "Ignore deleting attributes."
+        """Ignore deleting attributes."""
         return self
 
     # misc.
 
     def __repr__(self):
-        "Return a string representation."
+        """Return a string representation."""
         return "<Null>"
 
     def __str__(self):
-        "Convert to a string and return it."
+        """Convert to a string and return it."""
         return "Null"

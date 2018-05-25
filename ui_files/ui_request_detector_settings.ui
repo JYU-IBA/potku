@@ -257,10 +257,47 @@
                       <x>0</x>
                       <y>0</y>
                       <width>414</width>
-                      <height>210</height>
+                      <height>208</height>
                      </rect>
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_4">
+                     <item>
+                      <layout class="QHBoxLayout" name="horizontalLayout_5">
+                       <property name="rightMargin">
+                        <number>6</number>
+                       </property>
+                       <item>
+                        <layout class="QVBoxLayout" name="verticalLayout_10">
+                         <item>
+                          <widget class="QLabel" name="label_2">
+                           <property name="text">
+                            <string>Distance 
+from target:</string>
+                           </property>
+                           <property name="alignment">
+                            <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+                           </property>
+                          </widget>
+                         </item>
+                        </layout>
+                       </item>
+                       <item alignment="Qt::AlignRight">
+                        <widget class="QLabel" name="label">
+                         <property name="text">
+                          <string>T
+A
+R
+G
+E
+T</string>
+                         </property>
+                         <property name="scaledContents">
+                          <bool>false</bool>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
+                     </item>
                      <item>
                       <layout class="QHBoxLayout" name="foilsLayout"/>
                      </item>
@@ -269,11 +306,28 @@
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="newFoilButton">
-                   <property name="text">
-                    <string>Add a new foil</string>
-                   </property>
-                  </widget>
+                  <layout class="QHBoxLayout" name="horizontalLayout_6">
+                   <item>
+                    <spacer name="horizontalSpacer_2">
+                     <property name="orientation">
+                      <enum>Qt::Horizontal</enum>
+                     </property>
+                     <property name="sizeHint" stdset="0">
+                      <size>
+                       <width>40</width>
+                       <height>20</height>
+                      </size>
+                     </property>
+                    </spacer>
+                   </item>
+                   <item>
+                    <widget class="QPushButton" name="newFoilButton">
+                     <property name="text">
+                      <string>Add a new foil</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
                  </item>
                 </layout>
                </item>

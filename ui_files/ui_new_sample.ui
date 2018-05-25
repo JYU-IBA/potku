@@ -6,12 +6,12 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>274</width>
-    <height>176</height>
+    <width>317</width>
+    <height>222</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Create a new simulation</string>
+   <string>Create a new sample</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
@@ -33,7 +33,7 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>0</width>
+         <width>200</width>
          <height>0</height>
         </size>
        </property>

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 11.5.2018
+Updated on 23.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -41,37 +41,25 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.simulation = simulation
         self.icon_manager = icon_manager
         self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_simulation_settings.ui"), self)
+                                          "ui_specific_settings.ui"), self)
         self.ui.setWindowTitle("Simulation Settings")
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         screen_geometry = QtWidgets.QDesktopWidget.availableGeometry(
             QtWidgets.QApplication.desktop())
         self.resize(self.geometry().width(), screen_geometry.size().height()
                     * 0.8)
-        self.ui.simulationSettingsCheckBox.stateChanged.connect(
+        self.ui.defaultSettingsCheckBox.stateChanged.connect(
             lambda: self.__change_used_settings())
         self.ui.OKButton.clicked.connect(lambda:
                                          self.__save_settings_and_close())
         self.ui.applyButton.clicked.connect(lambda: self.__update_parameters())
         self.ui.cancelButton.clicked.connect(self.close)
 
-        double_validator = InputValidator()
-        positive_double_validator = InputValidator(bottom=0)
-
         # Add measurement settings view to the settings view
         self.measurement_settings_widget = MeasurementSettingsWidget(
             self.simulation)
         self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
-        self.measurement_settings_widget.ui.beamIonButton.setText("Select")
-        self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(False)
 
-        # self.measurement_settings_widget.ui.energyLineEdit.setValidator(
-        #     positive_double_validator)
-        double_angle_validator = InputValidator(0, 90, 10)
-        # self.measurement_settings_widget.ui.detectorThetaLineEdit.setValidator(
-        #     double_angle_validator)
-        # self.measurement_settings_widget.ui.targetThetaLineEdit.setValidator(
-        #     double_angle_validator)
         self.measurement_settings_widget.ui.picture.setScaledContents(True)
         pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
         self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
@@ -96,7 +84,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
 
         if self.simulation.detector is not None:
-            self.ui.simulationSettingsCheckBox.setCheckState(0)
+            self.ui.defaultSettingsCheckBox.setCheckState(0)
             self.measurement_settings_widget.ui.nameLineEdit.setText(
                 self.simulation.measurement_setting_file_name)
             self.measurement_settings_widget.ui.descriptionPlainTextEdit\
@@ -143,16 +131,17 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
          Update Simulation's Run, Detector and Target objects. If simulation
          specific parameters are in use, save them into a file.
         """
-        check_box = self.ui.simulationSettingsCheckBox
+        if not self.simulation.measurement_setting_file_name:
+            self.simulation.measurement_setting_file_name = \
+                self.simulation.name
+
+        check_box = self.ui.defaultSettingsCheckBox
         if check_box.isChecked():
             self.simulation.run = None
             self.simulation.detector = None
-            self.simulation.measurement_setting_file_name = \
-                self.simulation.name
             self.simulation.measurement_setting_file_description = ""
             self.simulation.target.target_theta = \
                 self.simulation.request.default_target.target_theta
-            # TODO: delete possible simulation specific files.
             det_folder_path =os.path.join(self.simulation.directory,
                                            "Detector")
             if os.path.exists(det_folder_path):

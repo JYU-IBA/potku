@@ -1,27 +1,26 @@
 # coding=utf-8
-'''
+"""
 Created on 15.3.2018
 Updated on 17.3.2018
-'''
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+"""
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
+             "Sinikka Siironen"
 
 from PyQt5 import QtWidgets
 
-from dialogs.graph_ignore_elements import GraphIgnoreElements
-from modules.element import Element
 from widgets.matplotlib.base import MatplotlibWidget
 
 
 class MatplotlibSimulationEnergySpectrumWidget(MatplotlibWidget):
-    '''Energy spectrum widget
-    '''
+    """Energy spectrum widget
+    """
     def __init__(self, parent, data):
-        '''Inits Energy Spectrum widget.
-        
+        """Inits Energy Spectrum widget.
+
         Args:
             parent: EnergySpectrumWidget class object.
             data: Energy spectrum data.
-        '''
+        """
         super().__init__(parent)
         super().fork_toolbar_buttons()
         # self.draw_legend = legend
@@ -48,16 +47,16 @@ class MatplotlibSimulationEnergySpectrumWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.__button_toggle_log)
         
         self.__button_ignores = QtWidgets.QToolButton(self)
-        self.__button_ignores.setToolTip("Select elements which are included in" + \
-                                         " the graph.")
+        self.__button_ignores.setToolTip("Select elements which are "
+                                         "included in the graph.")
         self.__icon_manager.set_icon(self.__button_ignores, "gear.svg")
         self.mpl_toolbar.addWidget(self.__button_ignores)
         
         self.on_draw()
 
     def on_draw(self):
-        '''Draw method for matplotlib.
-        '''
+        """Draw method for matplotlib.
+        """
         # Values for zoom
         x_min, x_max = self.axes.get_xlim()
         y_min, y_max = self.axes.get_ylim()
@@ -72,9 +71,9 @@ class MatplotlibSimulationEnergySpectrumWidget(MatplotlibWidget):
 
         self.axes.plot(x, y)
 
-        if x_max > 0.09 and x_max < 1.01:  # This works...
+        if 0.09 < x_max < 1.01:  # This works...
             x_max = self.axes.get_xlim()[1]
-        if y_max > 0.09 and y_max < 1.01:
+        if 0.09 < y_max < 1.01:
             y_max = self.axes.get_ylim()[1]
 
         # Set limits accordingly
@@ -88,7 +87,7 @@ class MatplotlibSimulationEnergySpectrumWidget(MatplotlibWidget):
         self.canvas.draw()
 
     def __toggle_log_scale(self):
-        '''Toggle log scaling for Y axis in depth profile graph.
-        '''
+        """Toggle log scaling for Y axis in depth profile graph.
+        """
         self.__log_scale = self.__button_toggle_log.isChecked()
         self.on_draw()

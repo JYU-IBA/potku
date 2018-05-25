@@ -98,10 +98,8 @@ class SimulationParameters:
 
         # If we cannot read the command file, we except an IOError
         except IOError:
-            # TODO: Print to the request log
-            print("Cannot read file " + file_path)
-            # msg = 'The file {0} doesn'
-            # logging.getLogger('request').error('')
+            msg = "Could not read file " + file_path + "."
+            logging.getLogger("request").error(msg)
 
     def read_layers(self, file_path):
         """
@@ -268,10 +266,8 @@ class SimulationParameters:
                 self.simulation["recoil"].append(line.strip().split())
 
         except IOError:
-            # TODO: Print to the request log
-            print("Cannot read file" + file_path)
-            # msg = 'The file {0} doesn'
-            # logging.getLogger('request').error('')
+            msg = "Could not read file " + file_path + "."
+            logging.getLogger("request").error(msg)
 
     def save_foil_params(self):
         """Writes the foil parameters into a file.

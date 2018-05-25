@@ -76,7 +76,16 @@
           <enum>QFrame::Raised</enum>
          </property>
          <layout class="QGridLayout" name="gridLayout">
-          <property name="margin">
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
            <number>0</number>
           </property>
           <item row="0" column="0">
@@ -94,9 +103,9 @@
              <property name="geometry">
               <rect>
                <x>0</x>
-               <y>-72</y>
-               <width>241</width>
-               <height>768</height>
+               <y>0</y>
+               <width>258</width>
+               <height>644</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout">
@@ -108,7 +117,13 @@
                    <number>0</number>
                   </property>
                   <item>
-                   <widget class="QCommandLinkButton" name="hideShowSettingsButton">
+                   <widget class="QCommandLinkButton" name="openSettingsButton">
+                    <property name="sizePolicy">
+                     <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                      <horstretch>0</horstretch>
+                      <verstretch>0</verstretch>
+                     </sizepolicy>
+                    </property>
                     <property name="toolTip">
                      <string>Define the settings for this specific measurement.</string>
                     </property>
@@ -125,132 +140,6 @@
                      <string>Define the settings for this specific measurement.</string>
                     </property>
                    </widget>
-                  </item>
-                  <item>
-                   <layout class="QHBoxLayout" name="horizontalLayout_3">
-                    <item>
-                     <spacer name="horizontalSpacer_7">
-                      <property name="orientation">
-                       <enum>Qt::Horizontal</enum>
-                      </property>
-                      <property name="sizeType">
-                       <enum>QSizePolicy::Fixed</enum>
-                      </property>
-                      <property name="sizeHint" stdset="0">
-                       <size>
-                        <width>30</width>
-                        <height>0</height>
-                       </size>
-                      </property>
-                     </spacer>
-                    </item>
-                    <item>
-                     <widget class="QFrame" name="settingsFrame">
-                      <property name="frameShape">
-                       <enum>QFrame::NoFrame</enum>
-                      </property>
-                      <property name="frameShadow">
-                       <enum>QFrame::Raised</enum>
-                      </property>
-                      <property name="lineWidth">
-                       <number>1</number>
-                      </property>
-                      <property name="midLineWidth">
-                       <number>0</number>
-                      </property>
-                      <layout class="QGridLayout" name="gridLayout_3">
-                       <property name="margin">
-                        <number>0</number>
-                       </property>
-                       <property name="spacing">
-                        <number>0</number>
-                       </property>
-                       <item row="0" column="0">
-                        <layout class="QVBoxLayout" name="verticalLayout_5">
-                         <item>
-                          <widget class="QCommandLinkButton" name="measuringUnitSettingsButton">
-                           <property name="toolTip">
-                            <string>Open the measuring unit settings for the active measurement and define the parameters for the measuring unit.</string>
-                           </property>
-                           <property name="text">
-                            <string>Measurement</string>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QCommandLinkButton" name="depthProfileSettingsButton">
-                           <property name="sizePolicy">
-                            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                             <horstretch>0</horstretch>
-                             <verstretch>0</verstretch>
-                            </sizepolicy>
-                           </property>
-                           <property name="minimumSize">
-                            <size>
-                             <width>40</width>
-                             <height>40</height>
-                            </size>
-                           </property>
-                           <property name="maximumSize">
-                            <size>
-                             <width>16777215</width>
-                             <height>40</height>
-                            </size>
-                           </property>
-                           <property name="toolTip">
-                            <string>Open the depth profile settings for the active measurement and define the parameters for the depth profiles.</string>
-                           </property>
-                           <property name="text">
-                            <string>Depth Profiles</string>
-                           </property>
-                           <property name="iconSize">
-                            <size>
-                             <width>25</width>
-                             <height>25</height>
-                            </size>
-                           </property>
-                          </widget>
-                         </item>
-                         <item>
-                          <widget class="QCommandLinkButton" name="calibrationSettingsButton">
-                           <property name="sizePolicy">
-                            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-                             <horstretch>0</horstretch>
-                             <verstretch>0</verstretch>
-                            </sizepolicy>
-                           </property>
-                           <property name="minimumSize">
-                            <size>
-                             <width>40</width>
-                             <height>40</height>
-                            </size>
-                           </property>
-                           <property name="maximumSize">
-                            <size>
-                             <width>16777215</width>
-                             <height>40</height>
-                            </size>
-                           </property>
-                           <property name="toolTip">
-                            <string>Open the calibration settings for the active measurement and define the used calibration parameters</string>
-                           </property>
-                           <property name="text">
-                            <string>ToF Calibration</string>
-                           </property>
-                           <property name="iconSize">
-                            <size>
-                             <width>25</width>
-                             <height>25</height>
-                            </size>
-                           </property>
-                          </widget>
-                         </item>
-                        </layout>
-                       </item>
-                      </layout>
-                     </widget>
-                    </item>
-                   </layout>
                   </item>
                  </layout>
                 </item>
@@ -350,10 +239,6 @@
  </widget>
  <tabstops>
   <tabstop>hidePanelButton</tabstop>
-  <tabstop>hideShowSettingsButton</tabstop>
-  <tabstop>measuringUnitSettingsButton</tabstop>
-  <tabstop>depthProfileSettingsButton</tabstop>
-  <tabstop>calibrationSettingsButton</tabstop>
   <tabstop>makeSelectionsButton</tabstop>
   <tabstop>saveCutsButton</tabstop>
   <tabstop>analyzeElementLossesButton</tabstop>
@@ -362,22 +247,5 @@
   <tabstop>scrollArea</tabstop>
  </tabstops>
  <resources/>
- <connections>
-  <connection>
-   <sender>hideShowSettingsButton</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>settingsFrame</receiver>
-   <slot>setVisible(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>586</x>
-     <y>41</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>695</x>
-     <y>162</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

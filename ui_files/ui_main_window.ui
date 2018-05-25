@@ -29,7 +29,7 @@
           </property>
           <property name="minimumSize">
            <size>
-            <width>200</width>
+            <width>250</width>
             <height>0</height>
            </size>
           </property>
@@ -233,21 +233,21 @@
               <item>
                <widget class="QPushButton" name="requestNewButton">
                 <property name="sizePolicy">
-                 <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
                 <property name="minimumSize">
                  <size>
-                  <width>110</width>
-                  <height>110</height>
+                  <width>130</width>
+                  <height>130</height>
                  </size>
                 </property>
                 <property name="maximumSize">
                  <size>
-                  <width>110</width>
-                  <height>110</height>
+                  <width>16777215</width>
+                  <height>16777215</height>
                  </size>
                 </property>
                 <property name="font">
@@ -272,21 +272,21 @@
               <item>
                <widget class="QPushButton" name="requestOpenButton">
                 <property name="sizePolicy">
-                 <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
                 <property name="minimumSize">
                  <size>
-                  <width>110</width>
-                  <height>110</height>
+                  <width>130</width>
+                  <height>130</height>
                  </size>
                 </property>
                 <property name="maximumSize">
                  <size>
-                  <width>110</width>
-                  <height>110</height>
+                  <width>16777215</width>
+                  <height>16777215</height>
                  </size>
                 </property>
                 <property name="font">
@@ -402,21 +402,21 @@ Start using Potku</string>
               <item>
                <widget class="QPushButton" name="addNewMeasurementButton">
                 <property name="sizePolicy">
-                 <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                   <horstretch>0</horstretch>
                   <verstretch>0</verstretch>
                  </sizepolicy>
                 </property>
                 <property name="minimumSize">
                  <size>
-                  <width>110</width>
-                  <height>110</height>
+                  <width>130</width>
+                  <height>130</height>
                  </size>
                 </property>
                 <property name="maximumSize">
                  <size>
-                  <width>110</width>
-                  <height>110</height>
+                  <width>16777215</width>
+                  <height>16777215</height>
                  </size>
                 </property>
                 <property name="font">
@@ -440,16 +440,22 @@ measurement</string>
               </item>
               <item>
                <widget class="QPushButton" name="addNewSimulationButton">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="minimumSize">
                  <size>
-                  <width>110</width>
-                  <height>110</height>
+                  <width>130</width>
+                  <height>130</height>
                  </size>
                 </property>
                 <property name="maximumSize">
                  <size>
-                  <width>110</width>
-                  <height>110</height>
+                  <width>16777215</width>
+                  <height>16777215</height>
                  </size>
                 </property>
                 <property name="font">
@@ -503,33 +509,6 @@ simulation</string>
                </size>
               </property>
              </spacer>
-            </item>
-            <item row="0" column="1">
-             <widget class="QLabel" name="label_6">
-              <property name="font">
-               <font>
-                <family>Tw Cen MT Condensed Extra Bold</family>
-                <pointsize>20</pointsize>
-                <weight>9</weight>
-                <italic>false</italic>
-                <bold>false</bold>
-               </font>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">font: 75 20pt &quot;Tw Cen MT Condensed Extra Bold&quot;;</string>
-              </property>
-              <property name="text">
-               <string>
-
-
-
-
-Start by loading a measurement or creating a new simulation</string>
-              </property>
-              <property name="wordWrap">
-               <bool>true</bool>
-              </property>
-             </widget>
             </item>
             <item row="3" column="0">
              <spacer name="verticalSpacer_12">
@@ -593,7 +572,6 @@ Start by loading a measurement or creating a new simulation</string>
     <addaction name="actionCreate_energy_spectrum"/>
     <addaction name="actionCreate_depth_profile"/>
     <addaction name="separator"/>
-    <addaction name="actionCreate_energy_spectrum_sim"/>
     <addaction name="separator"/>
     <addaction name="actionCreate_report"/>
     <addaction name="separator"/>

@@ -16,12 +16,12 @@ import modules.masses as masses
 
 
 class MeasurementSettingsWidget(QtWidgets.QWidget):
-    """Class for creating a request wide measurement settings tab.
+    """Class for creating a measurement settings tab.
     """
     def __init__(self, obj):
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_request_measurement_settings.ui"),
+                                          "ui_measurement_settings_tab.ui"),
                              self)
         self.obj = obj
 
@@ -52,9 +52,9 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
                                self.targetFiiDoubleSpinBox)
 
         self.nameLineEdit.setText(
-            self.obj.name)
+            self.obj.measurement_setting_file_name)
         self.descriptionPlainTextEdit.setPlainText(
-            self.obj.description)
+            self.obj.measurement_setting_file_description)
         self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             self.obj.modification_time)))
         self.energyDoubleSpinBox.setValue(
@@ -103,11 +103,12 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             isotope_data = self.isotopeComboBox.itemData(isotope_index)
             self.obj.run.beam.ion = Element(self.beamIonButton.text(),
                 isotope_data[0])
-            self.obj.name = self.nameLineEdit.text()
-            self.obj.description = self\
+            self.obj.measurement_setting_file_name = self.nameLineEdit.text()
+            self.obj.measurement_setting_file_description = self\
                 .descriptionPlainTextEdit.toPlainText()
             self.obj.run.beam.energy = self.energyDoubleSpinBox.value()
-            self.obj.run.beam.energy_dist = self.energyDistDoubleSpinBox.value()
+            self.obj.run.beam.energy_distribution = \
+                self.energyDistDoubleSpinBox.value()
             self.obj.run.beam.charge = self.beamChargeSpinBox.value()
             self.obj.run.beam.spot_size = [
                 self.spotSizeXdoubleSpinBox.value(),

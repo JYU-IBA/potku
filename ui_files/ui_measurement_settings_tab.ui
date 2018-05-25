@@ -33,43 +33,6 @@
     <enum>QLayout::SetDefaultConstraint</enum>
    </property>
    <item row="0" column="1">
-    <layout class="QHBoxLayout" name="horizontalLayout_19">
-     <item>
-      <widget class="QPushButton" name="loadButton">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="text">
-        <string>Load...</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="saveButton">
-       <property name="text">
-        <string>Save as...</string>
-       </property>
-      </widget>
-     </item>
-     <item>
-      <spacer name="horizontalSpacer_19">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-    </layout>
-   </item>
-   <item row="1" column="1">
     <widget class="QScrollArea" name="scrollArea">
      <property name="widgetResizable">
       <bool>true</bool>
@@ -79,8 +42,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>395</width>
-        <height>866</height>
+        <width>363</width>
+        <height>749</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -236,7 +199,7 @@
               <item row="1" column="1">
                <widget class="QComboBox" name="isotopeComboBox">
                 <property name="enabled">
-                 <bool>true</bool>
+                 <bool>false</bool>
                 </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Fixed">

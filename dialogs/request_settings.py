@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 13.5.2018
+Updated on 22.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -47,7 +47,7 @@ from modules.general_functions import open_file_dialog
 from modules.general_functions import save_file_dialog
 from modules.input_validator import InputValidator
 from modules.measuring_settings import MeasuringSettings
-from widgets.depth_profile_settings import DepthProfileSettingsWidget
+from widgets.profile_settings import ProfileSettingsWidget
 from widgets.detector_settings import DetectorSettingsWidget
 from widgets.measurement.settings import MeasurementSettingsWidget
 from widgets.simulation.settings import SimulationSettingsWidget
@@ -70,13 +70,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     screen_geometry.size().height() * 0.8)
 
         self.request = request
-        self.settings = request.settings
         self.icon_manager = icon_manager
-
-        # Creates object that loads and holds all the measuring data
-        self.measuring_unit_settings = self.settings.measuring_unit_settings
-        self.calibration_settings = self.settings.calibration_settings
-        self.depth_profile_settings = self.settings.depth_profile_settings
 
         # Connect buttons.
         self.ui.OKButton.clicked.connect(self.update_and_close_settings)
@@ -90,10 +84,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_measurement)
         self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
-        self.measurement_settings_widget.ui.loadButton.clicked \
-            .connect(lambda: self.__load_file("MEASURING_UNIT_SETTINGS"))
-        self.measurement_settings_widget.ui.saveButton.clicked \
-            .connect(lambda: self.__save_file("MEASUREMENT_SETTINGS"))
         self.measurement_settings_widget.ui.beamIonButton.clicked.connect(
             lambda: self.__change_element(
                 self.measurement_settings_widget.ui.beamIonButton,
@@ -113,7 +103,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Add detector settings view to the settings view
         self.detector_settings_widget = DetectorSettingsWidget(
-            self.request.default_detector, self.request, self.icon_manager)
+            self.request.default_detector, self.request, self.icon_manager,
+            self.request.default_measurement)
         self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
 
         self.detector_settings_widget.ui.saveButton.clicked \
@@ -136,42 +127,21 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                           self.request.default_folder,
                                                           "Default.simulation"))
         self.request.default_element_simulation = self.request \
-            .default_element_simulation.from_file(self.request,
+            .default_element_simulation.from_file(self.request, "",
+                                                  self.request.default_folder,
                                                   os.path.join(
                                                       self.request.default_folder,
                                                       "Default.mcsimu"),
-                                                  os.path.join(
-                                                      self.request.default_folder,
-                                                      "Default.rec"),
                                                   os.path.join(
                                                       self.request.default_folder,
                                                       "Default.profile"))
         self.request.default_simulation.element_simulations.append(
             self.request.default_element_simulation)
 
-        # Add depth profile settings view to the settings view
-        self.depth_profile_settings_widget = DepthProfileSettingsWidget(
+        # Add profile settings view to the settings view
+        self.profile_settings_widget = ProfileSettingsWidget(
             self.request.default_measurement)
-        self.ui.tabs.addTab(self.depth_profile_settings_widget, "Profile")
-
-        self.depth_profile_settings.show(self.depth_profile_settings_widget)
-
-        self.depth_profile_settings_widget.ui.loadButton.clicked.connect(
-            lambda: self.__load_file("DEPTH_PROFILE_SETTINGS"))
-        self.depth_profile_settings_widget.ui.saveButton.clicked.connect(
-            lambda: self.__save_file("DEPTH_PROFILE_SETTINGS"))
-
-        # self.depth_profile_settings_widget.ui.depthStepForStoppingLineEdit. \
-        #     setValidator(double_validator)
-        # self.depth_profile_settings_widget.ui.depthStepForOutputLineEdit. \
-        #     setValidator(double_validator)
-        #
-        # self.depth_profile_settings_widget.ui. \
-        #     depthsForConcentrationScalingLineEdit_1.setValidator(
-        #     double_validator)
-        # self.depth_profile_settings_widget.ui. \
-        #     depthsForConcentrationScalingLineEdit_2.setValidator(
-        #     double_validator)
+        self.ui.tabs.addTab(self.profile_settings_widget, "Profile")
 
         self.show_settings()
 
@@ -306,15 +276,13 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # TODO: Proper checking for all setting values
         try:
             self.measurement_settings_widget.update_settings()
-            self.depth_profile_settings_widget.update_settings()
+            self.profile_settings_widget.update_settings()
 
             default_measurement_settings_file = os.path.join(
                 self.request.default_measurement.directory,
                 "Default.measurement")
-            self.request.default_measurement.to_file(
-                default_measurement_settings_file, os.path.join(
-                    self.request.default_measurement.directory,
-                    "Default.profile"))
+            self.request.default_measurement.profile_to_file(os.path.join(
+                self.request.default_measurement.directory, "Default.profile"))
             self.request.default_measurement.run.to_file(
                 default_measurement_settings_file)
             self.request.default_target.to_file(
@@ -374,9 +342,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             # if not self.settings.has_been_set():
             #     raise TypeError
 
-            self.measuring_unit_settings.save_settings()
-            self.calibration_settings.save_settings()
-            self.depth_profile_settings.save_settings()
         except TypeError:
             QtWidgets.QMessageBox.question(self, "Warning",
                                            "Some of the setting values have "

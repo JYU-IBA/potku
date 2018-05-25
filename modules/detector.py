@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 11.5.2018
+Updated on 23.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -54,16 +54,16 @@ class Detector:
                  description="This a default detector setting file.",
                  modification_time=time.time(), type="TOF",
                  calibration=CalibrationParameters(), foils=[CircularFoil(
-                "Default", 7.0, 256.0, [Layer("First", [Element("C", 12.011,
+                "Foil1", 7.0, 256.0, [Layer("Layer_12C", [Element("C", 12.011,
                                                                 1)], 0.1,
                                               2.25)]), CircularFoil(
-                "Default", 9.0, 319.0, [Layer("Second", [Element("C", 12.011,
+                "Foil2", 9.0, 319.0, [Layer("Layer_12C", [Element("C", 12.011,
                                                                  1)], 13.3,
                                               2.25)]), CircularFoil(
-                "Default", 18.0, 942.0, [Layer("Third", [Element("C", 12.011,
+                "Foil3", 18.0, 942.0, [Layer("Layer_12C", [Element("C", 12.011,
                                                                  1)], 44.4,
                                                2.25)]), RectangularFoil(
-                "Default", 14.0, 14.0, 957.0, [Layer("Fourth", [Element(
+                "Foil4", 14.0, 14.0, 957.0, [Layer("Layer_28Si", [Element(
                     "N", 14.00, 0.57), Element("Si", 28.09, 0.43)], 1.0,
                                                      3.44)])], tof_foils=[
                 1, 2], virtual_size=(2.0, 5.0), tof_slope=1e-11,
@@ -217,10 +217,10 @@ class Detector:
                                     (foil["size"])[1],
                                     distance, layers, foil["transmission"]))
 
-        if measurement_file_path.endswith(".measurement"):
+        try:
             measurement_obj = json.load(open(measurement_file_path))
             detector_theta = measurement_obj["geometry"]["detector_theta"]
-        else:
+        except KeyError:
             detector_theta = request.default_detector.detector_theta
 
         return cls(path=detector_file_path,
@@ -302,10 +302,15 @@ class Detector:
             json.dump(obj, file, indent=4)
 
         # Read .measurement to obj to update only detector angles
-        if os.path.exists(measurement_file_path):
+        try:
             obj = json.load(open(measurement_file_path))
-            obj["geometry"]["detector_theta"] = self.detector_theta
-        else:
+            try:
+                obj["geometry"]["detector_theta"] = self.detector_theta
+            except KeyError:
+                obj["geometry"] = {
+                    "detector_theta": self.detector_theta
+                }
+        except FileNotFoundError:
             obj = {
                 "geometry": {
                     "detector_theta": self.detector_theta

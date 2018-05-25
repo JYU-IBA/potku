@@ -20,10 +20,11 @@ class GetEspe:
     Class for handling calling the external program get_espe to generate
     energy spectra coordinates.
     """
-    __slots__ = "__result_files", "__recoil_file", \
-                "__settings", "__beam", "__detector", "__target", \
-                "__channel_width", "__reference_density", "__fluence", \
-                "__params", "output_file", "__timeres", "__density", "__solid"
+    __slots__ = "__result_files", "__recoil_file", "__settings", "__beam", \
+                "__detector", "__target", "__channel_width", \
+                "__reference_density", "__fluence", "__params", "output_file",\
+                "__timeres", "__density", "__solid", "__erd_file", \
+                "__output_file"
 
     def __init__(self, settings, mcerd_objects):
         """
@@ -60,16 +61,16 @@ class GetEspe:
         #         -density surface atomic density of the first 10 nm layer
         #                  (at/cm^2)
 
-        self.__result_files = ""
-        for key, mcerd in mcerd_objects.items():
-            self.__result_files += mcerd.result_file + " "
-            # All the mcerd processes should have the same recoil
-            # distribution, so it shouldn't matter which of the files is used.
-            # TODO: WRONG, this needs to be fixed!
-            self.__recoil_file = mcerd.recoil_file
-            self.output_file = os.path.join(settings["result_directory"],
-                                            mcerd.espe_file_name)
-            # output file has the same name as recoil file
+        # self.__result_files = ""
+        # for key, mcerd in mcerd_objects.items():
+        #     self.__result_files += mcerd.result_file + " "
+        #     # All the mcerd processes should have the same recoil
+        #     # distribution, so it shouldn't matter which of the files is used.
+        #     # TODO: WRONG, this needs to be fixed!
+        #     self.__recoil_file = mcerd.recoil_file
+        #     self.output_file = os.path.join(settings["result_directory"],
+        #                                     mcerd.espe_file_name)
+        #     # output file has the same name as recoil file
 
         self.__beam = settings["beam"]
         self.__detector = settings["detector"]
@@ -77,8 +78,11 @@ class GetEspe:
         self.__channel_width = settings["ch"]
         self.__fluence = settings["fluence"]  # from Run object
         self.__timeres = settings["timeres"]
-        self.__density = settings["reference_density"]
+        self.__density = settings["reference_density"] * 1e16
         self.__solid = settings["solid"]
+        self.__recoil_file = settings["recoil_file"]
+        self.__erd_file = settings["erd_file"]
+        self.__output_file = settings["spectrum_file"]
 
         toflen = self.__detector.foils[self.__detector.tof_foils[1]].distance
         toflen -= self.__detector.foils[self.__detector.tof_foils[0]].distance
@@ -101,13 +105,16 @@ class GetEspe:
         self.run_get_espe()
 
     def run_get_espe(self):
-        command = ("type " if platform.system() == "Windows" else "cat ") + \
-                  self.__result_files + "| " + os.path.join(
+        get_espe_command = self.__erd_file + "| " + os.path.join(
             "external", "Potku-bin", "get_espe" +
                                      (".exe " if platform.system() == "Windows"
                                       else "_linux "
                                       if platform.system() == "Linux"
                                       else "_mac ")) + self.__params + " > " + \
-                  self.output_file
+                  self.__output_file
+        # Echo the command for debug purposes
+        command = "echo " + '"' + get_espe_command + '" & ' + \
+                  ("type " if platform.system() == "Windows" else "cat ") + \
+                  get_espe_command
 
         subprocess.call(command, shell=True)

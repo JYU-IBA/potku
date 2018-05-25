@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 30.4.2018
+Updated on 23.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -41,7 +41,7 @@ import hashlib
 import json
 import numpy
 from PyQt5 import QtWidgets
-from os import makedirs, rename, path
+import os
 
 
 def open_file_dialog(parent, default_folder, title, files):
@@ -129,12 +129,12 @@ def rename_file(old_path, new_name):
     """
     if not new_name:
         return
-    dir_path, old_name = path.split(old_path)
+    dir_path, old_name = os.path.split(old_path)
     try:
-        new_file = path.join(dir_path, new_name)
-        if path.exists(new_file):
+        new_file = os.path.join(dir_path, new_name)
+        if os.path.exists(new_file):
             raise OSError
-        rename(old_path, new_file)
+        os.rename(old_path, new_file)
     except OSError:
         # os.rename should raise this if directory or file exists on the
         # same name, but it seems it always doesn't.
@@ -227,23 +227,6 @@ def read_espe_file(espe_file):
     return data
 
 
-# TODO This function is copied from MeasurementTabWidget.
-def load_file(file):
-    """Load file
-
-    Args:
-        file: A string representing full filepath to the file.
-    """
-    lines = []
-    try:
-        with open(file, "rt") as fp:
-            for line in fp:
-                lines.append(line)
-    except:
-        pass
-    return lines
-
-
 def tof_list(cut_file, directory, save_output=False):
     """ToF_list
 
@@ -258,7 +241,8 @@ def tof_list(cut_file, directory, save_output=False):
     Returns:
         Returns cut file as list transformed through Arstila's tof_list program.
     """
-    bin_dir = path.join(path.realpath(path.curdir), "external", "Potku-bin")
+    bin_dir = os.path.join(os.path.realpath(os.path.curdir), "external",
+                           "Potku-bin")
     tof_list_array = []
     if not cut_file:
         return []
@@ -267,25 +251,16 @@ def tof_list(cut_file, directory, save_output=False):
         if platform.system() == 'Windows':
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            command = (str(path.join(bin_dir, "tof_list.exe")),
+            command = (str(os.path.join(bin_dir, "tof_list.exe")),
                        cut_file)
             stdout = subprocess.check_output(command,
                                              cwd=bin_dir,
                                              shell=True,
                                              startupinfo=startupinfo)
-        elif platform.system() == 'Linux':
-            command = "{0} {1}".format(path.join(bin_dir, "tof_list_linux"),
-                                       cut_file)
-            p = subprocess.Popen(command.split(' ', 1), cwd=bin_dir,
-                                 stdin=subprocess.PIPE,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
-            stdout, unused_stderr = p.communicate()
-
         else:
-            command = "{0} {1}".format(path.join(bin_dir, "tof_list_mac"),
-                                       cut_file)
-            p = subprocess.Popen(command.split(' ', 1), cwd=bin_dir,
+            command = "{0} {1}".format("./tof_list", cut_file)
+            p = subprocess.Popen(command.split(' ', 1),
+                                 cwd=bin_dir,
                                  stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
@@ -307,13 +282,13 @@ def tof_list(cut_file, directory, save_output=False):
             tof_list_array.append(tupled)
         if save_output:
             if not directory:
-                directory = path.join(path.realpath(path.curdir),
+                directory = os.path.join(os.path.realpath(os.path.curdir),
                                       "energy_spectrum_output")
-            if not path.exists(directory):
-                makedirs(directory)
-            unused_dir, file = path.split(cut_file)
-            directory_es_file = path.join(
-                directory, "{0}.tof_list".format(path.splitext(file)[0]))
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            unused_dir, file = os.path.split(cut_file)
+            directory_es_file = os.path.join(
+                directory, "{0}.tof_list".format(os.path.splitext(file)[0]))
             numpy_array = numpy.array(tof_list_array,
                                       dtype=[('float1', float),
                                              ('float2', float),
@@ -379,14 +354,15 @@ def carbon_stopping(element, isotope, energy, carbon_thickness):
     Returns:
         Energy loss of particle in a carbon foil of some thickness in Joules
     """
-    bin_dir = path.join(path.realpath(path.curdir), 'external', 'Potku-bin')
+    bin_dir = os.path.join(os.path.realpath(os.path.curdir), 'external',
+                           'Potku-bin')
     # parameters can be 0 but not None
     if element is not None and isotope is not None and energy is not None and \
             carbon_thickness is not None:
         # inputdata = bytes("{0}-{1}".format(isotope, element), 'utf-8')
         if platform.system() == 'Windows':
             print("Running gsto_stop.exe on Windows.")
-            args = [path.join(bin_dir, 'gsto_stop.exe'),
+            args = [os.path.join(bin_dir, 'gsto_stop.exe'),
                     "{0}-{1}".format(isotope, element), 'C', str(energy)]
             print(args)
             p = Popen(args, cwd=bin_dir, stdin=subprocess.PIPE,
@@ -450,7 +426,8 @@ def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
     # column_template = "%i " * column_count
     if not column_count or not timing_str:  # No columns or timings...
         return
-    bin_dir = path.join(path.realpath(path.curdir), "external", "Potku-bin")
+    bin_dir = os.path.join(os.path.realpath(os.path.curdir), "external",
+                           "Potku-bin")
     timediff_str = ""
     if timediff or temporary:
         timediff_str = "--timediff"
@@ -513,4 +490,35 @@ def to_superscript(string):
             "8": "\u2078",
             "9": "\u2079"}
 
-    return ''.join(sups.get(char, char) for char in string)
+    return "".join(sups.get(char, char) for char in string)
+
+
+def check_text(input_field):
+    """Checks if the given QLineEdit input field contains text. If not,
+    field's background is set red.
+
+    Args:
+        input_field: QLineEdit object.
+    """
+    if not input_field.text():
+        set_input_field_red(input_field)
+    else:
+        set_input_field_white(input_field)
+
+
+def set_input_field_red(input_field):
+    """Sets the background of given input field red.
+
+    Args:
+        input_field: Qt widget that supports Qt Style Sheets.
+    """
+    input_field.setStyleSheet("background-color: %s" % "#f6989d")
+
+
+def set_input_field_white(input_field):
+    """Sets the background of given input field white.
+
+    Args:
+        input_field: Qt widget that supports Qt Style Sheets.
+    """
+    input_field.setStyleSheet("background-color: %s" % "#ffffff")

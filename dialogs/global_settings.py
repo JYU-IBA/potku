@@ -48,8 +48,6 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         # Connect UI buttons
         self.ui.OKButton.clicked.connect(self.__accept_changes)
         self.ui.cancelButton.clicked.connect(self.close)
-        self.ui.loadRequestPathButton.clicked.connect(
-            self.__change_request_directory)
         buttons = self.ui.findChild(QtWidgets.QButtonGroup, "elementButtons")
         buttons.buttonClicked.connect(self.__change_element_color)
         self.line_coinc_count.setValidator(QtGui.QIntValidator(0, 1000000))
@@ -60,8 +58,6 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     def __set_values(self):
         """Set settings values to dialog.
         """
-        self.ui.requestPathLineEdit.setText(
-            self.settings.get_request_directory())
         for button in self.ui.groupBox_3.findChildren(QtWidgets.QPushButton):
             self.__set_button_color(button,
                                     self.settings.get_element_color(
@@ -85,7 +81,6 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.line_coinc_count.setText(
             str(self.settings.get_import_coinc_count()))
         self.__set_cross_sections()
-        self.check_es_output.setChecked(self.settings.is_es_output_saved())
 
         # ToF-E graph settings
         self.ui.check_tofe_invert_x.setChecked(
@@ -109,6 +104,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
             self.settings.get_tofe_compression_y())
         self.ui.spin_depth_iterations.setValue(
             self.settings.get_num_iterations())
+
         dirtyinteger = 0
         colors = sorted(MatplotlibHistogramWidget.color_scheme.items())
         for key, unused_value in colors:
@@ -128,7 +124,6 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     def __accept_changes(self):
         """Accept changed settings and save.
         """
-        self.settings.set_request_directory(self.ui.requestPathLineEdit.text())
         for button in self.ui.groupBox_3.findChildren(QtWidgets.QPushButton):
             self.settings.set_element_color(button.text(), button.color)
         for key in self.__added_timings.keys():
@@ -146,7 +141,6 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         elif self.ui.radio_cross_3.isChecked():
             flag_cross = 3
         self.settings.set_cross_sections(flag_cross)
-        self.settings.set_es_output_saved(self.check_es_output.isChecked())
 
         # ToF-E graph settings
         self.settings.set_tofe_invert_x(self.ui.check_tofe_invert_x.isChecked())

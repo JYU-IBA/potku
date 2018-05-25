@@ -39,30 +39,31 @@ class FoilDialog(QtWidgets.QDialog):
         self.ui.typeComboBox.addItem("rectangular")
 
         self.dimension_edits = []
-        self.first_dimension_edit = QtWidgets.QLineEdit()
+        self.first_dimension_edit = QtWidgets.QDoubleSpinBox()
+        self.first_dimension_edit.setMaximumWidth(70)
         self.second_dimension_edit = None
-        self.dimension_label = QtWidgets.QLabel("Diameter:")
+        self.dimension_label = QtWidgets.QLabel("Diameter (mm):")
 
         self.dimension_edits.append(self.first_dimension_edit)
         self.ui.dimensionLayout.addWidget(self.dimension_label)
         self.ui.dimensionLayout.addWidget(self.dimension_edits[0])
 
         self.ui.nameEdit.setText(self.foil.name)
-        self.ui.transmissionEdit.setText(str(self.foil.transmission))
+        self.ui.transmissionEdit.setValue(self.foil.transmission)
 
         if type(tmp_foils[tmp_index]) is CircularFoil:
             self.foil_type = CircularFoil
             self.ui.typeComboBox.setCurrentIndex(0)
-            self.first_dimension_edit.setText(str(self.foil.diameter))
+            self.first_dimension_edit.setValue(self.foil.diameter)
         else:
             self.foil_type = RectangularFoil
             self.ui.typeComboBox.setCurrentIndex(1)
-            self.dimension_label.setText("Size:")
-            self.second_dimension_edit = QtWidgets.QLineEdit()
+            self.dimension_label.setText("Size (mm):")
+            self.second_dimension_edit = QtWidgets.QDoubleSpinBox()
             self.dimension_edits.append(self.second_dimension_edit)
             self.ui.dimensionLayout.addWidget(self.dimension_edits[1])
-            self.first_dimension_edit.setText(str(self.foil.size[0]))
-            self.second_dimension_edit.setText(str(self.foil.size[1]))
+            self.first_dimension_edit.setValue(self.foil.size[0])
+            self.second_dimension_edit.setValue(self.foil.size[1])
 
         # This widget adds itself into the matplotlib_layout
         self.composition = FoilCompositionWidget(self, self.foil,
@@ -79,7 +80,7 @@ class FoilDialog(QtWidgets.QDialog):
 
     def _change_dimensions(self):
         if self.ui.typeComboBox.currentText() == "circular":
-            self.dimension_label.setText("Diameter:")
+            self.dimension_label.setText("Diameter (mm):")
             # removes the second dimension edit that is only needed
             # by rectangular type
             self.dimension_edits.pop()
@@ -92,9 +93,8 @@ class FoilDialog(QtWidgets.QDialog):
             else:
                 self.foil_type_changed = False
         else:
-            self.dimension_label.setText("Size:")
-            self.second_dimension_edit = QtWidgets.QLineEdit()
-            self.second_dimension_edit.setText("0.0")
+            self.dimension_label.setText("Size (mm):")
+            self.second_dimension_edit = QtWidgets.QDoubleSpinBox()
             self.dimension_edits.append(self.second_dimension_edit)
             self.ui.dimensionLayout.addWidget(self.second_dimension_edit)
             if self.foil_type is CircularFoil:

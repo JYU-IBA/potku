@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 28.3.2018
+Updated on 22.5.2018
 """
 from PyQt5.QtGui import QIcon
 
@@ -10,14 +10,15 @@ from dialogs.energy_spectrum import EnergySpectrumParamsDialog, \
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
+__version__ = "2.0"
 
 import os
 
-from PyQt5 import QtCore, QtWidgets, QtGui, uic
+from PyQt5 import QtCore, QtWidgets, QtGui
 from matplotlib.widgets import SpanSelector
 
-import modules.element
-import modules.general_functions as general
+from modules.element import Element
+from widgets.matplotlib.simulation.element import ElementWidget
 
 from dialogs.simulation.recoil_element_selection import \
     RecoilElementSelectionDialog
@@ -25,172 +26,9 @@ from dialogs.simulation.recoil_info_dialog import RecoilInfoDialog
 from widgets.matplotlib.base import MatplotlibWidget
 from dialogs.simulation.element_simulation_settings import \
     ElementSimulationSettingsDialog
-
-
-class Point:
-    """A 2D point with x and y coordinates."""
-    def __init__(self, xy):
-        """Inits point.
-
-        Args:
-            xy: The x and y coordinates of the point. An ordered data structure
-             whose first element is the x coordinate and second element
-             the y coordinate.
-        """
-        # TODO: Precision
-        self._x = xy[0]
-        self._y = xy[1]
-
-    def __lt__(self, other):
-        return self.get_x() < other.get_x()
-
-    def get_coordinates(self):
-        return self._x, self._y
-
-    def get_x(self):
-        return self._x
-
-    def get_y(self):
-        return self._y
-
-    def set_x(self, x):
-        self._x = x
-
-    def set_y(self, y):
-        self._y = y
-
-    def set_coordinates(self, xy):
-        self._x = xy[0]
-        self._y = xy[1]
-
-
-class RecoilElement:
-    """An element that has a list of points and a widget. The points are kept
-    in ascending order by their x coordinate.
-    """
-    def __init__(self, element, points, widget=None):
-        """Inits recoil element.
-
-        Args:
-            element: An Element class object.
-            points: A list of Point class objects.
-            widget: An ElementWidget class object.
-        """
-        self.element = element
-        self.name = "Default"
-        self.description = "This is a default rec setting file."
-        self.type = "rec"
-        # This is multiplied by 1e22
-        self.reference_density = 4.98
-        self._points = sorted(points)
-        self.widget = widget
-        self._edit_lock_on = True
-
-    def delete_widget(self):
-        self.widget.deleteLater()
-
-    def lock_edit(self):
-        self._edit_lock_on = True
-
-    def unlock_edit(self):
-        self._edit_lock_on = False
-
-    def get_edit_lock_on(self):
-        return self._edit_lock_on
-
-    def _sort_points(self):
-        """Sorts the points in ascending order by their x coordinate."""
-        self._points.sort()
-        self._xs = [point.get_x() for point in self._points]
-        self._ys = [point.get_y() for point in self._points]
-
-    def get_xs(self):
-        """Returns a list of the x coordinates of the points."""
-        return [point.get_x() for point in self._points]
-
-    def get_ys(self):
-        """Returns a list of the y coordinates of the points."""
-        return [point.get_y() for point in self._points]
-
-    def get_point_by_i(self, i):
-        """Returns the i:th point."""
-        return self._points[i]
-
-    def get_points(self):
-        return self._points
-
-    def add_point(self, point):
-        """Adds a point and maintains sort order."""
-        self._points.append(point)
-        self._sort_points()
-
-    def remove_point(self, point):
-        """Removes the given point."""
-        self._points.remove(point)
-
-    def get_left_neighbor(self, point):
-        """Returns the point whose x coordinate is closest to but
-        less than the given point's.
-        """
-        ind = self._points.index(point)
-        if ind == 0:
-            return None
-        else:
-            return self._points[ind - 1]
-
-    def get_right_neighbor(self, point):
-        """Returns the point whose x coordinate is closest to but
-        greater than the given point's.
-        """
-        ind = self._points.index(point)
-        if ind == len(self._points) - 1:
-            return None
-        else:
-            return self._points[ind + 1]
-
-
-class ElementWidget(QtWidgets.QWidget):
-    """Class for creating an element widget for the recoil atom distribution.
-    Args:
-        parent: A SimulationTabWidget.
-        """
-
-    def __init__(self, parent, element, icon_manager):
-        super().__init__()
-
-        self.parent = parent
-
-        horizontal_layout = QtWidgets.QHBoxLayout()
-
-        self.radio_button = QtWidgets.QRadioButton()
-
-        if element.isotope:
-            isotope_superscript = general.to_superscript(str(element.isotope))
-            button_text = isotope_superscript + " " + element.symbol
-        else:
-            button_text = element.symbol
-
-        self.radio_button.setText(button_text)
-
-        draw_spectrum_button = QtWidgets.QPushButton()
-        draw_spectrum_button.setIcon(QIcon(
-            "ui_icons/potku/energy_spectrum_icon.svg"))
-        draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                        QtWidgets.QSizePolicy.Fixed)
-        draw_spectrum_button.clicked.connect(self.plot_spectrum)
-
-        horizontal_layout.addWidget(self.radio_button)
-        horizontal_layout.addWidget(draw_spectrum_button)
-
-        self.setLayout(horizontal_layout)
-
-    def plot_spectrum(self):
-        dialog = EnergySpectrumParamsDialog(self.parent)
-        if dialog.result_files:
-            self.parent.energy_spectrum_widget = EnergySpectrumWidget(
-                parent=self.parent, use_cuts=dialog.result_files,
-                bin_width=dialog.bin_width)
-            self.parent.add_widget(self.parent.energy_spectrum_widget)
+from modules.point import Point
+from modules.recoil_element import RecoilElement
+from widgets.simulation.controls import SimulationControlsWidget
 
 
 class ElementManager:
@@ -201,7 +39,7 @@ class ElementManager:
     Each RecoilElement has 1 Element, 1 ElementWidget and 2...n Points.
 
     Args:
-        parent: A RecoilAtomDistributionWidget.
+        parent: A SimulationTabWidget.
     """
 
     def __init__(self, parent, icon_manager, simulation):
@@ -212,7 +50,7 @@ class ElementManager:
 
     def get_element_simulation_with_recoil_element(self, recoil_element):
         for element_simulation in self.element_simulations:
-            if element_simulation.recoil_element == recoil_element:
+            if element_simulation.recoil_elements[0] == recoil_element:
                 return element_simulation
 
     def get_element_simulation_with_radio_button(self, radio_button):
@@ -220,7 +58,16 @@ class ElementManager:
             if self.get_radio_button(element_simulation) == radio_button:
                 return element_simulation
 
-    def add_element_simulation(self, element):
+    def add_new_element_simulation(self, element):
+        """
+        Create a new ElementSimulation and RecoilElement with default points.
+
+        Args:
+             element: Element that tells the element to add.
+
+        Return:
+            Created ElementSimulation
+        """
         # Default points
         xs = [0.00, 35.00]
         ys = [1.0, 1.0]
@@ -229,20 +76,52 @@ class ElementManager:
         for xy in xys:
             points.append(Point(xy))
 
-        widget = ElementWidget(self.parent, element, self.icon_manager)
-        recoil_element = RecoilElement(element, points, widget)
+        element_widget = ElementWidget(self.parent, element, self.icon_manager)
+        recoil_element = RecoilElement(element, points)
+        recoil_element.widgets.append(element_widget)
         element_simulation = self.simulation.add_element_simulation(
             recoil_element)
-        widget.element_simulation = element_simulation
+        element_widget.element_simulation = element_simulation
+
+        # Add simulation controls widget
+        simulation_controls_widget = SimulationControlsWidget(
+            element_simulation)
+        simulation_controls_widget.element_simulation = element_simulation
+        self.parent.ui.contentsLayout.addWidget(simulation_controls_widget)
+        element_simulation.recoil_elements[0] \
+            .widgets.append(simulation_controls_widget)
 
         return element_simulation
 
+    def add_element_simulation(self, element_simulation):
+        """
+        Add an existing ElementSimulation.
+
+        Args:
+            element_simulation: ElementSimulation to be added.
+        """
+        recoil_element_widget =\
+            ElementWidget(self.parent,
+                          element_simulation.recoil_elements[0].element,
+                          self.icon_manager)
+        element_simulation.recoil_elements[0] \
+            .widgets.append(recoil_element_widget)
+        recoil_element_widget.element_simulation = element_simulation
+
+        # Add simulation controls widget
+        simulation_controls_widget = SimulationControlsWidget(
+            element_simulation)
+        simulation_controls_widget.element_simulation = element_simulation
+        self.parent.ui.contentsLayout.addWidget(simulation_controls_widget)
+        element_simulation.recoil_elements[0] \
+            .widgets.append(simulation_controls_widget)
+
     def remove_element_simulation(self, element_simulation):
-        element_simulation.recoil_element.delete_widget()
+        element_simulation.recoil_elements[0].delete_widgets()
         self.element_simulations.remove(element_simulation)
 
     def get_radio_button(self, element_simulation):
-        return element_simulation.recoil_element.widget\
+        return element_simulation.recoil_elements[0].widgets[0] \
             .radio_button
 
 
@@ -276,10 +155,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.fmt_ydata = lambda y: "{0:1.4f}".format(y)
         self.__icon_manager = icon_manager
         self.tab = tab
+        self.simulation = simulation
 
-        self.current_recoil_element = None
+        self.current_element_simulation = None
         self.element_manager = ElementManager(self.tab, self.__icon_manager,
-                                              simulation)
+                                              self.simulation)
         self.target = target
         self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
 
@@ -298,7 +178,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum,
                                   QtWidgets.QSizePolicy.Expanding))
 
-        self.parent_ui.addPushButton.clicked.connect(self.add_element_with_dialog)
+        self.parent_ui.addPushButton.clicked.connect(
+            self.add_element_with_dialog)
         self.parent_ui.removePushButton.clicked.connect(
             self.remove_current_element)
         self.parent_ui.settingsPushButton.clicked.connect(
@@ -356,32 +237,50 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # This customizes the toolbar buttons
         self.__fork_toolbar_buttons()
 
-        self.name_y_axis = "Relative concentration"
-        self.name_x_axis = "Depth"
+        self.name_y_axis = "Relative Concentration"
+        self.name_x_axis = "Depth [nm]"
+
+        if self.simulation.element_simulations:
+            self.__update_figure()
 
         self.on_draw()
 
+    def __update_figure(self):
+        for element_simulation in self.simulation.element_simulations:
+            for recoil_element in element_simulation.recoil_elements:
+                self.add_element(recoil_element.element, element_simulation)
+
     def open_element_simulation_settings(self):
-        if not self.current_recoil_element:
+        if not self.current_element_simulation:
             return
-        current_element_simulation = self.element_manager \
-            .get_element_simulation_with_recoil_element(
-            self.current_recoil_element)
-        dialog = ElementSimulationSettingsDialog(current_element_simulation)
+        ElementSimulationSettingsDialog(self.current_element_simulation)
 
     def open_recoil_element_info(self):
-        dialog = RecoilInfoDialog(self.current_recoil_element)
+        dialog = RecoilInfoDialog(
+            self.current_element_simulation.recoil_elements[0])
         if dialog.isOk:
-            self.current_recoil_element.name = dialog.name
-            self.current_recoil_element.description = dialog.description
-            self.current_recoil_element.reference_density = \
-                dialog.reference_density
-            self.update_recoil_element_info_labels()
+            new_values = {"name": dialog.name,
+                          "description": dialog.description,
+                          "reference_density": dialog.reference_density}
+            try:
+                self.current_element_simulation.update_recoil_element(
+                    self.current_element_simulation.recoil_elements[0],
+                    new_values)
+                self.update_recoil_element_info_labels()
+            except KeyError:
+                error_box = QtWidgets.QMessageBox()
+                error_box.setIcon(QtWidgets.QMessageBox.Warning)
+                error_box.addButton(QtWidgets.QMessageBox.Ok)
+                error_box.setText("All recoil element information could not "
+                                  "be saved.")
+                error_box.setWindowTitle("Error")
+                error_box.exec()
 
     def save_mcsimu_rec_profile(self, directory):
         for element_simulation in self.element_manager \
                 .element_simulations:
-            element = element_simulation.recoil_element.element
+            for recoil_element in element_simulation.recoil_elements:
+                element = recoil_element.element
             if element.isotope:
                 element_str = "{0}{1}".format(element.isotope, element.symbol)
             else:
@@ -389,8 +288,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
             element_simulation.mcsimu_to_file(
                 os.path.join(directory, element_simulation.name + ".mcsimu"))
-            element_simulation.recoil_to_file(
-                os.path.join(directory, element_str + ".rec"))
+            element_simulation.recoil_to_file(directory)
             element_simulation.profile_to_file(
                 os.path.join(directory, element_str + ".profile"))
 
@@ -409,7 +307,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         confirm_box.exec()
         if confirm_box.clickedButton() == yes_button:
-            self.current_recoil_element.unlock_edit()
+            self.current_element_simulation.unlock_edit(
+                self.current_element_simulation.recoil_elements[0])
             self.edit_lock_on = False
             self.edit_lock_push_button.setText("Full edit unlocked")
             self.edit_lock_push_button.setEnabled(False)
@@ -417,12 +316,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
     def choose_element(self, button, checked):
         if checked:
-            current_element_simulation = self.element_manager\
+            current_element_simulation = self.element_manager \
                 .get_element_simulation_with_radio_button(button)
-            self.current_recoil_element = \
-                current_element_simulation.recoil_element
+            self.current_element_simulation = \
+                current_element_simulation
             self.parent_ui.elementInfoWidget.show()
-            if self.current_recoil_element.get_edit_lock_on():
+            if self.current_element_simulation.get_edit_lock_on(
+                    self.current_element_simulation.recoil_elements[0]):
                 self.edit_lock_on = True
                 self.edit_lock_push_button.setText("Unlock full edit")
                 self.edit_lock_push_button.setEnabled(True)
@@ -440,15 +340,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
     def update_recoil_element_info_labels(self):
         self.parent_ui.nameLabel.setText(
-            "Name: " + self.current_recoil_element.name)
+            "Name: " + self.current_element_simulation.recoil_elements[0].name)
         self.parent_ui.referenceDensityLabel.setText(
             "Reference density: " + "{0:1.2f}".
-            format(self.current_recoil_element.reference_density)
-                   + "e22 at/cm\xb2"
+            format(self.current_element_simulation.recoil_elements[0]
+                   .reference_density) + "e22 at/cm\xb2"
         )
 
     def recoil_element_info_on_switch(self):
-        if self.current_recoil_element is None:
+        if self.current_element_simulation is None:
             self.parent_ui.elementInfoWidget.hide()
         else:
             self.parent_ui.elementInfoWidget.show()
@@ -456,29 +356,33 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def add_element_with_dialog(self):
         dialog = RecoilElementSelectionDialog(self)
         if dialog.isOk:
-            element_simulation = self.add_element(modules.element.Element(
+            element_simulation = self.add_element(Element(
                 dialog.element, dialog.isotope))
 
-            if self.current_recoil_element is None:
-                self.current_recoil_element = element_simulation.recoil_element
-                element_simulation.recoil_element.widget.radio_button\
+            if self.current_element_simulation is None:
+                self.current_element_simulation = element_simulation
+                element_simulation.recoil_elements[0].widgets[0].radio_button \
                     .setChecked(True)
 
-    def add_element(self, element):
-        # Create new ElementSimulation
-        element_simulation = self.element_manager\
-            .add_element_simulation(element)
+    def add_element(self, element, element_simulation=None):
+        """
+        Adds a new ElementSimulation based on the element. If elem_sim is
+         not None, only UI widgets need to be added.
 
-        # Add simulation controls widget
-        simulation_controls_widget = SimulationControlsWidget(
-            element_simulation)
-        simulation_controls_widget.element_simulation = element_simulation
-        self.tab.ui.contentsLayout.addWidget(simulation_controls_widget)
+         Args:
+             element: Element that is added.
+             element_simulation: ElementSimulation that needs the UI widgets.
+        """
+        if element_simulation is None:
+            # Create new ElementSimulation
+            element_simulation = self.element_manager \
+                .add_new_element_simulation(element)
+        else:
+            element_simulation = element_simulation
+            self.element_manager.add_element_simulation(element_simulation)
 
         # Add recoil element widget
-        recoil_element_widget = element_simulation.recoil_element \
-            .widget
-
+        recoil_element_widget = element_simulation.recoil_elements[0].widgets[0]
         self.radios.addButton(recoil_element_widget.radio_button)
         self.recoil_vertical_layout.addWidget(recoil_element_widget)
 
@@ -488,7 +392,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.element_manager.remove_element_simulation(element_simulation)
 
     def remove_current_element(self):
-        if not self.current_recoil_element:
+        if not self.current_element_simulation:
             return
         confirm_box = QtWidgets.QMessageBox()
         confirm_box.setIcon(QtWidgets.QMessageBox.Warning)
@@ -503,7 +407,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 .get_element_simulation_with_radio_button(
                 self.radios.checkedButton())
             self.remove_element(element_simulation)
-            self.current_recoil_element = None
+            self.current_element_simulation = None
             self.parent_ui.elementInfoWidget.hide()
             self.update_plot()
         else:
@@ -513,12 +417,19 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         for layer in self.target.layers:
             for layer_element in layer.elements:
                 already_exists = False
-                for existing_element_simulation in \
-                        self.element_manager.element_simulations:
-                    if layer_element == existing_element_simulation \
-                            .recoil_element.element:
-                        already_exists = True
-                        break
+
+                for existing_element_simulation \
+                        in self.element_manager.element_simulations:
+
+                    for recoil_element \
+                            in existing_element_simulation.recoil_elements:
+
+                        if layer_element.isotope \
+                                == recoil_element.element.isotope \
+                                and layer_element.symbol \
+                                == recoil_element.element.symbol:
+                            already_exists = True
+                            break
                 if not already_exists:
                     self.add_element(layer_element)
 
@@ -527,17 +438,25 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         self.axes.clear()  # Clear old stuff
 
-        self.axes.set_ylabel(self.name_y_axis.title())
-        self.axes.set_xlabel(self.name_x_axis.title())
+        self.axes.set_ylabel(self.name_y_axis)
+        self.axes.set_xlabel(self.name_x_axis)
 
-        if self.current_recoil_element:
-            self.lines, = self.axes.plot(self.current_recoil_element.get_xs(),
-                                         self.current_recoil_element.get_ys(),
-                                         color="blue")
-            self.markers, = self.axes.plot(self.current_recoil_element.get_xs(),
-                                           self.current_recoil_element.get_ys(),
-                                           color="blue", marker="o",
-                                           markersize=10, linestyle="None")
+        if self.current_element_simulation:
+            self.lines, = self.axes.plot(
+                self.current_element_simulation
+                    .get_xs(self.current_element_simulation.recoil_elements[0]),
+                self.current_element_simulation
+                    .get_ys(self.current_element_simulation.recoil_elements[0]),
+                color="blue")
+
+            self.markers, = self.axes.plot(
+                self.current_element_simulation
+                    .get_xs(self.current_element_simulation.recoil_elements[0]),
+                self.current_element_simulation
+                    .get_ys(self.current_element_simulation.recoil_elements[0]),
+                color="blue", marker="o",
+                markersize=10, linestyle="None")
+
             self.markers_selected, = self.axes.plot(0, 0, marker="o",
                                                     markersize=10,
                                                     linestyle="None",
@@ -554,13 +473,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                                     color='yellow',
                                                     visible=False)
 
-        # self.text_axes = self.fig.add_axes([0.8, 0.05, 0.1, 0.075])
-        # self.text_box = TextBox(self.text_axes, 'Coordinates', initial="Testi")
-
         self.axes.set_xlim(-1, 40)
         self.axes.set_ylim(-0.1, 2)
-        # self.text = self.fig.text(0.1, 0.9, "Selected point coordinates:",
-        #                           transform=self.fig.transFigure, va="top", ha="left")
 
         # Remove axis ticks and draw
         self.remove_axes_ticks()
@@ -643,9 +557,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         x = self.x_coordinate_box.value()
         leftmost_sel_point = self.selected_points[0]
-        left_neighbor = self.current_recoil_element.get_left_neighbor(
+        left_neighbor = self.current_element_simulation.get_left_neighbor(
+            self.current_element_simulation.recoil_elements[0],
             leftmost_sel_point)
-        right_neighbor = self.current_recoil_element.get_right_neighbor(
+        right_neighbor = self.current_element_simulation.get_right_neighbor(
+            self.current_element_simulation.recoil_elements[0],
             leftmost_sel_point)
 
         # Can't move past neighbors. If tried, sets x coordinate to
@@ -661,7 +577,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             else:
                 leftmost_sel_point.set_x(left_neighbor.get_x() + self.x_res)
         elif left_neighbor.get_x() < x < right_neighbor.get_x():
-                leftmost_sel_point.set_x(x)
+            leftmost_sel_point.set_x(x)
         elif left_neighbor.get_x() >= x:
             leftmost_sel_point.set_x(left_neighbor.get_x() + self.x_res)
         elif right_neighbor.get_x() <= x:
@@ -683,7 +599,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
-        if not self.current_recoil_element:
+        if not self.current_element_simulation:
             return
         # Don't do anything if drag tool or zoom tool is active.
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
@@ -695,7 +611,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             marker_contains, marker_info = self.markers.contains(event)
             if marker_contains:  # If clicked a point
                 i = marker_info['ind'][0]  # The clicked point's index
-                clicked_point = self.current_recoil_element.get_point_by_i(i)
+                clicked_point = \
+                    self.current_element_simulation.get_point_by_i(
+                        self.current_element_simulation.recoil_elements[0], i)
                 if clicked_point not in self.selected_points:
                     self.selected_points = [clicked_point]
                 self.dragged_points.extend(self.selected_points)
@@ -736,7 +654,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                              for i in range(0, len(self.dragged_points) - 1)]
         self.lowest_dr_p_i = 0
         for i in range(1, len(self.dragged_points)):
-            if self.dragged_points[i].get_y()\
+            if self.dragged_points[i].get_y() \
                     < self.dragged_points[self.lowest_dr_p_i].get_y():
                 self.lowest_dr_p_i = i
         self.y_dist_lowest = [self.dragged_points[i].get_y()
@@ -747,13 +665,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """Adds a point if there is space for it.
         Returns the point if a point was added, None if not.
         """
-        if not self.current_recoil_element:
+        if not self.current_element_simulation:
             return
         new_point = Point(coords)
-        self.current_recoil_element.add_point(new_point)
-        left_neighbor_x = self.current_recoil_element.get_left_neighbor(
+        self.current_element_simulation.add_point(
+            self.current_element_simulation.recoil_elements[0], new_point)
+        left_neighbor_x = self.current_element_simulation.get_left_neighbor(
+            self.current_element_simulation.recoil_elements[0],
             new_point).get_x()
-        right_neighbor_x = self.current_recoil_element.get_right_neighbor(
+        right_neighbor_x = self.current_element_simulation.get_right_neighbor(
+            self.current_element_simulation.recoil_elements[0],
             new_point).get_x()
 
         error = False
@@ -773,7 +694,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 new_point.set_x(right_neighbor_x - self.x_res)
 
         if error:
-            self.current_recoil_element.remove_point(new_point)
+            self.current_element_simulation.remove_point(
+                self.current_element_simulation.recoil_elements[0], new_point)
             # TODO: Add an error message text label
             print("Can't add a point here. There is no space for it.")
             return None
@@ -782,17 +704,23 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
     def update_plot(self):
         """ Updates marker and line data and redraws the plot. """
-        if not self.current_recoil_element:
+        if not self.current_element_simulation:
             self.markers.set_visible(False)
             self.lines.set_visible(False)
             self.markers_selected.set_visible(False)
             self.fig.canvas.draw_idle()
             return
 
-        self.markers.set_data(self.current_recoil_element.get_xs(),
-                              self.current_recoil_element.get_ys())
-        self.lines.set_data(self.current_recoil_element.get_xs(),
-                            self.current_recoil_element.get_ys())
+        self.markers.set_data(self.current_element_simulation.get_xs(
+            self.current_element_simulation.recoil_elements[0]),
+            self.current_element_simulation.get_ys(
+                self.current_element_simulation.recoil_elements[
+                    0]))
+        self.lines.set_data(self.current_element_simulation.get_xs(
+            self.current_element_simulation.recoil_elements[0]),
+            self.current_element_simulation.get_ys(
+                self.current_element_simulation.recoil_elements[
+                    0]))
 
         self.markers.set_visible(True)
         self.lines.set_visible(True)
@@ -806,7 +734,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 selected_ys.append(point.get_y())
             self.markers_selected.set_data(selected_xs, selected_ys)
             if self.selected_points[0] == \
-                    self.current_recoil_element.get_points()[-1]\
+                    self.current_element_simulation.recoil_elements[
+                        0].get_points()[-1] \
                     and self.edit_lock_on:
                 self.x_coordinate_box.setEnabled(False)
             else:
@@ -818,8 +747,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             #                                     self.selected_points[0].get_coordinates()[1]))
         else:
             self.markers_selected.set_data(
-                self.current_recoil_element.get_xs(),
-                self.current_recoil_element.get_ys())
+                self.current_element_simulation.get_xs(
+                    self.current_element_simulation.recoil_elements[0]),
+                self.current_element_simulation.get_ys(
+                    self.current_element_simulation.recoil_elements[0]))
             self.markers_selected.set_visible(False)
             self.x_coordinate_box.setEnabled(False)
             self.y_coordinate_box.setEnabled(False)
@@ -842,6 +773,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # Move the position where the next layer starts.
             next_layer_position += layer.thickness
 
+        self.axes.set_xlim(0, next_layer_position + 3)
         self.fig.canvas.draw_idle()
 
     def on_motion(self, event):
@@ -850,7 +782,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
-        if not self.current_recoil_element:
+        if not self.current_element_simulation:
             return
         # Don't do anything if drag tool or zoom tool is active.
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
@@ -869,7 +801,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         new_coords = self.get_new_checked_coordinates(event)
 
         for i in range(0, len(dr_ps)):
-            if dr_ps[i] == self.current_recoil_element.get_points()[-1] \
+            if dr_ps[i] == self.current_element_simulation.recoil_elements[
+                0].get_points()[-1] \
                     and self.edit_lock_on:
                 dr_ps[i].set_y(new_coords[i][1])
             else:
@@ -885,10 +818,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         leftmost_dr_p = dr_ps[0]
         rightmost_dr_p = dr_ps[-1]
-        left_neighbor = self.current_recoil_element.get_left_neighbor(
-            leftmost_dr_p)
-        right_neighbor = self.current_recoil_element.get_right_neighbor(
-            rightmost_dr_p)
+        left_neighbor = self.current_element_simulation.get_left_neighbor(
+            self.current_element_simulation.recoil_elements[0], leftmost_dr_p)
+        right_neighbor = self.current_element_simulation.get_right_neighbor(
+            self.current_element_simulation.recoil_elements[0], rightmost_dr_p)
 
         new_coords = self.get_new_unchecked_coordinates(event)
         new_x_left = new_coords[0][0]
@@ -901,23 +834,23 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if new_coords[-1][0] >= right_neighbor.get_x() - self.x_res:
                 new_coords[-1][0] = right_neighbor.get_x() - self.x_res
                 for i in range(0, len(dr_ps) - 1):
-                    new_coords[i][0] = right_neighbor.get_x()\
+                    new_coords[i][0] = right_neighbor.get_x() \
                                        - self.x_res - self.x_dist_right[i]
         elif right_neighbor is None and left_neighbor is not None:
             if new_coords[0][0] <= left_neighbor.get_x() + self.x_res:
                 new_coords[0][0] = left_neighbor.get_x() + self.x_res
                 for i in range(1, len(dr_ps)):
-                    new_coords[i][0] = left_neighbor.get_x() + self.x_res\
+                    new_coords[i][0] = left_neighbor.get_x() + self.x_res \
                                        + self.x_dist_left[i - 1]
         elif left_neighbor.get_x() + self.x_res >= new_coords[0][0]:
             new_coords[0][0] = left_neighbor.get_x() + self.x_res
             for i in range(1, len(dr_ps)):
-                new_coords[i][0] = left_neighbor.get_x() + self.x_res\
+                new_coords[i][0] = left_neighbor.get_x() + self.x_res \
                                    + self.x_dist_left[i - 1]
         elif right_neighbor.get_x() - self.x_res <= new_coords[-1][0]:
             new_coords[-1][0] = right_neighbor.get_x() - self.x_res
             for i in range(0, len(dr_ps) - 1):
-                new_coords[i][0] = right_neighbor.get_x() - self.x_res\
+                new_coords[i][0] = right_neighbor.get_x() - self.x_res \
                                    - self.x_dist_right[i]
 
         # Check for axis limit collisions:
@@ -958,15 +891,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """Removes all selected points, but not if there would be
         less than two points left.
         """
-        if not self.current_recoil_element:
+        if not self.current_element_simulation:
             return
-        if len(self.current_recoil_element.get_points()) - \
+        if len(self.current_element_simulation.recoil_elements[
+                   0].get_points()) - \
                 len(self.selected_points) < 2:
             # TODO: Add an error message text label
             print("There must always be at least two points")
         else:
             for sel_point in self.selected_points:
-                self.current_recoil_element.remove_point(sel_point)
+                self.current_element_simulation.remove_point(
+                    self.current_element_simulation.recoil_elements[0],
+                    sel_point)
             self.selected_points.clear()
             self.update_plot()
 
@@ -976,7 +912,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Args:
             event: A MPL MouseEvent
         """
-        if not self.current_recoil_element:
+        if not self.current_element_simulation:
             return
         # Don't do anything if drag tool or zoom tool is active.
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
@@ -986,82 +922,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.update_plot()
 
     def on_span_select(self, xmin, xmax):
-        if not self.current_recoil_element:
+        if not self.current_element_simulation:
             return
         sel_points = []
-        for point in self.current_recoil_element.get_points():
+        for point in self.current_element_simulation.recoil_elements[
+            0].get_points():
             if xmin <= point.get_x() <= xmax:
                 sel_points.append(point)
         self.selected_points = sel_points
         self.update_plot()
-
-
-class SimulationControlsWidget(QtWidgets.QWidget):
-    """Class for creating simulation controls widget for the element simulation.
-
-    Args:
-        element_simulation: ElementSimulation object.
-    """
-
-    def __init__(self, element_simulation):
-        super().__init__()
-
-        self.element_simulation = element_simulation
-
-        main_layout = QtWidgets.QHBoxLayout()
-
-        controls_group_box = QtWidgets.QGroupBox(self.element_simulation.name)
-        controls_group_box.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
-                                         QtWidgets.QSizePolicy.Preferred)
-
-        state_layout = QtWidgets.QHBoxLayout()
-        state_layout.addWidget(QtWidgets.QLabel("State: "))
-        self.state_label = QtWidgets.QLabel("Not started")
-        state_layout.addWidget(self.state_label)
-        state_widget = QtWidgets.QWidget()
-        state_widget.setLayout(state_layout)
-
-        controls_layout = QtWidgets.QHBoxLayout()
-        run_button = QtWidgets.QPushButton("Start")
-        run_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                 QtWidgets.QSizePolicy.Fixed)
-        run_button.clicked.connect(self.__start_simulation)
-        stop_button = QtWidgets.QPushButton("Stop")
-        stop_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                  QtWidgets.QSizePolicy.Fixed)
-        stop_button.clicked.connect(self.__stop_simulation)
-        controls_layout.addWidget(run_button)
-        controls_layout.addWidget(stop_button)
-        controls_widget = QtWidgets.QWidget()
-        controls_widget.setLayout(controls_layout)
-
-        processes_layout = QtWidgets.QFormLayout()
-        processes_label = QtWidgets.QLabel("No. of processes: ")
-        processes_spinbox = QtWidgets.QSpinBox()
-        processes_spinbox.setToolTip("Number of processes used in simulation")
-        processes_layout.addRow(processes_label, processes_spinbox)
-        processes_widget = QtWidgets.QWidget()
-        processes_widget.setLayout(processes_layout)
-
-        state_and_controls_layout = QtWidgets.QVBoxLayout()
-        state_and_controls_layout.addWidget(processes_widget)
-        state_and_controls_layout.addWidget(state_widget)
-        state_and_controls_layout.addWidget(controls_widget)
-
-        controls_group_box.setLayout(state_and_controls_layout)
-
-        main_layout.addWidget(controls_group_box)
-
-        self.setLayout(main_layout)
-
-    def __start_simulation(self):
-        """ Calls ElementSimulation's start method.
-        """
-        self.element_simulation.start()
-        self.state_label.setText("Running")
-
-    def __stop_simulation(self):
-        """ Calls ElementSimulation's stop method.
-        """
-        self.element_simulation.stop()
-        self.state_label.setText("Stopped")

@@ -2,7 +2,7 @@
 # TODO: Add licence information
 """
 Created on 27.3.2018
-Updated on 11.5.2018
+Updated on 13.5.2018
 """
 
 import datetime
@@ -28,8 +28,8 @@ class Target:
                 "image_size", "image_file", "scattering_element", "layers", \
                 "target_theta"
 
-    def __init__(self, name="", modification_time=time.time(), description="",
-                 target_type="AFM", image_size=(1024, 1024),
+    def __init__(self, name="Default", modification_time=time.time(),
+                 description="", target_type="AFM", image_size=(1024, 1024),
                  image_file="", scattering_element=Element.from_string(
                 "4He 3.0"), target_theta=70.0, layers=[]):
         """Initialize a target.
@@ -93,10 +93,12 @@ class Target:
                                 layer["thickness"],
                                 layer["density"]))
 
-        if measurement_file_path.endswith(".measurement"):
+        try:
             obj = json.load(open(measurement_file_path))
             target_theta = obj["geometry"]["target_theta"]
-        else:
+        # If keys do not exist or measurement_file_path is empty or file
+        # doesn't exist:
+        except (KeyError, IsADirectoryError, FileNotFoundError):
             target_theta = request.default_target.target_theta
 
         return cls(name=name, description=description,

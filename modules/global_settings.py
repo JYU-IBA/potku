@@ -1,13 +1,13 @@
 # coding=utf-8
-'''
+"""
 Created on 29.4.2013
-Updated on 14.8.2013
+Updated on 25.5.2018
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
 Miika Raunio
 
 This program is free software; you can redistribute it and/or
@@ -22,21 +22,23 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
+"""
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
+             "Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
-from os import makedirs, path, listdir
-import configparser, re, os
+import configparser
+import os
+from os import makedirs, path
 
 
 class GlobalSettings:
-    '''Global settings class to handle software settings.
-    '''
+    """Global settings class to handle software settings.
+    """
 
     def __init__(self):
-        '''Inits GLobalSettings class.
-        '''
+        """Inits GlobalSettings class.
+        """
         self.__config_directory = path.join(path.expanduser("~"), "potku")
         self.__config_file = path.join(self.__config_directory, "potku.ini")
         self.__config = configparser.ConfigParser()
@@ -170,24 +172,26 @@ class GlobalSettings:
         self.__flags_cross_section = {1: "Rutherford", 2: "L'Ecuyer",
                                       3: "Andersen"}
 
-        self.__set_defaults()
         if not path.exists(self.__config_file):
+            self.__set_defaults()
+            # Set default request directory
+            self.set_request_directory(self.__request_directory)
             self.save_config()
         else:
             self.__load_config()
 
     def __make_directories(self, directory):
-        '''Make directories if it doesn't exist.
-        
+        """Make directories if it doesn't exist.
+
         Args:
             directory: A string representing a directory.
-        '''
+        """
         if not path.exists(directory):
             makedirs(directory)
 
     def __set_defaults(self):
-        '''Set settings to default values.
-        '''
+        """Set settings to default values.
+        """
         self.__config.add_section("default")
         self.__config.add_section("colors")
         self.__config.add_section("import_timing")
@@ -221,341 +225,344 @@ class GlobalSettings:
         self.__config.set("tof-e_graph", "compression_y", "10")
 
     def __load_config(self):
-        '''Load old settings and set values.
-        '''
+        """Load old settings and set values.
+        """
         self.__config.read(self.__config_file)
 
     def save_config(self):
-        '''Save current global settings.
-        '''
+        """Save current global settings.
+        """
         with open(self.__config_file, 'wt+') as configfile:
             self.__config.write(configfile)
 
     def get_request_directory(self):
-        '''Get default request directory.
-        '''
+        """Get default request directory.
+        """
         return self.__config["default"]["request_directory"]
 
     def set_request_directory(self, directory):
-        '''Save default request directory.
-        
+        """Save default request directory.
+
         Args:
             directory: String representing folder where requests will be saved
             by default.
-        '''
+        """
         folders = directory.split("/")
         os_dir = os.sep.join(folders)
         self.__config["default"]["request_directory"] = os_dir
         self.save_config()
 
     def get_request_directory_last_open(self):
-        '''Get directory where last request was opened.
-        '''
+        """Get directory where last request was opened.
+        """
         return self.__config["default"]["request_directory_last_open"]
 
     def set_request_directory_last_open(self, directory):
-        '''Save last opened request directory.
-        
+        """Save last opened request directory.
+
         Args:
             directory: String representing request folder.
-        '''
+        """
         folders = directory.split("/")
         os_dir = os.sep.join(folders)
         self.__config["default"]["request_directory_last_open"] = os_dir
         self.save_config()
 
     def get_element_colors(self):
-        '''Get all elements' colors.
-        
+        """Get all elements' colors.
+
         Return:
             Returns a dictionary of elements' colors.
-        '''
+        """
         return self.__config["colors"]
 
     def get_element_color(self, element):
-        '''Get a specific element's color.
-        
+        """Get a specific element's color.
+
         Args:
             element: String representing element name.
-            
+
         Return:
-            Returns a color (string) for a specific element. 
-        '''
+            Returns a color (string) for a specific element.
+        """
         return self.__config["colors"][element]
 
     def set_element_color(self, element, color):
-        '''Set default color for an element.
-        
+        """Set default color for an element.
+
         Args:
             element: String representing element.
             color: String representing color.
-        '''
+        """
         self.__config["colors"][element] = color
 
     def get_import_timing(self, adc):
-        '''Get coincidence timings for specific ADC.
-        
+        """Get coincidence timings for specific ADC.
+
         Args:
-            ADC: An integer representing ADC channel.
-            
+            adc: An integer representing ADC channel.
+
         Return:
             Returns low & high values for coincidence timing.
-        '''
+        """
         try:
             return self.__config["import_timing"][str(adc)].split(',')
         except:  # Default if doesn't exist.
             return (-1000, 1000)
 
     def set_import_timing(self, adc, low, high):
-        '''Set coincidence timings for specific ADC.
-        
+        """Set coincidence timings for specific ADC.
+
         Args:
-            ADC: An integer representing ADC channel.
+            adc: An integer representing ADC channel.
             low: An integer representing timing low value.
             high: An integer representing timing high value.
-        '''
+        """
         if high < low:  # Quick fix just in case
             low, high = high, low
         self.__config["import_timing"][str(adc)] = "{0},{1}".format(low, high)
 
     def get_import_coinc_count(self):
-        '''Get how many coincidences will be collected for timing preview.
-            
+        """Get how many coincidences will be collected for timing preview.
+
         Return:
             Returns an integer representing coincidence count.
-        '''
+        """
         try:
             return int(self.__config["default"]["preview_coincidence_count"])
         except:  # Default if doesn't exist.
             return 10000
 
     def set_import_coinc_count(self, count):
-        '''Set coincidence timings for specific ADC.
-        
+        """Set coincidence timings for specific ADC.
+
         Args:
             count: An integer representing coincidence count.
-        '''
+        """
         self.__config["default"]["preview_coincidence_count"] = str(count)
 
     def get_cross_sections_text(self):
-        '''Get cross sections flag as text.
-        
+        """Get cross sections flag as text.
+
         Return:
             Returns the cross sections flag as string
-        '''
+        """
         return self.__flags_cross_section[self.get_cross_sections()]
 
     def get_cross_sections(self):
-        '''Get cross section model to be used in depth profile.
-            
+        """Get cross section model to be used in depth profile.
+
         Return:
             Returns an integer representing cross sections flag.
-        '''
+        """
         try:
             return int(self.__config["depth_profile"]["cross_section"])
         except:  # Default if doesn't exist.
             return 1
 
     def set_cross_sections(self, flag):
-        '''Set cross sections used in depth profile to settings.
-        
+        """Set cross sections used in depth profile to settings.
+
         Args:
             flag: An integer representing cross sections flag.
-        '''
+        """
         self.__config["depth_profile"]["cross_section"] = str(flag)
 
     def is_es_output_saved(self):
-        '''Is Energy Spectrum output saved or not.
-            
+        """Is Energy Spectrum output saved or not.
+
         Return:
             Returns a boolean representing will Potku save output or not.
-        '''
-        try:
-            return self.__config["default"]["es_output"] == "True"
-        except:  # Default if doesn't exist.
-            return False
+        """
+        # try:
+        #     return self.__config["default"]["es_output"] == "True"
+        # except:  # Default if doesn't exist.
+        #     return False
+
+        # We want to always save energy spectra.
+        return True
 
     def set_es_output_saved(self, flag):
-        '''Set whether Energy Spectrum output is saved or not.
-        
+        """Set whether Energy Spectrum output is saved or not.
+
         Args:
             flag: A boolean representing will Potku save output or not.
-        '''
+        """
         self.__config["default"]["es_output"] = str(flag)
 
     def get_tofe_transposed(self):
-        '''Get boolean if the ToF-E Histogram is transposed.
-            
+        """Get boolean if the ToF-E Histogram is transposed.
+
         Return:
             Returns a boolean if the ToF-E Histogram is transposed.
-        '''
+        """
         return self.__config["tof-e_graph"]["transpose"] == "True"
 
     def set_tofe_transposed(self, value):
-        '''Set if ToF-E histogram is transposed.
-        
+        """Set if ToF-E histogram is transposed.
+
         Args:
-            value: A boolean representing if the ToF-E Histogram's X axis 
+            value: A boolean representing if the ToF-E Histogram's X axis
                    is inverted.
-        '''
+        """
         self.__config["tof-e_graph"]["transpose"] = str(str(value) == "True")
 
     def get_tofe_invert_x(self):
-        '''Get boolean if the ToF-E Histogram's X axis is inverted.
-            
+        """Get boolean if the ToF-E Histogram's X axis is inverted.
+
         Return:
             Returns a boolean if the ToF-E Histogram's X axis is inverted.
-        '''
+        """
 
         return self.__config["tof-e_graph"]["invert_x"] == "True"
 
     def set_tofe_invert_x(self, value):
-        '''Set if ToF-E histogram's X axis inverted.
-        
+        """Set if ToF-E histogram's X axis inverted.
+
         Args:
-            value: A boolean representing if the ToF-E Histogram's X axis 
+            value: A boolean representing if the ToF-E Histogram's X axis
                    is inverted.
-        '''
+        """
         self.__config["tof-e_graph"]["invert_x"] = str(str(value) == "True")
 
     def get_tofe_invert_y(self):
-        '''Get boolean if the ToF-E Histogram's Y axis is inverted.
-            
+        """Get boolean if the ToF-E Histogram's Y axis is inverted.
+
         Return:
             Returns a boolean if the ToF-E Histogram's Y axis is inverted.
-        '''
+        """
         return self.__config["tof-e_graph"]["invert_y"] == "True"
 
     def set_tofe_invert_y(self, value):
-        '''Set if ToF-E histogram's Y axis inverted.
-        
+        """Set if ToF-E histogram's Y axis inverted.
+
         Args:
-            value: A boolean representing if the ToF-E Histogram's Y axis 
+            value: A boolean representing if the ToF-E Histogram's Y axis
                    is inverted.
-        '''
+        """
         self.__config["tof-e_graph"]["invert_y"] = str(str(value) == "True")
 
     def set_num_iterations(self, value):
-        '''Get the number of iterations erd_depth is to perform
+        """Get the number of iterations erd_depth is to perform
 
         Return:
             Returns the number. As an integer.
-        '''
+        """
         self.__config["depth_profile"]["num_iter"] = str(value)
 
     def get_num_iterations(self):
-        '''Set the number of iterations erd_depth is to perform
+        """Set the number of iterations erd_depth is to perform
 
         Args:
             value: An integer
-        '''
+        """
         try:
             return int(self.__config["depth_profile"]["num_iter"])
         except:  # Default
             return 3
 
     def get_tofe_color(self):
-        '''Get color of the ToF-E Histogram.
-            
+        """Get color of the ToF-E Histogram.
+
         Return:
             Returns a string representing ToF-E histogram color scheme.
-        '''
+        """
         return self.__config["tof-e_graph"]["color_scheme"]
 
     def set_tofe_color(self, value):
-        '''Set  color of the ToF-E Histogram.
-        
+        """Set  color of the ToF-E Histogram.
+
         Args:
             value: A string representing ToF-E histogram color scheme.
-        '''
+        """
         self.__config["tof-e_graph"]["color_scheme"] = str(value)
 
     def get_tofe_bin_range_mode(self):
-        '''Get ToF-E Histogram bin range mode.
-            
+        """Get ToF-E Histogram bin range mode.
+
         Return:
             Returns an integer representing ToF-E histogram bin range mode.
-        '''
+        """
         return int(self.__config["tof-e_graph"]["bin_range_mode"])
 
     def set_tofe_bin_range_mode(self, value):
-        '''Set ToF-E Histogram bin range automatic or manual.
-        
+        """Set ToF-E Histogram bin range automatic or manual.
+
         Args:
-            value: An integer representing the mode. 
+            value: An integer representing the mode.
                    Automatic = 0
                    Manual = 1
-        '''
+        """
         self.__config["tof-e_graph"]["bin_range_mode"] = str(value)
 
     def get_tofe_bin_range_x(self):
-        '''Get ToF-E Histogram X axis bin range.
-            
+        """Get ToF-E Histogram X axis bin range.
+
         Return:
             Returns an integer representing ToF-E histogram X axis bin range.
-        '''
+        """
         rmin = int(self.__config["tof-e_graph"]["bin_range_x_min"])
         rmax = int(self.__config["tof-e_graph"]["bin_range_x_max"])
         return rmin, rmax
 
     def set_tofe_bin_range_x(self, value_min, value_max):
-        '''Set ToF-E Histogram X axis bin range.
-        
+        """Set ToF-E Histogram X axis bin range.
+
         Args:
             value_min: An integer representing the axis range minimum.
             value_max: An integer representing the axis range maximum.
-        '''
+        """
         self.__config["tof-e_graph"]["bin_range_x_min"] = str(value_min)
         self.__config["tof-e_graph"]["bin_range_x_max"] = str(value_max)
 
     def get_tofe_bin_range_y(self):
-        '''Get ToF-E Histogram Y axis bin range.
-            
+        """Get ToF-E Histogram Y axis bin range.
+
         Return:
             Returns an integer representing ToF-E histogram Y axis bin range.
-        '''
+        """
         rmin = int(self.__config["tof-e_graph"]["bin_range_y_min"])
         rmax = int(self.__config["tof-e_graph"]["bin_range_y_max"])
         return rmin, rmax
 
     def set_tofe_bin_range_y(self, value_min, value_max):
-        '''Set ToF-E Histogram Y axis bin range.
-        
+        """Set ToF-E Histogram Y axis bin range.
+
         Args:
             value_min: An integer representing the axis range minimum.
             value_max: An integer representing the axis range maximum.
-        '''
+        """
         self.__config["tof-e_graph"]["bin_range_y_min"] = str(value_min)
         self.__config["tof-e_graph"]["bin_range_y_max"] = str(value_max)
 
     def get_tofe_compression_x(self):
-        '''Get ToF-E Histogram X axis compression.
-            
+        """Get ToF-E Histogram X axis compression.
+
         Return:
             Returns an integer representing ToF-E histogram Y axis compression.
-        '''
+        """
         return int(self.__config["tof-e_graph"]["compression_x"])
 
     def set_tofe_compression_x(self, value):
-        '''Set ToF-E Histogram X axis compression.
-        
+        """Set ToF-E Histogram X axis compression.
+
         Args:
             value: An integer representing the axis compression.
-        '''
+        """
         self.__config["tof-e_graph"]["compression_x"] = str(value)
 
     def get_tofe_compression_y(self):
-        '''Get ToF-E Histogram Y axis compression.
-            
+        """Get ToF-E Histogram Y axis compression.
+
         Return:
             Returns an integer representing ToF-E histogram Y axis compression.
-        '''
+        """
         return int(self.__config["tof-e_graph"]["compression_y"])
 
     def set_tofe_compression_y(self, value):
-        '''Set ToF-E Histogram Y axis compression.
-        
+        """Set ToF-E Histogram Y axis compression.
+
         Args:
             value: An integer representing the axis compression.
-        '''
+        """
         self.__config["tof-e_graph"]["compression_y"] = str(value)
