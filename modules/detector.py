@@ -54,16 +54,16 @@ class Detector:
                  description="This a default detector setting file.",
                  modification_time=time.time(), type="TOF",
                  calibration=CalibrationParameters(), foils=[CircularFoil(
-                "Default", 7.0, 256.0, [Layer("First", [Element("C", 12.011,
+                "Foil1", 7.0, 256.0, [Layer("Layer_12C", [Element("C", 12.011,
                                                                 1)], 0.1,
                                               2.25)]), CircularFoil(
-                "Default", 9.0, 319.0, [Layer("Second", [Element("C", 12.011,
+                "Foil2", 9.0, 319.0, [Layer("Layer_12C", [Element("C", 12.011,
                                                                  1)], 13.3,
                                               2.25)]), CircularFoil(
-                "Default", 18.0, 942.0, [Layer("Third", [Element("C", 12.011,
+                "Foil3", 18.0, 942.0, [Layer("Layer_12C", [Element("C", 12.011,
                                                                  1)], 44.4,
                                                2.25)]), RectangularFoil(
-                "Default", 14.0, 14.0, 957.0, [Layer("Fourth", [Element(
+                "Foil4", 14.0, 14.0, 957.0, [Layer("Layer_28Si", [Element(
                     "N", 14.00, 0.57), Element("Si", 28.09, 0.43)], 1.0,
                                                      3.44)])], tof_foils=[
                 1, 2], virtual_size=(2.0, 5.0), tof_slope=1e-11,
