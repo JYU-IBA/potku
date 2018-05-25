@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.3.2013
-Updated on 24.5.2018
+Updated on 25.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -23,8 +23,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
-             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
+             "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
 import os
@@ -36,7 +37,8 @@ class CutFile:
     """
     Cut file_path object for when reading cut files is necessary.
     """
-    def __init__(self, directory=None, elem_loss=False, weight_factor=1.0, split_number=0, split_count=1):
+    def __init__(self, directory=None, elem_loss=False, weight_factor=1.0,
+                 split_number=0, split_count=1):
         """ Inits cut file_path object.
         
         Args:
@@ -44,8 +46,8 @@ class CutFile:
             elem_loss: Boolean representing whether cut file_path is made from
                        elemental losses splits.
             weight_factor: Float representing element weight factor. 
-            split_number: Integer. Required for Elemental Losses, do not overwrite
-                          splits.
+            split_number: Integer. Required for Elemental Losses, do not
+            overwrite splits.
             split_count: Integer. Required for Elemental Losses, total count of 
                          splits.
         """
@@ -137,31 +139,40 @@ class CutFile:
         Saves data points into cut file_path with meta information.
         
         Args:
-            element_count: Integer representing which selection was used of total
-                           count of same element and isotope selection. This is so
-                           that we do not overwrite first 2H selection with other
-                           2H selection.
+            element_count: Integer representing which selection was used of
+            total count of same element and isotope selection. This is so
+            that we do not overwrite first 2H selection with other
+            2H selection.
         """
-        if self.element and self.directory and self.data:
-            measurement_name_with_prefix = str(pathlib.Path(self.directory).parents[1])
+        if self.element_scatter != "":
+            element = self.element_scatter
+        else:
+            element = self.element
+        if element and self.directory and self.data:
+            measurement_name_with_prefix = \
+                str(pathlib.Path(self.directory).parents[1])
             # First "-" is in sample name, second in measurement name
             measurement_name_start = measurement_name_with_prefix.find(
                 "-", measurement_name_with_prefix.find("-") + 1)
-            measurement_name = measurement_name_with_prefix[measurement_name_start + 1:]
+            measurement_name = \
+                measurement_name_with_prefix[measurement_name_start + 1:]
             if self.is_elem_loss:
                 if not os.path.exists(self.directory):
                     os.makedirs(self.directory)
-                file = os.path.join(self.directory, "{0}.{1}.{2}.{3}.cut".format(
-                                                 measurement_name,
-                                                 self.element,
-                                                 element_count, self.split_number))
+                file = os.path.join(self.directory,
+                                    "{0}.{1}.{2}.{3}.cut".format(
+                                        measurement_name,
+                                        element,
+                                        element_count, self.split_number))
             else:
                 if not os.path.exists(self.directory):
                     os.makedirs(self.directory)
-                while True:  # Has to run until file that doesn't exist is found.
-                    file = os.path.join(self.directory, "{0}.{1}.{2}.cut".format(
-                                                 measurement_name,
-                                                 self.element, element_count))
+                # Has to run until file that doesn't exist is found.
+                while True:
+                    file = os.path.join(self.directory,
+                                        "{0}.{1}.{2}.cut".format(
+                                            measurement_name,
+                                            element, element_count))
                     try:
                         # Using of os.path is not allowed here. 
                         # http://stackoverflow.com/questions/82831/
@@ -206,7 +217,8 @@ class CutFile:
         while split < splits and row_index < self_size:
             # Get last event number in first split
             max_event = reference_cut.data[((split + 1) * split_size) - 1][-1]  
-            while row_index < self_size and self.data[row_index][-1] <= max_event:
+            while row_index < self_size and \
+                    self.data[row_index][-1] <= max_event:
                 cut_splits[split].append(self.data[row_index])
                 row_index += 1
             split += 1

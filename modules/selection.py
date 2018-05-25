@@ -546,7 +546,7 @@ class Selection:
         self.element = Element(element, isotope)
         self.weight_factor = weight_factor
         if scatter and scatter != "":
-            self.element_scatter = Element(scatter)
+            self.element_scatter = Element(scatter, isotope)
         else:
             self.element_scatter = ""
 
@@ -766,13 +766,25 @@ class Selection:
         """
         save_string = ""
         if self.element:
+            if self.element.symbol != "Select":
+                symbol = self.element.symbol
+            else:
+                symbol = ""
+            if self.element_scatter != "":
+                isotope = self.element_scatter.isotope
+                scatter_symbol = self.element_scatter.symbol
+            else:
+                isotope = self.element.isotope
+                scatter_symbol = ""
+            if isotope is None:
+                isotope = ""
             save_string = "{0}    {1}    {2}    {3}    {4}    {5}    {6}".\
                 format(
                     self.type,
-                    self.element.symbol,
-                    (str(self.element.isotope) if self.element.isotope else ""),
+                    symbol,
+                    isotope,
                     self.weight_factor,
-                    self.element_scatter,
+                    scatter_symbol,
                     self.default_color,
                     self.__save_points(is_transposed))
         return save_string
