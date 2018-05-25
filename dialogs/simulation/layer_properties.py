@@ -19,6 +19,7 @@ import modules.masses as masses
 import enum
 import random
 
+
 class LayerPropertiesDialog(QtWidgets.QDialog):
     """Dialog for adding a new layer or editing an existing one.
     """
@@ -36,9 +37,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         # example when user changes the text in line edit.
         self.__ui.nameEdit.textChanged.connect(
             lambda: self.__ui.nameEdit.setStyleSheet(""))
-        self.__ui.thicknessEdit.textChanged.connect(
+        self.__ui.thicknessEdit.valueChanged.connect(
             lambda: self.__ui.thicknessEdit.setStyleSheet(""))
-        self.__ui.densityEdit.textChanged.connect(
+        self.__ui.densityEdit.valueChanged.connect(
             lambda: self.__ui.densityEdit.setStyleSheet(""))
 
         # Connect buttons to events
@@ -47,6 +48,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.__ui.cancelButton.clicked.connect(self.close)
 
         self.__element_layouts = []
+        self.__add_element_layout()
 
         self.exec_()
 
@@ -78,7 +80,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             empty_fields.append("Elements")
 
         # Check if 'thicknessEdit' is empty.
-        if not self.__ui.thicknessEdit.text():
+        if not self.__ui.thicknessEdit.value():
             self.__ui.thicknessEdit.setStyleSheet(failed_style)
             empty_fields.append("Thickness")
 
@@ -119,8 +121,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         window.
         """
         name = self.__ui.nameEdit.text()
-        thickness = float(self.__ui.thicknessEdit.text())
-        density = float(self.__ui.densityEdit.text())
+        thickness = self.__ui.thicknessEdit.value()
+        density = self.__ui.densityEdit.value()
         elements = []
         children = self.__ui.scrollAreaWidgetContents.children()
 
@@ -157,11 +159,11 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.__element_layouts.append(ElementLayout(
             self.__ui.scrollAreaWidgetContents))
 
+
 class ElementLayout(QtWidgets.QHBoxLayout):
     # TODO: Add docstring and more comments.
 
     def __init__(self, parent):
-
         parent.parentWidget().setStyleSheet("")
 
         super().__init__()
@@ -173,12 +175,13 @@ class ElementLayout(QtWidgets.QHBoxLayout):
         self.isotope.setFixedWidth(120)
         self.isotope.setEnabled(False)
 
-        self.amount = QtWidgets.QLineEdit()
-        self.amount.setFixedWidth(76)
-        self.amount.setEnabled(False)
-        self.amount.textChanged.connect(lambda: self.amount.setStyleSheet(""))
+        self.amount_spinbox = QtWidgets.QDoubleSpinBox()
+        self.amount_spinbox.setEnabled(False)
+        self.amount_spinbox.valueChanged\
+            .connect(lambda: self.amount_spinbox.setStyleSheet(""))
 
-        self.delete_button = QtWidgets.QPushButton("X")
+        self.delete_button = QtWidgets.QPushButton("")
+        self.delete_button.setIcon(QtGui.QIcon("ui_icons/potku/del.png"))
         self.delete_button.setFixedWidth(28)
         self.delete_button.setFixedHeight(28)
 
@@ -187,7 +190,7 @@ class ElementLayout(QtWidgets.QHBoxLayout):
 
         self.addWidget(self.element)
         self.addWidget(self.isotope)
-        self.addWidget(self.amount)
+        self.addWidget(self.amount_spinbox)
         self.addWidget(self.delete_button)
         self.insertStretch(-1, 0)
         parent.layout().addLayout(self)
@@ -196,7 +199,7 @@ class ElementLayout(QtWidgets.QHBoxLayout):
         # TODO: Add docstring.
         self.element.deleteLater()
         self.isotope.deleteLater()
-        self.amount.deleteLater()
+        self.amount_spinbox.deleteLater()
         self.delete_button.deleteLater()
         self.deleteLater()
 
@@ -209,7 +212,7 @@ class ElementLayout(QtWidgets.QHBoxLayout):
             self.element.setText(dialog.element)
             self.__load_isotopes()
             self.isotope.setEnabled(True)
-            self.amount.setEnabled(True)
+            self.amount_spinbox.setEnabled(True)
 
     def __load_isotopes(self):
         # TODO: Change the path.
