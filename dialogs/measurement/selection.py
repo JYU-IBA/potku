@@ -246,8 +246,11 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         dialog = QtWidgets.QColorDialog(self)
         self.color = dialog.getColor(QtGui.QColor(self.color))
         if self.color.isValid():
-            self.__change_color_button_color(
-                self.ui.sample_element_button.text())
+            if self.selection.element_scatter != "":
+                element = self.selection.element_scatter.symbol
+            else:
+                element = self.ui.sample_element_button.text()
+            self.__change_color_button_color(element)
 
     def __change_color_button_color(self, element):
         """Change color button's color.
