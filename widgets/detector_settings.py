@@ -148,14 +148,12 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
 
     def _add_default_foils(self):
         """
-        Add dafault foils as widgets.
+        Add default foils as widgets.
 
         Return:
             Layout that holds the default foil widgets.
         """
         layout = QtWidgets.QHBoxLayout()
-        target = QtWidgets.QLabel("Target")
-        layout.addWidget(target)
 
         foils = self.obj.foils
         for i in range(len(foils)):
