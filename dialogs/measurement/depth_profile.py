@@ -57,15 +57,15 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.parent = parent
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_depth_profile_params.ui"), self)
-        self.measurement = parent.measurement
-        self.__statusbar = parent.measurement.statusbar
+        self.measurement = parent.obj
+        self.__statusbar = parent.obj.statusbar
         self.__global_settings = self.measurement.request.global_settings
         
         # Connect buttons
         self.ui.OKButton.clicked.connect(self.__accept_params)
         self.ui.cancelButton.clicked.connect(self.close)
 
-        m_name = self.parent.measurement.measurement_name
+        m_name = self.parent.obj.name
         if not m_name in DepthProfileDialog.checked_cuts.keys():
             DepthProfileDialog.checked_cuts[m_name] = []
         self.measurement.fill_cuts_treewidget(
@@ -122,7 +122,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
             # Get the filepaths of the selected items
             root = self.ui.treeWidget.invisibleRootItem()
             child_count = root.childCount()
-            m_name = self.parent.measurement.measurement_name
+            m_name = self.parent.obj.name
             DepthProfileDialog.checked_cuts[m_name].clear()
             for i in range(child_count): 
                 item = root.child(i)
@@ -137,7 +137,9 @@ class DepthProfileDialog(QtWidgets.QDialog):
                         item_child = item.child(j)
                         if item_child.checkState(0):
                             name = item_child.file_name
-                            dir_e = self.parent.measurement.directory_composition_changes
+                            dir_e = os.path.join(
+                                self.parent.obj
+                                    .directory_composition_changes, "Changes")
                             use_cut.append(os.path.join(dir_e, name))
                             element = Element.from_string(item_child.file_name.split(".")[1])
                             elements.append(element)
@@ -190,7 +192,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 print("No cuts have been selected for depth profile.")
         except Exception as e:
             error_log = "Unexpected error: {0}".format(e)
-            logging.getLogger(self.measurement.measurement_name).error(error_log)
+            logging.getLogger(self.measurement.name).error(error_log)
         finally:
             self.__statusbar.removeWidget(progress_bar)
             progress_bar.hide()
@@ -273,7 +275,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
             super().__init__()
             self.parent = parent
             self.icon_manager = parent.icon_manager
-            self.measurement = parent.measurement
+            self.measurement = parent.obj
             self.output_dir = output_dir
             self.elements = elements
             self.x_units = x_units
@@ -338,7 +340,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
             str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + traceback._some_str(sys.exc_info()[1]), err_file,
                                  str(sys.exc_info()[2].tb_lineno)])
             msg += str_err
-            logging.getLogger(self.measurement.measurement_name).error(msg)
+            logging.getLogger(self.measurement.name).error(msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
 
@@ -355,7 +357,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
         """Reimplemented method when closing widget.
         """
         self.parent.depth_profile_widget = Null()
-        file = os.path.join(self.parent.measurement.directory, self.save_file)
+        file = os.path.join(self.parent.obj.directory, self.save_file)
         try:
             if os.path.isfile(file):
                 os.unlink(file)
@@ -367,8 +369,8 @@ class DepthProfileWidget(QtWidgets.QWidget):
         """Save object information to file.
         """
         output_dir = self.output_dir.replace(
-                         self.parent.measurement.directory + "\\", "")
-        file = os.path.join(self.parent.measurement.directory_depth_profiles, self.save_file)
+                         self.parent.obj.directory + "\\", "")
+        file = os.path.join(self.parent.obj.directory_depth_profiles, self.save_file)
         fh = open(file, "wt")
         fh.write("{0}\n".format(output_dir))
         fh.write("{0}\n".format("\t".join([str(element)

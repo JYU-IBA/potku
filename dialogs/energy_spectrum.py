@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 10.4.2018
+Updated on 22.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -82,22 +82,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 EnergySpectrumParamsDialog.checked_cuts[m_name])
 
             self.__update_eff_files()
-
-            if not hasattr(self.measurement, "measurement_settings"):
-                QtWidgets.QMessageBox.question(self, "Warning",
-                                               "Settings have not been set. Please set settings before continuing.",
-                                               QtWidgets.QMessageBox.Ok,
-                                               QtWidgets.QMessageBox.Ok)
-            else:
-                if not self.measurement.measurement_settings.has_been_set():
-                    reply = QtWidgets.QMessageBox.question(self, "Warning",
-                                                           "Not all settings have been set. Do you want to continue?",
-                                                           QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
-                                                           QtWidgets.QMessageBox.No)
-                    if reply == QtWidgets.QMessageBox.No:
-                        self.close()
-                        return
-                self.exec_()
+            self.exec_()
 
         else:
             header_item = QtWidgets.QTreeWidgetItem()
@@ -147,7 +132,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     item.file_name)
             child_count = item.childCount()
             if child_count > 0:  # Elemental Losses
-                dir_elo = self.measurement.directory_composition_changes
+                dir_elo = os.path.join(
+                    self.measurement.directory_composition_changes, "Changes")
                 for i in range(child_count):
                     item_child = item.child(i)
                     if item_child.checkState(0):
@@ -170,7 +156,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             # Check that matplotlib attribute exists after creation of energy spectrum widget.
             # If it doesn't exists, that means that the widget hasn't been initialized properly
             # and the program should show an error dialog.
-            if hasattr(self.parent.energy_spectrum_widget, "matplotlib"):
+            if hasattr(self.parent.energy_spectrum_widget, "matplotlib_layout"):
                 icon = self.parent.icon_manager.get_icon(
                     "energy_spectrum_icon_16.png")
                 self.parent.add_widget(self.parent.energy_spectrum_widget,
@@ -207,8 +193,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # This is probably not the most effective way, or practical for 
         # that matter, to get all efficiency files from directory defined
         # in global settings that match the cut files of measurements.
-        # TODO: ask from measurement get_detector_or_default
-        eff_files = self.measurement.detector.get_efficiency_files()
+        if self.measurement.detector:
+            eff_files = self.measurement.detector.get_efficiency_files()
+        else:
+            eff_files = self.measurement.request.default_detector.get_efficiency_files()
         eff_files_used = []
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()
@@ -257,7 +245,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.progress_bar = None
             self.use_cuts = use_cuts
             self.bin_width = bin_width
-            self.energy_spectrum_data = []
+            self.energy_spectrum_data = {}
             rbs_list = {}
 
             self.ui = uic.loadUi(os.path.join("ui_files",
@@ -267,7 +255,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.ui.setWindowTitle(title)
 
             if isinstance(self.parent.obj, Measurement):
-                self.measurement = self.parent.measurement
+                self.measurement = self.parent.obj
                 if self.measurement.statusbar:
                     self.progress_bar = QtWidgets.QProgressBar()
                     self.measurement.statusbar.addWidget(self.progress_bar, 1)
@@ -299,7 +287,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
 
             else:
                 for file in use_cuts:
-                    self.energy_spectrum_data.append(read_espe_file(file))
+                    self.energy_spectrum_data[file] = read_espe_file(file)
 
             # Graph in matplotlib widget and add to window
             self.matplotlib = MatplotlibEnergySpectrumWidget(
@@ -315,7 +303,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 sys.exc_info()[1]), err_file,
                                  str(sys.exc_info()[2].tb_lineno)])
             msg += str_err
-            logging.getLogger(self.measurement.name).error(msg)
+            logging.getLogger(self.obj.name).error(msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
         finally:

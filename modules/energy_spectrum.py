@@ -70,6 +70,8 @@ class EnergySpectrum:
         for key in keys:
             histed_files[key] = hist(self.__tof_listed_files[key],
                                      self.__spectrum_width, 3)
+            if not histed_files[key]:
+                return {}
             first_val = (histed_files[key][0][0] - self.__spectrum_width, 0)
             last_val = (histed_files[key][-1][0] + self.__spectrum_width, 0)
             histed_files[key].insert(0, first_val)
