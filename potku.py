@@ -536,20 +536,10 @@ class Potku(QtWidgets.QMainWindow):
         Opens a file dialog for selecting simulation to import.
         Opens selected simulation in Potku.
         """
-        if not self.request:
-            return
-        # TODO: What type of file should be opened? This may other method than
-        # open_file_dialog
-        filename = open_file_dialog(self, self.request.directory,
-                                    "Select a simulation to load",
-                                    "Simulation (*.smthn)")
-        # TODO: create necessary tab widget etc.
-        if filename:
-            QtWidgets.QMessageBox.critical(self, "Error",
-                                           "Simulation import not yet "
-                                           "implemented!",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+        QtWidgets.QMessageBox.critical(
+            self, "Error", "Importing simulation is not yet implemented.",
+            QtWidgets.QMessageBox.Ok,
+            QtWidgets.QMessageBox.Ok)
 
     def load_request_measurements(self, measurements=[]):
         """Load measurement files in the request.
@@ -927,7 +917,7 @@ class Potku(QtWidgets.QMainWindow):
 
         if tab_type == "simulation":
             simulation = self.request.samples.simulations.add_simulation_file(
-                         sample, filepath, self.tab_id)
+                sample, filepath, self.tab_id)
 
             if simulation:
                 tab = SimulationTabWidget(self.request, self.tab_id, simulation,
