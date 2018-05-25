@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>274</width>
-    <height>176</height>
+    <width>363</width>
+    <height>174</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -60,21 +60,14 @@
    </item>
    <item row="0" column="0">
     <layout class="QFormLayout" name="formLayout">
-     <item row="1" column="0">
+     <item row="0" column="0">
       <widget class="QLabel" name="simulationNameLabel">
        <property name="text">
         <string>Simulation name:</string>
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
-      <widget class="QLabel" name="SampleLabel">
-       <property name="text">
-        <string>Create under sample:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1">
+     <item row="0" column="1">
       <widget class="QLineEdit" name="simulationNameLineEdit">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -84,7 +77,7 @@
        </property>
        <property name="minimumSize">
         <size>
-         <width>0</width>
+         <width>200</width>
          <height>0</height>
         </size>
        </property>
@@ -99,7 +92,14 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="1">
+     <item row="1" column="0">
+      <widget class="QLabel" name="SampleLabel">
+       <property name="text">
+        <string>Create under sample:</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
       <layout class="QHBoxLayout" name="horizontalLayout_3">
        <item>
         <widget class="QComboBox" name="samplesComboBox">
