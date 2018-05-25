@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 29.4.2013
-Updated on 14.8.2013
+Updated on 25.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -172,8 +172,10 @@ class GlobalSettings:
         self.__flags_cross_section = {1: "Rutherford", 2: "L'Ecuyer",
                                       3: "Andersen"}
 
-        self.__set_defaults()
         if not path.exists(self.__config_file):
+            self.__set_defaults()
+            # Set default request directory
+            self.set_request_directory(self.__request_directory)
             self.save_config()
         else:
             self.__load_config()
@@ -298,7 +300,7 @@ class GlobalSettings:
         """Get coincidence timings for specific ADC.
 
         Args:
-            ADC: An integer representing ADC channel.
+            adc: An integer representing ADC channel.
 
         Return:
             Returns low & high values for coincidence timing.
@@ -312,7 +314,7 @@ class GlobalSettings:
         """Set coincidence timings for specific ADC.
 
         Args:
-            ADC: An integer representing ADC channel.
+            adc: An integer representing ADC channel.
             low: An integer representing timing low value.
             high: An integer representing timing high value.
         """
@@ -372,10 +374,13 @@ class GlobalSettings:
         Return:
             Returns a boolean representing will Potku save output or not.
         """
-        try:
-            return self.__config["default"]["es_output"] == "True"
-        except:  # Default if doesn't exist.
-            return False
+        # try:
+        #     return self.__config["default"]["es_output"] == "True"
+        # except:  # Default if doesn't exist.
+        #     return False
+
+        # We want to always save energy spectra.
+        return True
 
     def set_es_output_saved(self, flag):
         """Set whether Energy Spectrum output is saved or not.
