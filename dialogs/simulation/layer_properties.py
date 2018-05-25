@@ -134,7 +134,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             elem_isotope = int(children[i].currentText().split(" ")[0])
             # TODO: Some elements don't have isotope values. Figure out why.
             i += 1
-            elem_amount = float(children[i].text())
+            elem_amount = children[i].value()
             elements.append(Element(elem_symbol, elem_isotope, elem_amount))
             i += 2
 
