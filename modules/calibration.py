@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 18.5.2018
+Updated on 24.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -390,7 +390,16 @@ class TOFCalibrationPoint:
             # If the cut doesn't have a isotope, calculate standard atomic mass.
             mass = masses.get_standard_isotope(self.cut.element.symbol)
             isotope = masses.get_most_common_isotope(self.cut.element.symbol)[0]
-        self.mass = convert_amu_to_kg(mass)
+        self.recoiled_mass = convert_amu_to_kg(mass)
+
+        if self.type == "RBS":
+            element_scatter = self.cut.element_scatter
+            if element_scatter.isotope.mass:
+                mass_scatter = float(element_scatter.isotope.mass)
+            else:
+                mass_scatter = masses.get_standard_isotope(
+                    self.cut.element_scatter.name)
+            self.scatter_element_mass = convert_amu_to_kg(mass_scatter)
 
         beam_mass = float(run.beam.ion.isotope)
         self.beam_mass = convert_amu_to_kg(beam_mass)
@@ -422,12 +431,12 @@ class TOFCalibrationPoint:
         self.time_of_flight_seconds = self.calculate_time_of_flight()
         # (SECONDS)
         print("\nCut file type: " + str(self.type) + 
-              "\nRecoiled mass [kg]: " + str(self.mass) +
+              "\nRecoiled mass [kg]: " + str(self.recoiled_mass) +
               "\nRecoiled/scattered particle energy [J]: " + str(energy) + 
               "\nBeam mass [kg]: " + str(self.beam_mass) + 
               "\nBeam energy [J]: " + str(self.beam_energy) + 
               "\nToF lenght [m]: " + str(self.length) +
-              "\nTarget angle [rads]" + str(self.mass) +
+              "\nTarget angle [rads]" + str(self.recoiled_mass) +
               "\nStopping energy [J]: " + str(self.stopping_energy) +
               "\nTime of Flight [Channel]: " + str(
             self.time_of_flight_channel) +
@@ -490,7 +499,7 @@ class TOFCalibrationPoint:
         sine2 = sine * sine
         M_I = self.beam_mass
         if selection_type == "ERD":
-            M_R = self.mass
+            M_R = self.recoiled_mass
             mass_sum = M_I + M_R
             mass_sum2 = mass_sum * mass_sum
             if mass_sum == 0:
@@ -498,7 +507,7 @@ class TOFCalibrationPoint:
             kinematic_factor = (4.0 * M_I * M_R * cosin2) / mass_sum2
             return kinematic_factor
         elif selection_type == "RBS":
-            M_R = self.mass
+            M_R = self.scatter_element_mass
             M_R2 = M_R * M_R
             M_I2 = M_I * M_I
             mass_sum = M_I + M_R

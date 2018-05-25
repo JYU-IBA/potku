@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 11.5.2018
+Updated on 23.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -129,16 +129,25 @@ class Request:
 
         try:
             self.default_measurement = Measurement.from_file(
+                os.path.join(self.default_folder, "Default.info"),
                 os.path.join(self.default_folder, "Default.measurement"),
                 os.path.join(self.default_folder, "Default.profile"),
                 self)
+            # Read default run from file.
+            self.default_run = Run.from_file(default_measurement_file_path)
+            self.default_measurement.run = self.default_run
+            self.default_measurement.detector = self.default_detector
+            self.default_measurement.target = self.default_target
+
         except FileNotFoundError:
             # Create default measurement for request
-            self.default_measurement = Measurement(self, "Default",
-                                                   run=self.default_run,
-                                                   detector=self.default_detector,
-                                                   measurement_setting_file_name=
-                                                   "Default")
+            default_info_path = os.path.join(self.default_folder,
+                                             "Default.info")
+            self.default_measurement = Measurement(
+                self, path=default_info_path, name="Default",
+                run=self.default_run,
+                detector=self.default_detector,
+                measurement_setting_file_name="Default")
             self.default_measurement.measurement_to_file(os.path.join(
                 self.default_folder,
                 self.default_measurement.measurement_setting_file_name
@@ -150,12 +159,19 @@ class Request:
                 self.default_folder,
                 self.default_measurement.measurement_setting_file_name +
                 ".measurement"))
+            self.default_detector.to_file(os.path.join(self.default_folder,
+                                                       "Detector",
+                                                       "Default.detector"),
+                                          default_measurement_file_path)
+
+        self.default_target.to_file(os.path.join(self.default_folder,
+                                                 self.default_target.name
+                                                 + ".target"),
+                                    default_measurement_file_path)
 
         try:
-            self.default_simulation = Simulation.from_file(self,
-                                                           os.path.join(
-                                                               self.default_folder,
-                                                               "Default.simulation"))
+            self.default_simulation = Simulation.from_file(
+                self, os.path.join(self.default_folder, "Default.simulation"))
         except FileNotFoundError:
             # Create default simulation for request
             self.default_simulation = Simulation(os.path.join(
@@ -331,7 +347,7 @@ class Request:
             tabs = self.get_measurement_tabs(measurement.tab_id)
             for tab in tabs:
                 tab_name = tab.measurement.name
-                if tab.data_loaded and not tab_name in nonslaves and \
+                if tab.data_loaded and tab_name not in nonslaves and \
                         tab_name != name:
                     # No need to save same measurement twice.
                     tab.measurement.save_cuts()

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 11.5.2018
+Updated on 23.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -138,16 +138,40 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
          Update Measurement's Run, Detector and Target objects. If measurement
          specific parameters are in use, save them into a file.
         """
+        if not self.measurement.measurement_setting_file_name:
+            self.measurement.measurement_setting_file_name = \
+                self.measurement.name
+        if not self.measurement.profile_name:
+            self.measurement.profile_name = self.measurement.name
+
         check_box = self.ui.defaultSettingsCheckBox
         if check_box.isChecked():
+            measurement = self.measurement.request.default_measurement
             self.measurement.run = None
             self.measurement.detector = None
-            self.measurement.measurement_setting_file_name = None
-            self.measurement.measurement_setting_file_description = None
+            self.measurement.measurement_setting_file_description = ""
             self.measurement.target.target_theta = \
                 self.measurement.request.default_target.target_theta
-            # TODO: delete possible measurement specific files.
-            det_folder_path =os.path.join(self.measurement.directory,
+
+            # Revert all profile parameters to default.
+            self.measurement.profile_description = ""
+            self.measurement.reference_density = measurement.reference_density
+            self.measurement.number_of_depth_steps = \
+                measurement.number_of_depth_steps
+            self.measurement.depth_step_for_stopping = \
+                measurement.depth_step_for_stopping
+            self.measurement.depth_step_for_output = \
+                measurement.depth_step_for_output
+            self.measurement.depth_for_concentration_from = \
+                measurement.depth_for_concentration_from
+            self.measurement.depth_for_concentration_to = \
+                measurement.depth_for_concentration_to
+            self.measurement.channel_width = measurement.channel_width
+            self.measurement.reference_cut = measurement.reference_cut
+            self.measurement.number_of_splits = measurement.number_of_splits
+            self.measurement.normalization = measurement.normalization
+
+            det_folder_path = os.path.join(self.measurement.directory,
                                            "Detector")
             if os.path.exists(det_folder_path):
                 shutil.rmtree(det_folder_path)
@@ -164,11 +188,14 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                     file_name = "temp"
                 else:
                     file_name = self.measurement.measurement_setting_file_name
+                target_file_path = os.path.join(self.measurement.directory,
+                                                self.measurement.target.name +
+                                                ".target")
                 measurement_settings_file_path = os.path.join(
                     self.measurement.directory, file_name + ".measurement")
                 profile_file_path = os.path.join(self.measurement.directory,
-                                                self.measurement.profile_name +
-                                                ".profile")
+                                                 self.measurement.profile_name +
+                                                 ".profile")
                 det_folder_path = os.path.join(self.measurement.directory,
                                                "Detector")
                 if self.measurement.run is None:
@@ -198,23 +225,6 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                     self.measurement.directory,
                     self.measurement.measurement_setting_file_name +
                     ".measurement")
-                gen_obj = {
-                        "name": self.measurement.measurement_setting_file_name,
-                        "description": self.measurement.
-                        measurement_setting_file_description,
-                        "modification_time": str(
-                            datetime.datetime.fromtimestamp(time.time(
-
-                            ))),
-                        "modification_time_unix": time.time()
-                }
-                if os.path.exists(new_measurement_settings_file_path):
-                    obj = json.load(open(new_measurement_settings_file_path))
-                    obj["general"] = gen_obj
-                else:
-                    obj = {
-                        "general": gen_obj
-                    }
 
                 # Delete possible extra .measurement files
                 filename_to_remove = ""
@@ -226,14 +236,16 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                     os.remove(os.path.join(self.measurement.directory,
                                            filename_to_remove))
 
-                with open(new_measurement_settings_file_path, "w") as file:
-                    json.dump(obj, file, indent=4)
+                self.measurement.measurement_to_file(
+                    new_measurement_settings_file_path)
 
                 self.measurement.run.to_file(new_measurement_settings_file_path)
                 self.measurement.detector.\
                     to_file(self.measurement.detector.path,
                             new_measurement_settings_file_path)
                 self.measurement.profile_to_file(profile_file_path)
+                self.measurement.target.to_file(
+                    target_file_path, new_measurement_settings_file_path)
             except TypeError:
                 QtWidgets.QMessageBox.question(self, "Warning",
                                                "Some of the setting values "

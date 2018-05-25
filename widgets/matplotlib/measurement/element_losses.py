@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 27.8.2013
+Updated on 25.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -24,8 +24,9 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
-             "Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 from PyQt5 import QtWidgets
 
@@ -94,11 +95,10 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
         element_object = Element(cut_file[0].strip())
         element = element_object.symbol
         isotope = element_object.isotope
-        mass = str(isotope)
-        if not mass:
-            mass = masses.get_standard_isotope(element)
+        if isotope:
+            mass = float(isotope)
         else:
-            mass = float(mass)
+            mass = masses.get_standard_isotope(element)
         return mass
 
     def on_draw(self):
@@ -111,7 +111,7 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
                                            key=lambda x: self.__sortt(x[0]))]
         for key in keys:
             cut_file = key.split('.')
-            element_object = Element(cut_file[0].strip())
+            element_object = Element.from_string(cut_file[0].strip())
             element = element_object.symbol
             isotope = element_object.isotope
             if key in self.__ignore_elements:
@@ -138,6 +138,8 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
             else:
                 color = self.selection_colors[color_string]
 
+            if not isotope:
+                isotope = ""
             # Set label text
             if len(cut_file) == 2:
                 label = r"$^{" + str(isotope) + "}$" + element + rbs_string

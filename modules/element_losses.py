@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 10.4.2018
+Updated on 25.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -24,8 +24,9 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
-             "Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import os
 from PyQt5 import QtCore
@@ -136,13 +137,13 @@ class ElementLosses:
             cut = CutFile()
             cut.load_file(file)
             filename_split = file.split('.')
-            element = Element.from_string(filename_split[1])
-            if len(filename_split) == 4:  # Regular cut file
-                key = "{0}.{1}".format(element, filename_split[2])
+            element = Element.from_string(filename_split[2])
+            if len(filename_split) == 5:  # Regular cut file
+                key = "{0}.{1}".format(element, filename_split[3])
             else:  # Elemental Losses cut file
                 key = "{0}.{1}.{2}".format(element,
-                                           filename_split[2],
-                                           filename_split[3])
+                                           filename_split[3],
+                                           filename_split[4])
             self.cut_splits.add_splits(key, cut,
                                        cut.split(self.reference_cut,
                                                  self.partition_count,
@@ -150,9 +151,11 @@ class ElementLosses:
             dirtyinteger += 1
 
     def __element_losses_folder_clean_up(self):
-        for the_file in os.listdir(self.directory_composition_changes):
-            file_path = os.path.join(self.directory_composition_changes,
-                                     the_file)
+        for the_file in os.listdir(
+                os.path.join(self.directory_composition_changes, "Changes")):
+            file_path = os.path.join(
+                os.path.join(self.directory_composition_changes, "Changes"),
+                the_file)
             try:
                 if os.path.isfile(file_path):
                     os.unlink(file_path)

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 11.5.2018
+Updated on 23.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -304,8 +304,13 @@ class Detector:
         # Read .measurement to obj to update only detector angles
         try:
             obj = json.load(open(measurement_file_path))
-            obj["geometry"]["detector_theta"] = self.detector_theta
-        except (KeyError, FileNotFoundError):
+            try:
+                obj["geometry"]["detector_theta"] = self.detector_theta
+            except KeyError:
+                obj["geometry"] = {
+                    "detector_theta": self.detector_theta
+                }
+        except FileNotFoundError:
             obj = {
                 "geometry": {
                     "detector_theta": self.detector_theta

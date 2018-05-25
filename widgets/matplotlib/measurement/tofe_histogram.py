@@ -300,6 +300,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             rbs_string = ""
             element = sel.element
             if sel.type == "RBS":
+                element = sel.element_scatter
                 rbs_string = "*"
             sel.points.set_marker(None)  # Remove markers for legend.
             dirtyinteger = 0

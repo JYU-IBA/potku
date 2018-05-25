@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 4.5.2018
+Updated on 23.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -681,7 +681,8 @@ class Potku(QtWidgets.QMainWindow):
                                                       Qt.MatchEndsWith, 0))[0]
 
             self.__add_new_tab("measurement", dialog.filename, sample_item.obj,
-                               progress_bar, load_data=True)
+                               progress_bar, load_data=True,
+                               object_name=dialog.name)
             self.__remove_info_tab()
             self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
@@ -858,7 +859,8 @@ class Potku(QtWidgets.QMainWindow):
         parent_item.setExpanded(True)
 
     def __add_new_tab(self, tab_type, filepath, sample, progress_bar=None,
-                      file_current=0, file_count=1, load_data=False):
+                      file_current=0, file_count=1, load_data=False,
+                      object_name=""):
         """Add new tab into TabWidget.
 
         Adds a new tab into program's tabWidget. Makes a new measurement or
@@ -866,7 +868,8 @@ class Potku(QtWidgets.QMainWindow):
 
         Args:
             tab_type: Either "measurement" or "simulation".
-            filepath: A string representing measurement or simulation file path.
+            filepath: A string representing measurement or simulation file
+            path, or data path when creating a new measurement.
             sample: The sample under which the measurement or simulation is put.
             progress_bar: A QtWidgets.QProgressBar to be updated.
             file_current: An integer representing which number is currently
@@ -875,6 +878,8 @@ class Potku(QtWidgets.QMainWindow):
             load_data: A boolean representing whether to load data or not. This
             is to save time when loading a request and we do not want to load
             every measurement.
+            object_name: When creating a new Measurement, this is the name
+            for it.
         """
         if progress_bar:
             progress_bar.setValue((100 / file_count) * file_current)
@@ -882,10 +887,8 @@ class Potku(QtWidgets.QMainWindow):
 
         if tab_type == "measurement":
             measurement = \
-                self.request.samples.measurements.add_measurement_file(sample,
-                                                                       filepath,
-                                                                       self.
-                                                                       tab_id)
+                self.request.samples.measurements.add_measurement_file(
+                    sample, filepath, self.tab_id, object_name)
             if measurement:  # TODO: Finish this (load_data)
                 tab = MeasurementTabWidget(self.tab_id, measurement,
                                            self.icon_manager)

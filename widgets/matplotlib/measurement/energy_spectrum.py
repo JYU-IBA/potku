@@ -164,7 +164,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                color=color,
                                label=label)
         else:
-            for data in self.histed_files:
+            for data in self.histed_files.values():
                 x = tuple(float(pair[0]) for pair in data)
                 y = tuple(float(pair[1]) for pair in data)
                 self.axes.plot(x, y)
