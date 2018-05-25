@@ -55,7 +55,7 @@ class _CompositionWidget(MatplotlibWidget):
         # Remove Y-axis ticks and label
         self.axes.yaxis.set_tick_params("both", left="off", labelleft="off")
         self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
-        self.name_x_axis = "Depth"
+        self.name_x_axis = "Depth [nm]"
 
         self.__icon_manager = icon_manager
         self.__fork_toolbar_buttons()
@@ -70,7 +70,7 @@ class _CompositionWidget(MatplotlibWidget):
         """Draw method for matplotlib.
         """
         self.axes.clear()  # Clear old stuff
-        self.axes.set_xlabel(self.name_x_axis.title())
+        self.axes.set_xlabel(self.name_x_axis)
 
         # Remove axis ticks and draw
         self.remove_axes_ticks()
