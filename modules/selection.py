@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 24.5.2018
+Updated on 25.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -25,8 +25,9 @@ along with this program (file named 'LICENCE').
 
 Selection.py handles Selector and Selection objects.
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
-             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
+             "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
 import os
@@ -144,7 +145,8 @@ class Selector:
             index: Integer of index we want to get from selections.
             
         Return:
-            Returns Selection at said index. If index is out of range, returns None.
+            Returns Selection at said index. If index is out of range, returns
+            None.
         """
         if index >= self.count() or index < 0:
             return None
@@ -229,7 +231,8 @@ class Selector:
             sel.undo_last()
 
     def purge(self):
-        """Purges (removes) all open selections and allows new selection to be made.
+        """Purges (removes) all open selections and allows new selection to be
+        made.
         """
         for s in self.selections:
             if not s.is_closed:  # If selection is not closed -> purge
@@ -304,7 +307,8 @@ class Selector:
         """End last open selection.
         
         Ends last open selection. If selection is open, it will show dialog to 
-        select element information and draws into canvas before opening the dialog.
+        select element information and draws into canvas before opening the
+        dialog.
         
         Args:
             canvas: Matplotlib's FigureCanvas
@@ -335,7 +339,8 @@ class Selector:
         """Select a selection based on point.
         
         Args:
-            point: Point (x, y) which is clicked on the graph to select selection.
+            point: Point (x, y) which is clicked on the graph to select
+            selection.
             highlight: Boolean to determine whether to highlight just this 
                        selection.
             
@@ -380,8 +385,8 @@ class Selector:
             element = sel.element.symbol
             isotope = sel.element.isotope
             if sel.type == "RBS":
-                element, isotope = sel.scatter_element.symbol, \
-                                   sel.scatter_element.isotope
+                element, isotope = sel.element_scatter.symbol, \
+                                   sel.element_scatter.isotope
             dirtyinteger = 0
             # Use dirtyinteger to differentiate multiple selections of same 
             # selection. This is roundabout method, but works as it should with
@@ -399,7 +404,8 @@ class Selector:
     def grey_out_except(self, selected_id):
         """Grey out all selections except selected one.
         
-        Sets all selections' colors to grey except selected, which is set to red.
+        Sets all selections' colors to grey except selected, which is set to
+        red.
         
         Args:
             selected_id: Integer of selected selection id 
@@ -471,15 +477,15 @@ class Selector:
             selection.transpose(is_transposed)
 
     def update_single_selection_points(self, selection):
-        selection.events_counted=False
+        selection.events_counted = False
         selection.event_count = 0
         data = self.measurement.data
         if not selection.is_closed:
-            selection.events_counted=True
+            selection.events_counted = True
             return
         for n in range(len(data)):
             selection.point_inside(data[n])
-        selection.events_counted=True
+        selection.events_counted = True
 
     def update_selection_points(self):
         """Update all selections event counts.
@@ -565,6 +571,8 @@ class Selection:
                 self.add_point((x[i], y[i]))
             self.end_selection()
 
+        self.masses = None
+
     def add_point(self, point):
         """Adds a point to selection.
 
@@ -636,7 +644,7 @@ class Selection:
         """
         if self.count() > 0:
             x, y = self.points.get_data()
-            return (x[0], y[0])  # TODO: Should this be tuple or a class?
+            return x[0], y[0]  # TODO: Should this be tuple or a class?
         else:
             return None
 
@@ -649,7 +657,7 @@ class Selection:
         """
         if self.count() > 0:
             x, y = self.points.get_data()
-            return (x[-1], y[-1])  # TODO: Should this be tuple or a class?
+            return x[-1], y[-1]  # TODO: Should this be tuple or a class?
         else:
             return None
 
@@ -756,22 +764,25 @@ class Selection:
         Return:
             String representing current selection object.
         """
+        save_string = ""
         if self.element:
-            save_string = "{0}    {1}    {2}    {3}    {4}    {5}    {6}".format(
-                self.type,
-                self.element.symbol,
-                (str(self.element.isotope) if self.element.isotope else ""),
-                self.weight_factor,
-                self.element_scatter,
-                self.default_color,
-                self.__save_points(is_transposed))
+            save_string = "{0}    {1}    {2}    {3}    {4}    {5}    {6}".\
+                format(
+                    self.type,
+                    self.element.symbol,
+                    (str(self.element.isotope) if self.element.isotope else ""),
+                    self.weight_factor,
+                    self.element_scatter,
+                    self.default_color,
+                    self.__save_points(is_transposed))
         return save_string
 
     def transpose(self, transpose):
         """Transpose selection points.
 
         Args:
-            transpose: Boolean representing whether to transpose selection points.
+            transpose: Boolean representing whether to transpose selection
+            points.
         """
         if transpose:  # and not self.__is_transposed
             self.__is_transposed = True
@@ -806,7 +817,8 @@ class Selection:
         """
         if not self.axes_limits.is_inside(point):
             return False
-        inside = self.__point_inside_polygon(point[0], point[1], self.get_points())
+        inside = self.__point_inside_polygon(point[0], point[1],
+                                             self.get_points())
         # While at it, increase event point counts if not counted already.
         if inside and not self.events_counted:
             self.event_count += 1
@@ -830,7 +842,8 @@ class Selection:
                 if y <= max(p1y, p2y):
                     if x <= max(p1x, p2x):
                         if p1y != p2y:
-                            xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
+                            xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + \
+                                      p1x
                         if p1x == p2x or x <= xinters:
                             inside = not inside
             p1x, p1y = p2x, p2y
