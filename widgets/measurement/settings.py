@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 11.5.2018
+Updated on 25.5.2018
 """
 import time
 
@@ -46,10 +46,10 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             self.isotopeComboBox.setEnabled(
                 False)
 
-        link_angle_values(self.detectorThetaDoubleSpinBox,
-                               self.detectorFiiDoubleSpinBox)
-        link_angle_values(self.targetThetaDoubleSpinBox,
-                               self.targetFiiDoubleSpinBox)
+        # link_angle_values(self.detectorThetaDoubleSpinBox,
+        #                        self.detectorFiiDoubleSpinBox)
+        # link_angle_values(self.targetThetaDoubleSpinBox,
+        #                        self.targetFiiDoubleSpinBox)
 
         self.nameLineEdit.setText(
             self.obj.measurement_setting_file_name)
@@ -85,14 +85,15 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             detector_object = self.obj.request.default_detector
         self.detectorThetaDoubleSpinBox.setValue(
             detector_object.detector_theta)
-        # TODO: Fix the angle links to correct values
-        self.detectorFiiDoubleSpinBox.setValue(
-            detector_object.detector_theta + 180)
+        # TODO: Fix the angles!
+        # self.detectorFiiDoubleSpinBox.setValue(
+        #     detector_object.detector_theta + 180)
 
         self.targetThetaDoubleSpinBox.setValue(
             self.obj.target.target_theta)
-        self.targetFiiDoubleSpinBox.setValue(
-            self.obj.target.target_theta + 180)
+        # TODO: update angles!
+        # self.targetFiiDoubleSpinBox.setValue(
+        #     self.obj.target.target_theta + 180)
 
     def update_settings(self):
         # Measurement settings
