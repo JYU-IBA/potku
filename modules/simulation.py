@@ -82,6 +82,7 @@ class Simulations:
         detector_extension = ".detector"
         measurement_settings_file = ""
         element_simulation_extension = ".mcsimu"
+        profile_extension = ".profile"
 
         # Create simulation from file
         if os.path.exists(simulation_path):
@@ -136,8 +137,8 @@ class Simulations:
                     element_str = file.split(".")[0]
 
                     # .profile file
-                    profile_file_path = os.path.join(simulation.directory,
-                                                     element_str + ".profile")
+                    profile_file_path = os.path.join(
+                        simulation.directory, element_str + profile_extension)
 
                     if os.path.exists(profile_file_path):
                         # Create ElementSimulation from files
