@@ -24,8 +24,18 @@ class FoilWidget(QtWidgets.QWidget):
                                               self.__calculate_distance())
 
     def _delete_foil(self):
-        self.parent.delete_foil(self)
-        self.parent.calculate_distance()
+        confirm_box = QtWidgets.QMessageBox()
+        confirm_box.setIcon(QtWidgets.QMessageBox.Warning)
+        yes_button = confirm_box.addButton(QtWidgets.QMessageBox.Yes)
+        confirm_box.addButton(QtWidgets.QMessageBox.Cancel)
+        confirm_box.setText("Are you sure you want to delete the foil?")
+        confirm_box.setWindowTitle("Confirm")
+
+        confirm_box.exec()
+
+        if confirm_box.clickedButton() == yes_button:
+            self.parent.delete_foil(self)
+            self.parent.calculate_distance()
 
     def __calculate_distance(self):
         self.parent.calculate_distance()
