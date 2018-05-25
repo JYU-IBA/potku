@@ -17,7 +17,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>ui_composition_dialog</string>
+   <string>Foil Information</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="2" column="0">
