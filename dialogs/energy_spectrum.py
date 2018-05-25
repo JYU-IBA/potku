@@ -286,7 +286,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                         rbs_list[key] = get_scatter_element(cut)
 
             else:
-                for file in use_cuts.keys():
+                for file in use_cuts:
                     self.energy_spectrum_data[file] = read_espe_file(file)
 
             # Graph in matplotlib widget and add to window
