@@ -7,8 +7,7 @@ name = "pypi"
 numpy = "*"
 scipy = "*"
 matplotlib = "*"
-"PyQt5" = "*"
-"pyqt5" = "==5.9.2"
+"PyQt5" = "==5.9.2"
 
 [dev-packages]
 PyInstaller = "*"
