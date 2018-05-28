@@ -51,8 +51,7 @@ class Detector:
                 "detector_theta", "__measurement_settings_file_path"
 
     def __init__(self, path, measurement_settings_file_path, name="Default",
-                 description="This a default detector setting file.",
-                 modification_time=time.time(), type="TOF",
+                 description="", modification_time=time.time(), type="TOF",
                  calibration=CalibrationParameters(), foils=[CircularFoil(
                 "Foil1", 7.0, 256.0, [Layer("Layer_12C", [Element("C", 12.011,
                                                                 1)], 0.1,

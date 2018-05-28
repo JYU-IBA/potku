@@ -3,6 +3,8 @@
 Created on 4.5.2018
 Updated on 28.5.2018
 """
+from modules.target import Target
+
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
@@ -198,21 +200,19 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                 else:
                     file_name = self.measurement.measurement_setting_file_name
 
-                target_file_path = \
-                    os.path.join(self.measurement.directory,
-                                 self.measurement.target.name + ".target")
-                measurement_settings_file_path = \
-                    os.path.join(self.measurement.directory,
-                                 file_name + ".measurement")
-                profile_file_path = \
-                    os.path.join(self.measurement.directory,
-                                 self.measurement.profile_name + ".profile")
-                det_folder_path = \
-                    os.path.join(self.measurement.directory, "Detector")
-
+                if self.measurement.target is None:
+                    # Create default Target object for Measurement
+                    self.measurement.target = Target()
                 if self.measurement.run is None:
                     # Create default Run object for Measurement
                     self.measurement.run = Run()
+
+                det_folder_path = \
+                    os.path.join(self.measurement.directory, "Detector")
+                measurement_settings_file_path = \
+                    os.path.join(self.measurement.directory,
+                                 file_name + ".measurement")
+
                 if self.measurement.detector is None:
                     # Create default Detector object for Measurement
                     detector_file_path = os.path.join(det_folder_path,
@@ -267,8 +267,15 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                     self.measurement.detector.add_efficiency_file(eff_file)
 
                 # Save profile parameters
+                profile_file_path = \
+                    os.path.join(self.measurement.directory,
+                                 self.measurement.profile_name + ".profile")
                 self.measurement.profile_to_file(profile_file_path)
+
                 # Save target parameters
+                target_file_path = \
+                    os.path.join(self.measurement.directory,
+                                 self.measurement.target.name + ".target")
                 self.measurement.target\
                     .to_file(target_file_path,
                              new_measurement_settings_file_path)

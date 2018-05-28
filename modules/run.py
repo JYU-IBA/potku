@@ -40,7 +40,7 @@ class Run:
     Class that handles parameters concerning a run.
     """
 
-    def __init__(self, beam=Beam(), fluence=1.00e+12, current=1.07,
+    def __init__(self, beam=None, fluence=1.00e+12, current=1.07,
                  charge=0.641, time=600):
         """
         Initializes the Run object.
@@ -53,6 +53,8 @@ class Run:
             time: Time of the run.
         """
         self.beam = beam
+        if not self.beam:
+            self.beam = Beam()
         self.fluence = fluence
         self.current = current
         self.charge = charge

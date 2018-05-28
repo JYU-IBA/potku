@@ -21,16 +21,17 @@ class RecoilElement:
         Args:
             element: An Element class object.
             points: A list of Point class objects.
-            widgets: An ElementWidget class object.
         """
         self.element = element
         self.name = "Default"
         self.prefix = (Element.__str__(element)).split(" ")[0]
-        self.description = "This is a default rec setting file."
+        self.description = "These are default recoil settings."
         self.type = "rec"
         # This is multiplied by 1e22
         self.reference_density = 4.98
         self._points = sorted(points)
+
+        # Contains ElementWidget and SimulationControlsWidget.
         self.widgets = []
         self._edit_lock_on = True
 

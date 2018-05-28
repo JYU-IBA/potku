@@ -95,120 +95,21 @@ class Request:
             os.makedirs(self.default_folder)
 
         # Try reading default objects from Default folder.
-        self.default_detector_folder = os.path.join(self.default_folder,
-                                                    "Detector")
-        default_measurement_file_path = os.path.join(self.default_folder,
-                                                     "Default.measurement")
+        self.create_default_measurement()
+        self.create_default_detector()
+        self.create_default_target()
+        self.create_default_simulation()
+        self.create_default_run()
 
-        detector_path = os.path.join(self.directory,
-                                     self.default_detector_folder,
-                                     "Default.detector")
-        if os.path.exists(detector_path):
-            # Read detector from file
-            self.default_detector = Detector.from_file(
-                detector_path,
-                default_measurement_file_path, self)
-            self.default_detector.update_directories(
-                self.default_detector_folder)
-        else:
-            # Create Detector folder under Default folder
-            if not os.path.exists(self.default_detector_folder):
-                os.makedirs(self.default_detector_folder)
-            # Create default detector for request
-            self.default_detector = Detector(
-                os.path.join(self.default_detector_folder,
-                             "Default.detector"),
-                default_measurement_file_path)
-            self.default_detector.update_directories(
-                self.default_detector_folder)
+        # Set default Run, Detector and Target objects to Measurement
+        self.default_measurement.run = self.default_run
+        self.default_measurement.detector = self.default_detector
+        self.default_measurement.target = self.default_target
 
-        target_path = os.path.join(self.default_folder, "Default.target")
-        if os.path.exists(target_path):
-            # Read target from file
-            self.default_target = Target.from_file(target_path,
-                default_measurement_file_path, self)
-        else:
-            # Create default target for request
-            self.default_target = Target(name="Default")
-            self.default_target.to_file(os.path.join(self.default_folder,
-                                                     "Default.target"),
-                                        default_measurement_file_path)
-
-        measurement_info_path = os.path.join(self.default_folder,
-                                             "Default.info")
-        if os.path.exists(measurement_info_path):
-            # Read measurement from file
-            self.default_measurement = Measurement.from_file(
-                measurement_info_path,
-                os.path.join(self.default_folder, "Default.measurement"),
-                os.path.join(self.default_folder, "Default.profile"),
-                self)
-            # Read default run from file.
-            self.default_run = Run.from_file(default_measurement_file_path)
-            self.default_measurement.run = self.default_run
-            self.default_measurement.detector = self.default_detector
-            self.default_measurement.target = self.default_target
-
-        else:
-            # Create default measurement for request
-            default_info_path = os.path.join(self.default_folder,
-                                             "Default.info")
-            self.default_measurement = Measurement(
-                self, path=default_info_path, name="Default",
-                run=self.default_run,
-                detector=self.default_detector,
-                measurement_setting_file_name="Default")
-            self.default_measurement.info_to_file(
-                os.path.join(self.default_folder,
-                             self.default_measurement.name + ".info"))
-            self.default_measurement.measurement_to_file(os.path.join(
-                self.default_folder,
-                self.default_measurement.measurement_setting_file_name
-                + ".measurement"))
-            self.default_measurement.profile_to_file(os.path.join(
-                self.default_folder,
-                self.default_measurement.profile_name + ".profile"))
-            self.default_measurement.run.to_file(os.path.join(
-                self.default_folder,
-                self.default_measurement.measurement_setting_file_name +
-                ".measurement"))
-            self.default_detector.to_file(os.path.join(self.default_folder,
-                                                       "Detector",
-                                                       "Default.detector"),
-                                          default_measurement_file_path)
-
-        self.default_target.to_file(os.path.join(self.default_folder,
-                                                 self.default_target.name
-                                                 + ".target"),
-                                    default_measurement_file_path)
-
-        simulation_path = os.path.join(self.default_folder,
-                                       "Default.simulation")
-        if os.path.exists(simulation_path):
-            # Read default simulation from file
-            self.default_simulation = Simulation.from_file(
-                self, simulation_path)
-        else:
-            # Create default simulation for request
-            self.default_simulation = Simulation(os.path.join(
-                self.default_folder, "Default.simulation"), self)
-
-        mcsimu_path = os.path.join(self.default_folder, "Default.mcsimu")
-        if os.path.exists(mcsimu_path):
-            # Read default element simulation from file
-            self.default_element_simulation = \
-                ElementSimulation.from_file(self, "4He", self.default_folder,
-                                            mcsimu_path,
-                                            os.path.join(
-                                                self.default_folder,
-                                                "Default.profile"))
-        else:
-            # Create default element simulation for request
-            self.default_element_simulation = ElementSimulation(
-                self.default_folder, self, [RecoilElement(
-                    Element.from_string("4He 3.0"), [])], name="Default")
-            self.default_simulation.element_simulations.append(
-                self.default_element_simulation)
+        # Set default Run, Detector and Target objects to Simulation
+        self.default_simulation.run = self.default_run
+        self.default_simulation.detector = self.default_detector
+        self.default_simulation.target = self.default_target
 
         self.__set_request_logger()
 
@@ -233,6 +134,138 @@ class Request:
             self.save()
         else:
             self.load()
+
+    def create_default_detector(self):
+        # Detector
+        self.default_detector_folder = os.path.join(self.default_folder,
+                                                    "Detector")
+
+        detector_path = os.path.join(self.directory,
+                                     self.default_detector_folder,
+                                     "Default.detector")
+        if os.path.exists(detector_path):
+            # Read detector from file
+            self.default_detector = Detector.from_file(
+                detector_path,
+                self.default_measurement_file_path, self)
+            self.default_detector.update_directories(
+                self.default_detector_folder)
+        else:
+            # Create Detector folder under Default folder
+            if not os.path.exists(self.default_detector_folder):
+                os.makedirs(self.default_detector_folder)
+            # Create default detector for request
+            self.default_detector = Detector(
+                os.path.join(self.default_detector_folder,
+                             "Default.detector"),
+                self.default_measurement_file_path, name="Default detector",
+                description="These are default detector settings.")
+            self.default_detector.update_directories(
+                self.default_detector_folder)
+
+        self.default_detector.to_file(os.path.join(self.default_folder,
+                                                   "Detector",
+                                                   "Default.detector"),
+                                      self.default_measurement_file_path)
+
+    def create_default_measurement(self):
+        # Measurement
+        self.default_measurement_file_path = os.path.join(self.default_folder,
+                                                     "Default.measurement")
+        measurement_info_path = os.path.join(self.default_folder,
+                                             "Default.info")
+        if os.path.exists(measurement_info_path):
+            # Read measurement from file
+            self.default_measurement = Measurement.from_file(
+                measurement_info_path,
+                os.path.join(self.default_folder, "Default.measurement"),
+                os.path.join(self.default_folder, "Default.profile"),
+                self)
+
+        else:
+            # Create default measurement for request
+            default_info_path = os.path.join(self.default_folder,
+                                             "Default.info")
+            self.default_measurement = Measurement(
+                self, path=default_info_path,
+                run=self.default_run,
+                detector=self.default_detector,
+                description="This is a default measurement.",
+                profile_description="These are default profile parameters.",
+                measurement_setting_file_description="These are default "
+                                                     "measurement parameters.")
+            self.default_measurement.info_to_file(
+                os.path.join(self.default_folder,
+                             self.default_measurement.name + ".info"))
+            self.default_measurement.measurement_to_file(os.path.join(
+                self.default_folder,
+                self.default_measurement.measurement_setting_file_name
+                + ".measurement"))
+            self.default_measurement.profile_to_file(os.path.join(
+                self.default_folder,
+                self.default_measurement.profile_name + ".profile"))
+
+    def create_default_target(self):
+        # Target
+        target_path = os.path.join(self.default_folder, "Default.target")
+        if os.path.exists(target_path):
+            # Read target from file
+            self.default_target = Target \
+                .from_file(target_path, self.default_measurement_file_path, self)
+        else:
+            # Create default target for request
+            self.default_target = Target(description="These are default "
+                                                     "target parameters.")
+            self.default_target.to_file(os.path.join(self.default_folder,
+                                                     "Default.target"),
+                                        self.default_measurement_file_path)
+
+        self.default_target.to_file(os.path.join(self.default_folder,
+                                                 self.default_target.name
+                                                 + ".target"),
+                                    self.default_measurement_file_path)
+
+    def create_default_run(self):
+        # Read default run from file.
+        self.default_run = Run.from_file(self.default_measurement_file_path)
+        self.default_run.to_file(os.path.join(
+            self.default_folder,
+            self.default_measurement.measurement_setting_file_name +
+            ".measurement"))
+
+    def create_default_simulation(self):
+        # Simulation
+        simulation_path = os.path.join(self.default_folder,
+                                       "Default.simulation")
+        if os.path.exists(simulation_path):
+            # Read default simulation from file
+            self.default_simulation = Simulation.from_file(
+                self, simulation_path)
+        else:
+            # Create default simulation for request
+            self.default_simulation = Simulation(os.path.join(
+                self.default_folder, "Default.simulation"), self,
+                description="This is a default simulation.",
+                measurement_setting_file_description="These are default "
+                                                     "measurement parameters.")
+
+        mcsimu_path = os.path.join(self.default_folder, "Default.mcsimu")
+        if os.path.exists(mcsimu_path):
+            # Read default element simulation from file
+            self.default_element_simulation = \
+                ElementSimulation.from_file(self, "4He", self.default_folder,
+                                            mcsimu_path,
+                                            os.path.join(
+                                                self.default_folder,
+                                                "Default.profile"))
+        else:
+            # Create default element simulation for request
+            self.default_element_simulation = ElementSimulation(
+                self.default_folder, self,
+                [RecoilElement(Element.from_string("4He 3.0"), [])],
+                description="These are default simulation parameters.")
+            self.default_simulation.element_simulations.append(
+                self.default_element_simulation)
 
     def exclude_slave(self, measurement):
         """ Exclude measurement from slave category under master.

@@ -256,25 +256,22 @@ class Measurement:
     #             "reference_cut", "number_of_splits", "normalization"
 
     def __init__(self, request, path, tab_id=-1, name="Default",
-                 description="This a default measurement.",
-                 modification_time=time.time(), run=None, detector=None,
-                 target=Target(), profile_name="Default",
-                 profile_description="This is a default profile setting file.",
-                 profile_modification_time=time.time(),
+                 description="", modification_time=time.time(), run=None,
+                 detector=None, target=None, profile_name="Default",
+                 profile_description="", profile_modification_time=time.time(),
                  reference_density=3.5, number_of_depth_steps=40,
                  depth_step_for_stopping=50, depth_step_for_output=50,
                  depth_for_concentration_from=800,
                  depth_for_concentration_to=1500, channel_width=0.1,
                  reference_cut="", number_of_splits=10, normalization="First",
-                 measurement_setting_file_name="",
-                 measurement_setting_file_description=
-                 "This a default measurement setting file.",
-                 measurement_setting_modification_time = time.time()
-                 ):
+                 measurement_setting_file_name="Default",
+                 measurement_setting_file_description="",
+                 measurement_setting_modification_time=time.time()):
         """Initializes a measurement.
 
         Args:
             request: Request class object.
+            path: Full path to measurement's .info file.
         """
         self.tab_id = tab_id
 
@@ -427,7 +424,7 @@ class Measurement:
                    description=description,
                    modification_time=modification_time,
                    run=None, detector=None,
-                   target=Target(), profile_name=profile_name,
+                   target=None, profile_name=profile_name,
                    profile_description=profile_description,
                    profile_modification_time=profile_modification_time,
                    number_of_depth_steps=number_of_depth_steps,
@@ -442,9 +439,8 @@ class Measurement:
                    measurement_setting_file_name=measurement_settings_name,
                    measurement_setting_file_description
                    =measurement_settings_description,
-                   measurement_setting_modification_time =
                    measurement_setting_modification_time
-                   )
+                   =measurement_setting_modification_time)
 
     def measurement_to_file(self, measurement_file_path):
         if os.path.exists(measurement_file_path):

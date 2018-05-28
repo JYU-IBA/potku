@@ -28,9 +28,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.show_settings()
         
     def show_settings(self):
-        if self.obj.run:
-            run_object = self.obj.run
-        else:
+        run_object = self.obj.run
+        if not run_object:
             run_object = self.obj.request.default_run
         if run_object.beam.ion:
             self.ui.beamIonButton.setText(
@@ -79,9 +78,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.timeDoubleSpinBox.setValue(
             run_object.time)
 
-        if self.obj.detector:
-            detector_object = self.obj.detector
-        else:
+        detector_object = self.obj.detector
+        if not detector_object:
             detector_object = self.obj.request.default_detector
         self.detectorThetaDoubleSpinBox.setValue(
             detector_object.detector_theta)
@@ -89,11 +87,14 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         # self.detectorFiiDoubleSpinBox.setValue(
         #     detector_object.detector_theta + 180)
 
+        target_object = self.obj.target
+        if not target_object:
+            target_object = self.obj.request.default_target
         self.targetThetaDoubleSpinBox.setValue(
-            self.obj.target.target_theta)
+            target_object.target_theta)
         # TODO: update angles!
         # self.targetFiiDoubleSpinBox.setValue(
-        #     self.obj.target.target_theta + 180)
+        #     target_object.target_theta + 180)
 
     def update_settings(self):
         # Measurement settings

@@ -202,9 +202,9 @@ class Simulation:
                 "measurement_setting_file_description", "defaultlog", "errorlog"
 
     def __init__(self, path, request, name="Default",
-                 description="This is a default simulation setting file.",
+                 description="",
                  modification_time=time.time(), tab_id=-1, run=None,
-                 detector=None, target=Target(),
+                 detector=None, target=None,
                  measurement_setting_file_name="",
                  measurement_setting_file_description=""):
         """Initializes Simulation object.
@@ -229,8 +229,10 @@ class Simulation:
         self.element_simulations = []
 
         self.run = run
-        self.target = target
         self.detector = detector
+        self.target = target
+        if not self.target:
+            self.target = Target()
 
         self.name_prefix = "MC_simulation_"
         self.serial_number = 0

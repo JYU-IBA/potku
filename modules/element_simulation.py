@@ -42,25 +42,18 @@ class ElementSimulation:
                 "minimum_scattering_angle", "minimum_main_scattering_angle", \
                 "minimum_energy", "simulation_mode", "seed_number", \
                 "recoil_elements", "recoil_atoms", "mcerd_objects", \
-                "get_espe", "channel_width", "reference_density", "beam", \
-                "target", "detector", "__command", "__process", "settings", \
-                "espe_settings", "description", "run", "spectra", "bin_width"
+                "get_espe", "channel_width", "beam", "target", "detector", \
+                "__mcerd_command", "__process", "settings", "espe_settings", \
+                "description", "run", "spectra", "bin_width"
 
-    def __init__(self, directory, request, recoil_elements, beam=Beam(),
-                 target=Target(),
-                 detector=None,
-                 run=Run(),
-                 name="Default",
-                 description="This is a default mcsimu setting file.",
-                 modification_time=datetime.datetime.now(),
-                 simulation_type="ERD",
-                 number_of_ions=1000000, number_of_preions=100000,
-                 number_of_scaling_ions=5, number_of_recoils=10,
-                 minimum_scattering_angle=0.05,
-                 minimum_main_scattering_angle=20,
-                 simulation_mode="narrow", seed_number=101,
-                 minimum_energy=1.0, channel_width=0.1,
-                 reference_density=4.98e22):
+    def __init__(self, directory, request, recoil_elements, beam=None,
+                 target=None, detector=None, run=None, name="Default",
+                 description="", modification_time=time.time(),
+                 simulation_type="ERD", number_of_ions=1000000,
+                 number_of_preions=100000, number_of_scaling_ions=5,
+                 number_of_recoils=10, minimum_scattering_angle=0.05,
+                 minimum_main_scattering_angle=20, simulation_mode="narrow",
+                 seed_number=101, minimum_energy=1.0, channel_width=0.1):
         """ Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
@@ -72,8 +65,7 @@ class ElementSimulation:
             run: Run object reference.
             name: Name of the element simulation.
             description: Description of the ElementSimulation
-            modification_time: A modification time in ISO 8601 format, without
-                               information about the timezone.
+            modification_time: Modification time in Unix time.
             simulation_type: Type of simulation
             number_of_ions: Number of ions to be simulated.
             number_of_preions: Number of ions in presimulation.
@@ -85,7 +77,6 @@ class ElementSimulation:
             seed_number: Seed number to give unique value to one simulation.
             minimum_energy: Minimum energy.
             channel_width: Channel width.
-            reference_density: Reference density.
         """
         self.directory = directory
         self.request = request
@@ -125,8 +116,8 @@ class ElementSimulation:
         self.profile_to_file(os.path.join(self.directory,
                                           self.name + ".profile"))
 
-        self.__command = os.path.join("external", "Potku-bin", "mcerd" +
-                                      (".exe" if platform.system() == "Windows"
+        self.__mcerd_command = os.path.join("external", "Potku-bin", "mcerd" +
+                                            (".exe" if platform.system() == "Windows"
                                        else ""))
         self.__process = None
         # This has all the mcerd objects so get_espe knows all the element
