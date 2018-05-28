@@ -30,6 +30,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
     """
     Dialog class for handling the measurement parameter input.
     """
+
     def __init__(self, measurement, icon_manager):
         """
         Initializes the dialog.
@@ -89,9 +90,9 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.ui.defaultSettingsCheckBox.setCheckState(0)
             self.measurement_settings_widget.ui.nameLineEdit.setText(
                 self.measurement.measurement_setting_file_name)
-            self.measurement_settings_widget.ui.descriptionPlainTextEdit\
+            self.measurement_settings_widget.ui.descriptionPlainTextEdit \
                 .setPlainText(
-                    self.measurement.measurement_setting_file_description)
+                self.measurement.measurement_setting_file_description)
             self.measurement_settings_widget.ui.dateLabel.setText(str(
                 datetime.datetime.fromtimestamp(
                     self.measurement.modification_time)))
@@ -146,15 +147,18 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
 
         check_box = self.ui.defaultSettingsCheckBox
         if check_box.isChecked():
+            # Use request settings
             measurement = self.measurement.request.default_measurement
             self.measurement.run = None
             self.measurement.detector = None
-            self.measurement.measurement_setting_file_description = ""
+            self.measurement.measurement_setting_file_description = \
+                measurement.measurement_setting_file_description
             self.measurement.target.target_theta = \
                 self.measurement.request.default_target.target_theta
 
             # Revert all profile parameters to default.
-            self.measurement.profile_description = ""
+            self.measurement.profile_description = \
+                measurement.profile_description
             self.measurement.reference_density = measurement.reference_density
             self.measurement.number_of_depth_steps = \
                 measurement.number_of_depth_steps
@@ -174,33 +178,42 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             det_folder_path = os.path.join(self.measurement.directory,
                                            "Detector")
             if os.path.exists(det_folder_path):
+                # Remove Measurement specific Detector files
                 shutil.rmtree(det_folder_path)
+
             filenames_to_remove = []
             for file in os.listdir(self.measurement.directory):
                 if file.endswith(".measurement") or file.endswith(".profile"):
                     filenames_to_remove.append(file)
             for file in filenames_to_remove:
-                os.remove(os.path.join(self.measurement.directory,
-                                       file))
+                # Remove Measurement specific .measurement and .profile files
+                os.remove(os.path.join(self.measurement.directory, file))
+
         else:
+            # Use Measurement specific settings
             try:
                 if self.measurement.measurement_setting_file_name is None:
                     file_name = "temp"
                 else:
                     file_name = self.measurement.measurement_setting_file_name
-                target_file_path = os.path.join(self.measurement.directory,
-                                                self.measurement.target.name +
-                                                ".target")
-                measurement_settings_file_path = os.path.join(
-                    self.measurement.directory, file_name + ".measurement")
-                profile_file_path = os.path.join(self.measurement.directory,
-                                                 self.measurement.profile_name +
-                                                 ".profile")
-                det_folder_path = os.path.join(self.measurement.directory,
-                                               "Detector")
+
+                target_file_path = \
+                    os.path.join(self.measurement.directory,
+                                 self.measurement.target.name + ".target")
+                measurement_settings_file_path = \
+                    os.path.join(self.measurement.directory,
+                                 file_name + ".measurement")
+                profile_file_path = \
+                    os.path.join(self.measurement.directory,
+                                 self.measurement.profile_name + ".profile")
+                det_folder_path = \
+                    os.path.join(self.measurement.directory, "Detector")
+
                 if self.measurement.run is None:
+                    # Create default Run object for Measurement
                     self.measurement.run = Run()
                 if self.measurement.detector is None:
+                    # Create default Detector object for Measurement
                     detector_file_path = os.path.join(det_folder_path,
                                                       "Default.detector")
                     if not os.path.exists(det_folder_path):
@@ -209,22 +222,17 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                         detector_file_path, measurement_settings_file_path)
                     self.measurement.detector.create_folder_structure(
                         det_folder_path)
-                else:
-                    detector_file_path = self.measurement.detector.path
+
+                # Set Detector object to settings widget
                 self.detector_settings_widget.obj = self.measurement.detector
 
+                # Update settings
                 self.measurement_settings_widget.update_settings()
                 self.detector_settings_widget.update_settings()
                 self.profile_settings_widget.update_settings()
                 self.measurement.detector.path = \
                     os.path.join(det_folder_path,
                                  self.measurement.detector.name + ".detector")
-
-                # Save general measurement settings parameters.
-                new_measurement_settings_file_path = os.path.join(
-                    self.measurement.directory,
-                    self.measurement.measurement_setting_file_name +
-                    ".measurement")
 
                 # Delete possible extra .measurement files
                 filename_to_remove = ""
@@ -236,16 +244,27 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                     os.remove(os.path.join(self.measurement.directory,
                                            filename_to_remove))
 
-                self.measurement.measurement_to_file(
-                    new_measurement_settings_file_path)
+                # Save general measurement settings parameters.
+                new_measurement_settings_file_path = os.path.join(
+                    self.measurement.directory,
+                    self.measurement.measurement_setting_file_name +
+                    ".measurement")
+                self.measurement\
+                    .measurement_to_file(new_measurement_settings_file_path)
 
+                # Save run parameters
                 self.measurement.run.to_file(new_measurement_settings_file_path)
-                self.measurement.detector.\
-                    to_file(self.measurement.detector.path,
-                            new_measurement_settings_file_path)
+                # Save detector parameters
+                self.measurement.detector. to_file(
+                    self.measurement.detector.path,
+                    new_measurement_settings_file_path)
+                # Save profile parameters
                 self.measurement.profile_to_file(profile_file_path)
-                self.measurement.target.to_file(
-                    target_file_path, new_measurement_settings_file_path)
+                # Save target parameters
+                self.measurement.target\
+                    .to_file(target_file_path,
+                             new_measurement_settings_file_path)
+
             except TypeError:
                 QtWidgets.QMessageBox.question(self, "Warning",
                                                "Some of the setting values "
