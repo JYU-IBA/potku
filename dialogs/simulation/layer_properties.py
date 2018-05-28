@@ -176,6 +176,7 @@ class ElementLayout(QtWidgets.QHBoxLayout):
         self.isotope.setEnabled(False)
 
         self.amount_spinbox = QtWidgets.QDoubleSpinBox()
+        self.amount_spinbox.setMaximum(9999.00)
         self.amount_spinbox.setEnabled(False)
         self.amount_spinbox.valueChanged\
             .connect(lambda: self.amount_spinbox.setStyleSheet(""))
