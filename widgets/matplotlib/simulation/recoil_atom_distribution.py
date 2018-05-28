@@ -245,6 +245,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.on_draw()
 
+        for button in self.radios.buttons():
+            button.setChecked(True)
+            break
+
     def __update_figure(self):
         for element_simulation in self.simulation.element_simulations:
             for recoil_element in element_simulation.recoil_elements:
