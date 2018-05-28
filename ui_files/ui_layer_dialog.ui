@@ -232,7 +232,11 @@
          </widget>
         </item>
         <item>
-         <widget class="QDoubleSpinBox" name="thicknessEdit"/>
+         <widget class="QDoubleSpinBox" name="thicknessEdit">
+          <property name="maximum">
+           <double>9999.989999999999782</double>
+          </property>
+         </widget>
         </item>
         <item>
          <widget class="QLabel" name="label_8">
@@ -265,7 +269,11 @@
          </widget>
         </item>
         <item>
-         <widget class="QDoubleSpinBox" name="densityEdit"/>
+         <widget class="QDoubleSpinBox" name="densityEdit">
+          <property name="maximum">
+           <double>9999.989999999999782</double>
+          </property>
+         </widget>
         </item>
         <item>
          <widget class="QLabel" name="label_5">

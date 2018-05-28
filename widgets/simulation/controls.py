@@ -34,6 +34,7 @@ class SimulationControlsWidget(QtWidgets.QWidget):
                                          QtWidgets.QSizePolicy.Preferred)
 
         state_layout = QtWidgets.QHBoxLayout()
+        state_layout.setContentsMargins(0, 6, 0, 0)
         state_layout.addWidget(QtWidgets.QLabel("State: "))
         self.state_label = QtWidgets.QLabel("Not started")
         state_layout.addWidget(self.state_label)
@@ -41,13 +42,18 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         state_widget.setLayout(state_layout)
 
         controls_layout = QtWidgets.QHBoxLayout()
-        run_button = QtWidgets.QPushButton("Start")
+        controls_layout.setContentsMargins(0, 6, 0, 0)
+        run_button = QtWidgets.QPushButton()
+        run_button.setIcon(QIcon("ui_icons/reinhardt/player_play.svg"))
         run_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                  QtWidgets.QSizePolicy.Fixed)
+        run_button.setToolTip("Start simulation")
         run_button.clicked.connect(self.__start_simulation)
-        stop_button = QtWidgets.QPushButton("Stop")
+        stop_button = QtWidgets.QPushButton()
+        stop_button.setIcon(QIcon("ui_icons/reinhardt/player_stop.svg"))
         stop_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                   QtWidgets.QSizePolicy.Fixed)
+        stop_button.setToolTip("Stop simulation")
         stop_button.clicked.connect(self.__stop_simulation)
         controls_layout.addWidget(run_button)
         controls_layout.addWidget(stop_button)
@@ -55,14 +61,17 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         controls_widget.setLayout(controls_layout)
 
         processes_layout = QtWidgets.QFormLayout()
-        processes_label = QtWidgets.QLabel("No. of processes: ")
+        processes_layout.setContentsMargins(0, 6, 0, 0)
+        processes_label = QtWidgets.QLabel("Processes: ")
         processes_spinbox = QtWidgets.QSpinBox()
         processes_spinbox.setToolTip("Number of processes used in simulation")
+        processes_spinbox.setFixedWidth(50)
         processes_layout.addRow(processes_label, processes_spinbox)
         processes_widget = QtWidgets.QWidget()
         processes_widget.setLayout(processes_layout)
 
         state_and_controls_layout = QtWidgets.QVBoxLayout()
+        state_and_controls_layout.setContentsMargins(6, 6, 6, 6)
         state_and_controls_layout.addWidget(processes_widget)
         state_and_controls_layout.addWidget(state_widget)
         state_and_controls_layout.addWidget(controls_widget)
