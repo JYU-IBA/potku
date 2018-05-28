@@ -40,6 +40,7 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
         self.name = ""
         self.sample = None
         self.directory = directory
+        self.filename = ""
 
         for sample in samples:
             self.ui.samplesComboBox.addItem(
