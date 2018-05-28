@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 23.5.2018
+Updated on 28.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -183,7 +183,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
 
             filenames_to_remove = []
             for file in os.listdir(self.measurement.directory):
-                if file.endswith(".measurement") or file.endswith(".profile"):
+                if file.endswith(".measurement") or file.endswith(".profile")\
+                        or file.endswith(".target"):
                     filenames_to_remove.append(file)
             for file in filenames_to_remove:
                 # Remove Measurement specific .measurement and .profile files
