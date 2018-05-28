@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 23.5.2018
+Updated on 28.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -174,8 +174,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                         os.makedirs(det_folder_path)
                     self.simulation.detector = Detector(
                         detector_file_path, measurement_settings_file_path)
-                    self.simulation.detector.create_folder_structure(
+                    self.simulation.detector.update_directories(
                         det_folder_path)
+
+                    # Transfer the default detector efficiencies to new Detector
+                    self.simulation.detector.efficiencies = list(
+                        self.simulation.request.default_detector.efficiencies)
+                    self.simulation.request.default_detector.efficiencies = []
                 else:
                     detector_file_path = self.simulation.detector.path
                 self.detector_settings_widget.obj = self.simulation.detector
@@ -223,12 +228,15 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     json.dump(obj, file, indent=4)
 
                 self.simulation.run.to_file(new_measurement_settings_file_path)
-                self.simulation.detector.\
-                    to_file(self.simulation.detector.path,
-                            new_measurement_settings_file_path)
-                self.simulation.target.\
-                    to_file(target_file_path,
-                            new_measurement_settings_file_path)
+                self.simulation.detector.to_file(
+                    self.simulation.detector.path,
+                    new_measurement_settings_file_path)
+                for eff_file in self.simulation.detector.efficiencies:
+                    self.simulation.detector.add_efficiency_file(eff_file)
+
+                self.simulation.target.to_file(
+                    target_file_path,
+                    new_measurement_settings_file_path)
             except TypeError:
                 QtWidgets.QMessageBox.question(self, "Warning",
                                                "Some of the setting values "

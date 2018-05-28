@@ -221,8 +221,12 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                         os.makedirs(det_folder_path)
                     self.measurement.detector = Detector(
                         detector_file_path, measurement_settings_file_path)
-                    self.measurement.detector.create_folder_structure(
+                    self.measurement.detector.update_directories(
                         det_folder_path)
+                    # Transfer the default detector efficiencies to new Detector
+                    self.measurement.detector.efficiencies = list(
+                        self.measurement.request.default_detector.efficiencies)
+                    self.measurement.request.default_detector.efficiencies = []
 
                 # Set Detector object to settings widget
                 self.detector_settings_widget.obj = self.measurement.detector
@@ -256,9 +260,12 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                 # Save run parameters
                 self.measurement.run.to_file(new_measurement_settings_file_path)
                 # Save detector parameters
-                self.measurement.detector. to_file(
+                self.measurement.detector.to_file(
                     self.measurement.detector.path,
                     new_measurement_settings_file_path)
+                for eff_file in self.measurement.detector.efficiencies:
+                    self.measurement.detector.add_efficiency_file(eff_file)
+
                 # Save profile parameters
                 self.measurement.profile_to_file(profile_file_path)
                 # Save target parameters

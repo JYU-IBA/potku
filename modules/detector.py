@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 23.5.2018
+Updated on 28.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -115,7 +115,7 @@ class Detector:
         self.to_file(os.path.join(self.path),
                      self.__measurement_settings_file_path)
 
-    def create_folder_structure(self, directory):
+    def update_directories(self, directory):
         """
 
         Args:
@@ -142,6 +142,26 @@ class Detector:
             if f.strip().endswith(".eff"):
                 files.append(f)
         return files
+
+    def get_efficiency_files_from_list(self):
+        """
+        Get efficiency files that are stored in detector's efficiency list,
+        i.e. that are not yet moved under any detector's efficiency folder.
+
+        Return:
+            List of efficiecy files.
+        """
+        files = []
+        for path in self.efficiencies:
+            file = os.path.split(path)[1]
+            files.append(file)
+        return files
+
+    def save_efficiency_file_path(self, file_path):
+        """
+        Save the efficiency file path to detector's efficiencies list.
+        """
+        self.efficiencies.append(file_path)
 
     def add_efficiency_file(self, file_path):
         """Copies efficiency file to detector's efficiency folder.

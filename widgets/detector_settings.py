@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 18.5.2018
+Updated on 28.5.2018
 """
 import time
 
@@ -54,8 +54,12 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             lambda: self._add_new_foil(self.foils_layout))
 
         # Efficiency files
-        self.ui.efficiencyListWidget.addItems(
-            self.obj.get_efficiency_files())
+        efficiency_files = self.obj.get_efficiency_files()
+        self.ui.efficiencyListWidget.addItems(efficiency_files)
+        self.obj.efficiencies = []
+        for f in efficiency_files:
+            self.obj.efficiencies.append(os.path.join(
+                self.obj.efficiency_directory, f))
         self.ui.addEfficiencyButton.clicked.connect(
             lambda: self.__add_efficiency())
         self.ui.removeEfficiencyButton.clicked.connect(
@@ -226,8 +230,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.sender().setText(self.tmp_foil_info[foil_object_index].name)
 
     def __add_efficiency(self):
-        """Adds efficiency file in detector's efficiency directory and
-        updates settings view.
+        """Adds efficiency file in detector's efficiency list for moving into
+        efficiency folder later and updates settings view.
         """
         new_efficiency_file = open_file_dialog(self,
                                                self.request.default_folder,
@@ -235,10 +239,11 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
                                                "Efficiency File (*.eff)")
         if not new_efficiency_file:
             return
-        self.obj.add_efficiency_file(new_efficiency_file)
+        # self.obj.add_efficiency_file(new_efficiency_file)
+        self.obj.save_efficiency_file_path(new_efficiency_file)
         self.ui.efficiencyListWidget.clear()
         self.ui.efficiencyListWidget.addItems(
-            self.obj.get_efficiency_files())
+            self.obj.get_efficiency_files_from_list())
 
     def __remove_efficiency(self):
         """Removes efficiency file from detector's efficiency directory and
