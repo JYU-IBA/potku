@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 25.5.2018
+Updated on 28.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -395,7 +395,7 @@ class Selector:
                 color_string = "{0}{1}{2}".format(isotope,
                                                   element,
                                                   dirtyinteger)
-                if color_string not in color_dict:
+                if color_string not in color_dict.keys():
                     break
                 dirtyinteger += 1
             color_dict[color_string] = sel.default_color
