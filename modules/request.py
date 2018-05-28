@@ -99,13 +99,16 @@ class Request:
                                                     "Detector")
         default_measurement_file_path = os.path.join(self.default_folder,
                                                      "Default.measurement")
-        try:
+
+        detector_path = os.path.join(self.directory,
+                                     self.default_detector_folder,
+                                     "Default.detector")
+        if os.path.exists(detector_path):
+            # Read detector from file
             self.default_detector = Detector.from_file(
-                os.path.join(self.directory,
-                             self.default_detector_folder,
-                             "Default.detector"),
+                detector_path,
                 default_measurement_file_path, self)
-        except FileNotFoundError:
+        else:
             # Create Detector folder under Default folder
             if not os.path.exists(self.default_detector_folder):
                 os.makedirs(self.default_detector_folder)
@@ -117,19 +120,24 @@ class Request:
             self.default_detector.create_folder_structure(
                 self.default_detector_folder)
 
-        try:
-            self.default_target = Target.from_file(os.path.join(
-                self.default_folder, "Default.target"),
+        target_path = os.path.join(self.default_folder, "Default.target")
+        if os.path.exists(target_path):
+            # Read target from file
+            self.default_target = Target.from_file(target_path,
                 default_measurement_file_path, self)
-        except FileNotFoundError:
+        else:
+            # Create default target for request
             self.default_target = Target(name="Default")
             self.default_target.to_file(os.path.join(self.default_folder,
                                                      "Default.target"),
                                         default_measurement_file_path)
 
-        try:
+        measurement_info_path = os.path.join(self.default_folder,
+                                             "Default.info")
+        if os.path.exists(measurement_info_path):
+            # Read measurement from file
             self.default_measurement = Measurement.from_file(
-                os.path.join(self.default_folder, "Default.info"),
+                measurement_info_path,
                 os.path.join(self.default_folder, "Default.measurement"),
                 os.path.join(self.default_folder, "Default.profile"),
                 self)
@@ -139,7 +147,7 @@ class Request:
             self.default_measurement.detector = self.default_detector
             self.default_measurement.target = self.default_target
 
-        except FileNotFoundError:
+        else:
             # Create default measurement for request
             default_info_path = os.path.join(self.default_folder,
                                              "Default.info")
@@ -169,24 +177,28 @@ class Request:
                                                  + ".target"),
                                     default_measurement_file_path)
 
-        try:
+        simulation_path = os.path.join(self.default_folder,
+                                       "Default.simulation")
+        if os.path.exists(simulation_path):
+            # Read default simulation from file
             self.default_simulation = Simulation.from_file(
-                self, os.path.join(self.default_folder, "Default.simulation"))
-        except FileNotFoundError:
+                self, simulation_path)
+        else:
             # Create default simulation for request
             self.default_simulation = Simulation(os.path.join(
                 self.default_folder, "Default.simulation"), self)
 
-        try:
+        mcsimu_path = os.path.join(self.default_folder, "Default.mcsimu")
+        if os.path.exists(mcsimu_path):
+            # Read default element simulation from file
             self.default_element_simulation = \
                 ElementSimulation.from_file(self, "4He", self.default_folder,
-                                            os.path.join(
-                                                self.default_folder,
-                                                "Default.mcsimu"),
+                                            mcsimu_path,
                                             os.path.join(
                                                 self.default_folder,
                                                 "Default.profile"))
-        except FileNotFoundError:
+        else:
+            # Create default element simulation for request
             self.default_element_simulation = ElementSimulation(
                 self.default_folder, self, [RecoilElement(
                     Element.from_string("4He 3.0"), [])], name="Default")
