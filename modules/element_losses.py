@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 25.5.2018
+Updated on 28.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -62,7 +62,7 @@ class ElementLosses:
         # self.cut_splits_dict = {}
         self.reference_cut_file = reference_cut_file
         filename_split = reference_cut_file.split('.')
-        element = Element.from_string(filename_split[1])
+        element = Element.from_string(filename_split[2])
         self.reference_key = "{0}.{1}".format(element, filename_split[2])
         self.cut_splits = ElementLossesSplitHolder()
 

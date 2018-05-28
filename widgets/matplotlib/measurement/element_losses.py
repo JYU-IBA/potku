@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 25.5.2018
+Updated on 28.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -132,14 +132,14 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
                     rbs_string = "*"
 
             # Get color for selection
+            if isotope is None:
+                isotope = ""
             color_string = "{0}{1}{2}".format(isotope, element, cut_file[1])
-            if color_string not in self.selection_colors:
+            if color_string not in self.selection_colors.keys():
                 color = "red"
             else:
                 color = self.selection_colors[color_string]
 
-            if not isotope:
-                isotope = ""
             # Set label text
             if len(cut_file) == 2:
                 label = r"$^{" + str(isotope) + "}$" + element + rbs_string

@@ -144,7 +144,7 @@ class CutFile:
             that we do not overwrite first 2H selection with other
             2H selection.
         """
-        if self.element_scatter != "":
+        if self.element_scatter.symbol is not "":
             element = self.element_scatter
         else:
             element = self.element
@@ -156,6 +156,8 @@ class CutFile:
                 "-", measurement_name_with_prefix.find("-") + 1)
             measurement_name = \
                 measurement_name_with_prefix[measurement_name_start + 1:]
+            if element is not "":
+                element = element.__str__()
             if self.is_elem_loss:
                 if not os.path.exists(self.directory):
                     os.makedirs(self.directory)
@@ -182,13 +184,17 @@ class CutFile:
                         element_count += 1
                     except IOError:
                         break
+            if self.element_scatter is not "":
+                element_scatter = self.element_scatter.__str__()
+            else:
+                element_scatter = ""
             my_file = open(file, 'wt')
             my_file.write("Count: {0}\n".format(self.count))
             my_file.write("Type: {0}\n".format(self.type))
             my_file.write("Weight Factor: {0}\n".format(self.weight_factor))
             my_file.write("Energy: {0}\n".format(0))
             my_file.write("Detector Angle: {0}\n".format(0))
-            my_file.write("Scatter Element: {0}\n".format(self.element_scatter))
+            my_file.write("Scatter Element: {0}\n".format(element_scatter))
             my_file.write("Element losses: {0}\n".format(self.is_elem_loss))
             my_file.write("Split count: {0}\n".format(self.split_count))
             my_file.write("\n")
@@ -258,7 +264,7 @@ class CutFile:
         self.weight_factor = cut_file.weight_factor * additional_weight_factor
         self.energy = cut_file.energy
         self.detector_angle = cut_file.detector_angle
-        self.element_scatter = Element(cut_file.element_scatter)
+        self.element_scatter = cut_file.element_scatter
 
 
 def is_rbs(file):
@@ -279,8 +285,8 @@ def is_rbs(file):
             if len(line_split) > 1: 
                 key = line_split[0].strip()
                 value = line_split[1].strip()
-            if key == "Type":
-                return value == "RBS"            
+                if key == "Type":
+                    return value == "RBS"
             dirtyinteger += 1
     return False
 
@@ -304,6 +310,6 @@ def get_scatter_element(file):
             if len(line_split) > 1: 
                 key = line_split[0].strip()
                 value = line_split[1].strip()
-            if key == "Scatter Element":
-                return Element(value)
+                if key == "Scatter Element":
+                    return Element.from_string(value)
     return None
