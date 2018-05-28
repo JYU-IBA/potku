@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 20.8.2013
+Updated on 28.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -27,10 +27,15 @@ DepthFiles.py creates the files necessary for generating depth files.
 Also handles several tasks necessary for operating with depth files.
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
-             "Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
-import math, os, platform, re, subprocess
+import math
+import os
+import platform
+import re
+import subprocess
 
 
 class DepthFiles(object):
@@ -183,6 +188,8 @@ def integrate_concentrations(depth_files, ignore_elements, lim_a, lim_b):
     """
     # TODO TARKISTA, ETTÄ TOIMII!!!
     concentration = {}
+    if not depth_files:
+        return concentration
     # Extract the sum of data point within the [lim_a,lim_b]-range
     bin_width = abs(depth_files[0][1][0] - depth_files[0][1][1])
     for element in depth_files:
@@ -218,6 +225,8 @@ def integrate_lists(depth_files, ignore_elements, lim_a, lim_b,
     """
     percentages = {}
     margin_of_errors = {}
+    if not depth_files:
+        return {}, {}
     # Extract the sum of data point within the [lim_a,lim_b]-range
     total_values = depth_files[0]
     total_values_sum = 0
@@ -279,7 +288,7 @@ def integrate_lists(depth_files, ignore_elements, lim_a, lim_b,
         else:
             stat_err = 0
         syst_err = (systematic_error / 100) * percentages[element]
-        margin_of_errors[element] = math.sqrt(stat_err * stat_err + \
+        margin_of_errors[element] = math.sqrt(stat_err * stat_err +
                                               syst_err * syst_err)
     return percentages, margin_of_errors
 

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 22.5.2018
+Updated on 28.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -23,13 +23,17 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
+             "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import logging
 import os
 import sys
-from PyQt5 import QtCore, uic, QtWidgets
+from PyQt5 import QtCore
+from PyQt5 import uic
+from PyQt5 import QtWidgets
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.energy_spectrum import EnergySpectrumWidget
@@ -38,7 +42,6 @@ from dialogs.measurement.depth_profile import DepthProfileWidget
 from dialogs.measurement.element_losses import ElementLossesDialog
 from dialogs.measurement.element_losses import ElementLossesWidget
 from modules.element import Element
-from modules.null import Null
 from modules.ui_log_handlers import CustomLogHandler
 from widgets.log import LogWidget
 from widgets.measurement.tofe_histogram import TofeHistogramWidget
@@ -65,11 +68,11 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         self.obj = measurement
         self.icon_manager = icon_manager
 
-        self.histogram = Null()
+        self.histogram = None
         # self.add_histogram()
-        self.elemental_losses_widget = Null()
-        self.energy_spectrum_widget = Null()
-        self.depth_profile_widget = Null()
+        self.elemental_losses_widget = None
+        self.energy_spectrum_widget = None
+        self.depth_profile_widget = None
         # self.check_previous_state_files()  # For above three.
 
         self.ui.saveCutsButton.clicked.connect(self.measurement_save_cuts)
@@ -90,7 +93,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         # Enable master button
         self.toggle_master_button()
 
-    def add_widget(self, widget, minimized=None, has_close_button=True, icon=None):
+    def add_widget(self, widget, minimized=None, has_close_button=True,
+                   icon=None):
         """Adds a new widget to current (measurement) tab.
 
         Args:
@@ -102,10 +106,10 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         if has_close_button:
             subwindow = self.ui.mdiArea.addSubWindow(widget)
         else:
-            subwindow = self.ui.mdiArea.addSubWindow(widget,
-                                                     QtCore.Qt.CustomizeWindowHint \
-                                                     | QtCore.Qt.WindowTitleHint \
-                                                     | QtCore.Qt.WindowMinMaxButtonsHint)
+            subwindow = self.ui.mdiArea.addSubWindow(
+                widget, QtCore.Qt.CustomizeWindowHint |
+                        QtCore.Qt.WindowTitleHint |
+                        QtCore.Qt.WindowMinMaxButtonsHint)
         if icon:
             subwindow.setWindowIcon(icon)
         subwindow.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -126,14 +130,14 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         self.ui.makeSelectionsButton.clicked.connect(
             lambda: self.histogram.matplotlib.elementSelectionButton.setChecked(
                 True))
-        # self.connect(self.histogram.matplotlib, QtCore.SIGNAL("selectionsChanged(PyQt_PyObject)"),
-        # self.__set_cut_button_enabled)
-        self.histogram.matplotlib.selectionsChanged.connect(self.__set_cut_button_enabled)
+        self.histogram.matplotlib.selectionsChanged.connect(
+            self.__set_cut_button_enabled)
 
         # Draw after giving axes -> selections set properly
         self.histogram.matplotlib.on_draw()
         if not self.obj.selector.is_empty():
-            self.histogram.matplotlib.elementSelectionSelectButton.setEnabled(True)
+            self.histogram.matplotlib.elementSelectionSelectButton.setEnabled(
+                True)
         self.add_widget(self.histogram, has_close_button=False)
         self.histogram.set_cut_button_enabled()
 
@@ -144,8 +148,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
     def add_log(self):
         """Add the measurement log to measurement tab widget.
 
-        Checks also if there's already some logging for this measurement and appends
-        the text field of the user interface with this log.
+        Checks also if there's already some logging for this measurement and
+        appends the text field of the user interface with this log.
         """
         self.log = LogWidget()
         self.add_widget(self.log, minimized=True, has_close_button=False)
@@ -158,11 +162,11 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         self.__read_log_file(log_error, 0)
 
     def add_ui_logger(self, log_widget):
-        """Adds handlers to measurement logger so the logger can log the events to
-        the user interface too.
+        """Adds handlers to measurement logger so the logger can log the events
+        to the user interface too.
 
-        log_widget specifies which ui element will handle the logging. That should
-        be the one which is added to this MeasurementTabWidget.
+        log_widget specifies which ui element will handle the logging. That
+        should be the one which is added to this MeasurementTabWidget.
         """
         logger = logging.getLogger(self.obj.name)
         defaultformat = logging.Formatter(
@@ -173,7 +177,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
                                                 log_widget)
         logger.addHandler(widgetlogger_default)
 
-    def check_previous_state_files(self, progress_bar=Null(), directory=None):
+    def check_previous_state_files(self, progress_bar=None, directory=None):
         """Check if saved state for Elemental Losses, Energy Spectrum or Depth
         Profile exists. If yes, load them also.
 
@@ -249,7 +253,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
                 lines[2].strip().split("\t"), name, m_name)
             cut_names = [os.path.basename(cut) for cut in use_cuts]
             elements_string = lines[1].strip().split("\t")
-            elements = [Element.from_string(element) for element in elements_string]
+            elements = [Element.from_string(element)
+                        for element in elements_string]
             x_unit = lines[3].strip()
             line_zero = False
             line_scale = False
@@ -288,7 +293,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             return
         m_name = self.obj.name
         try:
-            reference_cut = self.__confirm_filepath(lines[0].strip(), name, m_name)
+            reference_cut = self.__confirm_filepath(lines[0].strip(),
+                                                    name, m_name)
             checked_cuts = self.__confirm_filepath(
                 lines[1].strip().split("\t"), name, m_name)
             cut_names = [os.path.basename(cut) for cut in checked_cuts]
@@ -357,7 +363,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         previous = self.depth_profile_widget
         DepthProfileDialog(parent)
         if self.depth_profile_widget != previous and \
-                type(self.depth_profile_widget) != Null:
+                type(self.depth_profile_widget) is not None:
             self.depth_profile_widget.save_to_file()
 
     def open_energy_spectrum(self, parent):
@@ -369,7 +375,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         previous = self.energy_spectrum_widget
         EnergySpectrumParamsDialog(parent)
         if self.energy_spectrum_widget != previous and \
-                type(self.energy_spectrum_widget) != Null:
+                type(self.energy_spectrum_widget) is not None:
             self.energy_spectrum_widget.save_to_file()
 
     def open_element_losses(self, parent):
@@ -381,7 +387,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         previous = self.elemental_losses_widget
         ElementLossesDialog(parent)
         if self.elemental_losses_widget != previous and \
-                type(self.elemental_losses_widget) != Null:
+                type(self.elemental_losses_widget) != None:
             self.elemental_losses_widget.save_to_file()
 
     def toggle_master_button(self):
@@ -398,7 +404,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         Args:
             filepath: A string representing a filepath.
             name: A string representing origin measurement's name.
-            m_name: A string representing measurement's name where graph is created.
+            m_name: A string representing measurement's name where graph is
+            created.
         """
         if type(filepath) == str:
             # Replace two for measurement and cut file's name. Not all, in case 
@@ -474,7 +481,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         return new.join(li)
 
     def __set_cut_button_enabled(self, selections):
-        """Enables save cuts button if the given selections list's lenght is not 0.
+        """Enables save cuts button if the given selections list's lenght is
+        not 0.
         Otherwise disable.
         
         Args:

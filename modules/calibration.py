@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 24.5.2018
+Updated on 28.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -312,8 +312,9 @@ class TOFCalibration:
         Param = collections.namedtuple('Param', 'a b')
         p_guess = Param(a=guess_a, b=guess_b)
         try:
-            p, unused_cov, unused_info, unused_mesg, unused_ier = optimize.leastsq(
-                self.__residuals, p_guess, args=(x, y), full_output=True)
+            p, unused_cov, unused_info, unused_mesg, unused_ier = \
+                optimize.leastsq(
+                    self.__residuals, p_guess, args=(x, y), full_output=True)
             p = Param(*p)        
         except:
             print("Invalid fit parameters")
@@ -395,7 +396,7 @@ class TOFCalibrationPoint:
         if self.type == "RBS":
             element_scatter = self.cut.element_scatter
             if element_scatter.isotope.mass:
-                mass_scatter = float(element_scatter.isotope.mass)
+                mass_scatter = float(element_scatter.isotope)
             else:
                 mass_scatter = masses.get_standard_isotope(
                     self.cut.element_scatter.name)
@@ -564,4 +565,4 @@ class TOFCalibrationPoint:
         Return:
             Returns TOFCalibrationPoint values in tuple.
         """
-        return tuple(self.time_of_flight_channel, self.time_of_flight_seconds)
+        return self.time_of_flight_channel, self.time_of_flight_seconds

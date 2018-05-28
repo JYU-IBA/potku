@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 22.5.2018
+Updated on 28.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -28,8 +28,9 @@ from PyQt5.QtCore import Qt
 from modules.general_functions import read_espe_file
 from modules.measurement import Measurement
 
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
-             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
+             "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
 import logging
@@ -74,7 +75,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.ui.pushButton_OK.clicked.connect(self.__accept_params)
 
             m_name = self.measurement.name
-            if not m_name in EnergySpectrumParamsDialog.checked_cuts.keys():
+            if m_name not in EnergySpectrumParamsDialog.checked_cuts.keys():
                 EnergySpectrumParamsDialog.checked_cuts[m_name] = []
             self.measurement.fill_cuts_treewidget(
                 self.ui.treeWidget,
@@ -134,8 +135,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             if child_count > 0:  # Elemental Losses
                 dir_elo = os.path.join(
                     self.measurement.directory_composition_changes, "Changes")
-                for i in range(child_count):
-                    item_child = item.child(i)
+                for j in range(child_count):
+                    item_child = item.child(j)
                     if item_child.checkState(0):
                         use_cuts.append(
                             os.path.join(dir_elo, item_child.file_name))
@@ -153,9 +154,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 use_cuts,
                 width)
 
-            # Check that matplotlib attribute exists after creation of energy spectrum widget.
-            # If it doesn't exists, that means that the widget hasn't been initialized properly
-            # and the program should show an error dialog.
+            # Check that matplotlib attribute exists after creation of energy
+            # spectrum widget.
+            # If it doesn't exists, that means that the widget hasn't been
+            # initialized properly and the program should show an error dialog.
             if hasattr(self.parent.energy_spectrum_widget, "matplotlib_layout"):
                 icon = self.parent.icon_manager.get_icon(
                     "energy_spectrum_icon_16.png")
@@ -170,22 +172,24 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 )
                 logging.getLogger("request").info(msg)
                 logging.getLogger(measurement_name).info(
-                    "Created Energy Spectrum. Bin width: {0} Cut files: {1}".format(
+                    "Created Energy Spectrum. Bin width: {0} Cut files: {1}".
+                    format(
                         width,
                         ", ".join(use_cuts)))
                 log_info = "Energy Spectrum graph points:\n"
                 data = self.parent.energy_spectrum_widget.energy_spectrum_data
                 splitinfo = "\n".join(["{0}: {1}".format(key, ", ".join(
-                    "({0};{1})".format(round(v[0], 2), v[1]) \
+                    "({0};{1})".format(round(v[0], 2), v[1])
                     for v in data[key])) for key in data.keys()])
                 logging.getLogger(measurement_name).info(log_info + splitinfo)
                 self.close()
             else:
                 self.close()
-                reply = QtWidgets.QMessageBox.critical(self, "Error",
-                                                       "An error occured while trying to create energy spectrum",
-                                                       QtWidgets.QMessageBox.Ok,
-                                                       QtWidgets.QMessageBox.Ok)
+                reply = QtWidgets.QMessageBox.critical(
+                    self, "Error",
+                    "An error occured while trying to create energy spectrum",
+                    QtWidgets.QMessageBox.Ok,
+                    QtWidgets.QMessageBox.Ok)
 
     def __update_eff_files(self):
         """Update efficiency files to UI which are used.
@@ -196,7 +200,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         if self.measurement.detector:
             eff_files = self.measurement.detector.get_efficiency_files()
         else:
-            eff_files = self.measurement.request.default_detector.get_efficiency_files()
+            eff_files = self.measurement.request.default_detector.\
+                get_efficiency_files()
         eff_files_used = []
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()
@@ -209,14 +214,16 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 # selected so user knows exactly what files are used instead
                 # of what files match all the cut files.
                 # if not item.checkState(0): continue
+                if not hasattr(item, "file_name"):
+                    continue
                 cut_element = Element.from_string(item.file_name.split(".")[1])
-                mass = cut_element.isotope.mass
+                mass = cut_element.isotope
                 if not mass:
                     mass = round(
                         masses.get_standard_isotope(cut_element.symbol),
                         0)
                 if cut_element.symbol == element.symbol \
-                        and mass == element.isotope.mass:
+                        and mass == element.isotope:
                     eff_files_used.append(eff)
         if eff_files_used:
             self.ui.label_efficiency_files.setText(
@@ -236,7 +243,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
         Args:
             parent: A TabWidget.
             use_cuts: A string list representing Cut files.
-            bin_width: A float representing Energy Spectrum histogram's bin width.
+            bin_width: A float representing Energy Spectrum histogram's bin
+            width.
         """
         try:
             super().__init__()
@@ -251,7 +259,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.ui = uic.loadUi(os.path.join("ui_files",
                                               "ui_energy_spectrum.ui"),
                                  self)
-            title = "{0} - Bin Width: {1}".format(self.ui.windowTitle(), bin_width)
+            title = "{0} - Bin Width: {1}".format(self.ui.windowTitle(),
+                                                  bin_width)
             self.ui.setWindowTitle(title)
 
             if isinstance(self.parent.obj, Measurement):
@@ -270,11 +279,13 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 # Generate new tof.in file for external programs
                 self.measurement.generate_tof_in()
                 # Do energy spectrum stuff on this
-                self.energy_spectrum = EnergySpectrum(self.measurement,
-                                                      use_cuts,
-                                                      bin_width,
-                                                      progress_bar=self.progress_bar)
-                self.energy_spectrum_data = self.energy_spectrum.calculate_spectrum()
+                self.energy_spectrum = EnergySpectrum(
+                    self.measurement,
+                    use_cuts,
+                    bin_width,
+                    progress_bar=self.progress_bar)
+                self.energy_spectrum_data = self.energy_spectrum.\
+                    calculate_spectrum()
 
                 # Check for RBS selections.
                 for cut in self.use_cuts:
