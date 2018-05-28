@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 17.4.2013
-Updated on 28.8.2013
+Updated on 28.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -27,8 +27,9 @@ MatplotlibDepthProfileWidget handles the drawing and operation of the
 depth profile graph.
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
-             "Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import os, re
 from PyQt5 import QtWidgets
@@ -85,8 +86,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__ignore_from_ratio = []
         self.selection_colors = parent.measurement.selector.get_colors()
         self.icon_manager = parent.icon_manager
-        self.lim_a = float
-        self.lim_b = float
+        self.lim_a = 0.0
+        self.lim_b = 0.0
         self.lim_icons = {'a': 'depth_profile_lim_all.svg',
                           'b': 'depth_profile_lim_in.svg',
                           'c': 'depth_profile_lim_ex.svg'}
@@ -131,15 +132,15 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
     def __sortt(self, key):
         if key == "total":
             return -1
-        element_object = Element(key)
+        if type(key) is Element:
+            element_object = key
+        else:
+            element_object = Element.from_string(key)
         element = element_object.symbol
         isotope = element_object.isotope
-        mass = str(isotope)
-        if not mass:
-            mass = masses.get_standard_isotope(element)
-        else:
-            mass = float(mass)
-        return mass
+        if not isotope:
+            isotope = masses.get_standard_isotope(element)
+        return isotope
 
     def on_draw(self):
         """Draws the depth profile graph
@@ -167,15 +168,21 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             for file in self.depth_files:
                 full_path = os.path.join(self.depth_dir, file)
                 full_paths.append(full_path)
-            self.read_files = df.extract_from_depth_files(full_paths,
-                                                          self.elements,
-                                                          x_column, y_column)
-            self.__files_read = True
-            self.rel_files = df.create_relational_depth_files(self.read_files)
-            # if not self.lim_a:
-            self.lim_a = self.read_files[0][1][0]
-            self.lim_b = self.read_files[0][1][-1]
-            # self.__limits_set = not self.__limits_set
+
+            try:
+                self.read_files = df.extract_from_depth_files(full_paths,
+                                                              self.elements,
+                                                              x_column,
+                                                              y_column)
+                self.__files_read = True
+                self.rel_files = df.create_relational_depth_files(
+                    self.read_files)
+                # if not self.lim_a:
+                self.lim_a = self.read_files[0][1][0]
+                self.lim_b = self.read_files[0][1][-1]
+                # self.__limits_set = not self.__limits_set
+            except FileNotFoundError:
+                self.__files_read = True
 
         # Determine what files to use for plotting
         if not self.__rel_graph:
@@ -466,7 +473,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.on_draw()
 
     def __toggle_drag_zoom(self):
-        self.__tool_label.setText("")
+        # self.__tool_label.setText("")
         if self.__button_drag.isChecked():
             self.mpl_toolbar.pan()
         if self.__button_zoom.isChecked():

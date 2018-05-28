@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 23.5.2018
+Updated on 28.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -151,30 +151,6 @@ class Measurements:
 
         # Create new Measurement object.
         else:
-            # measurement = Measurement(self.request, tab_id=tab_id,
-            #                           name=measurement_name[0])
-            # measurement.serial_number = sample.get_running_int_measurement()
-            # # TODO Can increasing the int be handled by sample?
-            # sample.increase_running_int_measurement_by_1()
-            #
-            # # Create path for measurement directory.
-            # measurement_directory = os.path.join(self.request.directory,
-            #                                      sample.directory,
-            #                                      measurement.name_prefix
-            #                                      + "%02d" %
-            #                                      measurement.serial_number +
-            #                                      "-" + measurement.name)
-            #
-            # # Create path for measurement file used by the program and create
-            # # folder structure.
-            # new_measurement_file = os.path.join(measurement_directory,
-            #                                     "Data", measurement_filename)
-            # measurement.create_folder_structure(measurement_directory,
-            #                                     new_measurement_file)
-            # if file_directory != os.path.join(measurement.directory,
-            #                                   measurement.directory_data) and \
-            #         file_directory:
-            #     measurement.copy_file_into_measurement(info_path)
             measurement_name, extension = os.path.splitext(file_name)
             try:
                 keys = sample.measurements.measurements.keys()
@@ -200,7 +176,8 @@ class Measurements:
                 # Create path for measurement file used by the program and
                 # create folder structure.
                 new_measurement_file = os.path.join(measurement_directory,
-                                                    "Data", measurement_filename)
+                                                    "Data",
+                                                    measurement_filename)
                 measurement.create_folder_structure(measurement_directory,
                                                     new_measurement_file)
                 if file_directory != os.path.join(measurement_directory,
@@ -329,6 +306,12 @@ class Measurement:
 
         self.errorlog = None
         self.defaultlog = None
+
+    def get_detector_or_default(self):
+        if self.detector is None:
+            return self.request.default_detector
+        else:
+            return self.detector
 
     def update_folders_and_selector(self):
         for item in os.listdir(self.directory):
@@ -474,8 +457,6 @@ class Measurement:
             json.dump(obj_info, file, indent=4)
 
     def profile_to_file(self, profile_file_path):
-        obj_profile = {}
-
         obj_profile = {"general": {},
                        "depth_profiles": {},
                        "energy_spectra": {},
@@ -1035,8 +1016,6 @@ class Measurement:
             global_settings.get_num_iterations())
 
         # Efficiency directory
-        # TODO Efficiency directory should be measurement's detector's
-        # directory and not request's.
         if self.detector:
             eff_directory = self.detector.efficiency_directory
         else:
