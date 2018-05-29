@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 28.5.2018
+Updated on 29.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -28,12 +28,18 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-from modules.general_functions import hist, carbon_stopping
-from modules.general_functions import convert_mev_to_joule, convert_amu_to_kg
-from scipy import cos, sin, sqrt, pi
+from modules.general_functions import hist
+from modules.general_functions import carbon_stopping
+from modules.general_functions import convert_mev_to_joule
+from modules.general_functions import convert_amu_to_kg
+from scipy import cos
+from scipy import sin
+from scipy import sqrt
+from scipy import pi
 import scipy.optimize as optimize
 from scipy.special import erf
-from numpy import array, linspace
+from numpy import array
+from numpy import linspace
 import collections
 import modules.masses as masses
 
@@ -94,20 +100,20 @@ class TOFCalibrationHistogram:
         Return:
             Returns calculated error function value for x.
         """
-        x0, A, k = params
-        return A * (erf((x - x0) / k) + 1) / 2
+        x0, a, k = params
+        return a * (erf((x - x0) / k) + 1) / 2
 
     def __residuals(self, p, x, y):
         return y - self.error_function(x, p)
 
-    def fit_error_function(self, x, y, guess_x0, guess_A, guess_k):
+    def fit_error_function(self, x, y, guess_x0, guess_a, guess_k):
         """Fits a error function to the given data.
         
         Args:
             x: data's x axis a list
             y: data's y axis a list
             guess_x0: Guess for the x_0's value
-            guess_A: Guess for the A's value
+            guess_a: Guess for the A's value
             guess_k: Guess for the k's value
             
         Return:
@@ -119,14 +125,14 @@ class TOFCalibrationHistogram:
         x = array(x)  # Numpy array
         y = array(y)
 
-        Param = collections.namedtuple("Param", "x0 A k")
-        p_guess = Param(x0=guess_x0, A=guess_A, k=guess_k)
+        Param = collections.namedtuple("Param", "x0 a k")
+        p_guess = Param(x0=guess_x0, a=guess_a, k=guess_k)
         p, unused_cov, unused_infodict, unused_mesg, unused_ier = \
             optimize.leastsq(self.__residuals, p_guess, args=(x, y),
                              full_output=True)
         p = Param(*p)        
 
-        return p.x0, p.A, p.k
+        return p.x0, p.a, p.k
 
     def find_leading_edge_borders(self):
         """Finds the beginning and the end of the leading edge.
@@ -277,6 +283,7 @@ class TOFCalibration:
         a*x + b
         
         Args:
+            x: point x.
             params: namedtuple or tuple that brings the used parameters ("a b")
             
         Return:
@@ -369,6 +376,8 @@ class TOFCalibrationPoint:
         self.point_used = True
         # measuring_settings = detector.measuring_unit_settings
         run = measurement.run
+        if run is None:  # if there is yet no Measurement's own Run object
+            run = measurement.request.default_run
         time_of_flight_length = 0
         i = len(detector.tof_foils) - 1
         while i - 1 >= 0:
@@ -391,7 +400,7 @@ class TOFCalibrationPoint:
             # If the cut doesn't have a isotope, calculate standard atomic mass.
             mass = masses.get_standard_isotope(self.cut.element.symbol)
             isotope = masses.get_most_common_isotope(self.cut.element.symbol)[0]
-        self.recoiled_mass = convert_amu_to_kg(mass)
+            self.recoiled_mass = convert_amu_to_kg(mass)
 
         if self.type == "RBS":
             element_scatter = self.cut.element_scatter
@@ -410,7 +419,8 @@ class TOFCalibrationPoint:
         # using same hardware.
         self.target_angle = detector.detector_theta * pi / 180
         energy = self.__calculate_particle_energy(self.beam_energy)
-        self.recoiled_mass = float(isotope)
+        recoiled_mass = float(isotope)
+        self.recoiled_mass = convert_amu_to_kg(recoiled_mass)
 
         # Carbon stopping gives a list of different result values. 
         # The last value is the stopping energy. 

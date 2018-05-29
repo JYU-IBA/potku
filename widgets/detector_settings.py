@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 28.5.2018
+Updated on 29.5.2018
 """
 import time
 
@@ -273,9 +273,9 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         distance = 0
         for i in range(len(self.detector_structure_widgets)):
             widget = self.detector_structure_widgets[i]
-            dist_to_add = widget.ui.distanceDoubleSpinBox.value() * 10
+            dist_to_add = widget.ui.distanceDoubleSpinBox.value()
             distance = distance + dist_to_add
-            widget.ui.distanceLabel.setText(str(distance / 10))
+            widget.ui.distanceLabel.setText(str(distance))
             self.tmp_foil_info[i].distance = distance
 
     def delete_foil(self, foil_widget):
