@@ -51,6 +51,9 @@ class Element:
         Args:
             element_str: A string from which the element information will be
                          parsed.
+
+        Return:
+            Element object.
         """
         m = re.match("(?P<isotope>[0-9]{0,3})(?P<symbol>[a-zA-Z]{1,2})"
                      "(\s(?P<amount>\d*(\.?\d+)?))?", element_str.strip())
@@ -87,6 +90,9 @@ class Element:
 
     def __eq__(self, other):
         """Compare object.
+
+        Return:
+            Boolean representing equality.
         """
         return str(self) == str(other)
 

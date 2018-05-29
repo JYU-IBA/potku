@@ -89,7 +89,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         files = open_files_dialog(self,
                                   self.request.directory,
                                   "Select an event collection to be imported",
-                                  "Event collection (*.evnt)")
+                                  "Event collection (*.evnt)")[0]
         for file in files:
             if file in self.__files_added:
                 continue

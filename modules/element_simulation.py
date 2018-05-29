@@ -274,7 +274,7 @@ class ElementSimulation:
                     points.append(Point((float(x), float(y))))
                 element = RecoilElement(Element.from_string(obj["element"]),
                                         points)
-                element.reference_density = obj["reference_density"]
+                element.reference_density = obj["reference_density"] / 1e22
                 element.simulation_type = obj["simulation_type"]
                 element.channel_width = channel_width
                 recoil_elements.append(element)
