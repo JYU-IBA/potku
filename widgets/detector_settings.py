@@ -137,7 +137,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.tmp_foil_info.append(new_foil)
         foil_widget.ui.foilButton.setText(new_foil.name)
         foil_widget.ui.distanceDoubleSpinBox.setValue(0.0)
-        distance = new_foil.distance / 10
+        distance = new_foil.distance
         foil_widget.ui.distanceLabel.setText(str(distance))
         foil_widget.ui.foilButton.clicked.connect(
             lambda: self._open_foil_dialog())
@@ -167,10 +167,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
                     foil_widget.ui.timingFoilCheckBox.setChecked(True)
             if i != 0:
                 distance = foils[i].distance - foils[i - 1].distance
-                foil_widget.ui.distanceDoubleSpinBox.setValue(distance / 10)
+                foil_widget.ui.distanceDoubleSpinBox.setValue(distance)
             else:
                 foil_widget.ui.distanceDoubleSpinBox.setValue(
-                    foils[i].distance / 10)
+                    foils[i].distance)
         return layout
 
     def _check_and_add(self):
