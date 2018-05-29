@@ -140,6 +140,16 @@ class Simulations:
                     profile_file_path = os.path.join(
                         simulation.directory, element_str + profile_extension)
 
+                    target_file_path = None
+                    measurement_file_path = None
+                    for file in os.listdir(simulation.directory):
+                        if file.endswith(".target"):
+                            target_file_path = os.path.join(
+                                simulation.directory, file)
+                        if file.endswith(measurement_extension):
+                            measurement_file_path = os.path.join(
+                                simulation.directory, file)
+
                     if os.path.exists(profile_file_path):
                         # Create ElementSimulation from files
                         element_simulation = ElementSimulation.from_file(
@@ -148,7 +158,9 @@ class Simulations:
                         simulation.element_simulations.append(
                             element_simulation)
                         element_simulation.run = simulation.run
-                        element_simulation.target = simulation.target
+                        element_simulation.target = Target.from_file(
+                            target_file_path, measurement_file_path,
+                            self.request)
 
         # Create a new simulation
         else:
