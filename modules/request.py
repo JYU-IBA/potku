@@ -94,11 +94,12 @@ class Request:
             os.makedirs(self.default_folder)
 
         # Try reading default objects from Default folder.
-        self.create_default_measurement()
+        self.default_measurement_file_path = os.path.join(self.default_folder,
+                                                          "Default.measurement")
         self.create_default_detector()
+        self.create_default_measurement()
         self.create_default_target()
         self.create_default_simulation()
-        self.create_default_run()
 
         # Set default Run, Detector and Target objects to Measurement
         self.default_measurement.run = self.default_run
@@ -170,8 +171,6 @@ class Request:
 
     def create_default_measurement(self):
         # Measurement
-        self.default_measurement_file_path = os.path.join(self.default_folder,
-                                                     "Default.measurement")
         measurement_info_path = os.path.join(self.default_folder,
                                              "Default.info")
         if os.path.exists(measurement_info_path):
@@ -181,7 +180,7 @@ class Request:
                 os.path.join(self.default_folder, "Default.measurement"),
                 os.path.join(self.default_folder, "Default.profile"),
                 self)
-
+            self.default_run = Run.from_file(self.default_measurement_file_path)
         else:
             # Create default measurement for request
             default_info_path = os.path.join(self.default_folder,
@@ -204,6 +203,10 @@ class Request:
             self.default_measurement.profile_to_file(os.path.join(
                 self.default_folder,
                 self.default_measurement.profile_name + ".profile"))
+            self.default_measurement.run.to_file(os.path.join(
+                self.default_folder,
+                self.default_measurement.measurement_setting_file_name +
+                ".measurement"))
 
     def create_default_target(self):
         # Target
@@ -227,11 +230,15 @@ class Request:
 
     def create_default_run(self):
         # Read default run from file.
-        self.default_run = Run.from_file(self.default_measurement_file_path)
-        self.default_run.to_file(os.path.join(
-            self.default_folder,
-            self.default_measurement.measurement_setting_file_name +
-            ".measurement"))
+        try:
+            # Try reading Run parameters from .measurement file.
+            self.default_run = Run.from_file(self.default_measurement_file_path)
+        except KeyError:
+            # Save new Run parameters to file.
+            self.default_run.to_file(os.path.join(
+                self.default_folder,
+                self.default_measurement.measurement_setting_file_name +
+                ".measurement"))
 
     def create_default_simulation(self):
         # Simulation
