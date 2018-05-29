@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 11.5.2018
+Updated on 29.5.2018
 
 #TODO Description of Potku and copyright
 #TODO Licence
@@ -147,6 +147,8 @@ class Simulations:
                             mcsimu_file_path, profile_file_path)
                         simulation.element_simulations.append(
                             element_simulation)
+                        element_simulation.run = simulation.run
+                        element_simulation.target = simulation.target
 
         # Create a new simulation
         else:
@@ -280,7 +282,9 @@ class Simulation:
                                                name=element_str,
                                                target=self.target,
                                                detector=self.detector,
-                                               recoil_elements=[recoil_element])
+                                               recoil_elements=[
+                                                   recoil_element],
+                                               run=self.run)
         element_simulation.recoil_elements.append(recoil_element)
         self.element_simulations.append(element_simulation)
         return element_simulation

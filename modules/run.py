@@ -122,7 +122,7 @@ class Run:
         energy = beam["energy"]
         b_charge = beam["charge"]
         energy_distribution = beam["energy_distribution"]
-        spot_size = beam["spot_size"]
+        spot_size = tuple(beam["spot_size"])
         divergence = beam["divergence"]
         profile = beam["profile"]
 
