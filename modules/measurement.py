@@ -148,6 +148,8 @@ class Measurements:
                                 os.path.join(measurement.directory,
                                              measurement_file),
                                 self.request)
+            self.request.samples.measurements.measurements[tab_id] = \
+                measurement
 
         # Create new Measurement object.
         else:
@@ -861,7 +863,7 @@ class Measurement:
     def __remove_old_cut_files(self):
         self.__unlink_files(os.path.join(self.directory, self.directory_cuts))
         directory_changes = os.path.join(
-                self.directory_composition_changes, "Changes")
+            self.directory_composition_changes, "Changes")
         if not os.path.exists(directory_changes):
             self.__make_directories(directory_changes)
         self.__unlink_files(directory_changes)
@@ -1024,7 +1026,7 @@ class Measurement:
 
         # Combine strings
         measurement = str_beam + str_energy + str_detector + str_target + \
-            str_toflen + str_carbon + str_density
+                      str_toflen + str_carbon + str_density
         calibration = "TOF calibration: {0} {1}\n".format(
             detector.tof_slope,
             detector.tof_offset)
@@ -1035,7 +1037,7 @@ class Measurement:
                        str_depthscale
 
         tof_in = measurement + calibration + anglecalib + depthprofile + \
-            str_cross + str_num_iterations + str_eff_dir
+                 str_cross + str_num_iterations + str_eff_dir
 
         # Get md5 of file and new settings
         md5 = hashlib.md5()
