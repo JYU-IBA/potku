@@ -27,16 +27,15 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import os
 import json
-import datetime
+import os
 import shutil
 import time
 
-from modules.foil import CircularFoil, RectangularFoil
-from modules.layer import Layer
 from modules.calibration_parameters import CalibrationParameters
 from modules.element import Element
+from modules.foil import CircularFoil, RectangularFoil
+from modules.layer import Layer
 
 
 class Detector:
@@ -44,7 +43,7 @@ class Detector:
     Detector class that handles all the information about a detector.
     It also can convert itself to and from file.
     """
-    __slots__ = "name", "description", "date", "type", "calibration", "foils",\
+    __slots__ = "name", "description", "date", "type", "foils",\
                 "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
                 "angle_slope", "angle_offset", "path", "modification_time",\
                 "efficiencies", "efficiency_directory", "timeres", \
@@ -52,44 +51,29 @@ class Detector:
 
     def __init__(self, path, measurement_settings_file_path, name="Default",
                  description="", modification_time=time.time(), type="TOF",
-                 calibration=CalibrationParameters(), foils=[CircularFoil(
-                "Foil1", 7.0, 256.0, [Layer("Layer_12C", [Element("C", 12.011,
-                                                                1)], 0.1,
-                                              2.25)]), CircularFoil(
-                "Foil2", 9.0, 319.0, [Layer("Layer_12C", [Element("C", 12.011,
-                                                                 1)], 13.3,
-                                              2.25)]), CircularFoil(
-                "Foil3", 18.0, 942.0, [Layer("Layer_12C", [Element("C", 12.011,
-                                                                 1)], 44.4,
-                                               2.25)]), RectangularFoil(
-                "Foil4", 14.0, 14.0, 957.0, [Layer("Layer_28Si", [Element(
-                    "N", 14.00, 0.57), Element("Si", 28.09, 0.43)], 1.0,
-                                                     3.44)])], tof_foils=[
-                1, 2], virtual_size=(2.0, 5.0), tof_slope=1e-11,
-                 tof_offset=1e-9, angle_slope=0, angle_offset=0,
-                 timeres=250.0, detector_theta=40):
+                 foils=None, tof_foils=None, virtual_size=(2.0, 5.0),
+                 tof_slope=1e-11, tof_offset=1e-9, angle_slope=0,
+                 angle_offset=0, timeres=250.0, detector_theta=40):
         """Initialize a detector.
 
         Args:
+            path: Path to .detector file.
             name: Detector name.
             measurement_settings_file_path: Path to measurement settings file
                                             which has detector angles.
             description: Detector description.
             modification_time: Modification time of detector file in Unix time.
             type: Type of detector.
-            calibration: Calibration parameters for detector.
             foils: Detector foils.
             tof_foils: List of indexes of ToF foils in foils list.
             virtual_size: Virtual size of the detector.
-            tof_slope: Tof slope.
-            tof_offset: Tof offset.
+            tof_slope: ToF slope.
+            tof_offset: ToF offset.
             angle_slope: Angle slope.
             angle_offset: Angle offset.
             timeres: Time resolution.
             detector_theta: Angle of the detector.
         """
-        # With this we get the path of the folder where the
-        # .json file needs to go.
         self.path = path
 
         self.name = name
@@ -97,7 +81,28 @@ class Detector:
         self.description = description
         self.modification_time = modification_time
         self.type = type
-        self.calibration = calibration
+        self.foils = foils
+        if not self.foils:
+            self.foils = [CircularFoil("Foil1", 7.0, 256.0,
+                                       [Layer("Layer_12C",
+                                              [Element("C", 12.011, 1)],
+                                              0.1, 2.25)]),
+                          CircularFoil("Foil2", 9.0, 319.0,
+                                       [Layer("Layer_12C",
+                                              [Element("C", 12.011, 1)],
+                                              13.3, 2.25)]),
+                          CircularFoil("Foil3", 18.0, 942.0,
+                                       [Layer("Layer_12C",
+                                              [Element("C", 12.011, 1)],
+                                              44.4, 2.25)]),
+                          RectangularFoil("Foil4", 14.0, 14.0, 957.0,
+                                          [Layer("Layer_28Si",
+                                                 [Element("N", 14.00, 0.57),
+                                                  Element("Si", 28.09, 0.43)],
+                                                 1.0, 3.44)])]
+        self.tof_foils = tof_foils
+        if not self.tof_foils:
+            self.tof_foils = [1, 2]
         self.timeres = timeres
         self.virtual_size = virtual_size
         self.tof_slope = tof_slope
@@ -105,7 +110,6 @@ class Detector:
         self.angle_slope = angle_slope
         self.angle_offset = angle_offset
         self.detector_theta = detector_theta
-        self.foils = foils
         self.tof_foils = tof_foils
 
         self.efficiencies = []
@@ -148,7 +152,7 @@ class Detector:
         i.e. that are not yet moved under any detector's efficiency folder.
 
         Return:
-            List of efficiecy files.
+            List of efficiency files.
         """
         files = []
         for path in self.efficiencies:
@@ -178,7 +182,7 @@ class Detector:
         """
         try:
             os.remove(os.path.join(self.efficiency_directory, file_name))
-        except OSError as e:
+        except OSError:
             # File was not found in efficiency file folder.
             pass
 
@@ -200,7 +204,6 @@ class Detector:
         description = obj["description"]
         modification_time = obj["modification_time_unix"]
         detector_type = obj["detector_type"]
-        calibration = None  # TODO
         timeres = obj["timeres"]
         virtual_size = tuple(obj["virtual_size"])
         tof_slope = obj["tof_slope"]
@@ -247,7 +250,7 @@ class Detector:
                    name=name,
                    description=description,
                    modification_time=modification_time,
-                   type=detector_type, calibration=calibration, foils=foils,
+                   type=detector_type, foils=foils,
                    tof_foils=tof_foils,
                    virtual_size=virtual_size, tof_slope=tof_slope,
                    tof_offset=tof_offset, angle_slope=angle_slope,
@@ -338,17 +341,3 @@ class Detector:
 
         with open(measurement_file_path, "w") as file:
             json.dump(obj, file, indent=4)
-
-# class ToFDetector(Detector):
-#
-#     def __init__(self, path, name, angle, foils):
-#         """Initialize a Time-of-Flight detector.
-#
-#         Args:
-#             angle: Detector angle
-#
-#         """
-#         Detector.__init__(self, path, name, angle, foils)
-
-
-# TODO: Add other detector types (GAS, SSD).
