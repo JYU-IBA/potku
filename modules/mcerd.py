@@ -1,5 +1,7 @@
 # coding=utf-8
 """
+Created on 25.4.2018
+Updated on 29.5.2018
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
@@ -118,8 +120,12 @@ class MCERD:
             file.write("Type of simulation: " +
                        self.__settings["simulation_type"] + "\n")
 
+            if not beam.ion.isotope:
+                beam_isotope = ""
+            else:
+                beam_isotope = beam.ion.isotope
             file.write(
-                "Beam ion: " + str(beam.ion.isotope) + beam.ion.symbol + "\n")
+                "Beam ion: " + str(beam_isotope) + beam.ion.symbol + "\n")
 
             file.write("Beam energy: " + str(beam.energy) + " MeV\n")
 
@@ -127,7 +133,11 @@ class MCERD:
 
             file.write("Detector description file: " + detector_file + "\n")
 
-            file.write("Recoiling atom: " + str(recoil_element.element.isotope)
+            if not recoil_element.element.isotope:
+                isotope = ""
+            else:
+                isotope = recoil_element.element.isotope
+            file.write("Recoiling atom: " + str(isotope)
                        + recoil_element.element.symbol + "\n")
 
             file.write("Recoiling material distribution: " + self.recoil_file

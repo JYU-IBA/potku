@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 6.5.2018
+Updated on 29.5.2018
 """
 from dialogs.energy_spectrum import EnergySpectrumWidget, \
     EnergySpectrumParamsDialog
@@ -42,11 +42,11 @@ class ElementSimulation:
                 "minimum_scattering_angle", "minimum_main_scattering_angle", \
                 "minimum_energy", "simulation_mode", "seed_number", \
                 "recoil_elements", "recoil_atoms", "mcerd_objects", \
-                "get_espe", "channel_width", "beam", "target", "detector", \
+                "get_espe", "channel_width", "target", "detector", \
                 "__mcerd_command", "__process", "settings", "espe_settings", \
                 "description", "run", "spectra", "bin_width"
 
-    def __init__(self, directory, request, recoil_elements, beam=None,
+    def __init__(self, directory, request, recoil_elements,
                  target=None, detector=None, run=None, name="Default",
                  description="", modification_time=time.time(),
                  simulation_type="ERD", number_of_ions=1000000,
@@ -59,7 +59,6 @@ class ElementSimulation:
             directory: Folder of simulation that contains the ElementSimulation.
             request: Request object reference.
             recoil_elements: List of RecoilElement objects.
-            beam: Beam object reference.
             target: Target object reference.
             detector: Detector object reference.
             run: Run object reference.
@@ -90,7 +89,6 @@ class ElementSimulation:
         # hold all recoil elements (= distributions) that are related to the
         # simulation (e.g. .mcsimu and .erd files).
         self.recoil_elements = recoil_elements
-        self.beam = beam
         self.target = target
         if detector:
             self.detector = detector
@@ -397,7 +395,7 @@ class ElementSimulation:
             "minimum_energy_of_ions": self.minimum_energy,
             "simulation_mode": self.simulation_mode,
             "seed_number": self.seed_number,
-            "beam": self.beam,
+            "beam": self.run.beam,
             "target": self.target,
             "detector": self.detector,
             "recoil_element": self.recoil_elements[0]
@@ -426,7 +424,7 @@ class ElementSimulation:
         Calculate the energy spectrum from the MCERD result file.
         """
         self.espe_settings = {
-            "beam": self.beam,
+            "beam": self.run.beam,
             "detector": self.detector,
             "target": self.target,
             "ch": self.channel_width,
