@@ -452,6 +452,6 @@ class ElementSimulation:
         """
         Plots simulated energy spectrum.
         """
-        dialog = EnergySpectrumParamsDialog(self)
+        dialog = EnergySpectrumParamsDialog(self, spectrum_type="simulation")
         self.spectra = dialog.spectra
         self.bin_width = dialog.bin_width

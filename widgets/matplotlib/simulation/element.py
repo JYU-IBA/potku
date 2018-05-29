@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 22.5.2018
+Updated on 29.5.2018
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
@@ -51,9 +51,10 @@ class ElementWidget(QtWidgets.QWidget):
 
     def plot_spectrum(self):
         self.element_simulation.calculate_espe()
-        dialog = EnergySpectrumParamsDialog(self.parent)
+        dialog = EnergySpectrumParamsDialog(self.parent,
+                                            spectrum_type="simulation")
         if dialog.result_files:
             self.parent.energy_spectrum_widget = EnergySpectrumWidget(
                 parent=self.parent, use_cuts=dialog.result_files,
-                bin_width=dialog.bin_width)
+                bin_width=dialog.bin_width, spectrum_type="simulation")
             self.parent.add_widget(self.parent.energy_spectrum_widget)

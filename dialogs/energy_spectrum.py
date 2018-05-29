@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 28.5.2018
+Updated on 29.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -52,7 +52,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     checked_cuts = {}
     bin_width = 0.1
 
-    def __init__(self, parent):
+    def __init__(self, parent, spectrum_type):
         """Inits energy spectrum dialog.
         
         Args:
@@ -60,6 +60,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         """
         super().__init__()
         self.parent = parent
+        self.spectrum_type = spectrum_type
         self.ui = uic.loadUi(
             os.path.join("ui_files", "ui_energy_spectrum_params.ui"), self)
 
@@ -150,9 +151,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             if self.parent.energy_spectrum_widget:
                 self.parent.del_widget(self.parent.energy_spectrum_widget)
             self.parent.energy_spectrum_widget = EnergySpectrumWidget(
-                self.parent,
-                use_cuts,
-                width)
+                self.parent, spectrum_type=self.spectrum_type,
+                use_cuts=use_cuts,
+                bin_width=width)
 
             # Check that matplotlib attribute exists after creation of energy
             # spectrum widget.
@@ -237,7 +238,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     """
     save_file = "widget_energy_spectrum.save"
 
-    def __init__(self, parent, use_cuts=[], bin_width=0.1):
+    def __init__(self, parent, spectrum_type, use_cuts=[], bin_width=0.1):
         """Inits widget.
         
         Args:
@@ -304,7 +305,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.matplotlib = MatplotlibEnergySpectrumWidget(
                 self,
                 self.energy_spectrum_data,
-                rbs_list)
+                rbs_list, spectrum_type)
         except:
             import traceback
             msg = "Could not create Energy Spectrum graph. "
