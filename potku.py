@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 23.5.2018
+Updated on 29.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -553,8 +553,8 @@ class Potku(QtWidgets.QMainWindow):
             samples_with_measurements = measurements
             load_data = True
         else:
-            # a dict with the sample as a key, and measurements in the value
-            # as a list
+            # a dict with the sample as a key, and measurements' info file paths
+            # in the value as a list
             samples_with_measurements = \
                 self.request.samples.get_samples_and_measurements()
             load_data = False
@@ -566,7 +566,7 @@ class Potku(QtWidgets.QMainWindow):
         dirtyinteger = 0
         for sample, measurements in samples_with_measurements.items():
             for measurement_file in measurements:
-                self.__add_new_tab("measurement", measurement_file, sample,
+                self.add_new_tab("measurement", measurement_file, sample,
                                    progress_bar, dirtyinteger, count,
                                    load_data=load_data)
                 dirtyinteger += 1
@@ -582,6 +582,7 @@ class Potku(QtWidgets.QMainWindow):
             for sample_path in sample_paths_in_request:
                 sample = self.request.samples.add_sample(sample_path)
                 self.__add_root_item_to_tree(sample)
+        self.request.increase_running_int_by_1()
 
     def load_request_simulations(self, simulations=[]):
         """Load simulation files in the request.
@@ -605,7 +606,7 @@ class Potku(QtWidgets.QMainWindow):
         dirtyinteger = 0
         for sample, simulations in samples_with_simulations.items():
             for simulation_file in simulations:
-                self.__add_new_tab("simulation", simulation_file, sample,
+                self.add_new_tab("simulation", simulation_file, sample,
                                    progress_bar, dirtyinteger, count,
                                    load_data=load_data)
                 dirtyinteger += 1
@@ -680,7 +681,7 @@ class Potku(QtWidgets.QMainWindow):
             sample_item = (self.tree_widget.findItems(sample_name,
                                                       Qt.MatchEndsWith, 0))[0]
 
-            self.__add_new_tab("measurement", dialog.filename, sample_item.obj,
+            self.add_new_tab("measurement", dialog.filename, sample_item.obj,
                                progress_bar, load_data=True,
                                object_name=dialog.name)
             self.__remove_info_tab()
@@ -714,7 +715,7 @@ class Potku(QtWidgets.QMainWindow):
             serial_number = sample_item.obj.get_running_int_simulation()
             sample_item.obj.increase_running_int_simulation_by_1()
 
-            self.__add_new_tab("simulation", os.path.join(
+            self.add_new_tab("simulation", os.path.join(
                 self.request.directory, sample_item.obj.directory,
                 "MC_simulation_" + "%02d" % serial_number + "-" + dialog.name,
                 dialog.name + ".simulation"), sample_item.obj, progress_bar,
@@ -858,9 +859,9 @@ class Potku(QtWidgets.QMainWindow):
         parent_item.addChild(tree_item)
         parent_item.setExpanded(True)
 
-    def __add_new_tab(self, tab_type, filepath, sample, progress_bar=None,
+    def add_new_tab(self, tab_type, filepath, sample, progress_bar=None,
                       file_current=0, file_count=1, load_data=False,
-                      object_name=""):
+                      object_name="", import_evnt=False):
         """Add new tab into TabWidget.
 
         Adds a new tab into program's tabWidget. Makes a new measurement or
@@ -880,6 +881,7 @@ class Potku(QtWidgets.QMainWindow):
             every measurement.
             object_name: When creating a new Measurement, this is the name
             for it.
+            import_evnt: Whether evnt data is being imported or not.
         """
         if progress_bar:
             progress_bar.setValue((100 / file_count) * file_current)
@@ -888,7 +890,8 @@ class Potku(QtWidgets.QMainWindow):
         if tab_type == "measurement":
             measurement = \
                 self.request.samples.measurements.add_measurement_file(
-                    sample, filepath, self.tab_id, object_name)
+                    sample, filepath, self.tab_id, object_name,
+                    import_evnt=import_evnt)
             if measurement:  # TODO: Finish this (load_data)
                 tab = MeasurementTabWidget(self.tab_id, measurement,
                                            self.icon_manager)

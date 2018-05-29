@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 31.3.2018
+Updated on 29.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -22,18 +22,23 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Timo Konu"
-__version__ = "1.0"
+__author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
+             "Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 from collections import OrderedDict
 import logging
 import os
-from PyQt5 import uic, QtCore, QtWidgets
+from PyQt5 import uic
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
 import re
 from time import clock
 
 from dialogs.measurement.import_timing_graph import ImportTimingGraphDialog
-from modules.general_functions import open_files_dialog, coinc
+from modules.general_functions import open_files_dialog
+from modules.general_functions import coinc
+from modules.measurement import Measurement
 
 
 class ImportMeasurementsDialog(QtWidgets.QDialog):
@@ -179,10 +184,20 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             filename_list.append(item.filename)
             # request_dir = str(os.path.join(self.request.directory, item.name))
 
-            sample_path = os.path.join(self.request.directory, "Sample_" + str(sample_count))
-            sample_count += 1
-            self.request.samples.add_sample(sample_path)
-            measurement_path = os.path.join(sample_path, item.name)
+            sample = self.request.samples.add_sample()
+            # TODO: add sample to tree
+            sample_path = os.path.join(self.request.directory, sample.directory)
+            measurement_prefix = "Measurement_" + "%02d" % \
+                                 sample.get_running_int_measurement()
+            measurement_name = measurement_prefix + "-" + item.name
+            measurement_path = os.path.join(sample_path,
+                                            measurement_name)
+            self.parent.add_new_tab("measurement", "", sample,
+                                      object_name=item.name,
+                                      import_evnt=True)
+            # measurement = sample.measurements.measurements.\
+            #     add_measurement_file(sample, "", 1, measurement_name,
+            #                          import_evnt=True)
             output_file = "{0}.{1}".format(measurement_path, "asc")
             n = 2
             while True:  # Allow import of same named files.
@@ -190,7 +205,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                     break
                 output_file = "{0}-{2}.{1}".format(measurement_path, "asc", n)
                 n += 1
-            imported_files[sample_path] = output_file
+            imported_files[sample] = output_file
             coinc(item.file,
                   output_file,
                   skip_lines=self.spin_skiplines.value(),
