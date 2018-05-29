@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 22.5.2018
+Updated on 29.5.2018
 """
 from PyQt5.QtGui import QIcon
 
@@ -119,6 +119,16 @@ class ElementManager:
     def remove_element_simulation(self, element_simulation):
         element_simulation.recoil_elements[0].delete_widgets()
         self.element_simulations.remove(element_simulation)
+
+        # Delete all files that relate to element_simulation
+        files_to_be_removed = []
+        for file in os.listdir(element_simulation.directory):
+            if file.startswith(element_simulation.name):
+                file_path = os.path.join(element_simulation.directory, file)
+                files_to_be_removed.append(file_path)
+
+        for file_path in files_to_be_removed:
+            os.remove(file_path)
 
     def get_radio_button(self, element_simulation):
         return element_simulation.recoil_elements[0].widgets[0] \
