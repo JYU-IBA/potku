@@ -3,29 +3,28 @@
 Created on 4.5.2018
 Updated on 28.5.2018
 """
-from modules.target import Target
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-from PyQt5 import uic
-from PyQt5 import QtWidgets
-from PyQt5 import QtGui
-from PyQt5 import QtCore
 import os
-import modules.masses as masses
-from widgets.measurement.settings import MeasurementSettingsWidget
-from modules.input_validator import InputValidator
-from dialogs.element_selection import ElementSelectionDialog
-from widgets.detector_settings import DetectorSettingsWidget
-from widgets.profile_settings import ProfileSettingsWidget
-from modules.run import Run
-from modules.detector import Detector
-import json
-import datetime
-import time
 import shutil
+import time
+
+from PyQt5 import QtCore
+from PyQt5 import QtGui
+from PyQt5 import QtWidgets
+from PyQt5 import uic
+
+import modules.masses as masses
+from dialogs.element_selection import ElementSelectionDialog
+from modules.detector import Detector
+from modules.run import Run
+from modules.target import Target
+from widgets.detector_settings import DetectorSettingsWidget
+from widgets.measurement.settings import MeasurementSettingsWidget
+from widgets.profile_settings import ProfileSettingsWidget
 
 
 class MeasurementSettingsDialog(QtWidgets.QDialog):
@@ -95,9 +94,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.measurement_settings_widget.ui.descriptionPlainTextEdit \
                 .setPlainText(
                 self.measurement.measurement_setting_file_description)
-            self.measurement_settings_widget.ui.dateLabel.setText(str(
-                datetime.datetime.fromtimestamp(
-                    self.measurement.modification_time)))
+            self.measurement_settings_widget.ui.dateLabel.setText(time.strftime(
+                "%c %z %Z", time.localtime(self.measurement.modification_time)))
 
         # Add profile settings view to the settings view
         self.profile_settings_widget = ProfileSettingsWidget(

@@ -23,11 +23,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-from modules.beam import Beam
-from modules.element import Element
-from modules.element_simulation import ElementSimulation
-from modules.run import Run
-from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen " \
@@ -36,16 +31,20 @@ __version__ = "2.0"
 
 import configparser
 import logging
-from datetime import datetime
 import os
+import time
+import re
+
+from modules.element import Element
+from modules.element_simulation import ElementSimulation
+from modules.run import Run
+from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 from modules.sample import Samples
 from modules.measurement import Measurement
 from modules.simulation import Simulation
 from modules.settings import Settings
 from modules.detector import Detector
 from modules.target import Target
-
-import re
 
 
 class Request:
@@ -127,7 +126,8 @@ class Request:
         self.__request_information.add_section("meta")
         self.__request_information.add_section("open_measurements")
         self.__request_information["meta"]["request_name"] = self.request_name
-        self.__request_information["meta"]["created"] = str(datetime.now())
+        self.__request_information["meta"]["created"] = \
+            time.strftime("%c %z %Z", time.localtime(time.time()))
         self.__request_information["meta"]["master"] = ""
         self.__request_information["meta"]["nonslave"] = ""
         if not os.path.exists(self.request_file):
