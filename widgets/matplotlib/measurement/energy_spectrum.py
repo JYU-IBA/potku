@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 27.8.2013
+Updated on 29.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -25,8 +25,10 @@ along with this program (file named 'LICENCE').
 """
 from modules.measurement import Measurement
 
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
+             "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 from PyQt5 import QtWidgets
 
@@ -40,7 +42,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     """Energy spectrum widget
     """
 
-    def __init__(self, parent, histed_files, rbs_list, legend=True):
+    def __init__(self, parent, histed_files, rbs_list, spectrum_type,
+                 legend=True):
         """Inits Energy Spectrum widget.
 
         Args:
@@ -77,27 +80,26 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                      "monitoring_section.svg")
         self.mpl_toolbar.addWidget(self.__button_toggle_log)
 
-        self.__button_ignores = QtWidgets.QToolButton(self)
-        self.__button_ignores.clicked.connect(self.__ignore_elements_from_graph)
-        self.__button_ignores.setToolTip(
-            "Select elements which are included in" + \
-            " the graph.")
-        self.__icon_manager.set_icon(self.__button_ignores, "gear.svg")
-        self.mpl_toolbar.addWidget(self.__button_ignores)
+        if spectrum_type == "measurement":
+            self.__button_ignores = QtWidgets.QToolButton(self)
+            self.__button_ignores.clicked.connect(
+                self.__ignore_elements_from_graph)
+            self.__button_ignores.setToolTip(
+                "Select elements which are included in" + \
+                " the graph.")
+            self.__icon_manager.set_icon(self.__button_ignores, "gear.svg")
+            self.mpl_toolbar.addWidget(self.__button_ignores)
 
         self.on_draw()
 
     def __sortt(self, key):
         cut_file = key.split('.')
         element_object = Element.from_string(cut_file[0].strip())
-        element = element_object.element.symbol
-        isotope = element_object.element.isotope
-        mass = str(isotope)
-        if not mass:
-            mass = masses.get_standard_isotope(element)
-        else:
-            mass = float(mass)
-        return mass
+        element = element_object.symbol
+        isotope = element_object.isotope
+        if not isotope:
+            isotope = masses.get_standard_isotope(element)
+        return isotope
 
     def on_draw(self):
         """Draw method for matplotlib.

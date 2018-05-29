@@ -1,12 +1,9 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 22.5.2018
+Updated on 29.5.2018
 """
 from PyQt5.QtGui import QIcon
-
-from dialogs.energy_spectrum import EnergySpectrumParamsDialog, \
-    EnergySpectrumWidget
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"

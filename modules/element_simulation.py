@@ -3,28 +3,21 @@
 Created on 25.4.2018
 Updated on 29.5.2018
 """
-from dialogs.energy_spectrum import EnergySpectrumWidget, \
-    EnergySpectrumParamsDialog
-from modules.energy_spectrum import EnergySpectrum
-
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
 import platform
-import datetime
 import json
 import os
 import math
 import time
 
-from widgets.matplotlib.simulation.recoil_atom_distribution import \
-    RecoilElement, Point
+from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
+from widgets.matplotlib.simulation.recoil_atom_distribution import Point
+from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 
-from modules.beam import Beam
 from modules.element import Element
-from modules.run import Run
-from modules.target import Target
 from modules.mcerd import MCERD
 from modules.get_espe import GetEspe
 from modules.foil import CircularFoil
@@ -384,6 +377,10 @@ class ElementSimulation:
 
     def start(self):
         """ Start the simulation."""
+        if self.run is None:
+            run = self.request.default_run
+        else:
+            run = self.run
         self.settings = {
             "simulation_type": self.simulation_type,
             "number_of_ions": self.number_of_ions,
@@ -395,13 +392,12 @@ class ElementSimulation:
             "minimum_energy_of_ions": self.minimum_energy,
             "simulation_mode": self.simulation_mode,
             "seed_number": self.seed_number,
-            "beam": self.run.beam,
+            "beam": run.beam,
             "target": self.target,
             "detector": self.detector,
             "recoil_element": self.recoil_elements[0]
         }
-        # TODO: fix this to have the real seed number
-        self.mcerd_objects["seed number"] = MCERD(self.settings)
+        self.mcerd_objects[self.seed_number] = MCERD(self.settings)
 
     def stop(self):
         """ Stop the simulation."""
@@ -420,16 +416,21 @@ class ElementSimulation:
         pass
 
     def calculate_espe(self):
+
         """
         Calculate the energy spectrum from the MCERD result file.
         """
+        if self.run is None:
+            run = self.request.default_run
+        else:
+            run = self.run
         self.espe_settings = {
-            "beam": self.run.beam,
+            "beam": run.beam,
             "detector": self.detector,
             "target": self.target,
             "ch": self.channel_width,
             "reference_density": self.recoil_elements[0].reference_density,
-            "fluence": self.run.fluence,
+            "fluence": run.fluence,
             "timeres": self.detector.timeres,
             "solid": self.calculate_solid(),
             "erd_file": os.path.join(self.directory,
@@ -451,6 +452,6 @@ class ElementSimulation:
         """
         Plots simulated energy spectrum.
         """
-        dialog = EnergySpectrumParamsDialog(self)
+        dialog = EnergySpectrumParamsDialog(self, spectrum_type="simulation")
         self.spectra = dialog.spectra
         self.bin_width = dialog.bin_width

@@ -2,7 +2,7 @@
 # TODO: Add licence information
 """
 Created on 27.3.2018
-Updated on 13.5.2018
+Updated on 29.5.2018
 """
 
 import datetime
@@ -98,7 +98,7 @@ class Target:
             target_theta = obj["geometry"]["target_theta"]
         # If keys do not exist or measurement_file_path is empty or file
         # doesn't exist:
-        except (KeyError, IsADirectoryError, FileNotFoundError):
+        except (KeyError, IsADirectoryError, FileNotFoundError, TypeError):
             target_theta = request.default_target.target_theta
 
         return cls(name=name, description=description,
