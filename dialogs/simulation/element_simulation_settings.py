@@ -1,6 +1,25 @@
 # coding=utf-8
 """
-Created on 4.5.2018
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -31,25 +50,25 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             self.toggle_settings)
 
         self.set_spinbox_maximums()
-        self.import_specific_settings()
+        self.show_settings()
 
         self.exec_()
 
     def set_spinbox_maximums(self):
-        # These are the max values that the spinboxes allow. They should be big
-        # enough.
-        intmax = 2147483647
-        floatmax = 1000000000000000013287555072.00
-        self.ui.numberOfIonsSpinBox.setMaximum(intmax)
-        self.ui.numberOfPreIonsSpinBox.setMaximum(intmax)
-        self.ui.seedSpinBox.setMaximum(intmax)
-        self.ui.numberOfRecoilsSpinBox.setMaximum(intmax)
-        self.ui.numberOfScalingIonsSpinBox.setMaximum(intmax)
-        self.ui.minimumScatterAngleDoubleSpinBox.setMaximum(floatmax)
-        self.ui.minimumMainScatterAngleDoubleSpinBox.setMaximum(floatmax)
-        self.ui.minimumEnergyDoubleSpinBox.setMaximum(floatmax)
+        """Set maximum values to spinbox components."""
+        int_max = 2147483647
+        float_max = 1000000000000000013287555072.00
+        self.ui.numberOfIonsSpinBox.setMaximum(int_max)
+        self.ui.numberOfPreIonsSpinBox.setMaximum(int_max)
+        self.ui.seedSpinBox.setMaximum(int_max)
+        self.ui.numberOfRecoilsSpinBox.setMaximum(int_max)
+        self.ui.numberOfScalingIonsSpinBox.setMaximum(int_max)
+        self.ui.minimumScatterAngleDoubleSpinBox.setMaximum(float_max)
+        self.ui.minimumMainScatterAngleDoubleSpinBox.setMaximum(float_max)
+        self.ui.minimumEnergyDoubleSpinBox.setMaximum(float_max)
 
-    def import_specific_settings(self):
+    def show_settings(self):
+        """Show settings of ElementSimulation object in view."""
         self.ui.nameLineEdit.setText(
             self.element_simulation.name)
         self.ui.descriptionPlainTextEdit.setPlainText(
@@ -101,6 +120,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         """
 
         if self.use_default_settings:
+            # Use request settings
             default_element_simu = self.element_simulation.request \
                 .default_element_simulation
 
@@ -136,6 +156,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             self.element_simulation.minimum_energy = \
                 default_element_simu.minimum_energy
         else:
+            # Use element specific settings
             self.element_simulation.name = \
                 self.ui.nameLineEdit.text()
             self.element_simulation.description = \
