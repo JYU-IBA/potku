@@ -274,7 +274,7 @@ class Potku(QtWidgets.QMainWindow):
         measurement tab widget.
         """
         widget = self.ui.tabs.currentWidget()
-        if hasattr(widget, "measurement"):
+        if isinstance(widget, MeasurementTabWidget):
             widget.open_depth_profile(widget)
         else:
             QtWidgets.QMessageBox.question(self, "Notification",
@@ -288,7 +288,7 @@ class Potku(QtWidgets.QMainWindow):
         measurement tab widget.
         """
         widget = self.ui.tabs.currentWidget()
-        if hasattr(widget, "measurement"):
+        if isinstance(widget, MeasurementTabWidget):
             widget.open_element_losses(widget)
         else:
             QtWidgets.QMessageBox.question(self, "Notification",
@@ -302,7 +302,7 @@ class Potku(QtWidgets.QMainWindow):
         measurement tab widget.
         """
         widget = self.ui.tabs.currentWidget()
-        if hasattr(widget, "measurement"):
+        if isinstance(widget, MeasurementTabWidget):
             widget.open_energy_spectrum(widget)
         else:
             QtWidgets.QMessageBox.question(self, "Notification",
@@ -316,7 +316,7 @@ class Potku(QtWidgets.QMainWindow):
         to cut files.
         """
         widget = self.ui.tabs.currentWidget()
-        if hasattr(widget, "measurement"):
+        if isinstance(widget, MeasurementTabWidget):
             widget.measurement_save_cuts()
         else:
             QtWidgets.QMessageBox.question(self, "Notification",
@@ -331,7 +331,7 @@ class Potku(QtWidgets.QMainWindow):
         simulation tab widget.
         """
         widget = self.ui.tabs.currentWidget()
-        if hasattr(widget, "simulation"):
+        if isinstance(widget, MeasurementTabWidget):
             widget.open_energy_spectrum(widget)
         else:
             QtWidgets.QMessageBox.question(self, "Notification",
