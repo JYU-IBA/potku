@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 28.5.2018
+Updated on 29.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -82,8 +82,9 @@ class Measurements:
             return None
         return self.measurements[key]
 
-    def add_measurement_file(self, sample, file_path, tab_id, name):
-        """Add a new file to measurements.
+    def add_measurement_file(self, sample, file_path, tab_id, name,
+                             import_evnt):
+        """ Add a new file to measurements.
 
         Args:
             sample: The sample under which the measurement is put.
@@ -91,110 +92,135 @@ class Measurements:
             creating a new measurement.
             tab_id: Integer representing identifier for measurement's tab.
             name: Name for the Measurement object.
+            import_evnt: Whether evnt data is being imported or not.
 
         Return:
             Returns new measurement or None if it wasn't added
         """
         directory_prefix = "Measurement_"
         measurement = None
-        measurement_filename = os.path.split(file_path)[1]
-        file_directory, file_name = os.path.split(file_path)
 
-        # Check if measurement on the same name already exists.
-        for key in sample.measurements.measurements.keys():
-            if sample.measurements.measurements[key].name == name:
-                return None
+        if import_evnt:
+            next_serial = sample.get_running_int_measurement()
+            measurement_directory = \
+                os.path.join(self.request.directory, sample.directory,
+                             directory_prefix + "%02d" % next_serial +
+                             "-" + name)
+            sample.increase_running_int_measurement_by_1()
+            if not os.path.exists(measurement_directory):
+                os.makedirs(measurement_directory)
+            measurement = Measurement(self.request, measurement_directory,
+                                      tab_id, name)
 
-        profile_file_path = None
-        measurement_file = None
-        for file in os.listdir(file_directory):
-            if file.endswith(".profile"):
-                profile_file_path = os.path.join(file_directory, file)
-            elif file.endswith(".measurement"):
-                measurement_file = os.path.join(file_directory, file)
-
-        # Create Measurement from file
-        if os.path.exists(file_path) and file_path.endswith(".info"):
-            measurement = Measurement.from_file(file_path,
-                                                measurement_file,
-                                                profile_file_path,
-                                                self.request)
-            measurement_folder_name = os.path.split(file_directory)[1]
-            serial_number = int(measurement_folder_name[
-                                len(directory_prefix):len(
-                                    directory_prefix) + 2])
+            measurement.info_to_file(os.path.join(measurement_directory,
+                                                  measurement.name +
+                                                  ".info"))
+            measurement.create_folder_structure(measurement_directory, None)
+            serial_number = next_serial
             measurement.serial_number = serial_number
-            measurement.tab_id = tab_id
-            measurement.update_folders_and_selector()
-
-            if measurement_file:
-                measurement.run = Run.from_file(os.path.join(
-                    measurement.directory, measurement_file))
-
-            # Read Detector anf Target information from file.
-            for file in os.listdir(file_directory):
-                if file.endswith(".target"):
-                    measurement.target = Target.from_file(os.path.join(
-                        file_directory, file), os.path.join(
-                        file_directory,
-                        measurement_file), self.request)
-                if file.startswith("Detector"):
-                    det_folder = os.path.join(file_directory,
-                                              "Detector")
-                    for f in os.listdir(det_folder):
-                        if f.endswith(".detector"):
-                            measurement.detector = Detector.from_file(
-                                os.path.join(det_folder, f),
-                                os.path.join(measurement.directory,
-                                             measurement_file),
-                                self.request)
             self.request.samples.measurements.measurements[tab_id] = \
                 measurement
 
-        # Create new Measurement object.
         else:
-            measurement_name, extension = os.path.splitext(file_name)
-            try:
-                keys = sample.measurements.measurements.keys()
-                for key in keys:
-                    if sample.measurements.measurements[key].directory == \
-                            measurement_name:
-                        return measurement  # measurement = None
-                next_serial = sample.get_running_int_measurement()
-                measurement_directory = \
-                    os.path.join(self.request.directory, sample.directory,
-                                 directory_prefix + "%02d" % next_serial +
-                                 "-" + name)
-                sample.increase_running_int_measurement_by_1()
-                if not os.path.exists(measurement_directory):
-                    os.makedirs(measurement_directory)
-                measurement = Measurement(self.request, measurement_directory,
-                                          tab_id, name)
+            measurement_filename = os.path.split(file_path)[1]
+            file_directory, file_name = os.path.split(file_path)
 
-                measurement.info_to_file(os.path.join(measurement_directory,
-                                                      measurement.name +
-                                                      ".info"))
+            # Check if measurement on the same name already exists.
+            for key in sample.measurements.measurements.keys():
+                if sample.measurements.measurements[key].name == name:
+                    return None
 
-                # Create path for measurement file used by the program and
-                # create folder structure.
-                new_measurement_file = os.path.join(measurement_directory,
-                                                    "Data",
-                                                    measurement_filename)
-                measurement.create_folder_structure(measurement_directory,
-                                                    new_measurement_file)
-                if file_directory != os.path.join(measurement_directory,
-                                                  measurement.directory_data) \
-                        and file_directory:
-                    measurement.copy_file_into_measurement(file_path)
-                serial_number = next_serial
+            profile_file_path = None
+            measurement_file = None
+            for file in os.listdir(file_directory):
+                if file.endswith(".profile"):
+                    profile_file_path = os.path.join(file_directory, file)
+                elif file.endswith(".measurement"):
+                    measurement_file = os.path.join(file_directory, file)
+
+            # Create Measurement from file
+            if os.path.exists(file_path) and file_path.endswith(".info"):
+                measurement = Measurement.from_file(file_path,
+                                                    measurement_file,
+                                                    profile_file_path,
+                                                    self.request)
+                measurement_folder_name = os.path.split(file_directory)[1]
+                serial_number = int(measurement_folder_name[
+                                    len(directory_prefix):len(
+                                        directory_prefix) + 2])
                 measurement.serial_number = serial_number
+                measurement.tab_id = tab_id
+                measurement.update_folders_and_selector()
+
+                if measurement_file:
+                    measurement.run = Run.from_file(os.path.join(
+                        measurement.directory, measurement_file))
+
+                # Read Detector anf Target information from file.
+                for file in os.listdir(file_directory):
+                    if file.endswith(".target"):
+                        measurement.target = Target.from_file(os.path.join(
+                            file_directory, file), os.path.join(
+                            file_directory,
+                            measurement_file), self.request)
+                    if file.startswith("Detector"):
+                        det_folder = os.path.join(file_directory,
+                                                  "Detector")
+                        for f in os.listdir(det_folder):
+                            if f.endswith(".detector"):
+                                measurement.detector = Detector.from_file(
+                                    os.path.join(det_folder, f),
+                                    os.path.join(measurement.directory,
+                                                 measurement_file),
+                                    self.request)
                 self.request.samples.measurements.measurements[tab_id] = \
                     measurement
-                measurement.measurement_file = measurement_filename
-            except:
-                log = "Something went wrong while adding a new measurement."
-                logging.getLogger("request").critical(log)
-                print(sys.exc_info())
+
+            # Create new Measurement object.
+            else:
+                measurement_name, extension = os.path.splitext(file_name)
+                try:
+                    keys = sample.measurements.measurements.keys()
+                    for key in keys:
+                        if sample.measurements.measurements[key].directory == \
+                                measurement_name:
+                            return measurement  # measurement = None
+                    next_serial = sample.get_running_int_measurement()
+                    measurement_directory = \
+                        os.path.join(self.request.directory, sample.directory,
+                                     directory_prefix + "%02d" % next_serial +
+                                     "-" + name)
+                    sample.increase_running_int_measurement_by_1()
+                    if not os.path.exists(measurement_directory):
+                        os.makedirs(measurement_directory)
+                    measurement = Measurement(self.request,
+                                              measurement_directory,
+                                              tab_id, name)
+
+                    measurement.info_to_file(os.path.join(measurement_directory,
+                                                          measurement.name +
+                                                          ".info"))
+
+                    # Create path for measurement file used by the program and
+                    # create folder structure.
+                    new_measurement_file = os.path.join(measurement_directory,
+                                                        "Data",
+                                                        measurement_filename)
+                    measurement.create_folder_structure(measurement_directory,
+                                                        new_measurement_file)
+                    if file_directory != os.path.join(
+                            measurement_directory, measurement.directory_data) \
+                                and file_directory:
+                        measurement.copy_file_into_measurement(file_path)
+                    serial_number = next_serial
+                    measurement.serial_number = serial_number
+                    self.request.samples.measurements.measurements[tab_id] = \
+                        measurement
+                    measurement.measurement_file = measurement_filename
+                except:
+                    log = "Something went wrong while adding a new measurement."
+                    logging.getLogger("request").critical(log)
+                    print(sys.exc_info())
 
         # Add Measurement to  Measurements.
         sample.measurements.measurements[tab_id] = measurement
@@ -500,9 +526,13 @@ class Measurement:
             measurement_folder: Path of the measurement folder.
             measurement_file: Path of the measurement file. (under Data)
         """
-        measurement_data_folder, measurement_name = \
-            os.path.split(measurement_file)
-        self.measurement_file = measurement_name  # With extension
+        if measurement_file is None:
+            measurement_data_folder = os.path.join(measurement_folder, "Data")
+            self.measurement_file = None
+        else:
+            measurement_data_folder, measurement_name = \
+                os.path.split(measurement_file)
+            self.measurement_file = measurement_name  # With extension
 
         self.directory = measurement_folder
         self.directory_data = measurement_data_folder
