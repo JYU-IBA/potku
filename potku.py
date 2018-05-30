@@ -38,7 +38,6 @@ import subprocess
 import sys
 from datetime import datetime
 from datetime import timedelta
-import logging
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -56,7 +55,9 @@ from dialogs.measurement.load_measurement import LoadMeasurementDialog
 from dialogs.new_request import RequestNewDialog
 from dialogs.request_settings import RequestSettingsDialog
 from dialogs.simulation.new_simulation import SimulationNewDialog
-from modules.general_functions import open_file_dialog, remove_file, rename_file
+from modules.general_functions import open_file_dialog
+from modules.general_functions import remove_file
+from modules.general_functions import rename_file
 from modules.global_settings import GlobalSettings
 from modules.icon_manager import IconManager
 from modules.measurement import Measurement
@@ -220,7 +221,7 @@ class Potku(QtWidgets.QMainWindow):
             try:
                 new_name = clicked_item.text(0)
                 new_path = clicked_item.obj.name_prefix + "%02d" % \
-                           clicked_item.obj.serial_number + "-" + new_name
+                    clicked_item.obj.serial_number + "-" + new_name
                 new_dir = rename_file(clicked_item.obj.directory, new_path)
             except OSError:
                 QtWidgets.QMessageBox.critical(self, "Error",
@@ -420,9 +421,6 @@ class Potku(QtWidgets.QMainWindow):
             clicked_item: TreeWidgetItem with tab_id attribute (int) that
             connects the item to the corresponding MeasurementTabWidget
         """
-        # TODO: This doesn't work. There is no list/dictionary of references
-        # to the tab widgets once they are removed from the QTabWidget.
-        # tab = self.request_measurements[clicked_item.tab_id]
 
         # Blocking signals from tree view to prevent edit event
         self.tree_widget.blockSignals(True)
@@ -547,14 +545,16 @@ class Potku(QtWidgets.QMainWindow):
             QtWidgets.QMessageBox.Ok,
             QtWidgets.QMessageBox.Ok)
 
-    def load_request_measurements(self, measurements=[]):
+    def load_request_measurements(self, measurements=None):
         """Load measurement files in the request.
 
         Args:
             measurements: A list representing loadable measurements when
             importing measurements to the request.
         """
-        # TODO: fix this for import_binary.py and import_measurement.py
+        if measurements is None:
+            measurements = []
+        # TODO: fix this for import_binary.py
         if measurements:
             samples_with_measurements = measurements
             load_data = True
@@ -573,8 +573,8 @@ class Potku(QtWidgets.QMainWindow):
         for sample, measurements in samples_with_measurements.items():
             for measurement_file in measurements:
                 self.add_new_tab("measurement", measurement_file, sample,
-                                   progress_bar, dirtyinteger, count,
-                                   load_data=load_data)
+                                 progress_bar, dirtyinteger, count,
+                                 load_data=load_data)
                 dirtyinteger += 1
 
         self.statusbar.removeWidget(progress_bar)
@@ -590,13 +590,15 @@ class Potku(QtWidgets.QMainWindow):
                 self.add_root_item_to_tree(sample)
             self.request.increase_running_int_by_1()
 
-    def load_request_simulations(self, simulations=[]):
+    def load_request_simulations(self, simulations=None):
         """Load simulation files in the request.
 
         Args:
             simulations: A list representing loadable simulation when importing
                           simulation to the request.
         """
+        if simulations is None:
+            simulations = []
         if simulations:
             samples_with_simulations = simulations
             load_data = True
@@ -613,8 +615,8 @@ class Potku(QtWidgets.QMainWindow):
         for sample, simulations in samples_with_simulations.items():
             for simulation_file in simulations:
                 self.add_new_tab("simulation", simulation_file, sample,
-                                   progress_bar, dirtyinteger, count,
-                                   load_data=load_data)
+                                 progress_bar, dirtyinteger, count,
+                                 load_data=load_data)
                 dirtyinteger += 1
 
         self.statusbar.removeWidget(progress_bar)
@@ -688,8 +690,8 @@ class Potku(QtWidgets.QMainWindow):
                                                       Qt.MatchEndsWith, 0))[0]
 
             self.add_new_tab("measurement", dialog.filename, sample_item.obj,
-                               progress_bar, load_data=True,
-                               object_name=dialog.name)
+                             progress_bar, load_data=True,
+                             object_name=dialog.name)
             self.__remove_info_tab()
             self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
@@ -866,8 +868,8 @@ class Potku(QtWidgets.QMainWindow):
         parent_item.setExpanded(True)
 
     def add_new_tab(self, tab_type, filepath, sample, progress_bar=None,
-                      file_current=0, file_count=1, load_data=False,
-                      object_name="", import_evnt=False):
+                    file_current=0, file_count=1, load_data=False,
+                    object_name="", import_evnt=False):
         """Add new tab into TabWidget.
 
         Adds a new tab into program's tabWidget. Makes a new measurement or
