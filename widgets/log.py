@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 16.4.2013
-Updated on 23.5.2013
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,11 +25,14 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
-             "Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
-from os.path import join
-from PyQt5 import uic, QtCore, QtWidgets
+import os
+from PyQt5 import uic
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
 
 
 class LogWidget(QtWidgets.QWidget):
@@ -42,7 +46,7 @@ class LogWidget(QtWidgets.QWidget):
         super().__init__()
         # This is used to ensure that the window can't be closed.        
         self.want_to_close = False
-        self.ui = uic.loadUi(join("ui_files", "ui_log_widget.ui"), self)
+        self.ui = uic.loadUi(os.path.join("ui_files", "ui_log_widget.ui"), self)
         self.ui.hideButton.clicked.connect(self.minimize_window)
 
     def add_text(self, message):
@@ -64,8 +68,8 @@ class LogWidget(QtWidgets.QWidget):
     def closeEvent(self, close_event):  # Inherited
         """Event which happens when the windows is closing.
 
-        Instead of closing, minimize the window. This is because the disabling of
-        the close button isn't implemented yet.
+        Instead of closing, minimize the window. This is because the disabling
+        of the close button isn't implemented yet.
 
         Args:
             close_event: Close event
