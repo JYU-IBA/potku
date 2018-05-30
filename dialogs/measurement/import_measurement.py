@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 29.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -186,19 +186,21 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
 
             sample = self.request.samples.add_sample()
             # TODO: add sample to tree
+            self.parent.add_root_item_to_tree(sample)
             sample_path = os.path.join(self.request.directory, sample.directory)
             measurement_prefix = "Measurement_" + "%02d" % \
                                  sample.get_running_int_measurement()
             measurement_name = measurement_prefix + "-" + item.name
             measurement_path = os.path.join(sample_path,
                                             measurement_name)
-            self.parent.add_new_tab("measurement", "", sample,
+            measurement = self.parent.add_new_tab("measurement", "", sample,
                                       object_name=item.name,
                                       import_evnt=True)
             # measurement = sample.measurements.measurements.\
             #     add_measurement_file(sample, "", 1, measurement_name,
             #                          import_evnt=True)
-            output_file = "{0}.{1}".format(measurement_path, "asc")
+            output_file = os.path.join(measurement.directory_data, item.name
+                                       + ".asc")
             n = 2
             while True:  # Allow import of same named files.
                 if not os.path.isfile(output_file):
@@ -232,7 +234,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         logging.getLogger("request").info(log_var)
         logging.getLogger("request").info(log_elapsed)
         self.imported = True
-        self.parent.load_request_measurements(imported_files)
+        # self.parent.load_request_measurements(imported_files)
         self.close()
 
     def __insert_import_timings(self):

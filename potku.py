@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 29.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -581,7 +581,7 @@ class Potku(QtWidgets.QMainWindow):
         if sample_paths_in_request:
             for sample_path in sample_paths_in_request:
                 sample = self.request.samples.add_sample(sample_path)
-                self.__add_root_item_to_tree(sample)
+                self.add_root_item_to_tree(sample)
         self.request.increase_running_int_by_1()
 
     def load_request_simulations(self, simulations=[]):
@@ -731,7 +731,7 @@ class Potku(QtWidgets.QMainWindow):
             sample_name: Sample name.
         """
         sample = self.request.samples.add_sample(name=sample_name)
-        self.__add_root_item_to_tree(sample)
+        self.add_root_item_to_tree(sample)
 
     def open_request(self):
         """Shows a dialog to open a request.
@@ -820,7 +820,7 @@ class Potku(QtWidgets.QMainWindow):
         """
         self.ui.tabs.removeTab(tab_index)
 
-    def __add_root_item_to_tree(self, obj):
+    def add_root_item_to_tree(self, obj):
         """Adds a root item to tree.
 
         Args:
@@ -920,6 +920,7 @@ class Potku(QtWidgets.QMainWindow):
                     Qt.MatchEndsWith, 0))[0]
                 self.__add_item_to_tree(sample_item, measurement, load_data)
                 self.tab_id += 1
+                return measurement
 
         if tab_type == "simulation":
             simulation = self.request.samples.simulations.add_simulation_file(
