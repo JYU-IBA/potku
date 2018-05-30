@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 28.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -36,11 +36,12 @@ from PyQt5 import uic
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 
-from modules.cut_file import is_rbs, get_scatter_element
+from modules.cut_file import is_rbs
+from modules.cut_file import get_scatter_element
 from modules.depth_files import DepthFiles
 from modules.element import Element
-from modules.null import Null
-from widgets.matplotlib.measurement.depth_profile import MatplotlibDepthProfileWidget
+from widgets.matplotlib.measurement.depth_profile import \
+    MatplotlibDepthProfileWidget
 import modules.masses as masses
 
 
@@ -70,7 +71,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.ui.cancelButton.clicked.connect(self.close)
 
         m_name = self.parent.obj.name
-        if not m_name in DepthProfileDialog.checked_cuts.keys():
+        if m_name not in DepthProfileDialog.checked_cuts.keys():
             DepthProfileDialog.checked_cuts[m_name] = []
         self.measurement.fill_cuts_treewidget(
             self.ui.treeWidget,
@@ -177,13 +178,15 @@ class DepthProfileDialog(QtWidgets.QDialog):
                                        DepthProfileDialog.line_scale,
                                        DepthProfileDialog.systerr)
                 progress_bar.setValue(90)
-                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.
+                                                      AllEvents)
                 # Mac requires event processing to show progress bar and its 
                 # process.
                 
                 icon = self.parent.icon_manager.\
                     get_icon("depth_profile_icon_2_16.png")
-                self.parent.add_widget(self.parent.depth_profile_widget, icon=icon)
+                self.parent.add_widget(self.parent.depth_profile_widget,
+                                       icon=icon)
                 self.close()
             else:
                 print("No cuts have been selected for depth profile.")
@@ -357,7 +360,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
         """
-        self.parent.depth_profile_widget = Null()
+        self.parent.depth_profile_widget = None
         file = os.path.join(self.parent.obj.directory, self.save_file)
         try:
             if os.path.isfile(file):

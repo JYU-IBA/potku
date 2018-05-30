@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 28.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -110,7 +110,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                 self.measurement.measurement_setting_file_name)
             self.measurement_settings_widget.ui.descriptionPlainTextEdit \
                 .setPlainText(
-                self.measurement.measurement_setting_file_description)
+                    self.measurement.measurement_setting_file_description)
             self.measurement_settings_widget.ui.dateLabel.setText(time.strftime(
                 "%c %z %Z", time.localtime(self.measurement.modification_time)))
 

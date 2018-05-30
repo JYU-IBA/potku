@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 23.5.2013
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -26,13 +26,15 @@ along with this program (file named 'LICENCE').
 
 Opens a element selection dialog.
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
-             "Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
+             "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
-from os.path import join
+import os
 
-from PyQt5 import uic, QtWidgets
+from PyQt5 import uic
+from PyQt5 import QtWidgets
 
 
 class ElementSelectionDialog(QtWidgets.QDialog):
@@ -44,7 +46,9 @@ class ElementSelectionDialog(QtWidgets.QDialog):
         """Inits the ElementSelection class
         """
         super().__init__()
-        self.ui = uic.loadUi(join("ui_files", "ui_element_selection.ui"), self)
+        self.ui = uic.loadUi(os.path.join("ui_files",
+                                          "ui_element_selection.ui"),
+                             self)
         buttons = self.ui.findChild(QtWidgets.QButtonGroup, "elementButtons")
         buttons.buttonClicked.connect(self.__set_element)
         self.ui.pushButton_Cancel.clicked.connect(self.close)

@@ -111,7 +111,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                 self.simulation.measurement_setting_file_name)
             self.measurement_settings_widget.ui.descriptionPlainTextEdit \
                 .setPlainText(
-                self.simulation.measurement_setting_file_description)
+                    self.simulation.measurement_setting_file_description)
             self.measurement_settings_widget.dateLabel.setText(time.strftime(
                 "%c %z %Z", time.localtime(self.simulation.modification_time)))
 

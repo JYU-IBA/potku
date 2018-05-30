@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.4.2018
-Updated on 5.3.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -26,11 +26,13 @@ along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
-__versio__ = "2.0"
+__version__ = "2.0"
 
-from os.path import join
+import os
 
-from PyQt5 import QtCore, uic, QtWidgets
+from PyQt5 import QtCore
+from PyQt5 import uic
+from PyQt5 import QtWidgets
 
 import modules.masses as masses
 from dialogs.element_selection import ElementSelectionDialog
@@ -45,7 +47,7 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         """Inits simulation element selection dialog.
         """
         super().__init__()
-        self.ui = uic.loadUi(join("ui_files",
+        self.ui = uic.loadUi(os.path.join("ui_files",
                                   "ui_recoil_element_selection_dialog.ui"),
                              self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -174,5 +176,3 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
 
         self.isOk = True
         self.close()
-
-

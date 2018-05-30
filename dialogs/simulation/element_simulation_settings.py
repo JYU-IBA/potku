@@ -1,5 +1,8 @@
 # coding=utf-8
 """
+Created on 4.4.2018
+Updated on 30.5.2018
+
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
@@ -25,7 +28,8 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 
 import os
-from PyQt5 import uic, QtWidgets
+from PyQt5 import uic
+from PyQt5 import QtWidgets
 
 
 class ElementSimulationSettingsDialog(QtWidgets.QDialog):

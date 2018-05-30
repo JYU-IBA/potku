@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 27.8.2013
-Updated on 27.8.2013
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -27,12 +27,14 @@ along with this program (file named 'LICENCE').
 MatplotlibDepthProfileWidget handles the drawing and operation of the 
 depth profile graph.
 """
-__author__ = "Timo Konu"
-__versio__ = "1.0"
+__author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
+             "Rekilä \n Sinikka Siironen"
+__version__ = "1.0"
 
-from os.path import join
+import os
 
-from PyQt5 import QtCore, uic, QtWidgets
+from PyQt5 import QtCore, uic
+from PyQt5 import QtWidgets
 
 
 class GraphIgnoreElements(QtWidgets.QDialog):
@@ -41,12 +43,14 @@ class GraphIgnoreElements(QtWidgets.QDialog):
         
         Args:
             elements: A list of elements in Depth Profile.
-            ignored: A list of elements ignored previously for ratio calculation.
+            ignored: A list of elements ignored previously for ratio
+            calculation.
         """
         super().__init__()
         self.__elements = elements
         self.ignored_elements = ignored
-        uic.loadUi(join("ui_files", "ui_graph_ignored_elements.ui"), self)
+        uic.loadUi(os.path.join("ui_files", "ui_graph_ignored_elements.ui"),
+                   self)
         self.button_ok.clicked.connect(self.__ok_button)
         self.button_cancel.clicked.connect(self.close)
         self.__set_values()
@@ -58,7 +62,7 @@ class GraphIgnoreElements(QtWidgets.QDialog):
         for element in self.__elements:
             item = QtWidgets.QTreeWidgetItem([str(element)])
             item.element = str(element)
-            if not item.element in self.ignored_elements:
+            if item.element not in self.ignored_elements:
                 item.setCheckState(0, QtCore.Qt.Checked)
             else:
                 item.setCheckState(0, QtCore.Qt.Unchecked)

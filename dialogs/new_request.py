@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 5.4.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -32,7 +32,8 @@ __version__ = "2.0"
 import logging
 import os
 
-from PyQt5 import uic, QtWidgets
+from PyQt5 import uic
+from PyQt5 import QtWidgets
 
 
 class RequestNewDialog(QtWidgets.QDialog):
@@ -65,8 +66,8 @@ class RequestNewDialog(QtWidgets.QDialog):
     def __browser_folder(self):
         """Open file browser and show the selected file in view.
         """
-        folder = QtWidgets.QFileDialog.getExistingDirectory(self,
-                                              self.ui.browseFolderButton.text())
+        folder = QtWidgets.QFileDialog.getExistingDirectory(
+            self, self.ui.browseFolderButton.text())
         if folder:
             self.folder = folder
             self.ui.requestDirectoryLineEdit.setText(folder)

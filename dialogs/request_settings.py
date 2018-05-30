@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 22.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -34,9 +34,13 @@ __version__ = "2.0"
 import os
 import time
 
-from PyQt5 import QtCore, QtGui, uic, QtWidgets
+from PyQt5 import QtCore
+from PyQt5 import QtGui
+from PyQt5 import uic
+from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QDesktopWidget, QApplication
+from PyQt5.QtWidgets import QDesktopWidget
+from PyQt5.QtWidgets import QApplication
 
 import modules.masses as masses
 from dialogs.element_selection import ElementSelectionDialog

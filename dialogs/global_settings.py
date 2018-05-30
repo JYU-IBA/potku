@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 30.4.2013
-Updated on 26.8.2013
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -25,12 +25,16 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
-             "Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 from os import path
 
-from PyQt5 import QtCore, uic, QtGui, QtWidgets
+from PyQt5 import QtCore
+from PyQt5 import uic
+from PyQt5 import QtGui
+from PyQt5 import QtWidgets
 
 from dialogs.measurement.import_measurement import CoincTiming
 from widgets.matplotlib.measurement.tofe_histogram import \
@@ -159,8 +163,10 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         x_r_max = self.ui.spin_tofe_bin_x_max.value()
         y_r_min = self.ui.spin_tofe_bin_y_min.value()
         y_r_max = self.ui.spin_tofe_bin_y_max.value()
-        if x_r_min > x_r_max: x_r_min = 0
-        if y_r_min > y_r_max: y_r_min = 0
+        if x_r_min > x_r_max:
+            x_r_min = 0
+        if y_r_min > y_r_max:
+            y_r_min = 0
         compression_x = self.ui.spin_tofe_compression_x.value()
         compression_y = self.ui.spin_tofe_compression_y.value()
         self.settings.set_tofe_bin_range_x(x_r_min, x_r_max)

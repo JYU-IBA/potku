@@ -1,6 +1,7 @@
 # coding=utf-8
 """
 Created on 3.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,7 +30,8 @@ __version__ = "2.0"
 
 import os
 
-from PyQt5 import uic, QtWidgets
+from PyQt5 import uic
+from PyQt5 import QtWidgets
 
 
 class RecoilInfoDialog(QtWidgets.QDialog):

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.4.2013
-Updated on 18.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -30,14 +30,17 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import os
-from PyQt5 import QtCore, QtGui, uic, QtWidgets
+from PyQt5 import QtCore
+from PyQt5 import QtGui
+from PyQt5 import uic
+from PyQt5 import QtWidgets
 
 from modules.cut_file import CutFile
 from modules.calibration import TOFCalibration
 from widgets.matplotlib.calibration.curve_fitting \
-import MatplotlibCalibrationCurveFittingWidget
+    import MatplotlibCalibrationCurveFittingWidget
 from widgets.matplotlib.calibration.linear_fitting \
-import MatplotlibCalibrationLinearFittingWidget
+    import MatplotlibCalibrationLinearFittingWidget
 
 
 class CalibrationDialog(QtWidgets.QDialog):
@@ -192,7 +195,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         """
         self.__change_accept_point_label("")
         if current_item and hasattr(current_item, "directory") and \
-        hasattr(current_item, "file_name"):
+           hasattr(current_item, "file_name"):
             self.__set_current_cut(current_item)        
             self.__update_curve_fit()
 

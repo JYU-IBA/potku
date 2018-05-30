@@ -1,13 +1,15 @@
 # coding=utf-8
 """
 Created on 5.8.2013
-Updated on 28.8.2013
+Updated on 30.5.2018
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.  
-Copyright (C) Timo Konu
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,13 +24,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 
-MatplotlibDepthProfileWidget handles the drawing and operation of the 
+MatplotlibDepthProfileWidget handles the drawing and operation of the
 depth profile graph.
 """
-__author__ = "Timo Konu"
-__versio__ = "1.0"
+__author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
+             "Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
-from os.path import join
+import os
 from PyQt5 import QtCore, uic, QtWidgets
 
 
@@ -46,7 +49,8 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
         self.__elements = elements
         self.ignore_from_graph = ignored_graph
         self.ignore_from_ratio = ignored_ratio
-        uic.loadUi(join("ui_files", "ui_depth_profile_ignored.ui"), self)
+        uic.loadUi(os.path.join("ui_files", "ui_depth_profile_ignored.ui"),
+                   self)
         self.button_ok.clicked.connect(self.__ok_button)
         self.button_cancel.clicked.connect(self.close)
         self.tree_elements.itemChanged.connect(self.__element_toggle_graph)
@@ -75,7 +79,7 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
             # Add to graph list
             item = QtWidgets.QTreeWidgetItem([element_str])
             item.element = element_str
-            if not item.element in self.ignore_from_graph:
+            if item.element not in self.ignore_from_graph:
                 item.setCheckState(0, QtCore.Qt.Checked)
             else:
                 item.setCheckState(0, QtCore.Qt.Unchecked)
@@ -83,8 +87,8 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
             # Add to ratio list
             item2 = QtWidgets.QTreeWidgetItem([element_str])
             item2.element = element_str
-            if not item2.element in self.ignore_from_ratio and \
-                    not item2.element in self.ignore_from_graph:
+            if item2.element not in self.ignore_from_ratio and \
+                    item2.element not in self.ignore_from_graph:
                 item2.setCheckState(0, QtCore.Qt.Checked)
             else:
                 item2.setCheckState(0, QtCore.Qt.Unchecked)
@@ -111,6 +115,6 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
         for i in range(child_count):
             item = root.child(i)
             if not item.checkState(0) and \
-                    not item.element in self.ignore_from_ratio:
+                    item.element not in self.ignore_from_ratio:
                 self.ignore_from_ratio.append(item.element)
         self.close()

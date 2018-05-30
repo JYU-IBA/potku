@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 30.4.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -30,7 +30,9 @@ __version__ = "2.0"
 
 import os
 
-from PyQt5 import uic, QtGui, QtWidgets
+from PyQt5 import uic
+from PyQt5 import QtGui
+from PyQt5 import QtWidgets
 
 import modules.masses as masses
 from dialogs.element_selection import ElementSelectionDialog
@@ -231,7 +233,7 @@ class ElementLayout(QtWidgets.QHBoxLayout):
         self.delete_button.deleteLater()
         self.deleteLater()
 
-    def __select_element(self, button):
+    def __select_element(self):
         """Opens a dialog to select an element.
         """
         dialog = ElementSelectionDialog()

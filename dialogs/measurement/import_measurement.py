@@ -139,7 +139,6 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         self.grid_timing.addWidget(label_low, 1, 0)
         self.grid_timing.addWidget(label_high, 2, 0)
 
-    # TODO: This part needs to be tested (sample was added).
     def __import_files(self):
         """Import listed files with settings defined in the dialog.
         """
@@ -176,7 +175,6 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         # process.
         
         filename_list = []
-        sample_count = 0
         for i in range(root_child_count):
             progress_bar.setValue(i / root_child_count)
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
@@ -184,20 +182,12 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             # process.
             item = root.child(i)
             filename_list.append(item.filename)
-            # request_dir = str(os.path.join(self.request.directory, item.name))
 
             sample = self.request.samples.add_sample()
             self.parent.add_root_item_to_tree(sample)
-            sample_path = os.path.join(self.request.directory, sample.directory)
-            measurement_prefix = "Measurement_" + "%02d" % \
-                                 sample.get_running_int_measurement()
-            measurement_name = measurement_prefix + "-" + item.name
             measurement = self.parent.add_new_tab("measurement", "", sample,
-                                      object_name=item.name,
-                                      import_evnt=True)
-            # measurement = sample.measurements.measurements.\
-            #     add_measurement_file(sample, "", 1, measurement_name,
-            #                          import_evnt=True)
+                                                  object_name=item.name,
+                                                  import_evnt=True)
             output_file = os.path.join(measurement.directory_data, item.name
                                        + ".asc")
             n = 2

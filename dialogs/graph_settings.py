@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 16.8.2013
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -25,10 +25,10 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen" \
-             " \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
-
-from os.path import join
+             " \n Samuli Rahkonen \n Miika Raunio \n Severi Jääskelänen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
+import os
 
 from PyQt5 import QtCore, uic, QtWidgets
 
@@ -45,7 +45,8 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
         """
         super().__init__()
         self.parent = parent
-        self.ui = uic.loadUi(join("ui_files", "ui_tofe_graph_settings.ui"),
+        self.ui = uic.loadUi(os.path.join("ui_files",
+                                          "ui_tofe_graph_settings.ui"),
                              self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 

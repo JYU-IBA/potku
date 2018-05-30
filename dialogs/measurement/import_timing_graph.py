@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 29.8.2013
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -24,10 +24,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Timo Konu"
-__versio__ = "1.0"
+__author__ = "Timo Konu \n Severi Jääskeläinne \n Samuel Kaiponen \m Heta " \
+             "Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
-from os import path, stat
+import os
 from PyQt5 import uic, QtWidgets
 
 from modules.general_functions import coinc
@@ -63,16 +64,17 @@ class ImportTimingGraphDialog(QtWidgets.QDialog):
         self.__output_file = output_file
         self.timing_low = adc_timing_spin[0]
         self.timing_high = adc_timing_spin[1]
-        self.ui = uic.loadUi(path.join("ui_files", "ui_import_graph_dialog.ui"),
+        self.ui = uic.loadUi(os.path.join("ui_files",
+                                          "ui_import_graph_dialog.ui"),
                              self)
         self.button_close.clicked.connect(self.close)
         coinc(self.__input_file, self.__output_file, skip_lines=skip_lines,
               tablesize=10, trigger=trigger, adc_count=adc_count, timing=timing,
               nevents=coinc_count, temporary=True)
-        if not stat(self.__output_file).st_size:
-            unused_reply = QtWidgets.QMessageBox.question \
-                (self, "Empty File", "No coincidence events were found.",
-                 QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+        if not os.stat(self.__output_file).st_size:
+            unused_reply = QtWidgets.QMessageBox.question(
+                self, "Empty File", "No coincidence events were found.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             self.close()  # Just in case.
         else:
             self.matplotlib = MatplotlibImportTimingWidget(self,

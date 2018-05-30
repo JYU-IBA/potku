@@ -29,10 +29,15 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli " \
              "Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import logging, os, sys
-from PyQt5 import uic, QtCore, QtWidgets
+import logging
+import os
+import sys
+from PyQt5 import uic
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
 
-from modules.cut_file import is_rbs, get_scatter_element
+from modules.cut_file import is_rbs
+from modules.cut_file import get_scatter_element
 from modules.element_losses import ElementLosses
 from modules.null import Null
 from widgets.matplotlib.measurement.element_losses \
@@ -65,7 +70,7 @@ class ElementLossesDialog(QtWidgets.QDialog):
 
         # TODO: Reads cut files twice. Requires Refactor.
         m_name = self.parent.obj.name
-        if not m_name in ElementLossesDialog.reference_cut.keys():
+        if m_name not in ElementLossesDialog.reference_cut.keys():
             ElementLossesDialog.reference_cut[m_name] = None
         cuts, unused_elemloss = parent.obj.get_cut_files()
         dirtyinteger = 0
@@ -76,7 +81,7 @@ class ElementLossesDialog(QtWidgets.QDialog):
                 self.ui.referenceCut.setCurrentIndex(dirtyinteger)
             dirtyinteger += 1
 
-        if not m_name in ElementLossesDialog.checked_cuts.keys():
+        if m_name not in ElementLossesDialog.checked_cuts.keys():
             ElementLossesDialog.checked_cuts[m_name] = []
         parent.obj.fill_cuts_treewidget(
             self.ui.targetCutTree,
@@ -97,7 +102,6 @@ class ElementLossesDialog(QtWidgets.QDialog):
         cut_elo = os.path.join(self.parent.obj.directory_composition_changes,
                                "Changes")
         y_axis_0_scale = self.ui.radioButton_0max.isChecked()
-        unused_y_axis_min_scale = self.ui.radioButton_minmax.isChecked()
         reference_cut = os.path.join(cut_dir,
                                      self.ui.referenceCut.currentText())
         split_count = self.ui.partitionCount.value()
@@ -188,7 +192,6 @@ class ElementLossesWidget(QtWidgets.QWidget):
             self.checked_cuts = checked_cuts
             self.partition_count = partition_count
             self.y_scale = y_scale
-            # TODO: Use Null with GUI ProgresBar.
             if self.measurement.statusbar:
                 self.progress_bar = QtWidgets.QProgressBar()
                 self.measurement.statusbar.addWidget(self.progress_bar, 1)
@@ -209,7 +212,8 @@ class ElementLossesWidget(QtWidgets.QWidget):
             self.ui.setWindowTitle(title)
             # Calculate elemental losses
             self.losses = ElementLosses(self.measurement.directory_cuts,
-                                        self.measurement.directory_composition_changes,
+                                        self.measurement.
+                                        directory_composition_changes,
                                         self.reference_cut_file,
                                         self.checked_cuts,
                                         self.partition_count,
@@ -262,13 +266,14 @@ class ElementLossesWidget(QtWidgets.QWidget):
         self.ui = None
         self.close()
 
-    def __save_splits(self):  # TODO: Use Null with GUI ProgresBar.
+    def __save_splits(self):
         if self.progress_bar:
             self.progress_bar = QtWidgets.QProgressBar()
             self.measurement.statusbar.addWidget(self.progress_bar, 1)
             self.progress_bar.show()
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its process.
+            # Mac requires event processing to show progress bar and its
+            # process.
         else:
             self.progress_bar = None
         self.losses.progress_bar = self.progress_bar  # Update this     
