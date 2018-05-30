@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 28.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -40,7 +41,7 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
     """Energy spectrum widget
     """
 
-    def __init__(self, parent, split, legend=True, y_scale=0, rbs_list={}):
+    def __init__(self, parent, split, legend=True, y_scale=0, rbs_list=None):
         """Inits Energy Spectrum widget.
 
         Args:
@@ -51,6 +52,8 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
             rbs_list: A dictionary of RBS selection elements containing
                       scatter elements.
         """
+        if rbs_list is None:
+            rbs_list = []
         super().__init__(parent)
         super().fork_toolbar_buttons()
         self.draw_legend = legend

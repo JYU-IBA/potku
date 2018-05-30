@@ -2,6 +2,26 @@
 """
 Created on 1.3.2018
 Updated on 29.5.2018
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
@@ -41,7 +61,7 @@ class ElementWidget(QtWidgets.QWidget):
         draw_spectrum_button.setIcon(QIcon(
             "ui_icons/potku/energy_spectrum_icon.svg"))
         draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                        QtWidgets.QSizePolicy.Fixed)
+                                           QtWidgets.QSizePolicy.Fixed)
         draw_spectrum_button.clicked.connect(self.plot_spectrum)
 
         horizontal_layout.addWidget(self.radio_button)

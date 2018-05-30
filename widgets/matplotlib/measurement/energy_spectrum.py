@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 29.8.2018
+Updated on 30.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,7 +24,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-from modules.measurement import Measurement
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
@@ -36,6 +36,7 @@ from dialogs.graph_ignore_elements import GraphIgnoreElements
 from modules.element import Element
 from widgets.matplotlib.base import MatplotlibWidget
 import modules.masses as masses
+from modules.measurement import Measurement
 
 
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
@@ -85,8 +86,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.__button_ignores.clicked.connect(
                 self.__ignore_elements_from_graph)
             self.__button_ignores.setToolTip(
-                "Select elements which are included in" + \
-                " the graph.")
+                "Select elements which are included in the graph.")
             self.__icon_manager.set_icon(self.__button_ignores, "gear.svg")
             self.mpl_toolbar.addWidget(self.__button_ignores)
 

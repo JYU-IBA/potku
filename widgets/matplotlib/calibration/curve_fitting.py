@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2013
-Updated on 18.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -28,9 +28,11 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-from PyQt5 import QtGui, QtWidgets
+from PyQt5 import QtGui
+from PyQt5 import QtWidgets
 
-from modules.calibration import TOFCalibrationPoint, TOFCalibrationHistogram
+from modules.calibration import TOFCalibrationPoint
+from modules.calibration import TOFCalibrationHistogram
 from widgets.matplotlib.base import MatplotlibWidget
 import modules.masses as masses
 

@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 17.4.2013
-Updated on 28.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -373,9 +374,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.modeButton = QtWidgets.QToolButton(self)
         self.modeButton.clicked.connect(self.__toggle_lim_mode)
         self.modeButton.setEnabled(False)
-        self.modeButton.setToolTip("Toggles between selecting the entire " + \
-                                   "histogram, area included in the limits and " + \
-                                   "areas included of the limits")
+        self.modeButton.setToolTip(
+            "Toggles between selecting the entire " +
+            "histogram, area included in the limits and " +
+            "areas included of the limits")
         self.icon_manager.set_icon(self.modeButton, "depth_profile_lim_all.svg")
         self.mpl_toolbar.addWidget(self.modeButton)
 
@@ -401,8 +403,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__button_toggle_absolute.clicked.connect(
             self.__toggle_absolute_values)
         self.__button_toggle_absolute.setCheckable(True)
-        self.__button_toggle_absolute.setToolTip("Toggle absolute values for " + \
-                                                 "elements.")
+        self.__button_toggle_absolute.setToolTip(
+            "Toggle absolute values for elements.")
         self.icon_manager.set_icon(self.__button_toggle_absolute, "color.svg")
         self.mpl_toolbar.addWidget(self.__button_toggle_absolute)
 

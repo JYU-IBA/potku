@@ -1,12 +1,28 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 29.5.2018
-"""
-from PyQt5.QtGui import QIcon
+Updated on 30.5.2018
 
-from dialogs.energy_spectrum import EnergySpectrumParamsDialog, \
-    EnergySpectrumWidget
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
+"""
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
@@ -14,7 +30,9 @@ __version__ = "2.0"
 
 import os
 
-from PyQt5 import QtCore, QtWidgets, QtGui
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+from PyQt5 import QtGui
 from matplotlib.widgets import SpanSelector
 
 from modules.element import Element
@@ -419,7 +437,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if confirm_box.clickedButton() == yes_button:
             element_simulation = self.element_manager \
                 .get_element_simulation_with_radio_button(
-                self.radios.checkedButton())
+                    self.radios.checkedButton())
             self.remove_element(element_simulation)
             self.current_element_simulation = None
             self.parent_ui.elementInfoWidget.hide()
@@ -757,8 +775,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.x_coordinate_box.setValue(self.selected_points[0].get_x())
             self.y_coordinate_box.setEnabled(True)
             self.y_coordinate_box.setValue(self.selected_points[0].get_y())
-            # self.text.set_text('selected: %d %d' % (self.selected_points[0].get_coordinates()[0],
-            #                                     self.selected_points[0].get_coordinates()[1]))
+            # self.text.set_text('selected: %d %d' %
+            # (self.selected_points[0].get_coordinates()[0],
+            # self.selected_points[0].get_coordinates()[1]))
         else:
             self.markers_selected.set_data(
                 self.current_element_simulation.get_xs(
@@ -940,7 +959,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             return
         sel_points = []
         for point in self.current_element_simulation.recoil_elements[
-            0].get_points():
+        0].get_points():
             if xmin <= point.get_x() <= xmax:
                 sel_points.append(point)
         self.selected_points = sel_points

@@ -1,5 +1,8 @@
 # coding=utf-8
 """
+Created on 25.4.2018
+Updated on 30.5.2018
+
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
@@ -24,13 +27,9 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import enum
 import matplotlib
-import random
 
 from dialogs.simulation.layer_properties import LayerPropertiesDialog
-from modules.layer import Layer
-from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from widgets.matplotlib.base import MatplotlibWidget
 
@@ -126,7 +125,7 @@ class _CompositionWidget(MatplotlibWidget):
         self.__icon_manager.set_icon(action_add_layer, "add.png")
         self.mpl_toolbar.addAction(action_add_layer)
 
-    def __add_layer(self, position = -1):
+    def __add_layer(self, position=-1):
         """Adds a new layer to the list of layers.
 
         Args:
@@ -147,7 +146,7 @@ class _CompositionWidget(MatplotlibWidget):
 
     def __update_figure(self):
         """Updates the figure to match the information of the layers."""
-        next_layer_position = 0 # Position where the next layer will be drawn.
+        next_layer_position = 0  # Position where the next layer will be drawn.
 
         # This variable is used to alternate between the darker and lighter
         # colors of grey.
@@ -161,13 +160,15 @@ class _CompositionWidget(MatplotlibWidget):
             layer_patch = matplotlib.patches.Rectangle(
                 (next_layer_position, 0),
                 layer.thickness, 1,
-                color = (0.85, 0.85, 0.85) if is_next_color_dark else
+                color=(0.85, 0.85, 0.85) if is_next_color_dark else
                 (0.9, 0.9, 0.9)
             )
 
             # Alternate the color.
-            if is_next_color_dark: is_next_color_dark = False
-            else: is_next_color_dark = True
+            if is_next_color_dark:
+                is_next_color_dark = False
+            else:
+                is_next_color_dark = True
 
             self.axes.add_patch(layer_patch)
 
