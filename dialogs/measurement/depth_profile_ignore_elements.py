@@ -47,13 +47,12 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
         self.ignore_from_graph = ignored_graph
         self.ignore_from_ratio = ignored_ratio
         uic.loadUi(join("ui_files", "ui_depth_profile_ignored.ui"), self)
-        self.button_ok.clicked.connect(self.__ok_button) 
+        self.button_ok.clicked.connect(self.__ok_button)
         self.button_cancel.clicked.connect(self.close)
         self.tree_elements.itemChanged.connect(self.__element_toggle_graph)
         self.__set_values()
         self.exec_()
 
-    
     def __element_toggle_graph(self, item, col):
         """Catch item changed event from element tree.
         """
@@ -61,13 +60,12 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
             return
         root = self.tree_ratio.invisibleRootItem()
         child_count = root.childCount()
-        for i in range(child_count): 
+        for i in range(child_count):
             ratio_element = root.child(i)
             if ratio_element.element != item.element:
                 continue
             ratio_element.setHidden(not item.checkState(0))
             ratio_element.setCheckState(0, item.checkState(0))
-
 
     def __set_values(self):
         """Set elements to tree widget.
@@ -86,15 +84,14 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
             item2 = QtWidgets.QTreeWidgetItem([element_str])
             item2.element = element_str
             if not item2.element in self.ignore_from_ratio and \
-            not item2.element in self.ignore_from_graph:
+                    not item2.element in self.ignore_from_graph:
                 item2.setCheckState(0, QtCore.Qt.Checked)
             else:
                 item2.setCheckState(0, QtCore.Qt.Unchecked)
             self.tree_ratio.addTopLevelItem(item2)
             if element_str in self.ignore_from_graph:
                 item2.setHidden(True)
-                
-    
+
     def __ok_button(self):
         """Accept selected elements to be used in ratio calculation.
         """
@@ -103,7 +100,7 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
         # Graph
         root = self.tree_elements.invisibleRootItem()
         child_count = root.childCount()
-        for i in range(child_count): 
+        for i in range(child_count):
             item = root.child(i)
             if not item.checkState(0):
                 self.ignore_from_graph.append(item.element)
@@ -111,14 +108,9 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
         # Ratio
         root = self.tree_ratio.invisibleRootItem()
         child_count = root.childCount()
-        for i in range(child_count): 
+        for i in range(child_count):
             item = root.child(i)
             if not item.checkState(0) and \
-               not item.element in self.ignore_from_ratio:
+                    not item.element in self.ignore_from_ratio:
                 self.ignore_from_ratio.append(item.element)
         self.close()
-        
-        
-        
-        
-        

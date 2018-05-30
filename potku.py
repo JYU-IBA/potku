@@ -25,41 +25,39 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 
-import logging
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMenu
-from PyQt5.QtWidgets import QTreeWidgetItem
-from PyQt5.QtWidgets import QAbstractItemView
-from dialogs.measurement.load_measurement import LoadMeasurementDialog
-from modules.measurement import Measurement
-
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli " \
              "Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n Samuel " \
              "Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
 import gc
+import os
 import platform
+import shutil
 import subprocess
 import sys
 from datetime import datetime, timedelta
 
-import os
-import shutil
-from PyQt5 import QtWidgets
 from PyQt5 import QtCore
+from PyQt5 import QtWidgets
 from PyQt5 import uic
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QAbstractItemView
+from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QTreeWidgetItem
 
 from dialogs.about import AboutDialog
 from dialogs.global_settings import GlobalSettingsDialog
 from dialogs.measurement.import_binary import ImportDialogBinary
 from dialogs.measurement.import_measurement import ImportMeasurementsDialog
+from dialogs.measurement.load_measurement import LoadMeasurementDialog
 from dialogs.new_request import RequestNewDialog
 from dialogs.request_settings import RequestSettingsDialog
 from dialogs.simulation.new_simulation import SimulationNewDialog
 from modules.general_functions import open_file_dialog, remove_file, rename_file
 from modules.global_settings import GlobalSettings
 from modules.icon_manager import IconManager
+from modules.measurement import Measurement
 from modules.request import Request
 from widgets.measurement.tab import MeasurementTabWidget
 from widgets.simulation.tab import SimulationTabWidget

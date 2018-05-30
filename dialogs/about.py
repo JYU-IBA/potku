@@ -3,12 +3,13 @@
 Created on 12.5.2013
 Updated on 23.5.2013
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, 
-Samuli Rahkonen and Miika Raunio
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,38 +25,40 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli K�rkk�inen \n Samuli Rahkonen \n Miika Raunio"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli K�rkk�inen \n " \
+             "Samuli Rahkonen \n Miika Raunio"
 __versio__ = "1.0"
 
 import os
-from PyQt5 import QtWidgets, QtCore, QtGui, uic
 from math import sin
+
+from PyQt5 import QtWidgets, QtCore, QtGui, uic
+
 
 class AboutDialog(QtWidgets.QDialog):
     """About dialog that shows information about the program itself.
     """
+
     def __init__(self):
         """Inits the About Dialog.
         """
         super().__init__()
-        
+
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_about.ui"), self)
         self.ui.OKButton.clicked.connect(self.close)
         self.ui.DiscoButton.clicked.connect(self.__disco)
-        
+
         pixmap = QtGui.QPixmap(os.path.join("images", "potku_logo_icon.svg"))
         scaled_pixmap = pixmap.scaled(self.ui.picture.size(),
                                       QtCore.Qt.KeepAspectRatio)
         self.ui.picture.setPixmap(scaled_pixmap)
-        
+
         self.x = 0
         self.y = 2
         self.z = 3
         self.__timer = None
         self.exec_()
 
-        
-        
     def closeEvent(self, event):
         """Proper closing.
         """
@@ -63,14 +66,12 @@ class AboutDialog(QtWidgets.QDialog):
             self.__timer.stop()
         event.accept()  # let the window close
 
-    
     def __disco(self):
-        """Magic
+        """Magic.
         """
         self.__timer = QtCore.QTimer(interval=10, timeout=self.__timeout)
         self.__timer.start()
-    
-    
+
     def __timeout(self):
         self.x += 0.1
         self.y += 0.1
@@ -82,5 +83,3 @@ class AboutDialog(QtWidgets.QDialog):
                                                           self.color_G,
                                                           self.color_B)
         self.ui.setStyleSheet(bg)
-
-        

@@ -7,8 +7,9 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -51,10 +52,10 @@ class DepthProfileDialog(QtWidgets.QDialog):
     systerr = 0.0
     
     def __init__(self, parent):
-        """Inits depth profile dialog
+        """Inits depth profile dialog.
         
         Args:
-            parent: MeasurementTabWidget
+            parent: A MeasurementTabWidget.
         """
         super().__init__()
         self.parent = parent
@@ -92,7 +93,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.exec_()
         
     def __accept_params(self):
-        """Accept given parameters
+        """Accept given parameters.
         """
         progress_bar = QtWidgets.QProgressBar()
         self.__statusbar.addWidget(progress_bar, 1) 
@@ -211,8 +212,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 # TODO: Perhaps make this update every time a cut file is
                 # selected so user knows exactly what files are used instead
                 # of what files match all the cut files.
-                # if not item.checkState(0): continue
-                
+
                 # TODO: Does not check elemental losses for efficiency files.
                 if not hasattr(item, "file_name"):
                     continue

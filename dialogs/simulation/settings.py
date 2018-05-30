@@ -2,6 +2,27 @@
 """
 Created on 4.5.2018
 Updated on 28.5.2018
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -112,6 +133,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             masses.load_isotopes(dialog.element, combo_box)
 
     def __change_used_settings(self):
+        """Set specific settings enabled or disabled based on the "Use
+        request settings" checkbox.
+        """
         check_box = self.sender()
         if check_box.isChecked():
             self.ui.tabs.setEnabled(False)
@@ -258,5 +282,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                                QtWidgets.QMessageBox.Ok)
 
     def __save_settings_and_close(self):
+        """Save settings and close the dialog.
+        """
         self.__update_parameters()
         self.close()

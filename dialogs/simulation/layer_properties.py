@@ -3,21 +3,39 @@
 Created on 28.2.2018
 Updated on 30.4.2018
 
-#TODO Licence and copyright
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
 import os
+
 from PyQt5 import uic, QtGui, QtWidgets
+
+import modules.masses as masses
 from dialogs.element_selection import ElementSelectionDialog
 from modules.element import Element
 from modules.layer import Layer
-import modules.masses as masses
-import enum
-import random
 
 
 class LayerPropertiesDialog(QtWidgets.QDialog):
@@ -114,8 +132,6 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             return False
         return True  # If everything is ok, return true.
 
-        # TODO: Check if negative or zero values are given.
-
     def __accept_settings(self):
         """Function for accepting the current settings and closing the dialog
         window.
@@ -142,7 +158,11 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.close()
 
     def __missing_information_message(self, empty_fields):
-        # TODO: Add docstring.
+        """Show the user a message about missing information.
+
+        Args:
+            empty_fields: Input fields that are empty.
+        """
         fields = ""
         for field in empty_fields:
             fields += "  • " + field + "\n"
@@ -154,26 +174,31 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def __add_element_layout(self):
-        # TODO: Add docstring.
+        """Add element widget into view.
+        """
         self.__ui.scrollArea.setStyleSheet("")
         self.__element_layouts.append(ElementLayout(
             self.__ui.scrollAreaWidgetContents))
 
 
 class ElementLayout(QtWidgets.QHBoxLayout):
-    # TODO: Add docstring and more comments.
+    """ElementLayout that holds element information input fields."""
 
     def __init__(self, parent):
+        """Initializes the layout.
+        Args:
+            parent: A QWidget into which the layout is added.
+        """
         parent.parentWidget().setStyleSheet("")
 
         super().__init__()
 
-        self.element = QtWidgets.QPushButton("Select")
-        self.element.setFixedWidth(60)
+        self.element_button = QtWidgets.QPushButton("Select")
+        self.element_button.setFixedWidth(60)
 
-        self.isotope = QtWidgets.QComboBox()
-        self.isotope.setFixedWidth(120)
-        self.isotope.setEnabled(False)
+        self.isotope_combobox = QtWidgets.QComboBox()
+        self.isotope_combobox.setFixedWidth(120)
+        self.isotope_combobox.setEnabled(False)
 
         self.amount_spinbox = QtWidgets.QDoubleSpinBox()
         self.amount_spinbox.setMaximum(9999.00)
@@ -187,35 +212,39 @@ class ElementLayout(QtWidgets.QHBoxLayout):
         self.delete_button.setFixedWidth(28)
         self.delete_button.setFixedHeight(28)
 
-        self.element.clicked.connect(self.__select_element)
+        self.element_button.clicked.connect(self.__select_element)
         self.delete_button.clicked.connect(self.__delete_element_layout)
 
-        self.addWidget(self.element)
-        self.addWidget(self.isotope)
+        self.addWidget(self.element_button)
+        self.addWidget(self.isotope_combobox)
         self.addWidget(self.amount_spinbox)
         self.addWidget(self.delete_button)
         self.insertStretch(-1, 0)
         parent.layout().addLayout(self)
 
     def __delete_element_layout(self):
-        # TODO: Add docstring.
-        self.element.deleteLater()
-        self.isotope.deleteLater()
+        """Deletes element layout.
+        """
+        self.element_button.deleteLater()
+        self.isotope_combobox.deleteLater()
         self.amount_spinbox.deleteLater()
         self.delete_button.deleteLater()
         self.deleteLater()
 
     def __select_element(self, button):
-        # TODO: Add docstring.
+        """Opens a dialog to select an element.
+        """
         dialog = ElementSelectionDialog()
 
         if dialog.element:
-            self.element.setStyleSheet("")
-            self.element.setText(dialog.element)
+            self.element_button.setStyleSheet("")
+            self.element_button.setText(dialog.element)
             self.__load_isotopes()
-            self.isotope.setEnabled(True)
+            self.isotope_combobox.setEnabled(True)
             self.amount_spinbox.setEnabled(True)
 
     def __load_isotopes(self):
-        # TODO: Change the path.
-        masses.load_isotopes(self.element.text(), self.isotope, None)
+        """Loads isotopes of the element into the combobox.
+        """
+        masses.load_isotopes(self.element_button.text(), self.isotope_combobox,
+                             None)

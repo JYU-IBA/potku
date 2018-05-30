@@ -7,7 +7,9 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) Timo Konu
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -159,7 +161,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         for coinc_key in self.__added_timings.keys():
             coinc_timing = self.__added_timings[coinc_key]
             if coinc_timing.is_not_trigger:
-                timing[coinc_timing.adc] = (coinc_timing.low.value(), coinc_timing.high.value())
+                timing[coinc_timing.adc] = (coinc_timing.low.value(),
+                                            coinc_timing.high.value())
         start_time = clock()
         progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
@@ -179,7 +182,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             filename_list.append(item.filename)
             # request_dir = str(os.path.join(self.request.directory, item.name))
 
-            sample_path = os.path.join(self.request.directory, "Sample_" + str(sample_count))
+            sample_path = os.path.join(self.request.directory,
+                                       "Sample_" + str(sample_count))
             sample_count += 1
             self.request.samples.add_sample(sample_path)
             measurement_path = os.path.join(sample_path, item.name)
@@ -279,7 +283,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                         reading_data = True
                     self.__files_preview[file].append(line.strip())
         # Automatically set good values.
-        sort_adc_occ = OrderedDict(sorted(self.adc_occurance.items(), reverse=True))
+        sort_adc_occ = OrderedDict(sorted(self.adc_occurance.items(),
+                                          reverse=True))
         adc_keys = sorted(self.adc_occurance.keys())
         self.spin_skiplines.setValue(skip_length)
         self.spin_adctrigger.setMinimum(int(adc_keys[0]))
@@ -323,10 +328,15 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         # timing_first = timing.keys().next()
         timing_low = self.__added_timings[timing_first].low
         timing_high = self.__added_timings[timing_first].high
-        ImportTimingGraphDialog(self, input_file, output_file, (timing_low, timing_high),
-                                icon_manager=self.__icon_manager, skip_lines=self.spin_skiplines.value(),
-                                trigger=self.spin_adctrigger.value(), adc_count=self.spin_adccount.value(),
-                                timing=timing, coinc_count=self.global_settings.get_import_coinc_count())
+        ImportTimingGraphDialog(self, input_file, output_file,
+                                (timing_low, timing_high),
+                                icon_manager=self.__icon_manager,
+                                skip_lines=self.spin_skiplines.value(),
+                                trigger=self.spin_adctrigger.value(),
+                                adc_count=self.spin_adccount.value(),
+                                timing=timing,
+                                coinc_count=self.global_settings
+                                .get_import_coinc_count())
 
     def __create_combobox(self, adc):
         """Create combobox for ADC.
@@ -377,7 +387,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             button: A QtWidgets.QPushButton class object which was pressed.
         """
         index = self.grid_column.indexOf(button)
-        row, column, unused_cols, unused_rows = self.grid_column.getItemPosition(index)
+        row, column, unused_cols, unused_rows = \
+            self.grid_column.getItemPosition(index)
         column_count = sorted(range(column + 1), reverse=True)
         # Close all widgets in the row.
         for i in column_count:

@@ -7,8 +7,9 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -49,17 +50,11 @@ class CalibrationDialog(QtWidgets.QDialog):
         Args:
             measurements: A string list representing measurements files.
             detector: A Detector class object.
-            parent_settings_widget: A representing from which widget this was
-                                    opened from.
+            parent_settings_widget: A widget this dialog was opened from.
         """
         super().__init__()
         self.measurements = measurements
         self.measurement = measurement
-        # TODO: Settings should be loaded from the measurement depending on
-        # is the calibration dialog opened from the request settings
-        # (measurement's request settings is loaded) or the measurement
-        # specific settings(measurement's measurement settings is loaded).
-        # This has to be done for better architecture.
         self.detector = detector
         self.__cut_file = CutFile()
         self.__cut_files = {}
@@ -256,7 +251,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.timer.start()
 
     def timeout(self):
-        """Timeout eventmethod to remove label text.
+        """Timeout event method to remove label text.
         """
         self.ui.acceptPointLabel.setText("")
         self.timer.stop()

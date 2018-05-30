@@ -2,6 +2,27 @@
 """
 Created on 4.5.2018
 Updated on 28.5.2018
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
@@ -123,16 +144,14 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.ui.tabs.setEnabled(True)
 
     def __enabled_element_information(self):
-        """
-        Change the UI accordingly when an element is selected.
+        """ Change the UI accordingly when an element is selected.
         """
         self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(True)
         self.measurement_settings_widget.ui.isotopeLabel.setEnabled(True)
         self.ui.OKButton.setEnabled(True)
 
     def __update_parameters(self):
-        """
-         Update Measurement's Run, Detector and Target objects. If measurement
+        """ Update Measurement's Run, Detector and Target objects. If measurement
          specific parameters are in use, save them into a file.
         """
         if not self.measurement.measurement_setting_file_name:
@@ -284,5 +303,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                                                QtWidgets.QMessageBox.Ok)
 
     def __save_settings_and_close(self):
+        """ Save settings and close dialog.
+        """
         self.__update_parameters()
         self.close()

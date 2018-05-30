@@ -3,11 +3,13 @@
 Created on 27.8.2013
 Updated on 27.8.2013
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.  
-Copyright (C) Timo Konu
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -29,6 +31,7 @@ __author__ = "Timo Konu"
 __versio__ = "1.0"
 
 from os.path import join
+
 from PyQt5 import QtCore, uic, QtWidgets
 
 
@@ -44,12 +47,11 @@ class GraphIgnoreElements(QtWidgets.QDialog):
         self.__elements = elements
         self.ignored_elements = ignored
         uic.loadUi(join("ui_files", "ui_graph_ignored_elements.ui"), self)
-        self.button_ok.clicked.connect(self.__ok_button) 
+        self.button_ok.clicked.connect(self.__ok_button)
         self.button_cancel.clicked.connect(self.close)
         self.__set_values()
         self.exec_()
-        
-    
+
     def __set_values(self):
         """Set elements to tree widget.
         """
@@ -61,20 +63,15 @@ class GraphIgnoreElements(QtWidgets.QDialog):
             else:
                 item.setCheckState(0, QtCore.Qt.Unchecked)
             self.tree_elements.addTopLevelItem(item)
-    
-    
+
     def __ok_button(self):
         """Accept selected elements to be used in ratio calculation.
         """
         self.ignored_elements.clear()
         root = self.tree_elements.invisibleRootItem()
         child_count = root.childCount()
-        for i in range(child_count): 
+        for i in range(child_count):
             item = root.child(i)
             if not item.checkState(0):
                 self.ignored_elements.append(item.element)
         self.close()
-        
-        
-        
-        
