@@ -68,7 +68,6 @@ class Request:
         self.directory = directory
         self.request_name = name
         unused_directory, tmp_dirname = os.path.split(self.directory)
-        self.settings = Settings(self.directory)
         self.global_settings = global_settings
         self.statusbar = statusbar
         self.samples = Samples(self)
