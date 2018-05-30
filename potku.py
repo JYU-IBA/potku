@@ -36,7 +36,9 @@ import platform
 import shutil
 import subprocess
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
+import logging
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -245,6 +247,8 @@ class Potku(QtWidgets.QMainWindow):
         if clicked_item:
             # Remove object from Sample
             clicked_item.parent().obj.remove_obj(clicked_item.obj)
+            clicked_item.obj.defaultlog.close()
+            clicked_item.obj.errorlog.close()
 
             # Remove object directory
             remove_file(clicked_item.obj.directory)
@@ -255,7 +259,11 @@ class Potku(QtWidgets.QMainWindow):
             self.tree_widget.blockSignals(False)
 
             # Remove object tab
-            self.remove_tab(clicked_item.tab_id)
+            for i in range(self.ui.tabs.count()):
+                if self.ui.tabs.widget(i).obj is clicked_item.obj:
+                    self.ui.tabs.removeTab(i)
+                    break
+            self.tab_widgets.pop(clicked_item.obj.tab_id)
 
     def create_report(self):
         """
