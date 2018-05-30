@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 29.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -42,7 +43,6 @@ import sys
 import time
 from PyQt5 import QtCore, QtWidgets
 
-from modules.beam import Beam
 from modules.cut_file import CutFile
 from modules.general_functions import md5_for_file
 from modules.general_functions import rename_file
@@ -448,10 +448,8 @@ class Measurement:
                    normalization=normalization,
                    reference_density=reference_density,
                    measurement_setting_file_name=measurement_settings_name,
-                   measurement_setting_file_description
-                   =measurement_settings_description,
-                   measurement_setting_modification_time
-                   =measurement_setting_modification_time)
+                   measurement_setting_file_description=measurement_settings_description,
+                   measurement_setting_modification_time=measurement_setting_modification_time)
 
     def measurement_to_file(self, measurement_file_path):
         if os.path.exists(measurement_file_path):
@@ -921,8 +919,9 @@ class Measurement:
         elemloss = [f for f in os.listdir(os.path.join(
             self.directory, self.directory_composition_changes, "Changes"))
                     if os.path.isfile(os.path.join(
-                self.directory, self.directory_composition_changes, "Changes",
-                f))]
+                        self.directory, self.directory_composition_changes,
+                        "Changes",
+                        f))]
         return cuts, elemloss
 
     def fill_cuts_treewidget(self, treewidget, use_elemloss=False,
@@ -1027,7 +1026,6 @@ class Measurement:
         str_carbon = "Carbon foil thickness: {0}\n".format(
             carbon_foil_thickness)
 
-        # TODO: should this be calculated from target layer densities?
         str_density = "Target density: {0}\n".format(self.reference_density)
 
         # Depth Profile settings
@@ -1058,7 +1056,7 @@ class Measurement:
 
         # Combine strings
         measurement = str_beam + str_energy + str_detector + str_target + \
-                      str_toflen + str_carbon + str_density
+            str_toflen + str_carbon + str_density
         calibration = "TOF calibration: {0} {1}\n".format(
             detector.tof_slope,
             detector.tof_offset)
@@ -1066,10 +1064,10 @@ class Measurement:
             detector.angle_slope,
             detector.angle_offset)
         depthprofile = str_depthnumber + str_depthstop + str_depthout + \
-                       str_depthscale
+            str_depthscale
 
         tof_in = measurement + calibration + anglecalib + depthprofile + \
-                 str_cross + str_num_iterations + str_eff_dir
+            str_cross + str_num_iterations + str_eff_dir
 
         # Get md5 of file and new settings
         md5 = hashlib.md5()

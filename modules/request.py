@@ -7,8 +7,9 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -96,6 +97,14 @@ class Request:
         # Try reading default objects from Default folder.
         self.default_measurement_file_path = os.path.join(self.default_folder,
                                                           "Default.measurement")
+
+        self.default_detector_folder = None
+        self.default_detector = None
+        self.default_measurement = None
+        self.default_target = None
+        self.default_simulation = None
+        self.default_element_simulation = None
+
         self.create_default_detector()
         self.create_default_measurement()
         self.create_default_target()
@@ -213,8 +222,8 @@ class Request:
         target_path = os.path.join(self.default_folder, "Default.target")
         if os.path.exists(target_path):
             # Read target from file
-            self.default_target = Target \
-                .from_file(target_path, self.default_measurement_file_path, self)
+            self.default_target = Target.from_file(
+                target_path, self.default_measurement_file_path, self)
         else:
             # Create default target for request
             self.default_target = Target(description="These are default "

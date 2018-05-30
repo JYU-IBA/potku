@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 3.5.2018
-Updated on 10.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -23,16 +23,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
+             "Sinikka Siironen"
+__version__ = "2.0"
+
 import time
 
 from modules.beam import Beam
 from modules.element import Element
 import os
 import json
-
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen"
-__version__ = "2.0"
 
 
 class Run:
@@ -41,7 +41,7 @@ class Run:
     """
 
     def __init__(self, beam=None, fluence=1.00e+12, current=1.07,
-                 charge=0.641, time=600):
+                 charge=0.641, run_time=600):
         """
         Initializes the Run object.
 
@@ -58,7 +58,7 @@ class Run:
         self.fluence = fluence
         self.current = current
         self.charge = charge
-        self.time = time
+        self.time = run_time
 
     def to_file(self, measurement_file_path):
         """
@@ -87,8 +87,8 @@ class Run:
         if os.path.exists(measurement_file_path):
             obj = json.load(open(measurement_file_path))
             obj["general"]["modification_time"] = time.strftime("%c %z %Z",
-                                                     time.localtime(
-                                                         time.time()))
+                                                                time.localtime(
+                                                                 time.time()))
             obj["general"]["modification_time_unix"] = time.time()
             obj["run"] = run_obj
             obj["beam"] = beam_obj
@@ -130,4 +130,4 @@ class Run:
                            spot_size, divergence, profile)
 
         return cls(beam=beam_object, fluence=fluence, current=current,
-                   charge=charge, time=time)
+                   charge=charge, run_time=time)

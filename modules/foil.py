@@ -1,13 +1,28 @@
 # coding=utf-8
-# TODO: Add licence information
 """
 Created on 23.3.2018
 Updated on 2.5.2018
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
-from json import JSONEncoder
-
-from modules.layer import Layer
-
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
@@ -65,7 +80,8 @@ class RectangularFoil(Foil):
 
     __slots__ = "size"
 
-    def __init__(self, name="", size_x=0.0, size_y=0.0, distance=0.0, layers=None,
+    def __init__(self, name="", size_x=0.0, size_y=0.0, distance=0.0,
+                 layers=None,
                  transmission=1.0):
         """ Initialize a rectangular detector foil.
 

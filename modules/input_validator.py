@@ -1,14 +1,15 @@
 # coding=utf-8
-'''
+"""
 Created on 10.5.2013
-Updated on 23.5.2013
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,18 +23,21 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
-'''
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli K�rkk�inen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
-
-from PyQt5.QtGui import QDoubleValidator, QValidator
+"""
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
+             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
+from PyQt5.QtGui import QDoubleValidator
+from PyQt5.QtGui import QValidator
 from sys import float_info
+
 
 class InputValidator(QDoubleValidator):
     """Validator to check the validity of user inputs.
     
-    Accepts double values with scientific notation (i.e. 0.232, 12.5e-12) and turns 
-    empty input to 0.0 and commas (,) to points (.).
+    Accepts double values with scientific notation (i.e. 0.232, 12.5e-12) and
+    turns empty input to 0.0 and commas (,) to points (.).
     """
     def __init__(self, bottom=float_info.min, top=float_info.max,
                  decimals=float_info.dig, parent=None):
@@ -47,8 +51,7 @@ class InputValidator(QDoubleValidator):
         """
         QDoubleValidator.__init__(self, bottom, top, decimals, parent)
         self.setNotation(QDoubleValidator.ScientificNotation)
-        
-    
+
     def validate(self, input_value, pos):
         """Validates the given input. Overrides the QDoubleValidator's validate 
         function.

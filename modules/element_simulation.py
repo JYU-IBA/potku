@@ -1,7 +1,27 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 29.5.2018
+Updated on 30.5.2018
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
@@ -76,7 +96,8 @@ class ElementSimulation:
         self.description = description
         self.modification_time = modification_time
 
-        # TODO RecoilAtomDistributionWidget should use the selected RecoilElement.
+        # TODO RecoilAtomDistributionWidget should use the selected
+        # RecoilElement.
         # Now ElementSimulation never has multiple recoil elements, only
         # recoil_elements[0] is used. In the future, ElementSimulation should
         # hold all recoil elements (= distributions) that are related to the
@@ -324,8 +345,9 @@ class ElementSimulation:
             files are stored.
         """
         for recoil_element in self.recoil_elements:
-            recoil_file = os.path.join(simulation_folder, recoil_element.prefix +
-                                       "-" + recoil_element.name + ".rec")
+            recoil_file = os.path.join(simulation_folder,
+                                       recoil_element.prefix + "-" +
+                                       recoil_element.name + ".rec")
             if recoil_element.element.isotope:
                 element_str = "{0}{1}".format(recoil_element.element.isotope,
                                               recoil_element.element.symbol)
@@ -346,8 +368,8 @@ class ElementSimulation:
 
             for point in recoil_element.get_points():
                 point_obj = {
-                    "Point": str(round(point.get_x(), 2)) + " " +
-                             str(round(point.get_y(), 4))
+                    "Point": str(round(point.get_x(), 2)) + " " + str(round(
+                        point.get_y(), 4))
                 }
                 obj["profile"].append(point_obj)
 

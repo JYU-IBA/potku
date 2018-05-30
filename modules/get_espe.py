@@ -2,17 +2,34 @@
 """
 Created on 27.4.2018
 Updated on 2.5.2018
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
-import subprocess
-
-from modules.element import Element
-
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
 import os
 import platform
+import subprocess
 
 
 class GetEspe:
@@ -59,18 +76,6 @@ class GetEspe:
         #         -solid   solid angle of the detector (msr)
         #         -density surface atomic density of the first 10 nm layer
         #                  (at/cm^2)
-
-        # self.__result_files = ""
-        # for key, mcerd in mcerd_objects.items():
-        #     self.__result_files += mcerd.result_file + " "
-        #     # All the mcerd processes should have the same recoil
-        #     # distribution, so it shouldn't matter which of the files is used.
-        #     # TODO: WRONG, this needs to be fixed!
-        #     self.__recoil_file = mcerd.recoil_file
-        #     self.output_file = os.path.join(settings["result_directory"],
-        #                                     mcerd.espe_file_name)
-        #     # output file has the same name as recoil file
-
         self.__beam = settings["beam"]
         self.__detector = settings["detector"]
         self.__target = settings["target"]
@@ -88,7 +93,7 @@ class GetEspe:
         toflen_in_meters = toflen / 1000
 
         self.__params = "-beam " + str(self.__beam.ion.isotope) + \
-                         self.__beam.ion.symbol \
+                        self.__beam.ion.symbol \
                         + " -energy " + str(self.__beam.energy) \
                         + " -theta " + str(self.__detector.detector_theta) \
                         + " -tangle " + str(self.__target.target_theta) \

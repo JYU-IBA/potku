@@ -1,14 +1,15 @@
 # coding=utf-8
-'''
+"""
 Created on 8.4.2013
 Updated on 23.5.2013
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.   
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
-Miika Raunio
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,15 +25,18 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 
 Holds, loads and saves calibration parameters.
-'''
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli K�rkk�inen \n Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
-
+"""
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
+             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 import configparser
 import os
 
+
 class CalibrationParameters:
-    """MeasuringSettings holds the all request specific measurement unit parameters.
+    """MeasuringSettings holds the all request specific measurement unit
+    parameters.
     """
     def __init__(self, settings_filepath=None):
         """Inits MeasuringSettings.
@@ -53,7 +57,7 @@ class CalibrationParameters:
         self.angleoffset = 0
 
         self.__set_config_parameters()
-        if settings_filepath == None:
+        if settings_filepath is None:
             return
         
         self.filepath = os.path.join(settings_filepath,
@@ -62,10 +66,10 @@ class CalibrationParameters:
             with open(self.filepath, 'wt+') as configfile:
                 self.config.write(configfile)
         self.load_settings(self.filepath)
-    
-    
+
     def show(self, dialog):
-        """Shows the measuring parameters in the given measuring settings dialog.
+        """Shows the measuring parameters in the given measuring settings
+        dialog.
         
         Args:
             dialog: QDialog whose fields are updated with the Calibration 
@@ -75,16 +79,16 @@ class CalibrationParameters:
         dialog.offsetLineEdit.setText(str(self.offset))
         dialog.angleSlopeLineEdit.setText(str(self.angleslope))
         dialog.angleOffsetLineEdit.setText(str(self.angleoffset))
- 
-        
+
     def set_settings(self, dialog, used_settings=None):
         """Takes inputted parameters from the given dialog and sets them to the 
         corresponding object's parameters
         
         Args:
             dialog: QDialog from which the parameters are taken.
+            used_settings: Used settings.
         """
-        if used_settings == None:
+        if used_settings is None:
             self.use_settings = ""
         else:
             self.use_settings = used_settings
@@ -111,8 +115,7 @@ class CalibrationParameters:
 
         except:  # If there is a problem, use default values
             return
-        
-        
+
     def __set_config_parameters(self):
         self.config.add_section('default')
         self.config.set('default', 'use_settings', str(self.use_settings))
@@ -122,7 +125,6 @@ class CalibrationParameters:
         self.config.set('parameters', 'angleslope', str(self.angleslope))
         self.config.set('parameters', 'angleoffset', str(self.angleoffset))
 
-        
     def save_settings(self, filepath=None):
         """Saves settings' parameters to the given filepath.
         
@@ -135,7 +137,6 @@ class CalibrationParameters:
         self.config['parameters']['angleslope'] = str(self.angleslope)
         self.config['parameters']['angleoffset'] = str(self.angleoffset)
 
-
         if not filepath:
             filepath = self.filepath
 
@@ -145,4 +146,3 @@ class CalibrationParameters:
 
         with open(filepath, 'wt+') as configfile:  # save
             self.config.write(configfile)
-                

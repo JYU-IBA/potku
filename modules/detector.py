@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 29.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -33,7 +33,8 @@ import shutil
 import time
 
 from modules.element import Element
-from modules.foil import CircularFoil, RectangularFoil
+from modules.foil import CircularFoil
+from modules.foil import RectangularFoil
 from modules.layer import Layer
 
 
@@ -49,7 +50,8 @@ class Detector:
                 "detector_theta", "__measurement_settings_file_path"
 
     def __init__(self, path, measurement_settings_file_path, name="Default",
-                 description="", modification_time=time.time(), type="TOF",
+                 description="", modification_time=time.time(),
+                 detector_type="TOF",
                  foils=None, tof_foils=None, virtual_size=(2.0, 5.0),
                  tof_slope=1e-11, tof_offset=1e-9, angle_slope=0,
                  angle_offset=0, timeres=250.0, detector_theta=40):
@@ -62,7 +64,7 @@ class Detector:
                                             which has detector angles.
             description: Detector parameters description.
             modification_time: Modification time of detector file in Unix time.
-            type: Type of detector.
+            detector_type: Type of detector.
             foils: List of detector foils.
             tof_foils: List of indexes of ToF foils in foils list.
             virtual_size: Virtual size of the detector.
@@ -79,7 +81,7 @@ class Detector:
         self.__measurement_settings_file_path = measurement_settings_file_path
         self.description = description
         self.modification_time = modification_time
-        self.type = type
+        self.type = detector_type
         self.foils = foils
         if not self.foils:
             # Create default foils
@@ -253,7 +255,8 @@ class Detector:
         return cls(path=detector_file_path,
                    measurement_settings_file_path=measurement_file_path,
                    name=name, description=description,
-                   modification_time=modification_time, type=detector_type,
+                   modification_time=modification_time,
+                   detector_type=detector_type,
                    foils=foils, tof_foils=tof_foils, virtual_size=virtual_size,
                    tof_slope=tof_slope, tof_offset=tof_offset,
                    angle_slope=angle_slope, angle_offset=angle_offset,

@@ -7,8 +7,9 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,12 +25,12 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
-             "Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import configparser
 import os
-from os import makedirs, path
 
 
 class GlobalSettings:
@@ -39,11 +40,11 @@ class GlobalSettings:
     def __init__(self):
         """Inits GlobalSettings class.
         """
-        self.__config_directory = path.join(path.expanduser("~"), "potku")
-        self.__config_file = path.join(self.__config_directory, "potku.ini")
+        self.__config_directory = os.path.join(os.path.expanduser("~"), "potku")
+        self.__config_file = os.path.join(self.__config_directory, "potku.ini")
         self.__config = configparser.ConfigParser()
 
-        self.__request_directory = path.join(self.__config_directory,
+        self.__request_directory = os.path.join(self.__config_directory,
                                              "requests")
         self.__make_directories(self.__config_directory)
         self.__make_directories(self.__request_directory)
@@ -172,7 +173,7 @@ class GlobalSettings:
         self.__flags_cross_section = {1: "Rutherford", 2: "L'Ecuyer",
                                       3: "Andersen"}
 
-        if not path.exists(self.__config_file):
+        if not os.path.exists(self.__config_file):
             self.__set_defaults()
             # Set default request directory
             self.set_request_directory(self.__request_directory)
@@ -186,8 +187,8 @@ class GlobalSettings:
         Args:
             directory: A string representing a directory.
         """
-        if not path.exists(directory):
-            makedirs(directory)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 
     def __set_defaults(self):
         """Set settings to default values.

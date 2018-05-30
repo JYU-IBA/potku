@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 21.4.2013
-Updated on 9.4.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,8 +24,9 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio \n" \
-             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
+             "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
 import logging
@@ -34,14 +36,15 @@ import numpy
 from PyQt5 import QtCore
 
 from modules.element import Element
-from modules.general_functions import hist, tof_list
-from modules.null import Null
+from modules.general_functions import hist
+from modules.general_functions import tof_list
 
 
 class EnergySpectrum:
     """ Class for energy spectrum.
     """
-    def __init__(self, measurement, cut_files, spectrum_width, progress_bar=Null()):
+    def __init__(self, measurement, cut_files, spectrum_width,
+                 progress_bar=None):
         """Inits energy spectrum
         
         Args:
@@ -49,7 +52,7 @@ class EnergySpectrum:
                          is made.
             cut_files: String list of cut files.
             spectrum_width: Float representing energy spectrum graph width.
-            progress_bar: QtWidgets.QProgressBar for GUI (Null class object otherwise).
+            progress_bar: QtWidgets.QProgressBar for GUI (None otherwise).
         """
         self.__measurement = measurement
         self.__global_settings = self.__measurement.request.global_settings
@@ -57,7 +60,8 @@ class EnergySpectrum:
         self.__spectrum_width = spectrum_width
         self.__progress_bar = progress_bar
         self.__directory_es = measurement.directory_energy_spectra
-        # tof_list files here just in case progress bar might happen to 'disappear'.
+        # tof_list files here just in case progress bar might happen to
+        # 'disappear'.
         self.__tof_listed_files = self.__load_cuts()
 
     def calculate_spectrum(self):
@@ -80,10 +84,14 @@ class EnergySpectrum:
             for key in keys:
                 file = self.__measurement.measurement_file
                 histed = histed_files[key]
-                filename = os.path.join(self.__directory_es, "{0}.{1}.hist".format(os.path.splitext(file)[0], key))
+                filename = os.path.join(self.__directory_es,
+                                        "{0}.{1}.hist".format(
+                                            os.path.splitext(file)[0], key))
                 numpy_array = numpy.array(histed,
-                                          dtype=[('float', float), ('int', int)])
-                numpy.savetxt(filename, numpy_array, delimiter=" ", fmt="%5.5f %6d")
+                                          dtype=[('float', float),
+                                                 ('int', int)])
+                numpy.savetxt(filename, numpy_array, delimiter=" ",
+                              fmt="%5.5f %6d")
         return histed_files
 
     def __load_cuts(self):
@@ -109,18 +117,22 @@ class EnergySpectrum:
                 else:  # Elemental Losses cut file
                     key = "{0}.{1}.{2}".format(element, filename_split[2],
                                                filename_split[3])
-                cut_dict[key] = tof_list(cut_file, self.__directory_es, save_output)
+                cut_dict[key] = tof_list(cut_file, self.__directory_es,
+                                         save_output)
     
                 dirtyinteger += 1
                 self.__progress_bar.setValue((dirtyinteger / count) * 100)
-                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+                QtCore.QCoreApplication.processEvents(
+                    QtCore.QEventLoop.AllEvents)
                 # Mac requires event processing to show progress bar and its
                 # process.
         except:
             import traceback
             msg = "Could not calculate Energy Spectrum. "
             err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
-            str_err = ", ".join([sys.exc_info()[0].__name__ + ": " + traceback._some_str(sys.exc_info()[1]), err_file,
+            str_err = ", ".join([sys.exc_info()[0].__name__ + ": " +
+                                 traceback._some_str(sys.exc_info()[1]),
+                                 err_file,
                                 str(sys.exc_info()[2].tb_lineno)])
             msg += str_err
             logging.getLogger(self.__measurement.measurement_name).error(msg)

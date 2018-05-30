@@ -7,8 +7,9 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,8 +25,9 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
-             "Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
+             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import logging
 
@@ -41,7 +43,8 @@ class CustomLogHandler(logging.Handler):
         Args:
             level: The logging level set to this handler.
             formatter: The formatter set to this handler.
-            log_dialog: The log dialog, which can add the message to the interface.
+            log_dialog: The log dialog, which can add the message to the
+            interface.
         """
         logging.Handler.__init__(self)
         self.log_dialog = log_dialog
@@ -60,7 +63,6 @@ class CustomLogHandler(logging.Handler):
             record: The record which will be emitted.
         """
         try:
-            message = "Nothing to log."
             # Must have this check. If the logging level is DEBUG, 
             # there's no record to log from. Only LogRecord, which
             # doesn't have any specifications.

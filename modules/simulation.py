@@ -1,10 +1,27 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 29.5.2018
+Updated on 30.5.2018
 
-#TODO Description of Potku and copyright
-#TODO Licence
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 
 Simulation.py runs the MCERD simulation with a command file.
 """
@@ -142,13 +159,13 @@ class Simulations:
 
                     target_file_path = None
                     measurement_file_path = None
-                    for file in os.listdir(simulation.directory):
-                        if file.endswith(".target"):
+                    for f in os.listdir(simulation.directory):
+                        if f.endswith(".target"):
                             target_file_path = os.path.join(
-                                simulation.directory, file)
-                        if file.endswith(measurement_extension):
+                                simulation.directory, f)
+                        if f.endswith(measurement_extension):
                             measurement_file_path = os.path.join(
-                                simulation.directory, file)
+                                simulation.directory, f)
 
                     if os.path.exists(profile_file_path):
                         # Create ElementSimulation from files
