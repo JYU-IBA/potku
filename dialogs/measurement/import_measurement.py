@@ -164,7 +164,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         for coinc_key in self.__added_timings.keys():
             coinc_timing = self.__added_timings[coinc_key]
             if coinc_timing.is_not_trigger:
-                timing[coinc_timing.adc] = (coinc_timing.low.value(), coinc_timing.high.value())
+                timing[coinc_timing.adc] = (coinc_timing.low.value(),
+                                            coinc_timing.high.value())
         start_time = clock()
         progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
@@ -205,7 +206,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             while True:  # Allow import of same named files.
                 if not os.path.isfile(output_file):
                     break
-                output_file = "{0}-{2}.{1}".format(measurement_path, "asc", n)
+                output_file = "{0}-{2}.{1}".format(measurement.directory_data
+                 + os.sep + item.name, "asc", n)
                 n += 1
             imported_files[sample] = output_file
             coinc(item.file,
