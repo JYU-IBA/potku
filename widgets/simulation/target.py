@@ -1,9 +1,27 @@
 # coding=utf-8
 """
 Created on 28.3.2018
-Updated on 30.4.2018
+Updated on 30.5.2018
 
-TODO: Add licence and copyright information
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -33,13 +51,6 @@ class TargetWidget(QtWidgets.QWidget):
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_target_widget.ui"),
                              self)
-        # self.ui.addLayerButton.clicked.connect(self.add_layer)
-        # self.ui.removeLayerButton.clicked.connect(self.remove_layer)
-
-        # Add the TargetCompositionWidget and RecoilAtomDistributionWidget to
-        # stackedWidget.
-        # self.ui.stackedWidget.children()[1].setLayout(QtWidgets.QHBoxLayout)
-        # self.ui.stackedWidget.children()[2].setLayout(QtWidgets.QHBoxLayout)
 
         self.tab = tab
         self.simulation = simulation
@@ -98,9 +109,6 @@ class TargetWidget(QtWidgets.QWidget):
             target_name = self.target.name
         target_path = os.path.join(self.simulation.directory, target_name +
                                    ".target")
-        measurement_path = os.path.join(self.simulation.directory,
-                                        self.simulation.name +
-                                        ".measurement")
         self.target.to_file(target_path, None)
 
         self.recoil_widget.save_mcsimu_rec_profile(self.simulation.directory)

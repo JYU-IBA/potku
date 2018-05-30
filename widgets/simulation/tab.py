@@ -1,7 +1,27 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 4.5.2018
+Updated on 30.5.2018
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
@@ -54,7 +74,9 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.simulation_target = None
         self.energy_spectrum_widget = None
         self.log = None
-        
+        self.depth_profile_widget = None
+        self.elemental_losses_widget = None
+
         self.data_loaded = False
         self.panel_shown = True
         self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
@@ -76,8 +98,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
         else:
             subwindow = self.ui.mdiArea.addSubWindow(
                 widget, QtCore.Qt.CustomizeWindowHint |
-                        QtCore.Qt.WindowTitleHint |
-                        QtCore.Qt.WindowMinMaxButtonsHint)
+                QtCore.Qt.WindowTitleHint |
+                QtCore.Qt.WindowMinMaxButtonsHint)
         if icon:
             subwindow.setWindowIcon(icon)
         subwindow.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -106,7 +128,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         # TODO: Perhaps add a simulation log.
         self.log = LogWidget()
         self.add_widget(self.log, minimized=True, has_close_button=False)
-        self.add_UI_logger(self.log)
+        self.add_ui_logger(self.log)
         
         # Checks for log file and appends it to the field.
         log_default = os.path.join(self.obj.directory, 'default.log')
@@ -114,7 +136,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.__read_log_file(log_default, 1)
         self.__read_log_file(log_error, 0)
     
-    def add_UI_logger(self, log_widget):
+    def add_ui_logger(self, log_widget):
         """ Adds handlers to simulation logger so the logger can log the events
         to the user interface too.
         
@@ -137,6 +159,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         Args:
             progress_bar: A QtWidgets.QProgressBar where loading of previous
                           graph can be shown.
+            directory: Directory path.
         """
         if not directory:
             directory = self.obj.directory
@@ -255,7 +278,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
             split_count = int(lines[2])
             y_scale = int(lines[3])
             ElementLossesDialog.reference_cut[m_name] = \
-                                                os.path.basename(reference_cut)
+                os.path.basename(reference_cut)
             ElementLossesDialog.checked_cuts[m_name] = cut_names
             ElementLossesDialog.split_count = split_count
             ElementLossesDialog.y_scale = y_scale

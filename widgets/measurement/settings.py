@@ -1,15 +1,35 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 25.5.2018
+Updated on 30.5.2018
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
-import time
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
 import os
+import time
 from PyQt5 import uic, QtWidgets
 from modules.element import Element
 import modules.masses as masses
@@ -104,7 +124,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         if isotope_index != -1:
             isotope_data = self.isotopeComboBox.itemData(isotope_index)
             self.obj.run.beam.ion = Element(self.beamIonButton.text(),
-                isotope_data[0])
+                                            isotope_data[0])
             self.obj.measurement_setting_file_name = self.nameLineEdit.text()
             self.obj.measurement_setting_file_description = self\
                 .descriptionPlainTextEdit.toPlainText()
@@ -124,6 +144,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
                 .detectorThetaDoubleSpinBox.value()
             self.obj.target.target_theta = self\
                 .targetThetaDoubleSpinBox.value()
+
 
 def link_angle_values(theta, fii):
     """A function to link angle spinbox values to each other.
