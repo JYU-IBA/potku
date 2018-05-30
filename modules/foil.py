@@ -41,7 +41,7 @@ class CircularFoil(Foil):
 
     __slots__ = "diameter"
 
-    def __init__(self, name="Default", diameter=0.0, distance=0.0, layers=[],
+    def __init__(self, name="Default", diameter=0.0, distance=0.0, layers=None,
                  transmission=1.0):
         """ Initialize a circular detector foil.
 
@@ -53,6 +53,8 @@ class CircularFoil(Foil):
                           may make penetration smaller.
         """
 
+        if layers is None:
+            layers = []
         Foil.__init__(self, name, distance, layers, transmission)
         self.diameter = diameter
 
@@ -63,7 +65,7 @@ class RectangularFoil(Foil):
 
     __slots__ = "size"
 
-    def __init__(self, name="", size_x=0.0, size_y=0.0, distance=0.0, layers=[],
+    def __init__(self, name="", size_x=0.0, size_y=0.0, distance=0.0, layers=None,
                  transmission=1.0):
         """ Initialize a rectangular detector foil.
 
@@ -77,5 +79,7 @@ class RectangularFoil(Foil):
                           may make penetration smaller.
         """
 
+        if layers is None:
+            layers = []
         Foil.__init__(self, name, distance, layers, transmission)
         self.size = (size_x, size_y)

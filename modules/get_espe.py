@@ -20,13 +20,12 @@ class GetEspe:
     Class for handling calling the external program get_espe to generate
     energy spectra coordinates.
     """
-    __slots__ = "__result_files", "__recoil_file", "__settings", "__beam", \
-                "__detector", "__target", "__channel_width", \
-                "__reference_density", "__fluence", "__params", "output_file",\
-                "__timeres", "__density", "__solid", "__erd_file", \
-                "__output_file"
+    __slots__ = "__recoil_file", "__settings", "__beam", "__detector", \
+                "__target", "__channel_width", "__reference_density", \
+                "__fluence", "__params", "output_file", "__timeres", \
+                "__density", "__solid", "__erd_file", "__output_file"
 
-    def __init__(self, settings, mcerd_objects):
+    def __init__(self, settings):
         """
         Initializes the GetEspe class.
         Args:
@@ -105,16 +104,13 @@ class GetEspe:
         self.run_get_espe()
 
     def run_get_espe(self):
-        get_espe_command = self.__erd_file + "| " + os.path.join(
-            "external", "Potku-bin", "get_espe" +
-                                     (".exe " if platform.system() == "Windows"
-                                      else "_linux "
-                                      if platform.system() == "Linux"
-                                      else "_mac ")) + self.__params + " > " + \
-                  self.__output_file
-        # Echo the command for debug purposes
-        command = "echo " + '"' + get_espe_command + '" & ' + \
-                  ("type " if platform.system() == "Windows" else "cat ") + \
-                  get_espe_command
+        command = ("type " if platform.system() == "Windows" else "cat ") \
+                  + self.__erd_file + "| " \
+                  + os.path.join("external", "Potku-bin", "get_espe"
+                                 + (".exe " if platform.system() == "Windows"
+                                    else "_linux "
+                                    if platform.system() == "Linux"
+                                    else "_mac ")) \
+                  + self.__params + " > " + self.__output_file
 
         subprocess.call(command, shell=True)
