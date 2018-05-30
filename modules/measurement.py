@@ -926,7 +926,7 @@ class Measurement:
         return cuts, elemloss
 
     def fill_cuts_treewidget(self, treewidget, use_elemloss=False,
-                             checked_files=[]):
+                             checked_files=None):
         """ Fill QTreeWidget with cut files.
         
         Args:
@@ -935,6 +935,8 @@ class Measurement:
                           losses.
             checked_files: A list of previously checked files.
         """
+        if checked_files is None:
+            checked_files = []
         treewidget.clear()
         cuts, cuts_elemloss = self.get_cut_files()
         for cut in cuts:

@@ -237,7 +237,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     """
     save_file = "widget_energy_spectrum.save"
 
-    def __init__(self, parent, spectrum_type, use_cuts=[], bin_width=0.1):
+    def __init__(self, parent, spectrum_type, use_cuts=None, bin_width=0.1):
         """Inits widget.
         
         Args:
@@ -251,6 +251,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.parent = parent
             self.icon_manager = parent.icon_manager
             self.progress_bar = None
+            if use_cuts is None:
+                use_cuts = []
             self.use_cuts = use_cuts
             self.bin_width = bin_width
             self.energy_spectrum_data = {}
