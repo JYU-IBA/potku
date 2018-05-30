@@ -137,8 +137,6 @@ class Potku(QtWidgets.QMainWindow):
             self.create_new_simulation)
         self.ui.actionNew_Simulation_2.triggered.connect(
             self.create_new_simulation)
-        self.ui.actionImport_simulation.triggered.connect(
-            self.import_simulation)
         self.ui.actionCreate_energy_spectrum_sim.triggered.connect(
             self.current_simulation_create_energy_spectrum)
         self.ui.addNewSimulationButton.clicked.connect(
@@ -534,16 +532,6 @@ class Potku(QtWidgets.QMainWindow):
                                            self)  # For loading measurements.
         if import_dialog.imported:
             self.__remove_info_tab()
-
-    def import_simulation(self):
-        """
-        Opens a file dialog for selecting simulation to import.
-        Opens selected simulation in Potku.
-        """
-        QtWidgets.QMessageBox.critical(
-            self, "Error", "Importing simulation is not yet implemented.",
-            QtWidgets.QMessageBox.Ok,
-            QtWidgets.QMessageBox.Ok)
 
     def load_request_measurements(self, measurements=None):
         """Load measurement files in the request.
@@ -1259,7 +1247,6 @@ class Potku(QtWidgets.QMainWindow):
         # enable simulation buttons
         self.ui.actionNew_Simulation.setEnabled(state)
         self.ui.actionNew_Simulation_2.setEnabled(state)
-        self.ui.actionImport_simulation.setEnabled(state)
 
         # enable simulation energy spectra button
         self.ui.actionCreate_energy_spectrum_sim.setEnabled(state)
