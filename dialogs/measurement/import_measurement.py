@@ -40,7 +40,6 @@ from time import clock
 from dialogs.measurement.import_timing_graph import ImportTimingGraphDialog
 from modules.general_functions import open_files_dialog
 from modules.general_functions import coinc
-from modules.measurement import Measurement
 
 
 class ImportMeasurementsDialog(QtWidgets.QDialog):
@@ -188,14 +187,11 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             # request_dir = str(os.path.join(self.request.directory, item.name))
 
             sample = self.request.samples.add_sample()
-            # TODO: add sample to tree
             self.parent.add_root_item_to_tree(sample)
             sample_path = os.path.join(self.request.directory, sample.directory)
             measurement_prefix = "Measurement_" + "%02d" % \
                                  sample.get_running_int_measurement()
             measurement_name = measurement_prefix + "-" + item.name
-            measurement_path = os.path.join(sample_path,
-                                            measurement_name)
             measurement = self.parent.add_new_tab("measurement", "", sample,
                                       object_name=item.name,
                                       import_evnt=True)
@@ -221,6 +217,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                   timing=timing,
                   columns=string_column,
                   nevents=self.spin_eventcount.value())
+            measurement.measurement_file = output_file
         
         filenames = ", ".join(filename_list)
         self.statusbar.removeWidget(progress_bar)

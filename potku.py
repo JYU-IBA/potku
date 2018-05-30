@@ -588,7 +588,7 @@ class Potku(QtWidgets.QMainWindow):
             for sample_path in sample_paths_in_request:
                 sample = self.request.samples.add_sample(sample_path)
                 self.add_root_item_to_tree(sample)
-        self.request.increase_running_int_by_1()
+            self.request.increase_running_int_by_1()
 
     def load_request_simulations(self, simulations=[]):
         """Load simulation files in the request.
