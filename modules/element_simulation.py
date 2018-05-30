@@ -446,7 +446,7 @@ class ElementSimulation:
                                         self.recoil_elements[0].name +
                                         ".recoil")
         }
-        self.get_espe = GetEspe(self.espe_settings, self.mcerd_objects)
+        self.get_espe = GetEspe(self.espe_settings)
 
     def plot_spectrum(self):
         """
