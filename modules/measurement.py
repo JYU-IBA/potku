@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 30.5.2018
+Updated on 31.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1018,6 +1018,8 @@ class Measurement:
                                     detector.foils[
                                         detector.tof_foils[i - 1]].distance
             i = i - 1
+
+        time_of_flight_length = time_of_flight_length / 1000
         str_toflen = "Toflen: {0}\n".format(time_of_flight_length)
 
         carbon_foil_thickness = 0

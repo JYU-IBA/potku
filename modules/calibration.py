@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 29.5.2018
+Updated on 31.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -378,7 +378,7 @@ class TOFCalibrationPoint:
         run = measurement.run
         if run is None:  # if there is yet no Measurement's own Run object
             run = measurement.request.default_run
-        time_of_flight_length = 0
+        time_of_flight_length = 0  # Needs to be m, foil distances are mm.
         i = len(detector.tof_foils) - 1
         while i - 1 >= 0:
             time_of_flight_length = detector.foils[
@@ -386,6 +386,8 @@ class TOFCalibrationPoint:
                                     detector.foils[
                                         detector.tof_foils[i - 1]].distance
             i = i - 1
+
+        time_of_flight_length = time_of_flight_length / 1000
 
         carbon_foil_thickness = 0
         for layer in detector.foils[detector.tof_foils[0]].layers:
