@@ -49,7 +49,7 @@ class ElementSimulation:
     MCERD objects, but only one GetEspe object.
     """
 
-    __slots__ = "directory", "request", "name", "modification_time", \
+    __slots__ = "directory", "request", "name_prefix", "modification_time", \
                 "simulation_type", "number_of_ions", "number_of_preions", \
                 "number_of_scaling_ions", "number_of_recoils", \
                 "minimum_scattering_angle", "minimum_main_scattering_angle", \
@@ -57,21 +57,24 @@ class ElementSimulation:
                 "recoil_elements", "recoil_atoms", "mcerd_objects", \
                 "get_espe", "channel_width", "target", "detector", \
                 "__mcerd_command", "__process", "settings", "espe_settings", \
-                "description", "run", "spectra", "bin_width"
+                "description", "run", "spectra", "bin_width", "name", \
+                "use_default_settings"
 
-    def __init__(self, directory, request, recoil_elements,
+    def __init__(self, directory, request, recoil_elements, name_prefix="",
                  target=None, detector=None, run=None, name="Default",
-                 description="", modification_time=time.time(),
+                 description="", modification_time=None,
                  simulation_type="ERD", number_of_ions=1000000,
                  number_of_preions=100000, number_of_scaling_ions=5,
                  number_of_recoils=10, minimum_scattering_angle=0.05,
                  minimum_main_scattering_angle=20, simulation_mode="narrow",
-                 seed_number=101, minimum_energy=1.0, channel_width=0.1):
+                 seed_number=101, minimum_energy=1.0, channel_width=0.1,
+                 use_default_settings=True):
         """ Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
             request: Request object reference.
             recoil_elements: List of RecoilElement objects.
+            name_prefix: Prefix of the name, e.g. 55Mn
             target: Target object reference.
             detector: Detector object reference.
             run: Run object reference.
@@ -92,8 +95,11 @@ class ElementSimulation:
         """
         self.directory = directory
         self.request = request
+        self.name_prefix = name_prefix
         self.name = name
         self.description = description
+        if not modification_time:
+            modification_time = time.time()
         self.modification_time = modification_time
 
         # TODO RecoilAtomDistributionWidget should use the selected
@@ -122,16 +128,27 @@ class ElementSimulation:
         self.seed_number = seed_number
         self.channel_width = channel_width
 
+        self.use_default_settings = use_default_settings
+
+        if self.name_prefix != "":
+            name = self.name_prefix + "-" + self.name
+            prefix = self.name_prefix
+        else:
+            name = self.name
+            if os.sep + "Default" in self.directory:
+                prefix = self.name
+            else:
+                prefix = self.name_prefix
         self.mcsimu_to_file(os.path.join(self.directory,
-                                         self.name + ".mcsimu"))
+                                          name + ".mcsimu"))
         self.recoil_to_file(self.directory)
         self.profile_to_file(os.path.join(self.directory,
-                                          self.name + ".profile"))
+                                          prefix +
+                                          ".profile"))
 
-        self.__mcerd_command = os.path.join("external", "Potku-bin", "mcerd" +
-                                            (
-                                                ".exe" if platform.system() == "Windows"
-                                                else ""))
+        self.__mcerd_command = os.path.join(
+            "external", "Potku-bin", "mcerd" +
+            (".exe" if platform.system() == "Windows" else ""))
         self.__process = None
         # This has all the mcerd objects so get_espe knows all the element
         # simulations that belong together (with different seed numbers)
@@ -251,9 +268,20 @@ class ElementSimulation:
 
         obj = json.load(open(mcsimu_file_path))
 
-        name = obj["name"]
+        use_default_settings_str = obj["use_default_settings"]
+        if use_default_settings_str == "True":
+            use_default_settings = True
+        else:
+            use_default_settings = False
+        try:
+            name_prefix, name = obj["name"].split("-")
+        except ValueError as e:
+            name = obj["name"]
+            name_prefix = ""
+
         description = obj["description"]
         modification_time = obj["modification_time_unix"]
+        simulation_type = obj["simulation_type"]
         simulation_mode = obj["simulation_mode"]
         number_of_ions = obj["number_of_ions"]
         number_of_preions = obj["number_of_preions"]
@@ -289,7 +317,9 @@ class ElementSimulation:
                 break
 
         return cls(simulation_folder, request, recoil_elements,
+                   name_prefix=name_prefix,
                    description=description,
+                   simulation_type=simulation_type,
                    modification_time=modification_time, name=name,
                    number_of_ions=number_of_ions,
                    number_of_preions=number_of_preions,
@@ -299,7 +329,8 @@ class ElementSimulation:
                    minimum_main_scattering_angle=minimum_main_scattering_angle,
                    simulation_mode=simulation_mode,
                    seed_number=seed_number,
-                   minimum_energy=minimum_energy)
+                   minimum_energy=minimum_energy,
+                   use_default_settings=use_default_settings)
 
     def mcsimu_to_file(self, file_path):
         """Save mcsimu settings to file.
@@ -307,23 +338,49 @@ class ElementSimulation:
         Args:
             file_path: File in which the mcsimu settings will be saved.
         """
-        obj = {
-            "name": self.name,
-            "description": self.description,
-            "modification_time": time.strftime("%c %z %Z", time.localtime(
-                time.time())),
-            "modification_time_unix": time.time(),
-            "simulation_type": self.simulation_type,
-            "simulation_mode": self.simulation_mode,
-            "number_of_ions": self.number_of_ions,
-            "number_of_preions": self.number_of_preions,
-            "seed_number": self.seed_number,
-            "number_of_recoils": self.number_of_recoils,
-            "number_of_scaling_ions": self.number_of_scaling_ions,
-            "minimum_scattering_angle": self.minimum_scattering_angle,
-            "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
-            "minimum_energy": self.minimum_energy
-        }
+        if self.name_prefix != "":
+            name = self.name_prefix + "-" + self.name
+        else:
+            name = self.name
+        if not self.use_default_settings:
+            obj = {
+                "name": name,
+                "description": self.description,
+                "modification_time": time.strftime("%c %z %Z", time.localtime(
+                    time.time())),
+                "modification_time_unix": time.time(),
+                "simulation_type": self.simulation_type,
+                "simulation_mode": self.simulation_mode,
+                "number_of_ions": self.number_of_ions,
+                "number_of_preions": self.number_of_preions,
+                "seed_number": self.seed_number,
+                "number_of_recoils": self.number_of_recoils,
+                "number_of_scaling_ions": self.number_of_scaling_ions,
+                "minimum_scattering_angle": self.minimum_scattering_angle,
+                "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
+                "minimum_energy": self.minimum_energy,
+                "use_default_settings": str(self.use_default_settings)
+            }
+        else:
+            elem_sim = self.request.default_element_simulation
+            obj = {
+                "name": name,
+                "description": elem_sim.description,
+                "modification_time": time.strftime("%c %z %Z", time.localtime(
+                    time.time())),
+                "modification_time_unix": time.time(),
+                "simulation_type": elem_sim.simulation_type,
+                "simulation_mode": elem_sim.simulation_mode,
+                "number_of_ions": elem_sim.number_of_ions,
+                "number_of_preions": elem_sim.number_of_preions,
+                "seed_number": elem_sim.seed_number,
+                "number_of_recoils": elem_sim.number_of_recoils,
+                "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
+                "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
+                "minimum_main_scattering_angle": elem_sim.minimum_main_scattering_angle,
+                "minimum_energy": elem_sim.minimum_energy,
+                "use_default_settings": str(self.use_default_settings)
+            }
 
         with open(file_path, "w") as file:
             json.dump(obj, file, indent=4)
@@ -394,17 +451,21 @@ class ElementSimulation:
             run = self.request.default_run
         else:
             run = self.run
+        if self.use_default_settings:
+            elem_sim = self.request.default_element_simulation
+        else:
+            elem_sim = self
         self.settings = {
-            "simulation_type": self.simulation_type,
-            "number_of_ions": self.number_of_ions,
-            "number_of_ions_in_presimu": self.number_of_preions,
-            "number_of_scaling_ions": self.number_of_scaling_ions,
-            "number_of_recoils": self.number_of_recoils,
-            "minimum_scattering_angle": self.minimum_scattering_angle,
-            "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
-            "minimum_energy_of_ions": self.minimum_energy,
-            "simulation_mode": self.simulation_mode,
-            "seed_number": self.seed_number,
+            "simulation_type": elem_sim.simulation_type,
+            "number_of_ions": elem_sim.number_of_ions,
+            "number_of_ions_in_presimu": elem_sim.number_of_preions,
+            "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
+            "number_of_recoils": elem_sim.number_of_recoils,
+            "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
+            "minimum_main_scattering_angle": elem_sim.minimum_main_scattering_angle,
+            "minimum_energy_of_ions": elem_sim.minimum_energy,
+            "simulation_mode": elem_sim.simulation_mode,
+            "seed_number": elem_sim.seed_number,
             "beam": run.beam,
             "target": self.target,
             "detector": self.detector,
@@ -442,6 +503,10 @@ class ElementSimulation:
             run = self.request.default_run
         else:
             run = self.run
+        if self.use_default_settings:
+            seed_number = self.request.default_element_simulation.seed_number
+        else:
+            seed_number = self.seed_number
         self.espe_settings = {
             "beam": run.beam,
             "detector": self.detector,
@@ -454,11 +519,11 @@ class ElementSimulation:
             "erd_file": os.path.join(self.directory,
                                      self.recoil_elements[0].prefix + "-" +
                                      self.recoil_elements[0].name + "." +
-                                     str(self.seed_number) + ".erd"),
+                                     str(seed_number) + ".erd"),
             "spectrum_file": os.path.join(self.directory,
                                           self.recoil_elements[0].prefix + "-" +
                                           self.recoil_elements[0].name + "." +
-                                          str(self.seed_number) + ".simu"),
+                                          str(seed_number) + ".simu"),
             "recoil_file": recoil_file
         }
         self.get_espe = GetEspe(self.espe_settings)

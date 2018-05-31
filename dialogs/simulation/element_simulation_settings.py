@@ -30,6 +30,8 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 import os
 from PyQt5 import uic
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt
+import time
 
 
 class ElementSimulationSettingsDialog(QtWidgets.QDialog):
@@ -48,7 +50,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         self.element_simulation = element_simulation
         self.temp_settings = {}
 
-        self.use_default_settings = True
+        self.use_default_settings = element_simulation.use_default_settings
 
         self.ui.useRequestSettingsValuesCheckBox.stateChanged.connect(
             self.toggle_settings)
@@ -73,32 +75,47 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
 
     def show_settings(self):
         """Show settings of ElementSimulation object in view."""
+        if self.use_default_settings:
+            elem_simu = self.element_simulation.request.\
+                default_element_simulation
+        else:
+            elem_simu = self.element_simulation
+            self.ui.useRequestSettingsValuesCheckBox.setCheckState(0)
+            self.ui.settingsGroupBox.setEnabled(True)
+            self.use_default_settings = False
         self.ui.nameLineEdit.setText(
-            self.element_simulation.name)
+            elem_simu.name)
         self.ui.descriptionPlainTextEdit.setPlainText(
-            self.element_simulation.description)
-        self.ui.typeOfSimulationComboBox.setCurrentIndex(
-            self.ui.typeOfSimulationComboBox.findText(
-                self.element_simulation.simulation_type))
+            elem_simu.description)
+        self.ui.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+            elem_simu.modification_time)))
+        if elem_simu.simulation_type == "ERD":
+            self.ui.typeOfSimulationComboBox.setCurrentIndex(
+                self.ui.typeOfSimulationComboBox.findText(
+                    "REC", Qt.MatchFixedString))
+        else:
+            self.ui.typeOfSimulationComboBox.setCurrentIndex(
+                self.ui.typeOfSimulationComboBox.findText(
+                    "SCT", Qt.MatchFixedString))
         self.ui.modeComboBox.setCurrentIndex(
             self.ui.modeComboBox.findText(
-                self.element_simulation.simulation_mode))
+                elem_simu.simulation_mode, Qt.MatchFixedString))
         self.ui.numberOfIonsSpinBox.setValue(
-            self.element_simulation.number_of_ions)
+            elem_simu.number_of_ions)
         self.ui.numberOfPreIonsSpinBox.setValue(
-            self.element_simulation.number_of_preions)
+            elem_simu.number_of_preions)
         self.ui.seedSpinBox.setValue(
-            self.element_simulation.seed_number)
+            elem_simu.seed_number)
         self.ui.numberOfRecoilsSpinBox.setValue(
-            self.element_simulation.number_of_recoils)
+            elem_simu.number_of_recoils)
         self.ui.numberOfScalingIonsSpinBox.setValue(
-            self.element_simulation.number_of_scaling_ions)
+            elem_simu.number_of_scaling_ions)
         self.ui.minimumScatterAngleDoubleSpinBox.setValue(
-            self.element_simulation.minimum_scattering_angle)
+            elem_simu.minimum_scattering_angle)
         self.ui.minimumMainScatterAngleDoubleSpinBox.setValue(
-            self.element_simulation.minimum_main_scattering_angle)
+            elem_simu.minimum_main_scattering_angle)
         self.ui.minimumEnergyDoubleSpinBox.setValue(
-            self.element_simulation.minimum_energy)
+            elem_simu.minimum_energy)
 
     def toggle_settings(self):
         """If request settings checkbox is checked, disables settings in dialog.
@@ -107,9 +124,11 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         if self.ui.useRequestSettingsValuesCheckBox.isChecked():
             self.ui.settingsGroupBox.setEnabled(False)
             self.use_default_settings = True
+            self.element_simulation.use_default_settings = True
         else:
             self.ui.settingsGroupBox.setEnabled(True)
             self.use_default_settings = False
+            self.element_simulation.use_default_settings = False
 
     def update_settings_and_close(self):
         """Updates settings and closes the dialog."""
@@ -117,58 +136,36 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         self.close()
 
     def update_settings(self):
-        """If default settings are used, put them to element simulation and
-        delete the specific setting file, if it exists. If default settings are
-        not used, read settings from dialog, put them to element simulation and
-        save them to file.
+        """Delete existing file.
+        If default settings are used, put them to element simulation and save
+        into a file.
+        If default settings are not used, read settings from dialog,
+        put them to element simulation and save them to file.
         """
 
-        if self.use_default_settings:
-            # Use request settings
-            default_element_simu = self.element_simulation.request \
-                .default_element_simulation
+        # Delete .mcsimu file if exists
+        filename_to_remove = ""
+        for file in os.listdir(self.element_simulation.directory):
+            if file.endswith(".mcsimu") and file.startswith(
+                    self.element_simulation.name_prefix):
+                filename_to_remove = file
+                break
+        if filename_to_remove:
+            os.remove(os.path.join(self.element_simulation.directory,
+                                   filename_to_remove))
 
-            try:
-                os.remove(
-                    os.path.join(self.element_simulation.directory,
-                                 self.element_simulation.name + ".mcsimu"))
-            except OSError:
-                pass  # The file doesn't exist
-
-            self.element_simulation.name = \
-                default_element_simu.name
-            self.element_simulation.description = \
-                default_element_simu.description
-            self.element_simulation.simulation_type = \
-                default_element_simu.simulation_type
-            self.element_simulation.simulation_mode = \
-                default_element_simu.simulation_mode
-            self.element_simulation.number_of_ions = \
-                default_element_simu.number_of_ions
-            self.element_simulation.number_of_preions = \
-                default_element_simu.number_of_preions
-            self.element_simulation.seed_number = \
-                default_element_simu.seed_number
-            self.element_simulation.number_of_recoils = \
-                default_element_simu.number_of_recoils
-            self.element_simulation.number_of_scaling_ions = \
-                default_element_simu.number_of_scaling_ions
-            self.element_simulation.minimum_scattering_angle = \
-                default_element_simu.minimum_scattering_angle
-            self.element_simulation.minimum_main_scattering_angle = \
-                default_element_simu.minimum_main_scattering_angle
-            self.element_simulation.minimum_energy = \
-                default_element_simu.minimum_energy
-        else:
+        if not self.use_default_settings:
             # Use element specific settings
             self.element_simulation.name = \
                 self.ui.nameLineEdit.text()
             self.element_simulation.description = \
                 self.ui.descriptionPlainTextEdit.toPlainText()
-            self.element_simulation.simulation_type = \
-                self.ui.typeOfSimulationComboBox.currentText()
             self.element_simulation.simulation_mode = \
                 self.ui.modeComboBox.currentText()
+            if self.ui.typeOfSimulationComboBox.currentText() == "REC":
+                self.element_simulation.simulation_type = "ERD"
+            else:
+                self.element_simulation.simulation_type = "RBS"
             self.element_simulation.number_of_ions = \
                 self.ui.numberOfIonsSpinBox.value()
             self.element_simulation.number_of_preions = \
@@ -189,4 +186,48 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
 
             self.element_simulation.mcsimu_to_file(
                     os.path.join(self.element_simulation.directory,
+                                 self.element_simulation.name_prefix + "-" +
                                  self.element_simulation.name + ".mcsimu"))
+
+        # Revert ot default settings
+        else:
+            self.element_simulation.name = \
+                self.element_simulation.request.default_element_simulation.name
+            self.element_simulation.description = \
+                self.element_simulation.request.default_element_simulation\
+                    .description
+            self.element_simulation.simulation_mode = \
+                self.element_simulation.request.default_element_simulation\
+                    .simulation_mode
+            self.element_simulation.simulation_type = \
+                self.element_simulation.request.default_element_simulation\
+                    .simulation_type
+            self.element_simulation.number_of_ions = \
+                self.element_simulation.request.default_element_simulation\
+                    .number_of_ions
+            self.element_simulation.number_of_preions = \
+                self.element_simulation.request.default_element_simulation\
+                    .number_of_preions
+            self.element_simulation.seed_number = \
+                self.element_simulation.request.default_element_simulation\
+                    .seed_number
+            self.element_simulation.number_of_recoils = \
+                self.element_simulation.request.default_element_simulation\
+                    .number_of_recoils
+            self.element_simulation.number_of_scaling_ions = \
+                self.element_simulation.request.default_element_simulation\
+                    .number_of_scaling_ions
+            self.element_simulation.minimum_scattering_angle = \
+                self.element_simulation.request.default_element_simulation\
+                    .minimum_scattering_angle
+            self.element_simulation.minimum_main_scattering_angle = \
+                self.element_simulation.request.default_element_simulation\
+                    .minimum_main_scattering_angle
+            self.element_simulation.minimum_energy = \
+                self.element_simulation.request.default_element_simulation\
+                    .minimum_energy
+
+            self.element_simulation.mcsimu_to_file(
+                os.path.join(self.element_simulation.directory,
+                             self.element_simulation.name_prefix + "-" +
+                             self.element_simulation.name + ".mcsimu"))

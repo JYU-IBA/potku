@@ -151,14 +151,13 @@ class Simulations:
                     # .mcsimu file
                     mcsimu_file_path = os.path.join(simulation.directory, file)
 
-                    element_str = file.split(".")[0]
+                    element_str_with_name = file.split(".")[0]
 
-                    # .profile file
-                    profile_file_path = os.path.join(
-                        simulation.directory, element_str + profile_extension)
-
+                    prefix, name = element_str_with_name.split("-")
                     target_file_path = None
                     measurement_file_path = None
+                    profile_file_path = ""
+
                     for f in os.listdir(simulation.directory):
                         if f.endswith(".target"):
                             target_file_path = os.path.join(
@@ -166,11 +165,15 @@ class Simulations:
                         if f.endswith(measurement_extension):
                             measurement_file_path = os.path.join(
                                 simulation.directory, f)
+                        if f.endswith(profile_extension) and f.startswith(
+                                prefix):
+                            profile_file_path = os.path.join(
+                                simulation.directory, f)
 
                     if os.path.exists(profile_file_path):
                         # Create ElementSimulation from files
                         element_simulation = ElementSimulation.from_file(
-                            self.request, element_str, simulation_folder_path,
+                            self.request, prefix, simulation_folder_path,
                             mcsimu_file_path, profile_file_path)
                         simulation.element_simulations.append(
                             element_simulation)
@@ -308,7 +311,7 @@ class Simulation:
 
         element_simulation = ElementSimulation(directory=self.directory,
                                                request=self.request,
-                                               name=element_str,
+                                               name_prefix=element_str,
                                                target=self.target,
                                                detector=self.detector,
                                                recoil_elements=[

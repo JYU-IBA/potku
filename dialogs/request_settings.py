@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 30.5.2018
+Updated on 31.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -149,11 +149,14 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         widget.descriptionPlainTextEdit.setPlainText(elem_simu.description)
         widget.modeComboBox.setCurrentIndex(widget.modeComboBox.findText(
             elem_simu.simulation_mode, Qt.MatchFixedString))
-        widget.typeOfSimulationComboBox.setCurrentIndex(
-            widget.typeOfSimulationComboBox.findText(self.request
-                                                     .default_element_simulation
-                                                     .simulation_type,
-                                                     Qt.MatchFixedString))
+        if elem_simu.simulation_type == "ERD":
+            widget.typeOfSimulationComboBox.setCurrentIndex(
+                widget.typeOfSimulationComboBox.findText(
+                    "REC", Qt.MatchFixedString))
+        else:
+            widget.typeOfSimulationComboBox.setCurrentIndex(
+                widget.typeOfSimulationComboBox.findText("SCT",
+                                                         Qt.MatchFixedString))
         widget.minimumScatterAngleDoubleSpinBox.setValue(
             elem_simu.minimum_scattering_angle)
         widget.minimumMainScatterAngleDoubleSpinBox.setValue(
@@ -284,8 +287,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             elem_simu.name = self.simulation_settings_widget.nameLineEdit.text()
             elem_simu.description = self.simulation_settings_widget\
                 .descriptionPlainTextEdit. toPlainText()
-            elem_simu.simulation_type = self.simulation_settings_widget \
-                .typeOfSimulationComboBox.currentText().lower()
+            if self.simulation_settings_widget \
+                .typeOfSimulationComboBox.currentText() == "REC":
+                elem_simu.simulation_type = "ERD"
+            else:
+                elem_simu.simulation_type = "RBS"
             elem_simu.simulation_mode = self.simulation_settings_widget \
                 .modeComboBox.currentText().lower()
             elem_simu.number_of_ions = self.simulation_settings_widget \
