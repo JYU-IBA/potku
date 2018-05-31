@@ -129,8 +129,9 @@ class ElementSimulation:
                                           self.name + ".profile"))
 
         self.__mcerd_command = os.path.join("external", "Potku-bin", "mcerd" +
-                                            (".exe" if platform.system() == "Windows"
-                                       else ""))
+                                            (
+                                                ".exe" if platform.system() == "Windows"
+                                                else ""))
         self.__process = None
         # This has all the mcerd objects so get_espe knows all the element
         # simulations that belong together (with different seed numbers)
@@ -181,17 +182,7 @@ class ElementSimulation:
         try:
             recoil_element.name = new_values["name"]
             recoil_element.description = new_values["description"]
-            recoil_element.reference_density \
-                = new_values["reference_density"]
-            self.espe_settings["recoil_file"] = os.path \
-                .join(self.directory, recoil_element.prefix + "-" +
-                      recoil_element.name + ".recoil")
-            self.espe_settings["spectrum_file"] = os.path \
-                .join(self.directory, recoil_element.prefix + "-"
-                      + recoil_element.name + "."
-                      + str(self.seed_number) + ".simu")
-            recoil_element.write_recoil_file(
-                self.espe_settings["recoil_file"])
+            recoil_element.reference_density = new_values["reference_density"]
         except KeyError:
             raise
         self.recoil_to_file(self.directory)
@@ -438,10 +429,15 @@ class ElementSimulation:
         pass
 
     def calculate_espe(self):
-
         """
         Calculate the energy spectrum from the MCERD result file.
         """
+        recoil_file = os.path.join(self.directory,
+                                   self.recoil_elements[0].prefix + "-" +
+                                   self.recoil_elements[0].name +
+                                   ".recoil")
+        self.recoil_elements[0].write_recoil_file(recoil_file)
+
         if self.run is None:
             run = self.request.default_run
         else:
@@ -463,10 +459,7 @@ class ElementSimulation:
                                           self.recoil_elements[0].prefix + "-" +
                                           self.recoil_elements[0].name + "." +
                                           str(self.seed_number) + ".simu"),
-            "recoil_file": os.path.join(self.directory,
-                                        self.recoil_elements[0].prefix + "-" +
-                                        self.recoil_elements[0].name +
-                                        ".recoil")
+            "recoil_file": recoil_file
         }
         self.get_espe = GetEspe(self.espe_settings)
 
