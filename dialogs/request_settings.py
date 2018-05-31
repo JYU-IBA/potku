@@ -288,7 +288,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             elem_simu.description = self.simulation_settings_widget\
                 .descriptionPlainTextEdit. toPlainText()
             if self.simulation_settings_widget \
-                .typeOfSimulationComboBox.currentText().lower() == "REC":
+                .typeOfSimulationComboBox.currentText() == "REC":
                 elem_simu.simulation_type = "ERD"
             else:
                 elem_simu.simulation_type = "RBS"

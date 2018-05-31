@@ -212,6 +212,10 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     self.simulation.detector.efficiencies = list(
                         self.simulation.request.default_detector.efficiencies)
                     # TODO Why is default detector's efficiency list emptied?
+                    # Default efficiencies are emptied because efficiencies
+                    # added in simulation specific dialog go by default in
+                    # the list. The list is only used for this transferring,
+                    # so emptying it does no harm.
                     self.simulation.request.default_detector.efficiencies = []
 
                 # Set Detector object to settings widget

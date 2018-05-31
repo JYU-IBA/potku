@@ -141,7 +141,9 @@ class ElementManager:
         # Delete all files that relate to element_simulation
         files_to_be_removed = []
         for file in os.listdir(element_simulation.directory):
-            if file.startswith(element_simulation.name):
+            if  file.startswith(element_simulation.name_prefix) and \
+                    (file.endswith(".mcsimu") or file.endswith(".rec") or
+                     file.endswith(".profile")):
                 file_path = os.path.join(element_simulation.directory, file)
                 files_to_be_removed.append(file_path)
 
@@ -311,18 +313,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def save_mcsimu_rec_profile(self, directory):
         for element_simulation in self.element_manager \
                 .element_simulations:
-            for recoil_element in element_simulation.recoil_elements:
-                element = recoil_element.element
-            if element.isotope:
-                element_str = "{0}{1}".format(element.isotope, element.symbol)
-            else:
-                element_str = element.symbol
 
             element_simulation.mcsimu_to_file(
-                os.path.join(directory, element_simulation.name + ".mcsimu"))
+                os.path.join(directory, element_simulation.name_prefix + "-" +
+                             element_simulation.name +
+                             ".mcsimu"))
             element_simulation.recoil_to_file(directory)
             element_simulation.profile_to_file(
-                os.path.join(directory, element_str + ".profile"))
+                os.path.join(directory, element_simulation.name_prefix +
+                             ".profile"))
 
     def unlock_edit(self):
         confirm_box = QtWidgets.QMessageBox()

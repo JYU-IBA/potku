@@ -278,7 +278,8 @@ class Request:
             self.default_element_simulation = ElementSimulation(
                 self.default_folder, self,
                 [RecoilElement(Element.from_string("4He 3.0"), [])],
-                description="These are default simulation parameters.")
+                description="These are default simulation parameters.",
+                use_default_settings=False)
             self.default_simulation.element_simulations.append(
                 self.default_element_simulation)
 
