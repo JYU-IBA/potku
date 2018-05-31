@@ -261,9 +261,9 @@ class Measurement:
     #             "reference_cut", "number_of_splits", "normalization"
 
     def __init__(self, request, path, tab_id=-1, name="Default",
-                 description="", modification_time=time.time(), run=None,
+                 description="", modification_time=None, run=None,
                  detector=None, target=None, profile_name="Default",
-                 profile_description="", profile_modification_time=time.time(),
+                 profile_description="", profile_modification_time=None,
                  reference_density=3.5, number_of_depth_steps=40,
                  depth_step_for_stopping=50, depth_step_for_output=50,
                  depth_for_concentration_from=800,
@@ -271,7 +271,7 @@ class Measurement:
                  reference_cut="", number_of_splits=10, normalization="First",
                  measurement_setting_file_name="Default",
                  measurement_setting_file_description="",
-                 measurement_setting_modification_time=time.time()):
+                 measurement_setting_modification_time=None):
         """Initializes a measurement.
 
         Args:
@@ -284,6 +284,8 @@ class Measurement:
         self.path = path
         self.name = name
         self.description = description
+        if not modification_time:
+            modification_time = time.time()
         self.modification_time = modification_time
 
         self.run = run
@@ -295,11 +297,15 @@ class Measurement:
             self.measurement_setting_file_name = name
         self.measurement_setting_file_description = \
             measurement_setting_file_description
+        if not measurement_setting_modification_time:
+            measurement_setting_modification_time = time.time()
         self.measurement_setting_modification_time = \
             measurement_setting_modification_time
 
         self.profile_name = profile_name
         self.profile_description = profile_description
+        if not profile_modification_time:
+            profile_modification_time = time.time()
         self.profile_modification_time = profile_modification_time
         self.reference_density = reference_density
         self.number_of_depth_steps = number_of_depth_steps

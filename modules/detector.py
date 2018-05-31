@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 30.5.2018
+Updated on 31.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -50,7 +50,7 @@ class Detector:
                 "detector_theta", "__measurement_settings_file_path"
 
     def __init__(self, path, measurement_settings_file_path, name="Default",
-                 description="", modification_time=time.time(),
+                 description="", modification_time=None,
                  detector_type="TOF",
                  foils=None, tof_foils=None, virtual_size=(2.0, 5.0),
                  tof_slope=1e-11, tof_offset=1e-9, angle_slope=0,
@@ -80,6 +80,8 @@ class Detector:
         self.name = name
         self.__measurement_settings_file_path = measurement_settings_file_path
         self.description = description
+        if not modification_time:
+            modification_time = time.time()
         self.modification_time = modification_time
         self.type = detector_type
         self.foils = foils

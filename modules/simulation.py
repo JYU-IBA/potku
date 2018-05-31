@@ -237,7 +237,7 @@ class Simulation:
 
     def __init__(self, path, request, name="Default",
                  description="",
-                 modification_time=time.time(), tab_id=-1, run=None,
+                 modification_time=None, tab_id=-1, run=None,
                  detector=None, target=None,
                  measurement_setting_file_name="",
                  measurement_setting_file_description=""):
@@ -252,6 +252,8 @@ class Simulation:
 
         self.name = name
         self.description = description
+        if not modification_time:
+            modification_time = time.time()
         self.modification_time = modification_time
 
         self.measurement_setting_file_name = measurement_setting_file_name

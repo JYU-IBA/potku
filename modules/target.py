@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 27.3.2018
-Updated on 29.5.2018
+Updated on 31.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -45,7 +45,7 @@ class Target:
                 "image_size", "image_file", "scattering_element", "layers", \
                 "target_theta"
 
-    def __init__(self, name="Default", modification_time=time.time(),
+    def __init__(self, name="Default", modification_time=None,
                  description="", target_type="AFM", image_size=(1024, 1024),
                  image_file="", scattering_element=Element.from_string(
                 "4He 3.0"), target_theta=70.0, layers=None):
@@ -64,6 +64,8 @@ class Target:
             layers: Target layers.
         """
         self.name = name
+        if not modification_time:
+            modification_time = time.time()
         self.modification_time = modification_time
         self.description = description
         self.target_type = target_type
