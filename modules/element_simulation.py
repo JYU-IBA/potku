@@ -263,6 +263,7 @@ class ElementSimulation:
         name = obj["name"]
         description = obj["description"]
         modification_time = obj["modification_time_unix"]
+        simulation_type = obj["simulation_type"]
         simulation_mode = obj["simulation_mode"]
         number_of_ions = obj["number_of_ions"]
         number_of_preions = obj["number_of_preions"]
@@ -299,6 +300,7 @@ class ElementSimulation:
 
         return cls(simulation_folder, request, recoil_elements,
                    description=description,
+                   simulation_type=simulation_type,
                    modification_time=modification_time, name=name,
                    number_of_ions=number_of_ions,
                    number_of_preions=number_of_preions,

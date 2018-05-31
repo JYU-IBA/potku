@@ -30,6 +30,8 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 import os
 from PyQt5 import uic
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt
+import time
 
 
 class ElementSimulationSettingsDialog(QtWidgets.QDialog):
@@ -73,32 +75,47 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
 
     def show_settings(self):
         """Show settings of ElementSimulation object in view."""
+        if self.use_default_settings:
+            elem_simu = self.element_simulation.request.\
+                default_element_simulation
+        else:
+            elem_simu = self.element_simulation
+            self.ui.useRequestSettingsValuesCheckBox.setCheckState(0)
+            self.ui.settingsGroupBox.setEnabled(True)
+            self.use_default_settings = False
         self.ui.nameLineEdit.setText(
-            self.element_simulation.name)
+            elem_simu.name)
         self.ui.descriptionPlainTextEdit.setPlainText(
-            self.element_simulation.description)
-        self.ui.typeOfSimulationComboBox.setCurrentIndex(
-            self.ui.typeOfSimulationComboBox.findText(
-                self.element_simulation.simulation_type))
+            elem_simu.description)
+        self.ui.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+            elem_simu.modification_time)))
+        if elem_simu.simulation_type == "ERD":
+            self.ui.typeOfSimulationComboBox.setCurrentIndex(
+                self.ui.typeOfSimulationComboBox.findText(
+                    "REC", Qt.MatchFixedString))
+        else:
+            self.ui.typeOfSimulationComboBox.setCurrentIndex(
+                self.ui.typeOfSimulationComboBox.findText(
+                    "SCT", Qt.MatchFixedString))
         self.ui.modeComboBox.setCurrentIndex(
             self.ui.modeComboBox.findText(
-                self.element_simulation.simulation_mode))
+                elem_simu.simulation_mode, Qt.MatchFixedString))
         self.ui.numberOfIonsSpinBox.setValue(
-            self.element_simulation.number_of_ions)
+            elem_simu.number_of_ions)
         self.ui.numberOfPreIonsSpinBox.setValue(
-            self.element_simulation.number_of_preions)
+            elem_simu.number_of_preions)
         self.ui.seedSpinBox.setValue(
-            self.element_simulation.seed_number)
+            elem_simu.seed_number)
         self.ui.numberOfRecoilsSpinBox.setValue(
-            self.element_simulation.number_of_recoils)
+            elem_simu.number_of_recoils)
         self.ui.numberOfScalingIonsSpinBox.setValue(
-            self.element_simulation.number_of_scaling_ions)
+            elem_simu.number_of_scaling_ions)
         self.ui.minimumScatterAngleDoubleSpinBox.setValue(
-            self.element_simulation.minimum_scattering_angle)
+            elem_simu.minimum_scattering_angle)
         self.ui.minimumMainScatterAngleDoubleSpinBox.setValue(
-            self.element_simulation.minimum_main_scattering_angle)
+            elem_simu.minimum_main_scattering_angle)
         self.ui.minimumEnergyDoubleSpinBox.setValue(
-            self.element_simulation.minimum_energy)
+            elem_simu.minimum_energy)
 
     def toggle_settings(self):
         """If request settings checkbox is checked, disables settings in dialog.
@@ -167,8 +184,10 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 self.ui.descriptionPlainTextEdit.toPlainText()
             self.element_simulation.simulation_type = \
                 self.ui.typeOfSimulationComboBox.currentText()
-            self.element_simulation.simulation_mode = \
-                self.ui.modeComboBox.currentText()
+            if self.ui.modeComboBox.currentText() == "REC":
+                self.element_simulation.simulation_mode = "ERD"
+            else:
+                self.element_simulation.simulation_type = "RBS"
             self.element_simulation.number_of_ions = \
                 self.ui.numberOfIonsSpinBox.value()
             self.element_simulation.number_of_preions = \
