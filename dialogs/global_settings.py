@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 30.4.2013
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -42,6 +42,9 @@ from widgets.matplotlib.measurement.tofe_histogram import \
 
 
 class GlobalSettingsDialog(QtWidgets.QDialog):
+    """
+    A GlobalSettingsDialog.
+    """
     def __init__(self, settings):
         """Constructor for the program
         """
@@ -121,6 +124,9 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
             dirtyinteger += 1
 
     def __create_spinbox(self, default):
+        """
+        Create a spinbox.
+        """
         spinbox = QtWidgets.QSpinBox()
         spinbox.stepBy(1)
         spinbox.setMinimum(-1000)

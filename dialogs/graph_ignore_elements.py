@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 27.8.2013
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -38,6 +38,9 @@ from PyQt5 import QtWidgets
 
 
 class GraphIgnoreElements(QtWidgets.QDialog):
+    """
+    A dialog for ignoring elements in a graph.
+    """
     def __init__(self, elements, ignored):
         """Init the dialog.
         

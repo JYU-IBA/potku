@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2013
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -33,6 +33,9 @@ import re
 
 
 class Element:
+    """
+    Element class that handles information about one element.
+    """
     def __init__(self, symbol, isotope=None, amount=None):
         """Initializes an element object.
         Args:

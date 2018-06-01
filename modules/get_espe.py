@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 27.4.2018
-Updated on 2.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -109,6 +109,9 @@ class GetEspe:
         self.run_get_espe()
 
     def run_get_espe(self):
+        """
+        Run get_espe binary with given parameters.
+        """
         command = ("type " if platform.system() == "Windows" else "cat ") \
                   + self.__erd_file + "| " \
                   + os.path.join("external", "Potku-bin", "get_espe"

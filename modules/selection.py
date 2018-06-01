@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 28.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -43,6 +43,9 @@ from modules.element import Element
 
 
 class AxesLimits:
+    """
+    An AxesLimit class.
+    """
     def __init__(self):
         """Inits axes limits
         """
@@ -478,6 +481,12 @@ class Selector:
             selection.transpose(is_transposed)
 
     def update_single_selection_points(self, selection):
+        """
+        Update single selection points.
+
+        Args:
+            selection: Points to update.
+        """
         selection.events_counted = False
         selection.event_count = 0
         data = self.measurement.data

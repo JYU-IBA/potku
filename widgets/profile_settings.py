@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -35,6 +35,12 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
     """Class for creating a profile settings tab.
     """
     def __init__(self, measurement):
+        """
+        Initializes the widget.
+
+        Args:
+            measurement: Measurement object.
+        """
         super().__init__()
         self.ui = uic.loadUi(path.join("ui_files",
                                        "ui_profile_settings_tab.ui"), self)
@@ -43,6 +49,9 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
         self.show_settings()
 
     def show_settings(self):
+        """
+        Show profile settings.
+        """
         self.nameLineEdit.setText(
             self.measurement.profile_name)
         self.descriptionPlainTextEdit.setPlainText(
@@ -70,6 +79,9 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
                 self.measurement.normalization))
 
     def update_settings(self):
+        """
+        Update profile settings.
+        """
         self.measurement.profile_name = \
             self.nameLineEdit.text()
         self.measurement.profile_description = \

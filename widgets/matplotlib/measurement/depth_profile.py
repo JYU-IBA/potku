@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 17.4.2013
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -32,7 +32,8 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import os, re
+import os
+import re
 from PyQt5 import QtWidgets
 
 from dialogs.measurement.depth_profile_ignore_elements \
@@ -131,6 +132,15 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             self.on_draw()
 
     def __sortt(self, key):
+        """
+        Get isotope for key.
+
+        Args:
+            key: String that represents an Element.
+
+        Return:
+            Isotope or -1 if not key is "total".
+        """
         if key == "total":
             return -1
         if type(key) is Element:
@@ -411,21 +421,30 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__button_ignores = QtWidgets.QToolButton(self)
         self.__button_ignores.clicked.connect(self.__ignore_elements_dialog)
         self.__button_ignores.setToolTip(
-            "Select elements which are included in" + \
+            "Select elements which are included in" +
             " ratio calculation.")
         self.icon_manager.set_icon(self.__button_ignores, "gear.svg")
         self.mpl_toolbar.addWidget(self.__button_ignores)
 
     def __uncheck_custom_buttons(self):
+        """
+        Uncheck custom buttons.
+        """
         if self.__show_limits:
             self.limButton.setChecked(False)
             self.__toggle_lim_lines()
 
     def __uncheck_built_in_buttons(self):
+        """
+        Uncheck built.in buttons.
+        """
         self.__button_drag.setChecked(False)
         self.__button_zoom.setChecked(False)
 
     def __toggle_lim_mode(self):
+        """
+        Toggle lim mode.
+        """
         self.__switch_lim_mode()
         self.axes.clear()
         self.on_draw()
@@ -475,6 +494,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.on_draw()
 
     def __toggle_drag_zoom(self):
+        """
+        Toggle drag zoom.
+        """
         # self.__tool_label.setText("")
         if self.__button_drag.isChecked():
             self.mpl_toolbar.pan()

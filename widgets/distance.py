@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -36,6 +36,9 @@ class DistanceWidget(QtWidgets.QWidget):
     """Class for creating a distance widget for detector settings
     """
     def __init__(self):
+        """
+        Initializes the widget.
+        """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_distance_widget.ui"),
                              self)

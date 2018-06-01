@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 31.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -229,6 +229,9 @@ class Simulations:
 
 
 class Simulation:
+    """
+    A Simulation class that handles information about one Simulation.
+    """
     __slots__ = "path", "request", "simulation_file", "name", "tab_id", \
                 "description", "modification_time", "run", "detector", \
                 "target", "element_simulations", "name_prefix", \
@@ -279,10 +282,19 @@ class Simulation:
         self.to_file(self.path)
 
     def create_folder_structure(self):
+        """
+        Create folder structure for simulation.
+        """
         self.__make_directories(self.directory)
         self.set_loggers()
 
     def __make_directories(self, directory):
+        """
+        Makes a directory and adds the event to log.
+
+        Args:
+             directory: Directory to create.
+        """
         if not os.path.exists(directory):
             os.makedirs(directory)
             log = "Created a directory {0}.".format(directory)

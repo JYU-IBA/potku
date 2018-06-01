@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 31.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -78,6 +78,15 @@ class Measurements:
         return len(self.measurements) == 0
 
     def get_key_value(self, key):
+        """
+        Get key value.
+
+        Args:
+             key: A key.
+
+        Return:
+            Measurement object corresponding to key.
+        """
         if key not in self.measurements:
             return None
         return self.measurements[key]
@@ -342,12 +351,21 @@ class Measurement:
         self.defaultlog = None
 
     def get_detector_or_default(self):
+        """
+        Get measurement specific detector of default.
+
+        Return:
+            A Detector.
+        """
         if self.detector is None:
             return self.request.default_detector
         else:
             return self.detector
 
     def update_folders_and_selector(self):
+        """
+        Update folders and selector.
+        """
         for item in os.listdir(self.directory):
             if item.startswith("Composition_changes"):
                 self.directory_composition_changes = os.path.join(
@@ -375,6 +393,17 @@ class Measurement:
     def from_file(cls, measurement_info_path, measurement_file_path,
                   profile_file_path,
                   request):
+        """
+        Read Measurement information from filea.
+
+        Args:
+            measurement_info_path: Path to .info file.
+            measurement_file_path: Path to .measurement file.
+            profile_file_path: Path to .profile file.
+
+        Return:
+            Measurement object.
+        """
 
         obj_info = json.load(open(measurement_info_path))
         if measurement_file_path and os.path.exists(measurement_file_path):
@@ -458,6 +487,12 @@ class Measurement:
                    measurement_setting_modification_time=measurement_setting_modification_time)
 
     def measurement_to_file(self, measurement_file_path):
+        """
+        Write a .measurement file.
+
+        Args:
+            measurement_file_path: Path to .measurement file.
+        """
         if os.path.exists(measurement_file_path):
             obj_measurement = json.load(open(measurement_file_path))
         else:
@@ -477,6 +512,12 @@ class Measurement:
             json.dump(obj_measurement, file, indent=4)
 
     def info_to_file(self, info_file_path):
+        """
+        Write an .info file.
+
+        Args:
+            info_file_path: Path to .info file.
+        """
         obj_info = {
             "name": self.name,
             "description": self.description,
@@ -489,6 +530,12 @@ class Measurement:
             json.dump(obj_info, file, indent=4)
 
     def profile_to_file(self, profile_file_path):
+        """
+        Write a .profile file.
+
+        Args:
+            profile_file_path: Path to .profile file.
+        """
         obj_profile = {"general": {},
                        "depth_profiles": {},
                        "energy_spectra": {},
@@ -895,6 +942,9 @@ class Measurement:
         logging.getLogger(self.name).info(log_msg)
 
     def __remove_old_cut_files(self):
+        """
+        Remove old cut files.
+        """
         self.__unlink_files(os.path.join(self.directory, self.directory_cuts))
         directory_changes = os.path.join(
             self.directory_composition_changes, "Changes")

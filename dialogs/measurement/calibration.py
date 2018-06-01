@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.4.2013
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -260,8 +260,9 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.timer.stop()
 
     def __enable_accept_calibration_button(self):
-        # Let press accept calibration only if there are parameters available.
-        if self.tof_calibration.slope or self.tof_calibration.offset: 
+        """Let press accept calibration only if there are parameters available.
+        """
+        if self.tof_calibration.slope or self.tof_calibration.offset:
             self.ui.acceptCalibrationButton.setEnabled(True)
         else:
             self.ui.acceptCalibrationButton.setEnabled(False)

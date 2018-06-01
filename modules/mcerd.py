@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -40,6 +40,10 @@ from modules.foil import CircularFoil
 
 
 class MCERD:
+    """
+    An MCERD class that handles calling the mcerd binary and creating the
+    files it needs.
+    """
 
     def __init__(self, settings):
         """Create an MCERD object. This automatically starts the simulation.

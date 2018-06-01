@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2018
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -36,6 +36,9 @@ class SimulationSettingsWidget(QtWidgets.QWidget):
     """Class for creating a simulation settings tab.
     """
     def __init__(self):
+        """
+        Initializes the widget.
+        """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_request_simulation_settings.ui"),

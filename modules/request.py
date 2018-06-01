@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 28.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -145,7 +145,9 @@ class Request:
             self.load()
 
     def create_default_detector(self):
-        # Detector
+        """
+        Create default detector.
+        """
         self.default_detector_folder = os.path.join(self.default_folder,
                                                     "Detector")
 
@@ -178,7 +180,9 @@ class Request:
                                       self.default_measurement_file_path)
 
     def create_default_measurement(self):
-        # Measurement
+        """
+        Create default measurement.
+        """
         measurement_info_path = os.path.join(self.default_folder,
                                              "Default.info")
         if os.path.exists(measurement_info_path):
@@ -217,7 +221,9 @@ class Request:
                 ".measurement"))
 
     def create_default_target(self):
-        # Target
+        """
+        Create default target.
+        """
         target_path = os.path.join(self.default_folder, "Default.target")
         if os.path.exists(target_path):
             # Read target from file
@@ -237,7 +243,9 @@ class Request:
                                     self.default_measurement_file_path)
 
     def create_default_run(self):
-        # Read default run from file.
+        """
+        Create default run.
+        """
         try:
             # Try reading Run parameters from .measurement file.
             self.default_run = Run.from_file(self.default_measurement_file_path)
@@ -249,7 +257,9 @@ class Request:
                 ".measurement"))
 
     def create_default_simulation(self):
-        # Simulation
+        """
+        Create default simulation.
+        """
         simulation_path = os.path.join(self.default_folder,
                                        "Default.simulation")
         if os.path.exists(simulation_path):

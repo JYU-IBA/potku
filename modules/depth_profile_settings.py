@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 8.4.2013
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -72,6 +72,8 @@ class DepthProfileSettings:
         self.load_settings(self.filepath)
 
     def __set_config_parameters(self):
+        """ Set configuration parameters.
+        """
         self.config.add_section('default')
         self.config.set('default', 'use_settings', str(self.use_settings))
         depth_profile_settings = "depth_profile_settings"

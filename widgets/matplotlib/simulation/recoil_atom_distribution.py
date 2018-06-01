@@ -55,23 +55,46 @@ class ElementManager:
     A Simulation can have 0...n ElementSimulations.
     Each ElementSimulation has 1 RecoilElement.
     Each RecoilElement has 1 Element, 1 ElementWidget and 2...n Points.
-
-    Args:
-        parent: A SimulationTabWidget.
     """
 
     def __init__(self, parent, icon_manager, simulation):
+        """
+        Initializes element manager.
+
+        Args:
+            parent: Parent object.
+            icon_manager: IconManager object.
+            simulation: Simulation object.
+        """
         self.parent = parent
         self.icon_manager = icon_manager
         self.simulation = simulation
         self.element_simulations = self.simulation.element_simulations
 
     def get_element_simulation_with_recoil_element(self, recoil_element):
+        """
+        Get element simulation with recoil element.
+
+        Args:
+             recoil_element: A RecoilElement object.
+
+        Return:
+            ElementSimulation.
+        """
         for element_simulation in self.element_simulations:
             if element_simulation.recoil_elements[0] == recoil_element:
                 return element_simulation
 
     def get_element_simulation_with_radio_button(self, radio_button):
+        """
+        Get element simulation with radio button.
+
+        Args:
+             radio_button: A radio button widget.
+
+        Return:
+            ElementSimulation.
+        """
         for element_simulation in self.element_simulations:
             if self.get_radio_button(element_simulation) == radio_button:
                 return element_simulation
@@ -135,6 +158,12 @@ class ElementManager:
             .widgets.append(simulation_controls_widget)
 
     def remove_element_simulation(self, element_simulation):
+        """
+        Remove element simulation.
+
+        Args:
+            element_simulation: An ElementSimulation object to be removed.
+        """
         element_simulation.recoil_elements[0].delete_widgets()
         self.element_simulations.remove(element_simulation)
 
@@ -151,6 +180,12 @@ class ElementManager:
             os.remove(file_path)
 
     def get_radio_button(self, element_simulation):
+        """
+        Get a radio button based on element simulation.
+
+        Args:
+            element_simulation: An ElementSimulation object.
+        """
         return element_simulation.recoil_elements[0].widgets[0] \
             .radio_button
 
@@ -280,16 +315,25 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             break
 
     def __update_figure(self):
+        """
+        Update figure.
+        """
         for element_simulation in self.simulation.element_simulations:
             for recoil_element in element_simulation.recoil_elements:
                 self.add_element(recoil_element.element, element_simulation)
 
     def open_element_simulation_settings(self):
+        """
+        Open element simulation settings.
+        """
         if not self.current_element_simulation:
             return
         ElementSimulationSettingsDialog(self.current_element_simulation)
 
     def open_recoil_element_info(self):
+        """
+        Open recoil element info.
+        """
         dialog = RecoilInfoDialog(
             self.current_element_simulation.recoil_elements[0])
         if dialog.isOk:
@@ -311,6 +355,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 error_box.exec()
 
     def save_mcsimu_rec_profile(self, directory):
+        """
+        Save information to .mcsimu and .profile files.
+        """
         for element_simulation in self.element_manager \
                 .element_simulations:
 
@@ -324,6 +371,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                              ".profile"))
 
     def unlock_edit(self):
+        """
+        Unlock full edit.
+        """
         confirm_box = QtWidgets.QMessageBox()
         confirm_box.setIcon(QtWidgets.QMessageBox.Warning)
         yes_button = confirm_box.addButton(QtWidgets.QMessageBox.Yes)
@@ -346,6 +396,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.update_plot()
 
     def choose_element(self, button, checked):
+        """
+        Choose element from view.
+
+        Args:
+            button: Radio button.
+            checked: Whether button is checked or not.
+        """
         if checked:
             current_element_simulation = self.element_manager \
                 .get_element_simulation_with_radio_button(button)
@@ -370,6 +427,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # self.axes.autoscale()
 
     def update_recoil_element_info_labels(self):
+        """
+        Update recoil element info labels.
+        """
         self.parent_ui.nameLabel.setText(
             "Name: " + self.current_element_simulation.recoil_elements[0].name)
         self.parent_ui.referenceDensityLabel.setText(
@@ -379,12 +439,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         )
 
     def recoil_element_info_on_switch(self):
+        """
+        Show recoil element info on switch.
+        """
         if self.current_element_simulation is None:
             self.parent_ui.elementInfoWidget.hide()
         else:
             self.parent_ui.elementInfoWidget.show()
 
     def add_element_with_dialog(self):
+        """
+        Add new elelemnt simulation with dialog.
+        """
         dialog = RecoilElementSelectionDialog(self)
         if dialog.isOk:
             element_simulation = self.add_element(Element(
@@ -420,9 +486,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         return element_simulation
 
     def remove_element(self, element_simulation):
+        """
+        Remove element simulation.
+
+        Args:
+            element_simulation: An ElementSimulation object.
+        """
         self.element_manager.remove_element_simulation(element_simulation)
 
     def remove_current_element(self):
+        """
+        Remove current element simulation.
+        """
         if not self.current_element_simulation:
             return
         confirm_box = QtWidgets.QMessageBox()
@@ -444,7 +519,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         else:
             return
 
-    def import_elements(self):
+    def export_elements(self):
+        """
+        Export elements from target layers into element simulations.
+        """
         for layer in self.target.layers:
             for layer_element in layer.elements:
                 already_exists = False
@@ -512,6 +590,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.canvas.draw()
 
     def __toggle_tool_drag(self):
+        """
+        Toggle drag tool.
+        """
         if self.__button_drag.isChecked():
             self.mpl_toolbar.mode_tool = 1
         else:
@@ -519,6 +600,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.canvas.draw_idle()
 
     def __toggle_tool_zoom(self):
+        """
+        Toggle zoom tool.
+        """
         if self.__button_zoom.isChecked():
             self.mpl_toolbar.mode_tool = 2
         else:
@@ -526,6 +610,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.canvas.draw_idle()
 
     def __toggle_drag_zoom(self):
+        """
+        Toggle drag zoom.
+        """
         self.__tool_label.setText("")
         if self.__button_drag.isChecked():
             self.mpl_toolbar.pan()
@@ -535,6 +622,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.__button_zoom.setChecked(False)
 
     def __fork_toolbar_buttons(self):
+        """
+        Fork navigation tool bar button into custom ones.
+        """
         super().fork_toolbar_buttons()
         self.mpl_toolbar.mode_tool = 0
         self.__tool_label = self.mpl_toolbar.children()[24]
@@ -790,6 +880,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.fig.canvas.draw_idle()
 
     def update_layer_borders(self):
+        """
+        Update layer borders.
+        """
         next_layer_position = 0
         for idx, layer in enumerate(self.target.layers):
             self.axes.axvspan(
@@ -809,7 +902,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.fig.canvas.draw_idle()
 
     def on_motion(self, event):
-        """Callback method for mouse motion event. Moves points that are being dragged.
+        """Callback method for mouse motion event. Moves points that are being
+        dragged.
 
         Args:
             event: A MPL MouseEvent
@@ -954,6 +1048,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.update_plot()
 
     def on_span_select(self, xmin, xmax):
+        """
+        Select multiple points.
+
+        Args:
+            xmin: Area start.
+            xmax: Area end.
+        """
         if not self.current_element_simulation:
             return
         sel_points = []

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -46,6 +46,9 @@ import modules.masses as masses
 
 
 class DepthProfileDialog(QtWidgets.QDialog):
+    """
+    Dialog for making a depth profile.
+    """
     checked_cuts = {}
     x_unit = "1e15 at./cm²"
     line_zero = False

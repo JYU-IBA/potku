@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -92,6 +92,9 @@ class _CompositionWidget(MatplotlibWidget):
         self.canvas.draw_idle()
 
     def __toggle_drag_zoom(self):
+        """
+        Toggles the drag zoom.
+        """
         self.__tool_label.setText("")
         if self.__button_drag.isChecked():
             self.mpl_toolbar.pan()
@@ -101,6 +104,9 @@ class _CompositionWidget(MatplotlibWidget):
         self.__button_zoom.setChecked(False)
 
     def __fork_toolbar_buttons(self):
+        """
+        Forks the toolbar into custom buttons.
+        """
         super().fork_toolbar_buttons()
         self.mpl_toolbar.mode_tool = 0
         self.__tool_label = self.mpl_toolbar.children()[24]

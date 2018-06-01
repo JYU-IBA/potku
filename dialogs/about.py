@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.5.2013
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -46,6 +46,7 @@ class AboutDialog(QtWidgets.QDialog):
     def __init__(self):
         """Inits the About Dialog.
         """
+
         super().__init__()
 
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_about.ui"), self)

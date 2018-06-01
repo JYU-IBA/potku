@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -50,6 +50,9 @@ from widgets.matplotlib.measurement.energy_spectrum import \
 
 
 class EnergySpectrumParamsDialog(QtWidgets.QDialog):
+    """
+    An EnergySpectrumParamsDialog.
+    """
     checked_cuts = {}
     bin_width = 0.1
 

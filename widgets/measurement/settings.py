@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -39,6 +39,12 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
     """Class for creating a measurement settings tab.
     """
     def __init__(self, obj):
+        """
+        Initializes the widget.
+
+        Args:
+            obj: Object that uses these settings.
+        """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_measurement_settings_tab.ui"),
@@ -48,6 +54,9 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.show_settings()
         
     def show_settings(self):
+        """
+        Show measurement settings.
+        """
         run_object = self.obj.run
         if not run_object:
             run_object = self.obj.request.default_run
@@ -64,11 +73,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             self.beamIonButton.setText("Select")
             self.isotopeComboBox.setEnabled(
                 False)
-
-        # link_angle_values(self.detectorThetaDoubleSpinBox,
-        #                        self.detectorFiiDoubleSpinBox)
-        # link_angle_values(self.targetThetaDoubleSpinBox,
-        #                        self.targetFiiDoubleSpinBox)
 
         self.nameLineEdit.setText(
             self.obj.measurement_setting_file_name)
@@ -117,7 +121,9 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         #     target_object.target_theta + 180)
 
     def update_settings(self):
-        # Measurement settings
+        """
+        Update measurement settings.
+        """
         isotope_index = self.isotopeComboBox. \
             currentIndex()
         # TODO: Show a message box, don't just quietly do nothing
@@ -144,17 +150,3 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
                 .detectorThetaDoubleSpinBox.value()
             self.obj.target.target_theta = self\
                 .targetThetaDoubleSpinBox.value()
-
-
-def link_angle_values(theta, fii):
-    """A function to link angle spinbox values to each other.
-    """
-    # TODO: Fix the angle links to correct values
-    theta.valueChanged.connect(
-        lambda: fii.setValue(
-            theta.value() + 180
-        ))
-    fii.valueChanged.connect(
-        lambda: theta.setValue(
-            fii.value() - 180
-        ))

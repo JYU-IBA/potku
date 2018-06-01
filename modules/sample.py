@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 30.3.2018
-Edited on 30.5.2018
+Edited on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -140,15 +140,33 @@ class Sample:
         self._running_int_simulation = 1
 
     def get_running_int_measurement(self):
+        """
+        Get running int for measurements,
+
+        Return:
+            Integer.
+        """
         return self._running_int_measurement
 
     def increase_running_int_measurement_by_1(self):
+        """
+        Increase running int for measurement by one.
+        """
         self._running_int_measurement = self._running_int_measurement + 1
 
     def get_running_int_simulation(self):
+        """
+        Get running int for simulations,
+
+        Return:
+            Integer.
+        """
         return self._running_int_simulation
 
     def increase_running_int_simulation_by_1(self):
+        """
+            Increase running int for simulation by one.
+        """
         self._running_int_simulation = self._running_int_simulation + 1
 
     def get_measurements_files(self):

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 31.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -160,33 +160,119 @@ class ElementSimulation:
         self.bin_width = 0.1
 
     def unlock_edit(self, recoil_element):
+        """
+        Unlock full edit.
+
+        Args:
+            recoil_element: RecoilElement object.
+        """
         recoil_element.unlock_edit()
 
     def get_edit_lock_on(self, recoil_element):
-        recoil_element.get_edit_lock_on()
+        """
+        Get whether full edit lck is on or not.
+
+        Args:
+            recoil_element: A RecoilElement object.
+
+        Return:
+            True of False.
+        """
+        return recoil_element.get_edit_lock_on()
 
     def get_points(self, recoil_element):
+        """
+        Get recoile elemnt points.
+
+        Args:
+            recoil_element: A RecoilElement object.
+
+        Return:
+            Points list.
+        """
         return recoil_element.get_points()
 
     def get_xs(self, recoil_element):
+        """
+        Get x coordinates of a RecoilElement.
+
+        Args:
+            recoil_element: A RecoilElement object.
+
+        Return:
+            X coordinates in a list.
+        """
         return recoil_element.get_xs(),
 
     def get_ys(self, recoil_element):
+        """
+        Get y coordinates of a RecoilElement.
+
+        Args:
+            recoil_element: A RecoilElement object.
+
+        Return:
+            Y coodinates in a list.
+        """
         return recoil_element.get_ys(),
 
     def get_left_neighbor(self, recoil_element, point):
+        """
+        Get point's left neighbour.
+
+        Args:
+             recoil_element: A RecoilElement object.
+             point: A Point object.
+
+        Return:
+            A point.
+        """
         return recoil_element.get_left_neighbor(point)
 
     def get_right_neighbor(self, recoil_element, point):
+        """
+        Get point's right neighbour.
+
+        Args:
+             recoil_element: A RecoilElement object.
+             point: A Point object.
+
+        Return:
+            A point.
+        """
         return recoil_element.get_right_neighbor(point)
 
     def get_point_by_i(self, recoil_element, i):
+        """
+        Get a point by index.
+
+        Args:
+            recoil_element: A RecoilElement object.
+            i: Index.
+
+        Return:
+            A point.
+        """
         return recoil_element.get_point_by_i(i)
 
     def add_point(self, recoil_element, new_point):
+        """
+        Add a new point to recoil element.
+
+        Args:
+             recoil_element: A RecoilElement object.
+             new_point: Point to be added.
+        """
         recoil_element.add_point(new_point)
 
     def remove_point(self, recoil_element, point):
+        """
+        Remove a point from recoil element.
+
+        Args:
+            recoil_element: A RecoilElement object.
+            point: Point to be removed.
+        """
         recoil_element.remove_point(point)
 
     def update_recoil_element(self, recoil_element, new_values):

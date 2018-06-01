@@ -73,7 +73,7 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.elementInfoWidget.hide()
 
         self.ui.exportElementsButton.clicked.connect(
-            self.recoil_widget.import_elements)
+            self.recoil_widget.export_elements)
 
         self.ui.targetRadioButton.clicked.connect(self.switch_to_target)
         self.ui.recoilRadioButton.clicked.connect(self.switch_to_recoil)
@@ -89,6 +89,9 @@ class TargetWidget(QtWidgets.QWidget):
         self.set_shortcuts()
 
     def switch_to_target(self):
+        """
+        Switch to target view.
+        """
         self.ui.stackedWidget.setCurrentIndex(0)
         self.ui.recoilListWidget.hide()
         self.ui.editLockPushButton.hide()
@@ -97,6 +100,9 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.instructionLabel.setText("")
 
     def switch_to_recoil(self):
+        """
+        Switch to recoil atom distribution view.
+        """
         self.ui.stackedWidget.setCurrentIndex(1)
         self.recoil_widget.update_layer_borders()
         self.ui.exportElementsButton.hide()
@@ -108,6 +114,9 @@ class TargetWidget(QtWidgets.QWidget):
                                          "macOs users ⌘+click).")
 
     def __save_target_and_recoils(self):
+        """
+        Save target and element simulations.
+        """
         target_name = "temp"
         if self.target.name is not "":
             target_name = self.target.name
@@ -130,12 +139,9 @@ class TargetWidget(QtWidgets.QWidget):
                                        QtWidgets.QMessageBox.Ok)
 
     def set_shortcuts(self):
-        # Toggle rectangle selector
-        # self.rec_sel = QtWidgets.QShortcut(self)
-        # self.rec_sel.setKey(QtCore.Qt.Key_R)
-        # self.rec_sel.activated.connect(
-        #     lambda: self.matplotlib.toggle_rectangle_selector())
-        # Delete selected point(s)
+        """
+        Set shortcuts for deleting points.
+        """
         self.del_points = QtWidgets.QShortcut(self)
         self.del_points.setKey(QtCore.Qt.Key_Delete)
         self.del_points.activated.connect(

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2018
-Updated on 30.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -36,6 +36,12 @@ class FoilWidget(QtWidgets.QWidget):
     """Class for creating a foil widget for detector settings.
     """
     def __init__(self, parent):
+        """
+        Initializes the foil widget.
+
+        Args:
+            parent: Parent object.
+        """
         super().__init__()
         self.parent = parent
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_foil_widget.ui"),
@@ -45,6 +51,9 @@ class FoilWidget(QtWidgets.QWidget):
             lambda: self.__calculate_distance())
 
     def _delete_foil(self):
+        """
+        Delete a foil.
+        """
         confirm_box = QtWidgets.QMessageBox()
         confirm_box.setIcon(QtWidgets.QMessageBox.Warning)
         yes_button = confirm_box.addButton(QtWidgets.QMessageBox.Yes)
@@ -59,4 +68,7 @@ class FoilWidget(QtWidgets.QWidget):
             self.parent.calculate_distance()
 
     def __calculate_distance(self):
+        """
+        Calculate the distance between foils.
+        """
         self.parent.calculate_distance()
