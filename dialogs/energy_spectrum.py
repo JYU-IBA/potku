@@ -44,7 +44,6 @@ from modules.element import Element
 from modules.energy_spectrum import EnergySpectrum
 from modules.general_functions import read_espe_file
 from modules.measurement import Measurement
-from modules.null import Null
 from widgets.matplotlib.measurement.energy_spectrum import \
     MatplotlibEnergySpectrumWidget
 
@@ -343,7 +342,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
         """
-        self.parent.energy_spectrum_widget = Null()
+        self.parent.energy_spectrum_widget = None
         file = os.path.join(self.parent.obj.directory, self.save_file)
         try:
             if os.path.isfile(file):

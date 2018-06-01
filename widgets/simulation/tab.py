@@ -41,7 +41,6 @@ from dialogs.measurement.depth_profile import DepthProfileWidget
 from widgets.simulation.target import TargetWidget
 from modules.element import Element
 from modules.general_functions import read_espe_file
-from modules.null import Null
 from modules.ui_log_handlers import CustomLogHandler
 from widgets.log import LogWidget
 from widgets.simulation.energy_spectrum import SimulationEnergySpectrumWidget
@@ -152,7 +151,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
                                                 log_widget)
         logger.addHandler(widgetlogger_default)
     
-    def check_previous_state_files(self, progress_bar=Null(), directory=None):
+    def check_previous_state_files(self, progress_bar=None, directory=None):
         """Check if saved state for Elemental Losses, Energy Spectrum or Depth
         Profile exists. If yes, load them also.
 

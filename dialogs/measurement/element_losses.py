@@ -39,7 +39,6 @@ from PyQt5 import QtWidgets
 from modules.cut_file import is_rbs
 from modules.cut_file import get_scatter_element
 from modules.element_losses import ElementLosses
-from modules.null import Null
 from widgets.matplotlib.measurement.element_losses \
     import MatplotlibElementLossesWidget
 
@@ -285,7 +284,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
         """
-        self.parent.elemental_losses_widget = Null()
+        self.parent.elemental_losses_widget = None
         file = os.path.join(self.parent.obj.directory, self.save_file)
         try:
             if os.path.isfile(file):
