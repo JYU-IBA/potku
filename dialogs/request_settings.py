@@ -44,11 +44,7 @@ from PyQt5.QtWidgets import QApplication
 
 import modules.masses as masses
 from dialogs.element_selection import ElementSelectionDialog
-from modules.calibration_parameters import CalibrationParameters
-from modules.general_functions import open_file_dialog
-from modules.general_functions import save_file_dialog
 from modules.input_validator import InputValidator
-from modules.measuring_settings import MeasuringSettings
 from widgets.detector_settings import DetectorSettingsWidget
 from widgets.measurement.settings import MeasurementSettingsWidget
 from widgets.profile_settings import ProfileSettingsWidget
@@ -173,71 +169,21 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             elem_simu.number_of_scaling_ions)
 
     def __load_file(self, settings_type):
-        """ Opens file dialog and loads and shows selected ini file's values.
-
-        Args:
-            settings_type: (string) selects which settings file type will be
-                           loaded.
-                           Can be "MEASURING_UNIT_SETTINGS",
-                           "DEPTH_PROFILE_SETTINGS" or "CALIBRATION_SETTINGS"
         """
-        # TODO .ini files should not be used anymore.
-
-        filename = open_file_dialog(self, self.request.directory,
-                                    "Open settings file",
-                                    "Settings file (*.ini)")
-
-        if settings_type == "MEASURING_UNIT_SETTINGS":
-            settings = MeasuringSettings()
-            settings.load_settings(filename)
-            masses.load_isotopes(settings.element.symbol,
-                                 self.isotopeComboBox,
-                                 str(settings.element.isotope))
-            settings.show(self)
-        elif settings_type == "DEPTH_PROFILE_SETTINGS":
-            pass
-        elif settings_type == "CALIBRATION_SETTINGS":
-            settings = CalibrationParameters()
-            settings.show(self.detector_settings_widget)
-        else:
-            return
+        Load settings from file.
+        """
+        # TODO: implement
+        QtWidgets.QMessageBox.critical(self, "Error", "Not implemented",
+                                       QtWidgets.QMessageBox.Ok,
+                                       QtWidgets.QMessageBox.Ok)
 
     def __save_file(self, settings_type):
-        """Opens file dialog and sets and saves the settings to a ini file.
+        """Opens file dialog and sets and saves the settings to a file.
         """
-        if settings_type == "MEASURING_UNIT_SETTINGS":
-            settings = MeasuringSettings()
-        elif settings_type == "DEPTH_PROFILE_SETTINGS":
-            pass
-        elif settings_type == "CALIBRATION_SETTINGS":
-            settings = CalibrationParameters()
-        elif settings_type == "DETECTOR_SETTINGS":
-            pass
-        elif settings_type == "MEASUREMENT_SETTINGS":
-            pass
-        elif settings_type == "SIMULATION_SETTINGS":
-            pass
-        else:
-            return
-
-        filename = save_file_dialog(self, self.request.directory,
-                                    "Open measuring unit settings file",
-                                    "Settings file (*.ini)")
-
-        self.update_settings()
-        if filename:
-            if settings_type == "CALIBRATION_SETTINGS":
-                settings.set_settings(self.detector_settings_widget)
-                settings.save_settings(filename)
-            elif settings_type == "MEASUREMENT_SETTINGS":
-                self.request.default_measurement.save_settings(filename)
-            elif settings_type == "SIMULATION_SETTINGS":
-                self.request.default_simulation.save_settings(filename)
-            elif settings_type == "DETECTOR_SETTINGS":
-                self.request.default_detector.save_settings(filename)
-            else:
-                settings.set_settings(self.measurement_settings_widget)
-                settings.save_settings(filename)
+        # TODO: implement
+        QtWidgets.QMessageBox.critical(self, "Error", "Not implemented",
+                                       QtWidgets.QMessageBox.Ok,
+                                       QtWidgets.QMessageBox.Ok)
 
     def update_and_close_settings(self):
         """Updates measuring settings values with the dialog's values and

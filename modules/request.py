@@ -43,7 +43,6 @@ from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 from modules.sample import Samples
 from modules.measurement import Measurement
 from modules.simulation import Simulation
-from modules.settings import Settings
 from modules.detector import Detector
 from modules.target import Target
 
@@ -258,7 +257,8 @@ class Request:
 
     def create_default_simulation(self):
         """
-        Create default simulation.
+
+        :return:
         """
         simulation_path = os.path.join(self.default_folder,
                                        "Default.simulation")
