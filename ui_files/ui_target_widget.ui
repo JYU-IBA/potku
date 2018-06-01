@@ -182,7 +182,7 @@
              <x>0</x>
              <y>0</y>
              <width>180</width>
-             <height>372</height>
+             <height>390</height>
             </rect>
            </property>
           </widget>
@@ -265,6 +265,13 @@
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <item>
+      <widget class="QLabel" name="instructionLabel">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
      <item>
       <spacer name="horizontalSpacer_2">
        <property name="orientation">
