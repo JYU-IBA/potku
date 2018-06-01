@@ -110,7 +110,8 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.editLockPushButton.show()
         self.recoil_widget.recoil_element_info_on_switch()
         self.ui.instructionLabel.setText("You can add a new point to the "
-                                         "distribution using Ctrl+click ("
+                                         "distribution on a line between "
+                                         "points using Ctrl+click ("
                                          "macOs users ⌘+click).")
 
     def __save_target_and_recoils(self):
