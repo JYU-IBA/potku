@@ -38,6 +38,7 @@ import modules.masses as masses
 class MeasurementSettingsWidget(QtWidgets.QWidget):
     """Class for creating a measurement settings tab.
     """
+
     def __init__(self, obj):
         """
         Initializes the widget.
@@ -52,7 +53,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.obj = obj
 
         self.show_settings()
-        
+
     def show_settings(self):
         """
         Show measurement settings.
@@ -132,21 +133,20 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             self.obj.run.beam.ion = Element(self.beamIonButton.text(),
                                             isotope_data[0])
             self.obj.measurement_setting_file_name = self.nameLineEdit.text()
-            self.obj.measurement_setting_file_description = self\
+            self.obj.measurement_setting_file_description = self \
                 .descriptionPlainTextEdit.toPlainText()
             self.obj.run.beam.energy = self.energyDoubleSpinBox.value()
             self.obj.run.beam.energy_distribution = \
                 self.energyDistDoubleSpinBox.value()
             self.obj.run.beam.charge = self.beamChargeSpinBox.value()
-            self.obj.run.beam.spot_size = [
-                self.spotSizeXdoubleSpinBox.value(),
-                self.spotSizeYdoubleSpinBox.value()]
+            self.obj.run.beam.spot_size = (self.spotSizeXdoubleSpinBox.value(),
+                                           self.spotSizeYdoubleSpinBox.value())
             self.obj.run.beam.divergence = self.divergenceDoubleSpinBox.value()
             self.obj.run.beam.profile = self.profileComboBox.currentText()
             self.obj.run.fluence = self.fluenceDoubleSpinBox.value()
             self.obj.run.current = self.currentDoubleSpinBox.value()
             self.obj.run.time = self.timeDoubleSpinBox.value()
-            self.obj.detector.detector_theta = self\
+            self.obj.detector.detector_theta = self \
                 .detectorThetaDoubleSpinBox.value()
-            self.obj.target.target_theta = self\
+            self.obj.target.target_theta = self \
                 .targetThetaDoubleSpinBox.value()
