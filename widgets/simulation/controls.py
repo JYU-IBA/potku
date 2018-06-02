@@ -51,8 +51,10 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.element_simulation = element_simulation
 
         main_layout = QtWidgets.QHBoxLayout()
-
-        controls_group_box = QtWidgets.QGroupBox(self.element_simulation.name)
+        element = self.element_simulation.recoil_elements[
+            0].element
+        controls_group_box = QtWidgets.QGroupBox(str(element.isotope)
+                                                 + element.symbol)
         controls_group_box.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
                                          QtWidgets.QSizePolicy.Preferred)
 
