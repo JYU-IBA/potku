@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 1.6.2018
+Updated on 4.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -70,8 +70,6 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
             self.measurement.depth_for_concentration_to)
         self.channelWidthDoubleSpinBox.setValue(
             self.measurement.channel_width)
-        self.referenceCutLineEdit.setText(
-            self.measurement.reference_cut)
         self.numberOfSplitsSpinBox.setValue(
             self.measurement.number_of_splits)
         self.normalizationComboBox.setCurrentIndex(
@@ -100,8 +98,6 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
             self.depthForConcentrationToDoubleSpinBox.value()
         self.measurement.channel_width = \
             self.channelWidthDoubleSpinBox.value()
-        self.measurement.reference_cut = \
-            self.referenceCutLineEdit.text()
         self.measurement.number_of_splits = \
             self.numberOfSplitsSpinBox.value()
         self.measurement.normalization = \

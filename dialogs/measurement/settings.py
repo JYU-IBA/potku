@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 30.5.2018
+Updated on 4.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -186,7 +186,6 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.measurement.depth_for_concentration_to = \
                 measurement.depth_for_concentration_to
             self.measurement.channel_width = measurement.channel_width
-            self.measurement.reference_cut = measurement.reference_cut
             self.measurement.number_of_splits = measurement.number_of_splits
             self.measurement.normalization = measurement.normalization
 
