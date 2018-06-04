@@ -53,7 +53,6 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     An EnergySpectrumParamsDialog.
     """
     checked_cuts = {}
-    bin_width = 0.1
 
     def __init__(self, parent, spectrum_type):
         """Inits energy spectrum dialog.
@@ -70,8 +69,13 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # Connect buttons
         self.ui.pushButton_Cancel.clicked.connect(self.close)
 
-        width = EnergySpectrumParamsDialog.bin_width
-        self.ui.histogramTicksDoubleSpinBox.setValue(width)
+        if not self.parent.obj.detector:  # Request settings are used.
+            EnergySpectrumParamsDialog.bin_width = \
+                self.parent.obj.request.default_measurement.channel_width
+        else:
+            EnergySpectrumParamsDialog.bin_width = self.parent.obj.channel_width
+        self.ui.histogramTicksDoubleSpinBox.setValue(
+            EnergySpectrumParamsDialog.bin_width)
 
         if isinstance(self.parent.obj, Measurement):
             self.measurement = self.parent.obj
@@ -146,7 +150,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                             os.path.join(dir_elo, item_child.file_name))
                         EnergySpectrumParamsDialog.checked_cuts[m_name].append(
                             item_child.file_name)
-        EnergySpectrumParamsDialog.bin_width = width
+                EnergySpectrumParamsDialog.bin_width = width
         if use_cuts:
             self.ui.label_status.setText(
                 "Please wait. Creating energy spectrum.")
