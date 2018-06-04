@@ -166,6 +166,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             measurement = self.measurement.request.default_measurement
             self.measurement.run = None
             self.measurement.detector = None
+            self.measurement.use_default_profile_settings = True
             self.measurement.measurement_setting_file_description = \
                 measurement.measurement_setting_file_description
             self.measurement.target.target_theta = \
@@ -207,6 +208,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         else:
             # Use Measurement specific settings
             try:
+                self.measurement.use_default_profile_settings = False
                 if self.measurement.measurement_setting_file_name is None:
                     file_name = "temp"
                 else:

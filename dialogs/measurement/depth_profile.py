@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 1.6.2018
+Updated on 4.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -242,17 +242,42 @@ class DepthProfileDialog(QtWidgets.QDialog):
         dialog for the user.
         """
         detector = self.measurement.get_detector_or_default()
+
+        if self.measurement.use_default_profile_settings:
+            depth_step_for_stopping = \
+                self.measurement.request.default_measurement\
+                    .depth_step_for_stopping
+            number_of_depth_steps = \
+                self.measurement.request.default_measurement\
+                    .number_of_depth_steps
+            depth_step_for_output = \
+                self.measurement.request.default_measurement\
+                    .depth_step_for_output
+            depth_for_concentration_from = \
+                self.measurement.request.default_measurement\
+                    .depth_for_concentration_from
+            depth_for_concentration_to = \
+                self.measurement.request.default_measurement\
+                    .depth_for_concentration_t0
+        else:
+            depth_step_for_stopping = self.measurement.depth_step_for_stopping
+            number_of_depth_steps = self.measurement.number_of_depth_steps
+            depth_step_for_output = self.measurement.depth_step_for_output
+            depth_for_concentration_from = self.measurement\
+                .depth_for_concentration_from
+            depth_for_concentration_to = self.measurement\
+                .depth_for_concentration_to
         self.ui.label_calibslope.setText(str(detector.tof_slope))
         self.ui.label_caliboffset.setText(str(detector.tof_offset))
         self.ui.label_depthstop.setText(
-            str(self.measurement.depth_step_for_stopping))
+            str(depth_step_for_stopping))
         self.ui.label_depthnumber.setText(
-            str(self.measurement.number_of_depth_steps))
+            str(number_of_depth_steps))
         self.ui.label_depthbin.setText(
-            str(self.measurement.depth_step_for_output))
+            str(depth_step_for_output))
         self.ui.label_depthscale.setText("{0} - {1}".format(
-            self.measurement.depth_for_concentration_from,
-            self.measurement.depth_for_concentration_to))
+            depth_for_concentration_from,
+            depth_for_concentration_to))
         
 
 class DepthProfileWidget(QtWidgets.QWidget):

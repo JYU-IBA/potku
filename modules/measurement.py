@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 1.6.2018
+Updated on 4.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -280,7 +280,8 @@ class Measurement:
                  reference_cut="", number_of_splits=10, normalization="First",
                  measurement_setting_file_name="Default",
                  measurement_setting_file_description="",
-                 measurement_setting_modification_time=None):
+                 measurement_setting_modification_time=None,
+                 use_default_profile_settings=True):
         """Initializes a measurement.
 
         Args:
@@ -349,6 +350,8 @@ class Measurement:
 
         self.errorlog = None
         self.defaultlog = None
+
+        self.use_default_profile_settings = use_default_profile_settings
 
     def get_detector_or_default(self):
         """
@@ -444,6 +447,10 @@ class Measurement:
             number_of_splits = \
                 obj_profile["composition_changes"]["number_of_splits"]
             normalization = obj_profile["composition_changes"]["normalization"]
+            if obj_profile["general"]["use_default_settings"] == "True":
+                use_default_profile_settings = True
+            else:
+                use_default_profile_settings = False
 
         else:
             measurement = request.default_measurement
@@ -461,6 +468,7 @@ class Measurement:
             number_of_splits = measurement.number_of_splits
             normalization = measurement.normalization
             reference_density = measurement.reference_density
+            use_default_profile_settings = True
 
         name = obj_info["name"]
         description = obj_info["description"]
@@ -484,7 +492,8 @@ class Measurement:
                    reference_density=reference_density,
                    measurement_setting_file_name=measurement_settings_name,
                    measurement_setting_file_description=measurement_settings_description,
-                   measurement_setting_modification_time=measurement_setting_modification_time)
+                   measurement_setting_modification_time=measurement_setting_modification_time,
+                   use_default_profile_settings=use_default_profile_settings)
 
     def measurement_to_file(self, measurement_file_path):
         """
@@ -548,6 +557,8 @@ class Measurement:
             time.strftime("%c %z %Z", time.localtime(time.time()))
         obj_profile["general"]["modification_time_unix"] = \
             self.profile_modification_time
+        obj_profile["general"]["use_default_settings"] = \
+            str(self.use_default_profile_settings)
 
         obj_profile["depth_profiles"]["reference_density"] = \
             self.reference_density
@@ -1056,6 +1067,27 @@ class Measurement:
             target = self.request.default_target
         else:
             target = self.target
+
+        if self.use_default_profile_settings:
+            reference_density = \
+                self.request.default_measurement.reference_density
+            number_of_depth_steps = \
+                self.request.default_measurement.number_of_depth_steps
+            depth_step_for_stopping = \
+                self.request.default_measurement.depth_step_for_stopping
+            depth_step_for_output = self.request.default_measurement. \
+                depth_step_for_output
+            depth_for_concentration_from = \
+                self.request.default_measurement.depth_for_concentration_from
+            depth_for_concentration_to = \
+                self.request.default_measurement.depth_for_concentration_to
+        else:
+            reference_density = self.reference_density
+            number_of_depth_steps = self.number_of_depth_steps
+            depth_step_for_stopping = self.depth_step_for_stopping
+            depth_step_for_output = self.depth_step_for_output
+            depth_for_concentration_from = self.depth_for_concentration_from
+            depth_for_concentration_to = self.depth_for_concentration_to
         # Measurement settings
         str_beam = "Beam: {0}\n".format(
             run.beam.ion)
@@ -1084,18 +1116,18 @@ class Measurement:
         str_carbon = "Carbon foil thickness: {0}\n".format(
             carbon_foil_thickness)
 
-        str_density = "Target density: {0}\n".format(self.reference_density)
+        str_density = "Target density: {0}\n".format(reference_density)
 
         # Depth Profile settings
         str_depthnumber = "Number of depth steps: {0}\n".format(
-            self.number_of_depth_steps)
+            number_of_depth_steps)
         str_depthstop = "Depth step for stopping: {0}\n".format(
-            self.depth_step_for_stopping)
+            depth_step_for_stopping)
         str_depthout = "Depth step for output: {0}\n".format(
-            self.depth_step_for_output)
+            depth_step_for_output)
         str_depthscale = "Depths for concentration scaling: {0} {1}\n".format(
-            self.depth_for_concentration_from,
-            self.depth_for_concentration_to)
+            depth_for_concentration_from,
+            depth_for_concentration_to)
 
         # Cross section
         flag_cross = global_settings.get_cross_sections()

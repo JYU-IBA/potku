@@ -203,7 +203,9 @@ class Request:
                 description="This is a default measurement.",
                 profile_description="These are default profile parameters.",
                 measurement_setting_file_description="These are default "
-                                                     "measurement parameters.")
+                                                     "measurement "
+                                                     "parameters.",
+                use_default_profile_settings=False)
             self.default_measurement.info_to_file(
                 os.path.join(self.default_folder,
                              self.default_measurement.name + ".info"))
