@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 1.6.2018
+Updated on 4.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -257,8 +257,7 @@ class Request:
 
     def create_default_simulation(self):
         """
-
-        :return:
+        Create default simulation.
         """
         simulation_path = os.path.join(self.default_folder,
                                        "Default.simulation")

@@ -114,20 +114,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.simulation_settings_widget.ui.saveButton.clicked \
             .connect(lambda: self.__save_file("SIMULATION_SETTINGS"))
 
-        self.request.default_simulation = self.request.default_simulation \
-            .from_file(self.request, os.path.join(self.request.default_folder,
-                                                  "Default.simulation"))
-        self.request.default_element_simulation = \
-            self.request.default_element_simulation \
-                .from_file(self.request, "",
-                           self.request.default_folder,
-                           os.path.join(self.request.default_folder,
-                                        "Default.mcsimu"),
-                           os.path.join(self.request.default_folder,
-                                        "Default.profile"))
-        self.request.default_simulation.element_simulations.append(
-            self.request.default_element_simulation)
-
         # Add profile settings view to the settings view
         self.profile_settings_widget = ProfileSettingsWidget(
             self.request.default_measurement)

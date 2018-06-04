@@ -57,7 +57,7 @@ class ElementSimulation:
                 "recoil_elements", "recoil_atoms", "mcerd_objects", \
                 "get_espe", "channel_width", "target", "detector", \
                 "__mcerd_command", "__process", "settings", "espe_settings", \
-                "description", "run", "spectra", "bin_width", "name", \
+                "description", "run", "spectra", "name", \
                 "use_default_settings"
 
     def __init__(self, directory, request, recoil_elements, name_prefix="",
@@ -136,7 +136,7 @@ class ElementSimulation:
         else:
             name = self.name
             if os.sep + "Default" in self.directory:
-                prefix = self.name
+                prefix = self.name + "_element"
             else:
                 prefix = self.name_prefix
         self.mcsimu_to_file(os.path.join(self.directory,
@@ -157,7 +157,6 @@ class ElementSimulation:
         self.get_espe = None
         self.espe_settings = None
         self.spectra = []
-        self.bin_width = 0.1
 
     def unlock_edit(self, recoil_element):
         """
@@ -416,7 +415,8 @@ class ElementSimulation:
                    simulation_mode=simulation_mode,
                    seed_number=seed_number,
                    minimum_energy=minimum_energy,
-                   use_default_settings=use_default_settings)
+                   use_default_settings=use_default_settings,
+                   channel_width=channel_width)
 
     def mcsimu_to_file(self, file_path):
         """Save mcsimu settings to file.
@@ -526,6 +526,10 @@ class ElementSimulation:
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
         else:
             obj_profile = {"energy_spectra": {}}
+            obj_profile["modification_time"] = time.strftime("%c %z %Z",
+                                                             time.localtime(
+                                                                 time.time()))
+            obj_profile["modification_time_unix"] = time.time()
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
 
         with open(file_path, "w") as file:
@@ -620,4 +624,4 @@ class ElementSimulation:
         """
         dialog = EnergySpectrumParamsDialog(self, spectrum_type="simulation")
         self.spectra = dialog.spectra
-        self.bin_width = dialog.bin_width
+        self.channel_width = dialog.bin_width
