@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 1.6.2018
+Updated on 4.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -545,6 +545,10 @@ class ElementSimulation:
             elem_sim = self.request.default_element_simulation
         else:
             elem_sim = self
+        if self.detector is None:
+            detector = self.request.default_detector
+        else:
+            detector = self.detector
         self.settings = {
             "simulation_type": elem_sim.simulation_type,
             "number_of_ions": elem_sim.number_of_ions,
@@ -558,7 +562,7 @@ class ElementSimulation:
             "seed_number": elem_sim.seed_number,
             "beam": run.beam,
             "target": self.target,
-            "detector": self.detector,
+            "detector": detector,
             "recoil_element": self.recoil_elements[0]
         }
         self.mcerd_objects[self.seed_number] = MCERD(self.settings)
@@ -597,14 +601,18 @@ class ElementSimulation:
             seed_number = self.request.default_element_simulation.seed_number
         else:
             seed_number = self.seed_number
+        if self.detector is None:
+            detector = self.request.default_detector
+        else:
+            detector = self.detector
         self.espe_settings = {
             "beam": run.beam,
-            "detector": self.detector,
+            "detector": detector,
             "target": self.target,
             "ch": self.channel_width,
             "reference_density": self.recoil_elements[0].reference_density,
             "fluence": run.fluence,
-            "timeres": self.detector.timeres,
+            "timeres": detector.timeres,
             "solid": self.calculate_solid(),
             "erd_file": os.path.join(self.directory,
                                      self.recoil_elements[0].prefix + "-" +
