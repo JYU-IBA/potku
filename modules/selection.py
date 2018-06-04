@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 1.6.2018
+Updated on 4.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -388,6 +388,8 @@ class Selector:
         for sel in self.selections:
             element = sel.element.symbol
             isotope = sel.element.isotope
+            if isotope is None:
+                isotope = ""
             if sel.type == "RBS":
                 element, isotope = sel.element_scatter.symbol, \
                                    sel.element_scatter.isotope

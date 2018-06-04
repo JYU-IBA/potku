@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.3.2013
-Updated on 30.5.2018
+Updated on 4.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -145,7 +145,8 @@ class CutFile:
             that we do not overwrite first 2H selection with other
             2H selection.
         """
-        if self.element_scatter.symbol is not "":
+        if self.element_scatter is not "" and self.element_scatter.symbol is \
+           not "":
             element = self.element_scatter
         else:
             element = self.element
