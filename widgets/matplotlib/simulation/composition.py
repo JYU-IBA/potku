@@ -54,7 +54,7 @@ class _CompositionWidget(MatplotlibWidget):
         # Remove Y-axis ticks and label
         self.axes.yaxis.set_tick_params("both", left="off", labelleft="off")
         self.axes.fmt_xdata = lambda x: "{0:1.4f}".format(x)
-        self.axes.fmt_ydata = lambda y: "not relevant"
+        self.axes.fmt_ydata = lambda y: "N/A"
         self.name_x_axis = "Depth [nm]"
 
         self.__icon_manager = icon_manager
@@ -82,11 +82,8 @@ class _CompositionWidget(MatplotlibWidget):
         if event.button == 1:  # Left click
             for layer in self.layers:
                 if layer.click_is_inside(event.xdata):
-                    QtWidgets.QMessageBox.critical(self, "Info",
-                                                   "Layerin " + layer.name + " "
-                                                   "tiedot",
-                                                   QtWidgets.QMessageBox.Ok,
-                                                   QtWidgets.QMessageBox.Ok)
+                    dialog = LayerPropertiesDialog(layer)
+                    self.__update_figure()
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -180,6 +177,7 @@ class _CompositionWidget(MatplotlibWidget):
 
     def __update_figure(self):
         """Updates the figure to match the information of the layers."""
+        self.axes.clear()
         next_layer_position = 0  # Position where the next layer will be drawn.
 
         # This variable is used to alternate between the darker and lighter
@@ -192,7 +190,7 @@ class _CompositionWidget(MatplotlibWidget):
             # Draw a rectangular patch that will have the thickness of the
             # layer and a height of 1.
             layer_patch = matplotlib.patches.Rectangle(
-                (next_layer_position, 0),
+                (layer.start_depth, 0),
                 layer.thickness, 1,
                 color=(0.85, 0.85, 0.85) if is_next_color_dark else
                 (0.9, 0.9, 0.9)
@@ -208,7 +206,7 @@ class _CompositionWidget(MatplotlibWidget):
 
             # Put annotation in the middle of the rectangular patch.
             self.axes.annotate(layer.name,
-                               (next_layer_position + layer.thickness / 2, 0.5),
+                               (layer.start_depth + layer.thickness / 2, 0.5),
                                ha="center")
 
             # Move the position where the next layer starts.
