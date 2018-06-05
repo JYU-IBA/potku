@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -38,11 +38,11 @@ import modules.masses as masses
 
 
 class MatplotlibElementLossesWidget(MatplotlibWidget):
-    """Energy spectrum widget
+    """MatplotlibElementLossesWidget that is used to draw composition changes.
     """
 
     def __init__(self, parent, split, legend=True, y_scale=0, rbs_list=None):
-        """Inits Energy Spectrum widget.
+        """Inits Composition changes widget.
 
         Args:
             parent: An ElementLossesWidget class object.
@@ -94,6 +94,15 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
         self.on_draw()
 
     def __sortt(self, key):
+        """
+        Find isotope mass by key.
+
+        Args:
+            key: Cut file path.
+
+        Return:
+            Isotope mass.
+        """
         cut_file = key.split('.')
         element_object = Element(cut_file[0].strip())
         element = element_object.symbol

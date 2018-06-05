@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2013
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -38,17 +38,19 @@ import modules.masses as masses
 
 
 class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
-    """Energy spectrum widget
+    """ MatplotlibCalibrationCurveFittingWidget that is used to do curve
+    fitting.
     """
     def __init__(self, parent, detector, tof_calibration, cut, measurement,
                  bin_width=2.0, column=1, dialog=None):
-        """Inits Energy Spectrum widget.
+        """Inits Curve Fitting widget.
         
         Args:
             parent: CalibrationCurveFittingWidget
             detector: Detector class object.
             tof_calibration: TOFCalibration class object.
             cut: CutFile class object.
+            measurement: Measurment object.
             bin_width: Histograms bin width
             column: Which column of the CutFile's data is used to create a 
                     histogram.
@@ -87,6 +89,9 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
             self.__set_calibration_point(event.xdata)                                       
 
     def __set_calibration_point(self, tof):
+        """
+        Set calibration point.
+        """
         self.selected_tof = tof
         self.tof_calibration_point = TOFCalibrationPoint(self.selected_tof,
                                                          self.cut,
@@ -96,7 +101,7 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
         self.on_draw()
 
     def set_calibration_point_externally(self, tof):
-        """Set calibration point.
+        """Set calibration point  externally.
         
         Args:
             tof: Integer representing x axis value Time of Flight [Channel].
@@ -122,7 +127,10 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
         self.dialog.ui.tofSecondsLineEdit.setText(str(tof_seconds))
     
     def change_cut(self, cut):
-        """Changes the cut file to be drawn and analyzed
+        """Changes the cut file to be drawn and analyzed.
+
+        Args:
+            cut: A cut file.
         """
         if self.cut != cut:
             self.cut = cut 

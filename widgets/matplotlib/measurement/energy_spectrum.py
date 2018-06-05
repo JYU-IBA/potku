@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 30.8.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -40,7 +40,7 @@ from modules.measurement import Measurement
 
 
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
-    """Energy spectrum widget
+    """MatplotlibEnergySpectrumWidget that is used draw an energy spectrum.
     """
 
     def __init__(self, parent, histed_files, rbs_list, spectrum_type,
@@ -52,6 +52,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             histed_files: List of calculated energy spectrum files.
             rbs_list: A dictionary of RBS selection elements containing
                       scatter elements.
+            spectrum_type: If spectrum is for measurement or simulation.
             legend: Boolean representing whether to draw legend or not.
         """
         super().__init__(parent)
@@ -93,6 +94,15 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.on_draw()
 
     def __sortt(self, key):
+        """
+        Fing isotope by key.
+
+        Args:
+            key: Cut file path.
+
+        Return:
+            Element's isotope.
+        """
         cut_file = key.split('.')
         element_object = Element.from_string(cut_file[0].strip())
         element = element_object.symbol

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -34,10 +34,10 @@ from widgets.matplotlib.base import MatplotlibWidget
 
 class MatplotlibImportTimingWidget(MatplotlibWidget):
     """
-    A MatplotlibImportTimingWidget class.
+    A MatplotlibImportTimingWidget class that handles importing timing.
     """
     def __init__(self, parent, output_file, icon_manager, timing):
-        """Inits import timings widget
+        """Inits import timings widget.
 
         Args:
             parent: An ImportTimingGraphDialog class object.
@@ -75,7 +75,7 @@ class MatplotlibImportTimingWidget(MatplotlibWidget):
         self.on_draw()
 
     def on_draw(self):
-        """Draws the timings graph
+        """Draws the timings graph.
         """
         self.axes.clear()
 
@@ -97,7 +97,7 @@ class MatplotlibImportTimingWidget(MatplotlibWidget):
         """Handles clicks on the graph.
 
         Args:
-            event: A click event on the graph
+            event: A click event on the graph.
         """
         if event.button == 1 and self.limButton.isChecked():
             value = int(event.xdata)

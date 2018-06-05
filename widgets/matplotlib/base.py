@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -38,7 +38,7 @@ from modules.navigation_toolbar import NavigationToolBar2QTView as \
 
 
 class MatplotlibWidget(QtWidgets.QWidget):
-    """Base class for matplotlib widgets
+    """Base class for matplotlib widgets.
     """
     def __init__(self, parent):
         """Inits matplotlib widget.
@@ -53,6 +53,9 @@ class MatplotlibWidget(QtWidgets.QWidget):
         self.__create_frame()
 
     def __create_frame(self):
+        """
+        Create frame for plotting.
+        """
         self.fig = Figure((5.0, 3.0), dpi=self.dpi)
         self.fig.patch.set_facecolor("white")
         self.canvas = FigureCanvas(self.fig)

@@ -1,7 +1,7 @@
 ﻿# coding=utf-8
 """
 Created on 18.4.2013
-Updated on 30.8.2013
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -62,7 +62,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             parent: A TofeHistogramWidget class object.
             measurement_data: A list of data points.
             icon_manager: IconManager class object.
-            icon_manager: An iconmanager class object.
         """
         super().__init__(parent)
         self.canvas.manager.set_title("ToF-E Histogram")
@@ -249,6 +248,13 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
     def __fix_axes_range(self, axes_range, compression):
         """Fixes axes' range to be divisible by compression.
+
+        Args:
+            axes_range: Range of axes.
+            compression: Compression.
+
+        Return:
+            Axes range.
         """
         rmin, rmax = axes_range
         mod = (rmax - rmin) % compression
@@ -259,6 +265,12 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         return rmin, rmax
 
     def __set_y_axis_on_right(self, yes):
+        """
+        Set y axis to right.
+
+        Args:
+            yes: Yse to setting.
+        """
         if yes:
             # self.axes.spines['left'].set_color('none')
             self.axes.spines['right'].set_color('black')
@@ -271,6 +283,12 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.axes.yaxis.set_label_position("left")
 
     def __set_x_axis_on_top(self, yes):
+        """
+        Set y axis to top.
+
+        Args:
+            yes: Yse to setting.
+        """
         if yes:
             # self.axes.spines['bottom'].set_color('none')
             self.axes.spines['top'].set_color('black')
@@ -283,6 +301,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.axes.xaxis.set_label_position("bottom")
 
     def __on_draw_legend(self):
+        """
+        Draw legends.
+        """
         self.axes.legend_ = None
         if not self.measurement.selector.selections:
             return
@@ -345,6 +366,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             sel.points.set_marker(sel.LINE_MARKER)
 
     def __toggle_tool_drag(self):
+        """
+        Toggle tool drag.
+        """
         if self.__button_drag.isChecked():
             self.mpl_toolbar.mode_tool = 1
         else:
@@ -357,6 +381,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.canvas.draw_idle()
 
     def __toggle_tool_zoom(self):
+        """
+        Toggle tool zoom.
+        """
         if self.__button_zoom.isChecked():
             self.mpl_toolbar.mode_tool = 2
         else:
@@ -369,6 +396,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.canvas.draw_idle()
 
     def __toggle_drag_zoom(self):
+        """
+        Toggle drag zoom.
+        """
         self.__tool_label.setText("")
         if self.__button_drag.isChecked():
             self.mpl_toolbar.pan()
@@ -378,6 +408,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__button_zoom.setChecked(False)
 
     def __fork_toolbar_buttons(self):
+        """
+        Fork toolbar buttons.
+        """
         super().fork_toolbar_buttons()
         self.mpl_toolbar.mode_tool = 0
         self.__tool_label = self.mpl_toolbar.children()[24]
@@ -448,25 +481,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
             return
         cursor_location = [int(event.xdata), int(event.ydata)]
-        # TODO: Possible switch to QtCore's mouseclicks
-        # buttond = {QtCore.Qt.LeftButton  : 1,
-        #       QtCore.Qt.MidButton   : 2,
-        #       QtCore.Qt.RightButton : 3,
-        #       # QtCore.Qt.XButton1 : None,
-        #       # QtCore.Qt.XButton2 : None,
-        #       }
-        # However, QtCore.Qt.RightButton is actually middle button (wheel) on 
-        # windows. So we'll use the numbers instead since they actually work
-        # cross-platform just fine.
-        # [DEBUG] Middle mouse button to debug current zoom levels or position.
-        # if event.button == 2:
-        #    print()
-        #    print("VIEWS:")
-        #    for item in self.mpl_toolbar._views:
-        #        print("\t{0}".format(item))
-        #    print("POSITIONS:")
-        #    for item in self.mpl_toolbar._positions:
-        #        print("\t{0}".format(item))
         if event.button == 1:  # Left click
             if self.elementSelectionSelectButton.isChecked():
                 if self.measurement.selection_select(cursor_location) == 1:
@@ -501,19 +515,27 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.__on_draw_legend()
 
     def __emit_selections_changed(self):
-        """Emits a 'selectionsChanged' signal with the selections list as a parameter. 
+        """Emits a 'selectionsChanged' signal with the selections list as a
+        parameter.
         """
         # self.emit(QtCore.SIGNAL("selectionsChanged(PyQt_PyObject)"),
         # self.measurement.selector.selections)
         self.selectionsChanged.emit(self.measurement.selector.selections)
 
     def __emit_save_cuts(self):
-        """Emits a 'selectionsChanged' signal with the selections list as a parameter. 
+        """Emits a 'selectionsChanged' signal with the selections list as a
+        parameter.
         """
-        # self.emit(QtCore.SIGNAL("saveCuts(PyQt_PyObject)"), self.measurement)
         self.saveCuts.emit(self.measurement.selector.selections)
 
     def __context_menu(self, event, cursor_location):
+        """
+        Open context menu.
+
+        Args:
+            event: Event to open context menu.
+            cursor_location: Location of the cursor.
+        """
         menu = QtWidgets.QMenu(self)
 
         action = QtWidgets.QAction(self.tr("Graph Settings..."), self)

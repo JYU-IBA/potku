@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2013
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -33,11 +33,11 @@ from widgets.matplotlib.base import MatplotlibWidget
 
 
 class MatplotlibCalibrationLinearFittingWidget(MatplotlibWidget):
-    """Energy spectrum widget
+    """MatplotlibCalibrationLinearFittingWidget used for liner fitting.
     """
 
     def __init__(self, parent, tof_calibration, dialog=None, old_params=None):
-        """Inits Energy Spectrum widget.
+        """Inits Linear Fitting widget.
 
         Args:
             parent: CalibrationCurveFittingWidget

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2018
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -32,7 +32,8 @@ from widgets.matplotlib.base import MatplotlibWidget
 
 
 class MatplotlibSimulationEnergySpectrumWidget(MatplotlibWidget):
-    """Energy spectrum widget
+    """MatplotlibSimulationEnergySpectrumWidget that is used to draw an energy
+    spectrum.
     """
     def __init__(self, parent, data):
         """Inits Energy Spectrum widget.

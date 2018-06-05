@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 31.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -185,6 +185,9 @@ class ElementManager:
 
         Args:
             element_simulation: An ElementSimulation object.
+
+        Return:
+            Element simulation.
         """
         return element_simulation.recoil_elements[0].widgets[0] \
             .radio_button
@@ -211,6 +214,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         Args:
             parent: A TargetWidget class object.
+            simulation: Simulation object.
+            target: Target object.
+            tab: Tab widget.
             icon_manager: An IconManager class object.
         """
 
@@ -357,6 +363,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def save_mcsimu_rec_profile(self, directory):
         """
         Save information to .mcsimu and .profile files.
+
+        Args:
+            directory: Directory to save to.
         """
         for element_simulation in self.element_manager \
                 .element_simulations:
@@ -718,7 +727,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """ On click event above graph.
 
         Args:
-            event: A MPL MouseEvent
+            event: A MPL MouseEvent.
         """
         if not self.current_element_simulation:
             return
@@ -760,7 +769,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             self.update_plot()
 
     def set_on_click_attributes(self, event):
-        """Sets the attributes needed for dragging points."""
+        """Sets the attributes needed for dragging points.
+
+        Args:
+            event: An MPL MouseEvent.
+        """
         locations = []
         for point in self.dragged_points:
             x0, y0 = point.get_coordinates()
@@ -785,6 +798,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def add_point(self, coords):
         """Adds a point if there is space for it.
         Returns the point if a point was added, None if not.
+
+        Args:
+            coords: Coordinates of the point.
+
+        Return:
+            New point.
         """
         if not self.current_element_simulation:
             return
@@ -939,6 +958,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     def get_new_checked_coordinates(self, event):
         """Returns checked new coordinates for dragged points.
         They have been checked for neighbor or axis limit collisions.
+
+        Args:
+            event: An MPL MouseEvent.
+
+        Return:
+            New coordinates.
         """
         dr_ps = self.dragged_points
 
@@ -996,6 +1021,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """Returns new coordinates for dragged points.
         These coordinates come from mouse movement and they haven't been checked
         for neighbor or axis limit collisions.
+
+        Args:
+            event: A MPL MouseEvent.
+
+        Return:
+            New unchecked coordinates.
         """
         new_unchecked_coords = []
         for i, point in enumerate(self.dragged_points):
@@ -1008,7 +1039,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         return new_unchecked_coords
 
     def update_location(self, event):
-        """Updates the location of points that are being dragged."""
+        """Updates the location of points that are being dragged.
+
+        Args:
+            event: An MPL MouseEvent.
+        """
         for point in self.dragged_points:
             point.set_coordinates((event.xdata, event.ydata))
         self.update_plot()

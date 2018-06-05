@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 17.4.2013
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -45,7 +45,7 @@ import modules.masses as masses
 
 
 class MatplotlibDepthProfileWidget(MatplotlibWidget):
-    """Depth profile widget.
+    """MatplotlibDepthProfileWidget that draws depth profiles.
     """
 
     def __init__(self, parent, depth_dir, elements, rbs_list, depth_scale,
@@ -112,7 +112,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         """Handles clicks on the graph.
 
         Args:
-            event: A click event on the graph
+            event: A click event on the graph.
         """
         if event.button == 1 and self.__show_limits:
             if self.__use_limit.get() == 'a':
@@ -352,6 +352,12 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
 
     def __physic_rounding_decimals(self, floater):
         """Find correct decimal count for rounding to 15-rule.
+
+        Args:
+            floater: Float to round.
+
+        Return:
+            Rounded number.
         """
         i = 0
         temp = floater
@@ -436,7 +442,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
 
     def __uncheck_built_in_buttons(self):
         """
-        Uncheck built.in buttons.
+        Uncheck built-in buttons.
         """
         self.__button_drag.setChecked(False)
         self.__button_zoom.setChecked(False)
@@ -454,6 +460,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         a = enable relative view throughout the histogram
         b = enable relative view only within limits
         c = enable relative view only outside limits
+
+        Args:
+            mode: Mode to switch to.
         """
         if mode != "":
             self.lim_mode = mode
@@ -528,7 +537,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.on_draw()
 
     class __Limit:
-        """Simple object to control when setting the integration
+        """ Simple object to control when setting the integration
         limits in Depth Profile.
         """
 
