@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2013
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -94,6 +94,9 @@ class Element:
 
     def __eq__(self, other):
         """Compare object.
+
+        Args:
+            other: Object to compare with.
 
         Return:
             Boolean representing equality.

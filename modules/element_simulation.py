@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -92,6 +92,7 @@ class ElementSimulation:
             seed_number: Seed number to give unique value to one simulation.
             minimum_energy: Minimum energy.
             channel_width: Channel width.
+            use_default_settings: Whether to use default settings or not.
         """
         self.directory = directory
         self.request = request
@@ -293,6 +294,7 @@ class ElementSimulation:
     def calculate_solid(self):
         """
         Calculate the solid parameter.
+
         Return:
             Returns the solid parameter calculated.
         """
@@ -307,6 +309,7 @@ class ElementSimulation:
     def calculate_smallest_solid_angle(self):
         """
         Calculate the smallest solid angle.
+
         Return:
             Smallest solid angle. (unit millisteradian)
         """
@@ -350,6 +353,9 @@ class ElementSimulation:
             simulation parameters.
             profile_file_path: A file path to JSON file containing the
             channel width.
+
+        Return:
+            ElementSimulation object.
         """
 
         obj = json.load(open(mcsimu_file_path))

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 31.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -370,6 +370,7 @@ class TOFCalibrationPoint:
             time_of_flight: An integer representing time of flight channel.
             cut: A CutFile class object.
             detector: A Detector class object.
+            measurement: Measurement object.
         """
         self.cut = cut
         self.type = cut.type

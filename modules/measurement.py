@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -238,6 +238,9 @@ class Measurements:
 
     def remove_obj(self, removed_obj):
         """Removes given measurement.
+
+        Args:
+            removed_obj: Object to be removed.
         """
         self.measurements.pop(removed_obj.tab_id)
 
@@ -286,6 +289,32 @@ class Measurement:
         Args:
             request: Request class object.
             path: Full path to measurement's .info file.
+            tab_id: Tab id.
+            name: Measurement name.
+            description: Description for measurement.
+            modification_time: Modification time.
+            run: Run object.
+            detector: Detector object.
+            target: Target object.
+            profile_name: Name of profile settings file.
+            profile_description: Description of the profile settings file.
+            profile_modification_time: Modification time of the profile
+            settigs file.
+            reference_density: Reference density.
+            number_of_depth_steps: Number of depth steps.
+            depth_step_for_stopping: Depth step for stopping.
+            depth_step_for_output: Depth step for output.
+            depth_for_concentration_from: Depth for concentration from.
+            depth_for_concentration_to: Depth for concentration to.
+            channel_width: Channel width.
+            reference_cut: Reference cut.
+            number_of_splits: Number of splits.
+            normalization: Normalization.
+            measurement_setting_file_name: Measurement settings file name.
+            measurement_setting_file_description: Measurement settings file
+            description.
+            measurement_setting_modification_time: Measurement settings file
+            modification time.
         """
         self.tab_id = tab_id
 
@@ -400,6 +429,7 @@ class Measurement:
             measurement_info_path: Path to .info file.
             measurement_file_path: Path to .measurement file.
             profile_file_path: Path to .profile file.
+            request: Request object.
 
         Return:
             Measurement object.
@@ -637,7 +667,7 @@ class Measurement:
         shutil.copyfile(file_path, new_path)
 
     def load_data(self):
-        """Loads measurement data from filepath
+        """Loads measurement data from filepath.
         """
         # import cProfile, pstats
         # pr = cProfile.Profile()
@@ -683,6 +713,9 @@ class Measurement:
 
     def rename_data_file(self, new_name=None):
         """Renames the measurement data file.
+
+        Args:
+            new_name: New name for the file.
         """
         if new_name is None:
             return
@@ -870,9 +903,7 @@ class Measurement:
 
     # TODO: UI stuff here. Something should be in the widgets...?
     def save_cuts(self):
-        """ Save cut files
-        
-        Saves data points within selections into cut files.
+        """ Saves data points within selections into cut files.
         """
         if self.selector.is_empty():
             return 0
@@ -953,6 +984,12 @@ class Measurement:
         self.__unlink_files(directory_changes)
 
     def __unlink_files(self, directory):
+        """
+        Unlink files from directory.
+
+        Args:
+            directory: Directory to be emptied.
+        """
         for the_file in os.listdir(directory):
             file_path = os.path.join(directory, the_file)
             try:

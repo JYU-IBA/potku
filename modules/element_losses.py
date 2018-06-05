@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -37,7 +37,7 @@ from modules.element import Element
 
 
 class ElementLosses:
-    """Element Losses class.
+    """Element Losses class that handles composition changes.
     """
 
     def __init__(self, directory_cuts, directory_composition_changes,
@@ -151,6 +151,9 @@ class ElementLosses:
             dirtyinteger += 1
 
     def __element_losses_folder_clean_up(self):
+        """
+        Clean up composition changes folder.
+        """
         for the_file in os.listdir(
                 os.path.join(self.directory_composition_changes, "Changes")):
             file_path = os.path.join(
@@ -220,6 +223,9 @@ class ElementLossesSplitHolder:
 
     def get_cut(self, key):
         """Get cut file used to make splits.
+
+        Return:
+            Cut file used to make splits.
         """
         if key not in self.__cut_mains.keys():
             return None
@@ -227,6 +233,9 @@ class ElementLossesSplitHolder:
 
     def get_splits(self, key):
         """Get splits of a cut file.
+
+        Return:
+            Cut file's splits.
         """
         if key not in self.__splits.keys():
             return []

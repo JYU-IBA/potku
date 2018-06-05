@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 28.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -158,6 +158,7 @@ def merge_files_in_range(file_a, file_b, lim_a, lim_b):
         file_b: Second file to be merged.
         lim_a: The lower limit.
         lim_b: The higher limit.
+
     Return:
         A merged file.
     """
@@ -187,7 +188,7 @@ def integrate_concentrations(depth_files, ignore_elements, lim_a, lim_b):
     Return:
         List of lists filled with percentages.
     """
-    # TODO TARKISTA, ETTÄ TOIMII!!!
+    # TODO CHECK THIS WORKS!!!
     concentration = {}
     if not depth_files:
         return concentration
@@ -301,6 +302,7 @@ def get_depth_files(elements, dir_cuts):
         elements: List of Element objects that should have a
         corresponding depth file.
         dir_cuts: Directory of the cut files.
+
     Returns:
         A list of depth files which matched the elements.
     """

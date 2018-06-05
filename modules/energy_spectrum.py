@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.4.2013
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -41,7 +41,7 @@ from modules.general_functions import tof_list
 
 
 class EnergySpectrum:
-    """ Class for energy spectrum.
+    """ Class for energy spectrum that holds the data for one energy spectrum.
     """
     def __init__(self, measurement, cut_files, spectrum_width,
                  progress_bar=None):
@@ -67,7 +67,8 @@ class EnergySpectrum:
     def calculate_spectrum(self):
         """Calculate energy spectrum data from cut files.
         
-        Returns list of cut files 
+        Return:
+             List of cut files.
         """
         histed_files = {}
         keys = self.__tof_listed_files.keys()

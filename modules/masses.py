@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 20.3.2013
-Updated on 6.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -107,8 +107,10 @@ def load_isotopes(element, combobox, current_isotope=None):
 
 def get_standard_isotope(element):
     """Calculate standard element weight.
+
     Args:
         element: A two letter symbol representing an element, e.g. 'He'
+
     Return:
         Returns standard weight of given element (float).
     """

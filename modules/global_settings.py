@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 29.4.2013
-Updated on 25.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -255,6 +255,9 @@ class GlobalSettings:
 
     def get_request_directory_last_open(self):
         """Get directory where last request was opened.
+
+        Return:
+            Path to last open directory.
         """
         return self.__config["default"]["request_directory_last_open"]
 
@@ -454,8 +457,8 @@ class GlobalSettings:
     def get_num_iterations(self):
         """Set the number of iterations erd_depth is to perform
 
-        Args:
-            value: An integer
+        Return:
+            Number of iterations.
         """
         try:
             return int(self.__config["depth_profile"]["num_iter"])

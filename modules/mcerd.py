@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -289,6 +289,9 @@ class MCERD:
 
     def copy_result(self, destination):
         """Copies MCERD result file (.erd) into given destination.
+
+        Args:
+            destination: Where to copy.
         """
         try:
             shutil.copy(self.result_file, destination)

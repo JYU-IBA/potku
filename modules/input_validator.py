@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.5.2013
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -59,6 +59,9 @@ class InputValidator(QDoubleValidator):
         Args:
             input_value: User given string to be validated.
             pos: Cursor position (if required).
+
+        Return:
+            Whether value is invalid or acceptable.
         """
         input_value = input_value.replace(",", ".")
         state, pos, a = QDoubleValidator.validate(self, input_value, pos)

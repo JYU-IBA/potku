@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 2.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,7 +29,7 @@ __version__ = "2.0"
 
 
 class Foil:
-    """Class for detector foil.
+    """Class for detector foil and its information.
     """
 
     __slots__ = "name", "distance", "layers", "transmission"
@@ -51,7 +51,7 @@ class Foil:
 
 
 class CircularFoil(Foil):
-    """ Class for circular detector foil.
+    """ Class for circular detector foil and its information.
     """
 
     __slots__ = "diameter"
@@ -61,6 +61,7 @@ class CircularFoil(Foil):
         """ Initialize a circular detector foil.
 
         Args:
+            name:         Name of the foil.
             diameter:     Diameter of the circular foil.
             distance:     Distance from the origin of the sample.
             layers:       Layers of the foil in a single list.
@@ -75,18 +76,17 @@ class CircularFoil(Foil):
 
 
 class RectangularFoil(Foil):
-    """ Class for rectangular detector foil.
+    """ Class for rectangular detector foil and its information.
     """
 
     __slots__ = "size"
 
     def __init__(self, name="", size_x=0.0, size_y=0.0, distance=0.0,
-                 layers=None,
-                 transmission=1.0):
+                 layers=None, transmission=1.0):
         """ Initialize a rectangular detector foil.
 
         Args:
-            name:         Nama of the foil.
+            name:         Name of the foil.
             size_x:       Rectangular foil x width.
             size_y:       Rectangular foil y height.
             distance:     Distance from the origin of the sample.

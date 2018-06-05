@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -46,9 +46,7 @@ import os
 
 
 def open_file_dialog(parent, default_folder, title, files):
-    """Opens open file dialog
-
-    Opens dialog to select file to be opened and returns full file path to
+    """ Opens dialog to select file to be opened and returns full file path to
     selected file if one is selected. If no file is selected returns None.
 
     Args:
@@ -58,7 +56,7 @@ def open_file_dialog(parent, default_folder, title, files):
         title: String representing open file dialog title.
         files: String representing what type of file can be opened.
 
-    Returns:
+    Return:
         A full path to the selected filename if a file is selected. For
         example:
 
@@ -71,9 +69,7 @@ def open_file_dialog(parent, default_folder, title, files):
 
 
 def open_files_dialog(parent, default_folder, title, files):
-    """Opens open file dialog for multiple files
-
-    Opens dialog to select files to be opened and returns full file path to
+    """ Opens dialog to select files to be opened and returns full file path to
     selected file if one or more is selected.
     If no file is selected returns None.
 
@@ -84,7 +80,7 @@ def open_files_dialog(parent, default_folder, title, files):
         title: String representing open file dialog title.
         files: String representing what type of file can be opened.
 
-    Returns:
+    Return:
         A full path to the selected filename if a file is selected. For
         example:
 
@@ -97,9 +93,7 @@ def open_files_dialog(parent, default_folder, title, files):
 
 
 def save_file_dialog(parent, default_folder, title, files):
-    """Opens save file dialog
-
-    Opens dialog to select savefile name and returns full file path to
+    """ Opens dialog to select savefile name and returns full file path to
     selected file if one is selected. If no file is selected returns None.
 
     Args:
@@ -109,7 +103,7 @@ def save_file_dialog(parent, default_folder, title, files):
         title: String representing open file dialog title.
         files: String representing what type of file can be opened.
 
-    Returns:
+    Return:
         A full path to the selected filename if a file is selected. For
         example:
 
@@ -127,6 +121,9 @@ def rename_file(old_path, new_name):
     Args:
         old_path: Path of file or directory to rename.
         new_name: New name for the file or directory.
+
+    Return:
+        Path to the new file.
     """
     if not new_name:
         return
@@ -217,7 +214,7 @@ def read_espe_file(espe_file):
         espe_file: A string representing path of energy spectrum data file
         (.simu) to be read.
 
-    Returns:
+    Return:
         Returns energy spectrum data as a list.
         """
     data = []
@@ -239,7 +236,7 @@ def tof_list(cut_file, directory, save_output=False):
                    directory.
         save_output: A boolean representing whether tof_list output is saved.
 
-    Returns:
+    Return:
         Returns cut file as list transformed through Arstila's tof_list program.
     """
     bin_dir = os.path.join(os.path.realpath(os.path.curdir), "external",
@@ -335,7 +332,7 @@ def convert_amu_to_kg(mass_in_amus):
     Args:
         mass_in_amus: Value to be converted (float)
     
-    Returns:
+    Return:
         Returns mass in kilograms (float)
     """
     # amu = 1.660538921 * pow(10, -27)  # 1 u = 1.660538921×10−27 kg
@@ -352,7 +349,7 @@ def carbon_stopping(element, isotope, energy, carbon_thickness):
         energy: Energy of the incident particle in MeVs (e.g. 2.0)
         carbon_thickness: Thickness of the carbon foil in ug/cm^2. (e.g. 3.0)
 
-    Returns:
+    Return:
         Energy loss of particle in a carbon foil of some thickness in Joules
     """
     bin_dir = os.path.join(os.path.realpath(os.path.curdir), 'external',
@@ -470,6 +467,16 @@ def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
 
 
 def md5_for_file(f, block_size=2 ** 20):
+    """
+    Hash the file.
+
+    Args:
+         f: Hile to hash.
+         block_size: Block size.
+
+    Return:
+        Hash digest.
+    """
     md5 = hashlib.md5()
     while True:
         data = f.read(block_size)
@@ -480,6 +487,15 @@ def md5_for_file(f, block_size=2 ** 20):
 
 
 def to_superscript(string):
+    """
+    Transform string to superscript.
+
+    Args:
+         string: String to transform.
+
+    Return:
+        Superscripted string.
+    """
     sups = {"0": "\u2070",
             "1": "\xb9",
             "2": "\xb2",
