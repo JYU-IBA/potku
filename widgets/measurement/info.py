@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 13.4.2013
-Updated on 23.5.2013
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,10 +25,10 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
-             "Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
-
-from os.path import join
+             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
+import os
 from PyQt5 import uic, QtWidgets
 
 
@@ -36,8 +37,11 @@ class MeasurementInfoWidget(QtWidgets.QWidget):
     """
 
     def __init__(self):
+        """
+        Initializes the widget.
+        """
         super().__init__()
-        self.ui = uic.loadUi(join("ui_files",
+        self.ui = uic.loadUi(os.path.join("ui_files",
                                   "ui_create_measurement_info_widget.ui"), self)
         bg = "url(images/background.svg)"
         self.ui.setStyleSheet(

@@ -1,19 +1,36 @@
 # coding=utf-8
-# TODO: Add licence information
 """
 Created on 27.3.2018
-Updated on 29.5.2018
+Updated on 5.6.2018
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
-
-import datetime
-import os
-
-from modules.element import Element
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
+import os
+
+from modules.element import Element
 import json
 import time
 
@@ -28,10 +45,10 @@ class Target:
                 "image_size", "image_file", "scattering_element", "layers", \
                 "target_theta"
 
-    def __init__(self, name="Default", modification_time=time.time(),
+    def __init__(self, name="Default", modification_time=None,
                  description="", target_type="AFM", image_size=(1024, 1024),
                  image_file="", scattering_element=Element.from_string(
-                "4He 3.0"), target_theta=70.0, layers=[]):
+                "4He 3.0"), target_theta=70.0, layers=None):
         """Initialize a target.
 
         Args:
@@ -42,11 +59,13 @@ class Target:
             image_size: Target image size.
             image_file: Target image file.
             scattering_element: Scattering element.
-            target_theta: Target angle # TODO: check how the other is
+            target_theta: Target angle
             calculated from the other,
             layers: Target layers.
         """
         self.name = name
+        if not modification_time:
+            modification_time = time.time()
         self.modification_time = modification_time
         self.description = description
         self.target_type = target_type
@@ -54,6 +73,8 @@ class Target:
         self.image_file = image_file
         self.scattering_element = scattering_element
         self.target_theta = target_theta
+        if layers is None:
+            layers = []
         self.layers = layers
 
     @classmethod
@@ -91,7 +112,8 @@ class Target:
             layers.append(Layer(layer["name"],
                                 elements,
                                 layer["thickness"],
-                                layer["density"]))
+                                layer["density"],
+                                layer["start_depth"]))
 
         try:
             obj = json.load(open(measurement_file_path))
@@ -135,7 +157,8 @@ class Target:
                 "name": layer.name,
                 "elements": [element.__str__() for element in layer.elements],
                 "thickness": layer.thickness,
-                "density": layer.density
+                "density": layer.density,
+                "start_depth": layer.start_depth
             }
             obj["layers"].append(layer_obj)
 

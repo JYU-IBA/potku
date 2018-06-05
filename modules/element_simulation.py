@@ -1,7 +1,27 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 29.5.2018
+Updated on 4.6.2018
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
@@ -29,7 +49,7 @@ class ElementSimulation:
     MCERD objects, but only one GetEspe object.
     """
 
-    __slots__ = "directory", "request", "name", "modification_time", \
+    __slots__ = "directory", "request", "name_prefix", "modification_time", \
                 "simulation_type", "number_of_ions", "number_of_preions", \
                 "number_of_scaling_ions", "number_of_recoils", \
                 "minimum_scattering_angle", "minimum_main_scattering_angle", \
@@ -37,21 +57,24 @@ class ElementSimulation:
                 "recoil_elements", "recoil_atoms", "mcerd_objects", \
                 "get_espe", "channel_width", "target", "detector", \
                 "__mcerd_command", "__process", "settings", "espe_settings", \
-                "description", "run", "spectra", "bin_width"
+                "description", "run", "spectra", "name", \
+                "use_default_settings"
 
-    def __init__(self, directory, request, recoil_elements,
+    def __init__(self, directory, request, recoil_elements, name_prefix="",
                  target=None, detector=None, run=None, name="Default",
-                 description="", modification_time=time.time(),
+                 description="", modification_time=None,
                  simulation_type="ERD", number_of_ions=1000000,
                  number_of_preions=100000, number_of_scaling_ions=5,
                  number_of_recoils=10, minimum_scattering_angle=0.05,
                  minimum_main_scattering_angle=20, simulation_mode="narrow",
-                 seed_number=101, minimum_energy=1.0, channel_width=0.1):
+                 seed_number=101, minimum_energy=1.0, channel_width=0.1,
+                 use_default_settings=True):
         """ Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
             request: Request object reference.
             recoil_elements: List of RecoilElement objects.
+            name_prefix: Prefix of the name, e.g. 55Mn
             target: Target object reference.
             detector: Detector object reference.
             run: Run object reference.
@@ -72,11 +95,15 @@ class ElementSimulation:
         """
         self.directory = directory
         self.request = request
+        self.name_prefix = name_prefix
         self.name = name
         self.description = description
+        if not modification_time:
+            modification_time = time.time()
         self.modification_time = modification_time
 
-        # TODO RecoilAtomDistributionWidget should use the selected RecoilElement.
+        # TODO RecoilAtomDistributionWidget should use the selected
+        # RecoilElement.
         # Now ElementSimulation never has multiple recoil elements, only
         # recoil_elements[0] is used. In the future, ElementSimulation should
         # hold all recoil elements (= distributions) that are related to the
@@ -101,15 +128,27 @@ class ElementSimulation:
         self.seed_number = seed_number
         self.channel_width = channel_width
 
+        self.use_default_settings = use_default_settings
+
+        if self.name_prefix != "":
+            name = self.name_prefix + "-" + self.name
+            prefix = self.name_prefix
+        else:
+            name = self.name
+            if os.sep + "Default" in self.directory:
+                prefix = self.name + "_element"
+            else:
+                prefix = self.name_prefix
         self.mcsimu_to_file(os.path.join(self.directory,
-                                         self.name + ".mcsimu"))
+                                          name + ".mcsimu"))
         self.recoil_to_file(self.directory)
         self.profile_to_file(os.path.join(self.directory,
-                                          self.name + ".profile"))
+                                          prefix +
+                                          ".profile"))
 
-        self.__mcerd_command = os.path.join("external", "Potku-bin", "mcerd" +
-                                            (".exe" if platform.system() == "Windows"
-                                       else ""))
+        self.__mcerd_command = os.path.join(
+            "external", "Potku-bin", "mcerd" +
+            (".exe" if platform.system() == "Windows" else ""))
         self.__process = None
         # This has all the mcerd objects so get_espe knows all the element
         # simulations that belong together (with different seed numbers)
@@ -118,36 +157,121 @@ class ElementSimulation:
         self.get_espe = None
         self.espe_settings = None
         self.spectra = []
-        self.bin_width = 0.1
 
     def unlock_edit(self, recoil_element):
+        """
+        Unlock full edit.
+
+        Args:
+            recoil_element: RecoilElement object.
+        """
         recoil_element.unlock_edit()
 
     def get_edit_lock_on(self, recoil_element):
-        recoil_element.get_edit_lock_on()
+        """
+        Get whether full edit lck is on or not.
+
+        Args:
+            recoil_element: A RecoilElement object.
+
+        Return:
+            True of False.
+        """
+        return recoil_element.get_edit_lock_on()
 
     def get_points(self, recoil_element):
+        """
+        Get recoile elemnt points.
+
+        Args:
+            recoil_element: A RecoilElement object.
+
+        Return:
+            Points list.
+        """
         return recoil_element.get_points()
 
     def get_xs(self, recoil_element):
+        """
+        Get x coordinates of a RecoilElement.
+
+        Args:
+            recoil_element: A RecoilElement object.
+
+        Return:
+            X coordinates in a list.
+        """
         return recoil_element.get_xs(),
 
     def get_ys(self, recoil_element):
+        """
+        Get y coordinates of a RecoilElement.
+
+        Args:
+            recoil_element: A RecoilElement object.
+
+        Return:
+            Y coodinates in a list.
+        """
         return recoil_element.get_ys(),
 
     def get_left_neighbor(self, recoil_element, point):
+        """
+        Get point's left neighbour.
+
+        Args:
+             recoil_element: A RecoilElement object.
+             point: A Point object.
+
+        Return:
+            A point.
+        """
         return recoil_element.get_left_neighbor(point)
 
     def get_right_neighbor(self, recoil_element, point):
+        """
+        Get point's right neighbour.
+
+        Args:
+             recoil_element: A RecoilElement object.
+             point: A Point object.
+
+        Return:
+            A point.
+        """
         return recoil_element.get_right_neighbor(point)
 
     def get_point_by_i(self, recoil_element, i):
+        """
+        Get a point by index.
+
+        Args:
+            recoil_element: A RecoilElement object.
+            i: Index.
+
+        Return:
+            A point.
+        """
         return recoil_element.get_point_by_i(i)
 
     def add_point(self, recoil_element, new_point):
+        """
+        Add a new point to recoil element.
+
+        Args:
+             recoil_element: A RecoilElement object.
+             new_point: Point to be added.
+        """
         recoil_element.add_point(new_point)
 
     def remove_point(self, recoil_element, point):
+        """
+        Remove a point from recoil element.
+
+        Args:
+            recoil_element: A RecoilElement object.
+            point: Point to be removed.
+        """
         recoil_element.remove_point(point)
 
     def update_recoil_element(self, recoil_element, new_values):
@@ -160,17 +284,7 @@ class ElementSimulation:
         try:
             recoil_element.name = new_values["name"]
             recoil_element.description = new_values["description"]
-            recoil_element.reference_density \
-                = new_values["reference_density"]
-            self.espe_settings["recoil_file"] = os.path \
-                .join(self.directory, recoil_element.prefix + "-" +
-                      recoil_element.name + ".recoil")
-            self.espe_settings["spectrum_file"] = os.path \
-                .join(self.directory, recoil_element.prefix + "-"
-                      + recoil_element.name + "."
-                      + str(self.seed_number) + ".simu")
-            recoil_element.write_recoil_file(
-                self.espe_settings["recoil_file"])
+            recoil_element.reference_density = new_values["reference_density"]
         except KeyError:
             raise
         self.recoil_to_file(self.directory)
@@ -239,9 +353,20 @@ class ElementSimulation:
 
         obj = json.load(open(mcsimu_file_path))
 
-        name = obj["name"]
+        use_default_settings_str = obj["use_default_settings"]
+        if use_default_settings_str == "True":
+            use_default_settings = True
+        else:
+            use_default_settings = False
+        try:
+            name_prefix, name = obj["name"].split("-")
+        except ValueError as e:
+            name = obj["name"]
+            name_prefix = ""
+
         description = obj["description"]
         modification_time = obj["modification_time_unix"]
+        simulation_type = obj["simulation_type"]
         simulation_mode = obj["simulation_mode"]
         number_of_ions = obj["number_of_ions"]
         number_of_preions = obj["number_of_preions"]
@@ -277,7 +402,9 @@ class ElementSimulation:
                 break
 
         return cls(simulation_folder, request, recoil_elements,
+                   name_prefix=name_prefix,
                    description=description,
+                   simulation_type=simulation_type,
                    modification_time=modification_time, name=name,
                    number_of_ions=number_of_ions,
                    number_of_preions=number_of_preions,
@@ -287,7 +414,9 @@ class ElementSimulation:
                    minimum_main_scattering_angle=minimum_main_scattering_angle,
                    simulation_mode=simulation_mode,
                    seed_number=seed_number,
-                   minimum_energy=minimum_energy)
+                   minimum_energy=minimum_energy,
+                   use_default_settings=use_default_settings,
+                   channel_width=channel_width)
 
     def mcsimu_to_file(self, file_path):
         """Save mcsimu settings to file.
@@ -295,23 +424,49 @@ class ElementSimulation:
         Args:
             file_path: File in which the mcsimu settings will be saved.
         """
-        obj = {
-            "name": self.name,
-            "description": self.description,
-            "modification_time": time.strftime("%c %z %Z", time.localtime(
-                time.time())),
-            "modification_time_unix": time.time(),
-            "simulation_type": self.simulation_type,
-            "simulation_mode": self.simulation_mode,
-            "number_of_ions": self.number_of_ions,
-            "number_of_preions": self.number_of_preions,
-            "seed_number": self.seed_number,
-            "number_of_recoils": self.number_of_recoils,
-            "number_of_scaling_ions": self.number_of_scaling_ions,
-            "minimum_scattering_angle": self.minimum_scattering_angle,
-            "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
-            "minimum_energy": self.minimum_energy
-        }
+        if self.name_prefix != "":
+            name = self.name_prefix + "-" + self.name
+        else:
+            name = self.name
+        if not self.use_default_settings:
+            obj = {
+                "name": name,
+                "description": self.description,
+                "modification_time": time.strftime("%c %z %Z", time.localtime(
+                    time.time())),
+                "modification_time_unix": time.time(),
+                "simulation_type": self.simulation_type,
+                "simulation_mode": self.simulation_mode,
+                "number_of_ions": self.number_of_ions,
+                "number_of_preions": self.number_of_preions,
+                "seed_number": self.seed_number,
+                "number_of_recoils": self.number_of_recoils,
+                "number_of_scaling_ions": self.number_of_scaling_ions,
+                "minimum_scattering_angle": self.minimum_scattering_angle,
+                "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
+                "minimum_energy": self.minimum_energy,
+                "use_default_settings": str(self.use_default_settings)
+            }
+        else:
+            elem_sim = self.request.default_element_simulation
+            obj = {
+                "name": name,
+                "description": elem_sim.description,
+                "modification_time": time.strftime("%c %z %Z", time.localtime(
+                    time.time())),
+                "modification_time_unix": time.time(),
+                "simulation_type": elem_sim.simulation_type,
+                "simulation_mode": elem_sim.simulation_mode,
+                "number_of_ions": elem_sim.number_of_ions,
+                "number_of_preions": elem_sim.number_of_preions,
+                "seed_number": elem_sim.seed_number,
+                "number_of_recoils": elem_sim.number_of_recoils,
+                "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
+                "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
+                "minimum_main_scattering_angle": elem_sim.minimum_main_scattering_angle,
+                "minimum_energy": elem_sim.minimum_energy,
+                "use_default_settings": str(self.use_default_settings)
+            }
 
         with open(file_path, "w") as file:
             json.dump(obj, file, indent=4)
@@ -324,8 +479,9 @@ class ElementSimulation:
             files are stored.
         """
         for recoil_element in self.recoil_elements:
-            recoil_file = os.path.join(simulation_folder, recoil_element.prefix +
-                                       "-" + recoil_element.name + ".rec")
+            recoil_file = os.path.join(simulation_folder,
+                                       recoil_element.prefix + "-" +
+                                       recoil_element.name + ".rec")
             if recoil_element.element.isotope:
                 element_str = "{0}{1}".format(recoil_element.element.isotope,
                                               recoil_element.element.symbol)
@@ -346,8 +502,8 @@ class ElementSimulation:
 
             for point in recoil_element.get_points():
                 point_obj = {
-                    "Point": str(round(point.get_x(), 2)) + " " +
-                             str(round(point.get_y(), 4))
+                    "Point": str(round(point.get_x(), 2)) + " " + str(round(
+                        point.get_y(), 4))
                 }
                 obj["profile"].append(point_obj)
 
@@ -370,6 +526,10 @@ class ElementSimulation:
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
         else:
             obj_profile = {"energy_spectra": {}}
+            obj_profile["modification_time"] = time.strftime("%c %z %Z",
+                                                             time.localtime(
+                                                                 time.time()))
+            obj_profile["modification_time_unix"] = time.time()
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
 
         with open(file_path, "w") as file:
@@ -381,20 +541,28 @@ class ElementSimulation:
             run = self.request.default_run
         else:
             run = self.run
+        if self.use_default_settings:
+            elem_sim = self.request.default_element_simulation
+        else:
+            elem_sim = self
+        if self.detector is None:
+            detector = self.request.default_detector
+        else:
+            detector = self.detector
         self.settings = {
-            "simulation_type": self.simulation_type,
-            "number_of_ions": self.number_of_ions,
-            "number_of_ions_in_presimu": self.number_of_preions,
-            "number_of_scaling_ions": self.number_of_scaling_ions,
-            "number_of_recoils": self.number_of_recoils,
-            "minimum_scattering_angle": self.minimum_scattering_angle,
-            "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
-            "minimum_energy_of_ions": self.minimum_energy,
-            "simulation_mode": self.simulation_mode,
-            "seed_number": self.seed_number,
+            "simulation_type": elem_sim.simulation_type,
+            "number_of_ions": elem_sim.number_of_ions,
+            "number_of_ions_in_presimu": elem_sim.number_of_preions,
+            "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
+            "number_of_recoils": elem_sim.number_of_recoils,
+            "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
+            "minimum_main_scattering_angle": elem_sim.minimum_main_scattering_angle,
+            "minimum_energy_of_ions": elem_sim.minimum_energy,
+            "simulation_mode": elem_sim.simulation_mode,
+            "seed_number": elem_sim.seed_number,
             "beam": run.beam,
             "target": self.target,
-            "detector": self.detector,
+            "detector": detector,
             "recoil_element": self.recoil_elements[0]
         }
         self.mcerd_objects[self.seed_number] = MCERD(self.settings)
@@ -416,37 +584,47 @@ class ElementSimulation:
         pass
 
     def calculate_espe(self):
-
         """
         Calculate the energy spectrum from the MCERD result file.
         """
+        recoil_file = os.path.join(self.directory,
+                                   self.recoil_elements[0].prefix + "-" +
+                                   self.recoil_elements[0].name +
+                                   ".recoil")
+        self.recoil_elements[0].write_recoil_file(recoil_file)
+
         if self.run is None:
             run = self.request.default_run
         else:
             run = self.run
+        if self.use_default_settings:
+            seed_number = self.request.default_element_simulation.seed_number
+        else:
+            seed_number = self.seed_number
+        if self.detector is None:
+            detector = self.request.default_detector
+        else:
+            detector = self.detector
         self.espe_settings = {
             "beam": run.beam,
-            "detector": self.detector,
+            "detector": detector,
             "target": self.target,
             "ch": self.channel_width,
             "reference_density": self.recoil_elements[0].reference_density,
             "fluence": run.fluence,
-            "timeres": self.detector.timeres,
+            "timeres": detector.timeres,
             "solid": self.calculate_solid(),
             "erd_file": os.path.join(self.directory,
                                      self.recoil_elements[0].prefix + "-" +
                                      self.recoil_elements[0].name + "." +
-                                     str(self.seed_number) + ".erd"),
+                                     str(seed_number) + ".erd"),
             "spectrum_file": os.path.join(self.directory,
                                           self.recoil_elements[0].prefix + "-" +
                                           self.recoil_elements[0].name + "." +
-                                          str(self.seed_number) + ".simu"),
-            "recoil_file": os.path.join(self.directory,
-                                        self.recoil_elements[0].prefix + "-" +
-                                        self.recoil_elements[0].name +
-                                        ".recoil")
+                                          str(seed_number) + ".simu"),
+            "recoil_file": recoil_file
         }
-        self.get_espe = GetEspe(self.espe_settings, self.mcerd_objects)
+        self.get_espe = GetEspe(self.espe_settings)
 
     def plot_spectrum(self):
         """
@@ -454,4 +632,4 @@ class ElementSimulation:
         """
         dialog = EnergySpectrumParamsDialog(self, spectrum_type="simulation")
         self.spectra = dialog.spectra
-        self.bin_width = dialog.bin_width
+        self.channel_width = dialog.bin_width

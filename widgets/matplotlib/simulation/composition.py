@@ -1,5 +1,8 @@
 # coding=utf-8
 """
+Created on 25.4.2018
+Updated on 5.6.2018
+
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
@@ -24,13 +27,9 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import enum
 import matplotlib
-import random
 
 from dialogs.simulation.layer_properties import LayerPropertiesDialog
-from modules.layer import Layer
-from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from widgets.matplotlib.base import MatplotlibWidget
 
@@ -54,17 +53,40 @@ class _CompositionWidget(MatplotlibWidget):
 
         # Remove Y-axis ticks and label
         self.axes.yaxis.set_tick_params("both", left="off", labelleft="off")
-        self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
+        self.axes.fmt_xdata = lambda x: "{0:1.4f}".format(x)
+        self.axes.fmt_ydata = lambda y: "not relevant"
         self.name_x_axis = "Depth [nm]"
 
         self.__icon_manager = icon_manager
         self.__fork_toolbar_buttons()
 
         self.layers = layers
+        self.canvas.mpl_connect('button_press_event', self.on_click)
+
         self.on_draw()
 
         if self.layers:
             self.__update_figure()
+
+    def on_click(self, event):
+        """
+        Find if click corresponds to any layer and open a dialog for
+        modifying it.
+        """
+        # Don't do anything if drag tool or zoom tool is active.
+        if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
+            return
+        # Only inside the actual graph axes, else do nothing.
+        if event.inaxes != self.axes:
+            return
+        if event.button == 1:  # Left click
+            for layer in self.layers:
+                if layer.click_is_inside(event.xdata):
+                    QtWidgets.QMessageBox.critical(self, "Info",
+                                                   "Layerin " + layer.name + " "
+                                                   "tiedot",
+                                                   QtWidgets.QMessageBox.Ok,
+                                                   QtWidgets.QMessageBox.Ok)
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -93,6 +115,9 @@ class _CompositionWidget(MatplotlibWidget):
         self.canvas.draw_idle()
 
     def __toggle_drag_zoom(self):
+        """
+        Toggles the drag zoom.
+        """
         self.__tool_label.setText("")
         if self.__button_drag.isChecked():
             self.mpl_toolbar.pan()
@@ -102,6 +127,9 @@ class _CompositionWidget(MatplotlibWidget):
         self.__button_zoom.setChecked(False)
 
     def __fork_toolbar_buttons(self):
+        """
+        Forks the toolbar into custom buttons.
+        """
         super().fork_toolbar_buttons()
         self.mpl_toolbar.mode_tool = 0
         self.__tool_label = self.mpl_toolbar.children()[24]
@@ -126,7 +154,7 @@ class _CompositionWidget(MatplotlibWidget):
         self.__icon_manager.set_icon(action_add_layer, "add.png")
         self.mpl_toolbar.addAction(action_add_layer)
 
-    def __add_layer(self, position = -1):
+    def __add_layer(self, position=-1):
         """Adds a new layer to the list of layers.
 
         Args:
@@ -139,15 +167,20 @@ class _CompositionWidget(MatplotlibWidget):
         dialog = LayerPropertiesDialog()
 
         if dialog.layer and position < 0:
+            depth = 0
+            for layer in self.layers:
+                depth += layer.thickness
+            dialog.layer.start_depth = depth
             self.layers.append(dialog.layer)
             self.__update_figure()
         elif dialog.layer:
             self.layers.insert(position, dialog.layer)
+            # TODO: update all the layers' start depth
             self.__update_figure()
 
     def __update_figure(self):
         """Updates the figure to match the information of the layers."""
-        next_layer_position = 0 # Position where the next layer will be drawn.
+        next_layer_position = 0  # Position where the next layer will be drawn.
 
         # This variable is used to alternate between the darker and lighter
         # colors of grey.
@@ -161,13 +194,15 @@ class _CompositionWidget(MatplotlibWidget):
             layer_patch = matplotlib.patches.Rectangle(
                 (next_layer_position, 0),
                 layer.thickness, 1,
-                color = (0.85, 0.85, 0.85) if is_next_color_dark else
+                color=(0.85, 0.85, 0.85) if is_next_color_dark else
                 (0.9, 0.9, 0.9)
             )
 
             # Alternate the color.
-            if is_next_color_dark: is_next_color_dark = False
-            else: is_next_color_dark = True
+            if is_next_color_dark:
+                is_next_color_dark = False
+            else:
+                is_next_color_dark = True
 
             self.axes.add_patch(layer_patch)
 

@@ -1,13 +1,15 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 31.3.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) Timo Konu
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,13 +24,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Timo Konu"
-__version__ = "1.0"
+__author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
+             "Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 import struct
 import numpy
 import os
-from PyQt5 import uic, QtCore, QtWidgets
+from PyQt5 import uic
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
 
 from modules.general_functions import open_files_dialog
 
@@ -53,7 +58,8 @@ class ImportDialogBinary(QtWidgets.QDialog):
         self.button_cancel.clicked.connect(self.close) 
         self.button_addimport.clicked.connect(self.__add_file)
         
-        remove_file = QtWidgets.QAction("Remove selected files", self.treeWidget)
+        remove_file = QtWidgets.QAction("Remove selected files",
+                                        self.treeWidget)
         remove_file.triggered.connect(self.__remove_selected)
         self.treeWidget.setContextMenuPolicy(QtCore.Qt.ActionsContextMenu)
         self.treeWidget.addAction(remove_file)
@@ -108,7 +114,8 @@ class ImportDialogBinary(QtWidgets.QDialog):
         numpy_array = numpy.array(data)
         numpy.savetxt(output_file, numpy_array, delimiter=" ", fmt="%d %d")  
         
-    # TODO: This part needs to be tested (sample was added).
+    # TODO: This part needs to be fixed, sample adding done wrong and there
+    # is no Measurement object.
     def __import_files(self):
         """Import binary files.
         """
@@ -126,7 +133,8 @@ class ImportDialogBinary(QtWidgets.QDialog):
             item = root.child(i)
             input_file = item.file
 
-            sample_path = os.path.join(self.__request.directory, "Sample_" + str(sample_count))
+            sample_path = os.path.join(self.__request.directory, "Sample_" +
+                                       str(sample_count))
             sample_count += 1
             self.request.samples.add_sample(sample_path)
             measurement_path = os.path.join(sample_path, item.name)

@@ -78,7 +78,7 @@
                 </size>
                </property>
                <property name="text">
-                <string>General Settings...</string>
+                <string>Global Settings...</string>
                </property>
                <property name="description">
                 <string/>
@@ -539,7 +539,7 @@ simulation</string>
      <x>0</x>
      <y>0</y>
      <width>1467</width>
-     <height>28</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -560,7 +560,6 @@ simulation</string>
     <addaction name="menuImport"/>
     <addaction name="separator"/>
     <addaction name="actionNew_Simulation_2"/>
-    <addaction name="actionImport_simulation"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -751,14 +750,6 @@ simulation</string>
    </property>
    <property name="text">
     <string>New simulation</string>
-   </property>
-  </action>
-  <action name="actionImport_simulation">
-   <property name="enabled">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Import simulation</string>
    </property>
   </action>
   <action name="actionCreate_energy_spectrum_sim">

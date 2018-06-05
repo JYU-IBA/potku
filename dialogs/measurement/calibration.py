@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 15.4.2013
-Updated on 18.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -29,14 +30,17 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import os
-from PyQt5 import QtCore, QtGui, uic, QtWidgets
+from PyQt5 import QtCore
+from PyQt5 import QtGui
+from PyQt5 import uic
+from PyQt5 import QtWidgets
 
 from modules.cut_file import CutFile
 from modules.calibration import TOFCalibration
 from widgets.matplotlib.calibration.curve_fitting \
-import MatplotlibCalibrationCurveFittingWidget
+    import MatplotlibCalibrationCurveFittingWidget
 from widgets.matplotlib.calibration.linear_fitting \
-import MatplotlibCalibrationLinearFittingWidget
+    import MatplotlibCalibrationLinearFittingWidget
 
 
 class CalibrationDialog(QtWidgets.QDialog):
@@ -49,17 +53,11 @@ class CalibrationDialog(QtWidgets.QDialog):
         Args:
             measurements: A string list representing measurements files.
             detector: A Detector class object.
-            parent_settings_widget: A representing from which widget this was
-                                    opened from.
+            parent_settings_widget: A widget this dialog was opened from.
         """
         super().__init__()
         self.measurements = measurements
         self.measurement = measurement
-        # TODO: Settings should be loaded from the measurement depending on
-        # is the calibration dialog opened from the request settings
-        # (measurement's request settings is loaded) or the measurement
-        # specific settings(measurement's measurement settings is loaded).
-        # This has to be done for better architecture.
         self.detector = detector
         self.__cut_file = CutFile()
         self.__cut_files = {}
@@ -197,7 +195,7 @@ class CalibrationDialog(QtWidgets.QDialog):
         """
         self.__change_accept_point_label("")
         if current_item and hasattr(current_item, "directory") and \
-        hasattr(current_item, "file_name"):
+           hasattr(current_item, "file_name"):
             self.__set_current_cut(current_item)        
             self.__update_curve_fit()
 
@@ -256,14 +254,15 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.timer.start()
 
     def timeout(self):
-        """Timeout eventmethod to remove label text.
+        """Timeout event method to remove label text.
         """
         self.ui.acceptPointLabel.setText("")
         self.timer.stop()
 
     def __enable_accept_calibration_button(self):
-        # Let press accept calibration only if there are parameters available.
-        if self.tof_calibration.slope or self.tof_calibration.offset: 
+        """Let press accept calibration only if there are parameters available.
+        """
+        if self.tof_calibration.slope or self.tof_calibration.offset:
             self.ui.acceptCalibrationButton.setEnabled(True)
         else:
             self.ui.acceptCalibrationButton.setEnabled(False)

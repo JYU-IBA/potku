@@ -1,13 +1,14 @@
 # coding=utf-8
 """
-Created on 15.3.2013
-Updated on 5.3.2018
+Created on 23.4.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
 Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
@@ -23,14 +24,18 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
-__versio__ = "2.0"
+__author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
+             "Sinikka Siironen"
+__version__ = "2.0"
 
-from os.path import join
-from PyQt5 import QtCore, QtGui, uic, QtWidgets
+import os
 
-from dialogs.element_selection import ElementSelectionDialog
+from PyQt5 import QtCore
+from PyQt5 import uic
+from PyQt5 import QtWidgets
+
 import modules.masses as masses
+from dialogs.element_selection import ElementSelectionDialog
 
 
 class RecoilElementSelectionDialog(QtWidgets.QDialog):
@@ -39,10 +44,12 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
     """
 
     def __init__(self, recoil_atom_distribution):
-        """Inits simulation elemenet selection dialog.
+        """Inits simulation element selection dialog.
         """
         super().__init__()
-        self.ui = uic.loadUi(join("ui_files", "ui_recoil_element_selection_dialog.ui"), self)
+        self.ui = uic.loadUi(os.path.join("ui_files",
+                                  "ui_recoil_element_selection_dialog.ui"),
+                             self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.recoil_atom_distribution = recoil_atom_distribution
 
@@ -56,9 +63,8 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         self.element = None
         self.isotope = None
 
-        # Set current values to UI and show
-        #self.__set_values_to_dialog()
-        # Whether we accept or cancel selection, then remove selection if cancel.
+        # Whether we accept or cancel selection, then remove selection if
+        # cancel.
         self.isOk = False
         self.exec_()
 
@@ -73,16 +79,17 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         self.__check_if_settings_ok()
 
     def __change_element(self, button, isotope_combobox, standard_mass_label,
-                         standard_mass_radio, isotope_radio,
-                         sample=True):
+                         standard_mass_radio, isotope_radio, sample=True):
         """Shows dialog to change selection element.
 
         Args:
             button: QtWidgets.QPushButton (button to select element)
             isotope_combobox: QtWidgets.QComboBox
-            isotope_radio: QtGui.QRadioButton
             standard_mass_radio: QtGui.QRadioButton
             standard_mass_label: QtWidgets.QLabel
+            isotope_radio: QtGui.QRadioButton
+            sample: Boolean representing if element is sample (and not RBS
+                    element).
         """
         dialog = ElementSelectionDialog()
         # Only disable these once, not if you cancel after selecting once.
@@ -109,7 +116,8 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
             isotope_radio: QtGui.QRadioButton
             standard_mass_radio: QtGui.QRadioButton
             standard_mass_label: QtWidgets.QLabel
-            sample: Boolean representing if element is sample (and not RBS element).
+            sample: Boolean representing if element is sample (and not RBS
+                    element).
         """
         if element:
             isotope_radio.setEnabled(True)
@@ -120,13 +128,15 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
                                  element,
                                  current_isotope)
 
-    def __load_isotopes(self, combobox, standard_mass_label,
-                        element, current_isotope=None):
+    def __load_isotopes(self, combobox, standard_mass_label, element,
+                        current_isotope=None):
         """Change isotope information regarding element
 
         Args:
-            combobox: QtWidgets.QComboBox where element's isotopes are loaded to.
-            standard_mass_label: QtWidgets.QLabel where element's standard mass is shown.
+            combobox: QtWidgets.QComboBox where element's isotopes are loaded
+                      to.
+            standard_mass_label: QtWidgets.QLabel where element's standard mass
+                                 is shown.
             element: String representing element.
             current_isotope: String representing current isotope.
         """
@@ -138,21 +148,6 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         """Toggle Sample isotope radio button.
         """
         self.ui.isotope_combobox.setEnabled(self.ui.isotope_radio.isChecked())
-    # def __set_isotope_weight_factor(self, isotope_combobox=None):
-    #     """Set a specific isotope's weight factor to label.
-    #
-    #     Args:
-    #         isotope_combobox: A QtWidgets.QComboBox element of isotopes.
-    #     """
-    #     if not isotope_combobox or not isotope_combobox.isEnabled():
-    #         self.ui.isotope_specific_weight_factor_label.setText("")
-    #     else:
-    #         isotope_index = isotope_combobox.currentIndex()
-    #         unused_isotope, propability = isotope_combobox.itemData(
-    #             isotope_index)
-    #         isotope_weightfactor = 100.0 / float(propability)
-    #         text = "%.3f for specific isotope" % isotope_weightfactor
-    #         self.ui.isotope_specific_weight_factor_label.setText(text)
 
     def __check_if_settings_ok(self):
         """Check if sample settings are ok, and enable ok button.
@@ -166,7 +161,8 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
             self.ui.OKButton.setEnabled(False)
 
     def __accept_settings(self):
-        """Accept settings given in the selection dialog and save these to parent.
+        """Accept settings given in the selection dialog and save these to
+        parent.
         """
         self.element = self.ui.element_button.text()
 
@@ -177,9 +173,6 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
             isotope_index = self.ui.isotope_combobox.currentIndex()
             isotope_data = self.ui.isotope_combobox.itemData(isotope_index)
             self.isotope = isotope_data[0]
-            # sample_isotope = self.ui.sample_isotope_combobox.currentText()
 
         self.isOk = True
         self.close()
-
-

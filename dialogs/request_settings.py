@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 22.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -25,35 +26,35 @@ along with this program (file named 'LICENCE').
 
 Dialog for the request settings
 """
-import datetime
-import time
-
-from PyQt5.QtCore import Qt
-
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
 import os
-from PyQt5 import QtCore, QtGui, uic, QtWidgets
-from PyQt5.QtWidgets import QDesktopWidget, QApplication
+import time
+
+from PyQt5 import QtCore
+from PyQt5 import QtGui
+from PyQt5 import uic
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QDesktopWidget
+from PyQt5.QtWidgets import QApplication
 
 import modules.masses as masses
 from dialogs.element_selection import ElementSelectionDialog
-from modules.calibration_parameters import CalibrationParameters
-from modules.depth_profile_settings import DepthProfileSettings
-from modules.general_functions import open_file_dialog
-from modules.general_functions import save_file_dialog
 from modules.input_validator import InputValidator
-from modules.measuring_settings import MeasuringSettings
-from widgets.profile_settings import ProfileSettingsWidget
 from widgets.detector_settings import DetectorSettingsWidget
 from widgets.measurement.settings import MeasurementSettingsWidget
+from widgets.profile_settings import ProfileSettingsWidget
 from widgets.simulation.settings import SimulationSettingsWidget
 
 
 class RequestSettingsDialog(QtWidgets.QDialog):
+    """
+    A Dialog for modifying request settings.
+    """
 
     def __init__(self, request, icon_manager):
         """Constructor for the program
@@ -89,14 +90,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 self.measurement_settings_widget.ui.beamIonButton,
                 self.measurement_settings_widget.ui.isotopeComboBox))
 
-        # self.measurement_settings_widget.ui.energyLineEdit.setValidator(
-        #     positive_double_validator)
-        double_angle_validator = InputValidator(0, 90, 10)
-        # self.measurement_settings_widget.ui.detectorThetaLineEdit.setValidator(
-        #     double_angle_validator)
-        # self.measurement_settings_widget.ui.targetThetaLineEdit.setValidator(
-        #     double_angle_validator)
-
         self.measurement_settings_widget.ui.picture.setScaledContents(True)
         pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
         self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
@@ -121,133 +114,62 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.simulation_settings_widget.ui.saveButton.clicked \
             .connect(lambda: self.__save_file("SIMULATION_SETTINGS"))
 
-        self.request.default_simulation = \
-            self.request.default_simulation.from_file(self.request,
-                                                      os.path.join(
-                                                          self.request.default_folder,
-                                                          "Default.simulation"))
-        self.request.default_element_simulation = self.request \
-            .default_element_simulation.from_file(self.request, "",
-                                                  self.request.default_folder,
-                                                  os.path.join(
-                                                      self.request.default_folder,
-                                                      "Default.mcsimu"),
-                                                  os.path.join(
-                                                      self.request.default_folder,
-                                                      "Default.profile"))
-        self.request.default_simulation.element_simulations.append(
-            self.request.default_element_simulation)
-
         # Add profile settings view to the settings view
         self.profile_settings_widget = ProfileSettingsWidget(
             self.request.default_measurement)
         self.ui.tabs.addTab(self.profile_settings_widget, "Profile")
 
-        self.show_settings()
+        self.show_simulation_settings()
 
         self.exec_()
 
-    def show_settings(self):
-        # Simulation settings
-        self.simulation_settings_widget.nameLineEdit.setText(
-            self.request.default_element_simulation.name)
-        self.simulation_settings_widget.dateLabel.setText(
-            time.strftime("%c %z %Z", time.localtime(
-                self.request.default_element_simulation.modification_time)))
-        self.simulation_settings_widget.descriptionPlainTextEdit.setPlainText(
-            self.request.default_element_simulation.description)
-        self.simulation_settings_widget.modeComboBox.setCurrentIndex(
-            self.simulation_settings_widget.modeComboBox.findText(
-                self.request.default_element_simulation.simulation_mode,
-                Qt.MatchFixedString))
-        self.simulation_settings_widget.typeOfSimulationComboBox \
-            .setCurrentIndex(self.simulation_settings_widget
-                             .typeOfSimulationComboBox.findText(self.request
-                                    .default_element_simulation.simulation_type,
-                                                           Qt.MatchFixedString))
-        self.simulation_settings_widget.minimumScatterAngleDoubleSpinBox \
-            .setValue(self.request.default_element_simulation
-                      .minimum_scattering_angle)
-        self.simulation_settings_widget.minimumMainScatterAngleDoubleSpinBox \
-            .setValue(self.request.default_element_simulation
-                      .minimum_main_scattering_angle)
-        self.simulation_settings_widget.minimumEnergyDoubleSpinBox.setValue(
-            self.request.default_element_simulation.minimum_energy)
-        self.simulation_settings_widget.numberOfIonsSpinBox.setValue(
-            self.request.default_element_simulation.number_of_ions)
-        self.simulation_settings_widget.numberOfPreIonsSpinBox.setValue(
-            self.request.default_element_simulation.number_of_preions)
-        self.simulation_settings_widget.seedSpinBox.setValue(
-            self.request.default_element_simulation.seed_number)
-        self.simulation_settings_widget.numberOfRecoilsSpinBox.setValue(
-            self.request.default_element_simulation.number_of_recoils)
-        self.simulation_settings_widget.numberOfScalingIonsSpinBox.setValue(
-            self.request.default_element_simulation.number_of_scaling_ions)
+    def show_simulation_settings(self):
+        """ Show simulation settings in simulation tab widget.
+        """
+        widget = self.simulation_settings_widget
+        elem_simu = self.request.default_element_simulation
+        widget.nameLineEdit.setText(elem_simu.name)
+        widget.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+            elem_simu.modification_time)))
+        widget.descriptionPlainTextEdit.setPlainText(elem_simu.description)
+        widget.modeComboBox.setCurrentIndex(widget.modeComboBox.findText(
+            elem_simu.simulation_mode, Qt.MatchFixedString))
+        if elem_simu.simulation_type == "ERD":
+            widget.typeOfSimulationComboBox.setCurrentIndex(
+                widget.typeOfSimulationComboBox.findText(
+                    "REC", Qt.MatchFixedString))
+        else:
+            widget.typeOfSimulationComboBox.setCurrentIndex(
+                widget.typeOfSimulationComboBox.findText("SCT",
+                                                         Qt.MatchFixedString))
+        widget.minimumScatterAngleDoubleSpinBox.setValue(
+            elem_simu.minimum_scattering_angle)
+        widget.minimumMainScatterAngleDoubleSpinBox.setValue(
+            elem_simu.minimum_main_scattering_angle)
+        widget.minimumEnergyDoubleSpinBox.setValue(elem_simu.minimum_energy)
+        widget.numberOfIonsSpinBox.setValue(elem_simu.number_of_ions)
+        widget.numberOfPreIonsSpinBox.setValue(elem_simu.number_of_preions)
+        widget.seedSpinBox.setValue(elem_simu.seed_number)
+        widget.numberOfRecoilsSpinBox.setValue(elem_simu.number_of_recoils)
+        widget.numberOfScalingIonsSpinBox.setValue(
+            elem_simu.number_of_scaling_ions)
 
     def __load_file(self, settings_type):
-        """ Opens file dialog and loads and shows selected ini file's values.
-
-        Args:
-            settings_type: (string) selects which settings file type will be
-                           loaded.
-                           Can be "MEASURING_UNIT_SETTINGS",
-                           "DEPTH_PROFILE_SETTINGS" or "CALIBRATION_SETTINGS"
         """
-        filename = open_file_dialog(self, self.request.directory,
-                                    "Open settings file",
-                                    "Settings file (*.ini)")
-
-        if settings_type == "MEASURING_UNIT_SETTINGS":
-            settings = MeasuringSettings()
-            settings.load_settings(filename)
-            masses.load_isotopes(settings.element.symbol,
-                                 self.isotopeComboBox,
-                                 str(settings.element.isotope))
-            settings.show(self)
-        elif settings_type == "DEPTH_PROFILE_SETTINGS":
-            pass
-        elif settings_type == "CALIBRATION_SETTINGS":
-            settings = CalibrationParameters()
-            settings.show(self.detector_settings_widget)
-        else:
-            return
+        Load settings from file.
+        """
+        # TODO: implement
+        QtWidgets.QMessageBox.critical(self, "Error", "Not implemented",
+                                       QtWidgets.QMessageBox.Ok,
+                                       QtWidgets.QMessageBox.Ok)
 
     def __save_file(self, settings_type):
-        """Opens file dialog and sets and saves the settings to a ini file.
+        """Opens file dialog and sets and saves the settings to a file.
         """
-        if settings_type == "MEASURING_UNIT_SETTINGS":
-            settings = MeasuringSettings()
-        elif settings_type == "DEPTH_PROFILE_SETTINGS":
-            pass
-        elif settings_type == "CALIBRATION_SETTINGS":
-            settings = CalibrationParameters()
-        elif settings_type == "DETECTOR_SETTINGS":
-            pass
-        elif settings_type == "MEASUREMENT_SETTINGS":
-            pass
-        elif settings_type == "SIMULATION_SETTINGS":
-            pass
-        else:
-            return
-
-        filename = save_file_dialog(self, self.request.directory,
-                                    "Open measuring unit settings file",
-                                    "Settings file (*.ini)")
-
-        self.update_settings()
-        if filename:
-            if settings_type == "CALIBRATION_SETTINGS":
-                settings.set_settings(self.detector_settings_widget)
-                settings.save_settings(filename)
-            elif settings_type == "MEASUREMENT_SETTINGS":
-                self.request.default_measurement.save_settings(filename)
-            elif settings_type == "SIMULATION_SETTINGS":
-                self.request.default_simulation.save_settings(filename)
-            elif settings_type == "DETECTOR_SETTINGS":
-                self.request.default_detector.save_settings(filename)
-            else:
-                settings.set_settings(self.measurement_settings_widget)
-                settings.save_settings(filename)
+        # TODO: implement
+        QtWidgets.QMessageBox.critical(self, "Error", "Not implemented",
+                                       QtWidgets.QMessageBox.Ok,
+                                       QtWidgets.QMessageBox.Ok)
 
     def update_and_close_settings(self):
         """Updates measuring settings values with the dialog's values and
@@ -296,52 +218,40 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 default_measurement_settings_file)
 
             # Simulation settings
-            self.request.default_element_simulation.name = \
-                self.simulation_settings_widget.nameLineEdit.text()
-            self.request.default_element_simulation.description = \
-                self.simulation_settings_widget.descriptionPlainTextEdit. \
-                    toPlainText()
-            self.request.default_element_simulation \
-                .simulation_type = self.simulation_settings_widget \
-                .typeOfSimulationComboBox.currentText().lower()
-            self.request.default_element_simulation \
-                .simulation_mode = self.simulation_settings_widget \
+            elem_simu = self.request.default_element_simulation
+            elem_simu.name = self.simulation_settings_widget.nameLineEdit.text()
+            elem_simu.description = self.simulation_settings_widget\
+                .descriptionPlainTextEdit. toPlainText()
+            if self.simulation_settings_widget \
+               .typeOfSimulationComboBox.currentText() == "REC":
+                elem_simu.simulation_type = "ERD"
+            else:
+                elem_simu.simulation_type = "RBS"
+            elem_simu.simulation_mode = self.simulation_settings_widget \
                 .modeComboBox.currentText().lower()
-            self.request.default_element_simulation \
-                .number_of_ions = self.simulation_settings_widget \
+            elem_simu.number_of_ions = self.simulation_settings_widget \
                 .numberOfIonsSpinBox.value()
-            self.request.default_element_simulation \
-                .number_of_preions = self.simulation_settings_widget \
+            elem_simu.number_of_preions = self.simulation_settings_widget \
                 .numberOfPreIonsSpinBox.value()
-            self.request.default_element_simulation.seed_number \
-                = self.simulation_settings_widget.seedSpinBox.value()
-            self.request.default_element_simulation \
-                .number_of_recoils = self.simulation_settings_widget \
+            elem_simu.seed_number = self.simulation_settings_widget\
+                .seedSpinBox.value()
+            elem_simu.number_of_recoils = self.simulation_settings_widget \
                 .numberOfRecoilsSpinBox.value()
-            self.request.default_element_simulation \
-                .number_of_scaling_ions = self.simulation_settings_widget \
+            elem_simu.number_of_scaling_ions = self.simulation_settings_widget \
                 .numberOfScalingIonsSpinBox.value()
-            self.request.default_element_simulation \
-                .minimum_scattering_angle = self.simulation_settings_widget \
-                .minimumScatterAngleDoubleSpinBox.value()
-            self.request.default_element_simulation \
-                .minimum_main_scattering_angle = self \
+            elem_simu.minimum_scattering_angle = \
+                self.simulation_settings_widget\
+                    .minimumScatterAngleDoubleSpinBox.value()
+            elem_simu.minimum_main_scattering_angle = self \
                 .simulation_settings_widget \
                 .minimumMainScatterAngleDoubleSpinBox.value()
-            self.request.default_element_simulation \
-                .minimum_energy = self.simulation_settings_widget \
+            elem_simu .minimum_energy = self.simulation_settings_widget \
                 .minimumEnergyDoubleSpinBox.value()
 
             self.request.default_simulation.to_file(os.path.join(
                 self.request.default_folder, "Default.simulation"))
-            self.request.default_element_simulation.mcsimu_to_file(
-                os.path.join(self.request.default_folder, "Default.mcsimu"))
-            # TODO: The .mcsimu file should be saved here
-
-            # TODO Values should be checked.
-            # if not self.settings.has_been_set():
-            #     raise TypeError
-
+            elem_simu.mcsimu_to_file(os.path.join(self.request.default_folder,
+                                                  "Default.mcsimu"))
         except TypeError:
             QtWidgets.QMessageBox.question(self, "Warning",
                                            "Some of the setting values have "

@@ -1,15 +1,35 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 25.5.2018
+Updated on 1.6.2018
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
-import time
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
 import os
+import time
 from PyQt5 import uic, QtWidgets
 from modules.element import Element
 import modules.masses as masses
@@ -18,7 +38,14 @@ import modules.masses as masses
 class MeasurementSettingsWidget(QtWidgets.QWidget):
     """Class for creating a measurement settings tab.
     """
+
     def __init__(self, obj):
+        """
+        Initializes the widget.
+
+        Args:
+            obj: Object that uses these settings.
+        """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_measurement_settings_tab.ui"),
@@ -26,8 +53,11 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.obj = obj
 
         self.show_settings()
-        
+
     def show_settings(self):
+        """
+        Show measurement settings.
+        """
         run_object = self.obj.run
         if not run_object:
             run_object = self.obj.request.default_run
@@ -44,11 +74,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             self.beamIonButton.setText("Select")
             self.isotopeComboBox.setEnabled(
                 False)
-
-        # link_angle_values(self.detectorThetaDoubleSpinBox,
-        #                        self.detectorFiiDoubleSpinBox)
-        # link_angle_values(self.targetThetaDoubleSpinBox,
-        #                        self.targetFiiDoubleSpinBox)
 
         self.nameLineEdit.setText(
             self.obj.measurement_setting_file_name)
@@ -97,43 +122,31 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         #     target_object.target_theta + 180)
 
     def update_settings(self):
-        # Measurement settings
+        """
+        Update measurement settings.
+        """
         isotope_index = self.isotopeComboBox. \
             currentIndex()
         # TODO: Show a message box, don't just quietly do nothing
         if isotope_index != -1:
             isotope_data = self.isotopeComboBox.itemData(isotope_index)
             self.obj.run.beam.ion = Element(self.beamIonButton.text(),
-                isotope_data[0])
+                                            isotope_data[0])
             self.obj.measurement_setting_file_name = self.nameLineEdit.text()
-            self.obj.measurement_setting_file_description = self\
+            self.obj.measurement_setting_file_description = self \
                 .descriptionPlainTextEdit.toPlainText()
             self.obj.run.beam.energy = self.energyDoubleSpinBox.value()
             self.obj.run.beam.energy_distribution = \
                 self.energyDistDoubleSpinBox.value()
             self.obj.run.beam.charge = self.beamChargeSpinBox.value()
-            self.obj.run.beam.spot_size = [
-                self.spotSizeXdoubleSpinBox.value(),
-                self.spotSizeYdoubleSpinBox.value()]
+            self.obj.run.beam.spot_size = (self.spotSizeXdoubleSpinBox.value(),
+                                           self.spotSizeYdoubleSpinBox.value())
             self.obj.run.beam.divergence = self.divergenceDoubleSpinBox.value()
             self.obj.run.beam.profile = self.profileComboBox.currentText()
             self.obj.run.fluence = self.fluenceDoubleSpinBox.value()
             self.obj.run.current = self.currentDoubleSpinBox.value()
             self.obj.run.time = self.timeDoubleSpinBox.value()
-            self.obj.detector.detector_theta = self\
+            self.obj.detector.detector_theta = self \
                 .detectorThetaDoubleSpinBox.value()
-            self.obj.target.target_theta = self\
+            self.obj.target.target_theta = self \
                 .targetThetaDoubleSpinBox.value()
-
-def link_angle_values(theta, fii):
-    """A function to link angle spinbox values to each other.
-    """
-    # TODO: Fix the angle links to correct values
-    theta.valueChanged.connect(
-        lambda: fii.setValue(
-            theta.value() + 180
-        ))
-    fii.valueChanged.connect(
-        lambda: theta.setValue(
-            fii.value() - 180
-        ))

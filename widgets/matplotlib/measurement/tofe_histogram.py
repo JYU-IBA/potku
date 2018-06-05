@@ -7,8 +7,9 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,9 +25,9 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
-             "Samuli Rahkonen \n Miika Raunio"
-__versio__ = "1.0"
-
+             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 from matplotlib import cm
 from matplotlib.colors import LogNorm
 from PyQt5 import QtCore, QtWidgets
@@ -150,8 +151,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         # Check values for graph
         axes_range = None
         bin_counts = (
-        (self.__x_data_max - self.__x_data_min) / self.compression_x,
-        (self.__y_data_max - self.__y_data_min) / self.compression_y)
+            (self.__x_data_max - self.__x_data_min) / self.compression_x,
+            (self.__y_data_max - self.__y_data_min) / self.compression_y)
         if self.axes_range_mode == 1:
             axes_range = list(self.axes_range)
             axes_range[0] = self.__fix_axes_range(axes_range[0],
@@ -194,13 +195,13 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
         self.__on_draw_legend()
 
-        if (0.09 < x_max < 1.01):  # This works..
+        if 0.09 < x_max < 1.01:  # This works..
             x_min, x_max = self.axes.get_xlim()
-        if (0.09 < y_max < 1.01):  # or self.axes_range_mode
+        if 0.09 < y_max < 1.01:  # or self.axes_range_mode
             y_min, y_max = self.axes.get_ylim()
 
         # Change zoom limits if compression factor was changed (or new graph).
-        if (not self.__range_mode_automated and self.axes_range_mode == 0) \
+        if not self.__range_mode_automated and self.axes_range_mode == 0 \
                 or self.axes_range_mode == 1:
             # self.__range_mode_automated and self.axes_range_mode == 1
             tx_min, tx_max = self.axes.get_xlim()
@@ -475,7 +476,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                     self.__on_draw_legend()
             # If selection is enabled:
             if self.elementSelectionButton.isChecked():
-                if self.measurement.add_point(cursor_location, self.canvas) == 1:
+                if self.measurement.add_point(cursor_location, self.canvas) \
+                        == 1:
                     self.__on_draw_legend()
                     self.__emit_selections_changed()
                 self.canvas.draw_idle()  # Draw selection points

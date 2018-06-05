@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 17.4.2013
-Updated on 28.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -31,7 +32,8 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import os, re
+import os
+import re
 from PyQt5 import QtWidgets
 
 from dialogs.measurement.depth_profile_ignore_elements \
@@ -130,6 +132,15 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             self.on_draw()
 
     def __sortt(self, key):
+        """
+        Get isotope for key.
+
+        Args:
+            key: String that represents an Element.
+
+        Return:
+            Isotope or -1 if not key is "total".
+        """
         if key == "total":
             return -1
         if type(key) is Element:
@@ -373,9 +384,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.modeButton = QtWidgets.QToolButton(self)
         self.modeButton.clicked.connect(self.__toggle_lim_mode)
         self.modeButton.setEnabled(False)
-        self.modeButton.setToolTip("Toggles between selecting the entire " + \
-                                   "histogram, area included in the limits and " + \
-                                   "areas included of the limits")
+        self.modeButton.setToolTip(
+            "Toggles between selecting the entire " +
+            "histogram, area included in the limits and " +
+            "areas included of the limits")
         self.icon_manager.set_icon(self.modeButton, "depth_profile_lim_all.svg")
         self.mpl_toolbar.addWidget(self.modeButton)
 
@@ -401,29 +413,38 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__button_toggle_absolute.clicked.connect(
             self.__toggle_absolute_values)
         self.__button_toggle_absolute.setCheckable(True)
-        self.__button_toggle_absolute.setToolTip("Toggle absolute values for " + \
-                                                 "elements.")
+        self.__button_toggle_absolute.setToolTip(
+            "Toggle absolute values for elements.")
         self.icon_manager.set_icon(self.__button_toggle_absolute, "color.svg")
         self.mpl_toolbar.addWidget(self.__button_toggle_absolute)
 
         self.__button_ignores = QtWidgets.QToolButton(self)
         self.__button_ignores.clicked.connect(self.__ignore_elements_dialog)
         self.__button_ignores.setToolTip(
-            "Select elements which are included in" + \
+            "Select elements which are included in" +
             " ratio calculation.")
         self.icon_manager.set_icon(self.__button_ignores, "gear.svg")
         self.mpl_toolbar.addWidget(self.__button_ignores)
 
     def __uncheck_custom_buttons(self):
+        """
+        Uncheck custom buttons.
+        """
         if self.__show_limits:
             self.limButton.setChecked(False)
             self.__toggle_lim_lines()
 
     def __uncheck_built_in_buttons(self):
+        """
+        Uncheck built.in buttons.
+        """
         self.__button_drag.setChecked(False)
         self.__button_zoom.setChecked(False)
 
     def __toggle_lim_mode(self):
+        """
+        Toggle lim mode.
+        """
         self.__switch_lim_mode()
         self.axes.clear()
         self.on_draw()
@@ -473,6 +494,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.on_draw()
 
     def __toggle_drag_zoom(self):
+        """
+        Toggle drag zoom.
+        """
         # self.__tool_label.setText("")
         if self.__button_drag.isChecked():
             self.mpl_toolbar.pan()

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 23.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -25,41 +25,42 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 
-import logging
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QMenu
-from PyQt5.QtWidgets import QTreeWidgetItem
-from PyQt5.QtWidgets import QAbstractItemView
-from dialogs.measurement.load_measurement import LoadMeasurementDialog
-from modules.measurement import Measurement
-
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli " \
              "Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n Samuel " \
              "Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
 import gc
+import os
 import platform
+import shutil
 import subprocess
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
+from datetime import timedelta
 
-import os
-import shutil
-from PyQt5 import QtWidgets
 from PyQt5 import QtCore
+from PyQt5 import QtWidgets
 from PyQt5 import uic
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QAbstractItemView
+from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QTreeWidgetItem
 
 from dialogs.about import AboutDialog
 from dialogs.global_settings import GlobalSettingsDialog
 from dialogs.measurement.import_binary import ImportDialogBinary
 from dialogs.measurement.import_measurement import ImportMeasurementsDialog
+from dialogs.measurement.load_measurement import LoadMeasurementDialog
 from dialogs.new_request import RequestNewDialog
 from dialogs.request_settings import RequestSettingsDialog
 from dialogs.simulation.new_simulation import SimulationNewDialog
-from modules.general_functions import open_file_dialog, remove_file, rename_file
+from modules.general_functions import open_file_dialog
+from modules.general_functions import remove_file
+from modules.general_functions import rename_file
 from modules.global_settings import GlobalSettings
 from modules.icon_manager import IconManager
+from modules.measurement import Measurement
 from modules.request import Request
 from widgets.measurement.tab import MeasurementTabWidget
 from widgets.simulation.tab import SimulationTabWidget
@@ -136,8 +137,6 @@ class Potku(QtWidgets.QMainWindow):
             self.create_new_simulation)
         self.ui.actionNew_Simulation_2.triggered.connect(
             self.create_new_simulation)
-        self.ui.actionImport_simulation.triggered.connect(
-            self.import_simulation)
         self.ui.actionCreate_energy_spectrum_sim.triggered.connect(
             self.current_simulation_create_energy_spectrum)
         self.ui.addNewSimulationButton.clicked.connect(
@@ -220,7 +219,7 @@ class Potku(QtWidgets.QMainWindow):
             try:
                 new_name = clicked_item.text(0)
                 new_path = clicked_item.obj.name_prefix + "%02d" % \
-                           clicked_item.obj.serial_number + "-" + new_name
+                    clicked_item.obj.serial_number + "-" + new_name
                 new_dir = rename_file(clicked_item.obj.directory, new_path)
             except OSError:
                 QtWidgets.QMessageBox.critical(self, "Error",
@@ -247,6 +246,8 @@ class Potku(QtWidgets.QMainWindow):
         if clicked_item:
             # Remove object from Sample
             clicked_item.parent().obj.remove_obj(clicked_item.obj)
+            clicked_item.obj.defaultlog.close()
+            clicked_item.obj.errorlog.close()
 
             # Remove object directory
             remove_file(clicked_item.obj.directory)
@@ -257,7 +258,11 @@ class Potku(QtWidgets.QMainWindow):
             self.tree_widget.blockSignals(False)
 
             # Remove object tab
-            self.remove_tab(clicked_item.tab_id)
+            for i in range(self.ui.tabs.count()):
+                if self.ui.tabs.widget(i).obj is clicked_item.obj:
+                    self.ui.tabs.removeTab(i)
+                    break
+            self.tab_widgets.pop(clicked_item.obj.tab_id)
 
     def create_report(self):
         """
@@ -414,9 +419,6 @@ class Potku(QtWidgets.QMainWindow):
             clicked_item: TreeWidgetItem with tab_id attribute (int) that
             connects the item to the corresponding MeasurementTabWidget
         """
-        # TODO: This doesn't work. There is no list/dictionary of references
-        # to the tab widgets once they are removed from the QTabWidget.
-        # tab = self.request_measurements[clicked_item.tab_id]
 
         # Blocking signals from tree view to prevent edit event
         self.tree_widget.blockSignals(True)
@@ -531,30 +533,22 @@ class Potku(QtWidgets.QMainWindow):
         if import_dialog.imported:
             self.__remove_info_tab()
 
-    def import_simulation(self):
-        """
-        Opens a file dialog for selecting simulation to import.
-        Opens selected simulation in Potku.
-        """
-        QtWidgets.QMessageBox.critical(
-            self, "Error", "Importing simulation is not yet implemented.",
-            QtWidgets.QMessageBox.Ok,
-            QtWidgets.QMessageBox.Ok)
-
-    def load_request_measurements(self, measurements=[]):
+    def load_request_measurements(self, measurements=None):
         """Load measurement files in the request.
 
         Args:
             measurements: A list representing loadable measurements when
             importing measurements to the request.
         """
-        # TODO: fix this for import_binary.py and import_measurement.py
+        if measurements is None:
+            measurements = []
+        # TODO: fix this for import_binary.py
         if measurements:
             samples_with_measurements = measurements
             load_data = True
         else:
-            # a dict with the sample as a key, and measurements in the value
-            # as a list
+            # a dict with the sample as a key, and measurements' info file paths
+            # in the value as a list
             samples_with_measurements = \
                 self.request.samples.get_samples_and_measurements()
             load_data = False
@@ -566,9 +560,9 @@ class Potku(QtWidgets.QMainWindow):
         dirtyinteger = 0
         for sample, measurements in samples_with_measurements.items():
             for measurement_file in measurements:
-                self.__add_new_tab("measurement", measurement_file, sample,
-                                   progress_bar, dirtyinteger, count,
-                                   load_data=load_data)
+                self.add_new_tab("measurement", measurement_file, sample,
+                                 progress_bar, dirtyinteger, count,
+                                 load_data=load_data)
                 dirtyinteger += 1
 
         self.statusbar.removeWidget(progress_bar)
@@ -581,15 +575,18 @@ class Potku(QtWidgets.QMainWindow):
         if sample_paths_in_request:
             for sample_path in sample_paths_in_request:
                 sample = self.request.samples.add_sample(sample_path)
-                self.__add_root_item_to_tree(sample)
+                self.add_root_item_to_tree(sample)
+            self.request.increase_running_int_by_1()
 
-    def load_request_simulations(self, simulations=[]):
+    def load_request_simulations(self, simulations=None):
         """Load simulation files in the request.
 
         Args:
             simulations: A list representing loadable simulation when importing
                           simulation to the request.
         """
+        if simulations is None:
+            simulations = []
         if simulations:
             samples_with_simulations = simulations
             load_data = True
@@ -605,9 +602,9 @@ class Potku(QtWidgets.QMainWindow):
         dirtyinteger = 0
         for sample, simulations in samples_with_simulations.items():
             for simulation_file in simulations:
-                self.__add_new_tab("simulation", simulation_file, sample,
-                                   progress_bar, dirtyinteger, count,
-                                   load_data=load_data)
+                self.add_new_tab("simulation", simulation_file, sample,
+                                 progress_bar, dirtyinteger, count,
+                                 load_data=load_data)
                 dirtyinteger += 1
 
         self.statusbar.removeWidget(progress_bar)
@@ -680,9 +677,9 @@ class Potku(QtWidgets.QMainWindow):
             sample_item = (self.tree_widget.findItems(sample_name,
                                                       Qt.MatchEndsWith, 0))[0]
 
-            self.__add_new_tab("measurement", dialog.filename, sample_item.obj,
-                               progress_bar, load_data=True,
-                               object_name=dialog.name)
+            self.add_new_tab("measurement", dialog.filename, sample_item.obj,
+                             progress_bar, load_data=True,
+                             object_name=dialog.name)
             self.__remove_info_tab()
             self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
@@ -714,7 +711,7 @@ class Potku(QtWidgets.QMainWindow):
             serial_number = sample_item.obj.get_running_int_simulation()
             sample_item.obj.increase_running_int_simulation_by_1()
 
-            self.__add_new_tab("simulation", os.path.join(
+            self.add_new_tab("simulation", os.path.join(
                 self.request.directory, sample_item.obj.directory,
                 "MC_simulation_" + "%02d" % serial_number + "-" + dialog.name,
                 dialog.name + ".simulation"), sample_item.obj, progress_bar,
@@ -730,7 +727,7 @@ class Potku(QtWidgets.QMainWindow):
             sample_name: Sample name.
         """
         sample = self.request.samples.add_sample(name=sample_name)
-        self.__add_root_item_to_tree(sample)
+        self.add_root_item_to_tree(sample)
 
     def open_request(self):
         """Shows a dialog to open a request.
@@ -819,7 +816,7 @@ class Potku(QtWidgets.QMainWindow):
         """
         self.ui.tabs.removeTab(tab_index)
 
-    def __add_root_item_to_tree(self, obj):
+    def add_root_item_to_tree(self, obj):
         """Adds a root item to tree.
 
         Args:
@@ -858,9 +855,9 @@ class Potku(QtWidgets.QMainWindow):
         parent_item.addChild(tree_item)
         parent_item.setExpanded(True)
 
-    def __add_new_tab(self, tab_type, filepath, sample, progress_bar=None,
-                      file_current=0, file_count=1, load_data=False,
-                      object_name=""):
+    def add_new_tab(self, tab_type, filepath, sample, progress_bar=None,
+                    file_current=0, file_count=1, load_data=False,
+                    object_name="", import_evnt=False):
         """Add new tab into TabWidget.
 
         Adds a new tab into program's tabWidget. Makes a new measurement or
@@ -880,6 +877,7 @@ class Potku(QtWidgets.QMainWindow):
             every measurement.
             object_name: When creating a new Measurement, this is the name
             for it.
+            import_evnt: Whether evnt data is being imported or not.
         """
         if progress_bar:
             progress_bar.setValue((100 / file_count) * file_current)
@@ -888,7 +886,8 @@ class Potku(QtWidgets.QMainWindow):
         if tab_type == "measurement":
             measurement = \
                 self.request.samples.measurements.add_measurement_file(
-                    sample, filepath, self.tab_id, object_name)
+                    sample, filepath, self.tab_id, object_name,
+                    import_evnt=import_evnt)
             if measurement:  # TODO: Finish this (load_data)
                 tab = MeasurementTabWidget(self.tab_id, measurement,
                                            self.icon_manager)
@@ -917,6 +916,7 @@ class Potku(QtWidgets.QMainWindow):
                     Qt.MatchEndsWith, 0))[0]
                 self.__add_item_to_tree(sample_item, measurement, load_data)
                 self.tab_id += 1
+                return measurement
 
         if tab_type == "simulation":
             simulation = self.request.samples.simulations.add_simulation_file(
@@ -1247,7 +1247,6 @@ class Potku(QtWidgets.QMainWindow):
         # enable simulation buttons
         self.ui.actionNew_Simulation.setEnabled(state)
         self.ui.actionNew_Simulation_2.setEnabled(state)
-        self.ui.actionImport_simulation.setEnabled(state)
 
         # enable simulation energy spectra button
         self.ui.actionCreate_energy_spectrum_sim.setEnabled(state)

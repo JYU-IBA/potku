@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 29.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -74,6 +75,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         self.energy_spectrum_widget = None
         self.depth_profile_widget = None
         # self.check_previous_state_files()  # For above three.
+        self.log = None
 
         self.ui.saveCutsButton.clicked.connect(self.measurement_save_cuts)
         self.ui.analyzeElementLossesButton.clicked.connect(
@@ -100,6 +102,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         Args:
             widget: QWidget to be added into measurement tab widget.
             minimized: Boolean representing if widget should be minimized.
+            has_close_button: Whether widget has close button or not.
             icon: QtGui.QIcon for the subwindow.
         """
         # QtGui.QMdiArea.addSubWindow(QWidget, flags=0)
@@ -108,8 +111,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         else:
             subwindow = self.ui.mdiArea.addSubWindow(
                 widget, QtCore.Qt.CustomizeWindowHint |
-                        QtCore.Qt.WindowTitleHint |
-                        QtCore.Qt.WindowMinMaxButtonsHint)
+                QtCore.Qt.WindowTitleHint |
+                QtCore.Qt.WindowMinMaxButtonsHint)
         if icon:
             subwindow.setWindowIcon(icon)
         subwindow.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -184,6 +187,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         Args:
             progress_bar: A QtWidgets.QProgressBar where loading of previous
                           graph can be shown.
+            directory: directory path.
         """
         if not directory:
             directory = self.obj.directory
@@ -337,8 +341,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             self.energy_spectrum_widget = EnergySpectrumWidget(
                 self,
                 use_cuts,
-                width,
-                spectrum_type="measurement")
+                width)
             icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
             self.add_widget(self.energy_spectrum_widget, icon=icon)
         except:  # We do not need duplicate error logs, log in widget instead
@@ -389,7 +392,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         previous = self.elemental_losses_widget
         ElementLossesDialog(parent)
         if self.elemental_losses_widget != previous and \
-                type(self.elemental_losses_widget) != None:
+                type(self.elemental_losses_widget) is not None:
             self.elemental_losses_widget.save_to_file()
 
     def toggle_master_button(self):

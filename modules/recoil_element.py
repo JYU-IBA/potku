@@ -1,7 +1,27 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 21.5.2018
+Updated on 1.6.2018
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
@@ -36,16 +56,31 @@ class RecoilElement:
         self._edit_lock_on = True
 
     def delete_widgets(self):
+        """
+        Delete all widgets.
+        """
         for widget in self.widgets:
             widget.deleteLater()
 
     def lock_edit(self):
+        """
+        Lock full edit.
+        """
         self._edit_lock_on = True
 
     def unlock_edit(self):
+        """
+        Unlock full edit.
+        """
         self._edit_lock_on = False
 
     def get_edit_lock_on(self):
+        """
+        Get if full edit is locked or not.
+
+        Return:
+            True or False.
+        """
         return self._edit_lock_on
 
     def _sort_points(self):
@@ -67,6 +102,12 @@ class RecoilElement:
         return self._points[i]
 
     def get_points(self):
+        """
+        Get points.
+
+        Return:
+             Points list.
+        """
         return self._points
 
     def add_point(self, point):

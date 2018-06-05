@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 28.5.2018
+Updated on 4.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -42,7 +43,6 @@ from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 from modules.sample import Samples
 from modules.measurement import Measurement
 from modules.simulation import Simulation
-from modules.settings import Settings
 from modules.detector import Detector
 from modules.target import Target
 
@@ -67,7 +67,6 @@ class Request:
         self.directory = directory
         self.request_name = name
         unused_directory, tmp_dirname = os.path.split(self.directory)
-        self.settings = Settings(self.directory)
         self.global_settings = global_settings
         self.statusbar = statusbar
         self.samples = Samples(self)
@@ -96,6 +95,14 @@ class Request:
         # Try reading default objects from Default folder.
         self.default_measurement_file_path = os.path.join(self.default_folder,
                                                           "Default.measurement")
+
+        self.default_detector_folder = None
+        self.default_detector = None
+        self.default_measurement = None
+        self.default_target = None
+        self.default_simulation = None
+        self.default_element_simulation = None
+
         self.create_default_detector()
         self.create_default_measurement()
         self.create_default_target()
@@ -137,7 +144,9 @@ class Request:
             self.load()
 
     def create_default_detector(self):
-        # Detector
+        """
+        Create default detector.
+        """
         self.default_detector_folder = os.path.join(self.default_folder,
                                                     "Detector")
 
@@ -170,7 +179,9 @@ class Request:
                                       self.default_measurement_file_path)
 
     def create_default_measurement(self):
-        # Measurement
+        """
+        Create default measurement.
+        """
         measurement_info_path = os.path.join(self.default_folder,
                                              "Default.info")
         if os.path.exists(measurement_info_path):
@@ -192,7 +203,9 @@ class Request:
                 description="This is a default measurement.",
                 profile_description="These are default profile parameters.",
                 measurement_setting_file_description="These are default "
-                                                     "measurement parameters.")
+                                                     "measurement "
+                                                     "parameters.",
+                use_default_profile_settings=False)
             self.default_measurement.info_to_file(
                 os.path.join(self.default_folder,
                              self.default_measurement.name + ".info"))
@@ -209,12 +222,14 @@ class Request:
                 ".measurement"))
 
     def create_default_target(self):
-        # Target
+        """
+        Create default target.
+        """
         target_path = os.path.join(self.default_folder, "Default.target")
         if os.path.exists(target_path):
             # Read target from file
-            self.default_target = Target \
-                .from_file(target_path, self.default_measurement_file_path, self)
+            self.default_target = Target.from_file(
+                target_path, self.default_measurement_file_path, self)
         else:
             # Create default target for request
             self.default_target = Target(description="These are default "
@@ -229,7 +244,9 @@ class Request:
                                     self.default_measurement_file_path)
 
     def create_default_run(self):
-        # Read default run from file.
+        """
+        Create default run.
+        """
         try:
             # Try reading Run parameters from .measurement file.
             self.default_run = Run.from_file(self.default_measurement_file_path)
@@ -241,7 +258,9 @@ class Request:
                 ".measurement"))
 
     def create_default_simulation(self):
-        # Simulation
+        """
+        Create default simulation.
+        """
         simulation_path = os.path.join(self.default_folder,
                                        "Default.simulation")
         if os.path.exists(simulation_path):
@@ -270,7 +289,8 @@ class Request:
             self.default_element_simulation = ElementSimulation(
                 self.default_folder, self,
                 [RecoilElement(Element.from_string("4He 3.0"), [])],
-                description="These are default simulation parameters.")
+                description="These are default simulation parameters.",
+                use_default_settings=False)
             self.default_simulation.element_simulations.append(
                 self.default_element_simulation)
 

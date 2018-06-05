@@ -1,7 +1,28 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 28.5.2018
+Updated on 4.6.2018
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
@@ -89,7 +110,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                 self.measurement.measurement_setting_file_name)
             self.measurement_settings_widget.ui.descriptionPlainTextEdit \
                 .setPlainText(
-                self.measurement.measurement_setting_file_description)
+                    self.measurement.measurement_setting_file_description)
             self.measurement_settings_widget.ui.dateLabel.setText(time.strftime(
                 "%c %z %Z", time.localtime(self.measurement.modification_time)))
 
@@ -123,16 +144,14 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.ui.tabs.setEnabled(True)
 
     def __enabled_element_information(self):
-        """
-        Change the UI accordingly when an element is selected.
+        """ Change the UI accordingly when an element is selected.
         """
         self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(True)
         self.measurement_settings_widget.ui.isotopeLabel.setEnabled(True)
         self.ui.OKButton.setEnabled(True)
 
     def __update_parameters(self):
-        """
-         Update Measurement's Run, Detector and Target objects. If measurement
+        """ Update Measurement's Run, Detector and Target objects. If measurement
          specific parameters are in use, save them into a file.
         """
         if not self.measurement.measurement_setting_file_name:
@@ -147,6 +166,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             measurement = self.measurement.request.default_measurement
             self.measurement.run = None
             self.measurement.detector = None
+            self.measurement.use_default_profile_settings = True
             self.measurement.measurement_setting_file_description = \
                 measurement.measurement_setting_file_description
             self.measurement.target.target_theta = \
@@ -167,7 +187,6 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.measurement.depth_for_concentration_to = \
                 measurement.depth_for_concentration_to
             self.measurement.channel_width = measurement.channel_width
-            self.measurement.reference_cut = measurement.reference_cut
             self.measurement.number_of_splits = measurement.number_of_splits
             self.measurement.normalization = measurement.normalization
 
@@ -189,6 +208,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         else:
             # Use Measurement specific settings
             try:
+                self.measurement.use_default_profile_settings = False
                 if self.measurement.measurement_setting_file_name is None:
                     file_name = "temp"
                 else:
@@ -284,5 +304,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                                                QtWidgets.QMessageBox.Ok)
 
     def __save_settings_and_close(self):
+        """ Save settings and close dialog.
+        """
         self.__update_parameters()
         self.close()

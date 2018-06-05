@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 10.4.2013
-Updated on 3.5.2018
+Updated on 1.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -32,6 +33,9 @@ import re
 
 
 class Element:
+    """
+    Element class that handles information about one element.
+    """
     def __init__(self, symbol, isotope=None, amount=None):
         """Initializes an element object.
         Args:

@@ -7,8 +7,9 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -40,8 +41,8 @@ for line in csv.reader(open(__FILE_PATH), delimiter=" ", skipinitialspace=True):
     if line:  # skips empty lines
         if line[3] not in __isotopes:
             __isotopes[line[3]] = []
-        __isotopes[line[3]].append((int(line[2]), float(line[5]), float(line[
-                                                                            4])))
+        __isotopes[line[3]].append((int(line[2]), float(line[5]),
+                                    float(line[4])))
         # line[2] isotope number, line[5] natural abundance, line[4] exact mass
 
 

@@ -1,7 +1,8 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 29.5.2018
+Updated on 1.6.2018
+
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
@@ -22,7 +23,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-import shutil
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
@@ -31,16 +31,19 @@ __version__ = "2.0"
 import platform
 import subprocess
 
-import hashlib
+import shutil
 import os
 import tempfile
 
 import modules.masses as masses
-from modules.element import Element
 from modules.foil import CircularFoil
 
 
 class MCERD:
+    """
+    An MCERD class that handles calling the mcerd binary and creating the
+    files it needs.
+    """
 
     def __init__(self, settings):
         """Create an MCERD object. This automatically starts the simulation.
@@ -55,11 +58,8 @@ class MCERD:
         # be the C:\Users\<username>\AppData\Local\Temp.
         self.__tmp = tempfile.gettempdir()
 
-        # Create a unique hash for the temporary MCERD files. The name needs
-        # to be unique because there can be several MCERD processes.
-        # self.__hash = hashlib.sha1(str(settings).encode("utf-8")).hexdigest()
         self.__filename = self.__settings["recoil_element"].prefix \
-                          + "-" + self.__settings["recoil_element"].name
+            + "-" + self.__settings["recoil_element"].name
 
         # The recoil file and erd file are later passed to get_espe.
         self.recoil_file = os.path.join(self.__tmp, self.__filename + ".recoil")
@@ -67,9 +67,6 @@ class MCERD:
                                         str(self.__settings["seed_number"]) +
                                         ".erd")
         self.__create_mcerd_files()
-        # self.result_file = os.path.join(self.__tmp, self.__hash + "." +
-        #                                str(self.__settings["seed_number"]) +
-        #                             ".erd")
 
         # The command that is used to start the MCERD process.
         mcerd_command = os.path.join("external", "Potku-bin", "mcerd" +

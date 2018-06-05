@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 28.5.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -33,7 +34,6 @@ from PyQt5 import QtCore
 
 from modules.cut_file import CutFile
 from modules.element import Element
-from modules.null import Null
 
 
 class ElementLosses:
@@ -42,7 +42,7 @@ class ElementLosses:
 
     def __init__(self, directory_cuts, directory_composition_changes,
                  reference_cut_file, checked_cuts, partition_count,
-                 progress_bar=Null()):
+                 progress_bar=None):
         """Inits Element Losses class.
 
         Args:
@@ -52,7 +52,7 @@ class ElementLosses:
             reference_cut_file: String representing reference cut file.
             checked_cuts: String list of cut files to be graphed.
             partition_count: Integer representing split count.
-            progress_bar: QtWidgets.QProgressBar or Null() if not given.
+            progress_bar: QtWidgets.QProgressBar or None if not given.
         """
         self.directory_cuts = directory_cuts
         self.directory_composition_changes = directory_composition_changes

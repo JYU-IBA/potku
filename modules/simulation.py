@@ -1,10 +1,27 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 29.5.2018
+Updated on 1.6.2018
 
-#TODO Description of Potku and copyright
-#TODO Licence
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2018 Severi Jääskeläinen, Samuel Kaiponen, Heta Rekilä and
+Sinikka Siironen
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 
 Simulation.py runs the MCERD simulation with a command file.
 """
@@ -134,26 +151,29 @@ class Simulations:
                     # .mcsimu file
                     mcsimu_file_path = os.path.join(simulation.directory, file)
 
-                    element_str = file.split(".")[0]
+                    element_str_with_name = file.split(".")[0]
 
-                    # .profile file
-                    profile_file_path = os.path.join(
-                        simulation.directory, element_str + profile_extension)
-
+                    prefix, name = element_str_with_name.split("-")
                     target_file_path = None
                     measurement_file_path = None
-                    for file in os.listdir(simulation.directory):
-                        if file.endswith(".target"):
+                    profile_file_path = ""
+
+                    for f in os.listdir(simulation.directory):
+                        if f.endswith(".target"):
                             target_file_path = os.path.join(
-                                simulation.directory, file)
-                        if file.endswith(measurement_extension):
+                                simulation.directory, f)
+                        if f.endswith(measurement_extension):
                             measurement_file_path = os.path.join(
-                                simulation.directory, file)
+                                simulation.directory, f)
+                        if f.endswith(profile_extension) and f.startswith(
+                                prefix):
+                            profile_file_path = os.path.join(
+                                simulation.directory, f)
 
                     if os.path.exists(profile_file_path):
                         # Create ElementSimulation from files
                         element_simulation = ElementSimulation.from_file(
-                            self.request, element_str, simulation_folder_path,
+                            self.request, prefix, simulation_folder_path,
                             mcsimu_file_path, profile_file_path)
                         simulation.element_simulations.append(
                             element_simulation)
@@ -209,6 +229,9 @@ class Simulations:
 
 
 class Simulation:
+    """
+    A Simulation class that handles information about one Simulation.
+    """
     __slots__ = "path", "request", "simulation_file", "name", "tab_id", \
                 "description", "modification_time", "run", "detector", \
                 "target", "element_simulations", "name_prefix", \
@@ -217,7 +240,7 @@ class Simulation:
 
     def __init__(self, path, request, name="Default",
                  description="",
-                 modification_time=time.time(), tab_id=-1, run=None,
+                 modification_time=None, tab_id=-1, run=None,
                  detector=None, target=None,
                  measurement_setting_file_name="",
                  measurement_setting_file_description=""):
@@ -232,6 +255,8 @@ class Simulation:
 
         self.name = name
         self.description = description
+        if not modification_time:
+            modification_time = time.time()
         self.modification_time = modification_time
 
         self.measurement_setting_file_name = measurement_setting_file_name
@@ -257,10 +282,19 @@ class Simulation:
         self.to_file(self.path)
 
     def create_folder_structure(self):
+        """
+        Create folder structure for simulation.
+        """
         self.__make_directories(self.directory)
         self.set_loggers()
 
     def __make_directories(self, directory):
+        """
+        Makes a directory and adds the event to log.
+
+        Args:
+             directory: Directory to create.
+        """
         if not os.path.exists(directory):
             os.makedirs(directory)
             log = "Created a directory {0}.".format(directory)
@@ -291,7 +325,7 @@ class Simulation:
 
         element_simulation = ElementSimulation(directory=self.directory,
                                                request=self.request,
-                                               name=element_str,
+                                               name_prefix=element_str,
                                                target=self.target,
                                                detector=self.detector,
                                                recoil_elements=[

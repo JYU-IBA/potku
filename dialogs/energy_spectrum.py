@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 29.5.2018
+Updated on 1.6.2018
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
-Miika Raunio
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,10 +24,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-from PyQt5.QtCore import Qt
-
-from modules.general_functions import read_espe_file
-from modules.measurement import Measurement
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
@@ -37,20 +34,25 @@ import logging
 import os
 import sys
 
-from PyQt5 import uic, QtCore, QtWidgets
+from PyQt5 import uic
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
 
 import modules.masses as masses
 from modules.cut_file import is_rbs, get_scatter_element
 from modules.element import Element
 from modules.energy_spectrum import EnergySpectrum
-from modules.null import Null
+from modules.general_functions import read_espe_file
+from modules.measurement import Measurement
 from widgets.matplotlib.measurement.energy_spectrum import \
     MatplotlibEnergySpectrumWidget
 
 
 class EnergySpectrumParamsDialog(QtWidgets.QDialog):
+    """
+    An EnergySpectrumParamsDialog.
+    """
     checked_cuts = {}
-    bin_width = 0.1
 
     def __init__(self, parent, spectrum_type):
         """Inits energy spectrum dialog.
@@ -67,8 +69,13 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # Connect buttons
         self.ui.pushButton_Cancel.clicked.connect(self.close)
 
-        width = EnergySpectrumParamsDialog.bin_width
-        self.ui.histogramTicksDoubleSpinBox.setValue(width)
+        if not self.parent.obj.detector:  # Request settings are used.
+            EnergySpectrumParamsDialog.bin_width = \
+                self.parent.obj.request.default_measurement.channel_width
+        else:
+            EnergySpectrumParamsDialog.bin_width = self.parent.obj.channel_width
+        self.ui.histogramTicksDoubleSpinBox.setValue(
+            EnergySpectrumParamsDialog.bin_width)
 
         if isinstance(self.parent.obj, Measurement):
             self.measurement = self.parent.obj
@@ -143,7 +150,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                             os.path.join(dir_elo, item_child.file_name))
                         EnergySpectrumParamsDialog.checked_cuts[m_name].append(
                             item_child.file_name)
-        EnergySpectrumParamsDialog.bin_width = width
+                EnergySpectrumParamsDialog.bin_width = width
         if use_cuts:
             self.ui.label_status.setText(
                 "Please wait. Creating energy spectrum.")
@@ -238,7 +245,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     """
     save_file = "widget_energy_spectrum.save"
 
-    def __init__(self, parent, spectrum_type, use_cuts=[], bin_width=0.1):
+    def __init__(self, parent, spectrum_type, use_cuts=None, bin_width=0.1):
         """Inits widget.
         
         Args:
@@ -252,6 +259,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.parent = parent
             self.icon_manager = parent.icon_manager
             self.progress_bar = None
+            if use_cuts is None:
+                use_cuts = []
             self.use_cuts = use_cuts
             self.bin_width = bin_width
             self.energy_spectrum_data = {}
@@ -337,7 +346,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
         """
-        self.parent.energy_spectrum_widget = Null()
+        self.parent.energy_spectrum_widget = None
         file = os.path.join(self.parent.obj.directory, self.save_file)
         try:
             if os.path.isfile(file):

@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 28.5.2018
+Updated on 4.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -35,15 +36,19 @@ from PyQt5 import uic
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 
-from modules.cut_file import is_rbs, get_scatter_element
+from modules.cut_file import is_rbs
+from modules.cut_file import get_scatter_element
 from modules.depth_files import DepthFiles
 from modules.element import Element
-from modules.null import Null
-from widgets.matplotlib.measurement.depth_profile import MatplotlibDepthProfileWidget
+from widgets.matplotlib.measurement.depth_profile import \
+    MatplotlibDepthProfileWidget
 import modules.masses as masses
 
 
 class DepthProfileDialog(QtWidgets.QDialog):
+    """
+    Dialog for making a depth profile.
+    """
     checked_cuts = {}
     x_unit = "1e15 at./cm²"
     line_zero = False
@@ -51,10 +56,10 @@ class DepthProfileDialog(QtWidgets.QDialog):
     systerr = 0.0
     
     def __init__(self, parent):
-        """Inits depth profile dialog
+        """Inits depth profile dialog.
         
         Args:
-            parent: MeasurementTabWidget
+            parent: A MeasurementTabWidget.
         """
         super().__init__()
         self.parent = parent
@@ -69,7 +74,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.ui.cancelButton.clicked.connect(self.close)
 
         m_name = self.parent.obj.name
-        if not m_name in DepthProfileDialog.checked_cuts.keys():
+        if m_name not in DepthProfileDialog.checked_cuts.keys():
             DepthProfileDialog.checked_cuts[m_name] = []
         self.measurement.fill_cuts_treewidget(
             self.ui.treeWidget,
@@ -92,7 +97,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.exec_()
         
     def __accept_params(self):
-        """Accept given parameters
+        """Accept given parameters.
         """
         progress_bar = QtWidgets.QProgressBar()
         self.__statusbar.addWidget(progress_bar, 1) 
@@ -176,13 +181,15 @@ class DepthProfileDialog(QtWidgets.QDialog):
                                        DepthProfileDialog.line_scale,
                                        DepthProfileDialog.systerr)
                 progress_bar.setValue(90)
-                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.
+                                                      AllEvents)
                 # Mac requires event processing to show progress bar and its 
                 # process.
                 
                 icon = self.parent.icon_manager.\
                     get_icon("depth_profile_icon_2_16.png")
-                self.parent.add_widget(self.parent.depth_profile_widget, icon=icon)
+                self.parent.add_widget(self.parent.depth_profile_widget,
+                                       icon=icon)
                 self.close()
             else:
                 print("No cuts have been selected for depth profile.")
@@ -211,8 +218,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 # TODO: Perhaps make this update every time a cut file is
                 # selected so user knows exactly what files are used instead
                 # of what files match all the cut files.
-                # if not item.checkState(0): continue
-                
+
                 # TODO: Does not check elemental losses for efficiency files.
                 if not hasattr(item, "file_name"):
                     continue
@@ -236,17 +242,42 @@ class DepthProfileDialog(QtWidgets.QDialog):
         dialog for the user.
         """
         detector = self.measurement.get_detector_or_default()
+
+        if self.measurement.use_default_profile_settings:
+            depth_step_for_stopping = \
+                self.measurement.request.default_measurement\
+                    .depth_step_for_stopping
+            number_of_depth_steps = \
+                self.measurement.request.default_measurement\
+                    .number_of_depth_steps
+            depth_step_for_output = \
+                self.measurement.request.default_measurement\
+                    .depth_step_for_output
+            depth_for_concentration_from = \
+                self.measurement.request.default_measurement\
+                    .depth_for_concentration_from
+            depth_for_concentration_to = \
+                self.measurement.request.default_measurement\
+                    .depth_for_concentration_t0
+        else:
+            depth_step_for_stopping = self.measurement.depth_step_for_stopping
+            number_of_depth_steps = self.measurement.number_of_depth_steps
+            depth_step_for_output = self.measurement.depth_step_for_output
+            depth_for_concentration_from = self.measurement\
+                .depth_for_concentration_from
+            depth_for_concentration_to = self.measurement\
+                .depth_for_concentration_to
         self.ui.label_calibslope.setText(str(detector.tof_slope))
         self.ui.label_caliboffset.setText(str(detector.tof_offset))
         self.ui.label_depthstop.setText(
-            str(self.measurement.depth_step_for_stopping))
+            str(depth_step_for_stopping))
         self.ui.label_depthnumber.setText(
-            str(self.measurement.number_of_depth_steps))
+            str(number_of_depth_steps))
         self.ui.label_depthbin.setText(
-            str(self.measurement.depth_step_for_output))
+            str(depth_step_for_output))
         self.ui.label_depthscale.setText("{0} - {1}".format(
-            self.measurement.depth_for_concentration_from,
-            self.measurement.depth_for_concentration_to))
+            depth_for_concentration_from,
+            depth_for_concentration_to))
         
 
 class DepthProfileWidget(QtWidgets.QWidget):
@@ -357,7 +388,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
         """
-        self.parent.depth_profile_widget = Null()
+        self.parent.depth_profile_widget = None
         file = os.path.join(self.parent.obj.directory, self.save_file)
         try:
             if os.path.isfile(file):

@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 28.5.2018
+Updated on 4.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -42,7 +43,6 @@ import sys
 import time
 from PyQt5 import QtCore, QtWidgets
 
-from modules.beam import Beam
 from modules.cut_file import CutFile
 from modules.general_functions import md5_for_file
 from modules.general_functions import rename_file
@@ -78,12 +78,22 @@ class Measurements:
         return len(self.measurements) == 0
 
     def get_key_value(self, key):
+        """
+        Get key value.
+
+        Args:
+             key: A key.
+
+        Return:
+            Measurement object corresponding to key.
+        """
         if key not in self.measurements:
             return None
         return self.measurements[key]
 
-    def add_measurement_file(self, sample, file_path, tab_id, name):
-        """Add a new file to measurements.
+    def add_measurement_file(self, sample, file_path, tab_id, name,
+                             import_evnt):
+        """ Add a new file to measurements.
 
         Args:
             sample: The sample under which the measurement is put.
@@ -91,110 +101,135 @@ class Measurements:
             creating a new measurement.
             tab_id: Integer representing identifier for measurement's tab.
             name: Name for the Measurement object.
+            import_evnt: Whether evnt data is being imported or not.
 
         Return:
             Returns new measurement or None if it wasn't added
         """
         directory_prefix = "Measurement_"
         measurement = None
-        measurement_filename = os.path.split(file_path)[1]
-        file_directory, file_name = os.path.split(file_path)
 
-        # Check if measurement on the same name already exists.
-        for key in sample.measurements.measurements.keys():
-            if sample.measurements.measurements[key].name == name:
-                return None
+        if import_evnt:
+            next_serial = sample.get_running_int_measurement()
+            measurement_directory = \
+                os.path.join(self.request.directory, sample.directory,
+                             directory_prefix + "%02d" % next_serial +
+                             "-" + name)
+            sample.increase_running_int_measurement_by_1()
+            if not os.path.exists(measurement_directory):
+                os.makedirs(measurement_directory)
+            measurement = Measurement(self.request, measurement_directory,
+                                      tab_id, name)
 
-        profile_file_path = None
-        measurement_file = None
-        for file in os.listdir(file_directory):
-            if file.endswith(".profile"):
-                profile_file_path = os.path.join(file_directory, file)
-            elif file.endswith(".measurement"):
-                measurement_file = os.path.join(file_directory, file)
-
-        # Create Measurement from file
-        if os.path.exists(file_path) and file_path.endswith(".info"):
-            measurement = Measurement.from_file(file_path,
-                                                measurement_file,
-                                                profile_file_path,
-                                                self.request)
-            measurement_folder_name = os.path.split(file_directory)[1]
-            serial_number = int(measurement_folder_name[
-                                len(directory_prefix):len(
-                                    directory_prefix) + 2])
+            measurement.info_to_file(os.path.join(measurement_directory,
+                                                  measurement.name +
+                                                  ".info"))
+            measurement.create_folder_structure(measurement_directory, None)
+            serial_number = next_serial
             measurement.serial_number = serial_number
-            measurement.tab_id = tab_id
-            measurement.update_folders_and_selector()
-
-            if measurement_file:
-                measurement.run = Run.from_file(os.path.join(
-                    measurement.directory, measurement_file))
-
-            # Read Detector anf Target information from file.
-            for file in os.listdir(file_directory):
-                if file.endswith(".target"):
-                    measurement.target = Target.from_file(os.path.join(
-                        file_directory, file), os.path.join(
-                        file_directory,
-                        measurement_file), self.request)
-                if file.startswith("Detector"):
-                    det_folder = os.path.join(file_directory,
-                                              "Detector")
-                    for f in os.listdir(det_folder):
-                        if f.endswith(".detector"):
-                            measurement.detector = Detector.from_file(
-                                os.path.join(det_folder, f),
-                                os.path.join(measurement.directory,
-                                             measurement_file),
-                                self.request)
             self.request.samples.measurements.measurements[tab_id] = \
                 measurement
 
-        # Create new Measurement object.
         else:
-            measurement_name, extension = os.path.splitext(file_name)
-            try:
-                keys = sample.measurements.measurements.keys()
-                for key in keys:
-                    if sample.measurements.measurements[key].directory == \
-                            measurement_name:
-                        return measurement  # measurement = None
-                next_serial = sample.get_running_int_measurement()
-                measurement_directory = \
-                    os.path.join(self.request.directory, sample.directory,
-                                 directory_prefix + "%02d" % next_serial +
-                                 "-" + name)
-                sample.increase_running_int_measurement_by_1()
-                if not os.path.exists(measurement_directory):
-                    os.makedirs(measurement_directory)
-                measurement = Measurement(self.request, measurement_directory,
-                                          tab_id, name)
+            measurement_filename = os.path.split(file_path)[1]
+            file_directory, file_name = os.path.split(file_path)
 
-                measurement.info_to_file(os.path.join(measurement_directory,
-                                                      measurement.name +
-                                                      ".info"))
+            # Check if measurement on the same name already exists.
+            for key in sample.measurements.measurements.keys():
+                if sample.measurements.measurements[key].name == name:
+                    return None
 
-                # Create path for measurement file used by the program and
-                # create folder structure.
-                new_measurement_file = os.path.join(measurement_directory,
-                                                    "Data",
-                                                    measurement_filename)
-                measurement.create_folder_structure(measurement_directory,
-                                                    new_measurement_file)
-                if file_directory != os.path.join(measurement_directory,
-                                                  measurement.directory_data) \
-                        and file_directory:
-                    measurement.copy_file_into_measurement(file_path)
-                serial_number = next_serial
+            profile_file_path = None
+            measurement_file = None
+            for file in os.listdir(file_directory):
+                if file.endswith(".profile"):
+                    profile_file_path = os.path.join(file_directory, file)
+                elif file.endswith(".measurement"):
+                    measurement_file = os.path.join(file_directory, file)
+
+            # Create Measurement from file
+            if os.path.exists(file_path) and file_path.endswith(".info"):
+                measurement = Measurement.from_file(file_path,
+                                                    measurement_file,
+                                                    profile_file_path,
+                                                    self.request)
+                measurement_folder_name = os.path.split(file_directory)[1]
+                serial_number = int(measurement_folder_name[
+                                    len(directory_prefix):len(
+                                        directory_prefix) + 2])
                 measurement.serial_number = serial_number
+                measurement.tab_id = tab_id
+                measurement.update_folders_and_selector()
+
+                if measurement_file:
+                    measurement.run = Run.from_file(os.path.join(
+                        measurement.directory, measurement_file))
+
+                # Read Detector anf Target information from file.
+                for file in os.listdir(file_directory):
+                    if file.endswith(".target"):
+                        measurement.target = Target.from_file(os.path.join(
+                            file_directory, file), os.path.join(
+                            file_directory,
+                            measurement_file), self.request)
+                    if file.startswith("Detector"):
+                        det_folder = os.path.join(file_directory,
+                                                  "Detector")
+                        for f in os.listdir(det_folder):
+                            if f.endswith(".detector"):
+                                measurement.detector = Detector.from_file(
+                                    os.path.join(det_folder, f),
+                                    os.path.join(measurement.directory,
+                                                 measurement_file),
+                                    self.request)
                 self.request.samples.measurements.measurements[tab_id] = \
                     measurement
-                measurement.measurement_file = measurement_filename
-            except:
-                log = "Something went wrong while adding a new measurement."
-                logging.getLogger("request").critical(log)
-                print(sys.exc_info())
+
+            # Create new Measurement object.
+            else:
+                measurement_name, extension = os.path.splitext(file_name)
+                try:
+                    keys = sample.measurements.measurements.keys()
+                    for key in keys:
+                        if sample.measurements.measurements[key].directory == \
+                                measurement_name:
+                            return measurement  # measurement = None
+                    next_serial = sample.get_running_int_measurement()
+                    measurement_directory = \
+                        os.path.join(self.request.directory, sample.directory,
+                                     directory_prefix + "%02d" % next_serial +
+                                     "-" + name)
+                    sample.increase_running_int_measurement_by_1()
+                    if not os.path.exists(measurement_directory):
+                        os.makedirs(measurement_directory)
+                    measurement = Measurement(self.request,
+                                              measurement_directory,
+                                              tab_id, name)
+
+                    measurement.info_to_file(os.path.join(measurement_directory,
+                                                          measurement.name +
+                                                          ".info"))
+
+                    # Create path for measurement file used by the program and
+                    # create folder structure.
+                    new_measurement_file = os.path.join(measurement_directory,
+                                                        "Data",
+                                                        measurement_filename)
+                    measurement.create_folder_structure(measurement_directory,
+                                                        new_measurement_file)
+                    if file_directory != os.path.join(
+                            measurement_directory, measurement.directory_data) \
+                                and file_directory:
+                        measurement.copy_file_into_measurement(file_path)
+                    serial_number = next_serial
+                    measurement.serial_number = serial_number
+                    self.request.samples.measurements.measurements[tab_id] = \
+                        measurement
+                    measurement.measurement_file = measurement_filename
+                except:
+                    log = "Something went wrong while adding a new measurement."
+                    logging.getLogger("request").critical(log)
+                    print(sys.exc_info())
 
         # Add Measurement to  Measurements.
         sample.measurements.measurements[tab_id] = measurement
@@ -235,9 +270,9 @@ class Measurement:
     #             "reference_cut", "number_of_splits", "normalization"
 
     def __init__(self, request, path, tab_id=-1, name="Default",
-                 description="", modification_time=time.time(), run=None,
+                 description="", modification_time=None, run=None,
                  detector=None, target=None, profile_name="Default",
-                 profile_description="", profile_modification_time=time.time(),
+                 profile_description="", profile_modification_time=None,
                  reference_density=3.5, number_of_depth_steps=40,
                  depth_step_for_stopping=50, depth_step_for_output=50,
                  depth_for_concentration_from=800,
@@ -245,7 +280,8 @@ class Measurement:
                  reference_cut="", number_of_splits=10, normalization="First",
                  measurement_setting_file_name="Default",
                  measurement_setting_file_description="",
-                 measurement_setting_modification_time=time.time()):
+                 measurement_setting_modification_time=None,
+                 use_default_profile_settings=True):
         """Initializes a measurement.
 
         Args:
@@ -258,6 +294,8 @@ class Measurement:
         self.path = path
         self.name = name
         self.description = description
+        if not modification_time:
+            modification_time = time.time()
         self.modification_time = modification_time
 
         self.run = run
@@ -269,11 +307,15 @@ class Measurement:
             self.measurement_setting_file_name = name
         self.measurement_setting_file_description = \
             measurement_setting_file_description
+        if not measurement_setting_modification_time:
+            measurement_setting_modification_time = time.time()
         self.measurement_setting_modification_time = \
             measurement_setting_modification_time
 
         self.profile_name = profile_name
         self.profile_description = profile_description
+        if not profile_modification_time:
+            profile_modification_time = time.time()
         self.profile_modification_time = profile_modification_time
         self.reference_density = reference_density
         self.number_of_depth_steps = number_of_depth_steps
@@ -309,13 +351,24 @@ class Measurement:
         self.errorlog = None
         self.defaultlog = None
 
+        self.use_default_profile_settings = use_default_profile_settings
+
     def get_detector_or_default(self):
+        """
+        Get measurement specific detector of default.
+
+        Return:
+            A Detector.
+        """
         if self.detector is None:
             return self.request.default_detector
         else:
             return self.detector
 
     def update_folders_and_selector(self):
+        """
+        Update folders and selector.
+        """
         for item in os.listdir(self.directory):
             if item.startswith("Composition_changes"):
                 self.directory_composition_changes = os.path.join(
@@ -343,6 +396,17 @@ class Measurement:
     def from_file(cls, measurement_info_path, measurement_file_path,
                   profile_file_path,
                   request):
+        """
+        Read Measurement information from filea.
+
+        Args:
+            measurement_info_path: Path to .info file.
+            measurement_file_path: Path to .measurement file.
+            profile_file_path: Path to .profile file.
+
+        Return:
+            Measurement object.
+        """
 
         obj_info = json.load(open(measurement_info_path))
         if measurement_file_path and os.path.exists(measurement_file_path):
@@ -383,6 +447,10 @@ class Measurement:
             number_of_splits = \
                 obj_profile["composition_changes"]["number_of_splits"]
             normalization = obj_profile["composition_changes"]["normalization"]
+            if obj_profile["general"]["use_default_settings"] == "True":
+                use_default_profile_settings = True
+            else:
+                use_default_profile_settings = False
 
         else:
             measurement = request.default_measurement
@@ -400,6 +468,7 @@ class Measurement:
             number_of_splits = measurement.number_of_splits
             normalization = measurement.normalization
             reference_density = measurement.reference_density
+            use_default_profile_settings = True
 
         name = obj_info["name"]
         description = obj_info["description"]
@@ -422,12 +491,17 @@ class Measurement:
                    normalization=normalization,
                    reference_density=reference_density,
                    measurement_setting_file_name=measurement_settings_name,
-                   measurement_setting_file_description
-                   =measurement_settings_description,
-                   measurement_setting_modification_time
-                   =measurement_setting_modification_time)
+                   measurement_setting_file_description=measurement_settings_description,
+                   measurement_setting_modification_time=measurement_setting_modification_time,
+                   use_default_profile_settings=use_default_profile_settings)
 
     def measurement_to_file(self, measurement_file_path):
+        """
+        Write a .measurement file.
+
+        Args:
+            measurement_file_path: Path to .measurement file.
+        """
         if os.path.exists(measurement_file_path):
             obj_measurement = json.load(open(measurement_file_path))
         else:
@@ -447,6 +521,12 @@ class Measurement:
             json.dump(obj_measurement, file, indent=4)
 
     def info_to_file(self, info_file_path):
+        """
+        Write an .info file.
+
+        Args:
+            info_file_path: Path to .info file.
+        """
         obj_info = {
             "name": self.name,
             "description": self.description,
@@ -459,6 +539,12 @@ class Measurement:
             json.dump(obj_info, file, indent=4)
 
     def profile_to_file(self, profile_file_path):
+        """
+        Write a .profile file.
+
+        Args:
+            profile_file_path: Path to .profile file.
+        """
         obj_profile = {"general": {},
                        "depth_profiles": {},
                        "energy_spectra": {},
@@ -471,6 +557,8 @@ class Measurement:
             time.strftime("%c %z %Z", time.localtime(time.time()))
         obj_profile["general"]["modification_time_unix"] = \
             self.profile_modification_time
+        obj_profile["general"]["use_default_settings"] = \
+            str(self.use_default_profile_settings)
 
         obj_profile["depth_profiles"]["reference_density"] = \
             self.reference_density
@@ -500,9 +588,13 @@ class Measurement:
             measurement_folder: Path of the measurement folder.
             measurement_file: Path of the measurement file. (under Data)
         """
-        measurement_data_folder, measurement_name = \
-            os.path.split(measurement_file)
-        self.measurement_file = measurement_name  # With extension
+        if measurement_file is None:
+            measurement_data_folder = os.path.join(measurement_folder, "Data")
+            self.measurement_file = None
+        else:
+            measurement_data_folder, measurement_name = \
+                os.path.split(measurement_file)
+            self.measurement_file = measurement_name  # With extension
 
         self.directory = measurement_folder
         self.directory_data = measurement_data_folder
@@ -861,6 +953,9 @@ class Measurement:
         logging.getLogger(self.name).info(log_msg)
 
     def __remove_old_cut_files(self):
+        """
+        Remove old cut files.
+        """
         self.__unlink_files(os.path.join(self.directory, self.directory_cuts))
         directory_changes = os.path.join(
             self.directory_composition_changes, "Changes")
@@ -891,12 +986,13 @@ class Measurement:
         elemloss = [f for f in os.listdir(os.path.join(
             self.directory, self.directory_composition_changes, "Changes"))
                     if os.path.isfile(os.path.join(
-                self.directory, self.directory_composition_changes, "Changes",
-                f))]
+                        self.directory, self.directory_composition_changes,
+                        "Changes",
+                        f))]
         return cuts, elemloss
 
     def fill_cuts_treewidget(self, treewidget, use_elemloss=False,
-                             checked_files=[]):
+                             checked_files=None):
         """ Fill QTreeWidget with cut files.
         
         Args:
@@ -905,6 +1001,8 @@ class Measurement:
                           losses.
             checked_files: A list of previously checked files.
         """
+        if checked_files is None:
+            checked_files = []
         treewidget.clear()
         cuts, cuts_elemloss = self.get_cut_files()
         for cut in cuts:
@@ -969,6 +1067,27 @@ class Measurement:
             target = self.request.default_target
         else:
             target = self.target
+
+        if self.use_default_profile_settings:
+            reference_density = \
+                self.request.default_measurement.reference_density
+            number_of_depth_steps = \
+                self.request.default_measurement.number_of_depth_steps
+            depth_step_for_stopping = \
+                self.request.default_measurement.depth_step_for_stopping
+            depth_step_for_output = self.request.default_measurement. \
+                depth_step_for_output
+            depth_for_concentration_from = \
+                self.request.default_measurement.depth_for_concentration_from
+            depth_for_concentration_to = \
+                self.request.default_measurement.depth_for_concentration_to
+        else:
+            reference_density = self.reference_density
+            number_of_depth_steps = self.number_of_depth_steps
+            depth_step_for_stopping = self.depth_step_for_stopping
+            depth_step_for_output = self.depth_step_for_output
+            depth_for_concentration_from = self.depth_for_concentration_from
+            depth_for_concentration_to = self.depth_for_concentration_to
         # Measurement settings
         str_beam = "Beam: {0}\n".format(
             run.beam.ion)
@@ -987,6 +1106,8 @@ class Measurement:
                                     detector.foils[
                                         detector.tof_foils[i - 1]].distance
             i = i - 1
+
+        time_of_flight_length = time_of_flight_length / 1000
         str_toflen = "Toflen: {0}\n".format(time_of_flight_length)
 
         carbon_foil_thickness = 0
@@ -995,19 +1116,18 @@ class Measurement:
         str_carbon = "Carbon foil thickness: {0}\n".format(
             carbon_foil_thickness)
 
-        # TODO: should this be calculated from target layer densities?
-        str_density = "Target density: {0}\n".format(self.reference_density)
+        str_density = "Target density: {0}\n".format(reference_density)
 
         # Depth Profile settings
         str_depthnumber = "Number of depth steps: {0}\n".format(
-            self.number_of_depth_steps)
+            number_of_depth_steps)
         str_depthstop = "Depth step for stopping: {0}\n".format(
-            self.depth_step_for_stopping)
+            depth_step_for_stopping)
         str_depthout = "Depth step for output: {0}\n".format(
-            self.depth_step_for_output)
+            depth_step_for_output)
         str_depthscale = "Depths for concentration scaling: {0} {1}\n".format(
-            self.depth_for_concentration_from,
-            self.depth_for_concentration_to)
+            depth_for_concentration_from,
+            depth_for_concentration_to)
 
         # Cross section
         flag_cross = global_settings.get_cross_sections()
@@ -1026,7 +1146,7 @@ class Measurement:
 
         # Combine strings
         measurement = str_beam + str_energy + str_detector + str_target + \
-                      str_toflen + str_carbon + str_density
+            str_toflen + str_carbon + str_density
         calibration = "TOF calibration: {0} {1}\n".format(
             detector.tof_slope,
             detector.tof_offset)
@@ -1034,10 +1154,10 @@ class Measurement:
             detector.angle_slope,
             detector.angle_offset)
         depthprofile = str_depthnumber + str_depthstop + str_depthout + \
-                       str_depthscale
+            str_depthscale
 
         tof_in = measurement + calibration + anglecalib + depthprofile + \
-                 str_cross + str_num_iterations + str_eff_dir
+            str_cross + str_num_iterations + str_eff_dir
 
         # Get md5 of file and new settings
         md5 = hashlib.md5()

@@ -10,6 +10,12 @@
     <height>524</height>
    </rect>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>600</width>
+    <height>400</height>
+   </size>
+  </property>
   <property name="windowTitle">
    <string>Target Composition and Recoil Atom Distribution</string>
   </property>
@@ -182,7 +188,7 @@
              <x>0</x>
              <y>0</y>
              <width>180</width>
-             <height>372</height>
+             <height>390</height>
             </rect>
            </property>
           </widget>
@@ -265,6 +271,13 @@
    </item>
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout_4">
+     <item>
+      <widget class="QLabel" name="instructionLabel">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
      <item>
       <spacer name="horizontalSpacer_2">
        <property name="orientation">

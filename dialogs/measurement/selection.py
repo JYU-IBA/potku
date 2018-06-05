@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 25.5.2018
+Updated on 4.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -28,12 +29,16 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-from os.path import join
-from PyQt5 import QtCore, QtGui, uic, QtWidgets
+import os
 
+from PyQt5 import QtCore
+from PyQt5 import QtGui
+from PyQt5 import uic
+from PyQt5 import QtWidgets
+
+import modules.masses as masses
 from dialogs.element_selection import ElementSelectionDialog
 from modules.element import Element
-import modules.masses as masses
 
 
 class SelectionSettingsDialog(QtWidgets.QDialog):
@@ -50,7 +55,8 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         self.selection = selection
         self.measurement = selection.measurement
         self.element_colormap = self.selection.element_colormap
-        self.ui = uic.loadUi(join("ui_files", "ui_selection_settings.ui"), self)
+        self.ui = uic.loadUi(os.path.join("ui_files",
+                                        "ui_selection_settings.ui"), self)
         self.__set_isotope_weight_factor()
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
@@ -182,6 +188,11 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         # If element was selected, proceed to enable appropriate fields.
         if dialog.element:
             button.setText(dialog.element)
+            if not sample:
+                self.selection.element_scatter = Element.from_string(
+                    dialog.element)
+            else:
+                self.selection.element_scatter = ""
             self.__enable_element_fields(dialog.element, isotope_combobox,
                                          isotope_radio, standard_mass_radio,
                                          standard_mass_label, sample)

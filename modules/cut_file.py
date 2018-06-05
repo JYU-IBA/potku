@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 26.3.2013
-Updated on 25.5.2018
+Updated on 4.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -144,7 +145,8 @@ class CutFile:
             that we do not overwrite first 2H selection with other
             2H selection.
         """
-        if self.element_scatter.symbol is not "":
+        if self.element_scatter is not "" and self.element_scatter.symbol is \
+           not "":
             element = self.element_scatter
         else:
             element = self.element
@@ -253,6 +255,7 @@ class CutFile:
         
         Args:
             cut_file: CutFile class object.
+            new_dir: New directory for cut file.
             data: List of data points.
             additional_weight_factor: Float
         """

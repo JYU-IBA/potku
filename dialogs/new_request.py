@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 5.4.2018
+Updated on 30.5.2018
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
-Miika Raunio
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -23,13 +24,16 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli Rahkonen \n Miika Raunio" \
-             "\n Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
+             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n "\
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
 import logging
 import os
-from PyQt5 import uic, QtWidgets
+
+from PyQt5 import uic
+from PyQt5 import QtWidgets
 
 
 class RequestNewDialog(QtWidgets.QDialog):
@@ -60,13 +64,17 @@ class RequestNewDialog(QtWidgets.QDialog):
         self.exec_()
 
     def __browser_folder(self):
-        folder = QtWidgets.QFileDialog.getExistingDirectory(self,
-                                              self.ui.browseFolderButton.text())
+        """Open file browser and show the selected file in view.
+        """
+        folder = QtWidgets.QFileDialog.getExistingDirectory(
+            self, self.ui.browseFolderButton.text())
         if folder:
             self.folder = folder
             self.ui.requestDirectoryLineEdit.setText(folder)
 
     def __create_request(self):
+        """Create new request.
+        """
         self.folder = self.ui.requestDirectoryLineEdit.text()
         self.name = self.ui.requestNameLineEdit.text().replace(" ", "_")
         # TODO: Remove replace above to allow spaces in request names.
@@ -81,7 +89,8 @@ class RequestNewDialog(QtWidgets.QDialog):
             return
         try:
             # Adding .Potku gives all requests the same ending.
-            directory = os.path.join(self.folder, self.name.replace(" ", "_")) + ".potku"
+            directory = os.path.join(self.folder,
+                                     self.name.replace(" ", "_")) + ".potku"
             if not os.path.exists(directory):
                 os.makedirs(directory)
                 self.directory = directory
@@ -91,4 +100,5 @@ class RequestNewDialog(QtWidgets.QDialog):
                 return
             self.close()
         except:
-            print("We've done something wrong. Most likely invalid request name.")
+            print("We've done something wrong. "
+                  "Most likely invalid request name.")

@@ -1,13 +1,15 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 31.3.2018
+Updated on 30.5.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) Timo Konu
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,18 +24,22 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Timo Konu"
-__version__ = "1.0"
+__author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
+             "Rekilä \n Sinikka Siironen"
+__version__ = "2.0"
 
 from collections import OrderedDict
 import logging
 import os
-from PyQt5 import uic, QtCore, QtWidgets
+from PyQt5 import uic
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
 import re
 from time import clock
 
 from dialogs.measurement.import_timing_graph import ImportTimingGraphDialog
-from modules.general_functions import open_files_dialog, coinc
+from modules.general_functions import open_files_dialog
+from modules.general_functions import coinc
 
 
 class ImportMeasurementsDialog(QtWidgets.QDialog):
@@ -133,7 +139,6 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         self.grid_timing.addWidget(label_low, 1, 0)
         self.grid_timing.addWidget(label_high, 2, 0)
 
-    # TODO: This part needs to be tested (sample was added).
     def __import_files(self):
         """Import listed files with settings defined in the dialog.
         """
@@ -159,7 +164,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         for coinc_key in self.__added_timings.keys():
             coinc_timing = self.__added_timings[coinc_key]
             if coinc_timing.is_not_trigger:
-                timing[coinc_timing.adc] = (coinc_timing.low.value(), coinc_timing.high.value())
+                timing[coinc_timing.adc] = (coinc_timing.low.value(),
+                                            coinc_timing.high.value())
         start_time = clock()
         progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
@@ -169,7 +175,6 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         # process.
         
         filename_list = []
-        sample_count = 0
         for i in range(root_child_count):
             progress_bar.setValue(i / root_child_count)
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
@@ -177,20 +182,22 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             # process.
             item = root.child(i)
             filename_list.append(item.filename)
-            # request_dir = str(os.path.join(self.request.directory, item.name))
 
-            sample_path = os.path.join(self.request.directory, "Sample_" + str(sample_count))
-            sample_count += 1
-            self.request.samples.add_sample(sample_path)
-            measurement_path = os.path.join(sample_path, item.name)
-            output_file = "{0}.{1}".format(measurement_path, "asc")
+            sample = self.request.samples.add_sample()
+            self.parent.add_root_item_to_tree(sample)
+            measurement = self.parent.add_new_tab("measurement", "", sample,
+                                                  object_name=item.name,
+                                                  import_evnt=True)
+            output_file = os.path.join(measurement.directory_data, item.name
+                                       + ".asc")
             n = 2
             while True:  # Allow import of same named files.
                 if not os.path.isfile(output_file):
                     break
-                output_file = "{0}-{2}.{1}".format(measurement_path, "asc", n)
+                output_file = "{0}-{2}.{1}".format(measurement.directory_data
+                 + os.sep + item.name, "asc", n)
                 n += 1
-            imported_files[sample_path] = output_file
+            imported_files[sample] = output_file
             coinc(item.file,
                   output_file,
                   skip_lines=self.spin_skiplines.value(),
@@ -200,6 +207,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                   timing=timing,
                   columns=string_column,
                   nevents=self.spin_eventcount.value())
+            measurement.measurement_file = output_file
         
         filenames = ", ".join(filename_list)
         self.statusbar.removeWidget(progress_bar)
@@ -217,7 +225,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         logging.getLogger("request").info(log_var)
         logging.getLogger("request").info(log_elapsed)
         self.imported = True
-        self.parent.load_request_measurements(imported_files)
+        # self.parent.load_request_measurements(imported_files)
         self.close()
 
     def __insert_import_timings(self):
@@ -279,7 +287,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                         reading_data = True
                     self.__files_preview[file].append(line.strip())
         # Automatically set good values.
-        sort_adc_occ = OrderedDict(sorted(self.adc_occurance.items(), reverse=True))
+        sort_adc_occ = OrderedDict(sorted(self.adc_occurance.items(),
+                                          reverse=True))
         adc_keys = sorted(self.adc_occurance.keys())
         self.spin_skiplines.setValue(skip_length)
         self.spin_adctrigger.setMinimum(int(adc_keys[0]))
@@ -323,10 +332,15 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         # timing_first = timing.keys().next()
         timing_low = self.__added_timings[timing_first].low
         timing_high = self.__added_timings[timing_first].high
-        ImportTimingGraphDialog(self, input_file, output_file, (timing_low, timing_high),
-                                icon_manager=self.__icon_manager, skip_lines=self.spin_skiplines.value(),
-                                trigger=self.spin_adctrigger.value(), adc_count=self.spin_adccount.value(),
-                                timing=timing, coinc_count=self.global_settings.get_import_coinc_count())
+        ImportTimingGraphDialog(self, input_file, output_file,
+                                (timing_low, timing_high),
+                                icon_manager=self.__icon_manager,
+                                skip_lines=self.spin_skiplines.value(),
+                                trigger=self.spin_adctrigger.value(),
+                                adc_count=self.spin_adccount.value(),
+                                timing=timing,
+                                coinc_count=self.global_settings
+                                .get_import_coinc_count())
 
     def __create_combobox(self, adc):
         """Create combobox for ADC.
@@ -377,7 +391,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             button: A QtWidgets.QPushButton class object which was pressed.
         """
         index = self.grid_column.indexOf(button)
-        row, column, unused_cols, unused_rows = self.grid_column.getItemPosition(index)
+        row, column, unused_cols, unused_rows = \
+            self.grid_column.getItemPosition(index)
         column_count = sorted(range(column + 1), reverse=True)
         # Close all widgets in the row.
         for i in column_count:

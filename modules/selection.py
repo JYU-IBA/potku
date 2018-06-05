@@ -1,14 +1,15 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 28.5.2018
+Updated on 4.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) Jarkko Aalto, Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen and 
-Miika Raunio
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -42,6 +43,9 @@ from modules.element import Element
 
 
 class AxesLimits:
+    """
+    An AxesLimit class.
+    """
     def __init__(self):
         """Inits axes limits
         """
@@ -384,6 +388,8 @@ class Selector:
         for sel in self.selections:
             element = sel.element.symbol
             isotope = sel.element.isotope
+            if isotope is None:
+                isotope = ""
             if sel.type == "RBS":
                 element, isotope = sel.element_scatter.symbol, \
                                    sel.element_scatter.isotope
@@ -477,6 +483,12 @@ class Selector:
             selection.transpose(is_transposed)
 
     def update_single_selection_points(self, selection):
+        """
+        Update single selection points.
+
+        Args:
+            selection: Points to update.
+        """
         selection.events_counted = False
         selection.event_count = 0
         data = self.measurement.data
