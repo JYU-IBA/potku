@@ -41,7 +41,7 @@ class RequestNewDialog(QtWidgets.QDialog):
     """
 
     def __init__(self, parent):
-        """Inits energy spectrum dialog.
+        """Inits new request dialog.
         
         Args:
             parent: Parent for the dialog.
