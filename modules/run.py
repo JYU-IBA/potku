@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 3.5.2018
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -50,7 +50,7 @@ class Run:
             fluence: Fluence.
             current: Current.
             charge: Charge.
-            time: Time of the run.
+            run_time: Time of the run.
         """
         self.beam = beam
         if not self.beam:

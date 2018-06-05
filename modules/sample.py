@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 30.3.2018
-Edited on 1.6.2018
+Edited on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -115,7 +115,7 @@ class Samples:
 
 class Sample:
     """
-    Class for a sample.
+    Class for a sample. Sample can have multiple measurements and simulations.
     """
 
     def __init__(self, serial_number, request, directory, name=""):
@@ -125,6 +125,7 @@ class Sample:
         Args:
             serial_number: Serial number for sample.
             request: Which request the sample belongs to.
+            directory: Directory of the sample.
             name: Optional name for the sample.
         """
         self.name = name
@@ -144,7 +145,7 @@ class Sample:
         Get running int for measurements,
 
         Return:
-            Integer.
+            Integer for measurement numbering.
         """
         return self._running_int_measurement
 
@@ -159,7 +160,7 @@ class Sample:
         Get running int for simulations,
 
         Return:
-            Integer.
+            Integer for simulation numbering.
         """
         return self._running_int_simulation
 

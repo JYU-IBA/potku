@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -98,7 +98,14 @@ class RecoilElement:
         return [point.get_y() for point in self._points]
 
     def get_point_by_i(self, i):
-        """Returns the i:th point."""
+        """Get the i:th point.
+
+        Args:
+            i: Index of the point.
+
+        Return:
+           Point at index i.
+        """
         return self._points[i]
 
     def get_points(self):
@@ -111,7 +118,11 @@ class RecoilElement:
         return self._points
 
     def add_point(self, point):
-        """Adds a point and maintains sort order."""
+        """Adds a point and maintains sort order.
+
+        Args:
+            point: Point to add.
+        """
         self._points.append(point)
         self._sort_points()
 
@@ -122,6 +133,12 @@ class RecoilElement:
     def get_left_neighbor(self, point):
         """Returns the point whose x coordinate is closest to but
         less than the given point's.
+
+        Args:
+            point: Point object.
+
+        Return:
+            Point's left neighbor.
         """
         ind = self._points.index(point)
         if ind == 0:
@@ -132,6 +149,12 @@ class RecoilElement:
     def get_right_neighbor(self, point):
         """Returns the point whose x coordinate is closest to but
         greater than the given point's.
+
+        Args:
+            point: Point object.
+
+        Return:
+            Point's right neighbor.
         """
         ind = self._points.index(point)
         if ind == len(self._points) - 1:

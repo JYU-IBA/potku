@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -72,7 +72,7 @@ class Simulations:
             key: Key of simulation dictionary.
 
         Return:
-            VReturns value corresponding to key.
+            Returns value corresponding to key.
         """
         if key not in self.simulations:
             return None
@@ -248,6 +248,16 @@ class Simulation:
 
         Args:
             path: Path to .simulation file.
+            request: Request object.
+            name: Simulation name.
+            description: Simulation description.
+            modification_time: Modification time.
+            tab_id: Tab id.
+            detector: Detector object.
+            target: Target object.
+            measurement_setting_file_name: Measurement settings file name.
+            measurement_setting_file_description: Measurement settings file
+            description.
             """
         self.tab_id = tab_id
         self.path = path
@@ -302,6 +312,9 @@ class Simulation:
 
     def rename_data_file(self, new_name=None):
         """Renames the simulation files.
+
+        Args:
+            new_name: New name of the file.
         """
         if new_name is None:
             return
@@ -316,6 +329,9 @@ class Simulation:
 
         Args:
             recoil_element: RecoilElement that is simulated.
+
+        Return:
+            Created element simulation.
         """
         element = recoil_element.element
         if element.isotope:
@@ -387,6 +403,9 @@ class Simulation:
             request: Request which the Simulation belongs to.
             file_path: A file path to JSON file containing the
             simulation information.
+
+        Return:
+            Simulation object.
         """
         obj = json.load(open(file_path))
 
@@ -399,10 +418,10 @@ class Simulation:
                    description=description, modification_time=modification_time)
 
     def to_file(self, file_path):
-        """Save simulation settings to a file.
+        """Save simulation info to a file.
 
         Args:
-            file_path: File in which the simulation settings will be saved."""
+            file_path: File in which the simulation info will be saved."""
 
         obj = {
             "name": self.name,

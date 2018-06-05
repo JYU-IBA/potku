@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -48,7 +48,7 @@ from modules.target import Target
 
 
 class Request:
-    """Request class to handle all measurements.
+    """Request class to handle all measurements and simulations.
     """
 
     def __init__(self, directory, name, statusbar, global_settings,
@@ -257,8 +257,7 @@ class Request:
 
     def create_default_simulation(self):
         """
-
-        :return:
+        Create default simulation.
         """
         simulation_path = os.path.join(self.default_folder,
                                        "Default.simulation")
@@ -333,6 +332,9 @@ class Request:
 
     def get_master(self):
         """ Get master measurement of the request.
+
+        Return:
+            Master measurement.
         """
         return self.__master_measurement
 
@@ -363,6 +365,9 @@ class Request:
     def get_running_int(self):
         """
         Get the running int needed for numbering the samples.
+
+        Return:
+            Running int for sample numbering.
         """
         return self._running_int
 
@@ -374,6 +379,12 @@ class Request:
 
     def get_measurement_tabs(self, exclude_id=-1):
         """ Get measurement tabs of a request.
+
+        Args:
+            exclude_id: Tab to exclude.
+
+        Return:
+            List of measurements.
         """
         list_m = []
         keys = list(filter((exclude_id).__ne__, self.__measurement_tabs.keys()))
@@ -383,6 +394,9 @@ class Request:
 
     def get_nonslaves(self):
         """ Get measurement names that will be excluded from slave category.
+
+        Return:
+            Nonslave measurements.
         """
         return self.__non_slaves
 
@@ -394,6 +408,9 @@ class Request:
         when inited so check is made in potku.py after loading all measurements
         via this method. The corresponding master title in treewidget is then
         set.
+
+        Return:
+            Master measurement if exists.
         """
         return self.__request_information["meta"]["master"]
 

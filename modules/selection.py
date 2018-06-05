@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -22,9 +22,7 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program (file named 'LICENCE').
-
-Selection.py handles Selector and Selection objects.
+along with this program (file named 'LICENCE')..
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
@@ -44,7 +42,7 @@ from modules.element import Element
 
 class AxesLimits:
     """
-    An AxesLimit class.
+    An AxesLimit class that handles axes limits.
     """
     def __init__(self):
         """Inits axes limits
@@ -99,9 +97,7 @@ class Selector:
     """Selector objects handles all selections within measurement.
     """
     def __init__(self, measurement, element_colormap):
-        """Inits Selector.
-        
-        Inits Selector object.
+        """ Inits Selector object.
         
         Args:
             measurement: Measurement object of this Selector.
@@ -142,7 +138,7 @@ class Selector:
         """
         return self.count() == 0
 
-    def get_at(self, index):  # Get selection at index
+    def get_at(self, index):
         """Get selection at index.
         
         Args:
@@ -156,8 +152,8 @@ class Selector:
             return None
         return self.selections[index]
 
-    def get_selected(self):  # Get selection by id
-        """Get currently selected selection.
+    def get_selected(self):
+        """Get currently selected selection by id.
         
         Return:
             Returns Selection of selected Selection on matplotlib graph. If none 
@@ -646,11 +642,11 @@ class Selection:
         return pointlist
 
     def get_first(self):
-        """Get first point in selection
+        """Get first point in selection.
 
         Return:
-            None: If no point in selection
-            (x, y): Otherwise
+            None: If no point in selection.
+            (x, y): Otherwise.
         """
         if self.count() > 0:
             x, y = self.points.get_data()
@@ -659,11 +655,11 @@ class Selection:
             return None
 
     def get_last(self):
-        """Get last point in selection
+        """Get last point in selection.
 
         Return:
-            None: If no point in selection
-            (x, y): Otherwise
+            None: If no point in selection.
+            (x, y): Otherwise.
         """
         if self.count() > 0:
             x, y = self.points.get_data()
@@ -853,6 +849,14 @@ class Selection:
         Polygon is a list of (x,y) pairs.        
         
         Algorithm got from: http://www.ariel.com.au/a/python-point-int-poly.html
+
+        Args:
+            x: X coordinat of point.
+            y: Y coordinate of point.
+            poly: Polygon.
+
+        Return:
+            True or False.
         """
         n = len(poly)
         inside = False
