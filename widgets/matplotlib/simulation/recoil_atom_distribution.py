@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 31.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -261,7 +261,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.edit_lock_push_button = self.parent_ui.editLockPushButton
         self.edit_lock_push_button.setEnabled(False)
         self.edit_lock_push_button.clicked.connect(self.unlock_edit)
-        self.edit_lock_on = True
+        self.edit_lock_on = False
 
         # Locations of points about to be dragged at the time of click
         self.click_locations = []
