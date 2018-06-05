@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -44,7 +44,7 @@ class RequestNewDialog(QtWidgets.QDialog):
         """Inits energy spectrum dialog.
         
         Args:
-            parent: Ibasoft class object.
+            parent: Parent for the dialog.
         """
         super().__init__()
         self.parent = parent

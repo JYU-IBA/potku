@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -61,6 +61,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         Args:
             request: Request class object.
+            icon_manager: An IconManager object.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_settings.ui"), self)
@@ -168,7 +169,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         widget.numberOfScalingIonsSpinBox.setValue(
             elem_simu.number_of_scaling_ions)
 
-    def __load_file(self, settings_type):
+    def __load_file(self):
         """
         Load settings from file.
         """
@@ -177,7 +178,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                        QtWidgets.QMessageBox.Ok,
                                        QtWidgets.QMessageBox.Ok)
 
-    def __save_file(self, settings_type):
+    def __save_file(self):
         """Opens file dialog and sets and saves the settings to a file.
         """
         # TODO: implement
@@ -283,6 +284,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         Args:
             button: button whose text is changed accordingly to the made
             selection.
+            combo_box: A combo box in which element's isotopes are loaded.
         """
         dialog = ElementSelectionDialog()
         if dialog.element:

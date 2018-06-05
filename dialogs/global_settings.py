@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 30.4.2013
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -43,10 +43,13 @@ from widgets.matplotlib.measurement.tofe_histogram import \
 
 class GlobalSettingsDialog(QtWidgets.QDialog):
     """
-    A GlobalSettingsDialog.
+    A Dialog for handling global Potku settings.
     """
     def __init__(self, settings):
-        """Constructor for the program
+        """Constructor for the program.
+
+        Args:
+            settings: A Settings object for global settings.
         """
         super().__init__()
         self.settings = settings

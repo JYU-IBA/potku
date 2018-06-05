@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.4.2018
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -35,11 +35,12 @@ import time
 
 
 class ElementSimulationSettingsDialog(QtWidgets.QDialog):
-    """Class for creating an element simulation settings tab.
+    """Class for creating an element simulation settings dialog. With this
+    element simulation settings can be modified.
     """
     def __init__(self, element_simulation):
         """
-        Inintializes the dialog.
+        Initializes the dialog.
 
         Args:
             element_simulation: An ElementSimulation object.

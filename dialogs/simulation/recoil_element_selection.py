@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.4.2018
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -118,6 +118,7 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
             standard_mass_label: QtWidgets.QLabel
             sample: Boolean representing if element is sample (and not RBS
                     element).
+            current_isotope: Element's isotope.
         """
         if element:
             isotope_radio.setEnabled(True)

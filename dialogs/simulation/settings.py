@@ -124,6 +124,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         Args:
             button: button whose text is changed accordingly to the made
             selection.
+            combo_box: A combo box where element's isotopes are loaded.
         """
         dialog = ElementSelectionDialog()
         if dialog.element:

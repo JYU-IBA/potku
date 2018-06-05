@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -50,7 +50,8 @@ from widgets.matplotlib.measurement.energy_spectrum import \
 
 class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     """
-    An EnergySpectrumParamsDialog.
+    A Dialog that is used to specify some parameters related to plotting an
+    energy spectrum.
     """
     checked_cuts = {}
     bin_width = 0.1
@@ -60,6 +61,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         
         Args:
             parent: A TabWidget.
+            spectrum_type: Whether spectrum is for measurement or simulation.
         """
         super().__init__()
         self.parent = parent
@@ -237,7 +239,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
 
 class EnergySpectrumWidget(QtWidgets.QWidget):
-    """Energy spectrum widget which is added to measurement tab.
+    """Energy spectrum widget which is added to measurement or simulation tab.
     """
     save_file = "widget_energy_spectrum.save"
 
@@ -246,6 +248,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
         
         Args:
             parent: A TabWidget.
+            spectrum_type: Whether widget belongs to simulation or measurement.
             use_cuts: A string list representing Cut files.
             bin_width: A float representing Energy Spectrum histogram's bin
             width.
