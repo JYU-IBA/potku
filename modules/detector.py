@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 31.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -90,20 +90,20 @@ class Detector:
             self.foils = [CircularFoil("Foil1", 7.0, 256.0,
                                        [Layer("Layer_12C",
                                               [Element("C", 12.011, 1)],
-                                              0.1, 2.25)]),
+                                              0.1, 2.25, 0.0)]),
                           CircularFoil("Foil2", 9.0, 319.0,
                                        [Layer("Layer_12C",
                                               [Element("C", 12.011, 1)],
-                                              13.3, 2.25)]),
+                                              13.3, 2.25, 0.1)]),
                           CircularFoil("Foil3", 18.0, 942.0,
                                        [Layer("Layer_12C",
                                               [Element("C", 12.011, 1)],
-                                              44.4, 2.25)]),
+                                              44.4, 2.25, 13.4)]),
                           RectangularFoil("Foil4", 14.0, 14.0, 957.0,
                                           [Layer("Layer_28Si",
                                                  [Element("N", 14.00, 0.57),
                                                   Element("Si", 28.09, 0.43)],
-                                                 1.0, 3.44)])]
+                                                 1.0, 3.44, 57.8)])]
         self.tof_foils = tof_foils
         if not self.tof_foils:
             # Set default ToF foils
@@ -234,7 +234,8 @@ class Detector:
                 layers.append(Layer(layer["name"],
                                     elements,
                                     float(layer["thickness"]),
-                                    float(layer["density"])))
+                                    float(layer["density"]),
+                                    float(layer["start_depth"])))
 
             if foil["type"] == "circular":
                 foils.append(
@@ -321,7 +322,8 @@ class Detector:
                     "elements": [element.__str__() for element in
                                  layer.elements],
                     "thickness": layer.thickness,
-                    "density": layer.density
+                    "density": layer.density,
+                    "start_depth": layer.start_depth
                 }
                 foil_obj["layers"].append(layer_obj)
 
