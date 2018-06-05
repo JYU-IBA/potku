@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -346,7 +346,10 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         """Create combobox for ADC.
         
         Args:
-            adc: An integer representing ADC.        
+            adc: An integer representing ADC.
+
+        Return:
+              Created combobox.
         """
         adc_keys = sorted(self.adc_occurance.keys())
         combobox = QtWidgets.QComboBox()
@@ -359,6 +362,15 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         return combobox
 
     def __create_spinbox(self, default):
+        """
+        Create a spinbox.
+
+        Args:
+             default: Default value.
+
+        Return:
+            Created spinbox.
+        """
         spinbox = QtWidgets.QSpinBox()
         spinbox.stepBy(1)
         spinbox.setMinimum(-1000)

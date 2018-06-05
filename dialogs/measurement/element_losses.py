@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 27.3.2013
-Updated on 10.4.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -283,6 +283,9 @@ class ElementLossesWidget(QtWidgets.QWidget):
 
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
+
+        Args:
+            evnt: Event which happens when closing the widget.
         """
         self.parent.elemental_losses_widget = None
         file = os.path.join(self.parent.obj.directory, self.save_file)

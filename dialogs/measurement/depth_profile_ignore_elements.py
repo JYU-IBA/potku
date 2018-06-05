@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.8.2013
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -62,6 +62,10 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
 
     def __element_toggle_graph(self, item, col):
         """Catch item changed event from element tree.
+
+        Args:
+            item: Element tree item.
+            col: Column in the view.
         """
         if col != 0:
             return

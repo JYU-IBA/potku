@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -128,6 +128,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         Args:
             button: button whose text is changed accordingly to the made
             selection.
+            combo_box: A combo box to which isotopes are loaded.
         """
         dialog = ElementSelectionDialog()
         if dialog.element:
@@ -137,6 +138,9 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             masses.load_isotopes(dialog.element, combo_box)
 
     def __change_used_settings(self):
+        """
+        Change used settings.
+        """
         check_box = self.sender()
         if check_box.isChecked():
             self.ui.tabs.setEnabled(False)

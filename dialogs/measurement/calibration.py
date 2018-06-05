@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.4.2013
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -53,6 +53,8 @@ class CalibrationDialog(QtWidgets.QDialog):
         Args:
             measurements: A string list representing measurements files.
             detector: A Detector class object.
+            measurement: A Measurement object for doing measurement specific
+            calibration.
             parent_settings_widget: A widget this dialog was opened from.
         """
         super().__init__()
@@ -159,8 +161,11 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.curveFittingWidget.matplotlib.set_calibration_point_externally(tof)
 
     def set_calibration_parameters_to_parent(self):
-        """Set calibration parameters to parent dialog's calibration parameters 
-        fields.
+        """ Set calibration parameters to parent dialog's calibration
+        parameters fields.
+
+        Return:
+            True or False whether successful or not.
         """
         if self.parent_settings_widget:
             self.parent_settings_widget.ui.slopeLineEdit.\
@@ -296,6 +301,8 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
             detector: Detector object
             bin_width: Float representing histogram's bin width.
             column: Integer representing which column number is used.
+            measurement: A Measurement object for doing measurement specific
+            calibration.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",

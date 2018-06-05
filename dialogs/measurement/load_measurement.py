@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -82,6 +82,9 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
         self.exec_()
 
     def __add_sample(self):
+        """
+        Add n new Sample to request.
+        """
         dialog = NewSampleDialog()
         if dialog.name:
             self.ui.samplesComboBox.addItem(dialog.name)
@@ -90,6 +93,9 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
             set_input_field_white(self.ui.samplesComboBox)
 
     def __load_measurement(self):
+        """
+        Load a measurement.
+        """
         self.path = self.ui.pathLineEdit.text()
         self.name = self.ui.nameLineEdit.text().replace(" ", "_")
         self.sample = self.ui.samplesComboBox.currentText()
@@ -105,6 +111,9 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
         self.close()
 
     def __browse_files(self):
+        """
+        Open a file dialog to browse files for import.
+        """
         self.filename = open_file_dialog(self, self.directory,
                                          "Select a measurement to load",
                                          "Raw Measurement (*.asc)")

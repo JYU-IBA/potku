@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -175,9 +175,11 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         Args:
             button: QtWidgets.QPushButton (button to select element)
             isotope_combobox: QtWidgets.QComboBox
-            isotope_radio: QtGui.QRadioButton
             standard_mass_radio: QtGui.QRadioButton
             standard_mass_label: QtWidgets.QLabel
+            isotope_radio: QtGui.QRadioButton
+            sample: Boolean representing if element is sample (and not RBS
+            element)
         """
         dialog = ElementSelectionDialog()
         # Only disable these once, not if you cancel after selecting once.
@@ -206,6 +208,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
             standard_mass_label: QtWidgets.QLabel
             sample: Boolean representing if element is sample (and not RBS
             element).
+            current_isotope: What is the element's isotope.
         """
         if element and element != "Select":
             isotope_radio.setEnabled(True)

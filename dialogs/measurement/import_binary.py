@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -43,6 +43,12 @@ class ImportDialogBinary(QtWidgets.QDialog):
     """
     def __init__(self, request, icon_manager, statusbar, parent):
         """Init binary measurement import dialog.
+
+        Args:
+            request: Request object.
+            icon_manager: IconManager object.
+            statusbar: Statusbar object.
+            parent: Parent object ofthe dialog.
         """
         super().__init__()
         self.__request = request
