@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 27.3.2018
-Updated on 31.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -112,7 +112,8 @@ class Target:
             layers.append(Layer(layer["name"],
                                 elements,
                                 layer["thickness"],
-                                layer["density"]))
+                                layer["density"],
+                                layer["start_depth"]))
 
         try:
             obj = json.load(open(measurement_file_path))
@@ -156,7 +157,8 @@ class Target:
                 "name": layer.name,
                 "elements": [element.__str__() for element in layer.elements],
                 "thickness": layer.thickness,
-                "density": layer.density
+                "density": layer.density,
+                "start_depth": layer.start_depth
             }
             obj["layers"].append(layer_obj)
 

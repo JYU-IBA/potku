@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.3.2018
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -56,7 +56,8 @@ class TargetWidget(QtWidgets.QWidget):
         self.simulation = simulation
         self.target = target
 
-        TargetCompositionWidget(self, self.target, icon_manager)
+        self.target_widget = TargetCompositionWidget(self, self.target,
+                                                 icon_manager)
         self.recoil_widget = RecoilAtomDistributionWidget(self,
                                                           self.simulation,
                                                           self.target,

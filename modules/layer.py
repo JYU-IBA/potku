@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -33,9 +33,9 @@ class Layer:
     """Class for a target or foil layer.
     """
 
-    __slots__ = "name", "elements", "thickness", "density"
+    __slots__ = "name", "elements", "thickness", "density", "start_depth"
 
-    def __init__(self, name, elements, thickness, density):
+    def __init__(self, name, elements, thickness, density, start_depth=-1):
         """Initializes a target or foil layer.
 
         Args:
@@ -43,8 +43,23 @@ class Layer:
             elements:        A list of Element objects.
             thickness:       Thickness of the layer in nanometers.
             density:         Layer density.
+            start_depth:     Depth where the layer starts.
         """
         self.name = name
         self.elements = elements
         self.thickness = thickness
         self.density = density
+        self.start_depth = start_depth
+
+    def click_is_inside(self, coordinate):
+        """
+        Check if given coordinate is inside layer.
+
+        Args:
+            coordinate: Coordinate to check.
+
+        Return:
+            True or False.
+        """
+        return self.start_depth < coordinate <= self.start_depth + \
+        self.thickness
