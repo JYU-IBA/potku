@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 13.4.2013
-Updated on 1.6.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -33,7 +33,7 @@ from PyQt5 import uic, QtWidgets
 
 
 class MeasurementInfoWidget(QtWidgets.QWidget):
-    """Class for creating an info tab widget
+    """Class for creating an info tab widget.
     """
 
     def __init__(self):

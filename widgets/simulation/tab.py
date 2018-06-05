@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -139,7 +139,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
         """ Adds handlers to simulation logger so the logger can log the events
         to the user interface too.
         
-        log_widget specifies which ui element will handle the logging. That
+        Args:
+            log_widget: Which ui element will handle the logging. That
         should be the one which is added to this SimulationTabWidget.
         """
         logger = logging.getLogger(self.obj.name)
@@ -307,6 +308,9 @@ class SimulationTabWidget(QtWidgets.QWidget):
             print(sys.exc_info())  # TODO: Remove this.
 
     def __open_settings(self):
+        """
+        Open simulation settings dialog.
+        """
         SimulationSettingsDialog(self.simulation, self.icon_manager)
     
     def __confirm_filepath(self, filepath, name, m_name):
@@ -362,6 +366,15 @@ class SimulationTabWidget(QtWidgets.QWidget):
         
         http://stackoverflow.com/questions/2556108/how-to-replace-the-last-
         occurence-of-an-expression-in-a-string
+
+        Args:
+            s: String object.
+            old: Old part.
+            new: New part.
+            occurrence: Last occurrence.
+
+        Return:
+            New string.
         """
         li = s.rsplit(old, occurrence)
         return new.join(li)

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2013
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -89,6 +89,9 @@ class TofeHistogramWidget(QtWidgets.QWidget):
     def __save_cuts(self, unused_measurement):
         """Connect to saving cuts. Issue it to request for every other
         measurement.
+
+        Args:
+            unused_measurement: Measurement object.
         """
         # self.measurement.request.save_cuts(self.measurement)
 

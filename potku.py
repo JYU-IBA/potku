@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -179,6 +179,9 @@ class Potku(QtWidgets.QMainWindow):
 
     def __open_menu(self, position):
         """Opens the right click menu in tree view.
+
+        Args:
+            position: Position of menu.
         """
         indexes = self.tree_widget.selectedIndexes()
         level = 0
@@ -417,7 +420,8 @@ class Potku(QtWidgets.QMainWindow):
 
         Args:
             clicked_item: TreeWidgetItem with tab_id attribute (int) that
-            connects the item to the corresponding MeasurementTabWidget
+            connects the item to the corresponding MeasurementTabWidget or
+            SimulationTabWidget.
         """
 
         # Blocking signals from tree view to prevent edit event
@@ -485,7 +489,7 @@ class Potku(QtWidgets.QMainWindow):
         self.tree_widget.blockSignals(False)
 
     def hide_panel(self, enable_hide=None):
-        """Sets the frame (including measurement navigation view, global
+        """Sets the frame (including tree navigation view, global
         settings and request settings buttons) visible.
 
         Args:
@@ -506,8 +510,6 @@ class Potku(QtWidgets.QMainWindow):
 
     def import_pelletron(self):
         """Import Pelletron's measurements into request.
-
-        Import Pelletron's measurements from
         """
         if not self.request:
             return
@@ -521,8 +523,6 @@ class Potku(QtWidgets.QMainWindow):
 
     def import_binary(self):
         """Import binary measurements into request.
-
-        Import binary measurements from
         """
         if not self.request:
             return
@@ -812,7 +812,7 @@ class Potku(QtWidgets.QMainWindow):
         """Remove tab.
 
         Args:
-            tab_index: Integer representing index of the current tab
+            tab_index: Integer representing index of the current tab.
         """
         self.ui.tabs.removeTab(tab_index)
 
@@ -835,6 +835,7 @@ class Potku(QtWidgets.QMainWindow):
         """Add item to tree where it can be opened.
 
         Args:
+            parent_item: Parent item in the tree.
             obj: Object related to item.
             load_data: A boolean representing if data is loaded.
         """
@@ -1165,21 +1166,20 @@ class Potku(QtWidgets.QMainWindow):
                                        QtWidgets.QMessageBox.Ok)
 
     def __open_info_tab(self):
-        """Opens an info tab to the QTabWidget 'tab_measurements' that guides
-        the user to add a new measurement to the request.
+        """Opens an info tab that guides the user to add a new measurement or
+        new simulation to the request.
         """
         self.ui.tabs.addTab(self.ui.infoTab, "Info")
 
     def __remove_introduction_tab(self):
-        """Removes an info tab from the QTabWidget 'tab_measurements' that
-        guides the user to create a new request.
+        """Removes an info tab that guides the user to create a new request.
         """
         index = self.ui.tabs.indexOf(self.ui.introduceTab)
         if index >= 0:
             self.ui.tabs.removeTab(index)
 
     def __remove_master_measurement(self):
-        """Remove master measurement
+        """Remove master measurement.
         """
         self.tree_widget.blockSignals(True)
 
@@ -1207,8 +1207,7 @@ class Potku(QtWidgets.QMainWindow):
         self.tree_widget.blockSignals(False)
 
     def __remove_info_tab(self):
-        """Removes an info tab from the QTabWidget 'tab_measurements' that
-        guides the user to add a new measurement to the request.
+        """Removes the info tab.
         """
         index = self.ui.tabs.indexOf(self.ui.infoTab)
         if index >= 0:
@@ -1227,9 +1226,7 @@ class Potku(QtWidgets.QMainWindow):
         self.icon_manager.set_icon(self.ui.actionNew_Measurement, "log.svg")
 
     def __set_request_buttons_enabled(self, state=False):
-        """Enables 'request settings', 'save request' and 'new measurement'
-        buttons.
-           Enables simulation related buttons.
+        """Enables measurement and simulation related buttons.
         Args:
             state: True/False enables or disables buttons
         """
@@ -1255,7 +1252,7 @@ class Potku(QtWidgets.QMainWindow):
         """Check if there is an open tab with the tab_id (identifier).
 
         Args:
-            tab_id: Identifier (int) for the MeasurementTabWidget
+            tab_id: Identifier (int) for the tab widget.
 
         Returns:
             True if tab is found, False if not

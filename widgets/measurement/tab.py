@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 30.5.2018
+Updated on 5.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -168,7 +168,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         """Adds handlers to measurement logger so the logger can log the events
         to the user interface too.
 
-        log_widget specifies which ui element will handle the logging. That
+        Args:
+            log_widget: Which ui element will handle the logging. That
         should be the one which is added to this MeasurementTabWidget.
         """
         logger = logging.getLogger(self.obj.name)
@@ -435,7 +436,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             return newfiles
 
     def __load_file(self, file):
-        """Load file
+        """Load file.
 
         Args:
             file: A string representing full filepath to the file.
@@ -481,6 +482,15 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         
         http://stackoverflow.com/questions/2556108/how-to-replace-the-last-
         occurence-of-an-expression-in-a-string
+
+        Args:
+            s: String object.
+            old: Old part.
+            new: New part.
+            occurrence: Last occurrence.
+
+        Return:
+            New string.
         """
         li = s.rsplit(old, occurrence)
         return new.join(li)
