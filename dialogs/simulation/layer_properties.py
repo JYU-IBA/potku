@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 5.6.2018
+Updated on 6.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -54,6 +54,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.__ui = uic.loadUi(os.path.join("ui_files", "ui_layer_dialog.ui"),
                                self)
         self.layer = layer
+        self.ok_pressed = False
 
         # Some border of widgets might be displaying red, because information
         # is missing. Remove the red border by reseting the style sheets, for
@@ -180,6 +181,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.layer.density = density
         else:
             self.layer = Layer(name, elements, thickness, density)
+        self.ok_pressed = True
         self.close()
 
     def __missing_information_message(self, empty_fields):
