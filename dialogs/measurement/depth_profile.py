@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 4.6.2018
+Updated on 6.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -258,7 +258,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                     .depth_for_concentration_from
             depth_for_concentration_to = \
                 self.measurement.request.default_measurement\
-                    .depth_for_concentration_t0
+                    .depth_for_concentration_to
         else:
             depth_step_for_stopping = self.measurement.depth_step_for_stopping
             number_of_depth_steps = self.measurement.number_of_depth_steps

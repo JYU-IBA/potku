@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 5.6.2018
+Updated on 6.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -54,10 +54,14 @@ class _CompositionWidget(MatplotlibWidget):
         # Remove Y-axis ticks and label
         self.axes.yaxis.set_tick_params("both", left="off", labelleft="off")
         self.axes.fmt_xdata = lambda x: "{0:1.4f}".format(x)
-        self.axes.fmt_ydata = lambda y: "not relevant"
+        self.axes.fmt_ydata = lambda y: "N/A"
         self.name_x_axis = "Depth [nm]"
 
         self.__icon_manager = icon_manager
+        self.__selected_layer = None
+        self.__layer_selector = None
+        self.__layer_actions = []
+
         self.__fork_toolbar_buttons()
 
         self.layers = layers
@@ -70,8 +74,7 @@ class _CompositionWidget(MatplotlibWidget):
 
     def on_click(self, event):
         """
-        Find if click corresponds to any layer and open a dialog for
-        modifying it.
+        Find if click corresponds to any layer and put it as selected layer.
         """
         # Don't do anything if drag tool or zoom tool is active.
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
@@ -82,11 +85,49 @@ class _CompositionWidget(MatplotlibWidget):
         if event.button == 1:  # Left click
             for layer in self.layers:
                 if layer.click_is_inside(event.xdata):
-                    QtWidgets.QMessageBox.critical(self, "Info",
-                                                   "Layerin " + layer.name + " "
-                                                   "tiedot",
-                                                   QtWidgets.QMessageBox.Ok,
-                                                   QtWidgets.QMessageBox.Ok)
+                    self.__selected_layer = layer
+                    self.__update_selected_layer()
+                    self.__enable_layer_buttons()
+                    break
+
+    def __enable_layer_buttons(self):
+        """
+        Enable buttons for modifying and deleting layers.
+        """
+        for action in self.__layer_actions:
+            action.setEnabled(True)
+
+    def __delete_layer(self):
+        pass
+
+    def __modify_layer(self):
+        """
+        Open a layer properties dialog for modifying the selected layer.
+        """
+        if self.__selected_layer:
+            dialog = LayerPropertiesDialog(self.__selected_layer)
+            if dialog.ok_pressed:
+                self.update_start_depths()
+                self.__update_figure()
+
+    def __update_selected_layer(self):
+        """
+        Put the selector on top of the selected layer. Remove old one.
+        """
+        layer = self.__selected_layer
+        if not layer:
+            return
+        if self.__layer_selector:
+            self.__layer_selector.set_visible(False)
+            self.__layer_selector = None
+        layer_patch = matplotlib.patches.Rectangle(
+            (layer.start_depth, 0),
+            layer.thickness, 1,
+            color='b', alpha=0.2
+        )
+        self.__layer_selector = layer_patch
+        self.axes.add_patch(layer_patch)
+        self.canvas.draw_idle()
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -97,6 +138,15 @@ class _CompositionWidget(MatplotlibWidget):
         # Remove axis ticks and draw
         self.remove_axes_ticks()
         self.canvas.draw()
+
+    def update_start_depths(self):
+        """
+        Update layers' start depths.
+        """
+        depth = 0.0
+        for layer in self.layers:
+            layer.start_depth = depth
+            depth += layer.thickness
 
     def __toggle_tool_drag(self):
         """Toggles the drag tool."""
@@ -154,6 +204,26 @@ class _CompositionWidget(MatplotlibWidget):
         self.__icon_manager.set_icon(action_add_layer, "add.png")
         self.mpl_toolbar.addAction(action_add_layer)
 
+        # Action for modifying the selected layer
+        action_modify_layer = QtWidgets.QAction("Modify selected layer", self)
+        action_modify_layer.triggered.connect(lambda: self.__modify_layer())
+        action_modify_layer.setToolTip("Modify selected layer")
+        self.__icon_manager.set_icon(action_modify_layer, "amarok_edit.svg")
+        action_modify_layer.setEnabled(False)
+        self.mpl_toolbar.addAction(action_modify_layer)
+
+        self.__layer_actions.append(action_modify_layer)
+
+        # Action for deleting the selected layer
+        action_delete_layer = QtWidgets.QAction("Delete selected layer", self)
+        action_delete_layer.triggered.connect(lambda: self.__delete_layer())
+        action_delete_layer.setToolTip("Delete the selected layer")
+        self.__icon_manager.set_icon(action_delete_layer, "del.png")
+        action_delete_layer.setEnabled(False)
+        self.mpl_toolbar.addAction(action_delete_layer)
+
+        self.__layer_actions.append(action_delete_layer)
+
     def __add_layer(self, position=-1):
         """Adds a new layer to the list of layers.
 
@@ -167,7 +237,7 @@ class _CompositionWidget(MatplotlibWidget):
         dialog = LayerPropertiesDialog()
 
         if dialog.layer and position < 0:
-            depth = 0
+            depth = 0.0
             for layer in self.layers:
                 depth += layer.thickness
             dialog.layer.start_depth = depth
@@ -180,6 +250,7 @@ class _CompositionWidget(MatplotlibWidget):
 
     def __update_figure(self):
         """Updates the figure to match the information of the layers."""
+        self.axes.clear()
         next_layer_position = 0  # Position where the next layer will be drawn.
 
         # This variable is used to alternate between the darker and lighter
@@ -188,14 +259,18 @@ class _CompositionWidget(MatplotlibWidget):
 
         # Draw the layers.
         for layer in self.layers:
+            if is_next_color_dark:
+                color = (0.85, 0.85, 0.85)
+            else:
+                color = (0.9, 0.9, 0.9)
+
 
             # Draw a rectangular patch that will have the thickness of the
             # layer and a height of 1.
             layer_patch = matplotlib.patches.Rectangle(
-                (next_layer_position, 0),
+                (layer.start_depth, 0),
                 layer.thickness, 1,
-                color=(0.85, 0.85, 0.85) if is_next_color_dark else
-                (0.9, 0.9, 0.9)
+                color=color
             )
 
             # Alternate the color.
@@ -207,14 +282,15 @@ class _CompositionWidget(MatplotlibWidget):
             self.axes.add_patch(layer_patch)
 
             # Put annotation in the middle of the rectangular patch.
-            self.axes.annotate(layer.name,
-                               (next_layer_position + layer.thickness / 2, 0.5),
-                               ha="center")
+            annotation = self.axes.annotate(layer.name,
+                         (layer.start_depth + layer.thickness / 2, 0.5),
+                          ha="center")
 
             # Move the position where the next layer starts.
             next_layer_position += layer.thickness
 
         self.axes.set_xbound(0, next_layer_position)
+        self.__update_selected_layer()
         self.canvas.draw_idle()
         self.mpl_toolbar.update()
 

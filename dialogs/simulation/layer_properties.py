@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 30.5.2018
+Updated on 6.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -44,13 +44,17 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
     """Dialog for adding a new layer or editing an existing one.
     """
 
-    def __init__(self):
+    def __init__(self, layer=None):
         """Inits a layer dialog.
+
+        Args:
+            layer: Layer object to be modified. None if creating a new layer.
         """
         super().__init__()
         self.__ui = uic.loadUi(os.path.join("ui_files", "ui_layer_dialog.ui"),
                                self)
-        self.layer = None
+        self.layer = layer
+        self.ok_pressed = False
 
         # Some border of widgets might be displaying red, because information
         # is missing. Remove the red border by reseting the style sheets, for
@@ -64,19 +68,33 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
         # Connect buttons to events
         self.__ui.addElementButton.clicked.connect(self.__add_element_layout)
-        self.__ui.okButton.clicked.connect(self.__add_layer)
+        self.__ui.okButton.clicked.connect(self.__save_layer)
         self.__ui.cancelButton.clicked.connect(self.close)
 
         self.__element_layouts = []
-        self.__add_element_layout()
+        if self.layer:
+            self.__show_layer_info()
+        else:
+            self.__add_element_layout()
 
         self.exec_()
 
-    def __add_layer(self):
+    def __save_layer(self):
         """Function for adding a new layer with given settings.
         """
         if self.__check_if_settings_ok():
             self.__accept_settings()
+
+    def __show_layer_info(self):
+        """
+        Show information of the current layer.
+        """
+        self.__ui.nameEdit.setText(self.layer.name)
+        self.__ui.thicknessEdit.setValue(self.layer.thickness)
+        self.__ui.densityEdit.setValue(self.layer.density)
+
+        for elem in self.layer.elements:
+            self.__add_element_layout(elem)
 
     def __check_if_settings_ok(self):
         """Check that all the settings are okay.
@@ -156,7 +174,14 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             elements.append(Element(elem_symbol, elem_isotope, elem_amount))
             i += 2
 
-        self.layer = Layer(name, elements, thickness, density)
+        if self.layer:
+            self.layer.name = name
+            self.layer.elements = elements
+            self.layer.thickness = thickness
+            self.layer.density = density
+        else:
+            self.layer = Layer(name, elements, thickness, density)
+        self.ok_pressed = True
         self.close()
 
     def __missing_information_message(self, empty_fields):
@@ -175,39 +200,51 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             "\nFill out the required information in order to continue.",
             QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
-    def __add_element_layout(self):
+    def __add_element_layout(self, element=None):
         """Add element widget into view.
         """
         self.__ui.scrollArea.setStyleSheet("")
         self.__element_layouts.append(ElementLayout(
-            self.__ui.scrollAreaWidgetContents))
+            self.__ui.scrollAreaWidgetContents, element))
 
 
 class ElementLayout(QtWidgets.QHBoxLayout):
     """ElementLayout that holds element information input fields."""
 
-    def __init__(self, parent):
+    def __init__(self, parent, element):
         """Initializes the layout.
         Args:
             parent: A QWidget into which the layout is added.
+            element: Element object whose info is shown. None adding a
+            default layout.
         """
         parent.parentWidget().setStyleSheet("")
 
         super().__init__()
 
-        self.element_button = QtWidgets.QPushButton("Select")
+        if not element:
+            btn_txt = "Select"
+            enabled = False
+        else:
+            btn_txt = element.symbol
+            enabled = True
+        self.element_button = QtWidgets.QPushButton(btn_txt)
         self.element_button.setFixedWidth(60)
 
         self.isotope_combobox = QtWidgets.QComboBox()
         self.isotope_combobox.setFixedWidth(120)
-        self.isotope_combobox.setEnabled(False)
+        self.isotope_combobox.setEnabled(enabled)
 
         self.amount_spinbox = QtWidgets.QDoubleSpinBox()
         self.amount_spinbox.setMaximum(9999.00)
         self.amount_spinbox.setDecimals(3)
-        self.amount_spinbox.setEnabled(False)
+        self.amount_spinbox.setEnabled(enabled)
         self.amount_spinbox.valueChanged\
             .connect(lambda: self.amount_spinbox.setStyleSheet(""))
+
+        if enabled:
+            self.__load_isotopes(element.isotope)
+            self.amount_spinbox.setValue(element.amount)
 
         self.delete_button = QtWidgets.QPushButton("")
         self.delete_button.setIcon(QtGui.QIcon("ui_icons/potku/del.png"))
@@ -245,8 +282,8 @@ class ElementLayout(QtWidgets.QHBoxLayout):
             self.isotope_combobox.setEnabled(True)
             self.amount_spinbox.setEnabled(True)
 
-    def __load_isotopes(self):
+    def __load_isotopes(self, current_isotope=None):
         """Loads isotopes of the element into the combobox.
         """
         masses.load_isotopes(self.element_button.text(), self.isotope_combobox,
-                             None)
+                             current_isotope)
