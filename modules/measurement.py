@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 4.6.2018
+Updated on 7.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -392,6 +392,22 @@ class Measurement:
         element_colors = self.request.global_settings.get_element_colors()
         self.selector = Selector(self, element_colors)
 
+    def update_directory_references(self, new_dir):
+        """
+        Update directory references.
+        """
+        self.directory = new_dir
+        self.directory_data = os.path.join(self.directory, "Data")
+        self.directory_cuts = os.path.join(self.directory_data, "Cuts")
+        self.directory_composition_changes = os.path.join(self.directory,
+                                                          "Composition_changes")
+        self.directory_depth_profiles = os.path.join(self.directory,
+                                                     "Depth_profiles")
+        self.directory_energy_spectra = os.path.join(self.directory,
+                                                     "Energy_spectra")
+
+        self.selector.update_references(self)
+
     @classmethod
     def from_file(cls, measurement_info_path, measurement_file_path,
                   profile_file_path,
@@ -692,14 +708,29 @@ class Measurement:
         # ps.sort_stats("time")
         # ps.print_stats(10)
 
-    def rename_data_file(self, new_name=None):
+    def rename_info_file(self, new_name=None):
         """Renames the measurement data file.
         """
         if new_name is None:
             return
-        rename_file(os.path.join(self.directory, self.directory_data,
-                                 self.measurement_file), new_name + ".asc")
-        self.measurement_file = new_name + ".asc"
+        info_file = None
+        for file in os.listdir(self.directory):
+            if file.endswith(".info"):
+                info_file = file
+                break
+        if info_file:
+            rename_file(os.path.join(self.directory, info_file),
+                        new_name + ".info")
+
+    def rename_files_in_directory(self, dir):
+        if not os.path.exists(dir):
+            return
+        for file in os.listdir(dir):
+            if file.endswith(".cut"):
+                old_path = os.path.join(dir, file)
+                # Get everything except old measurement name from cut file
+                new_name = self.name + "." + file.split('.', 1)[1]
+                rename_file(old_path, new_name)
 
     def set_loggers(self):
         """Sets the loggers for this specified measurement.

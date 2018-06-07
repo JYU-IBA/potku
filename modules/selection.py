@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 4.6.2018
+Updated on 7.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -37,9 +37,11 @@ import logging
 from math import sqrt
 from matplotlib.path import Path
 from matplotlib.lines import Line2D
+from PyQt5 import QtWidgets
 
 from dialogs.measurement.selection import SelectionSettingsDialog
 from modules.element import Element
+from modules.general_functions import rename_file
 
 
 class AxesLimits:
@@ -233,6 +235,31 @@ class Selector:
         sel = self.selections[-1]  # [-1] = last one
         if not sel.is_closed:
             sel.undo_last()
+
+    def update_references(self, measurement):
+        """
+        Update references with values form Measurement.
+
+         Args:
+             measurement: Measurement object.
+        """
+        self.measurement_name = measurement.name
+        self.directory = measurement.directory_data
+
+        selection_file_without_path = os.path.split(self.selection_file)[1]
+        old_selection_file_in_new_path = \
+            os.path.join(self.directory, selection_file_without_path)
+        try:
+            if os.path.exists(old_selection_file_in_new_path):
+                new_file = rename_file(old_selection_file_in_new_path,
+                                       self.measurement_name + ".selections")
+        except OSError:
+            QtWidgets.QMessageBox.critical(self, "Error",
+                                           "Something went wrong while "
+                                           "renaming the selections file.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+        self.selection_file = os.path.join(self.directory, new_file)
 
     def purge(self):
         """Purges (removes) all open selections and allows new selection to be

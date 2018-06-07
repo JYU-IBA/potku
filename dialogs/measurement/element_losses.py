@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 27.3.2013
-Updated on 10.4.2018
+Updated on 7.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -292,6 +292,55 @@ class ElementLossesWidget(QtWidgets.QWidget):
         except:
             pass
         super().closeEvent(evnt)
+
+    def update_cuts(self):
+        """
+        Update checked cuts and reference cut with Measurement cuts.
+        """
+        for file in os.listdir(self.parent.obj.directory_cuts):
+            for i in range(len(self.checked_cuts)):
+                cut = self.checked_cuts[i]
+                cut_split = cut.split('.')  # There is one dot more (.potku)
+                file_split = file.split('.')
+                if cut_split[2] == file_split[1] and cut_split[3] == \
+                        file_split[2] and cut_split[4] == file_split[3]:
+                    cut_file = os.path.join(self.parent.obj.directory_cuts,
+                                            file)
+                    self.checked_cuts[i] = cut_file
+
+        changes_dir = os.path.join(
+            self.parent.obj.directory_composition_changes, "Changes")
+        if os.path.exists(changes_dir):
+            for file in os.listdir(changes_dir):
+                for i in range(len(self.checked_cuts)):
+                    cut = self.checked_cuts[i]
+                    cut_split = cut.split('.')  # There is one dot more (.potku)
+                    file_split = file.split('.')
+                    if cut_split[2] == file_split[1] and cut_split[3] == \
+                            file_split[2] and cut_split[4] == file_split[3]:
+                        cut_file = os.path.join(changes_dir, file)
+                        self.checked_cuts[i] = cut_file
+
+        self.losses.checked_cuts = self.checked_cuts
+
+        # Update reference cut
+        reference_split = self.reference_cut_file.split('.')
+        new_reference = self.parent.obj.name
+        i = 2
+        while i in range(len(reference_split)):
+            new_reference = new_reference + "." + reference_split[i]
+            i += 1
+        self.reference_cut_file = os.path.join(
+            self.parent.obj.directory_cuts, new_reference)
+        self.losses.reference_cut_file = self.reference_cut_file
+
+        self.losses.directory_composition_changes = changes_dir
+
+        # Update title
+        title = "{0} - Reference cut: {1}".format(
+            "Composition changes",
+            os.path.basename(self.reference_cut_file))
+        self.ui.setWindowTitle(title)
 
     def save_to_file(self):
         """Save object information to file.

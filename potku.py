@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 30.5.2018
+Updated on 7.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -220,6 +220,12 @@ class Potku(QtWidgets.QMainWindow):
                 new_name = clicked_item.text(0)
                 new_path = clicked_item.obj.name_prefix + "%02d" % \
                     clicked_item.obj.serial_number + "-" + new_name
+
+                # Close and remove logs
+                clicked_item.obj.remove_and_close_log(
+                    clicked_item.obj.defaultlog)
+                clicked_item.obj.remove_and_close_log(clicked_item.obj.errorlog)
+
                 new_dir = rename_file(clicked_item.obj.directory, new_path)
             except OSError:
                 QtWidgets.QMessageBox.critical(self, "Error",
@@ -235,8 +241,68 @@ class Potku(QtWidgets.QMainWindow):
                 return
             self.tree_widget.blockSignals(True)
             clicked_item.obj.name = new_name
-            clicked_item.obj.directory = new_dir
-            clicked_item.obj.rename_data_file(new_name)
+
+            clicked_item.obj.update_directory_references(new_dir)
+
+            clicked_item.obj.set_loggers()
+            if type(clicked_item.obj) is Measurement:
+                try:
+                    clicked_item.obj.rename_info_file(new_name)
+                    clicked_item.obj.info_to_file(
+                        os.path.join(new_dir, clicked_item.obj.name
+                                     + ".info"))
+                except OSError:
+                    QtWidgets.QMessageBox.critical(self, "Error",
+                                                   "Something went wrong while "
+                                                   "renaming info file.",
+                                                   QtWidgets.QMessageBox.Ok,
+                                                   QtWidgets.QMessageBox.Ok)
+
+                # Rename all cut files
+                try:
+                    clicked_item.obj.rename_files_in_directory(
+                        clicked_item.obj.directory_cuts)
+                except OSError:
+                    QtWidgets.QMessageBox.critical(self, "Error",
+                                                   "Something went wrong while "
+                                                   "renaming cuts.",
+                                                   QtWidgets.QMessageBox.Ok,
+                                                   QtWidgets.QMessageBox.Ok)
+                # Rename all split files
+                try:
+                    clicked_item.obj.rename_files_in_directory(os.path.join(
+                        clicked_item.obj.directory_composition_changes,
+                        "Changes"))
+                except OSError:
+                    QtWidgets.QMessageBox.critical(self, "Error",
+                                                   "Something went wrong while "
+                                                   "renaming splits.",
+                                                   QtWidgets.QMessageBox.Ok,
+                                                   QtWidgets.QMessageBox.Ok)
+
+                # Update Energy spectrum, Composition changes and Depth profile
+                # save files.
+                for i in range(self.ui.tabs.count()):
+                    tab_widget = self.ui.tabs.widget(i)
+                    if tab_widget.obj is clicked_item.obj:
+                        if tab_widget.energy_spectrum_widget:
+                            tab_widget.energy_spectrum_widget.update_use_cuts()
+                            tab_widget.energy_spectrum_widget.save_to_file()
+
+                        if tab_widget.elemental_losses_widget:
+                            tab_widget.elemental_losses_widget.update_cuts()
+                            tab_widget.elemental_losses_widget.save_to_file()
+
+                        if tab_widget.depth_profile_widget:
+                            tab_widget.depth_profile_widget.update_use_cuts()
+                            tab_widget.depth_profile_widget.save_to_file()
+
+                        self.remove_tab(i)
+                        self.ui.tabs.insertTab(i, tab_widget,
+                                               clicked_item.obj.name)
+                        self.ui.tabs.setCurrentWidget(tab_widget)
+                        break
+
             self.tree_widget.blockSignals(False)
 
     def __remove_tree_item(self):
