@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 6.6.2018
+Updated on 8.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -101,6 +101,17 @@ class _CompositionWidget(MatplotlibWidget):
         """
         Delete selected layer.
         """
+        reply = QtWidgets.QMessageBox.question(self, "Confirmation",
+                                               "Are you sure you want to "
+                                               "delete selected layer?",
+                                               QtWidgets.QMessageBox.Yes |
+                                               QtWidgets.QMessageBox.No |
+                                               QtWidgets.QMessageBox.Cancel,
+                                               QtWidgets.QMessageBox.Cancel)
+        if reply == QtWidgets.QMessageBox.No or reply == \
+                QtWidgets.QMessageBox.Cancel:
+            return  # If clicked Yes, then continue normally
+
         # Delete from layers list
         if self.__selected_layer in self.layers:
             self.layers.remove(self.__selected_layer)
