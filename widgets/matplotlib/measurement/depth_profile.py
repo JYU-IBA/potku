@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 17.4.2013
-Updated on 1.6.2018
+Updated on 8.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -45,7 +45,7 @@ import modules.masses as masses
 
 
 class MatplotlibDepthProfileWidget(MatplotlibWidget):
-    """Depth profile widget.
+    """Depth profile widget that handles drawing depth profiles.
     """
 
     def __init__(self, parent, depth_dir, elements, rbs_list, depth_scale,
@@ -312,6 +312,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             element = Element(labels[i])
             element_str = str(element)
             element_isotope = str(element.isotope)
+
+            if element_isotope == "None":
+                element_isotope = ""
+
             element_name = element.symbol
             if element_str in self.__rbs_list.values():
                 element_name += "*"

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 28.5.2018
+Updated on 8.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -37,6 +37,7 @@ import os
 import platform
 import re
 import subprocess
+from modules.general_functions import copy_cut_file_to_temp
 
 
 class DepthFiles(object):
@@ -50,7 +51,12 @@ class DepthFiles(object):
             file_paths: Full paths of cut files to be used.
             output_path: Full path of where depth files are to be created.
         """
-        file_paths_str = ' '.join(file_paths)
+        new_cut_files = []
+        for cut in file_paths:
+            new = copy_cut_file_to_temp(cut)
+            new_cut_files.append(new)
+
+        file_paths_str = ' '.join(new_cut_files)
         self.bin_dir = '%s%s%s' % ('external', os.sep, 'Potku-bin')
         self.command_win = 'cd ' + self.bin_dir + ' && tof_list.exe ' \
                            + file_paths_str + ' | erd_depth.exe ' \
@@ -66,6 +72,7 @@ class DepthFiles(object):
         """Generate the files necessary for drawing the depth profile
         """
         used_os = platform.system()
+
         if used_os == 'Windows':
             subprocess.call(self.command_win, shell=True)
         elif used_os == 'Linux':

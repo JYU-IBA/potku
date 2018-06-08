@@ -229,6 +229,31 @@ def read_espe_file(espe_file):
     return data
 
 
+def copy_cut_file_to_temp(cut_file):
+    """
+    Copy cut file into temp directory.
+
+    Args:
+        cut_file: Cut file to copy.
+
+    Return:
+        Path to the cut file in temp directory.
+    """
+    # Move cut file to temp folder, at least in Windows tof_list works
+    # properly when cut file is there.
+    # TODO: check that this works in mac and Linux
+    cut_file_name = os.path.split(cut_file)[1]
+
+    # OS specific directory where temporary MCERD files will be stored.
+    # In case of Linux and Mac this will be /tmp and in Windows this will
+    # be the C:\Users\<username>\AppData\Local\Temp.
+    tmp = tempfile.gettempdir()
+
+    new_cut_file = os.path.join(tmp, cut_file_name)
+    shutil.copyfile(cut_file, new_cut_file)
+    return new_cut_file
+
+
 def tof_list(cut_file, directory, save_output=False):
     """ToF_list
 
@@ -248,20 +273,8 @@ def tof_list(cut_file, directory, save_output=False):
     tof_list_array = []
     if not cut_file:
         return []
-    stdout = None
 
-    # Move cut file to temp folder, at least in Windows tof_list works
-    # properly when cut file is there.
-    # TODO: check that this works in mac and Linux
-    cut_file_name = os.path.split(cut_file)[1]
-
-    # OS specific directory where temporary MCERD files will be stored.
-    # In case of Linux and Mac this will be /tmp and in Windows this will
-    # be the C:\Users\<username>\AppData\Local\Temp.
-    tmp = tempfile.gettempdir()
-
-    new_cut_file = os.path.join(tmp, cut_file_name)
-    shutil.copyfile(cut_file, new_cut_file)
+    new_cut_file = copy_cut_file_to_temp(cut_file)
 
     try:
         if platform.system() == 'Windows':
