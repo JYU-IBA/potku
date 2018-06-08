@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 6.6.2018
+Updated on 8.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -136,6 +136,19 @@ class Detector:
         self.efficiency_directory = os.path.join(self.path, "Efficiency_files")
         if not os.path.exists(self.efficiency_directory):
             os.makedirs(self.efficiency_directory)
+
+    def update_directory_references(self, obj):
+        """
+        Update detector's path and efficiency folder path and efficiencies'
+        paths.
+        """
+        old_path_to_det, det_file = os.path.split(self.path)
+        old_path_to_obj, det_folder = os.path.split(old_path_to_det)
+        new_path = os.path.join(obj.directory, det_folder)
+
+        self.path = os.path.join(new_path, det_file)
+
+        self.efficiency_directory = os.path.join(new_path, "Efficiency_files")
 
     def get_efficiency_files(self):
         """Get efficiency files that are in detector's efficiency file folder
