@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 1.6.2018
+Updated on 8.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -278,13 +278,26 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         """Removes efficiency file from detector's efficiency directory and
         updates settings view.
         """
-        selected_efficiency_file = self.ui. \
-            efficiencyListWidget.currentItem().text()
-        self.obj.remove_efficiency_file(
-            selected_efficiency_file)
-        self.ui.efficiencyListWidget.clear()
-        self.ui.efficiencyListWidget.addItems(
-            self.obj.get_efficiency_files())
+        if self.ui.efficiencyListWidget.currentItem():
+            reply = QtWidgets.QMessageBox.question(self, "Confirmation",
+                                                   "Are you sure you want to "
+                                                   "delete selected efficiency"
+                                                   "?",
+                                                   QtWidgets.QMessageBox.Yes |
+                                                   QtWidgets.QMessageBox.No |
+                                                   QtWidgets.QMessageBox.Cancel,
+                                                   QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                return  # If clicked Yes, then continue normally
+
+            selected_efficiency_file = self.ui. \
+                efficiencyListWidget.currentItem().text()
+            self.obj.remove_efficiency_file(
+                selected_efficiency_file)
+            self.ui.efficiencyListWidget.clear()
+            self.ui.efficiencyListWidget.addItems(
+                self.obj.get_efficiency_files())
 
     def __open_calibration_dialog(self):
         """
