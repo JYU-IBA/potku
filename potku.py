@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 7.6.2018
+Updated on 8.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -61,6 +61,7 @@ from modules.general_functions import rename_file
 from modules.global_settings import GlobalSettings
 from modules.icon_manager import IconManager
 from modules.measurement import Measurement
+from modules.simulation import Simulation
 from modules.request import Request
 from widgets.measurement.tab import MeasurementTabWidget
 from widgets.simulation.tab import SimulationTabWidget
@@ -297,6 +298,29 @@ class Potku(QtWidgets.QMainWindow):
                             tab_widget.depth_profile_widget.update_use_cuts()
                             tab_widget.depth_profile_widget.save_to_file()
 
+                        self.remove_tab(i)
+                        self.ui.tabs.insertTab(i, tab_widget,
+                                               clicked_item.obj.name)
+                        self.ui.tabs.setCurrentWidget(tab_widget)
+                        break
+
+            elif type(clicked_item.obj) is Simulation:
+                try:
+                    clicked_item.obj.rename_simulation_file()
+                    clicked_item.obj.to_file(
+                        os.path.join(new_dir, clicked_item.obj.name
+                                     + ".simulation"))
+                except OSError:
+                    QtWidgets.QMessageBox.critical(self, "Error",
+                                                   "Something went wrong while "
+                                                   "renaming info file.",
+                                                   QtWidgets.QMessageBox.Ok,
+                                                   QtWidgets.QMessageBox.Ok)
+
+                # Update Tab name
+                for i in range(self.ui.tabs.count()):
+                    tab_widget = self.ui.tabs.widget(i)
+                    if tab_widget.obj is clicked_item.obj:
                         self.remove_tab(i)
                         self.ui.tabs.insertTab(i, tab_widget,
                                                clicked_item.obj.name)

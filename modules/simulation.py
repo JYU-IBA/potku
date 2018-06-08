@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 1.6.2018
+Updated on 8.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -248,6 +248,17 @@ class Simulation:
 
         Args:
             path: Path to .simulation file.
+            request: Request object.
+            name: Name of the simulation.
+            description: Description of the simulation.
+            modification_time: Modification time of the .simulation file.
+            tab_id: Tab id.
+            run: Run object.
+            detector: Detector object.
+            target: Target object.
+            measurement_setting_file_name: Measurement settings file name.
+            measurement_setting_file_description: Measurement settings file
+            description.
             """
         self.tab_id = tab_id
         self.path = path
@@ -300,16 +311,17 @@ class Simulation:
             log = "Created a directory {0}.".format(directory)
             logging.getLogger("request").info(log)
 
-    def rename_data_file(self, new_name=None):
-        """Renames the simulation files.
+    def rename_simulation_file(self):
+        """Renames the simulation files with self.simulatio_file.
         """
-        if new_name is None:
-            return
-        rename_file(os.path.join(self.directory, self.simulation_file),
-                    new_name + ".simulation")
-        self.simulation_file = new_name + ".simulation"
-        self.path = os.path.join(self.directory, self.simulation_file)
-        self.to_file(self.path)
+        simulation_file = None
+        for file in os.listdir(self.directory):
+            if file.endswith(".simulation"):
+                simulation_file = file
+                break
+        if simulation_file:
+            rename_file(os.path.join(self.directory, simulation_file),
+                        self.simulation_file)
 
     def add_element_simulation(self, recoil_element):
         """Adds ElementSimulation to Simulation.
@@ -398,6 +410,16 @@ class Simulation:
         return cls(request=request, path=file_path, name=name,
                    description=description, modification_time=modification_time)
 
+    def remove_and_close_log(self, log_filehandler):
+        """Closes the log file and removes it from the logger.
+
+        Args:
+            log_filehandler: Log's filehandler.
+        """
+        logging.getLogger(self.name).removeHandler(log_filehandler)
+        log_filehandler.flush()
+        log_filehandler.close()
+
     def to_file(self, file_path):
         """Save simulation settings to a file.
 
@@ -414,3 +436,17 @@ class Simulation:
 
         with open(file_path, "w") as file:
             json.dump(obj, file, indent=4)
+
+    def update_directory_references(self, new_dir):
+        """
+        Update simualtion's directory references.
+
+        Args:
+            new_dir: Path to simulation folder with new name.
+        """
+        self.directory = new_dir
+        self.simulation_file = self.name + ".simulation"
+
+        self.path = os.path.join(self.directory, self.simulation_file)
+        if self.detector:
+            self.detector.update_directory_references(self)
