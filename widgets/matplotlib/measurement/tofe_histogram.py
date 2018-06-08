@@ -1,7 +1,7 @@
 ﻿# coding=utf-8
 """
 Created on 18.4.2013
-Updated on 30.8.2013
+Updated on 8.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -623,6 +623,17 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     def remove_selected(self):
         """Remove selected selection.
         """
+        reply = QtWidgets.QMessageBox.question(self, "Confirmation",
+                                               "Are you sure you want to "
+                                               "delete selected selection?",
+                                               QtWidgets.QMessageBox.Yes |
+                                               QtWidgets.QMessageBox.No |
+                                               QtWidgets.QMessageBox.Cancel,
+                                               QtWidgets.QMessageBox.Cancel)
+        if reply == QtWidgets.QMessageBox.No or reply == \
+                QtWidgets.QMessageBox.Cancel:
+            return  # If clicked Yes, then continue normally
+
         self.measurement.remove_selected()
         self.measurement.reset_select()  # Nothing is now selected, reset colors
         self.measurement.selector.auto_save()
