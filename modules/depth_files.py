@@ -38,6 +38,7 @@ import platform
 import re
 import subprocess
 from modules.general_functions import copy_cut_file_to_temp
+from modules.general_functions import remove_file
 
 
 class DepthFiles(object):
@@ -51,12 +52,12 @@ class DepthFiles(object):
             file_paths: Full paths of cut files to be used.
             output_path: Full path of where depth files are to be created.
         """
-        new_cut_files = []
+        self.__new_cut_files = []
         for cut in file_paths:
             new = copy_cut_file_to_temp(cut)
-            new_cut_files.append(new)
+            self.__new_cut_files.append(new)
 
-        file_paths_str = ' '.join(new_cut_files)
+        file_paths_str = ' '.join(self.__new_cut_files)
         self.bin_dir = '%s%s%s' % ('external', os.sep, 'Potku-bin')
         self.command_win = 'cd ' + self.bin_dir + ' && tof_list.exe ' \
                            + file_paths_str + ' | erd_depth.exe ' \
@@ -81,6 +82,11 @@ class DepthFiles(object):
             subprocess.call(self.command_mac, shell=True)
         else:
             print('It appears we do no support your OS.')
+
+        for cut_file in self.__new_cut_files:
+            # remove unnecessary cut files.
+            remove_file(cut_file)
+        self.__new_cut_files = []
 
 
 def extract_from_depth_files(files, elements, x_column, y_column):

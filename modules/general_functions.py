@@ -340,6 +340,7 @@ def tof_list(cut_file, directory, save_output=False):
         msg += str_err
         print(msg)
     finally:
+        remove_file(new_cut_file)
         return tof_list_array
 
 
