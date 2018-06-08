@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 5.6.2018
+Updated on 8.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -500,24 +500,24 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         if not self.current_element_simulation:
             return
-        confirm_box = QtWidgets.QMessageBox()
-        confirm_box.setIcon(QtWidgets.QMessageBox.Warning)
-        yes_button = confirm_box.addButton(QtWidgets.QMessageBox.Yes)
-        confirm_box.addButton(QtWidgets.QMessageBox.Cancel)
-        confirm_box.setText("Are you sure you want to remove the element?")
-        confirm_box.setWindowTitle("Confirm")
-
-        confirm_box.exec()
-        if confirm_box.clickedButton() == yes_button:
-            element_simulation = self.element_manager \
-                .get_element_simulation_with_radio_button(
-                    self.radios.checkedButton())
-            self.remove_element(element_simulation)
-            self.current_element_simulation = None
-            self.parent_ui.elementInfoWidget.hide()
-            self.update_plot()
-        else:
-            return
+        reply = QtWidgets.QMessageBox.question(self, "Confirmation",
+                                               "Are you sure you want to "
+                                               "delete selected recoil "
+                                               "element?",
+                                               QtWidgets.QMessageBox.Yes |
+                                               QtWidgets.QMessageBox.No |
+                                               QtWidgets.QMessageBox.Cancel,
+                                               QtWidgets.QMessageBox.Cancel)
+        if reply == QtWidgets.QMessageBox.No or reply == \
+                QtWidgets.QMessageBox.Cancel:
+            return  # If clicked Yes, then continue normally
+        element_simulation = self.element_manager\
+            .get_element_simulation_with_radio_button(
+            self.radios.checkedButton())
+        self.remove_element(element_simulation)
+        self.current_element_simulation = None
+        self.parent_ui.elementInfoWidget.hide()
+        self.update_plot()
 
     def export_elements(self):
         """
