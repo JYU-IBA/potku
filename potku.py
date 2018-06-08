@@ -333,7 +333,31 @@ class Potku(QtWidgets.QMainWindow):
         """Removes selected tree item in tree view and in folder structure.
         """
         clicked_item = self.tree_widget.currentItem()
+
         if clicked_item:
+            if type(clicked_item.obj) is Measurement:
+                obj_type = "measurement"
+            elif type(clicked_item.obj) is Simulation:
+                obj_type = "simulation"
+            else:
+                obj_type = ""  # TODO: place for sample type checking.
+            reply = QtWidgets.QMessageBox.question(self, "Confirmation",
+                                                   "Deleting selected " +
+                                                   obj_type + " will delete"
+                                                   " all files and folders "
+                                                   "under selected " +
+                                                   obj_type + " directory."
+                                                   "\n\nAre you sure you want "
+                                                   "to delete selected "
+                                                   + obj_type + "?",
+                                                   QtWidgets.QMessageBox.Yes |
+                                                   QtWidgets.QMessageBox.No |
+                                                   QtWidgets.QMessageBox.Cancel,
+                                                   QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                return  # If clicked Yes, then continue normally
+
             # Remove object from Sample
             clicked_item.parent().obj.remove_obj(clicked_item.obj)
             clicked_item.obj.defaultlog.close()
