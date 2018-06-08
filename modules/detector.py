@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 5.6.2018
+Updated on 8.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -91,10 +91,10 @@ class Detector:
                                        [Layer("Layer_12C",
                                               [Element("C", 12.011, 1)],
                                               0.1, 2.25, 0.0)]),
-                          CircularFoil("Foil2", 9.0, 319.0,
+                          CircularFoil("Foil2", 10.0, 100.0,
                                        [Layer("Layer_12C",
                                               [Element("C", 12.011, 1)],
-                                              13.3, 2.25, 0.1)]),
+                                              13.0, 2.25, 0.1)]),
                           CircularFoil("Foil3", 18.0, 942.0,
                                        [Layer("Layer_12C",
                                               [Element("C", 12.011, 1)],
@@ -103,7 +103,7 @@ class Detector:
                                           [Layer("Layer_28Si",
                                                  [Element("N", 14.00, 0.57),
                                                   Element("Si", 28.09, 0.43)],
-                                                 1.0, 3.44, 57.8)])]
+                                                 100.0, 3.44, 57.8)])]
         self.tof_foils = tof_foils
         if not self.tof_foils:
             # Set default ToF foils
@@ -136,6 +136,19 @@ class Detector:
         self.efficiency_directory = os.path.join(self.path, "Efficiency_files")
         if not os.path.exists(self.efficiency_directory):
             os.makedirs(self.efficiency_directory)
+
+    def update_directory_references(self, obj):
+        """
+        Update detector's path and efficiency folder path and efficiencies'
+        paths.
+        """
+        old_path_to_det, det_file = os.path.split(self.path)
+        old_path_to_obj, det_folder = os.path.split(old_path_to_det)
+        new_path = os.path.join(obj.directory, det_folder)
+
+        self.path = os.path.join(new_path, det_file)
+
+        self.efficiency_directory = os.path.join(new_path, "Efficiency_files")
 
     def get_efficiency_files(self):
         """Get efficiency files that are in detector's efficiency file folder

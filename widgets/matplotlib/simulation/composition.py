@@ -70,7 +70,7 @@ class _CompositionWidget(MatplotlibWidget):
         self.on_draw()
 
         if self.layers:
-            self.__update_figure()
+            self.__update_figure(True)
 
     def on_click(self, event):
         """
@@ -98,7 +98,20 @@ class _CompositionWidget(MatplotlibWidget):
             action.setEnabled(True)
 
     def __delete_layer(self):
-        pass
+        """
+        Delete selected layer.
+        """
+        # Delete from layers list
+        if self.__selected_layer in self.layers:
+            self.layers.remove(self.__selected_layer)
+        # Remove as selected and remove selector
+        self.__layer_selector.set_visible(False)
+        self.__layer_selector = None
+        self.__selected_layer = None
+        # Update layer start depths
+        self.update_start_depths()
+        # Update canvas
+        self.__update_figure()
 
     def __modify_layer(self):
         """
@@ -242,14 +255,22 @@ class _CompositionWidget(MatplotlibWidget):
                 depth += layer.thickness
             dialog.layer.start_depth = depth
             self.layers.append(dialog.layer)
-            self.__update_figure()
+            self.__selected_layer = dialog.layer
+            self.__update_figure(add=True)
         elif dialog.layer:
             self.layers.insert(position, dialog.layer)
-            # TODO: update all the layers' start depth
-            self.__update_figure()
+            self.update_start_depths()
+            self.__selected_layer = dialog.layer
+            self.__update_figure(add=True)
 
-    def __update_figure(self):
-        """Updates the figure to match the information of the layers."""
+    def __update_figure(self, init=False, add=False):
+        """Updates the figure to match the information of the layers.
+
+        Args:
+            init: If view is being initialized.
+            add: If view is updated because of adding a new layer.
+        """
+        x_bounds = self.axes.get_xbound()
         self.axes.clear()
         next_layer_position = 0  # Position where the next layer will be drawn.
 
@@ -289,7 +310,18 @@ class _CompositionWidget(MatplotlibWidget):
             # Move the position where the next layer starts.
             next_layer_position += layer.thickness
 
-        self.axes.set_xbound(0, next_layer_position)
+        if init:
+            self.axes.set_xbound(0, next_layer_position)
+        else:
+            self.axes.set_xbound(x_bounds[0], x_bounds[1])
+
+        if add:
+            # Set right bound to bottom of new layer
+            view_bound = 0
+            for layer in self.layers:
+                view_bound += layer.thickness
+            self.axes.set_xbound(x_bounds[0], view_bound)
+
         self.__update_selected_layer()
         self.canvas.draw_idle()
         self.mpl_toolbar.update()

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.4.2013
-Updated on 30.5.2018
+Updated on 8.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -82,7 +82,7 @@ class EnergySpectrum:
             histed_files[key].append(last_val)
         if self.__global_settings.is_es_output_saved():
             for key in keys:
-                file = self.__measurement.measurement_file
+                file = self.__measurement.name
                 histed = histed_files[key]
                 filename = os.path.join(self.__directory_es,
                                         "{0}.{1}.hist".format(

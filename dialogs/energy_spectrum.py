@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 1.6.2018
+Updated on 7.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -331,6 +331,34 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             if self.progress_bar:
                 self.measurement.statusbar.removeWidget(self.progress_bar)
                 self.progress_bar.hide()
+
+    def update_use_cuts(self):
+        """
+        Update used cuts list with new Measurement cuts.
+        """
+        for file in os.listdir(self.parent.obj.directory_cuts):
+            for i in range(len(self.use_cuts)):
+                cut = self.use_cuts[i]
+                cut_split = cut.split('.')  # There is one dot more (.potku)
+                file_split = file.split('.')
+                if cut_split[2] == file_split[1] and cut_split[3] == \
+                        file_split[2] and cut_split[4] == file_split[3]:
+                    cut_file = os.path.join(self.parent.obj.directory_cuts,
+                                            file)
+                    self.use_cuts[i] = cut_file
+
+        changes_dir = os.path.join(
+            self.parent.obj.directory_composition_changes, "Changes")
+        if os.path.exists(changes_dir):
+            for file in os.listdir(changes_dir):
+                for i in range(len(self.use_cuts)):
+                    cut = self.use_cuts[i]
+                    cut_split = cut.split('.')  # There is one dot more (.potku)
+                    file_split = file.split('.')
+                    if cut_split[2] == file_split[1] and cut_split[3] == \
+                            file_split[2] and cut_split[4] == file_split[3]:
+                        cut_file = os.path.join(changes_dir, file)
+                        self.use_cuts[i] = cut_file
 
     def delete(self):
         """Delete variables and do clean up.
