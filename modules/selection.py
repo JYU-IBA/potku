@@ -253,13 +253,13 @@ class Selector:
             if os.path.exists(old_selection_file_in_new_path):
                 new_file = rename_file(old_selection_file_in_new_path,
                                        self.measurement_name + ".selections")
+                self.selection_file = os.path.join(self.directory, new_file)
         except OSError:
             QtWidgets.QMessageBox.critical(self, "Error",
                                            "Something went wrong while "
                                            "renaming the selections file.",
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
-        self.selection_file = os.path.join(self.directory, new_file)
 
     def purge(self):
         """Purges (removes) all open selections and allows new selection to be

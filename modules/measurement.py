@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 7.6.2018
+Updated on 8.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -395,6 +395,9 @@ class Measurement:
     def update_directory_references(self, new_dir):
         """
         Update directory references.
+
+        Args:
+            new_dir: Path to measurement folder with new name.
         """
         self.directory = new_dir
         self.directory_data = os.path.join(self.directory, "Data")
@@ -405,6 +408,9 @@ class Measurement:
                                                      "Depth_profiles")
         self.directory_energy_spectra = os.path.join(self.directory,
                                                      "Energy_spectra")
+
+        if self.detector:
+            self.detector.update_directory_references(self)
 
         self.selector.update_references(self)
 
