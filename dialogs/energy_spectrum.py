@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 7.6.2018
+Updated on 11.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -54,11 +54,13 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     """
     checked_cuts = {}
 
-    def __init__(self, parent, spectrum_type):
+    def __init__(self, parent, spectrum_type, element_simulation=None):
         """Inits energy spectrum dialog.
         
         Args:
             parent: A TabWidget.
+            spectrum_type: Whether spectrum is for measurement of simulation.
+            element_simulation: ElementSimulation object.
         """
         super().__init__()
         self.parent = parent
@@ -73,7 +75,12 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             EnergySpectrumParamsDialog.bin_width = \
                 self.parent.obj.request.default_measurement.channel_width
         else:
-            EnergySpectrumParamsDialog.bin_width = self.parent.obj.channel_width
+            if type(self.parent.obj) is Measurement:
+                EnergySpectrumParamsDialog.bin_width = \
+                    self.parent.obj.channel_width
+            else:
+                EnergySpectrumParamsDialog.bin_width = \
+                    element_simulation.channel_width
         self.ui.histogramTicksDoubleSpinBox.setValue(
             EnergySpectrumParamsDialog.bin_width)
 
