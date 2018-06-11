@@ -288,6 +288,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Points that have been selected
         self.selected_points = []
 
+        self.annotations = []
+
         # Span selection tool (used to select all points within a range
         # on the x axis)
         self.span_selector = SpanSelector(self.axes, self.on_span_select,
@@ -885,6 +887,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Update layer borders.
         """
+        for annotation in self.annotations:
+            annotation.set_visible(False)
+        self.annotations = []
+
         next_layer_position = 0
         for idx, layer in enumerate(self.target.layers):
             self.axes.axvspan(
@@ -893,9 +899,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             )
 
             # Put annotation in the middle of the rectangular patch.
-            self.axes.annotate(layer.name,
-                               (next_layer_position + layer.thickness / 2, 0.5),
-                               ha="center")
+            annotation = self.axes.annotate(layer.name,
+                                            (next_layer_position +
+                                             layer.thickness / 2, 0.5),
+                                            ha="center")
+
+            self.annotations.append(annotation)
 
             # Move the position where the next layer starts.
             next_layer_position += layer.thickness
