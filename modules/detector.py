@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 8.6.2018
+Updated on 11.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -47,7 +47,8 @@ class Detector:
                 "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
                 "angle_slope", "angle_offset", "path", "modification_time",\
                 "efficiencies", "efficiency_directory", "timeres", \
-                "detector_theta", "__measurement_settings_file_path"
+                "detector_theta", "__measurement_settings_file_path", \
+                "efficiencies_to_remove"
 
     def __init__(self, path, measurement_settings_file_path, name="Default",
                  description="", modification_time=None,
@@ -118,6 +119,7 @@ class Detector:
 
         # Efficiency file paths and directory
         self.efficiencies = []
+        self.efficiencies_to_remove = []
         self.efficiency_directory = None
 
         self.to_file(os.path.join(self.path),
@@ -188,6 +190,25 @@ class Detector:
             file_path: Path of the efficiency file.
         """
         shutil.copy(file_path, self.efficiency_directory)
+
+    def remove_efficiency_file_path(self, file_name):
+        """
+        Add efficiency file to remove to the list of to be removed efficiency
+        file paths and remove it from the efficiencies list.
+
+        Args:
+            file_name: Name of the efficiency file.
+        """
+        file_path = ""
+        folder_and_file = os.path.join("Efficiency_files", file_name)
+        for f in self.efficiencies:
+            if f.endswith(folder_and_file):
+                file_path = f
+            if f.endswith(file_name):
+                self.efficiencies.remove(f)
+
+        if file_path:
+            self.efficiencies_to_remove.append(file_path)
 
     def remove_efficiency_file(self, file_name):
         """Removes efficiency file from detector's efficiency file folder.

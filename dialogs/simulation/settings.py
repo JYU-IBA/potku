@@ -212,7 +212,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     # Detector
                     self.simulation.detector.efficiencies = list(
                         self.simulation.request.default_detector.
-                            efficiencies)
+                        efficiencies)
                     # TODO Why is default detector's efficiency list
                     # emptied?
                     # Default efficiencies are emptied because efficiencies

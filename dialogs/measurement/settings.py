@@ -247,7 +247,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                         # new Detector
                         self.measurement.detector.efficiencies = list(
                             self.measurement.request.default_detector.
-                                efficiencies)
+                            efficiencies)
                         self.measurement.request.default_detector.efficiencies \
                             = []
 

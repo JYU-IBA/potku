@@ -220,6 +220,13 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 # Detector settings
                 self.detector_settings_widget.update_settings()
 
+                for file in self.request.default_detector.efficiencies:
+                        self.request.default_detector.add_efficiency_file(file)
+
+                for file in \
+                        self.request.default_detector.efficiencies_to_remove:
+                    self.request.default_detector.remove_efficiency_file(file)
+
                 self.request.default_detector.to_file(os.path.join(
                     self.request.default_detector_folder, "Default.detector"),
                     default_measurement_settings_file)

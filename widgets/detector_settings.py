@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 8.6.2018
+Updated on 11.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -293,11 +293,12 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
 
             selected_efficiency_file = self.ui. \
                 efficiencyListWidget.currentItem().text()
-            self.obj.remove_efficiency_file(
-                selected_efficiency_file)
+            # self.obj.remove_efficiency_file(
+            #     selected_efficiency_file)
+            self.obj.remove_efficiency_file_path(selected_efficiency_file)
             self.ui.efficiencyListWidget.clear()
             self.ui.efficiencyListWidget.addItems(
-                self.obj.get_efficiency_files())
+                self.obj.get_efficiency_files_from_list())
 
     def __open_calibration_dialog(self):
         """
