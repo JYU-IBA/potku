@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 1.6.2018
+Updated on 11.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -118,6 +118,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.profile_settings_widget = ProfileSettingsWidget(
             self.request.default_measurement)
         self.ui.tabs.addTab(self.profile_settings_widget, "Profile")
+        self.__close = True
 
         self.show_simulation_settings()
 
@@ -177,7 +178,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         """
         try:
             self.__update_settings()
-            self.close()
+            if self.__close:
+                self.close()
         except TypeError:
             # Message has already been shown in update_settings()
             pass
@@ -195,72 +197,84 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         """Reads values from Request Settings dialog and updates them in
         default objects.
         """
-        # TODO: Proper checking for all setting values
-        try:
-            self.measurement_settings_widget.update_settings()
-            self.profile_settings_widget.update_settings()
+        # Check the target and detector angles
+        ok_pressed = self.measurement_settings_widget.check_angles()
+        if ok_pressed:
+            # TODO: Proper checking for all setting values
+            try:
+                self.measurement_settings_widget.update_settings()
+                self.profile_settings_widget.update_settings()
 
-            default_measurement_settings_file = os.path.join(
-                self.request.default_measurement.directory,
-                "Default.measurement")
-            self.request.default_measurement.profile_to_file(os.path.join(
-                self.request.default_measurement.directory, "Default.profile"))
-            self.request.default_measurement.run.to_file(
-                default_measurement_settings_file)
-            self.request.default_target.to_file(
-                None, default_measurement_settings_file)
+                default_measurement_settings_file = os.path.join(
+                    self.request.default_measurement.directory,
+                    "Default.measurement")
+                self.request.default_measurement.profile_to_file(os.path.join(
+                    self.request.default_measurement.directory,
+                    "Default.profile"))
+                self.request.default_measurement.run.to_file(
+                    default_measurement_settings_file)
+                self.request.default_target.to_file(
+                    None, default_measurement_settings_file)
 
-            # Detector settings
-            self.detector_settings_widget.update_settings()
+                # Detector settings
+                self.detector_settings_widget.update_settings()
 
-            self.request.default_detector.to_file(os.path.join(
-                self.request.default_detector_folder, "Default.detector"),
-                default_measurement_settings_file)
+                self.request.default_detector.to_file(os.path.join(
+                    self.request.default_detector_folder, "Default.detector"),
+                    default_measurement_settings_file)
 
-            # Simulation settings
-            elem_simu = self.request.default_element_simulation
-            elem_simu.name = self.simulation_settings_widget.nameLineEdit.text()
-            elem_simu.description = self.simulation_settings_widget\
-                .descriptionPlainTextEdit. toPlainText()
-            if self.simulation_settings_widget \
-               .typeOfSimulationComboBox.currentText() == "REC":
-                elem_simu.simulation_type = "ERD"
-            else:
-                elem_simu.simulation_type = "RBS"
-            elem_simu.simulation_mode = self.simulation_settings_widget \
-                .modeComboBox.currentText().lower()
-            elem_simu.number_of_ions = self.simulation_settings_widget \
-                .numberOfIonsSpinBox.value()
-            elem_simu.number_of_preions = self.simulation_settings_widget \
-                .numberOfPreIonsSpinBox.value()
-            elem_simu.seed_number = self.simulation_settings_widget\
-                .seedSpinBox.value()
-            elem_simu.number_of_recoils = self.simulation_settings_widget \
-                .numberOfRecoilsSpinBox.value()
-            elem_simu.number_of_scaling_ions = self.simulation_settings_widget \
-                .numberOfScalingIonsSpinBox.value()
-            elem_simu.minimum_scattering_angle = \
-                self.simulation_settings_widget\
-                    .minimumScatterAngleDoubleSpinBox.value()
-            elem_simu.minimum_main_scattering_angle = self \
-                .simulation_settings_widget \
-                .minimumMainScatterAngleDoubleSpinBox.value()
-            elem_simu .minimum_energy = self.simulation_settings_widget \
-                .minimumEnergyDoubleSpinBox.value()
+                # Simulation settings
+                elem_simu = self.request.default_element_simulation
+                elem_simu.name = self.simulation_settings_widget.nameLineEdit.\
+                    text()
+                elem_simu.description = self.simulation_settings_widget\
+                    .descriptionPlainTextEdit. toPlainText()
+                if self.simulation_settings_widget \
+                   .typeOfSimulationComboBox.currentText() == "REC":
+                    elem_simu.simulation_type = "ERD"
+                else:
+                    elem_simu.simulation_type = "RBS"
+                elem_simu.simulation_mode = self.simulation_settings_widget \
+                    .modeComboBox.currentText().lower()
+                elem_simu.number_of_ions = self.simulation_settings_widget \
+                    .numberOfIonsSpinBox.value()
+                elem_simu.number_of_preions = self.simulation_settings_widget \
+                    .numberOfPreIonsSpinBox.value()
+                elem_simu.seed_number = self.simulation_settings_widget\
+                    .seedSpinBox.value()
+                elem_simu.number_of_recoils = self.simulation_settings_widget \
+                    .numberOfRecoilsSpinBox.value()
+                elem_simu.number_of_scaling_ions = self.\
+                    simulation_settings_widget.numberOfScalingIonsSpinBox.\
+                    value()
+                elem_simu.minimum_scattering_angle = \
+                    self.simulation_settings_widget\
+                        .minimumScatterAngleDoubleSpinBox.value()
+                elem_simu.minimum_main_scattering_angle = self \
+                    .simulation_settings_widget \
+                    .minimumMainScatterAngleDoubleSpinBox.value()
+                elem_simu .minimum_energy = self.simulation_settings_widget \
+                    .minimumEnergyDoubleSpinBox.value()
 
-            self.request.default_simulation.to_file(os.path.join(
-                self.request.default_folder, "Default.simulation"))
-            elem_simu.mcsimu_to_file(os.path.join(self.request.default_folder,
-                                                  "Default.mcsimu"))
-        except TypeError:
-            QtWidgets.QMessageBox.question(self, "Warning",
-                                           "Some of the setting values have "
-                                           "not been set.\n" +
-                                           "Please input setting values to "
-                                           "save them.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
-            raise TypeError
+                self.request.default_simulation.to_file(os.path.join(
+                    self.request.default_folder, "Default.simulation"))
+                elem_simu.mcsimu_to_file(os.path.join(
+                    self.request.default_folder, "Default.mcsimu"))
+
+                self.__close = True
+            except TypeError:
+                # TODO: Make a better warning text.
+                QtWidgets.QMessageBox.question(self, "Warning",
+                                               "Some of the setting values have"
+                                               " not been set.\n" +
+                                               "Please input setting values to "
+                                               "save them.",
+                                               QtWidgets.QMessageBox.Ok,
+                                               QtWidgets.QMessageBox.Ok)
+                raise TypeError
+
+        else:
+            self.__close = False
 
     def __change_element(self, button, combo_box):
         """ Opens element selection dialog and loads selected element's isotopes

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 1.6.2018
+Updated on 11.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -104,22 +104,50 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             run_object.time)
 
         detector_object = self.obj.detector
-        if not detector_object:
+        target_object = self.obj.target
+        if not detector_object:  # Detector is an indicator whether default
+            # settings should be used.
             detector_object = self.obj.request.default_detector
+            target_object = self.obj.request.default_target
+        self.targetThetaDoubleSpinBox.setValue(
+                target_object.target_theta)
         self.detectorThetaDoubleSpinBox.setValue(
             detector_object.detector_theta)
         # TODO: Fix the angles!
         # self.detectorFiiDoubleSpinBox.setValue(
         #     detector_object.detector_theta + 180)
 
-        target_object = self.obj.target
-        if not target_object:
-            target_object = self.obj.request.default_target
-        self.targetThetaDoubleSpinBox.setValue(
-            target_object.target_theta)
         # TODO: update angles!
         # self.targetFiiDoubleSpinBox.setValue(
         #     target_object.target_theta + 180)
+
+    def check_angles(self):
+        """
+        Check that detector angle is bigger than target angle.
+        This is a must for measurement. Simulation can handle target angles
+        greater than the detector angle.
+
+        Return:
+            Whether it is ok to use current angle settings.
+        """
+        det_theta = self.detectorThetaDoubleSpinBox.value()
+        target_theta = self.targetThetaDoubleSpinBox.value()
+
+        if target_theta > det_theta:
+            reply = QtWidgets.QMessageBox.question(self, "Warning",
+                                                   "Measurement cannot use a "
+                                                   "target angle that is "
+                                                   "bigger than the detector "
+                                                   "angle (for simulation "
+                                                   "this is possible).\n\n Do "
+                                                   "you want to use these "
+                                                   "settings anyway?",
+                                           QtWidgets.QMessageBox.Ok |
+                                           QtWidgets.QMessageBox.Cancel,
+                                           QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.Cancel:
+                return False
+        return True
 
     def update_settings(self):
         """

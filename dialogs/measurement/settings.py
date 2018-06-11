@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 4.6.2018
+Updated on 11.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -119,6 +119,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.measurement)
         self.ui.tabs.addTab(self.profile_settings_widget, "Profile")
 
+        self.__close = True
+
         self.exec()
 
     def __change_element(self, button, combo_box):
@@ -206,105 +208,120 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                 os.remove(os.path.join(self.measurement.directory, file))
 
         else:
-            # Use Measurement specific settings
-            try:
-                self.measurement.use_default_profile_settings = False
-                if self.measurement.measurement_setting_file_name is None:
-                    file_name = "temp"
-                else:
-                    file_name = self.measurement.measurement_setting_file_name
+            # Check the target and detector angles
+            ok_pressed = self.measurement_settings_widget.check_angles()
+            if ok_pressed:
+                # Use Measurement specific settings
+                try:
+                    self.measurement.use_default_profile_settings = False
+                    if self.measurement.measurement_setting_file_name is None:
+                        file_name = "temp"
+                    else:
+                        file_name = self.measurement.\
+                            measurement_setting_file_name
 
-                if self.measurement.target is None:
-                    # Create default Target object for Measurement
-                    self.measurement.target = Target()
-                if self.measurement.run is None:
-                    # Create default Run object for Measurement
-                    self.measurement.run = Run()
+                    if self.measurement.target is None:
+                        # Create default Target object for Measurement
+                        self.measurement.target = Target()
+                    if self.measurement.run is None:
+                        # Create default Run object for Measurement
+                        self.measurement.run = Run()
 
-                det_folder_path = \
-                    os.path.join(self.measurement.directory, "Detector")
-                measurement_settings_file_path = \
-                    os.path.join(self.measurement.directory,
-                                 file_name + ".measurement")
+                    det_folder_path = \
+                        os.path.join(self.measurement.directory, "Detector")
+                    measurement_settings_file_path = \
+                        os.path.join(self.measurement.directory,
+                                     file_name + ".measurement")
 
-                if self.measurement.detector is None:
-                    # Create default Detector object for Measurement
-                    detector_file_path = os.path.join(det_folder_path,
-                                                      "Default.detector")
-                    if not os.path.exists(det_folder_path):
-                        os.makedirs(det_folder_path)
-                    self.measurement.detector = Detector(
-                        detector_file_path, measurement_settings_file_path)
-                    self.measurement.detector.update_directories(
-                        det_folder_path)
-                    # Transfer the default detector efficiencies to new Detector
-                    self.measurement.detector.efficiencies = list(
-                        self.measurement.request.default_detector.efficiencies)
-                    self.measurement.request.default_detector.efficiencies = []
+                    if self.measurement.detector is None:
+                        # Create default Detector object for Measurement
+                        detector_file_path = os.path.join(det_folder_path,
+                                                          "Default.detector")
+                        if not os.path.exists(det_folder_path):
+                            os.makedirs(det_folder_path)
+                        self.measurement.detector = Detector(
+                            detector_file_path, measurement_settings_file_path)
+                        self.measurement.detector.update_directories(
+                            det_folder_path)
+                        # Transfer the default detector efficiencies to
+                        # new Detector
+                        self.measurement.detector.efficiencies = list(
+                            self.measurement.request.default_detector.
+                                efficiencies)
+                        self.measurement.request.default_detector.efficiencies \
+                            = []
 
-                # Set Detector object to settings widget
-                self.detector_settings_widget.obj = self.measurement.detector
+                    # Set Detector object to settings widget
+                    self.detector_settings_widget.obj = self.measurement.\
+                        detector
 
-                # Update settings
-                self.measurement_settings_widget.update_settings()
-                self.detector_settings_widget.update_settings()
-                self.profile_settings_widget.update_settings()
-                self.measurement.detector.path = \
-                    os.path.join(det_folder_path,
-                                 self.measurement.detector.name + ".detector")
+                    # Update settings
+                    self.measurement_settings_widget.update_settings()
+                    self.detector_settings_widget.update_settings()
+                    self.profile_settings_widget.update_settings()
+                    self.measurement.detector.path = \
+                        os.path.join(det_folder_path,
+                                     self.measurement.detector.name +
+                                     ".detector")
 
-                # Delete possible extra .measurement files
-                filename_to_remove = ""
-                for file in os.listdir(self.measurement.directory):
-                    if file.endswith(".measurement"):
-                        filename_to_remove = file
-                        break
-                if filename_to_remove:
-                    os.remove(os.path.join(self.measurement.directory,
-                                           filename_to_remove))
+                    # Delete possible extra .measurement files
+                    filename_to_remove = ""
+                    for file in os.listdir(self.measurement.directory):
+                        if file.endswith(".measurement"):
+                            filename_to_remove = file
+                            break
+                    if filename_to_remove:
+                        os.remove(os.path.join(self.measurement.directory,
+                                               filename_to_remove))
 
-                # Save general measurement settings parameters.
-                new_measurement_settings_file_path = os.path.join(
-                    self.measurement.directory,
-                    self.measurement.measurement_setting_file_name +
-                    ".measurement")
-                self.measurement\
-                    .measurement_to_file(new_measurement_settings_file_path)
+                    # Save general measurement settings parameters.
+                    new_measurement_settings_file_path = os.path.join(
+                        self.measurement.directory,
+                        self.measurement.measurement_setting_file_name +
+                        ".measurement")
+                    self.measurement\
+                        .measurement_to_file(new_measurement_settings_file_path)
 
-                # Save run parameters
-                self.measurement.run.to_file(new_measurement_settings_file_path)
-                # Save detector parameters
-                self.measurement.detector.to_file(
-                    self.measurement.detector.path,
-                    new_measurement_settings_file_path)
-                for eff_file in self.measurement.detector.efficiencies:
-                    self.measurement.detector.add_efficiency_file(eff_file)
+                    # Save run parameters
+                    self.measurement.run.to_file(
+                        new_measurement_settings_file_path)
+                    # Save detector parameters
+                    self.measurement.detector.to_file(
+                        self.measurement.detector.path,
+                        new_measurement_settings_file_path)
+                    for eff_file in self.measurement.detector.efficiencies:
+                        self.measurement.detector.add_efficiency_file(eff_file)
 
-                # Save profile parameters
-                profile_file_path = \
-                    os.path.join(self.measurement.directory,
-                                 self.measurement.profile_name + ".profile")
-                self.measurement.profile_to_file(profile_file_path)
+                    # Save profile parameters
+                    profile_file_path = \
+                        os.path.join(self.measurement.directory,
+                                     self.measurement.profile_name + ".profile")
+                    self.measurement.profile_to_file(profile_file_path)
 
-                # Save target parameters
-                target_file_path = \
-                    os.path.join(self.measurement.directory,
-                                 self.measurement.target.name + ".target")
-                self.measurement.target\
-                    .to_file(target_file_path,
-                             new_measurement_settings_file_path)
+                    # Save target parameters
+                    target_file_path = \
+                        os.path.join(self.measurement.directory,
+                                     self.measurement.target.name + ".target")
+                    self.measurement.target\
+                        .to_file(target_file_path,
+                                 new_measurement_settings_file_path)
 
-            except TypeError:
-                QtWidgets.QMessageBox.question(self, "Warning",
-                                               "Some of the setting values "
-                                               "have not been set.\n" +
-                                               "Please input setting values to "
-                                               "save them.",
-                                               QtWidgets.QMessageBox.Ok,
-                                               QtWidgets.QMessageBox.Ok)
+                    self.__close = True
+
+                except TypeError:
+                    QtWidgets.QMessageBox.question(self, "Warning",
+                                                   "Some of the setting values "
+                                                   "have not been set.\n" +
+                                                   "Please input setting values"
+                                                   " to save them.",
+                                                   QtWidgets.QMessageBox.Ok,
+                                                   QtWidgets.QMessageBox.Ok)
+            else:
+                self.__close = False
 
     def __save_settings_and_close(self):
         """ Save settings and close dialog.
         """
         self.__update_parameters()
-        self.close()
+        if self.__close:
+            self.close()
