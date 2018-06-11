@@ -91,7 +91,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 self.measurement_settings_widget.ui.isotopeComboBox))
 
         self.measurement_settings_widget.ui.picture.setScaledContents(True)
-        pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
+        pixmap = QtGui.QPixmap(os.path.join("images",
+                                            "measurement_setup_angles.png"))
         self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
 
         # Add detector settings view to the settings view
