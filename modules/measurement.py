@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 8.6.2018
+Updated on 11.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -133,11 +133,6 @@ class Measurements:
         else:
             measurement_filename = os.path.split(file_path)[1]
             file_directory, file_name = os.path.split(file_path)
-
-            # Check if measurement on the same name already exists.
-            for key in sample.measurements.measurements.keys():
-                if sample.measurements.measurements[key].name == name:
-                    return None
 
             profile_file_path = None
             measurement_file = None

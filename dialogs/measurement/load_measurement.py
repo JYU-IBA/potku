@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 30.5.2018
+Updated on 11.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -63,7 +63,9 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
         self.sample = None
         self.directory = directory
         self.filename = ""
+        self.samples = samples
 
+        self.__close = True
         for sample in samples:
             self.ui.samplesComboBox.addItem(
                 "Sample " + "%02d" % sample.serial_number + " " + sample.name)
@@ -82,7 +84,7 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
         self.exec_()
 
     def __add_sample(self):
-        dialog = NewSampleDialog()
+        dialog = NewSampleDialog(self.samples)
         if dialog.name:
             self.ui.samplesComboBox.addItem(dialog.name)
             self.ui.samplesComboBox.setCurrentIndex(
@@ -102,7 +104,28 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
         if not self.sample:
             self.ui.addSampleButton.setFocus()
             return
-        self.close()
+
+        sample = self.__find_existing_sample()
+
+        if sample:
+            # Check if measurement on the same name already exists.
+            for key in sample.measurements.measurements.keys():
+                if sample.measurements.measurements[key].name == self.name:
+                    QtWidgets.QMessageBox.critical(self, "Already exists",
+                                                   "There already is a "
+                                                   "measurement with this name!"
+                                                   "\n\n Choose another "
+                                                   "name.",
+                                                   QtWidgets.QMessageBox.Ok,
+                                                   QtWidgets.QMessageBox.Ok)
+                    self.__close = False
+                    break
+                else:
+                    self.__close = True
+        else:
+            self.close()
+        if self.__close:
+            self.close()
 
     def __browse_files(self):
         self.filename = open_file_dialog(self, self.directory,
@@ -113,3 +136,16 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
     @staticmethod
     def __check_text(input_field):
         check_text(input_field)
+
+    def __find_existing_sample(self):
+        """
+        Find existing sample that matches the sample name in dialog.
+
+        Return:
+            Sample object or None.
+        """
+        for sample in self.samples:
+            if "Sample " + "%02d" % sample.serial_number + " " + sample.name \
+                    == self.sample:
+                return sample
+        return None

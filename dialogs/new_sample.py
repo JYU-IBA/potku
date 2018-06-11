@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 30.5.2018
+Updated on 11.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -40,8 +40,11 @@ from modules.general_functions import set_input_field_red
 class NewSampleDialog(QtWidgets.QDialog):
     """Dialog for creating a new sample.
     """
-    def __init__(self):
+    def __init__(self, samples):
         """Inits a new sample dialog.
+
+        Args:
+            samples: List of samples.
         """
         super().__init__()
 
@@ -55,6 +58,8 @@ class NewSampleDialog(QtWidgets.QDialog):
         self.ui.cancelButton.clicked.connect(self.close)
         self.name = ""
         self.description = ""
+        self.samples = samples
+        self.__close = True
 
         self.exec_()
 
@@ -65,7 +70,21 @@ class NewSampleDialog(QtWidgets.QDialog):
         if not self.name:
             self.ui.nameLineEdit.setFocus()
             return
-        self.close()
+        for sample in self.samples:
+            if sample.name == self.name:
+                QtWidgets.QMessageBox.critical(self, "Already exists",
+                                               "There already is a "
+                                               "sample with this name!"
+                                               "\n\n Choose another "
+                                               "name.",
+                                               QtWidgets.QMessageBox.Ok,
+                                               QtWidgets.QMessageBox.Ok)
+                self.__close = False
+                break
+            else:
+                self.__close = True
+        if self.__close:
+            self.close()
 
     @staticmethod
     def __check_text(input_field):
