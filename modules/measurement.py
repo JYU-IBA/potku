@@ -177,6 +177,8 @@ class Measurements:
                                     os.path.join(measurement.directory,
                                                  measurement_file),
                                     self.request)
+                                measurement.detector.update_directories(
+                                    det_folder)
                 self.request.samples.measurements.measurements[tab_id] = \
                     measurement
 

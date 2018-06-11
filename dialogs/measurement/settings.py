@@ -258,6 +258,15 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                     # Update settings
                     self.measurement_settings_widget.update_settings()
                     self.detector_settings_widget.update_settings()
+
+                    for file in self.measurement.detector.efficiencies:
+                        self.measurement.detector.add_efficiency_file(file)
+
+                    for file in \
+                            self.measurement.detector.efficiencies_to_remove:
+                        self.measurement.detector.remove_efficiency_file(
+                            file)
+
                     self.profile_settings_widget.update_settings()
                     self.measurement.detector.path = \
                         os.path.join(det_folder_path,
@@ -289,8 +298,6 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                     self.measurement.detector.to_file(
                         self.measurement.detector.path,
                         new_measurement_settings_file_path)
-                    for eff_file in self.measurement.detector.efficiencies:
-                        self.measurement.detector.add_efficiency_file(eff_file)
 
                     # Save profile parameters
                     profile_file_path = \

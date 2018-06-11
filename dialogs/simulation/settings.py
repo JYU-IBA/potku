@@ -233,6 +233,14 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                  self.simulation.detector.name +
                                  ".detector")
 
+                for file in self.simulation.detector.efficiencies:
+                    self.simulation.detector.add_efficiency_file(file)
+
+                for file in \
+                        self.simulation.detector.efficiencies_to_remove:
+                    self.simulation.detector.remove_efficiency_file(
+                        file)
+
                 # Save measurement settings parameters.
                 new_measurement_settings_file_path = os.path.join(
                     self.simulation.directory,
@@ -279,8 +287,6 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                 self.simulation.detector.to_file(
                     self.simulation.detector.path,
                     new_measurement_settings_file_path)
-                for eff_file in self.simulation.detector.efficiencies:
-                    self.simulation.detector.add_efficiency_file(eff_file)
 
                 # Save Target object to file
                 self.simulation.target.to_file(
