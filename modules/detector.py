@@ -189,7 +189,10 @@ class Detector:
         Args:
             file_path: Path of the efficiency file.
         """
-        shutil.copy(file_path, self.efficiency_directory)
+        try:
+            shutil.copy(file_path, self.efficiency_directory)
+        except shutil.SameFileError:
+            pass
 
     def remove_efficiency_file_path(self, file_name):
         """
