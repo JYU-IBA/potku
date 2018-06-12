@@ -92,7 +92,7 @@ class RequestNewDialog(QtWidgets.QDialog):
         Validate the request name.
         """
         text = self.ui.requestNameLineEdit.text()
-        regex = "^[A-Za-z0-9_-]*"
+        regex = "^[A-Za-z0-9_ÖöÄäÅå-]*"
         valid_text = validate_text_input(text, regex)
 
         self.ui.requestNameLineEdit.setText(valid_text)

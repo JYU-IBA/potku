@@ -566,9 +566,9 @@ def validate_text_input(text, regex):
     valid = re.match(regex + "$", text)
 
     if "_" in regex:  # Request name
-        substitute_regex = "[^A-Za-z0-9_-]"
+        substitute_regex = "[^A-Za-z0-9_ÖöÄäÅå-]"
     else:  # Other names
-        substitute_regex = "[^A-Za-z0-9-]"
+        substitute_regex = "[^A-Za-z0-9-ÖöÄäÅå]"
 
     if not valid:
         valid_text = re.sub(substitute_regex, '', text)

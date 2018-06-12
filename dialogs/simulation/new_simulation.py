@@ -151,7 +151,7 @@ class SimulationNewDialog(QtWidgets.QDialog):
         Validate the simulation name.
         """
         text = self.ui.simulationNameLineEdit.text()
-        regex = "^[A-Za-z0-9-]*"
+        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
         valid_text = validate_text_input(text, regex)
 
         self.ui.simulationNameLineEdit.setText(valid_text)

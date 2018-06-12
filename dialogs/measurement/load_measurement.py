@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 11.6.2018
+Updated on 12.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -38,6 +38,7 @@ from modules.general_functions import open_file_dialog
 from modules.general_functions import check_text
 from modules.general_functions import set_input_field_red
 from modules.general_functions import set_input_field_white
+from modules.general_functions import validate_text_input
 
 
 class LoadMeasurementDialog(QtWidgets.QDialog):
@@ -80,6 +81,9 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
         set_input_field_red(self.ui.pathLineEdit)
         self.ui.pathLineEdit.textChanged.connect(lambda: self.__check_text(
             self.ui.pathLineEdit))
+
+        self.ui.nameLineEdit.textEdited.connect(
+            lambda: self.__validate())
 
         self.exec_()
 
@@ -149,3 +153,13 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
                     == self.sample:
                 return sample
         return None
+
+    def __validate(self):
+        """
+        Validate measurement's name.
+        """
+        text = self.ui.nameLineEdit.text()
+        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+        valid_text = validate_text_input(text, regex)
+
+        self.ui.nameLineEdit.setText(valid_text)
