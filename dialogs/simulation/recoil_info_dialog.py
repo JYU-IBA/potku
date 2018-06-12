@@ -32,6 +32,7 @@ import os
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
+import time
 
 
 class RecoilInfoDialog(QtWidgets.QDialog):
@@ -58,6 +59,9 @@ class RecoilInfoDialog(QtWidgets.QDialog):
             recoil_element.reference_density)
         self.description = ""
         self.isOk = False
+
+        self.__ui.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+            recoil_element.modification_time)))
 
         self.exec_()
 

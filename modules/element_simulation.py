@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 4.6.2018
+Updated on 12.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -394,6 +394,9 @@ class ElementSimulation:
                                         points)
                 element.reference_density = obj["reference_density"] / 1e22
                 element.simulation_type = obj["simulation_type"]
+
+                element.modification_time = obj["modification_time_unix"]
+
                 element.channel_width = channel_width
                 recoil_elements.append(element)
                 # TODO For now, reading just the first matching .rec file.
