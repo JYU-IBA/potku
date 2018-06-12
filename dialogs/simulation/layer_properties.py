@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 6.6.2018
+Updated on 12.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -39,6 +39,10 @@ from dialogs.element_selection import ElementSelectionDialog
 from modules.element import Element
 from modules.layer import Layer
 
+from modules.general_functions import validate_text_input
+from modules.general_functions import check_text
+from modules.general_functions import set_input_field_red
+
 
 class LayerPropertiesDialog(QtWidgets.QDialog):
     """Dialog for adding a new layer or editing an existing one.
@@ -59,8 +63,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         # Some border of widgets might be displaying red, because information
         # is missing. Remove the red border by reseting the style sheets, for
         # example when user changes the text in line edit.
+        set_input_field_red(self.__ui.nameEdit)
         self.__ui.nameEdit.textChanged.connect(
-            lambda: self.__ui.nameEdit.setStyleSheet(""))
+            lambda: self.__check_text(self.__ui.nameEdit))
         self.__ui.thicknessEdit.valueChanged.connect(
             lambda: self.__ui.thicknessEdit.setStyleSheet(""))
         self.__ui.densityEdit.valueChanged.connect(
@@ -76,6 +81,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.__show_layer_info()
         else:
             self.__add_element_layout()
+
+        self.__ui.nameEdit.textEdited.connect(lambda: self.__validate())
 
         self.exec_()
 
@@ -152,6 +159,15 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             return False
         return True  # If everything is ok, return true.
 
+    @staticmethod
+    def __check_text(input_field):
+        """Checks if there is text in given input field.
+
+        Args:
+            input_field: Input field the contents of which are checked.
+        """
+        check_text(input_field)
+
     def __accept_settings(self):
         """Function for accepting the current settings and closing the dialog
         window.
@@ -206,6 +222,16 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.__ui.scrollArea.setStyleSheet("")
         self.__element_layouts.append(ElementLayout(
             self.__ui.scrollAreaWidgetContents, element))
+
+    def __validate(self):
+        """
+        Validate the layer name.
+        """
+        text = self.__ui.nameEdit.text()
+        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+        valid_text = validate_text_input(text, regex)
+
+        self.__ui.nameEdit.setText(valid_text)
 
 
 class ElementLayout(QtWidgets.QHBoxLayout):

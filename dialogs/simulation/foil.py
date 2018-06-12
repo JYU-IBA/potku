@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2018
-Updated on 3.5.2018
+Updated on 12.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -34,6 +34,10 @@ from PyQt5 import QtWidgets
 from widgets.matplotlib.simulation.composition import FoilCompositionWidget
 from modules.foil import CircularFoil
 from modules.foil import RectangularFoil
+
+from modules.general_functions import set_input_field_red
+from modules.general_functions import check_text
+from modules.general_functions import validate_text_input
 
 
 class FoilDialog(QtWidgets.QDialog):
@@ -70,6 +74,10 @@ class FoilDialog(QtWidgets.QDialog):
         self.ui.dimensionLayout.addWidget(self.dimension_label)
         self.ui.dimensionLayout.addWidget(self.dimension_edits[0])
 
+        set_input_field_red(self.ui.nameEdit)
+        self.ui.nameEdit.textChanged.connect(lambda: self.__check_text(
+            self.ui.nameEdit))
+
         self.show_parameters()
 
         # This widget adds itself into the matplotlib_layout
@@ -82,6 +90,8 @@ class FoilDialog(QtWidgets.QDialog):
         self.ui.cancelButton.clicked.connect(self.close)
         self.ui.okButton.clicked.connect(lambda:
                                          self._save_foil_info_and_close())
+
+        self.ui.nameEdit.textEdited.connect(lambda: self.__validate())
 
         self.exec_()
 
@@ -133,6 +143,15 @@ class FoilDialog(QtWidgets.QDialog):
             else:
                 self.foil_type_changed = False
 
+    @staticmethod
+    def __check_text(input_field):
+        """Checks if there is text in given input field.
+
+        Args:
+            input_field: Input field the contents of which are checked.
+        """
+        check_text(input_field)
+
     def _save_foil_info_and_close(self):
         """Saves foil information and closes dialog."""
         if self.foil_type_changed:
@@ -158,3 +177,13 @@ class FoilDialog(QtWidgets.QDialog):
                 self.foil.size = (self.first_dimension_edit.value(),
                                   self.second_dimension_edit.value())
         self.close()
+
+    def __validate(self):
+        """
+        Validate the layer name.
+        """
+        text = self.ui.nameEdit.text()
+        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+        valid_text = validate_text_input(text, regex)
+
+        self.ui.nameEdit.setText(valid_text)
