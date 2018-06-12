@@ -35,6 +35,9 @@ import os
 from PyQt5 import uic
 from PyQt5 import QtWidgets
 from modules.general_functions import validate_text_input
+from modules.general_functions import check_text
+from modules.general_functions import set_input_field_white
+from modules.general_functions import set_input_field_red
 
 
 class RequestNewDialog(QtWidgets.QDialog):
@@ -64,6 +67,13 @@ class RequestNewDialog(QtWidgets.QDialog):
 
         self.ui.requestNameLineEdit.textEdited.connect(lambda:
                                                          self.__validate())
+        set_input_field_red(self.ui.requestNameLineEdit)
+        self.ui.requestNameLineEdit.textChanged.connect(
+            lambda: self.__check_text(self.ui.requestNameLineEdit))
+
+        self.ui.requestDirectoryLineEdit.textChanged.connect(
+            lambda: self.__check_text(self.ui.requestDirectoryLineEdit))
+
         self.__close = True
 
         self.exec_()
@@ -87,6 +97,15 @@ class RequestNewDialog(QtWidgets.QDialog):
 
         self.ui.requestNameLineEdit.setText(valid_text)
 
+    @staticmethod
+    def __check_text(input_field):
+        """Checks if there is text in given input field.
+
+        Args:
+            input_field: Input field the contents of which are checked.
+        """
+        check_text(input_field)
+
     def __create_request(self):
         """Create new request.
         """
@@ -98,10 +117,10 @@ class RequestNewDialog(QtWidgets.QDialog):
         # TODO: check for valid folder needed
         # TODO: Get rid of print -> message window perhaps
         if not self.folder:
-            print("Request folder required!")
+            self.ui.browseFolderButton.setFocus()
             return
         if not self.name:
-            print("Request name required!")
+            self.ui.requestNameLineEdit.setFocus()
             return
         try:
             # Adding .potku gives all requests the same ending.
