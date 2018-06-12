@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 11.6.2018
+Updated on 12.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -34,6 +34,10 @@ from PyQt5 import uic, QtWidgets
 from modules.element import Element
 import modules.masses as masses
 
+from modules.general_functions import set_input_field_red
+from modules.general_functions import check_text
+from modules.general_functions import validate_text_input
+
 
 class MeasurementSettingsWidget(QtWidgets.QWidget):
     """Class for creating a measurement settings tab.
@@ -52,7 +56,13 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
                              self)
         self.obj = obj
 
+        set_input_field_red(self.ui.nameLineEdit)
+        self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
+            self.ui.nameLineEdit))
+
         self.show_settings()
+
+        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
 
     def show_settings(self):
         """
@@ -178,3 +188,23 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
                 .detectorThetaDoubleSpinBox.value()
             self.obj.target.target_theta = self \
                 .targetThetaDoubleSpinBox.value()
+
+    @staticmethod
+    def __check_text(input_field):
+        """Checks if there is text in given input field.
+
+        Args:
+            input_field: Input field the contents of which are checked.
+        """
+        check_text(input_field)
+
+    def __validate(self):
+        """
+        Validate the measurement settings file name.
+        """
+        text = self.ui.nameLineEdit.text()
+        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+        valid_text = validate_text_input(text, regex)
+
+        self.ui.nameLineEdit.setText(valid_text)
+
