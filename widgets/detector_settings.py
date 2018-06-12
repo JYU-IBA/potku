@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 11.6.2018
+Updated on 12.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -39,6 +39,9 @@ from dialogs.simulation.foil import FoilDialog
 from modules.foil import CircularFoil
 from widgets.foil import FoilWidget
 from modules.general_functions import open_file_dialog
+from modules.general_functions import set_input_field_red
+from modules.general_functions import check_text
+from modules.general_functions import validate_text_input
 
 
 class DetectorSettingsWidget(QtWidgets.QWidget):
@@ -103,6 +106,12 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             connect(self.__open_calibration_dialog)
         self.ui.executeCalibrationButton.setEnabled(
             not self.request.samples.measurements.is_empty())
+
+        set_input_field_red(self.ui.nameLineEdit)
+        self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
+            self.ui.nameLineEdit))
+
+        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
 
         self.show_settings()
 
@@ -346,3 +355,23 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
 
         self.foils_layout.removeWidget(foil_widget)
         foil_widget.deleteLater()
+
+    @staticmethod
+    def __check_text(input_field):
+        """Checks if there is text in given input field.
+
+        Args:
+            input_field: Input field the contents of which are checked.
+        """
+        check_text(input_field)
+
+    def __validate(self):
+        """
+        Validate the sample name.
+        """
+        text = self.ui.nameLineEdit.text()
+        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+        valid_text = validate_text_input(text, regex)
+
+        self.ui.nameLineEdit.setText(valid_text)
+
