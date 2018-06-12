@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 11.6.2018
+Updated on 12.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -38,6 +38,7 @@ from dialogs.new_sample import NewSampleDialog
 from modules.general_functions import check_text
 from modules.general_functions import set_input_field_white
 from modules.general_functions import set_input_field_red
+from modules.general_functions import validate_text_input
 
 
 class SimulationNewDialog(QtWidgets.QDialog):
@@ -73,6 +74,9 @@ class SimulationNewDialog(QtWidgets.QDialog):
         self.name = None
         self.sample = None
         self.__close = True
+
+        self.ui.simulationNameLineEdit.textEdited.connect(
+            lambda: self.__validate())
 
         self.exec_()
 
@@ -141,3 +145,13 @@ class SimulationNewDialog(QtWidgets.QDialog):
                     == self.sample:
                 return sample
         return None
+
+    def __validate(self):
+        """
+        Validate the simulation name.
+        """
+        text = self.ui.simulationNameLineEdit.text()
+        regex = "^[A-Za-z0-9-]*"
+        valid_text = validate_text_input(text, regex)
+
+        self.ui.simulationNameLineEdit.setText(valid_text)
