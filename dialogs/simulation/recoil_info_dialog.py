@@ -34,6 +34,10 @@ from PyQt5 import uic
 from PyQt5 import QtWidgets
 import time
 
+from modules.general_functions import set_input_field_red
+from modules.general_functions import check_text
+from modules.general_functions import validate_text_input
+
 
 class RecoilInfoDialog(QtWidgets.QDialog):
     """Dialog for editing the name, description and reference density
@@ -51,6 +55,10 @@ class RecoilInfoDialog(QtWidgets.QDialog):
         self.__ui.okPushButton.clicked.connect(self.__accept_settings)
         self.__ui.cancelPushButton.clicked.connect(self.close)
 
+        set_input_field_red(self.__ui.nameLineEdit)
+        self.__ui.nameLineEdit.textChanged.connect(
+            lambda: self.__check_text(self.__ui.nameLineEdit))
+
         self.name = ""
         self.__ui.nameLineEdit.setText(recoil_element.name)
         self.__ui.descriptionLineEdit.setPlainText(
@@ -62,6 +70,8 @@ class RecoilInfoDialog(QtWidgets.QDialog):
 
         self.__ui.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             recoil_element.modification_time)))
+
+        self.__ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
 
         self.exec_()
 
@@ -75,3 +85,22 @@ class RecoilInfoDialog(QtWidgets.QDialog):
             .value()
         self.isOk = True
         self.close()
+
+    @staticmethod
+    def __check_text(input_field):
+        """Checks if there is text in given input field.
+
+        Args:
+            input_field: Input field the contents of which are checked.
+        """
+        check_text(input_field)
+
+    def __validate(self):
+        """
+        Validate the recoil name.
+        """
+        text = self.__ui.nameLineEdit.text()
+        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+        valid_text = validate_text_input(text, regex)
+
+        self.__ui.nameLineEdit.setText(valid_text)
