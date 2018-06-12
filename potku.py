@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 11.6.2018
+Updated on 12.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -65,6 +65,8 @@ from modules.simulation import Simulation
 from modules.request import Request
 from widgets.measurement.tab import MeasurementTabWidget
 from widgets.simulation.tab import SimulationTabWidget
+
+from modules.general_functions import validate_text_input
 
 
 class Potku(QtWidgets.QMainWindow):
@@ -207,7 +209,6 @@ class Potku(QtWidgets.QMainWindow):
     def __rename_tree_item(self):
         """Renames selected tree item in tree view and in folder structure.
         """
-        # TODO Prevent renaming as empty string.
         clicked_item = self.tree_widget.currentItem()
         self.tree_widget.editItem(clicked_item)
 
@@ -216,9 +217,31 @@ class Potku(QtWidgets.QMainWindow):
         when tree item is changed.
         """
         clicked_item = self.tree_widget.currentItem()
+
         if clicked_item:
+            regex = "^[A-Za-z0-9-ÖöÄäÅå]+"
+            valid_text = validate_text_input(clicked_item.text(0), regex)
+
+            if valid_text != clicked_item.text(0):
+                QtWidgets.QMessageBox.information(
+                    self, "Notice", "You can't use special characters other "
+                                    "than '-' in the name.",
+                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+                clicked_item.setText(0, clicked_item.obj.name)
+                return
+
+            if valid_text == "":
+                self.tree_widget.blockSignals(True)
+                clicked_item.setText(0, clicked_item.obj.name)
+                self.tree_widget.blockSignals(False)
+                return
+
+            if valid_text == clicked_item.obj.name:
+                clicked_item.setText(0, clicked_item.obj.name)
+                return
+
             try:
-                new_name = clicked_item.text(0)
+                new_name = valid_text
                 new_path = clicked_item.obj.name_prefix + "%02d" % \
                     clicked_item.obj.serial_number + "-" + new_name
 
@@ -242,6 +265,7 @@ class Potku(QtWidgets.QMainWindow):
                 return
             self.tree_widget.blockSignals(True)
             clicked_item.obj.name = new_name
+            clicked_item.setText(0, clicked_item.obj.name)
 
             clicked_item.obj.update_directory_references(new_dir)
 
