@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 30.5.2018
+Updated on 12.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -34,6 +34,7 @@ import os
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
+from modules.general_functions import validate_text_input
 
 
 class RequestNewDialog(QtWidgets.QDialog):
@@ -61,6 +62,10 @@ class RequestNewDialog(QtWidgets.QDialog):
         self.ui.pushCancel.clicked.connect(self.close)
         self.ui.browseFolderButton.clicked.connect(self.__browser_folder)
 
+        self.ui.requestNameLineEdit.textEdited.connect(lambda:
+                                                         self.__validate())
+        self.__close = True
+
         self.exec_()
 
     def __browser_folder(self):
@@ -72,11 +77,22 @@ class RequestNewDialog(QtWidgets.QDialog):
             self.folder = folder
             self.ui.requestDirectoryLineEdit.setText(folder)
 
+    def __validate(self):
+        """
+        Validate the request name.
+        """
+        text = self.ui.requestNameLineEdit.text()
+        regex = "^[A-Za-z0-9_-]*"
+        valid_text = validate_text_input(text, regex)
+
+        self.ui.requestNameLineEdit.setText(valid_text)
+
     def __create_request(self):
         """Create new request.
         """
         self.folder = self.ui.requestDirectoryLineEdit.text()
-        self.name = self.ui.requestNameLineEdit.text().replace(" ", "_")
+        self.name = self.ui.requestNameLineEdit.text()
+
         # TODO: Remove replace above to allow spaces in request names.
         # This does not include the actual request folder, replace below.
         # TODO: check for valid folder needed
@@ -88,17 +104,24 @@ class RequestNewDialog(QtWidgets.QDialog):
             print("Request name required!")
             return
         try:
-            # Adding .Potku gives all requests the same ending.
-            directory = os.path.join(self.folder,
-                                     self.name.replace(" ", "_")) + ".potku"
+            # Adding .potku gives all requests the same ending.
+            directory = os.path.join(self.folder, self.name) + ".potku"
             if not os.path.exists(directory):
                 os.makedirs(directory)
                 self.directory = directory
                 logging.getLogger("request").info("Created the request.")
+                self.__close = True
             else:
-                print("Folder already exists: {0}".format(directory))
-                return
-            self.close()
+                QtWidgets.QMessageBox.critical(self, "Already exists",
+                                               "There already is a "
+                                               "request with this name!"
+                                               "\n\n Choose another "
+                                               "name.",
+                                               QtWidgets.QMessageBox.Ok,
+                                               QtWidgets.QMessageBox.Ok)
+                self.__close = False
+            if self.__close:
+                self.close()
         except:
             print("We've done something wrong. "
                   "Most likely invalid request name.")

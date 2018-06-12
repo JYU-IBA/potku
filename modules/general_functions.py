@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 8.6.2018
+Updated on 12.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -552,3 +552,26 @@ def set_input_field_white(input_field):
         input_field: Qt widget that supports Qt Style Sheets.
     """
     input_field.setStyleSheet("background-color: %s" % "#ffffff")
+
+
+def validate_text_input(text, regex):
+    """
+    Validate the text using given regular expression. If not valid, remove
+    invalid characters.
+
+    Args:
+        text: Text to validate.
+        regex: Regular expression to match.
+    """
+    valid = re.match(regex + "$", text)
+
+    if "_" in regex:  # Request name
+        substitute_regex = "[^A-Za-z0-9_-]"
+    else:  # Other names
+        substitute_regex = "[^A-Za-z0-9-]"
+
+    if not valid:
+        valid_text = re.sub(substitute_regex, '', text)
+        return valid_text
+    else:
+        return text
