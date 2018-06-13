@@ -119,6 +119,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.measurement)
         self.ui.tabs.addTab(self.profile_settings_widget, "Profile")
 
+        self.ui.tabs.currentChanged.connect(lambda: self.__check_for_red())
+
         self.__close = True
 
         self.exec()
@@ -144,6 +146,19 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.ui.tabs.setEnabled(False)
         else:
             self.ui.tabs.setEnabled(True)
+
+    def __check_for_red(self):
+        """
+        Check whether there are any invalid field in the tabs.
+        """
+        for i in range(self.ui.tabs.count()):
+            tab_widget = self.ui.tabs.widget(i)
+            valid = tab_widget.fields_are_valid
+            if not valid:
+                self.ui.tabs.blockSignals(True)
+                self.tabs.setCurrentWidget(tab_widget)
+                self.ui.tabs.blockSignals(False)
+                break
 
     def __enabled_element_information(self):
         """ Change the UI accordingly when an element is selected.
@@ -171,8 +186,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.measurement.use_default_profile_settings = True
             self.measurement.measurement_setting_file_description = \
                 measurement.measurement_setting_file_description
-            self.measurement.target.target_theta = \
-                self.measurement.request.default_target.target_theta
+            self.measurement.target = None
 
             # Revert all profile parameters to default.
             self.measurement.profile_description = \
@@ -206,11 +220,21 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             for file in filenames_to_remove:
                 # Remove Measurement specific .measurement and .profile files
                 os.remove(os.path.join(self.measurement.directory, file))
-
+            self.__close = True
         else:
             # Check the target and detector angles
             ok_pressed = self.measurement_settings_widget.check_angles()
             if ok_pressed:
+                if not self.ui.tabs.currentWidget().fields_are_valid:
+                    QtWidgets.QMessageBox.critical(self, "Warning",
+                                                   "Some of the setting values "
+                                                   "have not been set.\n" +
+                                                   "Please input values in "
+                                                   "fields indicated in red.",
+                                                   QtWidgets.QMessageBox.Ok,
+                                                   QtWidgets.QMessageBox.Ok)
+                    self.__close = False
+                    return
                 # Use Measurement specific settings
                 try:
                     self.measurement.use_default_profile_settings = False
