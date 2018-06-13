@@ -172,6 +172,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
             self.__close = False
+            self.fields_are_valid = True
             return
 
         name = self.__ui.nameEdit.text()
