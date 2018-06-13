@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 12.6.2018
+Updated on 13.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -63,13 +63,18 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         # Some border of widgets might be displaying red, because information
         # is missing. Remove the red border by reseting the style sheets, for
         # example when user changes the text in line edit.
+        # set_input_field_red(self.__ui.nameEdit)
+        # self.__ui.nameEdit.textChanged.connect(
+        #     lambda: self.__check_text(self.__ui.nameEdit))
+        # self.__ui.thicknessEdit.valueChanged.connect(
+        #     lambda: self.__ui.thicknessEdit.setStyleSheet(""))
+        # self.__ui.densityEdit.valueChanged.connect(
+        #     lambda: self.__ui.densityEdit.setStyleSheet(""))
+
         set_input_field_red(self.__ui.nameEdit)
+        self.fields_are_valid = False
         self.__ui.nameEdit.textChanged.connect(
-            lambda: self.__check_text(self.__ui.nameEdit))
-        self.__ui.thicknessEdit.valueChanged.connect(
-            lambda: self.__ui.thicknessEdit.setStyleSheet(""))
-        self.__ui.densityEdit.valueChanged.connect(
-            lambda: self.__ui.densityEdit.setStyleSheet(""))
+            lambda: self.__check_text(self.__ui.nameEdit, self))
 
         # Connect buttons to events
         self.__ui.addElementButton.clicked.connect(self.__add_element_layout)
@@ -83,14 +88,17 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.__add_element_layout()
 
         self.__ui.nameEdit.textEdited.connect(lambda: self.__validate())
+        self.__close = True
 
         self.exec_()
 
     def __save_layer(self):
         """Function for adding a new layer with given settings.
         """
-        if self.__check_if_settings_ok():
-            self.__accept_settings()
+        self.__check_if_settings_ok()
+        self.__accept_settings()
+        if self.__close:
+            self.close()
 
     def __show_layer_info(self):
         """
@@ -110,68 +118,62 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
              True if the settings are okay and false if some required fields
              are empty.
         """
-        failed_style = "background-color: #FFDDDD"
-        empty_fields = []
         help_sum = 0
-
-        # Check if 'nameEdit' is empty.
-        if not self.__ui.nameEdit.text():
-            self.__ui.nameEdit.setStyleSheet(failed_style)
-            empty_fields.append("Name")
 
         # Check if 'scrollArea' is empty (no elements).
         if self.__ui.scrollAreaWidgetContents.layout().isEmpty():
-            self.__ui.scrollArea.setStyleSheet(failed_style)
-            empty_fields.append("Elements")
+            set_input_field_red(self.__ui.scrollArea)
+            self.fields_are_valid = False
 
         # Check if 'thicknessEdit' is empty.
         if not self.__ui.thicknessEdit.value():
-            self.__ui.thicknessEdit.setStyleSheet(failed_style)
-            empty_fields.append("Thickness")
+            set_input_field_red(self.__ui.thicknessEdit)
+            self.fields_are_valid = False
 
         # Check if 'densityEdit' is empty.
         if not self.__ui.densityEdit.text():
-            self.__ui.densityEdit.setStyleSheet(failed_style)
-            empty_fields.append("Density")
+            set_input_field_red(self.__ui.densityEdit)
+            self.fields_are_valid = False
 
         # Check that the element specific settings are okay.
-        one_or_more_empty = False
         for child in self.__ui.scrollAreaWidgetContents.children():
             if type(child) is QtWidgets.QPushButton:
                 if child.text() == "Select":
-                    child.setStyleSheet(failed_style)
-                    one_or_more_empty = True
+                    set_input_field_red(child)
+                    self.fields_are_valid = False
             if type(child) is QtWidgets.QLineEdit:
                 if child.isEnabled():
                     if child.text():
                         help_sum += float(child.text())
                     else:
-                        child.setStyleSheet(failed_style)
-                        one_or_more_empty = True
-
-        if one_or_more_empty:
-            empty_fields.append("Elements")
-
-        # If there are any empty fields, create a message box telling which
-        # of the fields are empty.
-        if empty_fields:
-            self.__missing_information_message(empty_fields)
-            return False
-        return True  # If everything is ok, return true.
+                        set_input_field_red(child)
+                        self.fields_are_valid = False
 
     @staticmethod
-    def __check_text(input_field):
+    def __check_text(input_field, dialog):
         """Checks if there is text in given input field.
 
         Args:
             input_field: Input field the contents of which are checked.
+            dialog: Layer dialog.
         """
-        check_text(input_field)
+        dialog.fields_are_valid = check_text(input_field)
 
     def __accept_settings(self):
         """Function for accepting the current settings and closing the dialog
         window.
         """
+        if not self.fields_are_valid:
+            QtWidgets.QMessageBox.critical(self, "Warning",
+                                           "Some of the parameter values have"
+                                           " not been set.\n" +
+                                           "Please input values in fields "
+                                           "indicated in red.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+            self.__close = False
+            return
+
         name = self.__ui.nameEdit.text()
         thickness = self.__ui.thicknessEdit.value()
         density = self.__ui.densityEdit.value()
@@ -198,7 +200,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         else:
             self.layer = Layer(name, elements, thickness, density)
         self.ok_pressed = True
-        self.close()
+        self.__close = True
 
     def __missing_information_message(self, empty_fields):
         """Show the user a message about missing information.
