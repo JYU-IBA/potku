@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 11.6.2018
+Updated on 13.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -115,6 +115,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.measurement_settings_widget.dateLabel.setText(time.strftime(
                 "%c %z %Z", time.localtime(self.simulation.modification_time)))
 
+        self.ui.tabs.currentChanged.connect(lambda: self.__check_for_red())
+        self.__close = True
+
         self.exec()
 
     def __change_element(self, button, combo_box):
@@ -142,6 +145,19 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         else:
             self.ui.tabs.setEnabled(True)
 
+    def __check_for_red(self):
+        """
+        Check whether there are any invalid field in the tabs.
+        """
+        for i in range(self.ui.tabs.count()):
+            tab_widget = self.ui.tabs.widget(i)
+            valid = tab_widget.fields_are_valid
+            if not valid:
+                self.ui.tabs.blockSignals(True)
+                self.tabs.setCurrentWidget(tab_widget)
+                self.ui.tabs.blockSignals(False)
+                break
+
     def __enabled_element_information(self):
         """
         Change the UI accordingly when an element is selected.
@@ -158,6 +174,17 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         if not self.simulation.measurement_setting_file_name:
             self.simulation.measurement_setting_file_name = \
                 self.simulation.name
+
+        if not self.ui.tabs.currentWidget().fields_are_valid:
+            QtWidgets.QMessageBox.critical(self, "Warning",
+                                           "Some of the setting values have"
+                                           " not been set.\n" +
+                                           "Please input values in fields "
+                                           "indicated in red.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+            self.__close = False
+            return
 
         check_box = self.ui.defaultSettingsCheckBox
         if check_box.isChecked():
@@ -305,4 +332,5 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         """Save settings and close the dialog.
         """
         self.__update_parameters()
-        self.close()
+        if self.__close:
+            self.close()
