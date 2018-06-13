@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 12.6.2018
+Updated on 13.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -287,6 +287,15 @@ class ElementSimulation:
             recoil_element.reference_density = new_values["reference_density"]
         except KeyError:
             raise
+        # Delete possible extra rec files.
+        filename_to_delete = ""
+        for file in os.listdir(self.directory):
+            if file.startswith(recoil_element.prefix) and file.endswith(".rec"):
+                filename_to_delete = file
+                break
+        if filename_to_delete:
+            os.remove(os.path.join(self.directory, filename_to_delete))
+
         self.recoil_to_file(self.directory)
 
     def calculate_solid(self):
@@ -392,6 +401,8 @@ class ElementSimulation:
                     points.append(Point((float(x), float(y))))
                 element = RecoilElement(Element.from_string(obj["element"]),
                                         points)
+                element.name = obj["name"]
+                element.description = obj["description"]
                 element.reference_density = obj["reference_density"] / 1e22
                 element.simulation_type = obj["simulation_type"]
 
