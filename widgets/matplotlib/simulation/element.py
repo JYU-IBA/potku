@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 11.6.2018
+Updated on 13.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -89,7 +89,7 @@ class ElementWidget(QtWidgets.QWidget):
         """
         Plot an energy spectrum.
         """
-        self.element_simulation.calculate_espe()
+        # self.element_simulation.calculate_espe()
         dialog = EnergySpectrumParamsDialog(
             self.parent, spectrum_type="simulation",
             element_simulation=self.element_simulation)

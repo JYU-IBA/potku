@@ -630,12 +630,11 @@ class ElementSimulation:
             "solid": self.calculate_solid(),
             "erd_file": os.path.join(self.directory,
                                      self.recoil_elements[0].prefix + "-" +
-                                     self.recoil_elements[0].name + "." +
-                                     str(seed_number) + ".erd"),
+                                     self.recoil_elements[0].name + ".*.erd"),
             "spectrum_file": os.path.join(self.directory,
                                           self.recoil_elements[0].prefix + "-" +
-                                          self.recoil_elements[0].name + "." +
-                                          str(seed_number) + ".simu"),
+                                          self.recoil_elements[0].name +
+                                          ".simu"),
             "recoil_file": recoil_file
         }
         self.get_espe = GetEspe(self.espe_settings)
