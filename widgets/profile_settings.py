@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 4.6.2018
+Updated on 13.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -30,6 +30,10 @@ from os import path
 from PyQt5 import uic
 from PyQt5 import QtWidgets
 
+from modules.general_functions import set_input_field_red
+from modules.general_functions import check_text
+from modules.general_functions import validate_text_input
+
 
 class ProfileSettingsWidget(QtWidgets.QWidget):
     """Class for creating a profile settings tab.
@@ -45,6 +49,12 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
         self.ui = uic.loadUi(path.join("ui_files",
                                        "ui_profile_settings_tab.ui"), self)
         self.measurement = measurement
+
+        set_input_field_red(self.ui.nameLineEdit)
+        self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
+            self.ui.nameLineEdit))
+
+        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
 
         self.show_settings()
 
@@ -134,3 +144,22 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
             self.numberOfSplitsSpinBox.value()
         self.measurement.normalization = \
             self.normalizationComboBox.currentText()
+
+    @staticmethod
+    def __check_text(input_field):
+        """Checks if there is text in given input field.
+
+        Args:
+            input_field: Input field the contents of which are checked.
+        """
+        check_text(input_field)
+
+    def __validate(self):
+        """
+        Validate the mcsimu settings file name.
+        """
+        text = self.ui.nameLineEdit.text()
+        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+        valid_text = validate_text_input(text, regex)
+
+        self.ui.nameLineEdit.setText(valid_text)
