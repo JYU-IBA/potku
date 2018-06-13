@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 11.6.2018
+Updated on 13.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -273,15 +273,15 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                                      self.measurement.detector.name +
                                      ".detector")
 
-                    # Delete possible extra .measurement files
-                    filename_to_remove = ""
+                    # Delete possible extra .measurement and .profile files
+                    filenames_to_remove = []
                     for file in os.listdir(self.measurement.directory):
-                        if file.endswith(".measurement"):
-                            filename_to_remove = file
-                            break
-                    if filename_to_remove:
+                        if file.endswith(".measurement") or file.endswith(
+                                ".profile"):
+                            filenames_to_remove.append(file)
+                    for filename in filenames_to_remove:
                         os.remove(os.path.join(self.measurement.directory,
-                                               filename_to_remove))
+                                               filename))
 
                     # Save general measurement settings parameters.
                     new_measurement_settings_file_path = os.path.join(
