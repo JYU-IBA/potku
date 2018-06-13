@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 12.6.2018
+Updated on 13.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -57,8 +57,9 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.obj = obj
 
         set_input_field_red(self.ui.nameLineEdit)
+        self.fields_are_valid = False
         self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
-            self.ui.nameLineEdit))
+            self.ui.nameLineEdit, self))
 
         self.show_settings()
 
@@ -190,13 +191,13 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
                 .targetThetaDoubleSpinBox.value()
 
     @staticmethod
-    def __check_text(input_field):
+    def __check_text(input_field, settings):
         """Checks if there is text in given input field.
 
         Args:
             input_field: Input field the contents of which are checked.
         """
-        check_text(input_field)
+        settings.fields_are_valid = check_text(input_field)
 
     def __validate(self):
         """

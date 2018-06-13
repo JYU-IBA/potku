@@ -51,8 +51,9 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
         self.measurement = measurement
 
         set_input_field_red(self.ui.nameLineEdit)
+        self.fields_are_valid = False
         self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
-            self.ui.nameLineEdit))
+            self.ui.nameLineEdit, self))
 
         self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
 
@@ -146,13 +147,14 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
             self.normalizationComboBox.currentText()
 
     @staticmethod
-    def __check_text(input_field):
+    def __check_text(input_field, settings):
         """Checks if there is text in given input field.
 
         Args:
             input_field: Input field the contents of which are checked.
+            settings: Settings widget.
         """
-        check_text(input_field)
+        settings.fields_are_valid = check_text(input_field)
 
     def __validate(self):
         """

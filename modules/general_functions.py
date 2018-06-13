@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 12.6.2018
+Updated on 13.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -529,11 +529,16 @@ def check_text(input_field):
 
     Args:
         input_field: QLineEdit object.
+
+    Return:
+        True for white, False for red.
     """
     if not input_field.text():
         set_input_field_red(input_field)
+        return False
     else:
         set_input_field_white(input_field)
+        return True
 
 
 def set_input_field_red(input_field):

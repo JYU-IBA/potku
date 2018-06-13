@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 11.6.2018
+Updated on 13.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -123,6 +123,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         self.show_simulation_settings()
 
+        self.ui.tabs.currentChanged.connect(lambda: self.__check_for_red())
+
         self.exec_()
 
     def show_simulation_settings(self):
@@ -155,6 +157,19 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         widget.numberOfRecoilsSpinBox.setValue(elem_simu.number_of_recoils)
         widget.numberOfScalingIonsSpinBox.setValue(
             elem_simu.number_of_scaling_ions)
+
+    def __check_for_red(self):
+        """
+        Check whether there are any invalid field in the tabs.
+        """
+        for i in range(self.ui.tabs.count()):
+            tab_widget = self.ui.tabs.widget(i)
+            valid = tab_widget.fields_are_valid
+            if not valid:
+                self.ui.tabs.blockSignals(True)
+                self.tabs.setCurrentWidget(tab_widget)
+                self.ui.tabs.blockSignals(False)
+                break
 
     def __load_file(self, settings_type):
         """
@@ -201,6 +216,16 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # Check the target and detector angles
         ok_pressed = self.measurement_settings_widget.check_angles()
         if ok_pressed:
+            if not self.ui.tabs.currentWidget().fields_are_valid:
+                QtWidgets.QMessageBox.critical(self, "Warning",
+                                               "Some of the setting values have"
+                                               " not been set.\n" +
+                                               "Please input values in fields "
+                                               "indicated in red.",
+                                               QtWidgets.QMessageBox.Ok,
+                                               QtWidgets.QMessageBox.Ok)
+                self.__close = False
+                return
             # TODO: Proper checking for all setting values
             try:
                 self.measurement_settings_widget.update_settings()
