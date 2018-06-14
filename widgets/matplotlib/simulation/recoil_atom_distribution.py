@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 11.6.2018
+Updated on 14.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -890,6 +890,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         for annotation in self.annotations:
             annotation.set_visible(False)
         self.annotations = []
+        last_layer_thickness = 0
 
         next_layer_position = 0
         for idx, layer in enumerate(self.target.layers):
@@ -905,11 +906,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                             ha="center")
 
             self.annotations.append(annotation)
+            last_layer_thickness = layer.thickness
 
             # Move the position where the next layer starts.
             next_layer_position += layer.thickness
 
-        self.axes.set_xlim(0, next_layer_position + 3)
+        end = next_layer_position - last_layer_thickness * 0.7
+        start = 0 - end * 0.05
+
+        self.axes.set_xlim(start, end)
         self.fig.canvas.draw_idle()
 
     def on_motion(self, event):
