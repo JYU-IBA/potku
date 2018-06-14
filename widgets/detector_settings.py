@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 13.6.2018
+Updated on 14.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -42,6 +42,7 @@ from modules.general_functions import open_file_dialog
 from modules.general_functions import set_input_field_red
 from modules.general_functions import check_text
 from modules.general_functions import validate_text_input
+import copy
 
 
 class DetectorSettingsWidget(QtWidgets.QWidget):
@@ -138,10 +139,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
 
         # Detector foils
         self.calculate_distance()
-        self.tmp_foil_info = self.obj.foils
+        self.tmp_foil_info = copy.deepcopy(self.obj.foils)
 
         # Tof foils
-        self.tof_foils = self.obj.tof_foils
+        self.tof_foils = copy.deepcopy(self.obj.tof_foils)
 
     def update_settings(self):
         """
