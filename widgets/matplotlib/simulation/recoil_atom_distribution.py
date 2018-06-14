@@ -306,6 +306,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # This customizes the toolbar buttons
         self.__fork_toolbar_buttons()
 
+        # Remember x limits to set when the user has returned from Target view.
+        self.original_x_limits = None
+
         self.name_y_axis = "Relative Concentration"
         self.name_x_axis = "Depth [nm]"
 
@@ -911,8 +914,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # Move the position where the next layer starts.
             next_layer_position += layer.thickness
 
-        end = next_layer_position - last_layer_thickness * 0.7
-        start = 0 - end * 0.05
+        if self.original_x_limits:
+            start = self.original_x_limits[0]
+            end = self.original_x_limits[1]
+        else:
+            end = next_layer_position - last_layer_thickness * 0.7
+            start = 0 - end * 0.05
 
         self.axes.set_xlim(start, end)
         self.fig.canvas.draw_idle()
