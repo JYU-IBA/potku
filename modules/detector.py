@@ -95,16 +95,16 @@ class Detector:
                           CircularFoil("Foil2", 10.0, 356.0,
                                        [Layer("Layer_12C",
                                               [Element("C", 12.011, 1)],
-                                              13.0, 2.25, 0.1)]),
+                                              13.0, 2.25, 0.0)]),
                           CircularFoil("Foil3", 18.0, 942.0,
                                        [Layer("Layer_12C",
                                               [Element("C", 12.011, 1)],
-                                              44.4, 2.25, 13.4)]),
+                                              44.4, 2.25, 0.0)]),
                           RectangularFoil("Foil4", 14.0, 14.0, 1042.0,
                                           [Layer("Layer_28Si",
                                                  [Element("N", 14.00, 0.57),
                                                   Element("Si", 28.09, 0.43)],
-                                                 100.0, 3.44, 57.8)])]
+                                                 100.0, 3.44, 0.0)])]
         self.tof_foils = tof_foils
         if not self.tof_foils:
             # Set default ToF foils
