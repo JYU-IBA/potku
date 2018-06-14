@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 11.6.2018
+Updated on 14.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -527,7 +527,6 @@ class Measurement:
             obj_measurement = {}
 
         obj_measurement["general"] = {}
-        obj_measurement["beam"] = {}
 
         obj_measurement["general"]["name"] = self.measurement_setting_file_name
         obj_measurement["general"]["description"] = \

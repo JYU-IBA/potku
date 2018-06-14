@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 7.6.2018
+Updated on 14.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -43,6 +43,11 @@ from modules.element import Element
 from widgets.matplotlib.measurement.depth_profile import \
     MatplotlibDepthProfileWidget
 import modules.masses as masses
+from modules.detector import Detector
+import time
+from modules.run import Run
+from modules.beam import Beam
+from modules.target import Target
 
 
 class DepthProfileDialog(QtWidgets.QDialog):
@@ -73,6 +78,13 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.ui.OKButton.clicked.connect(self.__accept_params)
         self.ui.cancelButton.clicked.connect(self.close)
 
+        self.__reference_density_label = None
+        self.__reference_density_spinbox = None
+
+        self.ui.radioButtonNm.clicked.connect(self.__add_reference_density)
+        self.ui.radioButtonAtPerCm2.clicked.connect(
+            self.__remove_reference_density)
+
         m_name = self.parent.obj.name
         if m_name not in DepthProfileDialog.checked_cuts.keys():
             DepthProfileDialog.checked_cuts[m_name] = []
@@ -85,6 +97,9 @@ class DepthProfileDialog(QtWidgets.QDialog):
         radio_buttons = self.findChildren(QtWidgets.QRadioButton)
         for radio_button in radio_buttons:
             radio_button.setChecked(radio_button.text() == x_unit)
+
+        if x_unit == "nm":
+            self.__add_reference_density()
         
         self.ui.check_0line.setChecked(DepthProfileDialog.line_zero)
         self.ui.check_scaleline.setChecked(DepthProfileDialog.line_scale)
@@ -170,6 +185,93 @@ class DepthProfileDialog(QtWidgets.QDialog):
                     QtCore.QEventLoop.AllEvents)
                 if self.parent.depth_profile_widget:
                     self.parent.del_widget(self.parent.depth_profile_widget)
+
+                # If reference density changed, update value to measurement and
+                # use_default_settings to False, all to_files.
+                if self.__reference_density_spinbox:
+                    self.parent.obj.reference_density = \
+                        self.__reference_density_spinbox.value()
+                    if self.parent.obj.reference_density != \
+                            self.parent.obj.request.default_measurement\
+                                    .reference_density:
+                        self.parent.obj.use_default_profile_settings = False
+                        measurement_file_path = os.path.join(
+                            self.parent.obj.directory,
+                            self.parent.obj.measurement_setting_file_name +
+                            ".measurement")
+                        self.parent.obj.measurement_to_file(
+                            measurement_file_path)
+                        profile_file_path = os.path.join(
+                            self.parent.obj.directory,
+                            self.parent.obj.profile_name + ".profile")
+                        self.parent.obj.profile_to_file(profile_file_path)
+
+                        if self.parent.obj.detector is None:
+                            default_det = self.parent.obj.\
+                                request.default_detector
+                            path = os.path.join(self.parent.obj.directory,
+                                                "Detector")
+                            if not os.path.exists(path):
+                                os.makedirs(path)
+                            path_to_det_file = os.path.join(path,
+                                                            default_det.name
+                                                            + ".detector")
+                            self.parent.obj.detector = Detector(
+                                path_to_det_file, measurement_file_path,
+                                default_det.name, default_det.description,
+                                time.time(), default_det.type,
+                                default_det.foils, default_det.tof_foils,
+                                default_det.virtual_size,
+                                default_det.tof_slope,
+                                default_det.tof_offset,
+                                default_det.angle_slope,
+                                default_det.angle_offset,
+                                default_det.timeres, default_det.detector_theta)
+
+                            self.parent.obj.detector.update_directories(path)
+                            effs = default_det.get_efficiency_files()
+                            for eff in effs:
+                                self.parent.obj.detector.add_efficiency_file(
+                                    os.path.join(default_det.
+                                                 efficiency_directory, eff))
+                            self.parent.obj.detector.to_file(os.path.join(
+                                self.parent.obj.detector.path,
+                                self.parent.obj.detector.name + ".detector"),
+                                measurement_file_path)
+
+                        if self.parent.obj.run is None:
+                            default_run = \
+                                self.parent.obj.request.default_measurement.run
+                            beam = Beam(default_run.beam.ion,
+                                        default_run.beam.energy,
+                                        default_run.beam.charge,
+                                        default_run.beam.energy_distribution,
+                                        default_run.beam.spot_size,
+                                        default_run.beam.divergence,
+                                        default_run.beam.profile)
+                            self.parent.obj.run = Run(beam,
+                                                      default_run.fluence,
+                                                      default_run.current,
+                                                      default_run.charge,
+                                                      default_run.time)
+                            self.parent.obj.run.to_file(measurement_file_path)
+
+                        if self.parent.obj.target is None:
+                            default_target = \
+                                self.parent.obj.request.default_measurement.\
+                                    target
+                            self.parent.obj.target = Target(
+                                default_target.name, time.time(),
+                                default_target.description,
+                                default_target.target_type,
+                                default_target.image_size,
+                                default_target.image_file,
+                                default_target.scattering_element,
+                                default_target.target_theta)
+                            self.parent.obj.target.to_file(os.path.join(
+                                self.parent.obj.directory,
+                                self.parent.obj.name + ".target"),
+                                measurement_file_path)
                 
                 self.parent.depth_profile_widget = \
                     DepthProfileWidget(self.parent,
@@ -199,6 +301,45 @@ class DepthProfileDialog(QtWidgets.QDialog):
         finally:
             self.__statusbar.removeWidget(progress_bar)
             progress_bar.hide()
+
+    def __add_reference_density(self):
+        """
+        Add a filed for modifying the reference density.
+        """
+        layout = self.ui.horizontalAxisUnitsLayout
+
+        ref_density_label = QtWidgets.QLabel(
+            '<html><head/><body><p>Reference density [g/cm<span '
+            'style=" vertical-align:super;">3</span>]:</p></body></html>')
+
+        ref_density_spin_box = QtWidgets.QDoubleSpinBox()
+        ref_density_spin_box.setMaximum(9999.00)
+        ref_density_spin_box.setDecimals(2)
+        ref_density_spin_box.setEnabled(True)
+
+        ref_density_spin_box.setValue(self.measurement.reference_density)
+
+        layout.insertWidget(3, ref_density_label)
+        layout.insertWidget(4, ref_density_spin_box)
+
+        self.__reference_density_label = ref_density_label
+        self.__reference_density_spinbox = ref_density_spin_box
+
+    def __remove_reference_density(self):
+        """
+        Remove reference density form dialog if it is there.
+        """
+        if self.__reference_density_spinbox and self.__reference_density_label:
+            layout = self.ui.horizontalAxisUnitsLayout
+
+            layout.removeWidget(self.__reference_density_label)
+            self.__reference_density_label.deleteLater()
+
+            layout.removeWidget(self.__reference_density_spinbox)
+            self.__reference_density_spinbox.deleteLater()
+
+            self.__reference_density_spinbox = None
+            self.__reference_density_label = None
 
     def __update_eff_files(self):
         """Update efficiency files to UI which are used.
