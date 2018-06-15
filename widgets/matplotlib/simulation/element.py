@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 1.6.2018
+Updated on 13.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -40,7 +40,7 @@ class ElementWidget(QtWidgets.QWidget):
         parent: A SimulationTabWidget.
         """
 
-    def __init__(self, parent, element, icon_manager):
+    def __init__(self, parent, element, icon_manager, element_simulation):
         """
         Initializes the ElementWidget.
 
@@ -48,10 +48,12 @@ class ElementWidget(QtWidgets.QWidget):
             parent: Parent widget.
             element: An Element object.
             icon_manager: IconManager object.
+            element_simulation: ElementSimulation object.
         """
         super().__init__()
 
         self.parent = parent
+        self.element_simulation = element_simulation
 
         horizontal_layout = QtWidgets.QHBoxLayout()
 
@@ -77,13 +79,20 @@ class ElementWidget(QtWidgets.QWidget):
 
         self.setLayout(horizontal_layout)
 
+    def add_element_simulation_reference(self, element_simulation):
+        """
+        Add reference to an Element Simulation object.
+        """
+        self.element_simulation = element_simulation
+
     def plot_spectrum(self):
         """
         Plot an energy spectrum.
         """
-        self.element_simulation.calculate_espe()
-        dialog = EnergySpectrumParamsDialog(self.parent,
-                                            spectrum_type="simulation")
+        # self.element_simulation.calculate_espe()
+        dialog = EnergySpectrumParamsDialog(
+            self.parent, spectrum_type="simulation",
+            element_simulation=self.element_simulation)
         if dialog.result_files:
             self.parent.energy_spectrum_widget = EnergySpectrumWidget(
                 parent=self.parent, use_cuts=dialog.result_files,

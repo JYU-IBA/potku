@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 3.5.2018
-Updated on 30.5.2018
+Updated on 13.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -32,6 +32,11 @@ import os
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
+import time
+
+from modules.general_functions import set_input_field_red
+from modules.general_functions import check_text
+from modules.general_functions import validate_text_input
 
 
 class RecoilInfoDialog(QtWidgets.QDialog):
@@ -50,6 +55,11 @@ class RecoilInfoDialog(QtWidgets.QDialog):
         self.__ui.okPushButton.clicked.connect(self.__accept_settings)
         self.__ui.cancelPushButton.clicked.connect(self.close)
 
+        set_input_field_red(self.__ui.nameLineEdit)
+        self.fields_are_valid = False
+        self.__ui.nameLineEdit.textChanged.connect(
+            lambda: self.__check_text(self.__ui.nameLineEdit, self))
+
         self.name = ""
         self.__ui.nameLineEdit.setText(recoil_element.name)
         self.__ui.descriptionLineEdit.setPlainText(
@@ -59,15 +69,54 @@ class RecoilInfoDialog(QtWidgets.QDialog):
         self.description = ""
         self.isOk = False
 
+        self.__ui.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+            recoil_element.modification_time)))
+
+        self.__ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+
+        self.__close = True
+
         self.exec_()
 
     def __accept_settings(self):
         """Function for accepting the current settings and closing the dialog
         window.
         """
-        self.name = self.__ui.nameLineEdit.text()
-        self.description = self.__ui.descriptionLineEdit.toPlainText()
-        self.reference_density = self.__ui.referenceDensityDoubleSpinBox\
-            .value()
-        self.isOk = True
-        self.close()
+        if not self.fields_are_valid:
+            QtWidgets.QMessageBox.critical(self, "Warning",
+                                           "Some of the setting values have"
+                                           " not been set.\n" +
+                                           "Please input values in fields "
+                                           "indicated in red.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+            self.__close = False
+        else:
+            self.name = self.__ui.nameLineEdit.text()
+            self.description = self.__ui.descriptionLineEdit.toPlainText()
+            self.reference_density = self.__ui.referenceDensityDoubleSpinBox\
+                .value()
+            self.isOk = True
+            self.__close = True
+        if self.__close:
+            self.close()
+
+    @staticmethod
+    def __check_text(input_field, settings):
+        """Checks if there is text in given input field.
+
+        Args:
+            input_field: Input field the contents of which are checked.
+            settings: Settings dialog.
+        """
+        settings.fields_are_valid = check_text(input_field)
+
+    def __validate(self):
+        """
+        Validate the recoil name.
+        """
+        text = self.__ui.nameLineEdit.text()
+        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+        valid_text = validate_text_input(text, regex)
+
+        self.__ui.nameLineEdit.setText(valid_text)

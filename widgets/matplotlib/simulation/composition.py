@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 6.6.2018
+Updated on 14.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -40,7 +40,7 @@ class _CompositionWidget(MatplotlibWidget):
     the layers of the target or the foil. This class should not be used
     as such.
     """
-    def __init__(self, parent, layers, icon_manager):
+    def __init__(self, parent, layers, icon_manager, foil_behaviour=False):
         """Initialize a CompositionWidget.
 
         Args:
@@ -48,6 +48,7 @@ class _CompositionWidget(MatplotlibWidget):
                           works as a parent of this Matplotlib widget.
             layers:       Layers of the target or the foil.
             icon_manager: An icon manager class object.
+            foil_behaviour: Whether to have foil specific behaviour or not.
         """
         super().__init__(parent)
 
@@ -56,6 +57,7 @@ class _CompositionWidget(MatplotlibWidget):
         self.axes.fmt_xdata = lambda x: "{0:1.4f}".format(x)
         self.axes.fmt_ydata = lambda y: "N/A"
         self.name_x_axis = "Depth [nm]"
+        self.foil_behaviour = foil_behaviour
 
         self.__icon_manager = icon_manager
         self.__selected_layer = None
@@ -101,6 +103,17 @@ class _CompositionWidget(MatplotlibWidget):
         """
         Delete selected layer.
         """
+        reply = QtWidgets.QMessageBox.question(self, "Confirmation",
+                                               "Are you sure you want to "
+                                               "delete selected layer?",
+                                               QtWidgets.QMessageBox.Yes |
+                                               QtWidgets.QMessageBox.No |
+                                               QtWidgets.QMessageBox.Cancel,
+                                               QtWidgets.QMessageBox.Cancel)
+        if reply == QtWidgets.QMessageBox.No or reply == \
+                QtWidgets.QMessageBox.Cancel:
+            return  # If clicked Yes, then continue normally
+
         # Delete from layers list
         if self.__selected_layer in self.layers:
             self.layers.remove(self.__selected_layer)
@@ -121,7 +134,7 @@ class _CompositionWidget(MatplotlibWidget):
             dialog = LayerPropertiesDialog(self.__selected_layer)
             if dialog.ok_pressed:
                 self.update_start_depths()
-                self.__update_figure()
+                self.__update_figure(add=self.foil_behaviour)
 
     def __update_selected_layer(self):
         """
@@ -367,7 +380,7 @@ class FoilCompositionWidget(_CompositionWidget):
         """
 
         _CompositionWidget.__init__(self, parent, foil.layers,
-                                    icon_manager)
+                                    icon_manager, foil_behaviour=True)
 
         self.layers = foil.layers
         self.canvas.manager.set_title("Foil composition")

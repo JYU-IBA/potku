@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 5.6.2018
+Updated on 14.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -117,12 +117,14 @@ class ElementManager:
         for xy in xys:
             points.append(Point(xy))
 
-        element_widget = ElementWidget(self.parent, element, self.icon_manager)
+        element_widget = ElementWidget(self.parent, element,
+                                       self.icon_manager, None)
         recoil_element = RecoilElement(element, points)
         recoil_element.widgets.append(element_widget)
         element_simulation = self.simulation.add_element_simulation(
             recoil_element)
         element_widget.element_simulation = element_simulation
+        element_widget.add_element_simulation_reference(element_simulation)
 
         # Add simulation controls widget
         simulation_controls_widget = SimulationControlsWidget(
@@ -144,7 +146,7 @@ class ElementManager:
         recoil_element_widget =\
             ElementWidget(self.parent,
                           element_simulation.recoil_elements[0].element,
-                          self.icon_manager)
+                          self.icon_manager, element_simulation)
         element_simulation.recoil_elements[0] \
             .widgets.append(recoil_element_widget)
         recoil_element_widget.element_simulation = element_simulation
@@ -286,6 +288,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Points that have been selected
         self.selected_points = []
 
+        self.annotations = []
+
         # Span selection tool (used to select all points within a range
         # on the x axis)
         self.span_selector = SpanSelector(self.axes, self.on_span_select,
@@ -301,6 +305,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         # This customizes the toolbar buttons
         self.__fork_toolbar_buttons()
+
+        # Remember x limits to set when the user has returned from Target view.
+        self.original_x_limits = None
 
         self.name_y_axis = "Relative Concentration"
         self.name_x_axis = "Depth [nm]"
@@ -500,24 +507,24 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         if not self.current_element_simulation:
             return
-        confirm_box = QtWidgets.QMessageBox()
-        confirm_box.setIcon(QtWidgets.QMessageBox.Warning)
-        yes_button = confirm_box.addButton(QtWidgets.QMessageBox.Yes)
-        confirm_box.addButton(QtWidgets.QMessageBox.Cancel)
-        confirm_box.setText("Are you sure you want to remove the element?")
-        confirm_box.setWindowTitle("Confirm")
-
-        confirm_box.exec()
-        if confirm_box.clickedButton() == yes_button:
-            element_simulation = self.element_manager \
-                .get_element_simulation_with_radio_button(
-                    self.radios.checkedButton())
-            self.remove_element(element_simulation)
-            self.current_element_simulation = None
-            self.parent_ui.elementInfoWidget.hide()
-            self.update_plot()
-        else:
-            return
+        reply = QtWidgets.QMessageBox.question(self, "Confirmation",
+                                               "Are you sure you want to "
+                                               "delete selected recoil "
+                                               "element?",
+                                               QtWidgets.QMessageBox.Yes |
+                                               QtWidgets.QMessageBox.No |
+                                               QtWidgets.QMessageBox.Cancel,
+                                               QtWidgets.QMessageBox.Cancel)
+        if reply == QtWidgets.QMessageBox.No or reply == \
+                QtWidgets.QMessageBox.Cancel:
+            return  # If clicked Yes, then continue normally
+        element_simulation = self.element_manager\
+            .get_element_simulation_with_radio_button(
+            self.radios.checkedButton())
+        self.remove_element(element_simulation)
+        self.current_element_simulation = None
+        self.parent_ui.elementInfoWidget.hide()
+        self.update_plot()
 
     def export_elements(self):
         """
@@ -883,6 +890,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Update layer borders.
         """
+        for annotation in self.annotations:
+            annotation.set_visible(False)
+        self.annotations = []
+        last_layer_thickness = 0
+
         next_layer_position = 0
         for idx, layer in enumerate(self.target.layers):
             self.axes.axvspan(
@@ -891,14 +903,25 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             )
 
             # Put annotation in the middle of the rectangular patch.
-            self.axes.annotate(layer.name,
-                               (next_layer_position + layer.thickness / 2, 0.5),
-                               ha="center")
+            annotation = self.axes.annotate(layer.name,
+                                            (next_layer_position +
+                                             layer.thickness / 2, 0.5),
+                                            ha="center")
+
+            self.annotations.append(annotation)
+            last_layer_thickness = layer.thickness
 
             # Move the position where the next layer starts.
             next_layer_position += layer.thickness
 
-        self.axes.set_xlim(0, next_layer_position + 3)
+        if self.original_x_limits:
+            start = self.original_x_limits[0]
+            end = self.original_x_limits[1]
+        else:
+            end = next_layer_position - last_layer_thickness * 0.7
+            start = 0 - end * 0.05
+
+        self.axes.set_xlim(start, end)
         self.fig.canvas.draw_idle()
 
     def on_motion(self, event):

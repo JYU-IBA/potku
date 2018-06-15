@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 8.6.2018
+Updated on 14.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -134,11 +134,6 @@ class Measurements:
             measurement_filename = os.path.split(file_path)[1]
             file_directory, file_name = os.path.split(file_path)
 
-            # Check if measurement on the same name already exists.
-            for key in sample.measurements.measurements.keys():
-                if sample.measurements.measurements[key].name == name:
-                    return None
-
             profile_file_path = None
             measurement_file = None
             for file in os.listdir(file_directory):
@@ -182,6 +177,8 @@ class Measurements:
                                     os.path.join(measurement.directory,
                                                  measurement_file),
                                     self.request)
+                                measurement.detector.update_directories(
+                                    det_folder)
                 self.request.samples.measurements.measurements[tab_id] = \
                     measurement
 
@@ -273,8 +270,8 @@ class Measurement:
                  description="", modification_time=None, run=None,
                  detector=None, target=None, profile_name="Default",
                  profile_description="", profile_modification_time=None,
-                 reference_density=3.5, number_of_depth_steps=40,
-                 depth_step_for_stopping=50, depth_step_for_output=50,
+                 reference_density=3.5, number_of_depth_steps=100,
+                 depth_step_for_stopping=10, depth_step_for_output=10,
                  depth_for_concentration_from=800,
                  depth_for_concentration_to=1500, channel_width=0.1,
                  reference_cut="", number_of_splits=10, normalization="First",
@@ -530,7 +527,6 @@ class Measurement:
             obj_measurement = {}
 
         obj_measurement["general"] = {}
-        obj_measurement["beam"] = {}
 
         obj_measurement["general"]["name"] = self.measurement_setting_file_name
         obj_measurement["general"]["description"] = \

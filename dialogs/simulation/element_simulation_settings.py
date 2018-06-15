@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.4.2018
-Updated on 1.6.2018
+Updated on 13.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -32,6 +32,9 @@ from PyQt5 import uic
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
 import time
+from modules.general_functions import set_input_field_red
+from modules.general_functions import check_text
+from modules.general_functions import validate_text_input
 
 
 class ElementSimulationSettingsDialog(QtWidgets.QDialog):
@@ -62,9 +65,39 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             self.toggle_settings)
 
         self.set_spinbox_maximums()
+
+        set_input_field_red(self.ui.nameLineEdit)
+        self.fields_are_valid = False
+        self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
+            self.ui.nameLineEdit, self))
+
         self.show_settings()
 
+        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+
+        self.__close = True
+
         self.exec_()
+
+    @staticmethod
+    def __check_text(input_field, settings):
+        """Checks if there is text in given input field.
+
+        Args:
+            input_field: Input field the contents of which are checked.
+            settings: Settings dialog.
+        """
+        settings.fields_are_valid = check_text(input_field)
+
+    def __validate(self):
+        """
+        Validate the mcsimu settings file name.
+        """
+        text = self.ui.nameLineEdit.text()
+        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+        valid_text = validate_text_input(text, regex)
+
+        self.ui.nameLineEdit.setText(valid_text)
 
     def set_spinbox_maximums(self):
         """Set maximum values to spinbox components."""
@@ -139,7 +172,8 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
     def update_settings_and_close(self):
         """Updates settings and closes the dialog."""
         self.update_settings()
-        self.close()
+        if self.__close:
+            self.close()
 
     def update_settings(self):
         """Delete existing file.
@@ -148,6 +182,16 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         If default settings are not used, read settings from dialog,
         put them to element simulation and save them to file.
         """
+        if not self.fields_are_valid:
+            QtWidgets.QMessageBox.critical(self, "Warning",
+                                           "Some of the setting values have"
+                                           " not been set.\n" +
+                                           "Please input values in fields "
+                                           "indicated in red.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+            self.__close = False
+            return
 
         # Delete .mcsimu file if exists
         filename_to_remove = ""
@@ -237,3 +281,5 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 os.path.join(self.element_simulation.directory,
                              self.element_simulation.name_prefix + "-" +
                              self.element_simulation.name + ".mcsimu"))
+
+        self.__close = True

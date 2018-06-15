@@ -325,7 +325,7 @@
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayout">
+    <layout class="QHBoxLayout" name="horizontalAxisUnitsLayout">
      <item>
       <widget class="QLabel" name="label">
        <property name="text">
@@ -334,7 +334,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="radioButtonNm">
+      <widget class="QRadioButton" name="radioButtonAtPerCm2">
        <property name="text">
         <string>1e15 at./cm²</string>
        </property>
@@ -344,7 +344,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QRadioButton" name="radioButtonAtPerCm2">
+      <widget class="QRadioButton" name="radioButtonNm">
        <property name="text">
         <string>nm</string>
        </property>

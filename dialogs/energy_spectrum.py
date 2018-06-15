@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 7.6.2018
+Updated on 15.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -54,11 +54,13 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     """
     checked_cuts = {}
 
-    def __init__(self, parent, spectrum_type):
+    def __init__(self, parent, spectrum_type, element_simulation=None):
         """Inits energy spectrum dialog.
         
         Args:
             parent: A TabWidget.
+            spectrum_type: Whether spectrum is for measurement of simulation.
+            element_simulation: ElementSimulation object.
         """
         super().__init__()
         self.parent = parent
@@ -73,7 +75,12 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             EnergySpectrumParamsDialog.bin_width = \
                 self.parent.obj.request.default_measurement.channel_width
         else:
-            EnergySpectrumParamsDialog.bin_width = self.parent.obj.channel_width
+            if type(self.parent.obj) is Measurement:
+                EnergySpectrumParamsDialog.bin_width = \
+                    self.parent.obj.channel_width
+            else:
+                EnergySpectrumParamsDialog.bin_width = \
+                    element_simulation.channel_width
         self.ui.histogramTicksDoubleSpinBox.setValue(
             EnergySpectrumParamsDialog.bin_width)
 
@@ -95,31 +102,50 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
         else:
             header_item = QtWidgets.QTreeWidgetItem()
-            header_item.setText(0, "Calculated energy spectra")
+            header_item.setText(0, "Simulated elements")
             self.ui.treeWidget.setHeaderItem(header_item)
 
-            self.ui.pushButton_OK.clicked.connect(self.__get_selected_spectra)
+            self.ui.pushButton_OK.clicked.connect(
+                self.__calculate_selected_spectra)
 
             self.result_files = []
+            elem_sim_prefixes = []  # .erd files of the same simulation are
+            # shown as one tree item.
             for file in os.listdir(self.parent.obj.directory):
-                if file.endswith(".simu"):
+                if file.endswith(".erd"):
+                    sim_name = file.split(".")[0]
+
+                    if sim_name in elem_sim_prefixes:
+                        continue
+
+                    elem_sim_prefixes.append(sim_name)
                     item = QtWidgets.QTreeWidgetItem()
-                    item.setText(0, file)
+                    item.setText(0, sim_name)
                     item.setCheckState(0, QtCore.Qt.Unchecked)
                     self.ui.treeWidget.addTopLevelItem(item)
 
             self.exec_()
 
-    def __get_selected_spectra(self):
-        """Reads selected spectra from dialog.
+    def __calculate_selected_spectra(self):
+        """Calculate selected spectra.
         """
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()
         for i in range(child_count):
             item = root.child(i)
             if item.checkState(0):
-                self.result_files.append(os.path.join(self.parent.obj.directory,
-                                                      item.text(0)))
+                for elem_sim in self.parent.obj.element_simulations:
+                    for rec_elem in elem_sim.recoil_elements:
+                        rec_elem_prefix_and_name = rec_elem.prefix + "-"\
+                                                   + rec_elem.name
+                        if rec_elem_prefix_and_name == item.text(0):
+                            elem_sim.channel_width = self.ui.\
+                                histogramTicksDoubleSpinBox.value()
+                            elem_sim.calculate_espe()
+                            self.result_files.append(os.path.join(
+                                self.parent.obj.directory,
+                                rec_elem_prefix_and_name + ".simu"))
+
         self.bin_width = self.ui.histogramTicksDoubleSpinBox.value()
 
         self.close()

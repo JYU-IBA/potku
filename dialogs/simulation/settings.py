@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 28.5.2018
+Updated on 13.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -115,6 +115,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.measurement_settings_widget.dateLabel.setText(time.strftime(
                 "%c %z %Z", time.localtime(self.simulation.modification_time)))
 
+        self.ui.tabs.currentChanged.connect(lambda: self.__check_for_red())
+        self.__close = True
+
         self.exec()
 
     def __change_element(self, button, combo_box):
@@ -142,6 +145,19 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         else:
             self.ui.tabs.setEnabled(True)
 
+    def __check_for_red(self):
+        """
+        Check whether there are any invalid field in the tabs.
+        """
+        for i in range(self.ui.tabs.count()):
+            tab_widget = self.ui.tabs.widget(i)
+            valid = tab_widget.fields_are_valid
+            if not valid:
+                self.ui.tabs.blockSignals(True)
+                self.tabs.setCurrentWidget(tab_widget)
+                self.ui.tabs.blockSignals(False)
+                break
+
     def __enabled_element_information(self):
         """
         Change the UI accordingly when an element is selected.
@@ -158,6 +174,17 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         if not self.simulation.measurement_setting_file_name:
             self.simulation.measurement_setting_file_name = \
                 self.simulation.name
+
+        if not self.ui.tabs.currentWidget().fields_are_valid:
+            QtWidgets.QMessageBox.critical(self, "Warning",
+                                           "Some of the setting values have"
+                                           " not been set.\n" +
+                                           "Please input values in fields "
+                                           "indicated in red.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+            self.__close = False
+            return
 
         check_box = self.ui.defaultSettingsCheckBox
         if check_box.isChecked():
@@ -189,8 +216,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     self.simulation.measurement_setting_file_name
                     + ".measurement")
                 target_file_path = os.path.join(self.simulation.directory,
-                                                self.simulation.target.name +
-                                                ".target")
+                                                self.simulation.target.name
+                                                + ".target")
                 det_folder_path = os.path.join(self.simulation.directory,
                                                "Detector")
 
@@ -208,15 +235,19 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     self.simulation.detector.update_directories(
                         det_folder_path)
 
-                    # Transfer the default detector efficiencies to new Detector
+                    # Transfer the default detector efficiencies to new
+                    # Detector
                     self.simulation.detector.efficiencies = list(
-                        self.simulation.request.default_detector.efficiencies)
-                    # TODO Why is default detector's efficiency list emptied?
+                        self.simulation.request.default_detector.
+                        efficiencies)
+                    # TODO Why is default detector's efficiency list
+                    # emptied?
                     # Default efficiencies are emptied because efficiencies
                     # added in simulation specific dialog go by default in
                     # the list. The list is only used for this transferring,
                     # so emptying it does no harm.
-                    self.simulation.request.default_detector.efficiencies = []
+                    self.simulation.request.default_detector.\
+                        efficiencies = []
 
                 # Set Detector object to settings widget
                 self.detector_settings_widget.obj = self.simulation.detector
@@ -226,7 +257,16 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                 self.detector_settings_widget.update_settings()
                 self.simulation.detector.path = \
                     os.path.join(det_folder_path,
-                                 self.simulation.detector.name + ".detector")
+                                 self.simulation.detector.name +
+                                 ".detector")
+
+                for file in self.simulation.detector.efficiencies:
+                    self.simulation.detector.add_efficiency_file(file)
+
+                for file in \
+                        self.simulation.detector.efficiencies_to_remove:
+                    self.simulation.detector.remove_efficiency_file(
+                        file)
 
                 # Save measurement settings parameters.
                 new_measurement_settings_file_path = os.path.join(
@@ -236,14 +276,17 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                 general_obj = {
                     "name": self.simulation.measurement_setting_file_name,
                     "description":
-                        self.simulation.measurement_setting_file_description,
+                        self.simulation.
+                            measurement_setting_file_description,
                     "modification_time":
-                        time.strftime("%c %z %Z", time.localtime(time.time())),
+                        time.strftime("%c %z %Z", time.localtime(
+                            time.time())),
                     "modification_time_unix": time.time()
                 }
 
                 if os.path.exists(new_measurement_settings_file_path):
-                    obj = json.load(open(new_measurement_settings_file_path))
+                    obj = json.load(open(
+                        new_measurement_settings_file_path))
                     obj["general"] = general_obj
                 else:
                     obj = {
@@ -265,23 +308,23 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     json.dump(obj, file, indent=4)
 
                 # Save Run object to file
-                self.simulation.run.to_file(new_measurement_settings_file_path)
+                self.simulation.run.to_file(
+                    new_measurement_settings_file_path)
                 # Save Detector object to file
                 self.simulation.detector.to_file(
                     self.simulation.detector.path,
                     new_measurement_settings_file_path)
-                for eff_file in self.simulation.detector.efficiencies:
-                    self.simulation.detector.add_efficiency_file(eff_file)
 
                 # Save Target object to file
                 self.simulation.target.to_file(
                     target_file_path, new_measurement_settings_file_path)
+
             except TypeError:
                 QtWidgets.QMessageBox.question(self, "Warning",
                                                "Some of the setting values "
                                                "have not been set.\n" +
-                                               "Please input setting values to "
-                                               "save them.",
+                                               "Please input setting values"
+                                               " to save them.",
                                                QtWidgets.QMessageBox.Ok,
                                                QtWidgets.QMessageBox.Ok)
 
@@ -289,4 +332,5 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         """Save settings and close the dialog.
         """
         self.__update_parameters()
-        self.close()
+        if self.__close:
+            self.close()

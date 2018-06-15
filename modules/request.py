@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 4.6.2018
+Updated on 12.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -168,7 +168,7 @@ class Request:
             self.default_detector = Detector(
                 os.path.join(self.default_detector_folder,
                              "Default.detector"),
-                self.default_measurement_file_path, name="Default detector",
+                self.default_measurement_file_path, name="Default-detector",
                 description="These are default detector settings.")
             self.default_detector.update_directories(
                 self.default_detector_folder)

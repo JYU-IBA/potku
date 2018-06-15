@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 4.6.2018
+Updated on 15.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -41,6 +41,8 @@ from modules.element import Element
 from modules.mcerd import MCERD
 from modules.get_espe import GetEspe
 from modules.foil import CircularFoil
+
+from modules.general_functions import rename_file
 
 
 class ElementSimulation:
@@ -281,13 +283,46 @@ class ElementSimulation:
             recoil_element: RecoilElement object to update.
             new_values: New values as a dictionary.
         """
+        old_name = recoil_element.name
         try:
             recoil_element.name = new_values["name"]
             recoil_element.description = new_values["description"]
             recoil_element.reference_density = new_values["reference_density"]
         except KeyError:
             raise
+        # Delete possible extra rec files.
+        filename_to_delete = ""
+        for file in os.listdir(self.directory):
+            if file.startswith(recoil_element.prefix) and file.endswith(".rec"):
+                filename_to_delete = file
+                break
+        if filename_to_delete:
+            os.remove(os.path.join(self.directory, filename_to_delete))
+
         self.recoil_to_file(self.directory)
+
+        if old_name != recoil_element.name:
+            recoil_file = os.path.join(self.directory, recoil_element.prefix
+                                       + "-" + old_name + ".recoil")
+            if os.path.exists(recoil_file):
+                new_name = recoil_element.prefix + "-" + recoil_element.name \
+                           + ".recoil"
+                rename_file(recoil_file, new_name)
+
+            erd_file = os.path.join(self.directory, recoil_element.prefix +
+                                    "-" + old_name + "." + str(self.seed_number)
+                                    + ".erd")
+            if os.path.exists(erd_file):
+                new_name = recoil_element.prefix + "-" + recoil_element.name \
+                           + "." + str(self.seed_number) + ".erd"
+                rename_file(erd_file, new_name)
+
+            simu_file = os.path.join(self.directory, recoil_element.prefix +
+                                     "-" + old_name + ".simu")
+            if os.path.exists(simu_file):
+                new_name = recoil_element.prefix + "-" + recoil_element.name \
+                           + ".simu"
+                rename_file(simu_file, new_name)
 
     def calculate_solid(self):
         """
@@ -392,8 +427,13 @@ class ElementSimulation:
                     points.append(Point((float(x), float(y))))
                 element = RecoilElement(Element.from_string(obj["element"]),
                                         points)
+                element.name = obj["name"]
+                element.description = obj["description"]
                 element.reference_density = obj["reference_density"] / 1e22
                 element.simulation_type = obj["simulation_type"]
+
+                element.modification_time = obj["modification_time_unix"]
+
                 element.channel_width = channel_width
                 recoil_elements.append(element)
                 # TODO For now, reading just the first matching .rec file.
@@ -563,17 +603,18 @@ class ElementSimulation:
             "beam": run.beam,
             "target": self.target,
             "detector": detector,
-            "recoil_element": self.recoil_elements[0]
+            "recoil_element": self.recoil_elements[0],
+            "sim_dir": self.directory,
         }
-        self.mcerd_objects[self.seed_number] = MCERD(self.settings)
+        self.mcerd_objects[elem_sim.seed_number] = MCERD(self.settings)
 
     def stop(self):
         """ Stop the simulation."""
         for sim in list(self.mcerd_objects.keys()):
             self.mcerd_objects[sim].stop_process()
             try:
-                self.mcerd_objects[sim].copy_result(self.directory)
-                self.calculate_espe()
+                # TODO: Delete extra simulation files?
+                self.mcerd_objects[sim].delete_unneeded_files()
             except FileNotFoundError:
                 raise
             del (self.mcerd_objects[sim])
@@ -616,12 +657,11 @@ class ElementSimulation:
             "solid": self.calculate_solid(),
             "erd_file": os.path.join(self.directory,
                                      self.recoil_elements[0].prefix + "-" +
-                                     self.recoil_elements[0].name + "." +
-                                     str(seed_number) + ".erd"),
+                                     self.recoil_elements[0].name + ".*.erd"),
             "spectrum_file": os.path.join(self.directory,
                                           self.recoil_elements[0].prefix + "-" +
-                                          self.recoil_elements[0].name + "." +
-                                          str(seed_number) + ".simu"),
+                                          self.recoil_elements[0].name +
+                                          ".simu"),
             "recoil_file": recoil_file
         }
         self.get_espe = GetEspe(self.espe_settings)

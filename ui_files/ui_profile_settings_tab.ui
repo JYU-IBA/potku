@@ -38,9 +38,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-123</y>
-        <width>454</width>
-        <height>612</height>
+        <y>0</y>
+        <width>398</width>
+        <height>525</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_5">
@@ -199,7 +199,7 @@
               <item row="3" column="0">
                <widget class="QLabel" name="stepForOutputLabel">
                 <property name="text">
-                 <string>Step for output [1e15 at./cm2]:</string>
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Step for output [1e15 at./cm&lt;span style=&quot; vertical-align:super;&quot;&gt;2&lt;/span&gt;]:&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                 </property>
                </widget>
               </item>

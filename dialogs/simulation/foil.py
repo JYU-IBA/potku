@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2018
-Updated on 3.5.2018
+Updated on 14.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -35,6 +35,11 @@ from widgets.matplotlib.simulation.composition import FoilCompositionWidget
 from modules.foil import CircularFoil
 from modules.foil import RectangularFoil
 
+from modules.general_functions import set_input_field_red
+from modules.general_functions import check_text
+from modules.general_functions import validate_text_input
+import copy
+
 
 class FoilDialog(QtWidgets.QDialog):
     """ Class for creating a foil widget for detector settings.
@@ -52,7 +57,7 @@ class FoilDialog(QtWidgets.QDialog):
         self.icon_manager = icon_manager
         self.foils = tmp_foils
         self.index = tmp_index
-        self.foil = tmp_foils[tmp_index]
+        self.tmp_foil = copy.deepcopy(tmp_foils[tmp_index])
         self.foil_type = None
         self.foil_type_changed = False
 
@@ -70,10 +75,15 @@ class FoilDialog(QtWidgets.QDialog):
         self.ui.dimensionLayout.addWidget(self.dimension_label)
         self.ui.dimensionLayout.addWidget(self.dimension_edits[0])
 
+        set_input_field_red(self.ui.nameEdit)
+        self.fields_are_valid = False
+        self.ui.nameEdit.textChanged.connect(lambda: self.__check_text(
+            self.ui.nameEdit, self))
+
         self.show_parameters()
 
         # This widget adds itself into the matplotlib_layout
-        self.composition = FoilCompositionWidget(self, self.foil,
+        self.composition = FoilCompositionWidget(self, self.tmp_foil,
                                                  self.icon_manager)
 
         self.ui.typeComboBox.currentIndexChanged.connect(
@@ -83,18 +93,21 @@ class FoilDialog(QtWidgets.QDialog):
         self.ui.okButton.clicked.connect(lambda:
                                          self._save_foil_info_and_close())
 
+        self.ui.nameEdit.textEdited.connect(lambda: self.__validate())
+        self.__close = True
+
         self.exec_()
 
     def show_parameters(self):
         """Show foil parameters in dialog.
         """
-        self.ui.nameEdit.setText(self.foil.name)
-        self.ui.transmissionEdit.setValue(self.foil.transmission)
+        self.ui.nameEdit.setText(self.tmp_foil.name)
+        self.ui.transmissionEdit.setValue(self.tmp_foil.transmission)
 
-        if type(self.foils[self.index]) is CircularFoil:
+        if type(self.tmp_foil) is CircularFoil:
             self.foil_type = CircularFoil
             self.ui.typeComboBox.setCurrentIndex(0)
-            self.first_dimension_edit.setValue(self.foil.diameter)
+            self.first_dimension_edit.setValue(self.tmp_foil.diameter)
         else:
             self.foil_type = RectangularFoil
             self.ui.typeComboBox.setCurrentIndex(1)
@@ -102,8 +115,8 @@ class FoilDialog(QtWidgets.QDialog):
             self.second_dimension_edit = QtWidgets.QDoubleSpinBox()
             self.dimension_edits.append(self.second_dimension_edit)
             self.ui.dimensionLayout.addWidget(self.dimension_edits[1])
-            self.first_dimension_edit.setValue(self.foil.size[0])
-            self.second_dimension_edit.setValue(self.foil.size[1])
+            self.first_dimension_edit.setValue(self.tmp_foil.size[0])
+            self.second_dimension_edit.setValue(self.tmp_foil.size[1])
 
     def _change_dimensions(self):
         """Change the view to show diameter for circular foil and sizes x and
@@ -133,28 +146,63 @@ class FoilDialog(QtWidgets.QDialog):
             else:
                 self.foil_type_changed = False
 
+    @staticmethod
+    def __check_text(input_field, dialog):
+        """Checks if there is text in given input field.
+
+        Args:
+            input_field: Input field the contents of which are checked.
+            dialog: Foil dialog.
+        """
+        dialog.fields_are_valid = check_text(input_field)
+
     def _save_foil_info_and_close(self):
         """Saves foil information and closes dialog."""
-        if self.foil_type_changed:
-            # If foil type has changed, change object.
-            if self.foil_type is CircularFoil:
-                new_foil = RectangularFoil(self.ui.nameEdit.text(),
-                                           layers=self.foil.layers)
-                new_foil.size = (self.first_dimension_edit.value(),
-                                 self.second_dimension_edit.value())
-            else:
-                new_foil = CircularFoil(self.ui.nameEdit.text(),
-                                        layers=self.foil.layers)
-                new_foil.diameter = self.first_dimension_edit.value()
-            new_foil.distance = self.foils[self.index].distance
-            self.foils[self.index] = new_foil
+        if not self.fields_are_valid:
+            QtWidgets.QMessageBox.critical(self, "Warning",
+                                           "Some of the parameters values have"
+                                           " not been set.\n" +
+                                           "Please input values in fields "
+                                           "indicated in red.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+            self.__close = False
+
         else:
-            # Save foil information to the old object.
-            self.foil.name = self.ui.nameEdit.text()
-            self.foil.transmission = self.ui.transmissionEdit.value()
-            if self.foil_type is CircularFoil:
-                self.foil.diameter = self.first_dimension_edit.value()
+            if self.foil_type_changed:
+                # If foil type has changed, change object.
+                if self.foil_type is CircularFoil:
+                    new_foil = RectangularFoil(self.ui.nameEdit.text(),
+                                               layers=self.tmp_foil.layers)
+                    new_foil.size = (self.first_dimension_edit.value(),
+                                     self.second_dimension_edit.value())
+                else:
+                    new_foil = CircularFoil(self.ui.nameEdit.text(),
+                                            layers=self.tmp_foil.layers)
+                    new_foil.diameter = self.first_dimension_edit.value()
+                new_foil.distance = self.foils[self.index].distance
+                self.tmp_foil = new_foil
             else:
-                self.foil.size = (self.first_dimension_edit.value(),
-                                  self.second_dimension_edit.value())
-        self.close()
+                # Save foil information to the old object.
+                self.tmp_foil.name = self.ui.nameEdit.text()
+                self.tmp_foil.transmission = self.ui.transmissionEdit.value()
+                if self.foil_type is CircularFoil:
+                    self.tmp_foil.diameter = self.first_dimension_edit.value()
+                else:
+                    self.tmp_foil.size = (self.first_dimension_edit.value(),
+                                          self.second_dimension_edit.value())
+            self.foils[self.index] = self.tmp_foil
+            self.__close = True
+
+        if self.__close:
+            self.close()
+
+    def __validate(self):
+        """
+        Validate the layer name.
+        """
+        text = self.ui.nameEdit.text()
+        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+        valid_text = validate_text_input(text, regex)
+
+        self.ui.nameEdit.setText(valid_text)

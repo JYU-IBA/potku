@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 30.5.2018
+Updated on 12.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -35,13 +35,17 @@ from PyQt5 import QtWidgets
 
 from modules.general_functions import check_text
 from modules.general_functions import set_input_field_red
+from modules.general_functions import validate_text_input
 
 
 class NewSampleDialog(QtWidgets.QDialog):
     """Dialog for creating a new sample.
     """
-    def __init__(self):
+    def __init__(self, samples):
         """Inits a new sample dialog.
+
+        Args:
+            samples: List of samples.
         """
         super().__init__()
 
@@ -55,6 +59,10 @@ class NewSampleDialog(QtWidgets.QDialog):
         self.ui.cancelButton.clicked.connect(self.close)
         self.name = ""
         self.description = ""
+        self.samples = samples
+        self.__close = True
+
+        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
 
         self.exec_()
 
@@ -65,7 +73,21 @@ class NewSampleDialog(QtWidgets.QDialog):
         if not self.name:
             self.ui.nameLineEdit.setFocus()
             return
-        self.close()
+        for sample in self.samples:
+            if sample.name == self.name:
+                QtWidgets.QMessageBox.critical(self, "Already exists",
+                                               "There already is a "
+                                               "sample with this name!"
+                                               "\n\n Choose another "
+                                               "name.",
+                                               QtWidgets.QMessageBox.Ok,
+                                               QtWidgets.QMessageBox.Ok)
+                self.__close = False
+                break
+            else:
+                self.__close = True
+        if self.__close:
+            self.close()
 
     @staticmethod
     def __check_text(input_field):
@@ -75,3 +97,13 @@ class NewSampleDialog(QtWidgets.QDialog):
             input_field: Input field the contents of which are checked.
         """
         check_text(input_field)
+
+    def __validate(self):
+        """
+        Validate the sample name.
+        """
+        text = self.ui.nameLineEdit.text()
+        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+        valid_text = validate_text_input(text, regex)
+
+        self.ui.nameLineEdit.setText(valid_text)

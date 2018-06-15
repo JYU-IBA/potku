@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 8.6.2018
+Updated on 14.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -47,7 +47,8 @@ class Detector:
                 "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
                 "angle_slope", "angle_offset", "path", "modification_time",\
                 "efficiencies", "efficiency_directory", "timeres", \
-                "detector_theta", "__measurement_settings_file_path"
+                "detector_theta", "__measurement_settings_file_path", \
+                "efficiencies_to_remove"
 
     def __init__(self, path, measurement_settings_file_path, name="Default",
                  description="", modification_time=None,
@@ -91,19 +92,19 @@ class Detector:
                                        [Layer("Layer_12C",
                                               [Element("C", 12.011, 1)],
                                               0.1, 2.25, 0.0)]),
-                          CircularFoil("Foil2", 10.0, 100.0,
+                          CircularFoil("Foil2", 10.0, 356.0,
                                        [Layer("Layer_12C",
                                               [Element("C", 12.011, 1)],
-                                              13.0, 2.25, 0.1)]),
+                                              13.0, 2.25, 0.0)]),
                           CircularFoil("Foil3", 18.0, 942.0,
                                        [Layer("Layer_12C",
                                               [Element("C", 12.011, 1)],
-                                              44.4, 2.25, 13.4)]),
-                          RectangularFoil("Foil4", 14.0, 14.0, 957.0,
+                                              44.4, 2.25, 0.0)]),
+                          RectangularFoil("Foil4", 14.0, 14.0, 1042.0,
                                           [Layer("Layer_28Si",
                                                  [Element("N", 14.00, 0.57),
                                                   Element("Si", 28.09, 0.43)],
-                                                 100.0, 3.44, 57.8)])]
+                                                 100.0, 3.44, 0.0)])]
         self.tof_foils = tof_foils
         if not self.tof_foils:
             # Set default ToF foils
@@ -118,6 +119,7 @@ class Detector:
 
         # Efficiency file paths and directory
         self.efficiencies = []
+        self.efficiencies_to_remove = []
         self.efficiency_directory = None
 
         self.to_file(os.path.join(self.path),
@@ -187,7 +189,29 @@ class Detector:
         Args:
             file_path: Path of the efficiency file.
         """
-        shutil.copy(file_path, self.efficiency_directory)
+        try:
+            shutil.copy(file_path, self.efficiency_directory)
+        except shutil.SameFileError:
+            pass
+
+    def remove_efficiency_file_path(self, file_name):
+        """
+        Add efficiency file to remove to the list of to be removed efficiency
+        file paths and remove it from the efficiencies list.
+
+        Args:
+            file_name: Name of the efficiency file.
+        """
+        file_path = ""
+        folder_and_file = os.path.join("Efficiency_files", file_name)
+        for f in self.efficiencies:
+            if f.endswith(folder_and_file):
+                file_path = f
+            if f.endswith(file_name):
+                self.efficiencies.remove(f)
+
+        if file_path:
+            self.efficiencies_to_remove.append(file_path)
 
     def remove_efficiency_file(self, file_name):
         """Removes efficiency file from detector's efficiency file folder.

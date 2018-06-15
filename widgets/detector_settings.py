@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 1.6.2018
+Updated on 14.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -39,6 +39,10 @@ from dialogs.simulation.foil import FoilDialog
 from modules.foil import CircularFoil
 from widgets.foil import FoilWidget
 from modules.general_functions import open_file_dialog
+from modules.general_functions import set_input_field_red
+from modules.general_functions import check_text
+from modules.general_functions import validate_text_input
+import copy
 
 
 class DetectorSettingsWidget(QtWidgets.QWidget):
@@ -104,6 +108,13 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.ui.executeCalibrationButton.setEnabled(
             not self.request.samples.measurements.is_empty())
 
+        set_input_field_red(self.ui.nameLineEdit)
+        self.fields_are_valid = False
+        self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
+            self.ui.nameLineEdit, self))
+
+        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+
         self.show_settings()
 
     def show_settings(self):
@@ -128,10 +139,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
 
         # Detector foils
         self.calculate_distance()
-        self.tmp_foil_info = self.obj.foils
+        self.tmp_foil_info = copy.deepcopy(self.obj.foils)
 
         # Tof foils
-        self.tof_foils = self.obj.tof_foils
+        self.tof_foils = copy.deepcopy(self.obj.tof_foils)
 
     def update_settings(self):
         """
@@ -278,13 +289,27 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         """Removes efficiency file from detector's efficiency directory and
         updates settings view.
         """
-        selected_efficiency_file = self.ui. \
-            efficiencyListWidget.currentItem().text()
-        self.obj.remove_efficiency_file(
-            selected_efficiency_file)
-        self.ui.efficiencyListWidget.clear()
-        self.ui.efficiencyListWidget.addItems(
-            self.obj.get_efficiency_files())
+        if self.ui.efficiencyListWidget.currentItem():
+            reply = QtWidgets.QMessageBox.question(self, "Confirmation",
+                                                   "Are you sure you want to "
+                                                   "delete selected efficiency"
+                                                   "?",
+                                                   QtWidgets.QMessageBox.Yes |
+                                                   QtWidgets.QMessageBox.No |
+                                                   QtWidgets.QMessageBox.Cancel,
+                                                   QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                return  # If clicked Yes, then continue normally
+
+            selected_efficiency_file = self.ui. \
+                efficiencyListWidget.currentItem().text()
+            # self.obj.remove_efficiency_file(
+            #     selected_efficiency_file)
+            self.obj.remove_efficiency_file_path(selected_efficiency_file)
+            self.ui.efficiencyListWidget.clear()
+            self.ui.efficiencyListWidget.addItems(
+                self.obj.get_efficiency_files_from_list())
 
     def __open_calibration_dialog(self):
         """
@@ -332,3 +357,24 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
 
         self.foils_layout.removeWidget(foil_widget)
         foil_widget.deleteLater()
+
+    @staticmethod
+    def __check_text(input_field, settings):
+        """Checks if there is text in given input field.
+
+        Args:
+            input_field: Input field the contents of which are checked.
+            settings: Settings widget.
+        """
+        settings.fields_are_valid = check_text(input_field)
+
+    def __validate(self):
+        """
+        Validate the sample name.
+        """
+        text = self.ui.nameLineEdit.text()
+        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+        valid_text = validate_text_input(text, regex)
+
+        self.ui.nameLineEdit.setText(valid_text)
+
