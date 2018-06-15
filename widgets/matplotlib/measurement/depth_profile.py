@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 17.4.2013
-Updated on 8.6.2018
+Updated on 15.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -309,8 +309,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         # Fix labels to proper format, with MoE
         labels_w_percentages = []
         for i in range(0, len(labels)):
-            element = Element(labels[i])
-            element_str = str(element)
+            element = Element.from_string(labels[i])
+            element_str = labels[i]
             element_isotope = str(element.isotope)
 
             if element_isotope == "None":
@@ -336,7 +336,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 else:
                     str_ratio = "{0}%".format(int(percentages[element_str]))
                     str_err = "± {0}%".format(int(moe[element_str]))
-                lbl_str = "{0} {1:<6} {2}".format(str_element,
+                lbl_str = "{0} {1:<6} {2}".format(r"$^{" + element_isotope +
+                                                  "}$" +
+                                                  element.symbol,
                                                   str_ratio, str_err)
             else:
                 lbl_str = '{0}'.format(str_element)
@@ -344,7 +346,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             # Use absolute values for the elements instead of percentages.
             if self.__absolute_values:
                 lbl_str = "{0} {1:<7} at./1e15 at./cm²"\
-                    .format(str_element,
+                    .format(r"$^{" + element_isotope + "}$" + element.symbol,
                             round(sum(concentrations[element_str]), 3))
             labels_w_percentages.append(lbl_str)
         leg = self.axes.legend(handles, labels_w_percentages,
