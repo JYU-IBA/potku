@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 30.3.2018
-Edited on 1.6.2018
+Edited on 15.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -68,6 +68,8 @@ class Samples:
             serial_string = prefix[1]
             try:
                 serial_number = int(serial_string)
+                if name == "":
+                    name = dir_split[1]
                 sample = Sample(serial_number, self.request, sample_dir, name)
             except Exception as e:
                 # Couldn't read sample's serial number from file path.
