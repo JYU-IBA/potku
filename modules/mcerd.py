@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 1.6.2018
+Updated on 15.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -56,14 +56,16 @@ class MCERD:
         # OS specific directory where temporary MCERD files will be stored.
         # In case of Linux and Mac this will be /tmp and in Windows this will
         # be the C:\Users\<username>\AppData\Local\Temp.
-        self.__tmp = tempfile.gettempdir()
+        # self.__tmp = tempfile.gettempdir()
+
+        self.dir = self.__settings["sim_dir"]
 
         self.__filename = self.__settings["recoil_element"].prefix \
             + "-" + self.__settings["recoil_element"].name
 
         # The recoil file and erd file are later passed to get_espe.
-        self.recoil_file = os.path.join(self.__tmp, self.__filename + ".recoil")
-        self.result_file = os.path.join(self.__tmp, self.__filename + "." +
+        self.recoil_file = os.path.join(self.dir, self.__filename + ".recoil")
+        self.result_file = os.path.join(self.dir, self.__filename + "." +
                                         str(self.__settings["seed_number"]) +
                                         ".erd")
         self.__create_mcerd_files()
@@ -72,7 +74,7 @@ class MCERD:
         mcerd_command = os.path.join("external", "Potku-bin", "mcerd" +
                                      (".exe " if platform.system() == "Windows"
                                       else " ") +
-                                     os.path.join(self.__tmp, self.__filename))
+                                     os.path.join(self.dir, self.__filename))
 
         # Start the MCERD process.
         # TODO: MCERD needs to be fixed so we can get rid of this ulimit.
@@ -100,11 +102,14 @@ class MCERD:
         are placed to the directory of the temporary files of the operating
         system.
         """
-        command_file = os.path.join(self.__tmp, self.__filename)
-        target_file = os.path.join(self.__tmp, self.__filename + ".target")
-        detector_file = os.path.join(self.__tmp, self.__filename + ".detector")
-        foils_file = os.path.join(self.__tmp, self.__filename + ".foils")
-        presimulation_file = os.path.join(self.__tmp, self.__filename + ".pre")
+        self.__command_file = os.path.join(self.dir, self.__filename)
+        self.__target_file = os.path.join(self.dir, self.__filename +
+                                          ".erd_target")
+        self.__detector_file = os.path.join(self.dir, self.__filename +
+                                            ".erd_detector")
+        self.__foils_file = os.path.join(self.dir, self.__filename + ".foils")
+        self.__presimulation_file = os.path.join(
+            self.dir, self.__filename + ".pre")
 
         beam = self.__settings["beam"]
         target = self.__settings["target"]
@@ -112,7 +117,7 @@ class MCERD:
         recoil_element = (self.__settings["recoil_element"])
 
         # Create the main MCERD command file
-        with open(command_file, "w") as file:
+        with open(self.__command_file, "w") as file:
 
             file.write("Type of simulation: " +
                        self.__settings["simulation_type"] + "\n")
@@ -126,9 +131,10 @@ class MCERD:
 
             file.write("Beam energy: " + str(beam.energy) + " MeV\n")
 
-            file.write("Target description file: " + target_file + "\n")
+            file.write("Target description file: " + self.__target_file + "\n")
 
-            file.write("Detector description file: " + detector_file + "\n")
+            file.write("Detector description file: " + self.__detector_file +
+                       "\n")
 
             if not recoil_element.element.isotope:
                 isotope = ""
@@ -164,7 +170,7 @@ class MCERD:
                        self.__settings["simulation_mode"] + "\n")
 
             file.write("Presimulation * result file: " +
-                       presimulation_file + "\n")
+                       self.__presimulation_file + "\n")
 
             file.write("Number of real ions per each scaling ion: " +
                        str(self.__settings["number_of_scaling_ions"]) + "\n")
@@ -179,7 +185,7 @@ class MCERD:
                        str(self.__settings["seed_number"]) + "\n")
 
         # Create the MCERD detector file
-        with open(detector_file, "w") as file_det:
+        with open(self.__detector_file, "w") as file_det:
 
             file_det.write("Detector type: " + detector.type + "\n")
 
@@ -194,7 +200,7 @@ class MCERD:
                            str(detector.tof_foils[1]) + "\n")
 
             file_det.write("Description file for the detector foils: " +
-                           foils_file + "\n")
+                           self.__foils_file + "\n")
 
             file_det.write("==========" + "\n")
 
@@ -232,7 +238,7 @@ class MCERD:
                                + "\n")
 
         # Create the MCERD target file
-        with open(target_file, "w") as file_target:
+        with open(self.__target_file, "w") as file_target:
             for layer in target.layers:
                 for element in layer.elements:
                     mass = masses.find_mass_of_isotope(element)
@@ -262,7 +268,7 @@ class MCERD:
                     count += 1
 
         # Create the MCERD foils file
-        with open(foils_file, "w") as file_foils:
+        with open(self.__foils_file, "w") as file_foils:
             for foil in detector.foils:
                 for layer in foil.layers:
                     for element in layer.elements:
@@ -295,3 +301,31 @@ class MCERD:
             shutil.copy(self.recoil_file, destination)
         except FileNotFoundError:
             raise
+
+    def delete_unneeded_files(self):
+        """
+        Delete mcerd files that are not needed anymore.
+        """
+        try:
+            os.remove(self.__command_file)
+            os.remove(self.__detector_file)
+            os.remove(self.__target_file)
+            os.remove(self.__foils_file)
+        except OSError:
+            pass  # Could not delete all the files
+
+        for file in os.listdir(self.dir):
+            if file.startswith(self.__filename + "." + str(self.__settings[
+               "seed_number"])):
+                if file.endswith(".out") or file.endswith(".dat") or \
+                   file.endswith(".range"):
+                    try:
+                        os.remove(os.path.join(self.dir, file))
+                    except OSError:
+                        continue
+            if file.startswith(self.__filename) and file.endswith(".pre"):
+                try:
+                    os.remove(os.path.join(self.dir, file))
+                except OSError:
+                    pass  # Could not delete the file
+

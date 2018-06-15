@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 13.6.2018
+Updated on 15.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -577,17 +577,18 @@ class ElementSimulation:
             "beam": run.beam,
             "target": self.target,
             "detector": detector,
-            "recoil_element": self.recoil_elements[0]
+            "recoil_element": self.recoil_elements[0],
+            "sim_dir": self.directory,
         }
-        self.mcerd_objects[self.seed_number] = MCERD(self.settings)
+        self.mcerd_objects[elem_sim.seed_number] = MCERD(self.settings)
 
     def stop(self):
         """ Stop the simulation."""
         for sim in list(self.mcerd_objects.keys()):
             self.mcerd_objects[sim].stop_process()
             try:
-                self.mcerd_objects[sim].copy_result(self.directory)
-                self.calculate_espe()
+                # TODO: Delete extra simulation files?
+                self.mcerd_objects[sim].delete_unneeded_files()
             except FileNotFoundError:
                 raise
             del (self.mcerd_objects[sim])
