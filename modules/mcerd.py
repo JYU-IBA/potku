@@ -33,7 +33,6 @@ import subprocess
 
 import shutil
 import os
-import tempfile
 
 import modules.masses as masses
 from modules.foil import CircularFoil
@@ -52,11 +51,6 @@ class MCERD:
             settings: All settings that MCERD needs in one dictionary.
         """
         self.__settings = settings
-
-        # OS specific directory where temporary MCERD files will be stored.
-        # In case of Linux and Mac this will be /tmp and in Windows this will
-        # be the C:\Users\<username>\AppData\Local\Temp.
-        # self.__tmp = tempfile.gettempdir()
 
         self.dir = self.__settings["sim_dir"]
 

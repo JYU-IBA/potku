@@ -42,6 +42,8 @@ from modules.mcerd import MCERD
 from modules.get_espe import GetEspe
 from modules.foil import CircularFoil
 
+from modules.general_functions import rename_file
+
 
 class ElementSimulation:
     """
@@ -281,6 +283,7 @@ class ElementSimulation:
             recoil_element: RecoilElement object to update.
             new_values: New values as a dictionary.
         """
+        old_name = recoil_element.name
         try:
             recoil_element.name = new_values["name"]
             recoil_element.description = new_values["description"]
@@ -297,6 +300,29 @@ class ElementSimulation:
             os.remove(os.path.join(self.directory, filename_to_delete))
 
         self.recoil_to_file(self.directory)
+
+        if old_name != recoil_element.name:
+            recoil_file = os.path.join(self.directory, recoil_element.prefix
+                                       + "-" + old_name + ".recoil")
+            if os.path.exists(recoil_file):
+                new_name = recoil_element.prefix + "-" + recoil_element.name \
+                           + ".recoil"
+                rename_file(recoil_file, new_name)
+
+            erd_file = os.path.join(self.directory, recoil_element.prefix +
+                                    "-" + old_name + "." + str(self.seed_number)
+                                    + ".erd")
+            if os.path.exists(erd_file):
+                new_name = recoil_element.prefix + "-" + recoil_element.name \
+                           + "." + str(self.seed_number) + ".erd"
+                rename_file(erd_file, new_name)
+
+            simu_file = os.path.join(self.directory, recoil_element.prefix +
+                                     "-" + old_name + ".simu")
+            if os.path.exists(simu_file):
+                new_name = recoil_element.prefix + "-" + recoil_element.name \
+                           + ".simu"
+                rename_file(simu_file, new_name)
 
     def calculate_solid(self):
         """
