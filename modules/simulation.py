@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 11.6.2018
+Updated on 18.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -105,6 +105,7 @@ class Simulations:
         if os.path.exists(simulation_path):
             simulation = Simulation.from_file(sample.request,
                                               simulation_path)
+            simulation.sample = sample
             serial_number = int(simulation_folder[len(directory_prefix):len(
                 directory_prefix) + 2])
             simulation.serial_number = serial_number
@@ -176,6 +177,7 @@ class Simulations:
                         element_simulation = ElementSimulation.from_file(
                             self.request, prefix, simulation_folder_path,
                             mcsimu_file_path, profile_file_path)
+                        element_simulation.sample = simulation.sample
                         simulation.element_simulations.append(
                             element_simulation)
                         element_simulation.run = simulation.run
@@ -194,7 +196,8 @@ class Simulations:
                             simulation_name:
                         return simulation  # simulation = None
                 simulation = Simulation(simulation_path, self.request,
-                                        name=simulation_name, tab_id=tab_id)
+                                        name=simulation_name, tab_id=tab_id,
+                                        sample=sample)
                 serial_number = int(simulation_folder[len(directory_prefix):len(
                     directory_prefix) + 2])
                 simulation.serial_number = serial_number
@@ -237,14 +240,15 @@ class Simulation:
                 "description", "modification_time", "run", "detector", \
                 "target", "element_simulations", "name_prefix", \
                 "serial_number", "directory", "measurement_setting_file_name", \
-                "measurement_setting_file_description", "defaultlog", "errorlog"
+                "measurement_setting_file_description", "defaultlog", \
+                "errorlog", "sample"
 
     def __init__(self, path, request, name="Default",
                  description="",
                  modification_time=None, tab_id=-1, run=None,
                  detector=None, target=None,
                  measurement_setting_file_name="",
-                 measurement_setting_file_description=""):
+                 measurement_setting_file_description="", sample=None):
         """Initializes Simulation object.
 
         Args:
@@ -260,10 +264,12 @@ class Simulation:
             measurement_setting_file_name: Measurement settings file name.
             measurement_setting_file_description: Measurement settings file
             description.
+            sample: Sample object under which Simulation belongs.
             """
         self.tab_id = tab_id
         self.path = path
         self.request = request
+        self.sample = sample
 
         self.name = name
         self.description = description
@@ -343,7 +349,7 @@ class Simulation:
                                                detector=self.detector,
                                                recoil_elements=[
                                                    recoil_element],
-                                               run=self.run)
+                                               run=self.run, sample=self.sample)
         element_simulation.recoil_elements.append(recoil_element)
         self.element_simulations.append(element_simulation)
         return element_simulation

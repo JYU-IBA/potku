@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 15.6.2018
+Updated on 18.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -60,7 +60,7 @@ class ElementSimulation:
                 "get_espe", "channel_width", "target", "detector", \
                 "__mcerd_command", "__process", "settings", "espe_settings", \
                 "description", "run", "spectra", "name", \
-                "use_default_settings"
+                "use_default_settings", "sample"
 
     def __init__(self, directory, request, recoil_elements, name_prefix="",
                  target=None, detector=None, run=None, name="Default",
@@ -70,7 +70,7 @@ class ElementSimulation:
                  number_of_recoils=10, minimum_scattering_angle=0.05,
                  minimum_main_scattering_angle=20, simulation_mode="narrow",
                  seed_number=101, minimum_energy=1.0, channel_width=0.1,
-                 use_default_settings=True):
+                 use_default_settings=True, sample=None):
         """ Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
@@ -94,6 +94,7 @@ class ElementSimulation:
             seed_number: Seed number to give unique value to one simulation.
             minimum_energy: Minimum energy.
             channel_width: Channel width.
+            sample: Sample object under which Element Simualtion belongs.
         """
         self.directory = directory
         self.request = request
@@ -103,6 +104,8 @@ class ElementSimulation:
         if not modification_time:
             modification_time = time.time()
         self.modification_time = modification_time
+
+        self.sample = sample
 
         # TODO RecoilAtomDistributionWidget should use the selected
         # RecoilElement.

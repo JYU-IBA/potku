@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 14.6.2018
+Updated on 18.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -120,6 +120,7 @@ class Measurements:
                 os.makedirs(measurement_directory)
             measurement = Measurement(self.request, measurement_directory,
                                       tab_id, name)
+            measurement.sample = sample
 
             measurement.info_to_file(os.path.join(measurement_directory,
                                                   measurement.name +
@@ -148,6 +149,7 @@ class Measurements:
                                                     measurement_file,
                                                     profile_file_path,
                                                     self.request)
+                measurement.sample = sample
                 measurement_folder_name = os.path.split(file_directory)[1]
                 serial_number = int(measurement_folder_name[
                                     len(directory_prefix):len(
@@ -202,6 +204,7 @@ class Measurements:
                     measurement = Measurement(self.request,
                                               measurement_directory,
                                               tab_id, name)
+                    measurement.sample = sample
 
                     measurement.info_to_file(os.path.join(measurement_directory,
                                                           measurement.name +
@@ -278,7 +281,7 @@ class Measurement:
                  measurement_setting_file_name="Default",
                  measurement_setting_file_description="",
                  measurement_setting_modification_time=None,
-                 use_default_profile_settings=True):
+                 use_default_profile_settings=True, sample=None):
         """Initializes a measurement.
 
         Args:
@@ -294,6 +297,8 @@ class Measurement:
         if not modification_time:
             modification_time = time.time()
         self.modification_time = modification_time
+
+        self.sample = sample
 
         self.run = run
         self.detector = detector

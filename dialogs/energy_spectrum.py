@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 15.6.2018
+Updated on 18.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -86,7 +86,6 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
         if isinstance(self.parent.obj, Measurement):
             self.measurement = self.parent.obj
-            self.__global_settings = self.measurement.request.global_settings
             self.ui.pushButton_OK.clicked.connect(self.__accept_params)
 
             m_name = self.measurement.name
@@ -105,14 +104,26 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             header_item.setText(0, "Simulated elements")
             self.ui.treeWidget.setHeaderItem(header_item)
 
+            tof_list_tree_widget = QtWidgets.QTreeWidget()
+            tof_list_tree_widget.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding,
+                QtWidgets.QSizePolicy.Expanding)
+
+            header = QtWidgets.QTreeWidgetItem()
+            header.setText(0, "Pre-calculated elements")
+
+            self.ui.gridLayout_2.addWidget(tof_list_tree_widget, 0, 1)
+
+            tof_list_tree_widget.setHeaderItem(header)
+
             self.ui.pushButton_OK.clicked.connect(
                 self.__calculate_selected_spectra)
 
             self.result_files = []
-            elem_sim_prefixes = []  # .erd files of the same simulation are
+            elem_sim_prefixes = []  # .rec files of the same simulation are
             # shown as one tree item.
             for file in os.listdir(self.parent.obj.directory):
-                if file.endswith(".erd"):
+                if file.endswith(".rec"):
                     sim_name = file.split(".")[0]
 
                     if sim_name in elem_sim_prefixes:
@@ -124,6 +135,26 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     item.setCheckState(0, QtCore.Qt.Unchecked)
                     self.ui.treeWidget.addTopLevelItem(item)
 
+            # Add calculated tof_list files to tof_list_tree_widget by
+            # measurement under the same sample.
+            for sample in self.parent.obj.request.samples.samples:
+                for measurement in sample.measurements.measurements.values():
+                    if element_simulation.sample is measurement.sample:
+                        tree_item = QtWidgets.QTreeWidgetItem()
+                        tree_item.setText(0, measurement.name)
+                        tree_item.obj = measurement
+                        tof_list_tree_widget.addTopLevelItem(tree_item)
+
+                        for file in os.listdir(
+                                measurement.directory_energy_spectra):
+                            if file.endswith("tof_list"):
+                                item = QtWidgets.QTreeWidgetItem()
+                                file_name_without_suffix = \
+                                    file.rsplit('.', 1)[0]
+                                item.setText(0, file_name_without_suffix)
+                                item.setCheckState(0, QtCore.Qt.Unchecked)
+                                tree_item.addChild(item)
+                                tree_item.setExpanded(True)
             self.exec_()
 
     def __calculate_selected_spectra(self):
