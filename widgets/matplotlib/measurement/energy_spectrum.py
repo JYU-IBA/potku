@@ -38,6 +38,7 @@ from widgets.matplotlib.base import MatplotlibWidget
 import modules.masses as masses
 from modules.measurement import Measurement
 import os
+from matplotlib.widgets import SpanSelector
 
 
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
@@ -91,7 +92,51 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.__icon_manager.set_icon(self.__button_ignores, "gear.svg")
             self.mpl_toolbar.addWidget(self.__button_ignores)
 
+        if spectrum_type == "simulation":
+            self.__button_area_calculation = QtWidgets.QToolButton(self)
+            self.__button_area_calculation.clicked.connect(
+                self.__calculate_selected_area)
+            self.__button_area_calculation.setToolTip(
+                "Calculate the area ratio between the two spectra inside the "
+                "selected interval.")
+            self.__icon_manager.set_icon(self.__button_area_calculation,
+                                         "depth_profile_lim_in.svg")
+            self.mpl_toolbar.addWidget(self.__button_area_calculation)
+
+            self.span_selector = SpanSelector(self.axes, self.on_span_select,
+                                              'horizontal', useblit=True,
+                                              rectprops=dict(alpha=0.5,
+                                                             facecolor='red'),
+                                              button=1)
+
+        self.limits = []
+
         self.on_draw()
+
+    def __calculate_selected_area(self):
+        """
+        Calculate the ratio between the two spectra areas.
+        """
+        pass
+
+    def on_span_select(self, xmin, xmax):
+        """
+        Show selected area in the plot.
+
+        Args:
+            xmin: Area start.
+            xmax: Area end.
+        """
+        for lim in self.limits:
+            lim.set_linestyle('None')
+
+        self.limits = []
+        ylim = self.axes.get_ylim()
+        self.limits.append(self.axes.axvline(x=xmin, linestyle="--"))
+        self.limits.append(self.axes.axvline(x=xmax, linestyle="--"))
+
+        self.axes.set_ybound(ylim[0], ylim[1])
+        self.canvas.draw_idle()
 
     def __sortt(self, key):
         cut_file = key.split('.')
@@ -122,7 +167,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             for key in keys:
                 cut_file = key.split('.')
                 cut = self.histed_files[key]
-                element_object = Element.from_string(cut_file[0])  # Yeah...
+                element_object = Element.from_string(cut_file[0])
                 element = element_object.symbol
                 isotope = element_object.isotope
                 if key in self.__ignore_elements:
