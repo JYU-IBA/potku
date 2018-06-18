@@ -46,6 +46,8 @@ from modules.general_functions import read_espe_file
 from modules.measurement import Measurement
 from widgets.matplotlib.measurement.energy_spectrum import \
     MatplotlibEnergySpectrumWidget
+from modules.general_functions import read_tof_list_file
+from modules.general_functions import calculate_spectrum
 
 
 class EnergySpectrumParamsDialog(QtWidgets.QDialog):
@@ -104,17 +106,17 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             header_item.setText(0, "Simulated elements")
             self.ui.treeWidget.setHeaderItem(header_item)
 
-            tof_list_tree_widget = QtWidgets.QTreeWidget()
-            tof_list_tree_widget.setSizePolicy(
+            self.tof_list_tree_widget = QtWidgets.QTreeWidget()
+            self.tof_list_tree_widget.setSizePolicy(
                 QtWidgets.QSizePolicy.Expanding,
                 QtWidgets.QSizePolicy.Expanding)
 
             header = QtWidgets.QTreeWidgetItem()
             header.setText(0, "Pre-calculated elements")
 
-            self.ui.gridLayout_2.addWidget(tof_list_tree_widget, 0, 1)
+            self.ui.gridLayout_2.addWidget(self.tof_list_tree_widget, 0, 1)
 
-            tof_list_tree_widget.setHeaderItem(header)
+            self.tof_list_tree_widget.setHeaderItem(header)
 
             self.ui.pushButton_OK.clicked.connect(
                 self.__calculate_selected_spectra)
@@ -143,7 +145,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                         tree_item = QtWidgets.QTreeWidgetItem()
                         tree_item.setText(0, measurement.name)
                         tree_item.obj = measurement
-                        tof_list_tree_widget.addTopLevelItem(tree_item)
+                        tree_item.obj = measurement
+                        self.tof_list_tree_widget.addTopLevelItem(tree_item)
 
                         for file in os.listdir(
                                 measurement.directory_energy_spectra):
@@ -176,6 +179,39 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                             self.result_files.append(os.path.join(
                                 self.parent.obj.directory,
                                 rec_elem_prefix_and_name + ".simu"))
+
+        root_for_tof_list_files = self.tof_list_tree_widget.invisibleRootItem()
+        child_count = root_for_tof_list_files.childCount()
+
+        # Read selected tof_list files
+        tof_listed_files = {}
+        item_texts = []
+        used_measurements = []
+        for i in range(child_count):
+            measurement_item = root_for_tof_list_files.child(i)
+            mes_child_count = measurement_item.childCount()
+            for j in range(mes_child_count):
+                item = measurement_item.child(j)
+                if item.checkState(0):
+                    used_measurements.append(item.parent().obj)
+                    item_texts.append(item.text(0))
+                    tof_list_file = os.path.join(
+                        item.parent().obj.directory_energy_spectra,
+                        item.text(0) + ".tof_list")
+                    tof_list = item.text(0).split('.', 1)[1]
+                    tof_listed_files[tof_list] = read_tof_list_file(
+                        tof_list_file)
+
+        # Calculate energy spectra from histed files
+        for measurement in used_measurements:
+            calculate_spectrum(tof_listed_files, self.ui.
+                               histogramTicksDoubleSpinBox.value(),
+                               measurement,
+                               measurement.directory_energy_spectra)
+            # Add result files
+            for name in item_texts:
+                self.result_files.append(os.path.join(
+                    measurement.directory_energy_spectra, name + ".hist"))
 
         self.bin_width = self.ui.histogramTicksDoubleSpinBox.value()
 
@@ -381,7 +417,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 sys.exc_info()[1]), err_file,
                                  str(sys.exc_info()[2].tb_lineno)])
             msg += str_err
-            logging.getLogger(self.obj.name).error(msg)
+            logging.getLogger(self.parent.obj.name).error(msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
         finally:

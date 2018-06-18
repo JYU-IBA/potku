@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.4.2013
-Updated on 8.6.2018
+Updated on 18.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -32,11 +32,10 @@ __version__ = "2.0"
 import logging
 import os
 import sys
-import numpy
 from PyQt5 import QtCore
 
 from modules.element import Element
-from modules.general_functions import hist
+from modules.general_functions import calculate_spectrum
 from modules.general_functions import tof_list
 
 
@@ -69,30 +68,9 @@ class EnergySpectrum:
         
         Returns list of cut files 
         """
-        histed_files = {}
-        keys = self.__tof_listed_files.keys()
-        for key in keys:
-            histed_files[key] = hist(self.__tof_listed_files[key],
-                                     self.__spectrum_width, 3)
-            if not histed_files[key]:
-                return {}
-            first_val = (histed_files[key][0][0] - self.__spectrum_width, 0)
-            last_val = (histed_files[key][-1][0] + self.__spectrum_width, 0)
-            histed_files[key].insert(0, first_val)
-            histed_files[key].append(last_val)
-        if self.__global_settings.is_es_output_saved():
-            for key in keys:
-                file = self.__measurement.name
-                histed = histed_files[key]
-                filename = os.path.join(self.__directory_es,
-                                        "{0}.{1}.hist".format(
-                                            os.path.splitext(file)[0], key))
-                numpy_array = numpy.array(histed,
-                                          dtype=[('float', float),
-                                                 ('int', int)])
-                numpy.savetxt(filename, numpy_array, delimiter=" ",
-                              fmt="%5.5f %6d")
-        return histed_files
+        return calculate_spectrum(self.__tof_listed_files,
+                                  self.__spectrum_width, self.__measurement,
+                                  self.__directory_es)
 
     def __load_cuts(self):
         """Loads cut files through tof_list into list.

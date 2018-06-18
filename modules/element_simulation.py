@@ -35,7 +35,6 @@ import time
 
 from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 from widgets.matplotlib.simulation.recoil_atom_distribution import Point
-from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 
 from modules.element import Element
 from modules.mcerd import MCERD
@@ -668,11 +667,3 @@ class ElementSimulation:
             "recoil_file": recoil_file
         }
         self.get_espe = GetEspe(self.espe_settings)
-
-    def plot_spectrum(self):
-        """
-        Plots simulated energy spectrum.
-        """
-        dialog = EnergySpectrumParamsDialog(self, spectrum_type="simulation")
-        self.spectra = dialog.spectra
-        self.channel_width = dialog.bin_width
