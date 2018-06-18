@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 18.6.2018
+Updated on 13.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -286,17 +286,8 @@ def tof_list(cut_file, directory, save_output=False):
                                              cwd=bin_dir,
                                              shell=True,
                                              startupinfo=startupinfo)
-        elif platform.system() == "Linux":
-            command = "{0} {1}".format("./tof_list", new_cut_file)
-            p = subprocess.Popen(command.split(' ', 1),
-                                 cwd=bin_dir,
-                                 stdin=subprocess.PIPE,
-                                 stdout=subprocess.PIPE,
-                                 stderr=subprocess.PIPE)
-            stdout, unused_stderr = p.communicate()
-
         else:
-            command = "{0} {1}".format("./tof_list_mac", new_cut_file)
+            command = "{0} {1}".format("./tof_list", new_cut_file)
             p = subprocess.Popen(command.split(' ', 1),
                                  cwd=bin_dir,
                                  stdin=subprocess.PIPE,
