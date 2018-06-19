@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 18.6.2018
+Updated on 19.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -45,6 +45,7 @@ from PyQt5 import QtWidgets
 import os
 import tempfile
 from decimal import Decimal
+import bisect
 
 
 def open_file_dialog(parent, default_folder, title, files):
@@ -639,3 +640,29 @@ def validate_text_input(text, regex):
         return valid_text
     else:
         return text
+
+
+def find_nearest(x, lst):
+    """
+    Find given list's nearest point's x coordinate from x.
+
+    Args:
+        x: X coordinate.
+        lst: List to search.
+
+    Return:
+        Nearest point's x coordinate.
+    """
+    # https://stackoverflow.com/questions/12141150/from-list-of-integers
+    # -get-number-closest-to-a-given-value
+    position = bisect.bisect_left(lst, x)
+    if position == 0:
+        return lst[0]
+    if position == len(lst):
+        return lst[len(lst) - 1]
+    before = lst[position -1]
+    after = lst[position]
+    if after - x < x - before:
+        return after
+    else:
+        return before

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 18.6.2018
+Updated on 19.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -39,6 +39,9 @@ import modules.masses as masses
 from modules.measurement import Measurement
 import os
 from matplotlib.widgets import SpanSelector
+from matplotlib import patches
+from shapely.geometry import Polygon
+from modules.general_functions import find_nearest
 
 
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
@@ -88,7 +91,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.__button_ignores.clicked.connect(
                 self.__ignore_elements_from_graph)
             self.__button_ignores.setToolTip(
-                "Select elements which are included in the graph.")
+                "Select elements which are included in the graph")
             self.__icon_manager.set_icon(self.__button_ignores, "gear.svg")
             self.mpl_toolbar.addWidget(self.__button_ignores)
 
@@ -98,7 +101,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 self.__calculate_selected_area)
             self.__button_area_calculation.setToolTip(
                 "Calculate the area ratio between the two spectra inside the "
-                "selected interval.")
+                "selected interval")
             self.__icon_manager.set_icon(self.__button_area_calculation,
                                          "depth_profile_lim_in.svg")
             self.mpl_toolbar.addWidget(self.__button_area_calculation)
@@ -107,9 +110,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                               'horizontal', useblit=True,
                                               rectprops=dict(alpha=0.5,
                                                              facecolor='red'),
-                                              button=1)
+                                              button=1, span_stays=True)
 
         self.limits = []
+        self.leg = None  # Original legend
+        self.lines_of_area = []
 
         self.on_draw()
 
@@ -117,7 +122,73 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         """
         Calculate the ratio between the two spectra areas.
         """
-        pass
+        lower_limit = self.limits[0].get_xdata()[0]
+        upper_limit = self.limits[1].get_xdata()[0]
+
+        # Create a list with points inside the limits
+        limited_points = []
+        for line_points in self.lines_of_area:
+            lim_points = []
+            for i in range(len(line_points)):
+                # Add first point that is either corresponding directly to lower
+                # limit or half of bin width bigger than the last point smaller
+                # than lower limit.
+                point = line_points[i]
+                x_point = float(point[0])
+                if lower_limit == x_point:
+                    lim_points.append((x_point, float(point[1])))
+                try:
+                    next_point = line_points[i + 1]
+                except IndexError:
+                    continue
+                if x_point < lower_limit < float(next_point[0]):
+                    start_y_point = (float(point[1]) + float(next_point[1])) / 2
+                    start_x_point = x_point + 0.5 * self.parent.bin_width
+                    start_point = start_x_point, start_y_point
+                    lim_points.append(start_point)
+                if lower_limit < x_point < upper_limit:
+                    lim_points.append((x_point, float(point[1])))
+                # Add last point that is either corresponding directly to upper
+                # limit or half of bin width smaller than the first point bigger
+                # than upper limit.
+                if upper_limit == x_point:
+                    lim_points.append((x_point, float(point[1])))
+                previous_point = line_points[i - 1]
+                if float(previous_point[0]) < upper_limit < x_point:
+                    end_y_point = (float(point[1]) +
+                                   float(previous_point[1])) / 2
+                    end_x_point = x_point - 0.5 * self.parent.bin_width
+                    end_point = end_x_point, end_y_point
+                    lim_points.append(end_point)
+            limited_points.append(lim_points)
+
+        # https://stackoverflow.com/questions/25439243/find-the-area-between-
+        # two-curves-plotted-in-matplotlib-fill-between-area
+        # Create a polygon points list from limited points
+        polygon_points = []
+        for value in limited_points[0]:
+            polygon_points.append([value[0], value[1]])
+
+        for value in limited_points[1][::-1]:
+            polygon_points.append([value[0], value[1]])
+
+        for value in limited_points[0][0:1]:
+            polygon_points.append([value[0], value[1]])
+
+        polygon = Polygon(polygon_points)
+        area = polygon.area
+
+        self.axes.legend(
+            handles=[patches.Rectangle(xy=[1, 1], width=1, height=1,
+                                       color='red', alpha=0.5,
+                                       label="Difference: %f" % area)],
+            loc=2,
+            bbox_to_anchor=(1, 1),
+            borderaxespad=0,
+            prop={'size': 12})
+
+        self.axes.add_artist(self.leg)
+        self.canvas.draw_idle()
 
     def on_span_select(self, xmin, xmax):
         """
@@ -127,13 +198,62 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             xmin: Area start.
             xmax: Area end.
         """
+        # TODO: limit histed files inside the limits to only two
+        first_line_lst = list(self.histed_files.values())[0]
+        first_line = [float(x[0]) for x in first_line_lst]
+        second_line_lst = list(self.histed_files.values())[1]
+        second_line = [float(x[0]) for x in second_line_lst]
+
+        self.lines_of_area = []
+        self.lines_of_area.append(first_line_lst)
+        self.lines_of_area.append(second_line_lst)
+
+        low_x = round(xmin, 3)
+        high_x = round(xmax, 3)
+
+        # Find nearest point to low_x from hist_files
+        nearest_low_1 = find_nearest(low_x, first_line)
+        nearest_low_2 = find_nearest(low_x, second_line)
+
+        if nearest_low_1 > nearest_low_2:
+            nearest_lows = [nearest_low_2, nearest_low_1]
+        else:
+            nearest_lows = [nearest_low_1, nearest_low_2]
+
+        nearest_low = find_nearest(low_x, nearest_lows)
+
+        nearest_high_1 = find_nearest(high_x, first_line)
+        nearest_high_2 = find_nearest(high_x, second_line)
+
+        if nearest_high_1 > nearest_high_2:
+            nearest_highs = [nearest_high_2, nearest_high_1]
+        else:
+            nearest_highs = [nearest_high_1, nearest_high_2]
+
+        nearest_high = find_nearest(high_x, nearest_highs)
+
+        # Always have low and high be different lines
+        if nearest_high in first_line and nearest_low in first_line:
+            if nearest_low_2 > nearest_high_1:
+                nearest_high = nearest_low_2
+                nearest_low = nearest_high_1
+            else:
+                nearest_low = nearest_low_2
+        elif nearest_high in second_line and nearest_low in second_line:
+            if nearest_low_1 > nearest_high_2:
+                nearest_high = nearest_low_1
+                nearest_low = nearest_high_2
+            else:
+                nearest_low = nearest_low_1
+
         for lim in self.limits:
             lim.set_linestyle('None')
 
         self.limits = []
         ylim = self.axes.get_ylim()
-        self.limits.append(self.axes.axvline(x=xmin, linestyle="--"))
-        self.limits.append(self.axes.axvline(x=xmax, linestyle="--"))
+        self.limits.append(self.axes.axvline(x=nearest_low, linestyle="--"))
+        self.limits.append(self.axes.axvline(x=nearest_high, linestyle="--",
+                                             color='red'))
 
         self.axes.set_ybound(ylim[0], ylim[1])
         self.canvas.draw_idle()
@@ -258,13 +378,13 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 self.__initiated_box = True
 
             handles, labels = self.axes.get_legend_handles_labels()
-            leg = self.axes.legend(handles,
-                                   labels,
-                                   loc=3,
-                                   bbox_to_anchor=(1, 0),
-                                   borderaxespad=0,
-                                   prop={'size': 12})
-            for handle in leg.legendHandles:
+            self.leg = self.axes.legend(handles,
+                                        labels,
+                                        loc=3,
+                                        bbox_to_anchor=(1, 0),
+                                        borderaxespad=0,
+                                        prop={'size': 12})
+            for handle in self.leg.legendHandles:
                 handle.set_linewidth(3.0)
 
         if 0.09 < x_max < 1.01:  # This works...

@@ -8,6 +8,8 @@ numpy = "*"
 scipy = "*"
 matplotlib = "*"
 "PyQt5" = "==5.9.2"
+wheel = "*"
+Shapely = "*" # Windows needs a download file {path = "C:/Users/Heta/Downloads/Shapely-1.6.4.post1-cp36-cp36m-win32.whl"}
 
 [dev-packages]
 PyInstaller = "*"
