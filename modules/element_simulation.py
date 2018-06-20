@@ -664,4 +664,10 @@ class ElementSimulation:
                                           ".simu"),
             "recoil_file": recoil_file
         }
+        if self.mcerd_objects:
+            for sim in list(self.mcerd_objects.keys()):
+                try:
+                    self.mcerd_objects[sim].copy_result(self.directory)
+                except FileNotFoundError:
+                    raise
         self.get_espe = GetEspe(self.espe_settings)
