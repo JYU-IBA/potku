@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 12.6.2018
+Updated on 20.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -148,14 +148,22 @@ class RecoilElement:
             recoil_file: File path to recoil file that ends with ".recoil".
         """
         with open(recoil_file, "w") as file_rec:
-            # MCERD requires the recoil atom distribution to start with these
-            # points
-            file_rec.write(
-                "0.00 0.000001\n10.00 0.000001\n")
+            # If there are not points all the way from 0 to 10, add this
+            # small amount
+            points = self.get_points()
+            if 0 < points[0].get_x():
+                point_x = round(points[0].get_x() - 0.01, 2)
+                if points[0].get_x() <= 10.0:
+                    file_rec.write("0.00 0.000001\n" + str(point_x) +
+                                   " 0.000001\n")
+                else:
+                    file_rec.write("0.00 0.000001\n10.00 0.000001\n" +
+                                   "10.01 0.0000\n" + str(point_x) +
+                                   " 0.0000\n")
 
-            for point in self.get_points():
+            for point in points:
                 file_rec.write(
-                    str(round(point.get_x() + 10.01, 2)) + " " +
+                    str(round(point.get_x(), 2)) + " " +
                     str(round(point.get_y(), 4)) + "\n")
 
             # MCERD requires the recoil atom distribution to end with these
