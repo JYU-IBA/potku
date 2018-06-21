@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 19.6.2018
+Updated on 20.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -42,6 +42,7 @@ from matplotlib.widgets import SpanSelector
 from matplotlib import patches
 from shapely.geometry import Polygon
 from modules.general_functions import find_nearest
+from scipy import integrate
 
 
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
@@ -64,6 +65,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.parent = parent
         self.draw_legend = legend
         self.histed_files = histed_files
+        self.spectrum_type = spectrum_type
+
+        # List for files to draw for simulation
+        self.files_to_draw = histed_files
+
         self.__rbs_list = rbs_list
         self.__icon_manager = parent.icon_manager
         if isinstance(parent.parent.obj, Measurement):
@@ -86,16 +92,15 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                      "monitoring_section.svg")
         self.mpl_toolbar.addWidget(self.__button_toggle_log)
 
-        if spectrum_type == "measurement":
-            self.__button_ignores = QtWidgets.QToolButton(self)
-            self.__button_ignores.clicked.connect(
-                self.__ignore_elements_from_graph)
-            self.__button_ignores.setToolTip(
-                "Select elements which are included in the graph")
-            self.__icon_manager.set_icon(self.__button_ignores, "gear.svg")
-            self.mpl_toolbar.addWidget(self.__button_ignores)
+        self.__button_ignores = QtWidgets.QToolButton(self)
+        self.__button_ignores.clicked.connect(
+            self.__ignore_elements_from_graph)
+        self.__button_ignores.setToolTip(
+            "Select elements which are included in the graph")
+        self.__icon_manager.set_icon(self.__button_ignores, "gear.svg")
+        self.mpl_toolbar.addWidget(self.__button_ignores)
 
-        if spectrum_type == "simulation":
+        if self.spectrum_type == "simulation":
             self.__button_area_calculation = QtWidgets.QToolButton(self)
             self.__button_area_calculation.clicked.connect(
                 self.__calculate_selected_area)
@@ -105,6 +110,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.__icon_manager.set_icon(self.__button_area_calculation,
                                          "depth_profile_lim_in.svg")
             self.mpl_toolbar.addWidget(self.__button_area_calculation)
+            self.__button_area_calculation.setEnabled(False)
 
             self.span_selector = SpanSelector(self.axes, self.on_span_select,
                                               'horizontal', useblit=True,
@@ -129,23 +135,26 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         limited_points = []
         for line_points in self.lines_of_area:
             lim_points = []
-            for i in range(len(line_points)):
+            points = list(line_points.values())[0]
+            for i in range(len(points)):
                 # Add first point that is either corresponding directly to lower
                 # limit or half of bin width bigger than the last point smaller
                 # than lower limit.
-                point = line_points[i]
+                point = points[i]
                 x_point = float(point[0])
                 if lower_limit == x_point:
                     lim_points.append((x_point, float(point[1])))
                 try:
-                    next_point = line_points[i + 1]
+                    next_point = points[i + 1]
+                    if x_point < lower_limit < float(next_point[0]):
+                        start_y_point = round((float(point[1]) + float(
+                            next_point[1])) / 2, 2)
+                        start_x_point = round(x_point + 0.5 * \
+                                        self.parent.bin_width, 2)
+                        start_point = start_x_point, start_y_point
+                        lim_points.append(start_point)
                 except IndexError:
-                    continue
-                if x_point < lower_limit < float(next_point[0]):
-                    start_y_point = (float(point[1]) + float(next_point[1])) / 2
-                    start_x_point = x_point + 0.5 * self.parent.bin_width
-                    start_point = start_x_point, start_y_point
-                    lim_points.append(start_point)
+                    pass
                 if lower_limit < x_point < upper_limit:
                     lim_points.append((x_point, float(point[1])))
                 # Add last point that is either corresponding directly to upper
@@ -153,11 +162,12 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 # than upper limit.
                 if upper_limit == x_point:
                     lim_points.append((x_point, float(point[1])))
-                previous_point = line_points[i - 1]
+                previous_point = points[i - 1]
                 if float(previous_point[0]) < upper_limit < x_point:
-                    end_y_point = (float(point[1]) +
-                                   float(previous_point[1])) / 2
-                    end_x_point = x_point - 0.5 * self.parent.bin_width
+                    end_y_point = round((float(point[1]) +
+                                   float(previous_point[1])) / 2, 2)
+                    end_x_point = round(x_point - 0.5 *
+                                        self.parent.bin_width, 2)
                     end_point = end_x_point, end_y_point
                     lim_points.append(end_point)
             limited_points.append(lim_points)
@@ -178,10 +188,44 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         polygon = Polygon(polygon_points)
         area = polygon.area
 
+        # Calculate also the ratio of the two curve's areas
+        x_1, y_1 = zip(*limited_points[0])
+        x_2, y_2 = zip(*limited_points[1])
+
+        area_1 = integrate.simps(y_1, x_1)
+        area_2 = integrate.simps(y_2, x_2)
+
+        # Check if one of the self.lines_of_area is a hist file
+        # If so, use it as the one to compare to
+        i = 0
+        j = 0
+        for line in self.lines_of_area:
+            for key, values in line.items():
+                if key.endswith(".hist"):
+                    i = i + 1
+                    break
+            if i != 0:
+                break
+            j = j + 1
+
+        if i != 0:
+            if j == 1 and i == 1 and area_2 != 0:
+                ratio = area_1 / area_2
+            else:
+                ratio = area_2 / area_1
+        else:
+            if area_1 > area_2:
+                ratio = area_2 / area_1
+            else:
+                ratio = area_1 / area_2
+
         self.axes.legend(
             handles=[patches.Rectangle(xy=[1, 1], width=1, height=1,
                                        color='red', alpha=0.5,
-                                       label="Difference: %f" % area)],
+                                       label="Difference: %s" %
+                                             str(round(area, 2)) +
+                                             "\nRatio: %s" %
+                                             str(round(ratio, 3)))],
             loc=2,
             bbox_to_anchor=(1, 1),
             borderaxespad=0,
@@ -198,15 +242,36 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             xmin: Area start.
             xmax: Area end.
         """
-        # TODO: limit histed files inside the limits to only two
-        first_line_lst = list(self.histed_files.values())[0]
-        first_line = [float(x[0]) for x in first_line_lst]
-        second_line_lst = list(self.histed_files.values())[1]
-        second_line = [float(x[0]) for x in second_line_lst]
+        if xmin == xmax:  # Do nothing if graph is clicked
+            return
+
+        # Limit files_to_draw to only two
+        if len(self.files_to_draw) != 2:
+            QtWidgets.QMessageBox.critical(self.parent.parent, "Warning",
+                                           "Limits can only be set when two "
+                                           "elements are drawn.\n\nPlease add"
+                                           " or remove elements accordingly.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+            return
+
+        i = 0
+        first = {}
+        second = {}
+        first_line = []
+        second_line = []
+        for key, val in self.files_to_draw.items():
+            if i == 0:
+                first_line = [float(x[0]) for x in val]
+                first[key] = [(float(x[0]), float(x[1])) for x in val]
+                i = i + 1
+            else:
+                second_line = [float(x[0]) for x in val]
+                second[key] = [(float(x[0]), float(x[1])) for x in val]
 
         self.lines_of_area = []
-        self.lines_of_area.append(first_line_lst)
-        self.lines_of_area.append(second_line_lst)
+        self.lines_of_area.append(first)
+        self.lines_of_area.append(second)
 
         low_x = round(xmin, 3)
         high_x = round(xmax, 3)
@@ -246,6 +311,13 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             else:
                 nearest_low = nearest_low_1
 
+        # Don't draw nearest high and low on top of each other
+        if nearest_low == nearest_high:
+            nearest_low = nearest_low - self.parent.bin_width
+            if nearest_low not in first_line or nearest_low not in second_line:
+                nearest_low = nearest_low + self.parent.bin_width
+                nearest_high = nearest_high + self.parent.bin_width
+
         for lim in self.limits:
             lim.set_linestyle('None')
 
@@ -256,6 +328,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                              color='red'))
 
         self.axes.set_ybound(ylim[0], ylim[1])
+
+        self.__button_area_calculation.setEnabled(True)
         self.canvas.draw_idle()
 
     def __sortt(self, key):
@@ -311,6 +385,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 x = tuple(float(pair[0]) for pair in cut)
                 y = tuple(float(pair[1]) for pair in cut)
 
+                if x[0] < x_min:
+                    x_min = x[0]
+
                 if isotope is None:
                     isotope = ""
 
@@ -336,8 +413,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                color=color,
                                label=label)
         else:
-
-            for key, data in self.histed_files.items():
+            if self.__ignore_elements:
+                self.files_to_draw = self.remove_ignored_elements()
+            for key, data in self.files_to_draw.items():
                 # Parse the element symbol and isotope.
                 file_name = os.path.split(key)[1]
                 isotope = ""
@@ -351,8 +429,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                         isotope = ""
                     symbol = element.symbol
 
-                    label = r"$^{" + str(isotope) + "}$" + symbol + " (" + \
-                            measurement_name + ")"
+                    label = r"$^{" + str(isotope) + "}$" + symbol + " (exp)"
                 else:
                     for s in file_name:
                         if s != "-":
@@ -367,6 +444,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
                 x = tuple(float(pair[0]) for pair in data)
                 y = tuple(float(pair[1]) for pair in data)
+
+                if x[0] < x_min:
+                    x_min = x[0]
                 self.axes.plot(x, y, label=label)
 
         if self.draw_legend:
@@ -394,7 +474,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         # Set limits accordingly
         self.axes.set_ylim([y_min, y_max])
-        self.axes.set_xlim([x_min, x_max])
+        self.axes.set_xlim([x_min - self.parent.bin_width, x_max])
 
         if self.__log_scale:
             self.axes.set_yscale('symlog')
@@ -404,6 +484,21 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         # Draw magic
         self.canvas.draw()
+
+    def remove_ignored_elements(self):
+        """
+        Find entries from self.histed_files that don't correspond to keys in
+        self.__ignore_elements.
+
+        Return:
+            Dictionary with the entries and keys that are not ignored.
+        """
+        files_to_draw = {}
+        for key, val in self.histed_files.items():
+            if key in self.__ignore_elements:
+                continue
+            files_to_draw[key] = val
+        return files_to_draw
 
     def __toggle_log_scale(self):
         """Toggle log scaling for Y axis in depth profile graph.
