@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 30.3.2018
-Edited on 15.6.2018
+Edited on 21.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -224,7 +224,7 @@ class Sample:
             if directory.startswith(name_prefix):
                 try:
                     # Read simulation number from directory name
-                    self._running_int_measurement = int(
+                    self._running_int_simulation = int(
                         directory[len(name_prefix):len(name_prefix) + 2])
                     for file in os.listdir(os.path.join(
                             self.request.directory, self.directory, directory)):
