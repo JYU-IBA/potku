@@ -43,6 +43,7 @@ from matplotlib import patches
 from shapely.geometry import Polygon
 from modules.general_functions import find_nearest
 from scipy import integrate
+import copy
 
 
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
@@ -64,7 +65,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         super().fork_toolbar_buttons()
         self.parent = parent
         self.draw_legend = legend
-        self.histed_files = histed_files
+        self.histed_files = copy.deepcopy(histed_files)
         self.spectrum_type = spectrum_type
 
         # List for files to draw for simulation
@@ -415,6 +416,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         else:
             if self.__ignore_elements:
                 self.files_to_draw = self.remove_ignored_elements()
+            else:
+                self.files_to_draw = copy.deepcopy(self.histed_files)
             for key, data in self.files_to_draw.items():
                 # Parse the element symbol and isotope.
                 file_name = os.path.split(key)[1]
@@ -509,9 +512,31 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     def __ignore_elements_from_graph(self):
         """Ignore elements from elements ratio calculation.
         """
-        elements = [item[0] for item in sorted(self.histed_files.items(),
+        if self.spectrum_type == "simulation":
+            elements = []
+            paths = []
+            ignored_elements = []
+            ignore_elements_for_dialog = []
+            for key in self.histed_files:
+                paths.append(key)
+                file = os.path.split(key)[1]
+                if file.endswith(".hist"):
+                    element = file.rsplit('.', 1)[0]
+                else:
+                    element = file.split('.')[0]
+                if key in self.__ignore_elements:
+                    ignore_elements_for_dialog.append(element)
+                elements.append(element)
+            dialog = GraphIgnoreElements(elements, ignore_elements_for_dialog)
+            for elem in dialog.ignored_elements:
+                for path in paths:
+                    if elem in path:
+                        ignored_elements.append(path)
+            self.__ignore_elements = ignored_elements
+        else:
+            elements = [item[0] for item in sorted(self.histed_files.items(),
                                                key=lambda x: self.__sortt(
                                                    x[0]))]
-        dialog = GraphIgnoreElements(elements, self.__ignore_elements)
-        self.__ignore_elements = dialog.ignored_elements
+            dialog = GraphIgnoreElements(elements, self.__ignore_elements)
+            self.__ignore_elements = dialog.ignored_elements
         self.on_draw()
