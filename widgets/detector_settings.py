@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 14.6.2018
+Updated on 21.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -137,6 +137,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.offsetLineEdit.setText(
             str(self.obj.tof_offset))
 
+        self.timeResSpinBox.setValue(self.obj.timeres)
+        self.virtualSizeXSpinBox.setValue(self.obj.virtual_size[0])
+        self.virtualSizeYSpinBox.setValue(self.obj.virtual_size[1])
+
         # Detector foils
         self.calculate_distance()
         self.tmp_foil_info = copy.deepcopy(self.obj.foils)
@@ -158,6 +162,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.obj.angle_slope = self.angleSlopeLineEdit.text()
         self.obj.tof_offset = self.offsetLineEdit.text()
         self.obj.tof_slope = self.slopeLineEdit.text()
+
+        self.obj.virtual_size = self.virtualSizeXSpinBox.value(), \
+                                self.virtualSizeYSpinBox.value()
+        self.obj.timeres = self.timeResSpinBox.value()
         # Detector foils
         self.calculate_distance()
         self.obj.foils = self.tmp_foil_info
