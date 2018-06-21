@@ -44,6 +44,7 @@ from shapely.geometry import Polygon
 from modules.general_functions import find_nearest
 from scipy import integrate
 import copy
+from matplotlib import offsetbox
 
 
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
@@ -220,18 +221,35 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             else:
                 ratio = area_1 / area_2
 
-        self.axes.legend(
-            handles=[patches.Rectangle(xy=[1, 1], width=1, height=1,
-                                       color='red', alpha=0.5,
-                                       label="Difference: %s" %
-                                             str(round(area, 2)) +
-                                             "\nRatio: %s" %
-                                             str(round(ratio, 3)))],
-            loc=2,
-            bbox_to_anchor=(1, 1),
-            borderaxespad=0,
-            prop={'size': 12})
+        # self.axes.legend(
+        #     handles=[patches.Rectangle(xy=[1, 1], width=1, height=1,
+        #                                color='red', alpha=0.5,
+        #                                label="Difference: %s" %
+        #                                      str(round(area, 2)) +
+        #                                      "\nRatio: %s" %
+        #                                      str(round(ratio, 3)))],
+        #     loc=2,
+        #     bbox_to_anchor=(1, 1),
+        #     borderaxespad=0,
+        #     prop={'size': 12})
+        # self.axes.annotate('Label', bbox_to_anchor=(1, 1), xycoords='data',
+        #            size=14, ha='right', va='top',
+        #            bbox=dict(boxstyle='square', fc='w', ec="#d1d1d1"))
 
+        text = "Difference: %s" % str(round(area, 2)) + \
+               "\nRatio: %s" % str(round(ratio, 3))
+        box1 = offsetbox.TextArea(text, textprops=dict(color="k"))
+        box = offsetbox.VPacker(children=[box1], align="center", pad=0, sep=5)
+
+        anchored_box = offsetbox.AnchoredOffsetbox(
+            loc=3,
+            child=box, pad=0.5,
+            frameon=True,
+            bbox_to_anchor=(1.0, 1.0),
+            bbox_transform=self.axes.transAxes,
+            borderpad=0.,
+        )
+        self.axes.add_artist(anchored_box)
         self.axes.add_artist(self.leg)
         self.canvas.draw_idle()
 
