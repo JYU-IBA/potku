@@ -48,6 +48,8 @@ from modules.point import Point
 from modules.recoil_element import RecoilElement
 from widgets.simulation.controls import SimulationControlsWidget
 from PyQt5.QtCore import QLocale
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QGuiApplication
 
 
 class ElementManager:
@@ -305,6 +307,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.canvas.mpl_connect('motion_notify_event', self.on_motion)
 
         self.locale = QLocale.c()
+        self.clipboard = QGuiApplication.clipboard()
+        self.ratio_str = self.clipboard.text()
+        self.clipboard.changed.connect(self.__update_multiply_action)
 
         # This customizes the toolbar buttons
         self.__fork_toolbar_buttons()
@@ -662,7 +667,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.x_coordinate_box.setMaximumWidth(62)
         self.x_coordinate_box.setKeyboardTracking(False)
         self.x_coordinate_box.valueChanged.connect(self.set_selected_point_x)
-        # self.x_coordinate_box.setLocale()
+
+        self.x_coordinate_box.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.actionXMultiply = QtWidgets.QAction(self)
+        self.actionXMultiply.setText("Multiply with value in clipboard\n(" +
+                                     self.ratio_str + ")")
+        self.actionXMultiply.triggered.connect(
+            lambda: self.__multiply_coordinate(self.x_coordinate_box))
+        self.x_coordinate_box.addAction(self.actionXMultiply)
+
         self.mpl_toolbar.addWidget(self.x_coordinate_box)
         self.x_coordinate_box.setEnabled(False)
 
@@ -678,7 +691,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.y_coordinate_box.setMinimum(self.y_min)
         self.y_coordinate_box.setKeyboardTracking(False)
         self.y_coordinate_box.valueChanged.connect(self.set_selected_point_y)
-        # self.y_coordinate_box.setFixedWidth(40)
+        self.y_coordinate_box.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.actionYMultiply = QtWidgets.QAction(self)
+        self.actionYMultiply.setText("Multiply with value in clipboard\n(" +
+                                     self.ratio_str + ")")
+        self.actionYMultiply.triggered.connect(
+            lambda: self.__multiply_coordinate(self.y_coordinate_box))
+        self.y_coordinate_box.addAction(self.actionYMultiply)
+
         self.mpl_toolbar.addWidget(self.y_coordinate_box)
         self.y_coordinate_box.setEnabled(False)
 
@@ -689,6 +709,34 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # TODO: Temporary icon
         self.__icon_manager.set_icon(point_remove_action, "del.png")
         self.mpl_toolbar.addAction(point_remove_action)
+
+    def __update_multiply_action(self):
+        self.ratio_str = self.clipboard.text()
+        self.actionXMultiply.setText("Multiply with value in clipboard\n(" +
+                                     self.ratio_str + ")")
+        self.actionYMultiply.setText("Multiply with value in clipboard\n(" +
+                                     self.ratio_str + ")")
+
+    def __multiply_coordinate(self, spinbox):
+        """
+        Multiply the spinbox's value with the value in clipboard.
+
+        Args:
+            spinbox: Spinbox whose value is multiplied.
+        """
+        try:
+            ratio = float(self.ratio_str)
+            coord = spinbox.value()
+            new_coord = round(ratio * coord, 3)
+            spinbox.setValue(new_coord)
+        except ValueError:
+            QtWidgets.QMessageBox.critical(self, "Error",
+                                           "Value '" + self.ratio_str +
+                                           "' is not suitable for "
+                                           "multiplying.\n\nPlease copy a "
+                                           "suitable value to clipboard.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
 
     def set_selected_point_x(self):
         """Sets the selected point's x coordinate
