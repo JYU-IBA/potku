@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 14.6.2018
+Updated on 25.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -63,11 +63,14 @@ class _CompositionWidget(MatplotlibWidget):
         self.__selected_layer = None
         self.__layer_selector = None
         self.__layer_actions = []
+        self.__annotations = []
 
         self.__fork_toolbar_buttons()
 
         self.layers = layers
         self.canvas.mpl_connect('button_press_event', self.on_click)
+        self.ylim = self.axes.get_ylim()
+        self.canvas.mpl_connect('draw_event', self.change_annotation_place)
 
         self.on_draw()
 
@@ -190,18 +193,6 @@ class _CompositionWidget(MatplotlibWidget):
             self.mpl_toolbar.mode_tool = 0
         self.canvas.draw_idle()
 
-    def __toggle_drag_zoom(self):
-        """
-        Toggles the drag zoom.
-        """
-        self.__tool_label.setText("")
-        if self.__button_drag.isChecked():
-            self.mpl_toolbar.pan()
-        if self.__button_zoom.isChecked():
-            self.mpl_toolbar.zoom()
-        self.__button_drag.setChecked(False)
-        self.__button_zoom.setChecked(False)
-
     def __fork_toolbar_buttons(self):
         """
         Forks the toolbar into custom buttons.
@@ -285,6 +276,9 @@ class _CompositionWidget(MatplotlibWidget):
         """
         x_bounds = self.axes.get_xbound()
         self.axes.clear()
+        for a in self.__annotations:
+            a.set_visible(False)
+        self.__annotations = []
         next_layer_position = 0  # Position where the next layer will be drawn.
 
         # This variable is used to alternate between the darker and lighter
@@ -298,13 +292,11 @@ class _CompositionWidget(MatplotlibWidget):
             else:
                 color = (0.9, 0.9, 0.9)
 
-
             # Draw a rectangular patch that will have the thickness of the
             # layer and a height of 1.
-            layer_patch = matplotlib.patches.Rectangle(
-                (layer.start_depth, 0),
-                layer.thickness, 1,
-                color=color
+            self.axes.axvspan(layer.start_depth,
+                              next_layer_position + layer.thickness,
+                              facecolor=color
             )
 
             # Alternate the color.
@@ -313,12 +305,11 @@ class _CompositionWidget(MatplotlibWidget):
             else:
                 is_next_color_dark = True
 
-            self.axes.add_patch(layer_patch)
-
             # Put annotation in the middle of the rectangular patch.
-            annotation = self.axes.annotate(layer.name,
-                         (layer.start_depth + layer.thickness / 2, 0.5),
-                          ha="center")
+            annotation = self.axes.annotate(" " + layer.name,
+                         (layer.start_depth, 0.5),
+                          ha="left")
+            self.__annotations.append(annotation)
 
             # Move the position where the next layer starts.
             next_layer_position += layer.thickness
@@ -338,6 +329,14 @@ class _CompositionWidget(MatplotlibWidget):
         self.__update_selected_layer()
         self.canvas.draw_idle()
         self.mpl_toolbar.update()
+
+    def change_annotation_place(self, event):
+        """
+        If ylim has changed, replace the annotations
+        """
+        self.axes.annotate("testi",
+                         (0, 0.5),
+                          ha="center")
 
 
 class TargetCompositionWidget(_CompositionWidget):
