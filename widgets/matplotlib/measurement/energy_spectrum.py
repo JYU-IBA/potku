@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 20.6.2018
+Updated on 25.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -39,12 +39,13 @@ import modules.masses as masses
 from modules.measurement import Measurement
 import os
 from matplotlib.widgets import SpanSelector
-from matplotlib import patches
 from shapely.geometry import Polygon
 from modules.general_functions import find_nearest
 from scipy import integrate
 import copy
 from matplotlib import offsetbox
+from PyQt5.QtGui import QClipboard
+from PyQt5.QtGui import QGuiApplication
 
 
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
@@ -122,7 +123,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         self.limits = []
         self.leg = None  # Original legend
+        self.anchored_box = None
         self.lines_of_area = []
+        self.clipboard = QGuiApplication.clipboard()
 
         self.on_draw()
 
@@ -198,7 +201,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         area_2 = integrate.simps(y_2, x_2)
 
         # Check if one of the self.lines_of_area is a hist file
-        # If so, use it as the one to compare to
+        # If so, use it as the one which is compare to the other
         i = 0
         j = 0
         for line in self.lines_of_area:
@@ -212,44 +215,41 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         if i != 0:
             if j == 1 and i == 1 and area_2 != 0:
-                ratio = area_1 / area_2
-            else:
                 ratio = area_2 / area_1
+            else:
+                ratio = area_1 / area_2
         else:
             if area_1 > area_2:
                 ratio = area_2 / area_1
             else:
                 ratio = area_1 / area_2
 
-        # self.axes.legend(
-        #     handles=[patches.Rectangle(xy=[1, 1], width=1, height=1,
-        #                                color='red', alpha=0.5,
-        #                                label="Difference: %s" %
-        #                                      str(round(area, 2)) +
-        #                                      "\nRatio: %s" %
-        #                                      str(round(ratio, 3)))],
-        #     loc=2,
-        #     bbox_to_anchor=(1, 1),
-        #     borderaxespad=0,
-        #     prop={'size': 12})
-        # self.axes.annotate('Label', bbox_to_anchor=(1, 1), xycoords='data',
-        #            size=14, ha='right', va='top',
-        #            bbox=dict(boxstyle='square', fc='w', ec="#d1d1d1"))
+        # Copy ratio to clipboard
+        self.clipboard.setText(str(round(ratio, 3)))
+
+        if self.anchored_box:
+            self.anchored_box.set_visible(False)
+            self.anchored_box = None
 
         text = "Difference: %s" % str(round(area, 2)) + \
-               "\nRatio: %s" % str(round(ratio, 3))
-        box1 = offsetbox.TextArea(text, textprops=dict(color="k"))
-        box = offsetbox.VPacker(children=[box1], align="center", pad=0, sep=5)
+               "\nRatio: %s" % str(round(ratio, 3)) + "\nInterval: [%s, %s]" % \
+               (str(round(lower_limit, 2)), str(round(upper_limit, 2)))
+        box1 = offsetbox.TextArea(text, textprops=dict(color="k", size=12))
 
-        anchored_box = offsetbox.AnchoredOffsetbox(
-            loc=3,
-            child=box, pad=0.5,
-            frameon=True,
-            bbox_to_anchor=(1.0, 1.0),
-            bbox_transform=self.axes.transAxes,
-            borderpad=0.,
-        )
-        self.axes.add_artist(anchored_box)
+        text_2 = "\nRatio copied to clipboard."
+        box2 = offsetbox.TextArea(text_2, textprops=dict(color="k", size=10))
+        box = offsetbox.VPacker(children=[box1, box2], align="center", pad=0,
+                                sep=0)
+
+        self.anchored_box = offsetbox.AnchoredOffsetbox(
+                loc=2,
+                child=box, pad=0.5,
+                frameon=False,
+                bbox_to_anchor=(1.0, 1.0),
+                bbox_transform=self.axes.transAxes,
+                borderpad=0.,
+            )
+        self.axes.add_artist(self.anchored_box)
         self.axes.add_artist(self.leg)
         self.canvas.draw_idle()
 
