@@ -44,7 +44,6 @@ from modules.general_functions import find_nearest
 from scipy import integrate
 import copy
 from matplotlib import offsetbox
-from PyQt5.QtGui import QClipboard
 from PyQt5.QtGui import QGuiApplication
 
 

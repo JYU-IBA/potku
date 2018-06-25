@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 13.6.2018
+Updated on 25.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -37,6 +37,7 @@ import modules.masses as masses
 from modules.general_functions import set_input_field_red
 from modules.general_functions import check_text
 from modules.general_functions import validate_text_input
+from PyQt5.QtCore import QLocale
 
 
 class MeasurementSettingsWidget(QtWidgets.QWidget):
@@ -60,6 +61,23 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.fields_are_valid = False
         self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
             self.ui.nameLineEdit, self))
+
+        locale = QLocale.c()
+
+        self.energyDoubleSpinBox.setLocale(locale)
+        self.energyDistDoubleSpinBox.setLocale(locale)
+        self.spotSizeXdoubleSpinBox.setLocale(locale)
+        self.spotSizeYdoubleSpinBox.setLocale(locale)
+        self.divergenceDoubleSpinBox.setLocale(locale)
+        self.fluenceDoubleSpinBox.setLocale(locale)
+        self.currentDoubleSpinBox.setLocale(locale)
+        self.timeDoubleSpinBox.setLocale(locale)
+        self.runChargeDoubleSpinBox.setLocale(locale)
+
+        self.targetThetaDoubleSpinBox.setLocale(locale)
+        self.detectorThetaDoubleSpinBox.setLocale(locale)
+        self.detectorFiiDoubleSpinBox.setLocale(locale)
+        self.targetFiiDoubleSpinBox.setLocale(locale)
 
         self.show_settings()
 
@@ -113,6 +131,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             run_object.current)
         self.timeDoubleSpinBox.setValue(
             run_object.time)
+        self.runChargeDoubleSpinBox.setValue(run_object.charge)
 
         detector_object = self.obj.detector
         target_object = self.obj.target

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 15.6.2018
+Updated on 25.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -47,6 +47,7 @@ from dialogs.simulation.element_simulation_settings import \
 from modules.point import Point
 from modules.recoil_element import RecoilElement
 from widgets.simulation.controls import SimulationControlsWidget
+from PyQt5.QtCore import QLocale
 
 
 class ElementManager:
@@ -302,6 +303,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.canvas.mpl_connect('button_press_event', self.on_click)
         self.canvas.mpl_connect('button_release_event', self.on_release)
         self.canvas.mpl_connect('motion_notify_event', self.on_motion)
+
+        self.locale = QLocale.c()
 
         # This customizes the toolbar buttons
         self.__fork_toolbar_buttons()
@@ -649,6 +652,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         # Point x coordinate spinbox
         self.x_coordinate_box = QtWidgets.QDoubleSpinBox(self)
+        # Set decimal pointer to .
+        self.x_coordinate_box.setLocale(self.locale)
         self.x_coordinate_box.setToolTip("X coordinate of selected point")
         self.x_coordinate_box.setSingleStep(0.1)
         self.x_coordinate_box.setDecimals(2)
@@ -663,6 +668,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         # Point y coordinate spinbox
         self.y_coordinate_box = QtWidgets.QDoubleSpinBox(self)
+        # Set decimal pointer to .
+        self.y_coordinate_box.setLocale(self.locale)
         self.y_coordinate_box.setToolTip("Y coordinate of selected point")
         self.y_coordinate_box.setSingleStep(0.1)
         self.y_coordinate_box.setDecimals(4)

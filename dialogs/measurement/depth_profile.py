@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 14.6.2018
+Updated on 25.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -48,6 +48,7 @@ import time
 from modules.run import Run
 from modules.beam import Beam
 from modules.target import Target
+from PyQt5.QtCore import QLocale
 
 
 class DepthProfileDialog(QtWidgets.QDialog):
@@ -80,6 +81,10 @@ class DepthProfileDialog(QtWidgets.QDialog):
 
         self.__reference_density_label = None
         self.__reference_density_spinbox = None
+
+        self.locale = QLocale.c()
+
+        self.ui.spin_systerr.setLocale(self.locale)
 
         self.ui.radioButtonNm.clicked.connect(self.__add_reference_density)
         self.ui.radioButtonAtPerCm2.clicked.connect(
@@ -316,6 +321,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         ref_density_spin_box.setMaximum(9999.00)
         ref_density_spin_box.setDecimals(2)
         ref_density_spin_box.setEnabled(True)
+        ref_density_spin_box.setLocale(self.locale)
 
         ref_density_spin_box.setValue(self.measurement.reference_density)
 
