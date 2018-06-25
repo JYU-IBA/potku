@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 13.6.2018
+Updated on 25.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -98,7 +98,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # Add detector settings view to the settings view
         self.detector_settings_widget = DetectorSettingsWidget(
             self.request.default_detector, self.request, self.icon_manager,
-            self.request.default_measurement)
+            self.measurement_settings_widget.tmp_run)
         self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
 
         self.detector_settings_widget.ui.saveButton.clicked \
@@ -170,6 +170,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 self.tabs.setCurrentWidget(tab_widget)
                 self.ui.tabs.blockSignals(False)
                 break
+        # Save run and beam parameters to tmp_run
+        self.measurement_settings_widget.save_to_tmp_run()
 
     def __load_file(self, settings_type):
         """

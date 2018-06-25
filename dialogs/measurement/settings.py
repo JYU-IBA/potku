@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 13.6.2018
+Updated on 25.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -100,7 +100,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             detector_object = self.measurement.request.default_detector
         self.detector_settings_widget = DetectorSettingsWidget(
             detector_object, self.measurement.request, self.icon_manager,
-            self.measurement)
+            self.measurement_settings_widget.tmp_run)
 
         self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
 

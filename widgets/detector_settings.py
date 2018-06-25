@@ -49,7 +49,7 @@ from PyQt5.QtCore import QLocale
 class DetectorSettingsWidget(QtWidgets.QWidget):
     """Class for creating a detector settings tab.
     """
-    def __init__(self, obj, request, icon_manager, measurement=None):
+    def __init__(self, obj, request, icon_manager, run=None):
         """
         Initializes a DetectorSettingsWidget object.
 
@@ -57,8 +57,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
               obj: a Detector object.
               request: Which request it belongs to.
               icon_manager: IconManager object.
-              measurement: Measurement object. None if detector is default
-              detector.
+              run: Run object. None if detector is default detector.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
@@ -68,7 +67,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.obj = obj
         self.request = request
         self.icon_manager = icon_manager
-        self.measurement = measurement
+        self.run = run
 
         # Temporary foils list which holds all the information given in the
         # foil dialog
@@ -332,7 +331,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         measurements = [self.request.samples.measurements.get_key_value(key)
                         for key in
                         self.request.samples.measurements.measurements.keys()]
-        CalibrationDialog(measurements, self.obj, self.measurement, self)
+        CalibrationDialog(measurements, self.obj, self.run, self)
 
     def calculate_distance(self):
         """

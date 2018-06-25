@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 31.5.2018
+Updated on 25.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -363,21 +363,18 @@ class TOFCalibration:
 class TOFCalibrationPoint:
     """ Class for the calculation of a theoretical time of flight.
     """
-    def __init__(self, time_of_flight, cut, detector, measurement):
+    def __init__(self, time_of_flight, cut, detector, run):
         """ Inits the class.
         
         Args:
             time_of_flight: An integer representing time of flight channel.
             cut: A CutFile class object.
             detector: A Detector class object.
+            run: Run object.
         """
         self.cut = cut
         self.type = cut.type
         self.point_used = True
-        # measuring_settings = detector.measuring_unit_settings
-        run = measurement.run
-        if run is None:  # if there is yet no Measurement's own Run object
-            run = measurement.request.default_run
         time_of_flight_length = 0  # Needs to be m, foil distances are mm.
         i = len(detector.tof_foils) - 1
         while i - 1 >= 0:
@@ -402,7 +399,6 @@ class TOFCalibrationPoint:
             # If the cut doesn't have a isotope, calculate standard atomic mass.
             mass = masses.get_standard_isotope(self.cut.element.symbol)
             isotope = masses.get_most_common_isotope(self.cut.element.symbol)[0]
-            self.recoiled_mass = convert_amu_to_kg(mass)
 
         if self.type == "RBS":
             element_scatter = self.cut.element_scatter
@@ -420,9 +416,9 @@ class TOFCalibrationPoint:
         # Target angle, same with both recoiled and scattered atoms when
         # using same hardware.
         self.target_angle = detector.detector_theta * pi / 180
-        energy = self.__calculate_particle_energy(self.beam_energy)
         recoiled_mass = float(isotope)
         self.recoiled_mass = convert_amu_to_kg(recoiled_mass)
+        energy = self.__calculate_particle_energy(self.beam_energy)
 
         # Carbon stopping gives a list of different result values. 
         # The last value is the stopping energy. 
