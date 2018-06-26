@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 25.6.2018
+Updated on 26.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -50,6 +50,7 @@ from widgets.simulation.controls import SimulationControlsWidget
 from PyQt5.QtCore import QLocale
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QGuiApplication
+import matplotlib
 
 
 class ElementManager:
@@ -292,6 +293,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.selected_points = []
 
         self.annotations = []
+        self.trans = matplotlib.transforms.blended_transform_factory(
+            self.axes.transData, self.axes.transAxes)
 
         # Span selection tool (used to select all points within a range
         # on the x axis)
@@ -954,6 +957,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.annotations = []
         last_layer_thickness = 0
 
+        y = 0.95
         next_layer_position = 0
         for idx, layer in enumerate(self.target.layers):
             self.axes.axvspan(
@@ -962,11 +966,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             )
 
             # Put annotation in the middle of the rectangular patch.
-            annotation = self.axes.annotate(layer.name,
-                                            (next_layer_position +
-                                             layer.thickness / 2, 0.5),
-                                            ha="center")
-
+            annotation = self.axes.text(layer.start_depth, y,
+                                        layer.name,
+                                        transform=self.trans,
+                                        fontsize=10,
+                                        ha="left")
+            y = y - 0.05
+            if y <= 0.1:
+                y = 0.95
             self.annotations.append(annotation)
             last_layer_thickness = layer.thickness
 
