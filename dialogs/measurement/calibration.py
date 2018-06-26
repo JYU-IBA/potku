@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.4.2013
-Updated on 1.6.2018
+Updated on 25.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -47,17 +47,18 @@ class CalibrationDialog(QtWidgets.QDialog):
     """A dialog for the time of flight calibration
     """
     def __init__(self, measurements, detector,
-                 measurement, parent_settings_widget=None):
+                 run, parent_settings_widget=None):
         """Inits the calibration dialog class.
         
         Args:
             measurements: A string list representing measurements files.
             detector: A Detector class object.
+            run: Run object.
             parent_settings_widget: A widget this dialog was opened from.
         """
         super().__init__()
         self.measurements = measurements
-        self.measurement = measurement
+        self.run = run
         self.detector = detector
         self.__cut_file = CutFile()
         self.__cut_files = {}
@@ -95,7 +96,7 @@ class CalibrationDialog(QtWidgets.QDialog):
                                           self.tof_calibration,
                                           self.detector,
                                           self.ui.binWidthSpinBox.value(), 1,
-                                          self.measurement)
+                                          self.run)
         
         old_params = None
         # Get old parameters from the parent dialog
@@ -286,7 +287,7 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
     """Widget class for holding MatplotlibCalibrationCurveFittingWidget.
     """
     def __init__(self, dialog, cut, tof_calibration,
-                 detector, bin_width, column, measurement):
+                 detector, bin_width, column, run):
         """Initializes widget.
         
         Args:
@@ -296,6 +297,7 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
             detector: Detector object
             bin_width: Float representing histogram's bin width.
             column: Integer representing which column number is used.
+            run: Run object.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
@@ -310,7 +312,7 @@ class CalibrationCurveFittingWidget(QtWidgets.QWidget):
         self.matplotlib = \
             MatplotlibCalibrationCurveFittingWidget(self, detector,
                                                     tof_calibration,
-                                                    cut, measurement,
+                                                    cut, run,
                                                     bin_width,
                                                     column,
                                                     dialog)

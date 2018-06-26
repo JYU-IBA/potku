@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 14.6.2018
+Updated on 26.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -47,6 +47,11 @@ from dialogs.simulation.element_simulation_settings import \
 from modules.point import Point
 from modules.recoil_element import RecoilElement
 from widgets.simulation.controls import SimulationControlsWidget
+from PyQt5.QtCore import QLocale
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QGuiApplication
+import matplotlib
+import modules.masses as masses
 
 
 class ElementManager:
@@ -116,6 +121,10 @@ class ElementManager:
         points = []
         for xy in xys:
             points.append(Point(xy))
+
+        if element.isotope is None:
+            element.isotope = int(round(masses.get_standard_isotope(
+                element.symbol)))
 
         element_widget = ElementWidget(self.parent, element,
                                        self.icon_manager, None)
@@ -289,6 +298,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.selected_points = []
 
         self.annotations = []
+        self.trans = matplotlib.transforms.blended_transform_factory(
+            self.axes.transData, self.axes.transAxes)
 
         # Span selection tool (used to select all points within a range
         # on the x axis)
@@ -303,6 +314,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.canvas.mpl_connect('button_release_event', self.on_release)
         self.canvas.mpl_connect('motion_notify_event', self.on_motion)
 
+        self.locale = QLocale.c()
+        self.clipboard = QGuiApplication.clipboard()
+        self.ratio_str = self.clipboard.text()
+        self.clipboard.changed.connect(self.__update_multiply_action)
+
         # This customizes the toolbar buttons
         self.__fork_toolbar_buttons()
 
@@ -312,10 +328,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.name_y_axis = "Relative Concentration"
         self.name_x_axis = "Depth [nm]"
 
+        self.on_draw()
+
         if self.simulation.element_simulations:
             self.__update_figure()
-
-        self.on_draw()
 
         for button in self.radios.buttons():
             button.setChecked(True)
@@ -325,9 +341,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Update figure.
         """
+        select_first_elem_sim = True
         for element_simulation in self.simulation.element_simulations:
             for recoil_element in element_simulation.recoil_elements:
                 self.add_element(recoil_element.element, element_simulation)
+                element_simulation.recoil_elements[0].widgets[
+                    0].radio_button.setChecked(select_first_elem_sim)
+                select_first_elem_sim = False
 
     def open_element_simulation_settings(self):
         """
@@ -645,6 +665,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         # Point x coordinate spinbox
         self.x_coordinate_box = QtWidgets.QDoubleSpinBox(self)
+        # Set decimal pointer to .
+        self.x_coordinate_box.setLocale(self.locale)
         self.x_coordinate_box.setToolTip("X coordinate of selected point")
         self.x_coordinate_box.setSingleStep(0.1)
         self.x_coordinate_box.setDecimals(2)
@@ -653,12 +675,22 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.x_coordinate_box.setMaximumWidth(62)
         self.x_coordinate_box.setKeyboardTracking(False)
         self.x_coordinate_box.valueChanged.connect(self.set_selected_point_x)
-        # self.x_coordinate_box.setLocale()
+
+        self.x_coordinate_box.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.actionXMultiply = QtWidgets.QAction(self)
+        self.actionXMultiply.setText("Multiply with value in clipboard\n(" +
+                                     self.ratio_str + ")")
+        self.actionXMultiply.triggered.connect(
+            lambda: self.__multiply_coordinate(self.x_coordinate_box))
+        self.x_coordinate_box.addAction(self.actionXMultiply)
+
         self.mpl_toolbar.addWidget(self.x_coordinate_box)
         self.x_coordinate_box.setEnabled(False)
 
         # Point y coordinate spinbox
         self.y_coordinate_box = QtWidgets.QDoubleSpinBox(self)
+        # Set decimal pointer to .
+        self.y_coordinate_box.setLocale(self.locale)
         self.y_coordinate_box.setToolTip("Y coordinate of selected point")
         self.y_coordinate_box.setSingleStep(0.1)
         self.y_coordinate_box.setDecimals(4)
@@ -667,7 +699,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.y_coordinate_box.setMinimum(self.y_min)
         self.y_coordinate_box.setKeyboardTracking(False)
         self.y_coordinate_box.valueChanged.connect(self.set_selected_point_y)
-        # self.y_coordinate_box.setFixedWidth(40)
+        self.y_coordinate_box.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.actionYMultiply = QtWidgets.QAction(self)
+        self.actionYMultiply.setText("Multiply with value in clipboard\n(" +
+                                     self.ratio_str + ")")
+        self.actionYMultiply.triggered.connect(
+            lambda: self.__multiply_coordinate(self.y_coordinate_box))
+        self.y_coordinate_box.addAction(self.actionYMultiply)
+
         self.mpl_toolbar.addWidget(self.y_coordinate_box)
         self.y_coordinate_box.setEnabled(False)
 
@@ -678,6 +717,34 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # TODO: Temporary icon
         self.__icon_manager.set_icon(point_remove_action, "del.png")
         self.mpl_toolbar.addAction(point_remove_action)
+
+    def __update_multiply_action(self):
+        self.ratio_str = self.clipboard.text()
+        self.actionXMultiply.setText("Multiply with value in clipboard\n(" +
+                                     self.ratio_str + ")")
+        self.actionYMultiply.setText("Multiply with value in clipboard\n(" +
+                                     self.ratio_str + ")")
+
+    def __multiply_coordinate(self, spinbox):
+        """
+        Multiply the spinbox's value with the value in clipboard.
+
+        Args:
+            spinbox: Spinbox whose value is multiplied.
+        """
+        try:
+            ratio = float(self.ratio_str)
+            coord = spinbox.value()
+            new_coord = round(ratio * coord, 3)
+            spinbox.setValue(new_coord)
+        except ValueError:
+            QtWidgets.QMessageBox.critical(self, "Error",
+                                           "Value '" + self.ratio_str +
+                                           "' is not suitable for "
+                                           "multiplying.\n\nPlease copy a "
+                                           "suitable value to clipboard.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
 
     def set_selected_point_x(self):
         """Sets the selected point's x coordinate
@@ -895,6 +962,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.annotations = []
         last_layer_thickness = 0
 
+        y = 0.95
         next_layer_position = 0
         for idx, layer in enumerate(self.target.layers):
             self.axes.axvspan(
@@ -903,11 +971,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             )
 
             # Put annotation in the middle of the rectangular patch.
-            annotation = self.axes.annotate(layer.name,
-                                            (next_layer_position +
-                                             layer.thickness / 2, 0.5),
-                                            ha="center")
-
+            annotation = self.axes.text(layer.start_depth, y,
+                                        layer.name,
+                                        transform=self.trans,
+                                        fontsize=10,
+                                        ha="left")
+            y = y - 0.05
+            if y <= 0.1:
+                y = 0.95
             self.annotations.append(annotation)
             last_layer_thickness = layer.thickness
 

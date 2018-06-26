@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2018
-Updated on 1.6.2018
+Updated on 25.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -30,6 +30,7 @@ __version__ = "2.0"
 import os
 from PyQt5 import uic
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import QLocale
 
 
 class FoilWidget(QtWidgets.QWidget):
@@ -46,6 +47,8 @@ class FoilWidget(QtWidgets.QWidget):
         self.parent = parent
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_foil_widget.ui"),
                              self)
+        locale = QLocale.c()
+        self.ui.distanceDoubleSpinBox.setLocale(locale)
         self.ui.deleteButton.clicked.connect(lambda: self._delete_foil())
         self.ui.distanceDoubleSpinBox.valueChanged.connect(
             lambda: self.__calculate_distance())

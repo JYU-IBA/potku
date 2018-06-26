@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 15.6.2018
+Updated on 26.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -35,7 +35,6 @@ import time
 
 from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 from widgets.matplotlib.simulation.recoil_atom_distribution import Point
-from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 
 from modules.element import Element
 from modules.mcerd import MCERD
@@ -60,7 +59,7 @@ class ElementSimulation:
                 "get_espe", "channel_width", "target", "detector", \
                 "__mcerd_command", "__process", "settings", "espe_settings", \
                 "description", "run", "spectra", "name", \
-                "use_default_settings"
+                "use_default_settings", "sample"
 
     def __init__(self, directory, request, recoil_elements, name_prefix="",
                  target=None, detector=None, run=None, name="Default",
@@ -70,7 +69,7 @@ class ElementSimulation:
                  number_of_recoils=10, minimum_scattering_angle=0.05,
                  minimum_main_scattering_angle=20, simulation_mode="narrow",
                  seed_number=101, minimum_energy=1.0, channel_width=0.1,
-                 use_default_settings=True):
+                 use_default_settings=True, sample=None):
         """ Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
@@ -94,6 +93,7 @@ class ElementSimulation:
             seed_number: Seed number to give unique value to one simulation.
             minimum_energy: Minimum energy.
             channel_width: Channel width.
+            sample: Sample object under which Element Simualtion belongs.
         """
         self.directory = directory
         self.request = request
@@ -103,6 +103,8 @@ class ElementSimulation:
         if not modification_time:
             modification_time = time.time()
         self.modification_time = modification_time
+
+        self.sample = sample
 
         # TODO RecoilAtomDistributionWidget should use the selected
         # RecoilElement.
@@ -155,9 +157,7 @@ class ElementSimulation:
         # This has all the mcerd objects so get_espe knows all the element
         # simulations that belong together (with different seed numbers)
         self.mcerd_objects = {}
-        self.settings = None
         self.get_espe = None
-        self.espe_settings = None
         self.spectra = []
 
     def unlock_edit(self, recoil_element):
@@ -575,8 +575,13 @@ class ElementSimulation:
         with open(file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
 
-    def start(self):
-        """ Start the simulation."""
+    def start(self, number_of_processes):
+        """
+        Start the simulation.
+
+        Args:
+            number_of_processes: How many processes are started.
+        """
         if self.run is None:
             run = self.request.default_run
         else:
@@ -589,32 +594,35 @@ class ElementSimulation:
             detector = self.request.default_detector
         else:
             detector = self.detector
-        self.settings = {
-            "simulation_type": elem_sim.simulation_type,
-            "number_of_ions": elem_sim.number_of_ions,
-            "number_of_ions_in_presimu": elem_sim.number_of_preions,
-            "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
-            "number_of_recoils": elem_sim.number_of_recoils,
-            "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
-            "minimum_main_scattering_angle": elem_sim.minimum_main_scattering_angle,
-            "minimum_energy_of_ions": elem_sim.minimum_energy,
-            "simulation_mode": elem_sim.simulation_mode,
-            "seed_number": elem_sim.seed_number,
-            "beam": run.beam,
-            "target": self.target,
-            "detector": detector,
-            "recoil_element": self.recoil_elements[0],
-            "sim_dir": self.directory,
-        }
-        self.mcerd_objects[elem_sim.seed_number] = MCERD(self.settings)
+
+        # Start as many processes as is given in number of processes
+        for i in range(number_of_processes):
+            seed_number = elem_sim.seed_number + i
+            settings = {
+                "simulation_type": elem_sim.simulation_type,
+                "number_of_ions": elem_sim.number_of_ions,
+                "number_of_ions_in_presimu": elem_sim.number_of_preions,
+                "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
+                "number_of_recoils": elem_sim.number_of_recoils,
+                "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
+                "minimum_main_scattering_angle": elem_sim.
+                minimum_main_scattering_angle,
+                "minimum_energy_of_ions": elem_sim.minimum_energy,
+                "simulation_mode": elem_sim.simulation_mode,
+                "seed_number": seed_number,
+                "beam": run.beam,
+                "target": self.target,
+                "detector": detector,
+                "recoil_element": self.recoil_elements[0]
+            }
+            self.mcerd_objects[seed_number] = MCERD(settings)
 
     def stop(self):
         """ Stop the simulation."""
         for sim in list(self.mcerd_objects.keys()):
             self.mcerd_objects[sim].stop_process()
             try:
-                # TODO: Delete extra simulation files?
-                self.mcerd_objects[sim].delete_unneeded_files()
+                self.mcerd_objects[sim].copy_results(self.directory)
             except FileNotFoundError:
                 raise
             del (self.mcerd_objects[sim])
@@ -638,15 +646,11 @@ class ElementSimulation:
             run = self.request.default_run
         else:
             run = self.run
-        if self.use_default_settings:
-            seed_number = self.request.default_element_simulation.seed_number
-        else:
-            seed_number = self.seed_number
         if self.detector is None:
             detector = self.request.default_detector
         else:
             detector = self.detector
-        self.espe_settings = {
+        espe_settings = {
             "beam": run.beam,
             "detector": detector,
             "target": self.target,
@@ -664,12 +668,10 @@ class ElementSimulation:
                                           ".simu"),
             "recoil_file": recoil_file
         }
-        self.get_espe = GetEspe(self.espe_settings)
-
-    def plot_spectrum(self):
-        """
-        Plots simulated energy spectrum.
-        """
-        dialog = EnergySpectrumParamsDialog(self, spectrum_type="simulation")
-        self.spectra = dialog.spectra
-        self.channel_width = dialog.bin_width
+        if self.mcerd_objects:
+            for sim in list(self.mcerd_objects.keys()):
+                try:
+                    self.mcerd_objects[sim].copy_recoil(self.directory)
+                except FileNotFoundError:
+                    raise
+        self.get_espe = GetEspe(espe_settings)

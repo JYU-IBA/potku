@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2018
-Updated on 14.6.2018
+Updated on 25.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -39,6 +39,7 @@ from modules.general_functions import set_input_field_red
 from modules.general_functions import check_text
 from modules.general_functions import validate_text_input
 import copy
+from PyQt5.QtCore import QLocale
 
 
 class FoilDialog(QtWidgets.QDialog):
@@ -68,8 +69,12 @@ class FoilDialog(QtWidgets.QDialog):
         self.dimension_edits = []
         self.first_dimension_edit = QtWidgets.QDoubleSpinBox()
         self.first_dimension_edit.setMaximumWidth(70)
+        self.locale = QLocale.c()
+        self.first_dimension_edit.setLocale(self.locale)
         self.second_dimension_edit = None
         self.dimension_label = QtWidgets.QLabel("Diameter (mm):")
+
+        self.ui.transmissionEdit.setLocale(self.locale)
 
         self.dimension_edits.append(self.first_dimension_edit)
         self.ui.dimensionLayout.addWidget(self.dimension_label)
@@ -139,6 +144,7 @@ class FoilDialog(QtWidgets.QDialog):
             # Rectangular foil
             self.dimension_label.setText("Size (mm):")
             self.second_dimension_edit = QtWidgets.QDoubleSpinBox()
+            self.second_dimension_edit.setLocale(self.locale)
             self.dimension_edits.append(self.second_dimension_edit)
             self.ui.dimensionLayout.addWidget(self.second_dimension_edit)
             if self.foil_type is CircularFoil:

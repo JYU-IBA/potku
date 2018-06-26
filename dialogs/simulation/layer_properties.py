@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 13.6.2018
+Updated on 26.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -42,6 +42,7 @@ from modules.layer import Layer
 from modules.general_functions import validate_text_input
 from modules.general_functions import check_text
 from modules.general_functions import set_input_field_red
+from PyQt5.QtCore import QLocale
 
 
 class LayerPropertiesDialog(QtWidgets.QDialog):
@@ -59,17 +60,6 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                                self)
         self.layer = layer
         self.ok_pressed = False
-
-        # Some border of widgets might be displaying red, because information
-        # is missing. Remove the red border by reseting the style sheets, for
-        # example when user changes the text in line edit.
-        # set_input_field_red(self.__ui.nameEdit)
-        # self.__ui.nameEdit.textChanged.connect(
-        #     lambda: self.__check_text(self.__ui.nameEdit))
-        # self.__ui.thicknessEdit.valueChanged.connect(
-        #     lambda: self.__ui.thicknessEdit.setStyleSheet(""))
-        # self.__ui.densityEdit.valueChanged.connect(
-        #     lambda: self.__ui.densityEdit.setStyleSheet(""))
 
         set_input_field_red(self.__ui.nameEdit)
         self.fields_are_valid = False
@@ -89,6 +79,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
         self.__ui.nameEdit.textEdited.connect(lambda: self.__validate())
         self.__close = True
+
+        self.__ui.thicknessEdit.setLocale(QLocale.c())
+        self.__ui.densityEdit.setLocale(QLocale.c())
 
         self.exec_()
 
@@ -186,8 +179,10 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         while i < len(children):
             elem_symbol = children[i].text()
             i += 1
-            elem_isotope = int(children[i].currentText().split(" ")[0])
-            # TODO: Some elements don't have isotope values. Figure out why.
+            try:
+                elem_isotope = int(children[i].currentText().split(" ")[0])
+            except ValueError:
+                elem_isotope = masses.get_standard_isotope(elem_symbol)
             i += 1
             elem_amount = children[i].value()
             elements.append(Element(elem_symbol, elem_isotope, elem_amount))
@@ -270,6 +265,7 @@ class ElementLayout(QtWidgets.QHBoxLayout):
         self.amount_spinbox.setEnabled(enabled)
         self.amount_spinbox.valueChanged\
             .connect(lambda: self.amount_spinbox.setStyleSheet(""))
+        self.amount_spinbox.setLocale(QLocale.c())
 
         if enabled:
             self.__load_isotopes(element.isotope)

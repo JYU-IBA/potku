@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 13.6.2018
+Updated on 25.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -37,6 +37,8 @@ import modules.masses as masses
 from modules.general_functions import set_input_field_red
 from modules.general_functions import check_text
 from modules.general_functions import validate_text_input
+from PyQt5.QtCore import QLocale
+import copy
 
 
 class MeasurementSettingsWidget(QtWidgets.QWidget):
@@ -61,6 +63,30 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
             self.ui.nameLineEdit, self))
 
+        locale = QLocale.c()
+
+        self.energyDoubleSpinBox.setLocale(locale)
+        self.energyDistDoubleSpinBox.setLocale(locale)
+        self.spotSizeXdoubleSpinBox.setLocale(locale)
+        self.spotSizeYdoubleSpinBox.setLocale(locale)
+        self.divergenceDoubleSpinBox.setLocale(locale)
+        self.fluenceDoubleSpinBox.setLocale(locale)
+        self.currentDoubleSpinBox.setLocale(locale)
+        self.timeDoubleSpinBox.setLocale(locale)
+        self.runChargeDoubleSpinBox.setLocale(locale)
+
+        self.targetThetaDoubleSpinBox.setLocale(locale)
+        self.detectorThetaDoubleSpinBox.setLocale(locale)
+        self.detectorFiiDoubleSpinBox.setLocale(locale)
+        self.targetFiiDoubleSpinBox.setLocale(locale)
+
+        run_object = self.obj.run
+        if not run_object:
+            run_object = self.obj.request.default_run
+
+        self.tmp_run = copy.deepcopy(run_object)  # Copy of measurement's run
+        #  or default run
+
         self.show_settings()
 
         self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
@@ -69,18 +95,15 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         """
         Show measurement settings.
         """
-        run_object = self.obj.run
-        if not run_object:
-            run_object = self.obj.request.default_run
-        if run_object.beam.ion:
+        if self.tmp_run.beam.ion:
             self.ui.beamIonButton.setText(
-                run_object.beam.ion.symbol)
+                self.tmp_run.beam.ion.symbol)
             # TODO Check that the isotope is also set.
             self.isotopeComboBox.setEnabled(True)
 
-            masses.load_isotopes(run_object.beam.ion.symbol,
+            masses.load_isotopes(self.tmp_run.beam.ion.symbol,
                                  self.ui.isotopeComboBox,
-                                 str(run_object.beam.ion.isotope))
+                                 str(self.tmp_run.beam.ion.isotope))
         else:
             self.beamIonButton.setText("Select")
             self.isotopeComboBox.setEnabled(
@@ -93,26 +116,27 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             self.obj.modification_time)))
         self.energyDoubleSpinBox.setValue(
-            run_object.beam.energy)
+            self.tmp_run.beam.energy)
         self.energyDistDoubleSpinBox.setValue(
-            run_object.beam.energy_distribution)
+            self.tmp_run.beam.energy_distribution)
         self.beamChargeSpinBox.setValue(
-            run_object.beam.charge)
+            self.tmp_run.beam.charge)
         self.spotSizeXdoubleSpinBox.setValue(
-            run_object.beam.spot_size[0])
+            self.tmp_run.beam.spot_size[0])
         self.spotSizeYdoubleSpinBox.setValue(
-            run_object.beam.spot_size[1])
+            self.tmp_run.beam.spot_size[1])
         self.divergenceDoubleSpinBox.setValue(
-            run_object.beam.divergence)
+            self.tmp_run.beam.divergence)
         self.profileComboBox.setCurrentIndex(
             self.profileComboBox.findText(
-                run_object.beam.profile))
+                self.tmp_run.beam.profile))
         self.fluenceDoubleSpinBox.setValue(
-            run_object.fluence)
+            self.tmp_run.fluence)
         self.currentDoubleSpinBox.setValue(
-            run_object.current)
+            self.tmp_run.current)
         self.timeDoubleSpinBox.setValue(
-            run_object.time)
+            self.tmp_run.time)
+        self.runChargeDoubleSpinBox.setValue(self.tmp_run.charge)
 
         detector_object = self.obj.detector
         target_object = self.obj.target
@@ -189,6 +213,29 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
                 .detectorThetaDoubleSpinBox.value()
             self.obj.target.target_theta = self \
                 .targetThetaDoubleSpinBox.value()
+
+    def save_to_tmp_run(self):
+        """
+        Save run and beam parameters to tmp_run object.
+        """
+        isotope_index = self.isotopeComboBox. \
+            currentIndex()
+        # TODO: Show a message box, don't just quietly do nothing
+        if isotope_index != -1:
+            isotope_data = self.isotopeComboBox.itemData(isotope_index)
+            self.tmp_run.beam.ion = Element(self.beamIonButton.text(),
+                                            isotope_data[0])
+            self.tmp_run.beam.energy = self.energyDoubleSpinBox.value()
+            self.tmp_run.beam.energy_distribution = \
+                self.energyDistDoubleSpinBox.value()
+            self.tmp_run.beam.charge = self.beamChargeSpinBox.value()
+            self.tmp_run.beam.spot_size = (self.spotSizeXdoubleSpinBox.value(),
+                                           self.spotSizeYdoubleSpinBox.value())
+            self.tmp_run.beam.divergence = self.divergenceDoubleSpinBox.value()
+            self.tmp_run.beam.profile = self.profileComboBox.currentText()
+            self.tmp_run.fluence = self.fluenceDoubleSpinBox.value()
+            self.tmp_run.current = self.currentDoubleSpinBox.value()
+            self.tmp_run.time = self.timeDoubleSpinBox.value()
 
     @staticmethod
     def __check_text(input_field, settings):

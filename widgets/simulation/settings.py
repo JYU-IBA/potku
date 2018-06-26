@@ -34,6 +34,7 @@ from PyQt5 import QtWidgets
 from modules.general_functions import set_input_field_red
 from modules.general_functions import check_text
 from modules.general_functions import validate_text_input
+from PyQt5.QtCore import QLocale
 
 
 class SimulationSettingsWidget(QtWidgets.QWidget):
@@ -54,6 +55,11 @@ class SimulationSettingsWidget(QtWidgets.QWidget):
             self.ui.nameLineEdit, self))
 
         self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+
+        locale = QLocale.c()
+        self.ui.minimumScatterAngleDoubleSpinBox.setLocale(locale)
+        self.ui.minimumMainScatterAngleDoubleSpinBox.setLocale(locale)
+        self.ui.minimumEnergyDoubleSpinBox.setLocale(locale)
 
     @staticmethod
     def __check_text(input_field, settings):

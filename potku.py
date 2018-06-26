@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 12.6.2018
+Updated on 18.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -129,7 +129,7 @@ class Potku(QtWidgets.QMainWindow):
 
         self.ui.actionNew_Request_2.triggered.connect(self.make_new_request)
         self.ui.actionOpen_Request_2.triggered.connect(self.open_request)
-        self.ui.actionExit.triggered.connect(self.close)
+        self.ui.actionExit.triggered.connect(self.close)  # Should save changes
 
         self.ui.menuImport.setEnabled(False)
         self.panel_shown = True

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 14.6.2018
+Updated on 25.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -43,12 +43,13 @@ from modules.general_functions import set_input_field_red
 from modules.general_functions import check_text
 from modules.general_functions import validate_text_input
 import copy
+from PyQt5.QtCore import QLocale
 
 
 class DetectorSettingsWidget(QtWidgets.QWidget):
     """Class for creating a detector settings tab.
     """
-    def __init__(self, obj, request, icon_manager, measurement=None):
+    def __init__(self, obj, request, icon_manager, run=None):
         """
         Initializes a DetectorSettingsWidget object.
 
@@ -56,8 +57,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
               obj: a Detector object.
               request: Which request it belongs to.
               icon_manager: IconManager object.
-              measurement: Measurement object. None if detector is default
-              detector.
+              run: Run object. None if detector is default detector.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
@@ -67,7 +67,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.obj = obj
         self.request = request
         self.icon_manager = icon_manager
-        self.measurement = measurement
+        self.run = run
 
         # Temporary foils list which holds all the information given in the
         # foil dialog
@@ -115,6 +115,11 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
 
         self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
 
+        locale = QLocale.c()
+        self.timeResSpinBox.setLocale(locale)
+        self.virtualSizeXSpinBox.setLocale(locale)
+        self.virtualSizeYSpinBox.setLocale(locale)
+
         self.show_settings()
 
     def show_settings(self):
@@ -137,6 +142,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.offsetLineEdit.setText(
             str(self.obj.tof_offset))
 
+        self.timeResSpinBox.setValue(self.obj.timeres)
+        self.virtualSizeXSpinBox.setValue(self.obj.virtual_size[0])
+        self.virtualSizeYSpinBox.setValue(self.obj.virtual_size[1])
+
         # Detector foils
         self.calculate_distance()
         self.tmp_foil_info = copy.deepcopy(self.obj.foils)
@@ -158,6 +167,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.obj.angle_slope = self.angleSlopeLineEdit.text()
         self.obj.tof_offset = self.offsetLineEdit.text()
         self.obj.tof_slope = self.slopeLineEdit.text()
+
+        self.obj.virtual_size = self.virtualSizeXSpinBox.value(), \
+                                self.virtualSizeYSpinBox.value()
+        self.obj.timeres = self.timeResSpinBox.value()
         # Detector foils
         self.calculate_distance()
         self.obj.foils = self.tmp_foil_info
@@ -318,7 +331,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         measurements = [self.request.samples.measurements.get_key_value(key)
                         for key in
                         self.request.samples.measurements.measurements.keys()]
-        CalibrationDialog(measurements, self.obj, self.measurement, self)
+        CalibrationDialog(measurements, self.obj, self.run, self)
 
     def calculate_distance(self):
         """

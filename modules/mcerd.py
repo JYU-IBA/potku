@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 15.6.2018
+Updated on 26.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -37,6 +37,8 @@ import os
 import modules.masses as masses
 from modules.foil import CircularFoil
 
+import tempfile
+
 
 class MCERD:
     """
@@ -52,14 +54,17 @@ class MCERD:
         """
         self.__settings = settings
 
-        self.dir = self.__settings["sim_dir"]
-
         self.__filename = self.__settings["recoil_element"].prefix \
             + "-" + self.__settings["recoil_element"].name
 
+        # OS specific directory where temporary MCERD files will be stored.
+        # In case of Linux and Mac this will be /tmp and in Windows this will
+        # be the C:\Users\<username>\AppData\Local\Temp.
+        self.tmp = tempfile.gettempdir()
+
         # The recoil file and erd file are later passed to get_espe.
-        self.recoil_file = os.path.join(self.dir, self.__filename + ".recoil")
-        self.result_file = os.path.join(self.dir, self.__filename + "." +
+        self.recoil_file = os.path.join(self.tmp, self.__filename + ".recoil")
+        self.result_file = os.path.join(self.tmp, self.__filename + "." +
                                         str(self.__settings["seed_number"]) +
                                         ".erd")
         self.__create_mcerd_files()
@@ -68,7 +73,7 @@ class MCERD:
         mcerd_command = os.path.join("external", "Potku-bin", "mcerd" +
                                      (".exe " if platform.system() == "Windows"
                                       else " ") +
-                                     os.path.join(self.dir, self.__filename))
+                                     os.path.join(self.tmp, self.__filename))
 
         # Start the MCERD process.
         # TODO: MCERD needs to be fixed so we can get rid of this ulimit.
@@ -96,14 +101,14 @@ class MCERD:
         are placed to the directory of the temporary files of the operating
         system.
         """
-        self.__command_file = os.path.join(self.dir, self.__filename)
-        self.__target_file = os.path.join(self.dir, self.__filename +
+        self.__command_file = os.path.join(self.tmp, self.__filename)
+        self.__target_file = os.path.join(self.tmp, self.__filename +
                                           ".erd_target")
-        self.__detector_file = os.path.join(self.dir, self.__filename +
+        self.__detector_file = os.path.join(self.tmp, self.__filename +
                                             ".erd_detector")
-        self.__foils_file = os.path.join(self.dir, self.__filename + ".foils")
+        self.__foils_file = os.path.join(self.tmp, self.__filename + ".foils")
         self.__presimulation_file = os.path.join(
-            self.dir, self.__filename + ".pre")
+            self.tmp, self.__filename + ".pre")
 
         beam = self.__settings["beam"]
         target = self.__settings["target"]
@@ -287,39 +292,27 @@ class MCERD:
 
         recoil_element.write_recoil_file(self.recoil_file)
 
-    def copy_result(self, destination):
-        """Copies MCERD result file (.erd) into given destination.
+    def copy_results(self, destination):
+        """Copies MCERD result file (.erd) and recoil file into given
+        destination.
+
+        Args:
+            destination: Destination folder.
         """
         try:
             shutil.copy(self.result_file, destination)
-            shutil.copy(self.recoil_file, destination)
+            self.copy_recoil(destination)
         except FileNotFoundError:
             raise
 
-    def delete_unneeded_files(self):
+    def copy_recoil(self, destination):
         """
-        Delete mcerd files that are not needed anymore.
+        Copy recoil file into given destination.
+
+        Args:
+            destination: Destination folder.
         """
         try:
-            os.remove(self.__command_file)
-            os.remove(self.__detector_file)
-            os.remove(self.__target_file)
-            os.remove(self.__foils_file)
-        except OSError:
-            pass  # Could not delete all the files
-
-        for file in os.listdir(self.dir):
-            if file.startswith(self.__filename + "." + str(self.__settings[
-               "seed_number"])):
-                if file.endswith(".out") or file.endswith(".dat") or \
-                   file.endswith(".range"):
-                    try:
-                        os.remove(os.path.join(self.dir, file))
-                    except OSError:
-                        continue
-            if file.startswith(self.__filename) and file.endswith(".pre"):
-                try:
-                    os.remove(os.path.join(self.dir, file))
-                except OSError:
-                    pass  # Could not delete the file
-
+            shutil.copy(self.recoil_file, destination)
+        except FileNotFoundError:
+            raise

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 1.6.2018
+Updated on 26.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -68,30 +68,35 @@ class SimulationControlsWidget(QtWidgets.QWidget):
 
         controls_layout = QtWidgets.QHBoxLayout()
         controls_layout.setContentsMargins(0, 6, 0, 0)
-        run_button = QtWidgets.QPushButton()
-        run_button.setIcon(QIcon("ui_icons/reinhardt/player_play.svg"))
-        run_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
+        self.run_button = QtWidgets.QPushButton()
+        self.run_button.setIcon(QIcon("ui_icons/reinhardt/player_play.svg"))
+        self.run_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                  QtWidgets.QSizePolicy.Fixed)
-        run_button.setToolTip("Start simulation")
-        run_button.clicked.connect(self.__start_simulation)
-        stop_button = QtWidgets.QPushButton()
-        stop_button.setIcon(QIcon("ui_icons/reinhardt/player_stop.svg"))
-        stop_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
+        self.run_button.setToolTip("Start simulation")
+        self.run_button.clicked.connect(self.__start_simulation)
+
+        self.stop_button = QtWidgets.QPushButton()
+        self.stop_button.setIcon(QIcon("ui_icons/reinhardt/player_stop.svg"))
+        self.stop_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                   QtWidgets.QSizePolicy.Fixed)
-        stop_button.setToolTip("Stop simulation")
-        stop_button.clicked.connect(self.__stop_simulation)
-        controls_layout.addWidget(run_button)
-        controls_layout.addWidget(stop_button)
+        self.stop_button.setToolTip("Stop simulation")
+        self.stop_button.clicked.connect(self.__stop_simulation)
+        self.stop_button.setEnabled(False)
+
+        controls_layout.addWidget(self.run_button)
+        controls_layout.addWidget(self.stop_button)
         controls_widget = QtWidgets.QWidget()
         controls_widget.setLayout(controls_layout)
 
         processes_layout = QtWidgets.QFormLayout()
         processes_layout.setContentsMargins(0, 6, 0, 0)
         processes_label = QtWidgets.QLabel("Processes: ")
-        processes_spinbox = QtWidgets.QSpinBox()
-        processes_spinbox.setToolTip("Number of processes used in simulation")
-        processes_spinbox.setFixedWidth(50)
-        processes_layout.addRow(processes_label, processes_spinbox)
+        self.processes_spinbox = QtWidgets.QSpinBox()
+        self.processes_spinbox.setValue(1)
+        self.processes_spinbox.setToolTip(
+            "Number of processes used in simulation")
+        self.processes_spinbox.setFixedWidth(50)
+        processes_layout.addRow(processes_label, self.processes_spinbox)
         processes_widget = QtWidgets.QWidget()
         processes_widget.setLayout(processes_layout)
 
@@ -110,8 +115,11 @@ class SimulationControlsWidget(QtWidgets.QWidget):
     def __start_simulation(self):
         """ Calls ElementSimulation's start method.
         """
-        self.element_simulation.start()
+        number_of_processes = self.processes_spinbox.value()
+        self.element_simulation.start(number_of_processes)
         self.state_label.setText("Running")
+        self.run_button.setEnabled(False)
+        self.stop_button.setEnabled(True)
 
     def __stop_simulation(self):
         """ Calls ElementSimulation's stop method.
@@ -128,3 +136,5 @@ class SimulationControlsWidget(QtWidgets.QWidget):
             error_box.setWindowTitle("Error")
             error_box.exec()
         self.state_label.setText("Stopped")
+        self.run_button.setEnabled(True)
+        self.stop_button.setEnabled(False)

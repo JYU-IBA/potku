@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2013
-Updated on 30.5.2018
+Updated on 25.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -40,7 +40,7 @@ import modules.masses as masses
 class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
     """Energy spectrum widget
     """
-    def __init__(self, parent, detector, tof_calibration, cut, measurement,
+    def __init__(self, parent, detector, tof_calibration, cut, run,
                  bin_width=2.0, column=1, dialog=None):
         """Inits Energy Spectrum widget.
         
@@ -49,6 +49,7 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
             detector: Detector class object.
             tof_calibration: TOFCalibration class object.
             cut: CutFile class object.
+            run: Run object.
             bin_width: Histograms bin width
             column: Which column of the CutFile's data is used to create a 
                     histogram.
@@ -65,7 +66,7 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
         self.cut_standard_scatter_mass = 0
         self.bin_width = bin_width
         self.use_column = column
-        self.measurement = measurement
+        self.run = run
         self.tof_calibration = tof_calibration
         
         self.tof_histogram = None
@@ -91,7 +92,7 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
         self.tof_calibration_point = TOFCalibrationPoint(self.selected_tof,
                                                          self.cut,
                                                          self.detector,
-                                                         self.measurement)
+                                                         self.run)
         self.__update_dialog_values()
         self.on_draw()
 
@@ -175,7 +176,7 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
                 self.selected_tof = params[0]  
                 self.tof_calibration_point = \
                     TOFCalibrationPoint(self.selected_tof, self.cut,
-                                        self.detector, self.measurement)
+                                        self.detector, self.run)
                 # Update dialog and draw a vertical line
                 self.__update_dialog_values()
                 self.axes.axvline(x=self.selected_tof, color="red")

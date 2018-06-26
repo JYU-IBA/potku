@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 13.6.2018
+Updated on 19.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -44,6 +44,8 @@ import numpy
 from PyQt5 import QtWidgets
 import os
 import tempfile
+from decimal import Decimal
+import bisect
 
 
 def open_file_dialog(parent, default_folder, title, files):
@@ -229,6 +231,60 @@ def read_espe_file(espe_file):
     return data
 
 
+def read_tof_list_file(tof_list_file):
+    """
+    Read a file in tof list format.
+
+    Args:
+        tof_list_file: File path to a tof list file.
+
+    Return:
+        List of the lines in the file as tuples.
+    """
+    data = []
+    if os.path.exists((tof_list_file)):
+        with open(tof_list_file, 'r') as file:
+            for line in file:
+                parts = line.split()
+                part = float(Decimal(parts[0])), float(Decimal(parts[1])), \
+                    float(Decimal(parts[2])), int(parts[3]), \
+                    float(Decimal(parts[4])), parts[5], \
+                    float(Decimal(parts[6])), int(parts[7])
+                data.append(part)
+    return data
+
+
+def calculate_spectrum(tof_listed_files, spectrum_width, measurement,
+                       directory_es):
+    """Calculate energy spectrum data from cut files.
+
+    Returns list of cut files
+    """
+    histed_files = {}
+    keys = tof_listed_files.keys()
+    for key in keys:
+        histed_files[key] = hist(tof_listed_files[key],
+                                 spectrum_width, 3)
+        if not histed_files[key]:
+            return {}
+        first_val = (histed_files[key][0][0] - spectrum_width, 0)
+        last_val = (histed_files[key][-1][0] + spectrum_width, 0)
+        histed_files[key].insert(0, first_val)
+        histed_files[key].append(last_val)
+    for key in keys:
+        file = measurement.name
+        histed = histed_files[key]
+        filename = os.path.join(directory_es,
+                                "{0}.{1}.hist".format(
+                                    os.path.splitext(file)[0], key))
+        numpy_array = numpy.array(histed,
+                                  dtype=[('float', float),
+                                         ('int', int)])
+        numpy.savetxt(filename, numpy_array, delimiter=" ",
+                      fmt="%5.5f %6d")
+    return histed_files
+
+
 def copy_cut_file_to_temp(cut_file):
     """
     Copy cut file into temp directory.
@@ -287,7 +343,11 @@ def tof_list(cut_file, directory, save_output=False):
                                              shell=True,
                                              startupinfo=startupinfo)
         else:
-            command = "{0} {1}".format("./tof_list", new_cut_file)
+            if platform.system() == "Linux":
+                command = "{0} {1}".format("./tof_list", new_cut_file)
+
+            else:
+                command = "{0} {1}".format("./tof_list_mac", new_cut_file)
             p = subprocess.Popen(command.split(' ', 1),
                                  cwd=bin_dir,
                                  stdin=subprocess.PIPE,
@@ -580,3 +640,29 @@ def validate_text_input(text, regex):
         return valid_text
     else:
         return text
+
+
+def find_nearest(x, lst):
+    """
+    Find given list's nearest point's x coordinate from x.
+
+    Args:
+        x: X coordinate.
+        lst: List to search.
+
+    Return:
+        Nearest point's x coordinate.
+    """
+    # https://stackoverflow.com/questions/12141150/from-list-of-integers
+    # -get-number-closest-to-a-given-value
+    position = bisect.bisect_left(lst, x)
+    if position == 0:
+        return lst[0]
+    if position == len(lst):
+        return lst[len(lst) - 1]
+    before = lst[position -1]
+    after = lst[position]
+    if after - x < x - before:
+        return after
+    else:
+        return before
