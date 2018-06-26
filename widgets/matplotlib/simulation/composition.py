@@ -151,11 +151,16 @@ class _CompositionWidget(MatplotlibWidget):
         if self.__layer_selector:
             self.__layer_selector.set_visible(False)
             self.__layer_selector = None
-        layer_patch = matplotlib.patches.Rectangle(
-            (layer.start_depth, 0),
-            layer.thickness, 1,
-            color='b', alpha=0.2
-        )
+        x_lim = self.axes.get_xlim()
+        layer_patch =  self.axes.axvspan(
+            layer.start_depth, layer.start_depth + layer.thickness,
+                              facecolor='b', alpha=0.2)
+        if x_lim != self.axes.get_xlim():
+            self.axes.set_xbound(*x_lim)
+        # layer_patch = matplotlib.patches.Rectangle(
+        #     (layer.start_depth, 0),
+        #     layer.thickness, 1,
+        #     color='b', alpha=0.2)
         self.__layer_selector = layer_patch
         self.axes.add_patch(layer_patch)
         self.canvas.draw_idle()
