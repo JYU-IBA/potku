@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 25.6.2018
+Updated on 26.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -179,8 +179,10 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         while i < len(children):
             elem_symbol = children[i].text()
             i += 1
-            elem_isotope = int(children[i].currentText().split(" ")[0])
-            # TODO: Some elements don't have isotope values. Figure out why.
+            try:
+                elem_isotope = int(children[i].currentText().split(" ")[0])
+            except ValueError:
+                elem_isotope = masses.get_standard_isotope(elem_symbol)
             i += 1
             elem_amount = children[i].value()
             elements.append(Element(elem_symbol, elem_isotope, elem_amount))
