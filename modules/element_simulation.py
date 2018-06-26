@@ -157,9 +157,7 @@ class ElementSimulation:
         # This has all the mcerd objects so get_espe knows all the element
         # simulations that belong together (with different seed numbers)
         self.mcerd_objects = {}
-        self.settings = None
         self.get_espe = None
-        self.espe_settings = None
         self.spectra = []
 
     def unlock_edit(self, recoil_element):
@@ -577,8 +575,13 @@ class ElementSimulation:
         with open(file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
 
-    def start(self):
-        """ Start the simulation."""
+    def start(self, number_of_processes):
+        """
+        Start the simulation.
+
+        Args:
+            number_of_processes: How many processes are started.
+        """
         if self.run is None:
             run = self.request.default_run
         else:
@@ -591,23 +594,28 @@ class ElementSimulation:
             detector = self.request.default_detector
         else:
             detector = self.detector
-        self.settings = {
-            "simulation_type": elem_sim.simulation_type,
-            "number_of_ions": elem_sim.number_of_ions,
-            "number_of_ions_in_presimu": elem_sim.number_of_preions,
-            "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
-            "number_of_recoils": elem_sim.number_of_recoils,
-            "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
-            "minimum_main_scattering_angle": elem_sim.minimum_main_scattering_angle,
-            "minimum_energy_of_ions": elem_sim.minimum_energy,
-            "simulation_mode": elem_sim.simulation_mode,
-            "seed_number": elem_sim.seed_number,
-            "beam": run.beam,
-            "target": self.target,
-            "detector": detector,
-            "recoil_element": self.recoil_elements[0]
-        }
-        self.mcerd_objects[elem_sim.seed_number] = MCERD(self.settings)
+
+        # Start as many processes as is given in number of processes
+        for i in range(number_of_processes):
+            seed_number = elem_sim.seed_number + i
+            settings = {
+                "simulation_type": elem_sim.simulation_type,
+                "number_of_ions": elem_sim.number_of_ions,
+                "number_of_ions_in_presimu": elem_sim.number_of_preions,
+                "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
+                "number_of_recoils": elem_sim.number_of_recoils,
+                "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
+                "minimum_main_scattering_angle": elem_sim.
+                minimum_main_scattering_angle,
+                "minimum_energy_of_ions": elem_sim.minimum_energy,
+                "simulation_mode": elem_sim.simulation_mode,
+                "seed_number": seed_number,
+                "beam": run.beam,
+                "target": self.target,
+                "detector": detector,
+                "recoil_element": self.recoil_elements[0]
+            }
+            self.mcerd_objects[seed_number] = MCERD(settings)
 
     def stop(self):
         """ Stop the simulation."""
@@ -638,15 +646,11 @@ class ElementSimulation:
             run = self.request.default_run
         else:
             run = self.run
-        if self.use_default_settings:
-            seed_number = self.request.default_element_simulation.seed_number
-        else:
-            seed_number = self.seed_number
         if self.detector is None:
             detector = self.request.default_detector
         else:
             detector = self.detector
-        self.espe_settings = {
+        espe_settings = {
             "beam": run.beam,
             "detector": detector,
             "target": self.target,
@@ -670,4 +674,4 @@ class ElementSimulation:
                     self.mcerd_objects[sim].copy_recoil(self.directory)
                 except FileNotFoundError:
                     raise
-        self.get_espe = GetEspe(self.espe_settings)
+        self.get_espe = GetEspe(espe_settings)
