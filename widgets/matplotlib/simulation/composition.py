@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 25.6.2018
+Updated on 26.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -70,6 +70,8 @@ class _CompositionWidget(MatplotlibWidget):
         self.layers = layers
         self.canvas.mpl_connect('button_press_event', self.on_click)
         self.ylim = self.axes.get_ylim()
+        self.trans = matplotlib.transforms.blended_transform_factory(
+            self.axes.transData, self.axes.transAxes)
         self.canvas.mpl_connect('draw_event', self.change_annotation_place)
 
         self.on_draw()
@@ -285,6 +287,8 @@ class _CompositionWidget(MatplotlibWidget):
         # colors of grey.
         is_next_color_dark = True
 
+        y = 0.95
+
         # Draw the layers.
         for layer in self.layers:
             if is_next_color_dark:
@@ -305,17 +309,21 @@ class _CompositionWidget(MatplotlibWidget):
             else:
                 is_next_color_dark = True
 
-            # Put annotation in the middle of the rectangular patch.
-            annotation = self.axes.annotate(" " + layer.name,
-                         (layer.start_depth, 0.5),
-                          ha="left")
+            annotation = self.axes.text(layer.start_depth, y,
+                                        layer.name,
+                                        transform=self.trans,
+                                        fontsize=10,
+                                        ha="left")
+            y = y - 0.05
+            if y <= 0.1:
+                y = 0.95
             self.__annotations.append(annotation)
 
             # Move the position where the next layer starts.
             next_layer_position += layer.thickness
 
         if init:
-            self.axes.set_xbound(0, next_layer_position)
+            self.axes.set_xbound(-1, next_layer_position)
         else:
             self.axes.set_xbound(x_bounds[0], x_bounds[1])
 
@@ -334,9 +342,22 @@ class _CompositionWidget(MatplotlibWidget):
         """
         If ylim has changed, replace the annotations
         """
-        self.axes.annotate("testi",
-                         (0, 0.5),
-                          ha="center")
+        if self.ylim != self.axes.get_ylim():
+            y = 0.95
+            for a in self.__annotations:
+                a.set_visible(False)
+            self.__annotations = []
+            for layer in self.layers:
+                annotation = self.axes.text(layer.start_depth, y,
+                                            layer.name,
+                                            transform=self.trans,
+                                            fontsize=10,
+                                            ha="left")
+                y = y - 0.05
+                if y <= 0.1:
+                    y = 0.95
+                self.__annotations.append(annotation)
+            self.ylim = self.axes.get_ylim()
 
 
 class TargetCompositionWidget(_CompositionWidget):
