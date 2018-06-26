@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 20.6.2018
+Updated on 26.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -292,11 +292,27 @@ class MCERD:
 
         recoil_element.write_recoil_file(self.recoil_file)
 
-    def copy_result(self, destination):
-        """Copies MCERD result file (.erd) into given destination.
+    def copy_results(self, destination):
+        """Copies MCERD result file (.erd) and recoil file into given
+        destination.
+
+        Args:
+            destination: Destination folder.
         """
         try:
             shutil.copy(self.result_file, destination)
+            self.copy_recoil(destination)
+        except FileNotFoundError:
+            raise
+
+    def copy_recoil(self, destination):
+        """
+        Copy recoil file into given destination.
+
+        Args:
+            destination: Destination folder.
+        """
+        try:
             shutil.copy(self.recoil_file, destination)
         except FileNotFoundError:
             raise
