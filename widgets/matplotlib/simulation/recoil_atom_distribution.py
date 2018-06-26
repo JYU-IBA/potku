@@ -51,6 +51,7 @@ from PyQt5.QtCore import QLocale
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QGuiApplication
 import matplotlib
+import modules.masses as masses
 
 
 class ElementManager:
@@ -120,6 +121,10 @@ class ElementManager:
         points = []
         for xy in xys:
             points.append(Point(xy))
+
+        if element.isotope is None:
+            element.isotope = int(round(masses.get_standard_isotope(
+                element.symbol)))
 
         element_widget = ElementWidget(self.parent, element,
                                        self.icon_manager, None)
