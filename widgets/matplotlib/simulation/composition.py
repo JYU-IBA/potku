@@ -328,7 +328,10 @@ class _CompositionWidget(MatplotlibWidget):
             next_layer_position += layer.thickness
 
         if init:
-            self.axes.set_xbound(-1, next_layer_position)
+            if self.foil_behaviour:
+                self.axes.set_xbound(0, next_layer_position)
+            else:
+                self.axes.set_xbound(-1, next_layer_position)
         else:
             self.axes.set_xbound(x_bounds[0], x_bounds[1])
 
