@@ -59,7 +59,7 @@ class ElementSimulation:
                 "get_espe", "channel_width", "target", "detector", \
                 "__mcerd_command", "__process", "settings", "espe_settings", \
                 "description", "run", "spectra", "name", \
-                "use_default_settings", "sample"
+                "use_default_settings", "sample", "controls"
 
     def __init__(self, directory, request, recoil_elements, name_prefix="",
                  target=None, detector=None, run=None, name="Default",
@@ -159,6 +159,8 @@ class ElementSimulation:
         self.mcerd_objects = {}
         self.get_espe = None
         self.spectra = []
+
+        self.controls = None
 
     def unlock_edit(self, recoil_element):
         """
@@ -615,7 +617,25 @@ class ElementSimulation:
                 "detector": detector,
                 "recoil_element": self.recoil_elements[0]
             }
-            self.mcerd_objects[seed_number] = MCERD(settings)
+            self.mcerd_objects[seed_number] = MCERD(settings, self)
+
+    def notify(self, sim):
+        """
+        Remove MCERD object from list that has finished.
+        If no there are no more MCERD objects, show the end of the simulation
+        in the controls.
+        """
+        key_to_delete = None
+        for key, value in self.mcerd_objects.items():
+            if value == sim:
+                key_to_delete = key
+        self.mcerd_objects[key_to_delete].copy_results(self.directory)
+
+        if key_to_delete:
+            del (self.mcerd_objects[key_to_delete])
+        if not self.mcerd_objects:
+            if self.controls:
+                self.controls.show_stop()
 
     def stop(self):
         """ Stop the simulation."""

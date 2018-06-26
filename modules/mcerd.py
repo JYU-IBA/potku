@@ -38,6 +38,7 @@ import modules.masses as masses
 from modules.foil import CircularFoil
 
 import tempfile
+import threading
 
 
 class MCERD:
@@ -46,13 +47,15 @@ class MCERD:
     files it needs.
     """
 
-    def __init__(self, settings):
+    def __init__(self, settings, parent):
         """Create an MCERD object. This automatically starts the simulation.
 
         Args:
             settings: All settings that MCERD needs in one dictionary.
+            parent: ElementSimulation object.
         """
         self.__settings = settings
+        self.parent = parent
 
         self.__filename = self.__settings["recoil_element"].prefix \
             + "-" + self.__settings["recoil_element"].name
@@ -81,6 +84,19 @@ class MCERD:
         exec_command = "" if platform.system() == "Windows" else "exec "
         self.__process = subprocess.Popen(ulimit + exec_command + mcerd_command,
                                           shell=True)
+        # Use thread for checking if process has terminated
+        thread = threading.Thread(target=self.check_if_mcerd_running)
+        thread.daemon = True
+        thread.start()
+
+    def check_if_mcerd_running(self):
+        """
+        Check if MCERD process is still running. If not, notify parent.
+        """
+        while True:
+            if self.__process.poll() == 0:
+                self.parent.notify(self)
+                break
 
     def stop_process(self):
         """Stop the MCERD process and delete the MCERD object."""

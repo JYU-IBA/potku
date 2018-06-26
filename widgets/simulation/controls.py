@@ -49,6 +49,7 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         super().__init__()
 
         self.element_simulation = element_simulation
+        self.element_simulation.controls = self
 
         main_layout = QtWidgets.QHBoxLayout()
         element = self.element_simulation.recoil_elements[
@@ -136,5 +137,12 @@ class SimulationControlsWidget(QtWidgets.QWidget):
             error_box.setWindowTitle("Error")
             error_box.exec()
         self.state_label.setText("Stopped")
+        self.show_stop()
+
+    def show_stop(self):
+        """
+        Set controls to show that simulation has ended.
+        """
+        self.state_label.setText("Finished")
         self.run_button.setEnabled(True)
         self.stop_button.setEnabled(False)
