@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 26.6.2018
+Updated on 27.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -675,7 +675,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.x_coordinate_box.setMaximumWidth(62)
         self.x_coordinate_box.setKeyboardTracking(False)
         self.x_coordinate_box.valueChanged.connect(self.set_selected_point_x)
-
         self.x_coordinate_box.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.actionXMultiply = QtWidgets.QAction(self)
         self.actionXMultiply.setText("Multiply with value in clipboard\n(" +
@@ -683,6 +682,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.actionXMultiply.triggered.connect(
             lambda: self.__multiply_coordinate(self.x_coordinate_box))
         self.x_coordinate_box.addAction(self.actionXMultiply)
+
+        self.actionXUndo = QtWidgets.QAction(self)
+        self.actionXUndo.setText("Undo multipy")
+        self.actionXUndo.triggered.connect(
+            lambda: self.undo(self.x_coordinate_box))
+        self.actionXUndo.setEnabled(False)
+        self.x_coordinate_box.addAction(self.actionXUndo)
 
         self.mpl_toolbar.addWidget(self.x_coordinate_box)
         self.x_coordinate_box.setEnabled(False)
@@ -707,6 +713,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             lambda: self.__multiply_coordinate(self.y_coordinate_box))
         self.y_coordinate_box.addAction(self.actionYMultiply)
 
+        self.actionYUndo = QtWidgets.QAction(self)
+        self.actionYUndo.setText("Undo multiply")
+        self.actionYUndo.triggered.connect(
+            lambda: self.undo(self.y_coordinate_box))
+        self.actionYUndo.setEnabled(False)
+        self.y_coordinate_box.addAction((self.actionYUndo))
+
         self.mpl_toolbar.addWidget(self.y_coordinate_box)
         self.y_coordinate_box.setEnabled(False)
 
@@ -717,6 +730,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # TODO: Temporary icon
         self.__icon_manager.set_icon(point_remove_action, "del.png")
         self.mpl_toolbar.addAction(point_remove_action)
+
+    def undo(self, spinbox):
+        """
+        Undo change to spinbox value.
+        """
+        if spinbox == self.x_coordinate_box:
+            old_value = self.selected_points[0].previous_x.pop()
+            if not self.selected_points[0].previous_x:
+                self.actionXUndo.setEnabled(False)
+        else:
+            old_value = self.selected_points[0].previous_y.pop()
+            if not self.selected_points[0].previous_y:
+                self.actionYUndo.setEnabled(False)
+        spinbox.setValue(old_value)
 
     def __update_multiply_action(self):
         self.ratio_str = self.clipboard.text()
@@ -736,6 +763,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             ratio = float(self.ratio_str)
             coord = spinbox.value()
             new_coord = round(ratio * coord, 3)
+            if spinbox == self.x_coordinate_box:
+                self.selected_points[0].previous_x.append(
+                    self.selected_points[0].get_x())
+                self.actionXUndo.setEnabled(True)
+            else:
+                self.selected_points[0].previous_y.append(
+                    self.selected_points[0].get_y())
+                self.actionYUndo.setEnabled(True)
             spinbox.setValue(new_coord)
         except ValueError:
             QtWidgets.QMessageBox.critical(self, "Error",
