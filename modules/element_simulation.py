@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 26.6.2018
+Updated on 27.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -59,9 +59,10 @@ class ElementSimulation:
                 "get_espe", "channel_width", "target", "detector", \
                 "__mcerd_command", "__process", "settings", "espe_settings", \
                 "description", "run", "spectra", "name", \
-                "use_default_settings", "sample", "controls"
+                "use_default_settings", "sample", "controls", "simulation"
 
-    def __init__(self, directory, request, recoil_elements, name_prefix="",
+    def __init__(self, directory, request, recoil_elements,
+                 simulation=None, name_prefix="",
                  target=None, detector=None, run=None, name="Default",
                  description="", modification_time=None,
                  simulation_type="ERD", number_of_ions=1000000,
@@ -75,6 +76,7 @@ class ElementSimulation:
             directory: Folder of simulation that contains the ElementSimulation.
             request: Request object reference.
             recoil_elements: List of RecoilElement objects.
+            simulation: Simulation object.
             name_prefix: Prefix of the name, e.g. 55Mn
             target: Target object reference.
             detector: Detector object reference.
@@ -98,6 +100,7 @@ class ElementSimulation:
         self.directory = directory
         self.request = request
         self.name_prefix = name_prefix
+        self.simulation = simulation
         self.name = name
         self.description = description
         if not modification_time:
@@ -397,7 +400,7 @@ class ElementSimulation:
             use_default_settings = False
         try:
             name_prefix, name = obj["name"].split("-")
-        except ValueError as e:
+        except ValueError:
             name = obj["name"]
             name_prefix = ""
 
@@ -618,6 +621,10 @@ class ElementSimulation:
                 "recoil_element": self.recoil_elements[0]
             }
             self.mcerd_objects[seed_number] = MCERD(settings, self)
+        if self.detector == self.request.default_detector:
+            self.request.running_simulations.append(self)
+        else:
+            self.simulation.running_simulations.append(self)
 
     def notify(self, sim):
         """
@@ -636,6 +643,10 @@ class ElementSimulation:
         if not self.mcerd_objects:
             if self.controls:
                 self.controls.show_stop()
+        if self.detector == self.request.default_detector:
+            self.request.running_simulations.remove(self)
+        else:
+            self.simulation.running_simulations.remove(self)
 
     def stop(self):
         """ Stop the simulation."""
@@ -646,6 +657,10 @@ class ElementSimulation:
             except FileNotFoundError:
                 raise
             del (self.mcerd_objects[sim])
+        if self.detector == self.request.default_detector:
+            self.request.running_simulations.remove(self)
+        else:
+            self.simulation.running_simulations.remove(self)
 
     def pause(self):
         """Pause the simulation."""

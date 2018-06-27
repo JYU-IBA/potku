@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 20.6.2018
+Updated on 27.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -184,6 +184,7 @@ class Simulations:
                         element_simulation.target = Target.from_file(
                             target_file_path, measurement_file_path,
                             self.request)
+                        element_simulation.simulation = simulation
 
         # Create a new simulation
         else:
@@ -241,7 +242,7 @@ class Simulation:
                 "target", "element_simulations", "name_prefix", \
                 "serial_number", "directory", "measurement_setting_file_name", \
                 "measurement_setting_file_description", "defaultlog", \
-                "errorlog", "sample"
+                "errorlog", "sample", "running_simulations"
 
     def __init__(self, path, request, name="Default",
                  description="",
@@ -296,6 +297,7 @@ class Simulation:
 
         self.directory, self.simulation_file = os.path.split(self.path)
         self.create_folder_structure()
+        self.running_simulations = []
 
         self.to_file(self.path)
 
@@ -344,6 +346,7 @@ class Simulation:
 
         element_simulation = ElementSimulation(directory=self.directory,
                                                request=self.request,
+                                               simulation=self,
                                                name_prefix=element_str,
                                                target=self.target,
                                                detector=self.detector,

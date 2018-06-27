@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 12.6.2018
+Updated on 27.6.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -107,6 +107,8 @@ class Request:
         self.create_default_measurement()
         self.create_default_target()
         self.create_default_simulation()
+
+        self.running_simulations = []
 
         # Set default Run, Detector and Target objects to Measurement
         self.default_measurement.run = self.default_run
@@ -284,11 +286,13 @@ class Request:
                                             os.path.join(
                                                 self.default_folder,
                                                 "Default.profile"))
+            self.default_element_simulation.simulation = self.default_simulation
         else:
             # Create default element simulation for request
             self.default_element_simulation = ElementSimulation(
                 self.default_folder, self,
                 [RecoilElement(Element.from_string("4He 3.0"), [])],
+                self.default_simulation,
                 description="These are default simulation parameters.",
                 use_default_settings=False)
             self.default_simulation.element_simulations.append(
@@ -478,3 +482,16 @@ class Request:
         requestlog.setFormatter(formatter)
 
         logger.addHandler(requestlog)
+
+    def simulations_running(self):
+        """
+        Check whether there are any simulations running that use request
+        settings.
+
+        Return:
+            True or False.
+        """
+        ret = False
+        if self.running_simulations:
+            ret = True
+        return ret

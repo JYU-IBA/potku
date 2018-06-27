@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 25.6.2018
+Updated on 27.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -228,6 +228,19 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                QtWidgets.QMessageBox.Ok)
                 self.__close = False
                 return
+            if self.request.simulations_running():
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Simulations running",
+                    "There are simulations running that use request "
+                    "settings.\nIf you save changes, all the running "
+                    "simulations will be stopped, and their result files "
+                    "deleted.\n\n.Do you want to save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    self.__close = False
+                    return
             # TODO: Proper checking for all setting values
             try:
                 self.measurement_settings_widget.update_settings()

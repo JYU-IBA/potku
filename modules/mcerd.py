@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 26.6.2018
+Updated on 27.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -39,6 +39,7 @@ from modules.foil import CircularFoil
 
 import tempfile
 import threading
+import time
 
 
 class MCERD:
@@ -94,8 +95,12 @@ class MCERD:
         Check if MCERD process is still running. If not, notify parent.
         """
         while True:
-            if self.__process.poll() == 0:
-                self.parent.notify(self)
+            try:
+                time.sleep(5)
+                if self.__process.poll() == 0:
+                    self.parent.notify(self)
+                    break
+            except AttributeError:
                 break
 
     def stop_process(self):
