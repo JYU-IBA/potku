@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 27.6.2018
+Updated on 28.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -76,6 +76,7 @@ class MCERD:
         # The command that is used to start the MCERD process.
         mcerd_command = os.path.join("external", "Potku-bin", "mcerd" +
                                      (".exe " if platform.system() == "Windows"
+                                      else "_mac " if platform.system() == "Darwin"
                                       else " ") +
                                      os.path.join(self.tmp, self.__filename))
 
