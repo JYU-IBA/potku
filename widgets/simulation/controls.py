@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 26.6.2018
+Updated on 28.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -136,8 +136,8 @@ class SimulationControlsWidget(QtWidgets.QWidget):
             error_box.setText("Energy spectrum data could not be generated.")
             error_box.setWindowTitle("Error")
             error_box.exec()
-        self.state_label.setText("Stopped")
         self.show_stop()
+        self.state_label.setText("Stopped")
 
     def show_stop(self):
         """

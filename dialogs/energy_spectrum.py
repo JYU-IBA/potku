@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 27.6.2018
+Updated on 28.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -126,20 +126,39 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 self.__calculate_selected_spectra)
 
             self.result_files = []
-            elem_sim_prefixes = []  # .rec files of the same simulation are
+            recoil_prefixes_and_names = []  # .recoil files of the same simulation are
             # shown as one tree item.
             for file in os.listdir(self.parent.obj.directory):
                 if file.endswith(".rec"):
-                    sim_name = file.split(".")[0]
+                    rec_name = file.split(".")[0]
 
-                    if sim_name in elem_sim_prefixes:
+                    if rec_name in recoil_prefixes_and_names:
                         continue
 
-                    elem_sim_prefixes.append(sim_name)
-                    item = QtWidgets.QTreeWidgetItem()
-                    item.setText(0, sim_name)
-                    item.setCheckState(0, QtCore.Qt.Unchecked)
-                    self.ui.treeWidget.addTopLevelItem(item)
+                    for f in os.listdir(self.parent.obj.directory):
+                        if f.startswith(rec_name) and f.endswith(".erd"):
+                            recoil_prefixes_and_names.append(rec_name)
+                            item = QtWidgets.QTreeWidgetItem()
+                            item.setText(0, rec_name)
+                            item.setCheckState(0, QtCore.Qt.Unchecked)
+                            self.ui.treeWidget.addTopLevelItem(item)
+                            break
+
+                    if rec_name in recoil_prefixes_and_names:
+                        continue
+
+                    # Also list rec files that have a running simulation
+                    for run_sim in self.parent.obj.request.running_simulations:
+                        for rec_elem in run_sim.recoil_elements:
+                            rec_prefix_and_elem = rec_elem.prefix + "-" + \
+                            rec_elem.name
+                            if rec_prefix_and_elem == rec_name:
+                                recoil_prefixes_and_names.append(rec_name)
+                                item = QtWidgets.QTreeWidgetItem()
+                                item.setText(0, rec_name)
+                                item.setCheckState(0, QtCore.Qt.Unchecked)
+                                self.ui.treeWidget.addTopLevelItem(item)
+                                break
 
             # Add calculated tof_list files to tof_list_tree_widget by
             # measurement under the same sample.

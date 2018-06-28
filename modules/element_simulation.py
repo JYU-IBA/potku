@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 27.6.2018
+Updated on 28.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -706,7 +706,7 @@ class ElementSimulation:
         if self.mcerd_objects:
             for sim in list(self.mcerd_objects.keys()):
                 try:
-                    self.mcerd_objects[sim].copy_recoil(self.directory)
+                    self.mcerd_objects[sim].copy_results(self.directory)
                 except FileNotFoundError:
                     raise
         self.get_espe = GetEspe(espe_settings)
