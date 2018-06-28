@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 27.6.2018
+Updated on 28.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -49,6 +49,7 @@ from widgets.detector_settings import DetectorSettingsWidget
 from widgets.measurement.settings import MeasurementSettingsWidget
 from widgets.profile_settings import ProfileSettingsWidget
 from widgets.simulation.settings import SimulationSettingsWidget
+import copy
 
 
 class RequestSettingsDialog(QtWidgets.QDialog):
@@ -234,13 +235,24 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     "There are simulations running that use request "
                     "settings.\nIf you save changes, all the running "
                     "simulations will be stopped, and their result files "
-                    "deleted.\n\n.Do you want to save changes anyway?",
+                    "deleted.\n\nDo you want to save changes anyway?",
                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
                     QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
                 if reply == QtWidgets.QMessageBox.No or reply == \
                         QtWidgets.QMessageBox.Cancel:
                     self.__close = False
                     return
+                else:
+                    # Stop simulations
+                    tmp_sims = copy.copy(self.request.running_simulations)
+                    for elem_sim in tmp_sims:
+                        elem_sim.stop()
+                        elem_sim.controls.state_label.setText("Stopped")
+                        elem_sim.controls.run_button.setEnabled(True)
+                        elem_sim.controls.stop_button.setEnabled(False)
+
+            # Check if there are any stopped or finished simulations
+                    # Delete all files ^
             # TODO: Proper checking for all setting values
             try:
                 self.measurement_settings_widget.update_settings()
