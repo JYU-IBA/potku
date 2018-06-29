@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 25.6.2018
+Updated on 29.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -157,12 +157,9 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         """
         Update detector settings.
         """
-        self.obj.name = \
-            self.nameLineEdit.text()
-        self.obj.description = \
-            self.descriptionLineEdit.toPlainText()
-        self.obj.type = \
-            self.typeComboBox.currentText()
+        self.obj.name = self.nameLineEdit.text()
+        self.obj.description = self.descriptionLineEdit.toPlainText()
+        self.obj.type = self.typeComboBox.currentText()
         self.obj.angle_offset = self.angleOffsetLineEdit.text()
         self.obj.angle_slope = self.angleSlopeLineEdit.text()
         self.obj.tof_offset = self.offsetLineEdit.text()
@@ -176,6 +173,120 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.obj.foils = self.tmp_foil_info
         # Tof foils
         self.obj.tof_foils = self.tof_foils
+
+    def values_changed(self):
+        """
+        Check if detector settings values have been changed.
+
+        Return:
+            True or False.
+        """
+        if self.obj.name != self.nameLineEdit.text():
+            return True
+        if self.obj.description != self.descriptionLineEdit.toPlainText():
+            return True
+        if self.obj.type != self.typeComboBox.currentText():
+            return True
+        if self.obj.angle_offset != self.angleOffsetLineEdit.text():
+            return True
+        if self.obj.angle_slope != self.angleSlopeLineEdit.text():
+            return True
+        if self.obj.tof_offset != self.offsetLineEdit.text():
+            return True
+        if self.obj.tof_slope != self.slopeLineEdit.text():
+            return True
+        if self.obj.virtual_size != (self.virtualSizeXSpinBox.value(),
+                                self.virtualSizeYSpinBox.value()):
+            return True
+        if self.obj.timeres != self.timeResSpinBox.value():
+            return True
+        # Detector foils
+        self.calculate_distance()
+        if self.foils_changed():
+            return True
+        # Tof foils
+        if self.obj.tof_foils != self.tof_foils:
+            return True
+
+    def foils_changed(self):
+        """
+        Check if detector foils have been changed.
+
+        Return:
+            True or False.
+        """
+        if len(self.obj.foils) != len(self.tmp_foil_info):
+            return True
+        for i in range(len(self.obj.foils)):
+            foil = self.obj.foils[i]
+            tmp_foil = self.tmp_foil_info[i]
+            if type(foil) != type(tmp_foil):
+                return True
+            if foil.name != tmp_foil.name:
+                return True
+            if foil.distance != tmp_foil.distance:
+                return True
+            if foil.transmission != tmp_foil.transmission:
+                return True
+            # Check layers
+            if self.layers_changed(foil, tmp_foil):
+                return True
+            if type(foil) is CircularFoil:
+                if foil.diameter != tmp_foil.diameter:
+                    return True
+            else:
+                if foil.size != tmp_foil.size:
+                    return True
+        return False
+
+    def layers_changed(self, foil1, foil2):
+        """
+        Check if foil1 has different layers than foil2.
+
+        Args:
+            foil1: Foil object.
+            foil2: Foil object.
+
+        Return:
+            True or False.
+        """
+        if len(foil1.layers) != len(foil2.layers):
+            return True
+        for i in range(len(foil1.layers)):
+            layer1 = foil1.layers[i]
+            layer2 = foil2.layers[i]
+            if layer1.name != layer2.name:
+                return True
+            if layer1.thickness != layer2.thickness:
+                return True
+            if layer1.density != layer2.density:
+                return True
+            if layer1.start_depth != layer2.start_depth:
+                return True
+            # Check layer elements
+            if self.layer_elements_changed(layer1, layer2):
+                return True
+        return False
+
+    def layer_elements_changed(self, layer1, layer2):
+        """
+        Check if layer1 elements are different than layer2 elements.
+
+        Args:
+            layer1: Layer object.
+            layer2: Layer object.
+
+        Return:
+            True or False.
+        """
+        if len(layer1.elements) != len(layer2.elements):
+            return True
+        for i in range(len(layer1.elements)):
+            elem1 = layer1.elements[i]
+            elem2 = layer2.elements[i]
+            if elem1 != elem2:
+                return True
+        return False
 
     def _add_new_foil(self, layout, new_foil=None):
         """

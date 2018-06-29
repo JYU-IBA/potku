@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 25.6.2018
+Updated on 29.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -190,7 +190,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         """
         isotope_index = self.isotopeComboBox. \
             currentIndex()
-        # TODO: Show a message box, don't just quietly do nothing
         if isotope_index != -1:
             isotope_data = self.isotopeComboBox.itemData(isotope_index)
             self.obj.run.beam.ion = Element(self.beamIonButton.text(),
@@ -213,6 +212,63 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
                 .detectorThetaDoubleSpinBox.value()
             self.obj.target.target_theta = self \
                 .targetThetaDoubleSpinBox.value()
+        else:
+            QtWidgets.QMessageBox.critical(self, "Warning",
+                                           "No isotope selected.\n\nPlease "
+                                           "select an isotope for the beam "
+                                           "element.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+
+    def values_changed(self):
+        """
+        Check whether measurement settings values have changed.
+
+        Return:
+             True or False.
+        """
+        isotope_index = self.isotopeComboBox. \
+            currentIndex()
+        if isotope_index != -1:
+            isotope_data = self.isotopeComboBox.itemData(isotope_index)
+            if self.obj.run.beam.ion != Element(self.beamIonButton.text(),
+                                                isotope_data[0]):
+                return True
+            if self.obj.measurement_setting_file_name != \
+                    self.nameLineEdit.text():
+                return True
+            if self.obj.measurement_setting_file_description != self \
+                .descriptionPlainTextEdit.toPlainText():
+                return True
+            if self.obj.run.beam.energy != self.energyDoubleSpinBox.value():
+                return True
+            if self.obj.run.beam.energy_distribution != \
+                self.energyDistDoubleSpinBox.value():
+                return True
+            if self.obj.run.beam.charge != self.beamChargeSpinBox.value():
+                return True
+            if self.obj.run.beam.spot_size != (
+                self.spotSizeXdoubleSpinBox.value(),
+                                           self.spotSizeYdoubleSpinBox.value()):
+                return True
+            if self.obj.run.beam.divergence != \
+                self.divergenceDoubleSpinBox.value():
+                return True
+            if self.obj.run.beam.profile != self.profileComboBox.currentText():
+                return True
+            if self.obj.run.fluence != self.fluenceDoubleSpinBox.value():
+                return True
+            if self.obj.run.current != self.currentDoubleSpinBox.value():
+                return True
+            if self.obj.run.time != self.timeDoubleSpinBox.value():
+                return True
+            if self.obj.detector.detector_theta != self \
+                .detectorThetaDoubleSpinBox.value():
+                return True
+            if self.obj.target.target_theta != self \
+                .targetThetaDoubleSpinBox.value():
+                return True
+            return False
 
     def save_to_tmp_run(self):
         """

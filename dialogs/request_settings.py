@@ -32,13 +32,12 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import os
-import time
+import copy
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import uic
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDesktopWidget
 from PyQt5.QtWidgets import QApplication
 
@@ -49,7 +48,6 @@ from widgets.detector_settings import DetectorSettingsWidget
 from widgets.measurement.settings import MeasurementSettingsWidget
 from widgets.profile_settings import ProfileSettingsWidget
 from widgets.simulation.settings import SimulationSettingsWidget
-import copy
 
 
 class RequestSettingsDialog(QtWidgets.QDialog):
@@ -106,7 +104,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             .connect(lambda: self.__save_file("DETECTOR_SETTINGS"))
 
         # Add simulation settings view to the settings view
-        self.simulation_settings_widget = SimulationSettingsWidget()
+        self.simulation_settings_widget = SimulationSettingsWidget(
+            self.request.default_element_simulation)
         self.ui.tabs.addTab(self.simulation_settings_widget, "Simulation")
 
         self.simulation_settings_widget.ui.generalParametersGroupBox \
@@ -122,42 +121,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.ui.tabs.addTab(self.profile_settings_widget, "Profile")
         self.__close = True
 
-        self.show_simulation_settings()
-
         self.ui.tabs.currentChanged.connect(lambda: self.__check_for_red())
 
         self.exec_()
-
-    def show_simulation_settings(self):
-        """ Show simulation settings in simulation tab widget.
-        """
-        widget = self.simulation_settings_widget
-        elem_simu = self.request.default_element_simulation
-        widget.nameLineEdit.setText(elem_simu.name)
-        widget.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
-            elem_simu.modification_time)))
-        widget.descriptionPlainTextEdit.setPlainText(elem_simu.description)
-        widget.modeComboBox.setCurrentIndex(widget.modeComboBox.findText(
-            elem_simu.simulation_mode, Qt.MatchFixedString))
-        if elem_simu.simulation_type == "ERD":
-            widget.typeOfSimulationComboBox.setCurrentIndex(
-                widget.typeOfSimulationComboBox.findText(
-                    "REC", Qt.MatchFixedString))
-        else:
-            widget.typeOfSimulationComboBox.setCurrentIndex(
-                widget.typeOfSimulationComboBox.findText("SCT",
-                                                         Qt.MatchFixedString))
-        widget.minimumScatterAngleDoubleSpinBox.setValue(
-            elem_simu.minimum_scattering_angle)
-        widget.minimumMainScatterAngleDoubleSpinBox.setValue(
-            elem_simu.minimum_main_scattering_angle)
-        widget.minimumEnergyDoubleSpinBox.setValue(elem_simu.minimum_energy)
-        widget.numberOfIonsSpinBox.setValue(elem_simu.number_of_ions)
-        widget.numberOfPreIonsSpinBox.setValue(elem_simu.number_of_preions)
-        widget.seedSpinBox.setValue(elem_simu.seed_number)
-        widget.numberOfRecoilsSpinBox.setValue(elem_simu.number_of_recoils)
-        widget.numberOfScalingIonsSpinBox.setValue(
-            elem_simu.number_of_scaling_ions)
 
     def __check_for_red(self):
         """
@@ -212,10 +178,33 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             # Message is already displayed within private method.
             pass
 
+    def values_changed(self):
+        """
+        Check if measurement, detector, simulation or profile settings have
+        changed.
+
+        Return:
+
+            True or False.
+        """
+        if self.measurement_settings_widget.values_changed():
+            return True
+        if self.detector_settings_widget.values_changed():
+            return True
+        if self.simulation_settings_widget.values_changed():
+            return True
+        if self.profile_settings_widget.values_changed():
+            return True
+        return False
+
     def __update_settings(self):
         """Reads values from Request Settings dialog and updates them in
         default objects.
         """
+        # Check that values have been changed
+        if not self.values_changed():
+            self.__close = True
+            return
         # Check the target and detector angles
         ok_pressed = self.measurement_settings_widget.check_angles()
         if ok_pressed:
@@ -325,43 +314,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     self.request.default_detector_folder, "Default.detector"),
                     default_measurement_settings_file)
 
-                # Simulation settings
-                elem_simu = self.request.default_element_simulation
-                elem_simu.name = self.simulation_settings_widget.nameLineEdit.\
-                    text()
-                elem_simu.description = self.simulation_settings_widget\
-                    .descriptionPlainTextEdit. toPlainText()
-                if self.simulation_settings_widget \
-                   .typeOfSimulationComboBox.currentText() == "REC":
-                    elem_simu.simulation_type = "ERD"
-                else:
-                    elem_simu.simulation_type = "RBS"
-                elem_simu.simulation_mode = self.simulation_settings_widget \
-                    .modeComboBox.currentText().lower()
-                elem_simu.number_of_ions = self.simulation_settings_widget \
-                    .numberOfIonsSpinBox.value()
-                elem_simu.number_of_preions = self.simulation_settings_widget \
-                    .numberOfPreIonsSpinBox.value()
-                elem_simu.seed_number = self.simulation_settings_widget\
-                    .seedSpinBox.value()
-                elem_simu.number_of_recoils = self.simulation_settings_widget \
-                    .numberOfRecoilsSpinBox.value()
-                elem_simu.number_of_scaling_ions = self.\
-                    simulation_settings_widget.numberOfScalingIonsSpinBox.\
-                    value()
-                elem_simu.minimum_scattering_angle = \
-                    self.simulation_settings_widget\
-                        .minimumScatterAngleDoubleSpinBox.value()
-                elem_simu.minimum_main_scattering_angle = self \
-                    .simulation_settings_widget \
-                    .minimumMainScatterAngleDoubleSpinBox.value()
-                elem_simu .minimum_energy = self.simulation_settings_widget \
-                    .minimumEnergyDoubleSpinBox.value()
-
                 self.request.default_simulation.to_file(os.path.join(
                     self.request.default_folder, "Default.simulation"))
-                elem_simu.mcsimu_to_file(os.path.join(
-                    self.request.default_folder, "Default.mcsimu"))
+                self.request.default_element_simulation.mcsimu_to_file(
+                    os.path.join(self.request.default_folder, "Default.mcsimu"))
 
                 self.__close = True
             except TypeError:
