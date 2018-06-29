@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 28.6.2018
+Updated on 29.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -58,8 +58,9 @@ class MCERD:
         self.__settings = settings
         self.parent = parent
 
-        self.__filename = self.__settings["recoil_element"].prefix \
+        self.__rec_filename = self.__settings["recoil_element"].prefix \
             + "-" + self.__settings["recoil_element"].name
+        self.__filename = self.parent.name_prefix + "-" + self.parent.name
 
         # OS specific directory where temporary MCERD files will be stored.
         # In case of Linux and Mac this will be /tmp and in Windows this will
@@ -67,7 +68,8 @@ class MCERD:
         self.tmp = tempfile.gettempdir()
 
         # The recoil file and erd file are later passed to get_espe.
-        self.recoil_file = os.path.join(self.tmp, self.__filename + ".recoil")
+        self.recoil_file = os.path.join(self.tmp, self.__rec_filename +
+                                        ".recoil")
         self.result_file = os.path.join(self.tmp, self.__filename + "." +
                                         str(self.__settings["seed_number"]) +
                                         ".erd")

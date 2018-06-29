@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 28.6.2018
+Updated on 29.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -229,11 +229,38 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                QtWidgets.QMessageBox.Ok)
                 self.__close = False
                 return
-            if self.request.simulations_running():
+
+            simulations_run = self.check_if_simulations_run()
+            simulations_running = self.request.simulations_running()
+            if simulations_run and simulations_running:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Simulated and running simulations",
+                    "There are simulations that use request settings, "
+                    "and either have been simulated or are currently running."
+                    "\nIf you save changes, the running simulations "
+                    "will be stopped, and the result files of the simulated "
+                    "and stopped simulations are deleted.\n\nDo you want to "
+                    "save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    self.__close = False
+                    return
+                else:
+                    # Stop simulations
+                    tmp_sims = copy.copy(self.request.running_simulations)
+                    for elem_sim in tmp_sims:
+                        elem_sim.stop()
+                        elem_sim.controls.state_label.setText("Stopped")
+                        elem_sim.controls.run_button.setEnabled(True)
+                        elem_sim.controls.stop_button.setEnabled(False)
+                    # TODO: Delete files
+            elif simulations_running:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulations running",
                     "There are simulations running that use request "
-                    "settings.\nIf you save changes, all the running "
+                    "settings.\nIf you save changes, the running "
                     "simulations will be stopped, and their result files "
                     "deleted.\n\nDo you want to save changes anyway?",
                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
@@ -250,9 +277,24 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         elem_sim.controls.state_label.setText("Stopped")
                         elem_sim.controls.run_button.setEnabled(True)
                         elem_sim.controls.stop_button.setEnabled(False)
+                    # TODO: Delete files
+            elif simulations_run:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Simulated simulations",
+                    "There are simulations that use request settings, "
+                    "and have been simulated.\nIf you save changes,"
+                    " the result files of the simulated simulations are "
+                    "deleted.\n\nDo you want to save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    self.__close = False
+                    return
+                else:
+                    pass
+                    # TODO: Delete files
 
-            # Check if there are any stopped or finished simulations
-                    # Delete all files ^
             # TODO: Proper checking for all setting values
             try:
                 self.measurement_settings_widget.update_settings()
@@ -335,6 +377,21 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         else:
             self.__close = False
+
+    def check_if_simulations_run(self):
+        """
+        Check if the re are any element simulations that have been simulated.
+
+        Return:
+             True or False.
+        """
+        for sample in self.request.samples.samples:
+            for simulation in sample.simulations.simulations.values():
+                for elem_sim in simulation.element_simulations:
+                    if elem_sim.simulations_done and \
+                       elem_sim.use_default_settings:
+                        return True
+        return False
 
     def __change_element(self, button, combo_box):
         """ Opens element selection dialog and loads selected element's isotopes

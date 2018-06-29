@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 28.6.2018
+Updated on 29.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -59,7 +59,8 @@ class ElementSimulation:
                 "get_espe", "channel_width", "target", "detector", \
                 "__mcerd_command", "__process", "settings", "espe_settings", \
                 "description", "run", "spectra", "name", \
-                "use_default_settings", "sample", "controls", "simulation"
+                "use_default_settings", "sample", "controls", "simulation", \
+                "simulations_done"
 
     def __init__(self, directory, request, recoil_elements,
                  simulation=None, name_prefix="",
@@ -70,7 +71,8 @@ class ElementSimulation:
                  number_of_recoils=10, minimum_scattering_angle=0.05,
                  minimum_main_scattering_angle=20, simulation_mode="narrow",
                  seed_number=101, minimum_energy=1.0, channel_width=0.1,
-                 use_default_settings=True, sample=None):
+                 use_default_settings=True, sample=None,
+                 simulations_done=False):
         """ Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
@@ -96,6 +98,8 @@ class ElementSimulation:
             minimum_energy: Minimum energy.
             channel_width: Channel width.
             sample: Sample object under which Element Simualtion belongs.
+            simulations_done: Whether any simulations have been run for this
+            element simulation.
         """
         self.directory = directory
         self.request = request
@@ -162,6 +166,9 @@ class ElementSimulation:
         self.mcerd_objects = {}
         self.get_espe = None
         self.spectra = []
+
+        # Whether any simulations have been run or not
+        self.simulations_done = simulations_done
 
         self.controls = None
 
@@ -446,7 +453,16 @@ class ElementSimulation:
                 #  be read and RecoilElement objects created from them.
                 break
 
-        return cls(simulation_folder, request, recoil_elements,
+        # Check if there are any files to tell that simulations have
+        # been run previously
+        simulations_done = False
+        for f in os.listdir(simulation_folder):
+            if f.startswith(name_prefix + "-" + name) and f.endswith(".erd"):
+                simulations_done = True
+                break
+
+        return cls(directory=simulation_folder, request=request,
+                   recoil_elements=recoil_elements,
                    name_prefix=name_prefix,
                    description=description,
                    simulation_type=simulation_type,
@@ -461,7 +477,8 @@ class ElementSimulation:
                    seed_number=seed_number,
                    minimum_energy=minimum_energy,
                    use_default_settings=use_default_settings,
-                   channel_width=channel_width)
+                   channel_width=channel_width,
+                   simulations_done=simulations_done)
 
     def mcsimu_to_file(self, file_path):
         """Save mcsimu settings to file.
@@ -618,10 +635,10 @@ class ElementSimulation:
                 "beam": run.beam,
                 "target": self.target,
                 "detector": detector,
-                "recoil_element": self.recoil_elements[0]
+                "recoil_element": self.recoil_elements[0],
             }
             self.mcerd_objects[seed_number] = MCERD(settings, self)
-        if self.detector == self.request.default_detector:
+        if self.use_default_settings:
             self.request.running_simulations.append(self)
         else:
             self.simulation.running_simulations.append(self)
@@ -643,10 +660,11 @@ class ElementSimulation:
         if not self.mcerd_objects:
             if self.controls:
                 self.controls.show_stop()
-        if self.detector == self.request.default_detector:
+        if self.use_default_settings:
             self.request.running_simulations.remove(self)
         else:
             self.simulation.running_simulations.remove(self)
+        self.simulations_done = True
 
     def stop(self):
         """ Stop the simulation."""
@@ -657,15 +675,11 @@ class ElementSimulation:
             except FileNotFoundError:
                 raise
             del (self.mcerd_objects[sim])
-        if self.detector == self.request.default_detector:
+        if self.use_default_settings:
             self.request.running_simulations.remove(self)
         else:
             self.simulation.running_simulations.remove(self)
-
-    def pause(self):
-        """Pause the simulation."""
-        # TODO: Implement this sometime in the future.
-        pass
+        self.simulations_done = True
 
     def calculate_espe(self):
         """
@@ -695,8 +709,8 @@ class ElementSimulation:
             "timeres": detector.timeres,
             "solid": self.calculate_solid(),
             "erd_file": os.path.join(self.directory,
-                                     self.recoil_elements[0].prefix + "-" +
-                                     self.recoil_elements[0].name + ".*.erd"),
+                                     self.name_prefix + "-" +
+                                     self.name + ".*.erd"),
             "spectrum_file": os.path.join(self.directory,
                                           self.recoil_elements[0].prefix + "-" +
                                           self.recoil_elements[0].name +
