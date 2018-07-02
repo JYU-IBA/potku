@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 27.6.2018
+Updated on 2.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -344,10 +344,13 @@ class Simulation:
         else:
             element_str = element.symbol
 
+        name = self.request.default_element_simulation.name
+
         element_simulation = ElementSimulation(directory=self.directory,
                                                request=self.request,
                                                simulation=self,
                                                name_prefix=element_str,
+                                               name=name,
                                                target=self.target,
                                                detector=self.detector,
                                                recoil_elements=[
