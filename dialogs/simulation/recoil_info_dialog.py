@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 3.5.2018
-Updated on 27.6.2018
+Updated on 2.72018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -77,6 +77,10 @@ class RecoilInfoDialog(QtWidgets.QDialog):
             recoil_element.modification_time)))
 
         self.__ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+
+        self.__ui.infoGroupBox.setTitle("Recoil element: " +
+                                        str(recoil_element.element.isotope) +
+                                        recoil_element.element.symbol)
 
         self.__close = True
 

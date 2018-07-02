@@ -494,12 +494,17 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
     def add_element_with_dialog(self):
         """
-        Add new elelemnt simulation with dialog.
+        Add new element simulation with dialog.
         """
         dialog = RecoilElementSelectionDialog(self)
         if dialog.isOk:
+            if dialog.isotope is None:
+                isotope = int(round(masses.get_standard_isotope(
+                dialog.element)))
+            else:
+                isotope = dialog.isotope
             element_simulation = self.add_element(Element(
-                dialog.element, dialog.isotope))
+                dialog.element, isotope))
 
             if self.current_element_simulation is None:
                 self.current_element_simulation = element_simulation
