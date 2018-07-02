@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 13.6.2018
+Updated on 2.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -27,35 +27,43 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
+import modules.general_functions as general
+
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
+from PyQt5 import QtCore
+
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog, \
     EnergySpectrumWidget
-import modules.general_functions as general
+from dialogs.simulation.element_simulation_settings import \
+    ElementSimulationSettingsDialog
 
 
 class ElementWidget(QtWidgets.QWidget):
     """Class for creating an element widget for the recoil atom distribution.
+
     Args:
         parent: A SimulationTabWidget.
         """
 
-    def __init__(self, parent, element, icon_manager, element_simulation):
+    def __init__(self, parent, element, parent_tab, element_simulation):
         """
         Initializes the ElementWidget.
 
         Args:
-            parent: Parent widget.
+            parent: A RecoilAtomDistributionWidget.
             element: An Element object.
-            icon_manager: IconManager object.
+            parent_tab: A SimulationTabWidget.
             element_simulation: ElementSimulation object.
         """
         super().__init__()
 
         self.parent = parent
+        self.parent_tab = parent_tab
         self.element_simulation = element_simulation
 
         horizontal_layout = QtWidgets.QHBoxLayout()
+        horizontal_layout.setContentsMargins(0, 0, 0, 0)
 
         self.radio_button = QtWidgets.QRadioButton()
 
@@ -77,6 +85,14 @@ class ElementWidget(QtWidgets.QWidget):
         horizontal_layout.addWidget(self.radio_button)
         horizontal_layout.addWidget(draw_spectrum_button)
 
+        settings_button = QtWidgets.QPushButton()
+        settings_button.setIcon(QIcon("ui_icons/reinhardt/gear.svg"))
+        settings_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                           QtWidgets.QSizePolicy.Fixed)
+        settings_button.clicked.connect(
+            self.open_element_simulation_settings)
+        horizontal_layout.addWidget(settings_button)
+
         self.setLayout(horizontal_layout)
 
     def add_element_simulation_reference(self, element_simulation):
@@ -84,6 +100,12 @@ class ElementWidget(QtWidgets.QWidget):
         Add reference to an Element Simulation object.
         """
         self.element_simulation = element_simulation
+
+    def open_element_simulation_settings(self):
+        """
+        Open element simulation settings.
+        """
+        ElementSimulationSettingsDialog(self.element_simulation)
 
     def plot_spectrum(self):
         """

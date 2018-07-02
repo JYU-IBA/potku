@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 27.6.2018
+Updated on 2.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -62,15 +62,17 @@ class ElementManager:
     Each RecoilElement has 1 Element, 1 ElementWidget and 2...n Points.
     """
 
-    def __init__(self, parent, icon_manager, simulation):
+    def __init__(self, parent_tab, parent, icon_manager, simulation):
         """
         Initializes element manager.
 
         Args:
-            parent: Parent object.
+            parent_tab: SimulationTabWidget object.
+            parent: RecoilAtomDistributionWidget object.
             icon_manager: IconManager object.
             simulation: Simulation object.
         """
+        self.parent_tab = parent_tab
         self.parent = parent
         self.icon_manager = icon_manager
         self.simulation = simulation
@@ -127,7 +129,7 @@ class ElementManager:
                 element.symbol)))
 
         element_widget = ElementWidget(self.parent, element,
-                                       self.icon_manager, None)
+                                       self.parent_tab, None)
         recoil_element = RecoilElement(element, points)
         recoil_element.widgets.append(element_widget)
         element_simulation = self.simulation.add_element_simulation(
@@ -139,7 +141,7 @@ class ElementManager:
         simulation_controls_widget = SimulationControlsWidget(
             element_simulation)
         simulation_controls_widget.element_simulation = element_simulation
-        self.parent.ui.contentsLayout.addWidget(simulation_controls_widget)
+        self.parent_tab.ui.contentsLayout.addWidget(simulation_controls_widget)
         element_simulation.recoil_elements[0] \
             .widgets.append(simulation_controls_widget)
 
@@ -155,7 +157,7 @@ class ElementManager:
         recoil_element_widget =\
             ElementWidget(self.parent,
                           element_simulation.recoil_elements[0].element,
-                          self.icon_manager, element_simulation)
+                          self.parent_tab, element_simulation)
         element_simulation.recoil_elements[0] \
             .widgets.append(recoil_element_widget)
         recoil_element_widget.element_simulation = element_simulation
@@ -164,7 +166,7 @@ class ElementManager:
         simulation_controls_widget = SimulationControlsWidget(
             element_simulation)
         simulation_controls_widget.element_simulation = element_simulation
-        self.parent.ui.contentsLayout.addWidget(simulation_controls_widget)
+        self.parent_tab.ui.contentsLayout.addWidget(simulation_controls_widget)
         element_simulation.recoil_elements[0] \
             .widgets.append(simulation_controls_widget)
 
@@ -227,14 +229,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         super().__init__(parent)
         self.canvas.manager.set_title("Recoil Atom Distribution")
-        self.axes.fmt_xdata = lambda x: "{0:1.2f}".format(x)
-        self.axes.fmt_ydata = lambda y: "{0:1.4f}".format(y)
+        self.axes.format_coord = self.format_coord
         self.__icon_manager = icon_manager
         self.tab = tab
         self.simulation = simulation
 
         self.current_element_simulation = None
-        self.element_manager = ElementManager(self.tab, self.__icon_manager,
+        self.element_manager = ElementManager(self.tab, self,
+                                              self.__icon_manager,
                                               self.simulation)
         self.target = target
         self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
@@ -243,6 +245,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Setting up the element scroll area
         widget = QtWidgets.QWidget()
         self.recoil_vertical_layout = QtWidgets.QVBoxLayout()
+        self.recoil_vertical_layout.setContentsMargins(0, 0, 0 ,0)
         widget.setLayout(self.recoil_vertical_layout)
 
         scroll_vertical_layout = QtWidgets.QVBoxLayout()
@@ -258,8 +261,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.add_element_with_dialog)
         self.parent_ui.removePushButton.clicked.connect(
             self.remove_current_element)
-        self.parent_ui.settingsPushButton.clicked.connect(
-            self.open_element_simulation_settings)
+        # self.parent_ui.settingsPushButton.clicked.connect(
+        #     self.open_element_simulation_settings)
 
         self.radios = QtWidgets.QButtonGroup(self)
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
@@ -336,6 +339,21 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         for button in self.radios.buttons():
             button.setChecked(True)
             break
+
+    def format_coord(self, x, y):
+        """
+        Format mouse coordinates.
+
+        Args:
+            x: X coordinate.
+            y: Y coordinate.
+
+        Return:
+            Formatted text.
+        """
+        x_part = "\nx:{0:1.2f},".format(x)
+        y_part = "\ny:{0:1.4f}".format(y)
+        return x_part + y_part
 
     def __update_figure(self):
         """
