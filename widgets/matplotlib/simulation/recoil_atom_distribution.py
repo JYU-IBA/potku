@@ -494,6 +494,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.current_recoil_element = \
                 self.element_manager.get_recoil_element_with_radio_button(
                     button, self.current_element_simulation)
+            # Disable element simulation deletion button for other than main
+            # recoil element.
+            if self.current_recoil_element is not \
+                    self.current_element_simulation.recoil_elements[0]:
+                self.parent_ui.removePushButton.setEnabled(False)
+            else:
+                self.parent_ui.removePushButton.setEnabled(True)
             self.parent_ui.elementInfoWidget.show()
             if self.current_element_simulation.get_edit_lock_on(
                     self.current_recoil_element):
@@ -594,10 +601,17 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         if not self.current_element_simulation:
             return
+        if self.current_recoil_element is not \
+                self.current_element_simulation.recoil_elements[0]:
+            return
         reply = QtWidgets.QMessageBox.question(self, "Confirmation",
-                                               "Are you sure you want to "
-                                               "delete selected recoil "
-                                               "element?",
+                                               "If you delete selected "
+                                               "element simulation, "
+                                               "all possible recoils "
+                                               "connected to it will be "
+                                               "also deleted.\n\nAre you sure "
+                                               "you want to delete selected "
+                                               "element simulation?",
                                                QtWidgets.QMessageBox.Yes |
                                                QtWidgets.QMessageBox.No |
                                                QtWidgets.QMessageBox.Cancel,
