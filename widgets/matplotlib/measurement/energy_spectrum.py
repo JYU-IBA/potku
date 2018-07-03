@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 25.6.2018
+Updated on 3.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -30,21 +30,26 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-from PyQt5 import QtWidgets
+import copy
+import modules.masses as masses
+import os
 
 from dialogs.graph_ignore_elements import GraphIgnoreElements
-from modules.element import Element
-from widgets.matplotlib.base import MatplotlibWidget
-import modules.masses as masses
-from modules.measurement import Measurement
-import os
-from matplotlib.widgets import SpanSelector
-from shapely.geometry import Polygon
-from modules.general_functions import find_nearest
-from scipy import integrate
-import copy
+
 from matplotlib import offsetbox
+from matplotlib.widgets import SpanSelector
+
+from modules.element import Element
+from modules.general_functions import find_nearest
+from modules.measurement import Measurement
+
+from PyQt5 import QtWidgets
 from PyQt5.QtGui import QGuiApplication
+
+from scipy import integrate
+from shapely.geometry import Polygon
+
+from widgets.matplotlib.base import MatplotlibWidget
 
 
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
@@ -153,8 +158,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                     if x_point < lower_limit < float(next_point[0]):
                         start_y_point = round((float(point[1]) + float(
                             next_point[1])) / 2, 2)
-                        start_x_point = round(x_point + 0.5 * \
-                                        self.parent.bin_width, 2)
+                        start_x_point = round(x_point + 0.5 *
+                                              self.parent.bin_width, 2)
                         start_point = start_x_point, start_y_point
                         lim_points.append(start_point)
                 except IndexError:
@@ -169,7 +174,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 previous_point = points[i - 1]
                 if float(previous_point[0]) < upper_limit < x_point:
                     end_y_point = round((float(point[1]) +
-                                   float(previous_point[1])) / 2, 2)
+                                         float(previous_point[1])) / 2, 2)
                     end_x_point = round(x_point - 0.5 *
                                         self.parent.bin_width, 2)
                     end_point = end_x_point, end_y_point
@@ -459,8 +464,10 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                 symbol += s
                         else:
                             break
+                    recoil_name_with_end = file_name.split('-', 1)[1]
+                    recoil_name = recoil_name_with_end.split('.')[0]
 
-                    label = r"$^{" + isotope + "}$" + symbol
+                    label = r"$^{" + isotope + "}$" + symbol + " " + recoil_name
 
                 x = tuple(float(pair[0]) for pair in data)
                 y = tuple(float(pair[1]) for pair in data)
@@ -552,8 +559,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.__ignore_elements = ignored_elements
         else:
             elements = [item[0] for item in sorted(self.histed_files.items(),
-                                               key=lambda x: self.__sortt(
-                                                   x[0]))]
+                                                   key=lambda x: self.__sortt(
+                                                    x[0]))]
             dialog = GraphIgnoreElements(elements, self.__ignore_elements)
             self.__ignore_elements = dialog.ignored_elements
         self.on_draw()
