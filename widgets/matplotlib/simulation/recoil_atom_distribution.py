@@ -398,11 +398,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         select_first_elem_sim = True
         for element_simulation in self.simulation.element_simulations:
-            for recoil_element in element_simulation.recoil_elements:
-                self.add_element(recoil_element.element, element_simulation)
-                element_simulation.recoil_elements[0].widgets[
-                    0].radio_button.setChecked(select_first_elem_sim)
-                select_first_elem_sim = False
+            self.add_element(element_simulation.recoil_elements[0].element,
+                             element_simulation)
+            element_simulation.recoil_elements[0].widgets[0].\
+                radio_button.setChecked(select_first_elem_sim)
+            select_first_elem_sim = False
 
     def open_element_simulation_settings(self):
         """
