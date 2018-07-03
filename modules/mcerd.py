@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 29.6.2018
+Updated on 3.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -70,7 +70,7 @@ class MCERD:
         # The recoil file and erd file are later passed to get_espe.
         self.recoil_file = os.path.join(self.tmp, self.__rec_filename +
                                         ".recoil")
-        self.result_file = os.path.join(self.tmp, self.__filename + "." +
+        self.result_file = os.path.join(self.tmp, self.__rec_filename + "." +
                                         str(self.__settings["seed_number"]) +
                                         ".erd")
         self.__create_mcerd_files()
@@ -80,10 +80,11 @@ class MCERD:
                                      (".exe " if platform.system() == "Windows"
                                       else "_mac " if platform.system() == "Darwin"
                                       else " ") +
-                                     os.path.join(self.tmp, self.__filename))
+                                     os.path.join(self.tmp,
+                                                  self.__rec_filename))
 
         # Start the MCERD process.
-        # TODO: MCERD needs to be fixed so we can get rid of this ulimit.
+        # MCERD needs to be fixed so we can get rid of this ulimit.
         ulimit = "" if platform.system() == "Windows" else "ulimit -s 64000; "
         exec_command = "" if platform.system() == "Windows" else "exec "
         self.__process = subprocess.Popen(ulimit + exec_command + mcerd_command,
@@ -125,7 +126,7 @@ class MCERD:
         are placed to the directory of the temporary files of the operating
         system.
         """
-        self.__command_file = os.path.join(self.tmp, self.__filename)
+        self.__command_file = os.path.join(self.tmp, self.__rec_filename)
         self.__target_file = os.path.join(self.tmp, self.__filename +
                                           ".erd_target")
         self.__detector_file = os.path.join(self.tmp, self.__filename +

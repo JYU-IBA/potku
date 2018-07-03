@@ -322,6 +322,14 @@ class ElementSimulation:
                            + ".recoil"
                 rename_file(recoil_file, new_name)
 
+            erd_file = os.path.join(self.directory, recoil_element.prefix +
+                                    "-" + old_name + "." + str(self.seed_number)
+                                    + ".erd")
+            if os.path.exists(erd_file):
+                new_name = recoil_element.prefix + "-" + recoil_element.name \
+                           + "." + str(self.seed_number) + ".erd"
+                rename_file(erd_file, new_name)
+
             simu_file = os.path.join(self.directory, recoil_element.prefix +
                                      "-" + old_name + ".simu")
             if os.path.exists(simu_file):
@@ -702,8 +710,8 @@ class ElementSimulation:
             "timeres": detector.timeres,
             "solid": self.calculate_solid(),
             "erd_file": os.path.join(self.directory,
-                                     self.name_prefix + "-" +
-                                     self.name + ".*.erd"),
+                                     self.recoil_elements[0].prefix + "-" +
+                                     self.recoil_elements[0].name + ".*.erd"),
             "spectrum_file": os.path.join(self.directory,
                                           self.recoil_elements[0].prefix + "-" +
                                           self.recoil_elements[0].name +
