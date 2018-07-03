@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 2.7.2018
+Updated on 3.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -27,8 +27,8 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import modules.general_functions as general
 import copy
+import modules.general_functions as general
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
@@ -40,6 +40,7 @@ from dialogs.simulation.element_simulation_settings import \
 
 from modules.recoil_element import RecoilElement
 from modules.point import Point
+
 from widgets.simulation.recoil_element import RecoilElementWidget
 
 
@@ -125,15 +126,19 @@ class ElementWidget(QtWidgets.QWidget):
 
         element = copy.copy(self.element_simulation.recoil_elements[0].element)
         recoil_element = RecoilElement(element, points)
-        # TODO: Widget for recoil element (different from elementwidget!)
         recoil_widget = RecoilElementWidget(self.parent, element,
                                             self.parent_tab, self,
                                             self.element_simulation)
         recoil_element.widgets.append(recoil_widget)
         self.element_simulation.recoil_elements.append(recoil_element)
 
-        # self.parent.radios.addButton(recoil_element_widget.radio_button)
-        # self.parent.recoil_vertical_layout.addWidget(recoil_element_widget)
+        self.parent.radios.addButton(recoil_widget.radio_button)
+        # Add recoil widget under ite element simulation's element widget
+        for i in range(self.parent.recoil_vertical_layout.count()):
+            if self.parent.recoil_vertical_layout.itemAt(i).widget() == self:
+                self.parent.recoil_vertical_layout.insertWidget(i + 1,
+                                                                recoil_widget)
+                break
 
     def open_element_simulation_settings(self):
         """
