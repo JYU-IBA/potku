@@ -448,17 +448,25 @@ class ElementSimulation:
                 element.modification_time = obj["modification_time_unix"]
 
                 element.channel_width = channel_width
-                recoil_elements.append(element)
-                # TODO For now, reading just the first matching .rec file.
-                # All .rec files that belong to this ElementSimulation should
-                #  be read and RecoilElement objects created from them.
-                break
+
+                is_simulated = False
+                # Find if file has a matching erd file (=has been simulated)
+                for f in os.listdir(simulation_folder):
+                    if f.startswith(prefix + "-" + element.name) \
+                       and f.endswith(".recoil"):
+                        recoil_elements.insert(0, element)
+                        is_simulated = True
+                        break
+                if not is_simulated:
+                    recoil_elements.append(element)
 
         # Check if there are any files to tell that simulations have
         # been run previously
         simulations_done = False
         for f in os.listdir(simulation_folder):
-            if f.startswith(name_prefix + "-" + name) and f.endswith(".erd"):
+            if f.startswith(name_prefix + "-" + recoil_elements[0].name) and \
+                    f.endswith(
+                    ".erd"):
                 simulations_done = True
                 break
 
@@ -682,15 +690,15 @@ class ElementSimulation:
             self.simulation.running_simulations.remove(self)
         self.simulations_done = True
 
-    def calculate_espe(self):
+    def calculate_espe(self, recoil_element):
         """
         Calculate the energy spectrum from the MCERD result file.
         """
         recoil_file = os.path.join(self.directory,
-                                   self.recoil_elements[0].prefix + "-" +
-                                   self.recoil_elements[0].name +
+                                   recoil_element.prefix + "-" +
+                                   recoil_element.name +
                                    ".recoil")
-        self.recoil_elements[0].write_recoil_file(recoil_file)
+        recoil_element.write_recoil_file(recoil_file)
 
         if self.run is None:
             run = self.request.default_run
@@ -705,7 +713,7 @@ class ElementSimulation:
             "detector": detector,
             "target": self.target,
             "ch": self.channel_width,
-            "reference_density": self.recoil_elements[0].reference_density,
+            "reference_density": recoil_element.reference_density,
             "fluence": run.fluence,
             "timeres": detector.timeres,
             "solid": self.calculate_solid(),
@@ -713,8 +721,8 @@ class ElementSimulation:
                                      self.recoil_elements[0].prefix + "-" +
                                      self.recoil_elements[0].name + ".*.erd"),
             "spectrum_file": os.path.join(self.directory,
-                                          self.recoil_elements[0].prefix + "-" +
-                                          self.recoil_elements[0].name +
+                                          recoil_element.prefix + "-" +
+                                          recoil_element.name +
                                           ".simu"),
             "recoil_file": recoil_file
         }

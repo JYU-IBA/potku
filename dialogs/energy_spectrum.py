@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 29.6.2018
+Updated on 3.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -31,24 +31,25 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import logging
+import modules.masses as masses
 import os
 import sys
 
 from PyQt5 import uic
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import QLocale
 
-import modules.masses as masses
 from modules.cut_file import is_rbs, get_scatter_element
 from modules.element import Element
 from modules.energy_spectrum import EnergySpectrum
+from modules.general_functions import calculate_spectrum
 from modules.general_functions import read_espe_file
+from modules.general_functions import read_tof_list_file
 from modules.measurement import Measurement
+
 from widgets.matplotlib.measurement.energy_spectrum import \
     MatplotlibEnergySpectrumWidget
-from modules.general_functions import read_tof_list_file
-from modules.general_functions import calculate_spectrum
-from PyQt5.QtCore import QLocale
 
 
 class EnergySpectrumParamsDialog(QtWidgets.QDialog):
@@ -199,7 +200,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                         if rec_elem_prefix_and_name == item.text(0):
                             elem_sim.channel_width = self.ui.\
                                 histogramTicksDoubleSpinBox.value()
-                            elem_sim.calculate_espe()
+                            elem_sim.calculate_espe(rec_elem)
                             self.result_files.append(os.path.join(
                                 self.parent.obj.directory,
                                 rec_elem_prefix_and_name + ".simu"))

@@ -27,6 +27,9 @@ __version__ = "2.0"
 
 import modules.general_functions
 
+from dialogs.energy_spectrum import EnergySpectrumParamsDialog
+from  dialogs.energy_spectrum import EnergySpectrumWidget
+
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
 
@@ -68,6 +71,14 @@ class RecoilElementWidget(QtWidgets.QWidget):
 
         self.radio_button.setText(button_text)
 
+        draw_spectrum_button = QtWidgets.QPushButton()
+        draw_spectrum_button.setIcon(QIcon(
+            "ui_icons/potku/energy_spectrum_icon.svg"))
+        draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                           QtWidgets.QSizePolicy.Fixed)
+        draw_spectrum_button.clicked.connect(self.plot_spectrum)
+        draw_spectrum_button.setToolTip("Draw energy spectra")
+
         remove_recoil_button = QtWidgets.QPushButton()
         remove_recoil_button.setIcon(QIcon("ui_icons/reinhardt/edit_delete.svg"))
         remove_recoil_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
@@ -76,9 +87,24 @@ class RecoilElementWidget(QtWidgets.QWidget):
         remove_recoil_button.setToolTip("Add a new recoil to element")
 
         horizontal_layout.addWidget(self.radio_button)
+        horizontal_layout.addWidget(draw_spectrum_button)
         horizontal_layout.addWidget(remove_recoil_button)
 
         self.setLayout(horizontal_layout)
+
+    def plot_spectrum(self):
+        """
+        Plot an energy spectrum.
+        """
+        # self.element_simulation.calculate_espe()
+        dialog = EnergySpectrumParamsDialog(
+            self.parent_tab, spectrum_type="simulation",
+            element_simulation=self.element_simulation)
+        if dialog.result_files:
+            self.parent_tab.energy_spectrum_widget = EnergySpectrumWidget(
+                parent=self.parent_tab, use_cuts=dialog.result_files,
+                bin_width=dialog.bin_width, spectrum_type="simulation")
+            self.parent_tab.add_widget(self.parent_tab.energy_spectrum_widget)
 
     def remove_recoil(self):
         """

@@ -53,6 +53,7 @@ from modules.recoil_element import RecoilElement
 from widgets.matplotlib.base import MatplotlibWidget
 from widgets.matplotlib.simulation.element import ElementWidget
 from widgets.simulation.controls import SimulationControlsWidget
+from widgets.simulation.recoil_element import RecoilElementWidget
 
 
 class ElementManager:
@@ -172,13 +173,13 @@ class ElementManager:
         Args:
             element_simulation: ElementSimulation to be added.
         """
-        recoil_element_widget =\
+        main_element_widget =\
             ElementWidget(self.parent,
                           element_simulation.recoil_elements[0].element,
                           self.parent_tab, element_simulation)
         element_simulation.recoil_elements[0] \
-            .widgets.append(recoil_element_widget)
-        recoil_element_widget.element_simulation = element_simulation
+            .widgets.append(main_element_widget)
+        main_element_widget.element_simulation = element_simulation
 
         # Add simulation controls widget
         simulation_controls_widget = SimulationControlsWidget(
@@ -187,6 +188,18 @@ class ElementManager:
         self.parent_tab.ui.contentsLayout.addWidget(simulation_controls_widget)
         element_simulation.recoil_elements[0] \
             .widgets.append(simulation_controls_widget)
+
+        # Add other recoil element widgets
+        i = 1
+        while i in range(len(element_simulation.recoil_elements)):
+            recoil_element_widget = RecoilElementWidget(
+                self.parent,
+                element_simulation.recoil_elements[i].element,
+                self.parent_tab, main_element_widget, element_simulation)
+            element_simulation.recoil_elements[i].widgets.append(
+                recoil_element_widget)
+            recoil_element_widget.element_simulation = element_simulation
+            i = i + 1
 
     def remove_element_simulation(self, element_simulation):
         """
