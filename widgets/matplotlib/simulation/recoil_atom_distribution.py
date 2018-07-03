@@ -434,7 +434,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 os.path.join(directory, element_simulation.name_prefix + "-" +
                              element_simulation.name +
                              ".mcsimu"))
-            element_simulation.recoil_to_file(directory)
+            for recoil_element in element_simulation.recoil_elements:
+                element_simulation.recoil_to_file(directory, recoil_element)
             element_simulation.profile_to_file(
                 os.path.join(directory, element_simulation.name_prefix +
                              ".profile"))

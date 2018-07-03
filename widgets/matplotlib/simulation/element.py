@@ -30,9 +30,6 @@ __version__ = "2.0"
 import copy
 import modules.general_functions as general
 
-from PyQt5 import QtWidgets
-from PyQt5.QtGui import QIcon
-
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog, \
     EnergySpectrumWidget
 from dialogs.simulation.element_simulation_settings import \
@@ -40,6 +37,9 @@ from dialogs.simulation.element_simulation_settings import \
 
 from modules.recoil_element import RecoilElement
 from modules.point import Point
+
+from PyQt5 import QtWidgets
+from PyQt5.QtGui import QIcon
 
 from widgets.simulation.recoil_element import RecoilElementWidget
 
@@ -107,6 +107,8 @@ class ElementWidget(QtWidgets.QWidget):
 
         self.setLayout(horizontal_layout)
 
+        self.__running_int_recoil = 1
+
     def add_element_simulation_reference(self, element_simulation):
         """
         Add reference to an Element Simulation object.
@@ -125,7 +127,9 @@ class ElementWidget(QtWidgets.QWidget):
             points.append(Point(xy))
 
         element = copy.copy(self.element_simulation.recoil_elements[0].element)
-        recoil_element = RecoilElement(element, points)
+        name = "Default-" + str(self.__running_int_recoil)
+        recoil_element = RecoilElement(element, points, name)
+        self.__running_int_recoil = self.__running_int_recoil + 1
         recoil_widget = RecoilElementWidget(self.parent, element,
                                             self.parent_tab, self,
                                             self.element_simulation)
@@ -139,6 +143,7 @@ class ElementWidget(QtWidgets.QWidget):
                 self.parent.recoil_vertical_layout.insertWidget(i + 1,
                                                                 recoil_widget)
                 break
+        recoil_widget.radio_button.setChecked(True)
 
     def open_element_simulation_settings(self):
         """

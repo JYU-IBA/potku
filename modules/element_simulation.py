@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 2.7.2018
+Updated on 3.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -27,21 +27,20 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import platform
 import json
-import os
 import math
+import os
+import platform
 import time
+
+from modules.element import Element
+from modules.foil import CircularFoil
+from modules.general_functions import rename_file
+from modules.get_espe import GetEspe
+from modules.mcerd import MCERD
 
 from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 from widgets.matplotlib.simulation.recoil_atom_distribution import Point
-
-from modules.element import Element
-from modules.mcerd import MCERD
-from modules.get_espe import GetEspe
-from modules.foil import CircularFoil
-
-from modules.general_functions import rename_file
 
 
 class ElementSimulation:
@@ -153,7 +152,8 @@ class ElementSimulation:
                 prefix = self.name_prefix
         self.mcsimu_to_file(os.path.join(self.directory,
                                           name + ".mcsimu"))
-        self.recoil_to_file(self.directory)
+        for recoil_element in self.recoil_elements:
+            self.recoil_to_file(self.directory, recoil_element)
         self.profile_to_file(os.path.join(self.directory,
                                           prefix +
                                           ".profile"))
@@ -312,7 +312,7 @@ class ElementSimulation:
         if filename_to_delete:
             os.remove(os.path.join(self.directory, filename_to_delete))
 
-        self.recoil_to_file(self.directory)
+        self.recoil_to_file(self.directory, recoil_element)
 
         if old_name != recoil_element.name:
             recoil_file = os.path.join(self.directory, recoil_element.prefix
@@ -321,14 +321,6 @@ class ElementSimulation:
                 new_name = recoil_element.prefix + "-" + recoil_element.name \
                            + ".recoil"
                 rename_file(recoil_file, new_name)
-
-            erd_file = os.path.join(self.directory, recoil_element.prefix +
-                                    "-" + old_name + "." + str(self.seed_number)
-                                    + ".erd")
-            if os.path.exists(erd_file):
-                new_name = recoil_element.prefix + "-" + recoil_element.name \
-                           + "." + str(self.seed_number) + ".erd"
-                rename_file(erd_file, new_name)
 
             simu_file = os.path.join(self.directory, recoil_element.prefix +
                                      "-" + old_name + ".simu")
@@ -534,44 +526,44 @@ class ElementSimulation:
         with open(file_path, "w") as file:
             json.dump(obj, file, indent=4)
 
-    def recoil_to_file(self, simulation_folder):
+    def recoil_to_file(self, simulation_folder, recoil_element):
         """Save recoil settings to file.
 
         Args:
             simulation_folder: Path to simulation folder in which ".rec"
             files are stored.
+            recoil_element: RecoilElement object to write to file to.
         """
-        for recoil_element in self.recoil_elements:
-            recoil_file = os.path.join(simulation_folder,
-                                       recoil_element.prefix + "-" +
-                                       recoil_element.name + ".rec")
-            if recoil_element.element.isotope:
-                element_str = "{0}{1}".format(recoil_element.element.isotope,
-                                              recoil_element.element.symbol)
-            else:
-                element_str = recoil_element.element.symbol
+        recoil_file = os.path.join(simulation_folder,
+                                   recoil_element.prefix + "-" +
+                                   recoil_element.name + ".rec")
+        if recoil_element.element.isotope:
+            element_str = "{0}{1}".format(recoil_element.element.isotope,
+                                          recoil_element.element.symbol)
+        else:
+            element_str = recoil_element.element.symbol
 
-            obj = {
-                "name": recoil_element.name,
-                "description": recoil_element.description,
-                "modification_time": time.strftime("%c %z %Z", time.localtime(
-                    time.time())),
-                "modification_time_unix": time.time(),
-                "simulation_type": recoil_element.type,
-                "element": element_str,
-                "reference_density": recoil_element.reference_density * 1e22,
-                "profile": []
+        obj = {
+            "name": recoil_element.name,
+            "description": recoil_element.description,
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
+                time.time())),
+            "modification_time_unix": time.time(),
+            "simulation_type": recoil_element.type,
+            "element": element_str,
+            "reference_density": recoil_element.reference_density * 1e22,
+            "profile": []
+        }
+
+        for point in recoil_element.get_points():
+            point_obj = {
+                "Point": str(round(point.get_x(), 2)) + " " + str(round(
+                    point.get_y(), 4))
             }
+            obj["profile"].append(point_obj)
 
-            for point in recoil_element.get_points():
-                point_obj = {
-                    "Point": str(round(point.get_x(), 2)) + " " + str(round(
-                        point.get_y(), 4))
-                }
-                obj["profile"].append(point_obj)
-
-            with open(recoil_file, "w") as file:
-                json.dump(obj, file, indent=4)
+        with open(recoil_file, "w") as file:
+            json.dump(obj, file, indent=4)
 
     def profile_to_file(self, file_path):
         """Save profile settings (only channel width) to file.
@@ -588,11 +580,11 @@ class ElementSimulation:
             obj_profile["modification_time_unix"] = time.time()
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
         else:
-            obj_profile = {"energy_spectra": {}}
-            obj_profile["modification_time"] = time.strftime("%c %z %Z",
-                                                             time.localtime(
-                                                                 time.time()))
-            obj_profile["modification_time_unix"] = time.time()
+            obj_profile = {"energy_spectra": {},
+                           "modification_time": time.strftime("%c %z %Z",
+                                                              time.localtime(
+                                                                  time.time())),
+                           "modification_time_unix": time.time()}
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
 
         with open(file_path, "w") as file:
