@@ -110,4 +110,4 @@ class RecoilElementWidget(QtWidgets.QWidget):
         """
         Remove recoil from element simulation.
         """
-        pass
+        self.parent.remove_recoil_element(self)

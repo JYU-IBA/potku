@@ -595,6 +595,28 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         self.element_manager.remove_element_simulation(element_simulation)
 
+    def remove_recoil_element(self, recoil_widget):
+        """
+        Remove recoil element that has the given recoil_widget.
+
+        Args:
+             recoil_widget: A RecoilElementWidget.
+        """
+        recoil_to_delete = None
+        element_simulation = None
+        for elem_sim in self.element_manager.element_simulations:
+            for recoil_element in elem_sim.recoil_elements:
+                if recoil_element.widgets[0] is recoil_widget:
+                    recoil_to_delete = recoil_element
+                    element_simulation = elem_sim
+                    break
+        if recoil_to_delete and element_simulation:
+            # Remove recoil widget from view
+            recoil_widget.deleteLater()
+            # Remove recoil element from element simulation
+            element_simulation.recoil_elements.remove(recoil_to_delete)
+            # TODO: Delete rec, recoil and simu files.
+
     def remove_current_element(self):
         """
         Remove current element simulation.
