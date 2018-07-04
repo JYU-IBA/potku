@@ -485,10 +485,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.full_edit_on = True
             self.edit_lock_push_button.setText("Full edit unlocked")
             self.current_element_simulation.y_min = 0.0
-            self.update_plot()
         else:
             # TODO: return to basic view (full edit not on)
-            pass
+            self.current_element_simulation.lock_edit()
+            self.full_edit_on = False
+            self.edit_lock_push_button.setText("Unlock full edit")
+            self.current_element_simulation.y_min = 0.0001
+        self.update_plot()
 
     def choose_element(self, button, checked):
         """
@@ -832,7 +835,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # self.actionXUndo.setEnabled(False)
         self.x_coordinate_box.addAction(self.actionXUndo)
 
-        self.mpl_toolbar.addWidget(self.x_coordinate_box)
+        self.x_box_action = self.mpl_toolbar.addWidget(self.x_coordinate_box)
         self.x_coordinate_box.setEnabled(False)
 
         # Point y coordinate spinbox
@@ -862,8 +865,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.actionYUndo.setEnabled(False)
         self.y_coordinate_box.addAction((self.actionYUndo))
 
-        self.mpl_toolbar.addWidget(self.y_coordinate_box)
-        # self.y_coordinate_box.setEnabled(False)
+        self.y_box_action = self.mpl_toolbar.addWidget(self.y_coordinate_box)
+        self.y_coordinate_box.setEnabled(False)
 
         # Point removal
         point_remove_action = QtWidgets.QAction("Remove point", self)
@@ -874,8 +877,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.mpl_toolbar.addAction(point_remove_action)
 
         if not self.current_element_simulation:
-            self.x_coordinate_box.setVisible(False)
-            self.y_coordinate_box.setVisible(False)
+            self.x_box_action.setVisible(False)
+            self.y_box_action.setVisible(False)
         else:
             self.y_coordinate_box.setEnabled(False)
             self.x_coordinate_box.setEnabled(False)
@@ -1105,6 +1108,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.lines.set_visible(True)
 
         if self.selected_points:  # If there are selected points
+            self.x_box_action.setVisible(True)
+            self.y_box_action.setVisible(True)
             self.markers_selected.set_visible(True)
             selected_xs = []
             selected_ys = []
@@ -1131,8 +1136,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.current_element_simulation.get_ys(
                     self.current_recoil_element))
             self.markers_selected.set_visible(False)
-            self.x_coordinate_box.setEnabled(False)
-            self.y_coordinate_box.setEnabled(False)
+            self.x_box_action.setVisible(False)
+            self.y_box_action.setVisible(False)
 
         self.fig.canvas.draw_idle()
 

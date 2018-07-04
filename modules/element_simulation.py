@@ -179,6 +179,12 @@ class ElementSimulation:
         """
         self.__full_edit_on = True
 
+    def lock_edit(self):
+        """
+        Lock full edit.
+        """
+        self.__full_edit_on = False
+
     def get_full_edit_on(self):
         """
         Get whether full edit is on or not.
