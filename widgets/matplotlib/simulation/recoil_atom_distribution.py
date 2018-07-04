@@ -622,13 +622,31 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     element_simulation = elem_sim
                     break
         if recoil_to_delete and element_simulation:
+            if recoil_widget.radio_button.isChecked():
+                element_simulation.recoil_elements[0].\
+                    widgets[0].radio_button.setChecked(True)
             # Remove radio button from list
-            self.radios.remove(recoil_widget.radio_button)
+            self.radios.removeButton(recoil_widget.radio_button)
             # Remove recoil widget from view
             recoil_widget.deleteLater()
             # Remove recoil element from element simulation
             element_simulation.recoil_elements.remove(recoil_to_delete)
-            # TODO: Delete rec, recoil and simu files.
+            # Delete rec, recoil and simu files.
+            rec_file = os.path.join(element_simulation.directory,
+                                    recoil_to_delete.prefix + "-" +
+                                    recoil_to_delete.name + ".rec")
+            if os.path.exists(rec_file):
+                os.remove(rec_file)
+            recoil_file = os.path.join(element_simulation.directory,
+                                       recoil_to_delete.prefix + "-" +
+                                       recoil_to_delete.name + ".recoil")
+            if os.path.exists(recoil_file):
+                os.remove(recoil_file)
+            simu_file = os.path.join(element_simulation.directory,
+                                     recoil_to_delete.prefix + "-" +
+                                     recoil_to_delete.name + ".simu")
+            if os.path.exists(simu_file):
+                os.remove(simu_file)
 
     def remove_current_element(self):
         """
