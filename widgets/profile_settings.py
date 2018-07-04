@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 29.6.2018
+Updated on 4.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -26,14 +26,17 @@ along with this program (file named 'LICENCE').
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 
-from os import path
-from PyQt5 import uic
-from PyQt5 import QtWidgets
+import time
 
-from modules.general_functions import set_input_field_red
-from modules.general_functions import check_text
-from modules.general_functions import validate_text_input
+from os import path
+
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 from PyQt5.QtCore import QLocale
+
+from modules.general_functions import check_text
+from modules.general_functions import set_input_field_red
+from modules.general_functions import validate_text_input
 
 
 class ProfileSettingsWidget(QtWidgets.QWidget):
@@ -75,6 +78,8 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
                 self.measurement.profile_name)
             self.descriptionPlainTextEdit.setPlainText(
                 self.measurement.profile_description)
+            self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+                self.measurement.profile_modification_time)))
             self.referenceDensityDoubleSpinBox.setValue(
                 self.measurement.reference_density)
             self.numberOfDepthStepsSpinBox.setValue(
@@ -97,6 +102,9 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
         else:
             self.nameLineEdit.setText(
                 self.measurement.request.default_measurement.profile_name)
+            self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+                self.measurement.request.default_measurement
+                    .profile_modification_time)))
             self.descriptionPlainTextEdit.setPlainText(
                 self.measurement.request.default_measurement
                     .profile_description)

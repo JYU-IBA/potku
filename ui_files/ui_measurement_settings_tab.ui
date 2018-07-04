@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>534</height>
+    <width>360</width>
+    <height>330</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -41,8 +41,8 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-235</y>
-        <width>363</width>
+        <y>0</y>
+        <width>340</width>
         <height>749</height>
        </rect>
       </property>
@@ -95,7 +95,7 @@
               <item row="1" column="0">
                <widget class="QLabel" name="label_33">
                 <property name="text">
-                 <string>Date:</string>
+                 <string>Modification time:</string>
                 </property>
                </widget>
               </item>
