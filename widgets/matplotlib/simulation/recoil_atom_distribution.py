@@ -275,6 +275,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
 
         super().__init__(parent)
+        self.parent = parent
         self.canvas.manager.set_title("Recoil Atom Distribution")
         self.axes.format_coord = self.format_coord
         self.__icon_manager = icon_manager
@@ -606,21 +607,25 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         self.element_manager.remove_element_simulation(element_simulation)
 
-    def remove_recoil_element(self, recoil_widget):
+    def remove_recoil_element(self, recoil_widget, element_simulation=None,
+                              recoil_element=None):
         """
         Remove recoil element that has the given recoil_widget.
 
         Args:
              recoil_widget: A RecoilElementWidget.
+             element_simulation: An ElementSimulation object.
+             recoil_element: A RecoilElement object.
         """
-        recoil_to_delete = None
-        element_simulation = None
-        for elem_sim in self.element_manager.element_simulations:
-            for recoil_element in elem_sim.recoil_elements:
-                if recoil_element.widgets[0] is recoil_widget:
-                    recoil_to_delete = recoil_element
-                    element_simulation = elem_sim
-                    break
+        recoil_to_delete = recoil_element
+        element_simulation = element_simulation
+        if not recoil_to_delete and not element_simulation:
+            for elem_sim in self.element_manager.element_simulations:
+                for recoil_element in elem_sim.recoil_elements:
+                    if recoil_element.widgets[0] is recoil_widget:
+                        recoil_to_delete = recoil_element
+                        element_simulation = elem_sim
+                        break
         if recoil_to_delete and element_simulation:
             if recoil_widget.radio_button.isChecked():
                 element_simulation.recoil_elements[0].\
@@ -657,7 +662,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if self.current_recoil_element is not \
                 self.current_element_simulation.recoil_elements[0]:
             return
-        reply = QtWidgets.QMessageBox.question(self, "Confirmation",
+        reply = QtWidgets.QMessageBox.question(self.parent, "Confirmation",
                                                "If you delete selected "
                                                "element simulation, "
                                                "all possible recoils "
@@ -675,6 +680,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         element_simulation = self.element_manager\
             .get_element_simulation_with_radio_button(
              self.radios.checkedButton())
+        # Remove possible other recoil elements
+        for recoil_elem in element_simulation.recoil_elements:
+            self.remove_recoil_element(recoil_elem.widgets[0],
+                                       element_simulation, recoil_elem)
+        self.current_recoil_element = None
         self.remove_element(element_simulation)
         self.current_element_simulation = None
         self.parent_ui.elementInfoWidget.hide()
@@ -907,7 +917,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.actionYUndo.setEnabled(True)
             spinbox.setValue(new_coord)
         except ValueError:
-            QtWidgets.QMessageBox.critical(self, "Error",
+            QtWidgets.QMessageBox.critical(self.parent, "Error",
                                            "Value '" + self.ratio_str +
                                            "' is not suitable for "
                                            "multiplying.\n\nPlease copy a "
@@ -1059,7 +1069,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.current_element_simulation.remove_point(
                 self.current_recoil_element, new_point)
             # TODO: Add an error message text label
-            QtWidgets.QMessageBox.critical(self, "Error",
+            QtWidgets.QMessageBox.critical(self.parent, "Error",
                                            "Can't add a point here.\nThere is "
                                            "no space for it.",
                                            QtWidgets.QMessageBox.Ok,
@@ -1280,7 +1290,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             return
         if len(self.current_recoil_element.get_points()) - \
                 len(self.selected_points) < 2:
-            QtWidgets.QMessageBox.critical(self, "Error",
+            QtWidgets.QMessageBox.critical(self.parent, "Error",
                                            "There must always be at least two"
                                            " points.",
                                            QtWidgets.QMessageBox.Ok,

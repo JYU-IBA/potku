@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.3.2018
-Updated on 3.7.2018
+Updated on 4.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,7 +29,9 @@ __version__ = "2.0"
 
 import os
 
-from PyQt5 import QtCore, uic, QtWidgets
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 
 from widgets.matplotlib.simulation.composition import TargetCompositionWidget
 from widgets.matplotlib.simulation.recoil_atom_distribution import \
@@ -47,6 +49,9 @@ class TargetWidget(QtWidgets.QWidget):
         recoil atom distribution.
 
         Args:
+            tab: A TabWidget.
+            simulation: A Simulation object.
+            target: A Target object.
             icon_manager: An icon manager class object.
         """
         super().__init__()
