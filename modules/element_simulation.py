@@ -39,8 +39,8 @@ from modules.general_functions import rename_file
 from modules.get_espe import GetEspe
 from modules.mcerd import MCERD
 
-from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 from widgets.matplotlib.simulation.recoil_atom_distribution import Point
+from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 
 
 class ElementSimulation:
@@ -59,7 +59,7 @@ class ElementSimulation:
                 "__mcerd_command", "__process", "settings", "espe_settings", \
                 "description", "run", "spectra", "name", \
                 "use_default_settings", "sample", "controls", "simulation", \
-                "simulations_done"
+                "simulations_done", "__full_edit_on", "y_min"
 
     def __init__(self, directory, request, recoil_elements,
                  simulation=None, name_prefix="",
@@ -112,12 +112,6 @@ class ElementSimulation:
 
         self.sample = sample
 
-        # TODO RecoilAtomDistributionWidget should use the selected
-        # RecoilElement.
-        # Now ElementSimulation never has multiple recoil elements, only
-        # recoil_elements[0] is used. In the future, ElementSimulation should
-        # hold all recoil elements (= distributions) that are related to the
-        # simulation (e.g. .mcsimu and .erd files).
         self.recoil_elements = recoil_elements
         self.target = target
         if detector:
@@ -172,27 +166,27 @@ class ElementSimulation:
         self.simulations_done = simulations_done
 
         self.controls = None
+        if self.simulations_done:
+            self.__full_edit_on = False
+            self.y_min = 0.0001
+        else:
+            self.__full_edit_on = True
+            self.y_min = 0.0
 
-    def unlock_edit(self, recoil_element):
+    def unlock_edit(self):
         """
         Unlock full edit.
-
-        Args:
-            recoil_element: RecoilElement object.
         """
-        recoil_element.unlock_edit()
+        self.__full_edit_on = True
 
-    def get_edit_lock_on(self, recoil_element):
+    def get_full_edit_on(self):
         """
-        Get whether full edit lck is on or not.
-
-        Args:
-            recoil_element: A RecoilElement object.
+        Get whether full edit is on or not.
 
         Return:
             True of False.
         """
-        return recoil_element.get_edit_lock_on()
+        return self.__full_edit_on
 
     def get_points(self, recoil_element):
         """

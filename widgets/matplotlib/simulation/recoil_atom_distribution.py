@@ -38,17 +38,17 @@ from dialogs.simulation.recoil_element_selection import \
     RecoilElementSelectionDialog
 from dialogs.simulation.recoil_info_dialog import RecoilInfoDialog
 
+from matplotlib.widgets import SpanSelector
+from modules.element import Element
+from modules.point import Point
+from modules.recoil_element import RecoilElement
+
 from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QLocale
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QGuiApplication
-
-from matplotlib.widgets import SpanSelector
-from modules.element import Element
-from modules.point import Point
-from modules.recoil_element import RecoilElement
 
 from widgets.matplotlib.base import MatplotlibWidget
 from widgets.matplotlib.simulation.element import ElementWidget
@@ -320,11 +320,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.parent_ui.editPushButton.clicked.connect(
             self.open_recoil_element_info)
 
-        # TODO: Set lock on only when simulation has been run
         self.edit_lock_push_button = self.parent_ui.editLockPushButton
-        self.edit_lock_push_button.setEnabled(False)
-        self.edit_lock_push_button.clicked.connect(self.unlock_edit)
-        self.edit_lock_on = False
+        self.edit_lock_push_button.clicked.connect(self.unlock_or_lock_edit)
+        self.full_edit_on = True
 
         # Locations of points about to be dragged at the time of click
         self.click_locations = []
@@ -337,7 +335,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Minimum x distance between points
         self.x_res = 0.01
         # Minimum y coordinate for points
-        self.y_min = 0.0001
+        # self.y_min = 0.0001
         # Markers representing points
         self.markers = None
         # Lines connecting markers
@@ -465,30 +463,32 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 os.path.join(directory, element_simulation.name_prefix +
                              ".profile"))
 
-    def unlock_edit(self):
+    def unlock_or_lock_edit(self):
         """
-        Unlock full edit.
+        Unlock or lock full edit.
         """
-        confirm_box = QtWidgets.QMessageBox()
-        confirm_box.setIcon(QtWidgets.QMessageBox.Warning)
-        yes_button = confirm_box.addButton(QtWidgets.QMessageBox.Yes)
-        confirm_box.addButton(QtWidgets.QMessageBox.Cancel)
-        confirm_box.setText("Are you sure you want to unlock full edit for this"
-                            " element?\nAll previous results of this element's"
-                            " simulation will be deleted!")
-        confirm_box.setInformativeText("When full edit is unlocked, you can"
-                                       " change the x coordinate of the"
-                                       " rightmost point.")
-        confirm_box.setWindowTitle("Confirm")
-
-        confirm_box.exec()
-        if confirm_box.clickedButton() == yes_button:
-            self.current_element_simulation.unlock_edit(
-                self.current_recoil_element)
-            self.edit_lock_on = False
+        if self.edit_lock_push_button.text() == "Unlock full edit":
+            reply = QtWidgets.QMessageBox.warning(
+                self.parent, "Confirm", "Are you sure you want to unlock full "
+                                        "edit for this element simulation?\n"
+                                        "All its previous results will be "
+                                        "deleted.\n\nUnlock full edit anyway?",
+                                           QtWidgets.QMessageBox.Yes |
+                                           QtWidgets.QMessageBox.No |
+                                           QtWidgets.QMessageBox.Cancel,
+                                           QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                return
+            self.current_element_simulation.unlock_edit()
+            # TODO: Delete result files (erds, recoil, simu)
+            self.full_edit_on = True
             self.edit_lock_push_button.setText("Full edit unlocked")
-            self.edit_lock_push_button.setEnabled(False)
-        self.update_plot()
+            self.current_element_simulation.y_min = 0.0
+            self.update_plot()
+        else:
+            # TODO: return to basic view (full edit not on)
+            pass
 
     def choose_element(self, button, checked):
         """
@@ -514,15 +514,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             else:
                 self.parent_ui.removePushButton.setEnabled(True)
             self.parent_ui.elementInfoWidget.show()
-            if self.current_element_simulation.get_edit_lock_on(
-                    self.current_recoil_element):
-                self.edit_lock_on = True
-                self.edit_lock_push_button.setText("Unlock full edit")
-                self.edit_lock_push_button.setEnabled(True)
-            else:
-                self.edit_lock_on = False
+            # Put full edit on if element simulation allows it
+            if self.current_element_simulation.get_full_edit_on():
+                self.full_edit_on = True
                 self.edit_lock_push_button.setText("Full edit unlocked")
-                self.edit_lock_push_button.setEnabled(False)
+            else:
+                self.full_edit_on = False
+                self.edit_lock_push_button.setText("Unlock full edit")
 
             self.update_recoil_element_info_labels()
             self.dragged_points.clear()
@@ -831,7 +829,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.actionXUndo.setText("Undo multipy")
         self.actionXUndo.triggered.connect(
             lambda: self.undo(self.x_coordinate_box))
-        self.actionXUndo.setEnabled(False)
+        # self.actionXUndo.setEnabled(False)
         self.x_coordinate_box.addAction(self.actionXUndo)
 
         self.mpl_toolbar.addWidget(self.x_coordinate_box)
@@ -846,7 +844,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.y_coordinate_box.setDecimals(4)
         self.y_coordinate_box.setMaximum(1000000000000)
         self.y_coordinate_box.setMaximumWidth(62)
-        self.y_coordinate_box.setMinimum(self.y_min)
+        self.y_coordinate_box.setMinimum(0.0)
         self.y_coordinate_box.setKeyboardTracking(False)
         self.y_coordinate_box.valueChanged.connect(self.set_selected_point_y)
         self.y_coordinate_box.setContextMenuPolicy(Qt.ActionsContextMenu)
@@ -865,7 +863,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.y_coordinate_box.addAction((self.actionYUndo))
 
         self.mpl_toolbar.addWidget(self.y_coordinate_box)
-        self.y_coordinate_box.setEnabled(False)
+        # self.y_coordinate_box.setEnabled(False)
 
         # Point removal
         point_remove_action = QtWidgets.QAction("Remove point", self)
@@ -874,6 +872,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # TODO: Temporary icon
         self.__icon_manager.set_icon(point_remove_action, "del.png")
         self.mpl_toolbar.addAction(point_remove_action)
+
+        if not self.current_element_simulation:
+            self.x_coordinate_box.setVisible(False)
+            self.y_coordinate_box.setVisible(False)
+        else:
+            self.y_coordinate_box.setEnabled(False)
+            self.x_coordinate_box.setEnabled(False)
 
     def undo(self, spinbox):
         """
@@ -1109,7 +1114,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.markers_selected.set_data(selected_xs, selected_ys)
             if self.selected_points[0] == \
                     self.current_recoil_element.get_points()[-1] \
-                    and self.edit_lock_on:
+                    and not self.full_edit_on:
                 self.x_coordinate_box.setEnabled(False)
             else:
                 self.x_coordinate_box.setEnabled(True)
@@ -1200,7 +1205,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         for i in range(0, len(dr_ps)):
             if dr_ps[i] == self.current_recoil_element.get_points()[-1] \
-                    and self.edit_lock_on:
+                    and not self.full_edit_on:
                 dr_ps[i].set_y(new_coords[i][1])
             else:
                 dr_ps[i].set_coordinates(new_coords[i])
@@ -1254,10 +1259,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             for i in range(1, len(dr_ps)):
                 new_coords[i][0] = self.x_dist_left[i - 1]
 
-        if new_coords[self.lowest_dr_p_i][1] < self.y_min:
-            new_coords[self.lowest_dr_p_i][1] = self.y_min
+        if new_coords[self.lowest_dr_p_i][1] < \
+                self.current_element_simulation.y_min:
+            new_coords[self.lowest_dr_p_i][1] = \
+                self.current_element_simulation.y_min
             for i in range(0, len(dr_ps)):
-                new_coords[i][1] = self.y_min + self.y_dist_lowest[i]
+                new_coords[i][1] = self.current_element_simulation.y_min + \
+                                   self.y_dist_lowest[i]
 
         return new_coords
 
