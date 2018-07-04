@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 3.7.2018
+Updated on 4.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -453,7 +453,7 @@ class ElementSimulation:
                 # Find if file has a matching erd file (=has been simulated)
                 for f in os.listdir(simulation_folder):
                     if f.startswith(prefix + "-" + element.name) \
-                       and f.endswith(".recoil"):
+                       and f.endswith(".erd"):
                         recoil_elements.insert(0, element)
                         is_simulated = True
                         break

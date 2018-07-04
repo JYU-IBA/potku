@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 3.7.2018
+Updated on 4.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -199,6 +199,17 @@ class ElementManager:
             element_simulation.recoil_elements[i].widgets.append(
                 recoil_element_widget)
             recoil_element_widget.element_simulation = element_simulation
+
+            # Check if there are e.g. Default-1 named recoil elements. If so,
+            #  increase element.running_int_recoil
+            recoil_name = element_simulation.recoil_elements[i].name
+            if recoil_name.startswith("Default-"):
+                possible_int = recoil_name.split('-')[1]
+                try:
+                    integer = int(possible_int)
+                    main_element_widget.running_int_recoil = integer + 1
+                except ValueError:
+                    pass
             i = i + 1
 
     def remove_element_simulation(self, element_simulation):
@@ -611,6 +622,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     element_simulation = elem_sim
                     break
         if recoil_to_delete and element_simulation:
+            # Remove radio button from list
+            self.radios.remove(recoil_widget.radio_button)
             # Remove recoil widget from view
             recoil_widget.deleteLater()
             # Remove recoil element from element simulation
