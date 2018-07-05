@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 4.7.2018
+Updated on 5.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1208,12 +1208,22 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         new_coords = self.get_new_checked_coordinates(event)
 
+        # Check if the point's y coordinate is zero or it is the last or
+        # first point. Move accordingly
+        # When full edit is not on, zero vy values stay zero, and start and
+        # end points can only move in y direction
         for i in range(0, len(dr_ps)):
             if dr_ps[i] == self.current_recoil_element.get_points()[-1] \
                     and not self.full_edit_on:
-                dr_ps[i].set_y(new_coords[i][1])
+                if dr_ps[i].get_y() == 0.0:
+                    continue
+                else:
+                    dr_ps[i].set_y(new_coords[i][1])
             else:
-                dr_ps[i].set_coordinates(new_coords[i])
+                if dr_ps[i].get_y() == 0.0 and not self.full_edit_on:
+                    dr_ps[i].set_coordinates((dr_ps[i].get_x(), 0.0))
+                else:
+                    dr_ps[i].set_coordinates(new_coords[i])
 
         self.update_plot()
 
@@ -1264,6 +1274,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             for i in range(1, len(dr_ps)):
                 new_coords[i][0] = self.x_dist_left[i - 1]
 
+        # Check that y_min is not crossed
         if new_coords[self.lowest_dr_p_i][1] < \
                 self.current_element_simulation.y_min:
             new_coords[self.lowest_dr_p_i][1] = \
