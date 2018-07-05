@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 3.7.2018
+Updated on 5.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -58,6 +58,13 @@ class RecoilElement:
 
         self.modification_time = None
 
+        # List for keeping track of intervals that are zero
+        self.zero_intervals_on_x = []
+        # List for keeping track of singular zero points
+        self.zero_values_on_x = []
+
+        self.update_zero_values()
+
     def delete_widgets(self):
         """
         Delete all widgets.
@@ -76,6 +83,32 @@ class RecoilElement:
         Unlock full edit.
         """
         self._edit_lock_on = False
+
+    def update_zero_values(self):
+        """
+        Update recoil element's zero value lists.
+        """
+        self.zero_values_on_x = []
+        self.zero_intervals_on_x = []
+        start_zero_point = None
+        end_zero_point = None
+        for point in self._points:
+            if point.get_y() == 0.0 and start_zero_point is None:
+                start_zero_point = point
+                end_zero_point = point
+            elif point.get_y() == 0.0 and start_zero_point is not None:
+                end_zero_point = point
+            elif start_zero_point and end_zero_point:
+                # Add one zero point's x to values list
+                if start_zero_point is end_zero_point:
+                    self.zero_values_on_x.append(start_zero_point.get_x())
+                # Add start x and end x of zero interval to interval list
+                else:
+                    self.zero_intervals_on_x.append(
+                        (start_zero_point.get_x(), end_zero_point.get_x())
+                    )
+                start_zero_point = None
+                end_zero_point = None
 
     def get_edit_lock_on(self):
         """

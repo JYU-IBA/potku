@@ -509,13 +509,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.current_recoil_element = \
                 self.element_manager.get_recoil_element_with_radio_button(
                     button, self.current_element_simulation)
-            # Disable element simulation deletion button for other than main
-            # recoil element.
+            # Disable element simulation deletion button and full edit for
+            # other than main recoil element
             if self.current_recoil_element is not \
                     self.current_element_simulation.recoil_elements[0]:
                 self.parent_ui.removePushButton.setEnabled(False)
+                self.edit_lock_push_button.setEnabled(False)
+                # Update zero values and intervals for main recoil element
+                self.current_element_simulation.recoil_elements[0].\
+                    update_zero_values()
             else:
                 self.parent_ui.removePushButton.setEnabled(True)
+                self.edit_lock_push_button.setEnabled(True)
             self.parent_ui.elementInfoWidget.show()
             # Put full edit on if element simulation allows it
             if self.current_element_simulation.get_full_edit_on():
@@ -524,14 +529,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             else:
                 self.full_edit_on = False
                 self.edit_lock_push_button.setText("Unlock full edit")
-
-            # Disable full edit button if current recoil element is not the
-            # main recoil element
-            if self.current_element_simulation.recoil_elements[0] is not \
-                    self.current_recoil_element:
-                self.edit_lock_push_button.setEnabled(False)
-            else:
-                self.edit_lock_push_button.setEnabled(True)
 
             self.update_recoil_element_info_labels()
             self.dragged_points.clear()
