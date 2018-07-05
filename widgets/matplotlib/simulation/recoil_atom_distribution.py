@@ -525,6 +525,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.full_edit_on = False
                 self.edit_lock_push_button.setText("Unlock full edit")
 
+            # Disable full edit button if current recoil element is not the
+            # main recoil element
+            if self.current_element_simulation.recoil_elements[0] is not \
+                    self.current_recoil_element:
+                self.edit_lock_push_button.setEnabled(False)
+            else:
+                self.edit_lock_push_button.setEnabled(True)
+
             self.update_recoil_element_info_labels()
             self.dragged_points.clear()
             self.selected_points.clear()
