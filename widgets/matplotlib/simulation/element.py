@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 4.7.2018
+Updated on 5.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,6 +28,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __version__ = "2.0"
 
 import copy
+
 import modules.general_functions as general
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog, \
@@ -36,10 +37,9 @@ from dialogs.simulation.element_simulation_settings import \
     ElementSimulationSettingsDialog
 
 from modules.recoil_element import RecoilElement
-from modules.point import Point
 
-from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
+from PyQt5 import QtWidgets
 
 from widgets.simulation.recoil_element import RecoilElementWidget
 
@@ -119,12 +119,8 @@ class ElementWidget(QtWidgets.QWidget):
         """
         Add new recoil to element simulation.
         """
-        xs = [0.00, 35.00]
-        ys = [1.0, 1.0]
-        xys = list(zip(xs, ys))
-        points = []
-        for xy in xys:
-            points.append(Point(xy))
+        points = copy.deepcopy(self.element_simulation.recoil_elements[
+                                   0].get_points())
 
         element = copy.copy(self.element_simulation.recoil_elements[0].element)
         name = "Default-" + str(self.running_int_recoil)
