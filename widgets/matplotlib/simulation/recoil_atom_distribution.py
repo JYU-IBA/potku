@@ -40,6 +40,7 @@ from dialogs.simulation.recoil_info_dialog import RecoilInfoDialog
 
 from matplotlib.widgets import SpanSelector
 from modules.element import Element
+from modules.general_functions import find_nearest
 from modules.point import Point
 from modules.recoil_element import RecoilElement
 
@@ -357,7 +358,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                           'horizontal', useblit=True,
                                           rectprops=dict(alpha=0.5,
                                                          facecolor='red'),
-                                          button=3)
+                                          button=3, span_stays=True)
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
@@ -1537,12 +1538,57 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
     def on_span_select(self, xmin, xmax):
         """
+        Select area to calculate the are of.
+
+        Args:
+             xmin: Start value of the mouse
+             xmax: End value of the mouse.
+        """
+        if xmin == xmax:  # Do nothing if graph is clicked
+            return
+
+        low_x = round(xmin, 3)
+        high_x = round(xmax, 3)
+
+        # Find the nearest points matching the low_x and high_x
+        points_x = self.current_recoil_element.get_xs()
+        nearest_start = find_nearest(low_x, points_x)
+        nearest_end = find_nearest(high_x, points_x)
+
+        if nearest_start == nearest_end:
+            start_i = points_x.index(nearest_start)
+            if start_i == len(points_x) - 1:
+                nearest_start_point = self.current_element_simulation. \
+                    get_point_by_i(
+                    self.current_recoil_element, start_i - 1)
+                nearest_start = nearest_start_point.get_x()
+            else:
+                nearest_end_point = \
+                    self.current_element_simulation.get_point_by_i(
+                    self.current_recoil_element, start_i + 1)
+                nearest_end = nearest_end_point.get_x()
+
+        for lim in self.current_element_simulation.area_limits:
+            lim.set_linestyle('None')
+
+        ylim = self.axes.get_ylim()
+        self.current_element_simulation.area_limits.append(self.axes.axvline(
+            x=nearest_start, linestyle="--"))
+        self.current_element_simulation.area_limits.append(self.axes.axvline(
+            x=nearest_end, linestyle="--", color='red'))
+
+        self.axes.set_ybound(ylim[0], ylim[1])
+        self.canvas.draw_idle()
+
+    def on_rectangle_select(self, xmin, xmax):
+        """
         Select multiple points.
 
         Args:
             xmin: Area start.
             xmax: Area end.
         """
+        # TODO: update!!!
         if not self.current_element_simulation:
             return
         sel_points = []
