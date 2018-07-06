@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 5.7.2018
+Updated on 6.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -109,6 +109,14 @@ class RecoilElement:
                     )
                 start_zero_point = None
                 end_zero_point = None
+        if start_zero_point and end_zero_point:
+            if start_zero_point is end_zero_point:
+                self.zero_values_on_x.append(start_zero_point.get_x())
+                # Add start x and end x of zero interval to interval list
+            else:
+                self.zero_intervals_on_x.append(
+                    (start_zero_point.get_x(), end_zero_point.get_x())
+                )
 
     def get_edit_lock_on(self):
         """

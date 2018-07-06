@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 5.7.2018
+Updated on 6.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -555,20 +555,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 zero_values_on_x:
             if x not in self.current_recoil_element.zero_values_on_x:
                 new_point = self.add_zero_point(x)
-                left_n = self.current_element_simulation.get_left_neighbor(
-                    self.current_recoil_element, new_point)
-                left_n_y = left_n.get_y()
-                right_n = self.current_element_simulation.get_right_neighbor(
-                    self.current_recoil_element, new_point)
-                right_n_y = right_n.get_y()
-
-                if left_n_y == 0.0:
-                    x_place = round((new_point.get_x() + left_n.get_x()) / 2, 2)
-                    self.add_point((x_place - self.x_res, 0.0001))
-                if right_n_y == 0.0:
-                    x_place = round((new_point.get_x() + right_n.get_x()) /
-                                    2, 2)
-                    self.add_point((x_place + self.x_res, 0.0001))
+                # Fix neighbors
+                self.fix_left_neighbor_of_zero(new_point)
+                self.fix_right_neighbor_of_zero(new_point)
         # Remove singular zeros
         if self.current_element_simulation.recoil_elements[0].\
            zero_values_on_x != self.current_recoil_element.zero_values_on_x:
@@ -581,9 +570,92 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     remove_point = self.current_recoil_element.get_point_by_i(i)
                     self.current_element_simulation.remove_point(
                         self.current_recoil_element, remove_point)
-        # Modify intervals
+        # Add intervals
+        for interval in self.current_element_simulation.recoil_elements[0].\
+                zero_intervals_on_x:
+            interval_start = interval[0]
+            interval_end = interval[1]
+            points = self.current_recoil_element.get_points()
+            for point in points:
+                x = point.get_x()
+                y = point.get_y()
+                if x == interval_start or x == interval_end:
+                    point.set_y(0.0)
+                elif interval_start < x < interval_end and y != 0.0:
+                    point.set_y(0.0)
+            if interval_start not in self.current_recoil_element.get_xs():
+                new_point = self.add_zero_point(interval_start)
+                self.fix_left_neighbor_of_zero(new_point)
+            if interval_end not in self.current_recoil_element.get_xs():
+                new_point = self.add_zero_point(interval_end)
+                self.fix_right_neighbor_of_zero(new_point)
+        # Remove intervals
+        if self.current_element_simulation.recoil_elements[0].\
+           zero_intervals_on_x != \
+           self.current_recoil_element.zero_intervals_on_x:
+            for interval2 in self.current_recoil_element.zero_intervals_on_x:
+                if interval2 not in \
+                   self.current_element_simulation.recoil_elements[0].\
+                   zero_intervals_on_x:
+                    for point2 in self.current_recoil_element.get_points():
+                        p_x = point2.get_x()
+                        if interval2[0] <= p_x <= interval2[1]:
+                            is_inside = False
+                            for interval3 in \
+                                    self.current_element_simulation.\
+                                    recoil_elements[0].zero_intervals_on_x:
+                                if interval3[0] <= p_x <= interval3[1]:
+                                    is_inside = True
+                                    break
+                            if is_inside or p_x in \
+                                    self.current_element_simulation.\
+                                    recoil_elements[0].zero_values_on_x:
+                                continue
+                            else:
+                                point2.set_y(0.0001)
+
         # Update current recoil's zero lists
-        pass
+        self.current_recoil_element.update_zero_values()
+
+        # Clean up unnecessary points inside zero intervals
+        points_to_remove = []
+        for inter in self.current_recoil_element.zero_intervals_on_x:
+            for p in self.current_recoil_element.get_points():
+                if inter[0] < p.get_x() < inter[1]:
+                    points_to_remove.append(p)
+        for r_p in points_to_remove:
+            self.current_element_simulation.remove_point(
+                self.current_recoil_element, r_p)
+
+    def fix_left_neighbor_of_zero(self, point):
+        """
+        If there should be non-zero values between point and its left
+        neighbor, add a new point between them.
+        """
+        left_n = self.current_element_simulation.get_left_neighbor(
+            self.current_recoil_element, point)
+        if not left_n:
+            return
+        left_n_y = left_n.get_y()
+        if left_n_y == 0.0:
+            x_place = round((point.get_x() + left_n.get_x()) / 2, 2)
+            self.add_point((x_place, 0.0001))
+
+    def fix_right_neighbor_of_zero(self, point):
+        """
+        If there should be non-zero values between point and its right
+        neighbor, add a new point between them.
+        """
+        right_n = self.current_element_simulation.get_right_neighbor(
+            self.current_recoil_element, point)
+        if not right_n:
+            return
+        right_n_y = right_n.get_y()
+
+        if right_n_y == 0.0:
+            x_place = round((point.get_x() + right_n.get_x()) /
+                            2, 2)
+            self.add_point((x_place, 0.0001))
 
     def add_zero_point(self, x):
         """
@@ -593,8 +665,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             x: X coordinate value.
         """
         new_point = Point((x, 0.0))
-        self.current_element_simulation.add_point(
-            self.current_recoil_element, new_point)
+        xs = self.current_recoil_element.get_xs()
+        if x in xs:
+            i = xs.index(x)
+            new_point = self.current_recoil_element.get_point_by_i(i)
+        else:
+            self.current_element_simulation.add_point(
+                self.current_recoil_element, new_point)
 
         self.current_recoil_element.zero_values_on_x.append(x)
         self.current_recoil_element.zero_values_on_x = sorted(
@@ -605,6 +682,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         left_neighbor_x = left_neighbor.get_x()
         right_neighbor = self.current_element_simulation.get_right_neighbor(
             self.current_recoil_element, new_point)
+
+        # If points doesn't have right neighbor, return
+        if not right_neighbor:
+            return new_point
+
         right_neighbor_x = right_neighbor.get_x()
 
         # If too close to left
