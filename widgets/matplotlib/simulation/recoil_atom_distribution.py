@@ -679,14 +679,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         left_neighbor = self.current_element_simulation.get_left_neighbor(
             self.current_recoil_element, new_point)
-        left_neighbor_x = left_neighbor.get_x()
         right_neighbor = self.current_element_simulation.get_right_neighbor(
             self.current_recoil_element, new_point)
 
         # If points doesn't have right neighbor, return
-        if not right_neighbor:
+        if not right_neighbor or not left_neighbor:
             return new_point
 
+        left_neighbor_x = left_neighbor.get_x()
         right_neighbor_x = right_neighbor.get_x()
 
         # If too close to left
@@ -1410,7 +1410,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 if dr_ps[i].get_y() == 0.0 and not self.full_edit_on:
                     dr_ps[i].set_coordinates((dr_ps[i].get_x(), 0.0))
                 else:
-                    dr_ps[i].set_coordinates(new_coords[i])
+                    if self.current_recoil_element != \
+                            self.current_element_simulation.recoil_elements[0] \
+                            and dr_ps[i].get_y() == 0.0:
+                        dr_ps[i].set_coordinates((dr_ps[i].get_x(), 0.0))
+                    else:
+                        dr_ps[i].set_coordinates(new_coords[i])
 
         self.update_plot()
 
@@ -1462,13 +1467,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 new_coords[i][0] = self.x_dist_left[i - 1]
 
         # Check that y_min is not crossed
-        if new_coords[self.lowest_dr_p_i][1] < \
-                self.current_element_simulation.y_min:
-            new_coords[self.lowest_dr_p_i][1] = \
-                self.current_element_simulation.y_min
+        if self.current_recoil_element != \
+                self.current_element_simulation.recoil_elements[0]:
+            y_min = 0.0001
+        else:
+            y_min = self.current_element_simulation.y_min
+        if new_coords[self.lowest_dr_p_i][1] < y_min:
+            new_coords[self.lowest_dr_p_i][1] = y_min
             for i in range(0, len(dr_ps)):
-                new_coords[i][1] = self.current_element_simulation.y_min + \
-                                   self.y_dist_lowest[i]
+                new_coords[i][1] = y_min + self.y_dist_lowest[i]
 
         return new_coords
 
