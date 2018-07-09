@@ -510,6 +510,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             checked: Whether button is checked or not.
         """
         if checked:
+            # Update limit and area parts
+            if self.current_element_simulation and \
+                    self.current_element_simulation.area_limits:
+                for limit in self.current_element_simulation.area_limits:
+                    limit.set_linestyle("None")
+                self.anchored_box.set_visible(False)
             current_element_simulation = self.element_manager \
                 .get_element_simulation_with_radio_button(button)
             self.current_element_simulation = \
@@ -550,6 +556,19 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.update_recoil_element_info_labels()
             self.dragged_points.clear()
             self.selected_points.clear()
+
+            # Update limit and area parts
+            if self.current_element_simulation.area_limits:
+                for lim in self.current_element_simulation.area_limits:
+                    lim.set_linestyle("--")
+                self.anchored_box.set_visible(True)
+                if not self.current_recoil_element.area:
+                    # Calculate area
+                    self.__calculate_selected_area()
+                text = "Area: %s" % str(round(
+                    self.current_recoil_element.area, 2))
+                box = self.anchored_box.get_child()
+                box.set_text(text)
             self.update_plot()
             # self.axes.relim()
             # self.axes.autoscale()
@@ -578,6 +597,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             else:
                 new_point = self.add_point((current_end_x, main_end_y),
                                            special=True)
+            self.fix_left_neighbor_of_zero(new_point)
 
         points_to_delete = []
         if main_end_x < current_end_x:
@@ -1681,6 +1701,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         polygon = Polygon(polygon_points)
         area = polygon.area
+        self.current_recoil_element.area = area
 
         if self.anchored_box:
             self.anchored_box.set_visible(False)
