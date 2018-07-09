@@ -534,6 +534,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                         zero_values_on_x != \
                         self.current_recoil_element.zero_values_on_x:
                     self.update_current_recoils_zeros()
+                    self.delete_and_add_possible_extra_points()
             else:
                 self.parent_ui.removePushButton.setEnabled(True)
                 self.edit_lock_push_button.setEnabled(True)
@@ -552,6 +553,42 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.update_plot()
             # self.axes.relim()
             # self.axes.autoscale()
+
+    def delete_and_add_possible_extra_points(self):
+        """
+        If current recoil element has too many or too little points at the
+        end to match the main recoil element, add or delete points accordingly.
+        """
+        main_points = self.current_element_simulation.recoil_elements[
+            0].get_points()
+        main_end = main_points[len(main_points) - 1]
+
+        current_points = self.current_recoil_element.get_points()
+        current_end = current_points[len(current_points) - 1]
+
+        # main end is further
+        main_end_x = main_end.get_x()
+        current_end_x = current_end.get_x()
+
+        main_end_y = main_end.get_y()
+        current_end_y = current_end.get_y()
+        if main_end_x > current_end_x:
+            if main_end_y == 0.0:
+                new_point = self.add_zero_point(main_end_x)
+            else:
+                new_point = self.add_point((current_end_x, main_end_y),
+                                           special=True)
+
+        points_to_delete = []
+        if main_end_x < current_end_x:
+            # Delete all unnecessary points
+            for point in current_points:
+                if point.get_x() > main_end_x:
+                    points_to_delete.append(point)
+        for p in points_to_delete:
+            self.current_element_simulation.remove_point(
+                self.current_recoil_element, p)
+        pass
 
     def update_current_recoils_zeros(self):
         """
@@ -1248,7 +1285,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                               - self.dragged_points[self.lowest_dr_p_i].get_y()
                               for i in range(len(self.dragged_points))]
 
-    def add_point(self, coords):
+    def add_point(self, coords, special=False):
         """Adds a point if there is space for it.
         Returns the point if a point was added, None if not.
         """
@@ -1259,36 +1296,47 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.current_recoil_element, new_point)
         left_neighbor_x = self.current_element_simulation.get_left_neighbor(
             self.current_recoil_element, new_point).get_x()
-        right_neighbor_x = self.current_element_simulation.get_right_neighbor(
-            self.current_recoil_element, new_point).get_x()
 
-        error = False
+        right_neighbor = self.current_element_simulation.get_right_neighbor(
+            self.current_recoil_element, new_point)
 
-        # If too close to left
-        if new_point.get_x() - left_neighbor_x < self.x_res:
-            # Need space to insert the new point
-            if right_neighbor_x - new_point.get_x() < 2 * self.x_res:
-                error = True
+        if right_neighbor:
+            right_neighbor_x = right_neighbor.get_x()
+
+            error = False
+
+            # If too close to left
+            if new_point.get_x() - left_neighbor_x < self.x_res:
+                # Need space to insert the new point
+                if right_neighbor_x - new_point.get_x() < 2 * self.x_res:
+                    error = True
+                else:
+                    # Insert the new point as close to its left neighbor as
+                    # possible
+                    new_point.set_x(left_neighbor_x + self.x_res)
+            elif right_neighbor_x - new_point.get_x() < self.x_res:
+                if new_point.get_x() - left_neighbor_x < 2 * self.x_res:
+                    error = True
+                else:
+                    new_point.set_x(right_neighbor_x - self.x_res)
+
+            if error:
+                self.current_element_simulation.remove_point(
+                    self.current_recoil_element, new_point)
+                # TODO: Add an error message text label
+                QtWidgets.QMessageBox.critical(self.parent, "Error",
+                                               "Can't add a point here.\nThere "
+                                               "is no space for it.",
+                                               QtWidgets.QMessageBox.Ok,
+                                               QtWidgets.QMessageBox.Ok)
+                return None
             else:
-                # Insert the new point as close to its left neighbor as possible
+                return new_point
+
+        elif special:
+            # When adding a non-zero point at the end of the recoil
+            if new_point.get_x() - left_neighbor_x < self.x_res:
                 new_point.set_x(left_neighbor_x + self.x_res)
-        elif right_neighbor_x - new_point.get_x() < self.x_res:
-            if new_point.get_x() - left_neighbor_x < 2 * self.x_res:
-                error = True
-            else:
-                new_point.set_x(right_neighbor_x - self.x_res)
-
-        if error:
-            self.current_element_simulation.remove_point(
-                self.current_recoil_element, new_point)
-            # TODO: Add an error message text label
-            QtWidgets.QMessageBox.critical(self.parent, "Error",
-                                           "Can't add a point here.\nThere is "
-                                           "no space for it.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
-            return None
-        else:
             return new_point
 
     def update_plot(self):
