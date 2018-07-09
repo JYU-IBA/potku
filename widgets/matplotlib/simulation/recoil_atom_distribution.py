@@ -515,7 +515,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.current_element_simulation.area_limits:
                 for limit in self.current_element_simulation.area_limits:
                     limit.set_linestyle("None")
-                self.anchored_box.set_visible(False)
+                if self.anchored_box:
+                    self.anchored_box.set_visible(False)
             current_element_simulation = self.element_manager \
                 .get_element_simulation_with_radio_button(button)
             self.current_element_simulation = \
@@ -529,6 +530,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.current_element_simulation.recoil_elements[0]:
                 self.parent_ui.removePushButton.setEnabled(False)
                 self.edit_lock_push_button.setEnabled(False)
+                self.__button_area_calculation.setEnabled(False)
                 # Update zero values and intervals for main recoil element
                 self.current_element_simulation.recoil_elements[0]. \
                     update_zero_values()
@@ -544,6 +546,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             else:
                 self.parent_ui.removePushButton.setEnabled(True)
                 self.edit_lock_push_button.setEnabled(True)
+                if self.current_element_simulation.area_limits:
+                    self.__button_area_calculation.setEnabled(True)
+                else:
+                    self.__button_area_calculation.setEnabled(False)
             self.parent_ui.elementInfoWidget.show()
             # Put full edit on if element simulation allows it
             if self.current_element_simulation.get_full_edit_on():
@@ -561,7 +567,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if self.current_element_simulation.area_limits:
                 for lim in self.current_element_simulation.area_limits:
                     lim.set_linestyle("--")
-                self.anchored_box.set_visible(True)
+                if self.anchored_box:
+                    self.anchored_box.set_visible(True)
                 if not self.current_recoil_element.area:
                     # Calculate area
                     self.__calculate_selected_area()
