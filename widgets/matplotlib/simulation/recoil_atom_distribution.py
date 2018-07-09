@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 6.7.2018
+Updated on 9.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -38,6 +38,7 @@ from dialogs.simulation.recoil_element_selection import \
     RecoilElementSelectionDialog
 from dialogs.simulation.recoil_info_dialog import RecoilInfoDialog
 
+from matplotlib import offsetbox
 from matplotlib.widgets import SpanSelector
 from modules.element import Element
 from modules.general_functions import find_nearest
@@ -50,6 +51,8 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import QLocale
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QGuiApplication
+
+from shapely.geometry import Polygon
 
 from widgets.matplotlib.base import MatplotlibWidget
 from widgets.matplotlib.simulation.element import ElementWidget
@@ -370,6 +373,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.ratio_str = self.clipboard.text()
         self.clipboard.changed.connect(self.__update_multiply_action)
 
+        self.__button_area_calculation = None
+
         # This customizes the toolbar buttons
         self.__fork_toolbar_buttons()
 
@@ -378,6 +383,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.name_y_axis = "Relative Concentration"
         self.name_x_axis = "Depth [nm]"
+
+        self.anchored_box = None
 
         self.on_draw()
 
@@ -1071,6 +1078,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.y_coordinate_box.setEnabled(False)
             self.x_coordinate_box.setEnabled(False)
 
+        self.__button_area_calculation = QtWidgets.QToolButton(self)
+        self.__button_area_calculation.clicked.connect(
+            self.__calculate_selected_area)
+        self.__button_area_calculation.setToolTip(
+            "Calculate the area inside the selected interval")
+        self.__icon_manager.set_icon(self.__button_area_calculation,
+                                     "depth_profile_lim_in.svg")
+        self.mpl_toolbar.addWidget(self.__button_area_calculation)
+        self.__button_area_calculation.setEnabled(False)
+
     def undo(self, spinbox):
         """
         Undo change to spinbox value.
@@ -1571,6 +1588,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         for lim in self.current_element_simulation.area_limits:
             lim.set_linestyle('None')
 
+        self.current_element_simulation.area_limits = []
+
         ylim = self.axes.get_ylim()
         self.current_element_simulation.area_limits.append(self.axes.axvline(
             x=nearest_start, linestyle="--"))
@@ -1578,6 +1597,60 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             x=nearest_end, linestyle="--", color='red'))
 
         self.axes.set_ybound(ylim[0], ylim[1])
+        self.__button_area_calculation.setEnabled(True)
+        self.canvas.draw_idle()
+
+    def __calculate_selected_area(self):
+        """
+        Calculate the recoil atom distribution's area inside limits.
+        """
+        lower_limit = self.current_element_simulation.area_limits[0].\
+            get_xdata()[0]
+        upper_limit = self.current_element_simulation.area_limits[1].\
+            get_xdata()[0]
+
+        limited_points = []
+        # Get the points that are used in calculating the area
+        for point in self.current_recoil_element.get_points():
+            if lower_limit <= point.get_x() <= upper_limit:
+                limited_points.append((point.get_x(), point.get_y()))
+
+        polygon_points = []
+        for value in limited_points:
+            polygon_points.append([value[0], value[1]])
+
+        # Add two points that have zero y coordinate to make a rectangle
+        point1_x = polygon_points[len(polygon_points) - 1][0]
+        point1 = (point1_x, 0.0)
+
+        point2_x = polygon_points[0][0]
+        point2 = (point2_x, 0.0)
+
+        polygon_points.append(point1)
+        polygon_points.append(point2)
+
+        polygon_points.append((polygon_points[0][0], polygon_points[0][1]))
+
+        polygon = Polygon(polygon_points)
+        area = polygon.area
+
+        if self.anchored_box:
+            self.anchored_box.set_visible(False)
+            self.anchored_box = None
+
+        text = "Area: %s" % str(round(area, 2))
+        box = offsetbox.TextArea(text, textprops=dict(color="k", size=12,
+                                                      backgroundcolor='w'))
+
+        self.anchored_box = offsetbox.AnchoredOffsetbox(
+                loc=1,
+                child=box, pad=0.5,
+                frameon=False,
+                bbox_to_anchor=(1.0, 1.0),
+                bbox_transform=self.axes.transAxes,
+                borderpad=0.,
+        )
+        self.axes.add_artist(self.anchored_box)
         self.canvas.draw_idle()
 
     def on_rectangle_select(self, xmin, xmax):
