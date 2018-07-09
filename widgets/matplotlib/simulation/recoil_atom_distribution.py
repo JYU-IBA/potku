@@ -361,7 +361,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                           'horizontal', useblit=True,
                                           rectprops=dict(alpha=0.5,
                                                          facecolor='red'),
-                                          button=3, span_stays=True)
+                                          button=1, span_stays=True)
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
@@ -1288,6 +1288,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             self.dragged_points = [new_point]
                             self.set_on_click_attributes(event)
                             self.update_plot()
+        elif event.button == 3:  # Left click
+            self.__context_menu(event)
 
     def set_on_click_attributes(self, event):
         """Sets the attributes needed for dragging points."""
@@ -1627,6 +1629,29 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if event.button == 1:
             self.dragged_points.clear()
             self.update_plot()
+
+    def __context_menu(self, event):
+        """
+        Create a menu for accessing the area multiplication tool.
+
+        Args:
+            event: An MPL Mouse event.
+        """
+        menu = QtWidgets.QMenu(self)
+
+        action = QtWidgets.QAction(self.tr("Multiply area..."), self)
+        action.triggered.connect(self.multiply_area)
+        menu.addAction(action)
+
+        coords = self.canvas.geometry().getCoords()
+        point = QtCore.QPoint(event.x, coords[3] - event.y - coords[1])
+        menu.exec_(self.canvas.mapToGlobal(point))
+
+    def multiply_area(self):
+        """
+        Multiply recoil element area.
+        """
+        pass
 
     def on_span_select(self, xmin, xmax):
         """
