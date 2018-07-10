@@ -34,6 +34,7 @@ import os
 
 from dialogs.simulation.element_simulation_settings import \
     ElementSimulationSettingsDialog
+from dialogs.simulation.multiply_area import MultiplyAreaDialog
 from dialogs.simulation.recoil_element_selection import \
     RecoilElementSelectionDialog
 from dialogs.simulation.recoil_info_dialog import RecoilInfoDialog
@@ -1659,8 +1660,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Multiply recoil element area.
         """
-        #
-        pass
+        dialog = MultiplyAreaDialog(
+            self.current_element_simulation.recoil_elements[0])
 
     def on_span_select(self, xmin, xmax):
         """
