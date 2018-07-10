@@ -1658,10 +1658,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
     def multiply_area(self):
         """
-        Multiply recoil element area.
+        Multiply recoil element area and change the distribution accordingly.
         """
         dialog = MultiplyAreaDialog(
             self.current_element_simulation.recoil_elements[0])
+
+
 
     def on_span_select(self, xmin, xmax):
         """

@@ -51,14 +51,9 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
 
         locale = QLocale.c()
         self.ui.fractionDoubleSpinBox.setLocale(locale)
-        self.ui.customAreaDoubleSpinBox.setLocale(locale)
 
         self.ui.cancelButton.clicked.connect(self.close)
         self.ui.fractionCheckBox.stateChanged.connect(self.change_custom)
-        self.ui.mainRecoilAreaRadioButton.clicked.connect(self.change_custom)
-        self.ui.customAreaRadioButton.clicked.connect(self.change_custom)
-        self.ui.customAreaDoubleSpinBox.valueChanged.connect(
-            self.calculate_new_area)
         self.ui.fractionDoubleSpinBox.valueChanged.connect(
             self.calculate_new_area)
 
@@ -80,11 +75,7 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
         """
         Calculate new area based on dialog's values.
         """
-        # Find reference area value
-        if self.ui.mainAreaLabel.isEnabled():
-            ref_area = self.main_recoil.area
-        else:
-            ref_area = self.ui.customAreaDoubleSpinBox.value()
+        ref_area = self.main_recoil.area
 
         # Find fraction
         if self.ui.fractionCheckBox.isChecked():
@@ -106,10 +97,4 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
         if self.sender() is self.ui.fractionCheckBox:
             checked = self.ui.fractionCheckBox.isChecked()
             self.ui.fractionDoubleSpinBox.setEnabled(checked)
-        elif self.sender() is self.ui.customAreaRadioButton:
-            self.ui.customAreaDoubleSpinBox.setEnabled(True)
-            self.ui.mainAreaLabel.setEnabled(False)
-        elif self.sender() is self.ui.mainRecoilAreaRadioButton:
-            self.ui.customAreaDoubleSpinBox.setEnabled(False)
-            self.ui.mainAreaLabel.setEnabled(True)
         self.calculate_new_area()
