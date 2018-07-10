@@ -1663,7 +1663,47 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         dialog = MultiplyAreaDialog(
             self.current_element_simulation.recoil_elements[0])
 
-
+        # If there are proper areas to handle
+        if dialog.reference_area and dialog.new_area:
+            # Delete/add points between limits to have matching number of points
+            # Delete
+            lower_limit = self.current_element_simulation.area_limits[0]. \
+                get_xdata()[0]
+            upper_limit = self.current_element_simulation.area_limits[1]. \
+                get_xdata()[0]
+            for point in reversed(self.current_recoil_element.get_points()):
+                x = point.get_x()
+                if x <= lower_limit:
+                    break
+                if upper_limit <= x:
+                    continue
+                else:
+                    self.current_element_simulation.remove_point(
+                        self.current_recoil_element, point)
+            # Add
+            points = self.current_element_simulation.\
+                recoil_elements[0].get_points()
+            for i in range(len(points)):
+                main_p_x = points[i].get_x()
+                main_p_y = points[i].get_y()
+                if main_p_x < lower_limit:
+                    continue
+                if upper_limit < main_p_x:
+                    break
+                else:
+                    if main_p_x not in self.current_recoil_element.get_xs():
+                        self.add_point((main_p_x, main_p_y))
+                # TODO: Modify lower and upper limit ys to match main ys
+            # If fraction is defined, use it to calculate new y coordinates
+            # for points between limits
+            if dialog.fraction:
+                for sec_p in self.current_recoil_element.get_points():
+                    current_y = sec_p.get_y()
+                    x = sec_p.get_x()
+                    if lower_limit <= x <= upper_limit:
+                        new_y = current_y * dialog.fraction
+                        sec_p.set_y(new_y)
+        self.update_plot()
 
     def on_span_select(self, xmin, xmax):
         """

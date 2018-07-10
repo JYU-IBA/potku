@@ -53,6 +53,8 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
         self.ui.fractionDoubleSpinBox.setLocale(locale)
 
         self.ui.cancelButton.clicked.connect(self.close)
+        self.ui.okButton.clicked.connect(self.close)
+
         self.ui.fractionCheckBox.stateChanged.connect(self.change_custom)
         self.ui.fractionDoubleSpinBox.valueChanged.connect(
             self.calculate_new_area)
@@ -66,7 +68,7 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
         self.ui.totalAreaLabel.setText(text)
 
         self.new_area = self.main_recoil.area
-        self.reference_area = None
+        self.reference_area = self.main_recoil.area
         self.fraction = None
 
         self.exec_()
@@ -76,6 +78,9 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
         Calculate new area based on dialog's values.
         """
         ref_area = self.main_recoil.area
+
+        if not ref_area:
+            return
 
         # Find fraction
         if self.ui.fractionCheckBox.isChecked():
