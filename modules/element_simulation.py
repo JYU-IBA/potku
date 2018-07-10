@@ -218,7 +218,7 @@ class ElementSimulation:
         Return:
             X coordinates in a list.
         """
-        return recoil_element.get_xs(),
+        return recoil_element.get_xs()
 
     def get_ys(self, recoil_element):
         """
@@ -230,7 +230,7 @@ class ElementSimulation:
         Return:
             Y coodinates in a list.
         """
-        return recoil_element.get_ys(),
+        return recoil_element.get_ys()
 
     def get_left_neighbor(self, recoil_element, point):
         """

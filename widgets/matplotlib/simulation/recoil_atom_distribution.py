@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 9.7.2018
+Updated on 10.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -42,6 +42,7 @@ from matplotlib import offsetbox
 from matplotlib.widgets import SpanSelector
 from modules.element import Element
 from modules.general_functions import find_nearest
+from modules.general_functions import find_y_on_line
 from modules.point import Point
 from modules.recoil_element import RecoilElement
 
@@ -361,7 +362,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                           'horizontal', useblit=True,
                                           rectprops=dict(alpha=0.5,
                                                          facecolor='red'),
-                                          button=1, span_stays=True)
+                                          button=1, span_stays=True,
+                                          onmove_callback=self.on_span_motion)
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
@@ -569,9 +571,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     lim.set_linestyle("--")
                 if self.anchored_box:
                     self.anchored_box.set_visible(True)
-                if not self.current_recoil_element.area:
-                    # Calculate area
-                    self.__calculate_selected_area()
+                self.__calculate_selected_area()
                 text = "Area: %s" % str(round(
                     self.current_recoil_element.area, 2))
                 box = self.anchored_box.get_child()
@@ -1465,6 +1465,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.set_xlim(start, end)
         self.fig.canvas.draw_idle()
 
+    def on_span_motion(self, min, max):
+        """
+        Check if there are no dragged points before showing the span.
+        """
+        if self.dragged_points:
+            self.span_selector.set_active(False)
+
     def on_motion(self, event):
         """Callback method for mouse motion event. Moves points that are being
         dragged.
@@ -1628,6 +1635,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             return
         if event.button == 1:
             self.dragged_points.clear()
+            self.span_selector.set_active(True)
             self.update_plot()
 
     def __context_menu(self, event):
@@ -1651,6 +1659,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Multiply recoil element area.
         """
+        #
         pass
 
     def on_span_select(self, xmin, xmax):
@@ -1715,6 +1724,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if lower_limit <= point.get_x() <= upper_limit:
                 limited_points.append((point.get_x(), point.get_y()))
 
+        # Add points if limits are not part of current recoil element's points
+        if lower_limit not in self.current_element_simulation.get_xs(
+                self.current_recoil_element):
+            self.add_area_point(lower_limit, limited_points)
+
+        if upper_limit not in self.current_element_simulation.get_xs(
+                self.current_recoil_element):
+            self.add_area_point(upper_limit, limited_points)
+
         polygon_points = []
         for value in limited_points:
             polygon_points.append([value[0], value[1]])
@@ -1753,6 +1771,26 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         )
         self.axes.add_artist(self.anchored_box)
         self.canvas.draw_idle()
+
+    def add_area_point(self, x, points_list):
+        """
+        Add a point to points list.
+
+        Args:
+             x: X coordinate.
+             points_list: Tuple list of points.
+        """
+        i = 0
+        points = self.current_recoil_element.get_points()
+        while i + 1 in range(len(points)):
+            c_p = points[i].get_x()
+            n_p = points[i + 1].get_x()
+            if c_p < x < n_p:
+                y = find_y_on_line(points[i], points[i + 1], x)
+                # Add point to limited_points
+                points_list.insert(i + 1, (x, y))
+                break
+            i = i + 1
 
     def on_rectangle_select(self, xmin, xmax):
         """

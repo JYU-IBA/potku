@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 19.6.2018
+Updated on 10.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -26,26 +26,26 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli " \
-             "Rahkonen \n Miika Raunio" \
+             "Rahkonen \n Miika Raunio \n" \
              "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import platform
-import shutil
-import re
-import subprocess
-import sys
-from subprocess import Popen
-
+import bisect
 import hashlib
 import json
 import numpy
-from PyQt5 import QtWidgets
 import os
+import platform
+import re
+import shutil
+import subprocess
+import sys
 import tempfile
+
 from decimal import Decimal
-import bisect
+from PyQt5 import QtWidgets
+from subprocess import Popen
 
 
 def open_file_dialog(parent, default_folder, title, files):
@@ -617,6 +617,27 @@ def set_input_field_white(input_field):
         input_field: Qt widget that supports Qt Style Sheets.
     """
     input_field.setStyleSheet("background-color: %s" % "#ffffff")
+
+
+def find_y_on_line(point1, point2, x):
+    """
+    Find the y(x) based on a line that goes through point1 and 2.
+
+    Args:
+         point1: Point object.
+         point2: Point object.
+         x: Value whose corresponding y is wanted.
+
+    Return:
+        Y for x.
+    """
+    y_part = point2.get_y() - point1.get_y()
+    x_part = point2.get_x() - point1.get_x()
+    k = y_part / x_part
+
+    y = k * x - (k * point1.get_x()) + point1.get_y()
+    return y
+
 
 
 def validate_text_input(text, regex):
