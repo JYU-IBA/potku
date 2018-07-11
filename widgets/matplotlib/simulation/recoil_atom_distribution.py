@@ -355,6 +355,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.selected_points = []
         # Clicked point
         self.clicked_point = None
+        # If point has been clicked
+        self.point_clicked = False
         # Event for right clicking, used for either showing context menu of
         # rectangle select
         self.__rectangle_event_click = None
@@ -1294,6 +1296,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if event.button == 1:  # Left click
             marker_contains, marker_info = self.markers.contains(event)
             if marker_contains:  # If clicked a point
+                self.point_clicked = True
+                self.span_selector.set_active(False)
                 i = marker_info['ind'][0]  # The clicked point's index
                 clicked_point = \
                     self.current_element_simulation.get_point_by_i(
@@ -1307,6 +1311,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
                 self.update_plot()
             else:
+                self.point_clicked = False
                 # Ctrl-click to add a point
                 modifiers = QtGui.QGuiApplication.queryKeyboardModifiers()
                 if modifiers == QtCore.Qt.ControlModifier:
@@ -1507,7 +1512,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Check if there are no dragged points before showing the span.
         """
-        if self.dragged_points:
+        if self.dragged_points or self.point_clicked:
             self.span_selector.set_active(False)
 
     def on_motion(self, event):
@@ -1829,7 +1834,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
              xmin: Start value of the mouse
              xmax: End value of the mouse.
         """
-        if xmin == xmax:  # Do nothing if graph is clicked
+        if xmin == xmax or self.point_clicked:  # Do nothing if graph is clicked
             return
 
         low_x = round(xmin, 3)
@@ -1872,6 +1877,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Calculate the recoil atom distribution's area inside limits.
         """
+        if not self.current_recoil_element.area_limits:
+            return
         lower_limit = self.current_recoil_element.area_limits[0].\
             get_xdata()[0]
         upper_limit = self.current_recoil_element.area_limits[1].\
