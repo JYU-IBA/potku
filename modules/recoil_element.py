@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 9.7.2018
+Updated on 11.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -65,6 +65,7 @@ class RecoilElement:
 
         # Area of certain limits
         self.area = None
+        self.area_limits = []
 
         self.update_zero_values()
 

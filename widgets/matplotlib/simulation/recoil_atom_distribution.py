@@ -531,9 +531,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         if checked:
             # Update limit and area parts
-            if self.current_element_simulation and \
-                    self.current_element_simulation.area_limits:
-                for limit in self.current_element_simulation.area_limits:
+            if self.current_recoil_element and \
+                    self.current_recoil_element.area_limits:
+                for limit in self.current_recoil_element.area_limits:
                     limit.set_linestyle("None")
                 if self.anchored_box:
                     self.anchored_box.set_visible(False)
@@ -562,10 +562,26 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                         self.current_recoil_element.zero_values_on_x:
                     self.update_current_recoils_zeros()
                     self.delete_and_add_possible_extra_points()
+                # Copy limits for current recoil if it doesn't have them yet
+                if not self.current_recoil_element.area_limits and \
+                        self.current_element_simulation.recoil_elements[0].\
+                        area_limits:
+                    lower_limit = \
+                        self.current_element_simulation.recoil_elements[0].\
+                        area_limits[0].get_xdata()[0]
+                    upper_limit = \
+                        self.current_element_simulation.recoil_elements[0].\
+                        area_limits[1].get_xdata()[0]
+                    self.current_recoil_element.area_limits.append(
+                        self.axes.axvline(
+                            x=lower_limit, linestyle="--"))
+                    self.current_recoil_element.area_limits.append(
+                        self.axes.axvline(
+                            x=upper_limit, linestyle="--", color='red'))
             else:
                 self.parent_ui.removePushButton.setEnabled(True)
                 self.edit_lock_push_button.setEnabled(True)
-                if self.current_element_simulation.area_limits:
+                if self.current_recoil_element.area_limits:
                     self.__button_area_calculation.setEnabled(True)
                 else:
                     self.__button_area_calculation.setEnabled(False)
@@ -583,8 +599,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.selected_points.clear()
 
             # Update limit and area parts
-            if self.current_element_simulation.area_limits:
-                for lim in self.current_element_simulation.area_limits:
+            if self.current_recoil_element.area_limits:
+                for lim in self.current_recoil_element.area_limits:
                     lim.set_linestyle("--")
                 if self.anchored_box:
                     self.anchored_box.set_visible(True)
@@ -1693,7 +1709,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if self.current_recoil_element is \
                 self.current_element_simulation.recoil_elements[0]:
             return
-        if not self.current_element_simulation.area_limits:
+        if not self.current_recoil_element.area_limits:
             return
 
         menu = QtWidgets.QMenu(self)
@@ -1705,12 +1721,31 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         coords = self.canvas.geometry().getCoords()
         point = QtCore.QPoint(event.x, coords[3] - event.y - coords[1])
 
-        if self.current_element_simulation.recoil_elements[0].area:
+        if self.current_element_simulation.recoil_elements[0].area and \
+                self.limits_match():
             action.setEnabled(True)
         else:
             action.setEnabled(False)
 
         menu.exec_(self.canvas.mapToGlobal(point))
+
+    def limits_match(self):
+        """
+        Check if current recoil element and main recoil element area limits
+        match.
+
+        Return:
+             True or False.
+        """
+        current_low = self.current_recoil_element.area_limits[0].get_xdata()[0]
+        current_high = self.current_recoil_element.area_limits[1].get_xdata()[0]
+
+        main_low = self.current_element_simulation.recoil_elements[0].\
+            area_limits[0].get_xdata()[0]
+        main_high = self.current_element_simulation.recoil_elements[0].\
+            area_limits[1].get_xdata()[0]
+
+        return current_low == main_low and current_high == main_high
 
     def multiply_area(self):
         """
@@ -1723,9 +1758,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if dialog.reference_area and dialog.new_area:
             # Delete/add points between limits to have matching number of points
             # Delete
-            lower_limit = self.current_element_simulation.area_limits[0]. \
+            lower_limit = self.current_recoil_element.area_limits[0]. \
                 get_xdata()[0]
-            upper_limit = self.current_element_simulation.area_limits[1]. \
+            upper_limit = self.current_recoil_element.area_limits[1]. \
                 get_xdata()[0]
             for point in reversed(self.current_recoil_element.get_points()):
                 x = point.get_x()
@@ -1816,15 +1851,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.current_recoil_element, start_i + 1)
                 nearest_end = nearest_end_point.get_x()
 
-        for lim in self.current_element_simulation.area_limits:
+        for lim in self.current_recoil_element.area_limits:
             lim.set_linestyle('None')
 
-        self.current_element_simulation.area_limits = []
+        self.current_recoil_element.area_limits = []
 
         ylim = self.axes.get_ylim()
-        self.current_element_simulation.area_limits.append(self.axes.axvline(
+        self.current_recoil_element.area_limits.append(self.axes.axvline(
             x=nearest_start, linestyle="--"))
-        self.current_element_simulation.area_limits.append(self.axes.axvline(
+        self.current_recoil_element.area_limits.append(self.axes.axvline(
             x=nearest_end, linestyle="--", color='red'))
 
         self.axes.set_ybound(ylim[0], ylim[1])
@@ -1835,9 +1870,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Calculate the recoil atom distribution's area inside limits.
         """
-        lower_limit = self.current_element_simulation.area_limits[0].\
+        lower_limit = self.current_recoil_element.area_limits[0].\
             get_xdata()[0]
-        upper_limit = self.current_element_simulation.area_limits[1].\
+        upper_limit = self.current_recoil_element.area_limits[1].\
             get_xdata()[0]
 
         limited_points = []

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 6.7.2018
+Updated on 11.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -59,7 +59,7 @@ class ElementSimulation:
                 "__mcerd_command", "__process", "settings", "espe_settings", \
                 "description", "run", "spectra", "name", \
                 "use_default_settings", "sample", "controls", "simulation", \
-                "simulations_done", "__full_edit_on", "y_min", "area_limits"
+                "simulations_done", "__full_edit_on", "y_min"
 
     def __init__(self, directory, request, recoil_elements,
                  simulation=None, name_prefix="",
@@ -172,8 +172,6 @@ class ElementSimulation:
         else:
             self.__full_edit_on = True
             self.y_min = 0.0
-
-        self.area_limits = []
 
     def unlock_edit(self):
         """
