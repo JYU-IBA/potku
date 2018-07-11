@@ -533,7 +533,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.current_element_simulation.recoil_elements[0]:
                 self.parent_ui.removePushButton.setEnabled(False)
                 self.edit_lock_push_button.setEnabled(False)
-                self.__button_area_calculation.setEnabled(False)
                 # Update zero values and intervals for main recoil element
                 self.current_element_simulation.recoil_elements[0]. \
                     update_zero_values()
@@ -1290,6 +1289,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             self.set_on_click_attributes(event)
                             self.update_plot()
         elif event.button == 3:  # Left click
+            if self.current_recoil_element is \
+                    self.current_element_simulation.recoil_elements[0]:
+                return
+            if not self.current_element_simulation.area_limits:
+                return
             self.__context_menu(event)
 
     def set_on_click_attributes(self, event):
@@ -1654,6 +1658,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         coords = self.canvas.geometry().getCoords()
         point = QtCore.QPoint(event.x, coords[3] - event.y - coords[1])
+
+        if self.current_element_simulation.recoil_elements[0].area:
+            action.setEnabled(True)
+        else:
+            action.setEnabled(False)
+
         menu.exec_(self.canvas.mapToGlobal(point))
 
     def multiply_area(self):
@@ -1673,9 +1683,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 get_xdata()[0]
             for point in reversed(self.current_recoil_element.get_points()):
                 x = point.get_x()
-                if x <= lower_limit:
+                if x < lower_limit:
                     break
-                if upper_limit <= x:
+                if upper_limit < x:
                     continue
                 else:
                     self.current_element_simulation.remove_point(
@@ -1683,6 +1693,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # Add
             points = self.current_element_simulation.\
                 recoil_elements[0].get_points()
+
             for i in range(len(points)):
                 main_p_x = points[i].get_x()
                 main_p_y = points[i].get_y()
@@ -1693,7 +1704,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 else:
                     if main_p_x not in self.current_recoil_element.get_xs():
                         self.add_point((main_p_x, main_p_y))
-                # TODO: Modify lower and upper limit ys to match main ys
             # If fraction is defined, use it to calculate new y coordinates
             # for points between limits
             if dialog.fraction:
@@ -1702,7 +1712,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     x = sec_p.get_x()
                     if lower_limit <= x <= upper_limit:
                         new_y = current_y * dialog.fraction
+                        if 0.00 < new_y < 0.0001:
+                            new_y = 0.0001
                         sec_p.set_y(new_y)
+        self.__calculate_selected_area()
         self.update_plot()
 
     def on_span_select(self, xmin, xmax):
