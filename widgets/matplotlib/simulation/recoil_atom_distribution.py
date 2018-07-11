@@ -353,6 +353,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.dragged_points = []
         # Points that have been selected
         self.selected_points = []
+        # Clicked point
+        self.clicked_point = None
+        # Event for right clicking, used for either showing context menu of
+        # rectangle select
+        self.__rectangle_event_click = None
+        # Event for releasing right click
+        self.__rectangle_event_release = None
 
         self.annotations = []
         self.trans = matplotlib.transforms.blended_transform_factory(
@@ -1217,7 +1224,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         to the value of the x spinbox.
         """
         x = self.x_coordinate_box.value()
-        leftmost_sel_point = self.selected_points[0]
+        leftmost_sel_point = self.clicked_point
         left_neighbor = self.current_element_simulation.get_left_neighbor(
             self.current_recoil_element,
             leftmost_sel_point)
@@ -1250,7 +1257,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         to the value of the y spinbox.
         """
         y = self.y_coordinate_box.value()
-        leftmost_sel_point = self.selected_points[0]
+        leftmost_sel_point = self.clicked_point
         leftmost_sel_point.set_y(y)
         self.update_plot()
 
@@ -1278,6 +1285,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 if clicked_point not in self.selected_points:
                     self.selected_points = [clicked_point]
                 self.dragged_points.extend(self.selected_points)
+                self.clicked_point = clicked_point
 
                 self.set_on_click_attributes(event)
 
@@ -1298,13 +1306,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             self.dragged_points = [new_point]
                             self.set_on_click_attributes(event)
                             self.update_plot()
-        elif event.button == 3:  # Left click
-            if self.current_recoil_element is \
-                    self.current_element_simulation.recoil_elements[0]:
-                return
-            if not self.current_element_simulation.area_limits:
-                return
-            self.__context_menu(event)
+
+        elif event.button == 3:  # Right click
+            self.__rectangle_event_click = event
+            self.__rectangle_event_release = event
 
     def set_on_click_attributes(self, event):
         """Sets the attributes needed for dragging points."""
@@ -1421,10 +1426,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             else:
                 self.x_coordinate_box.setEnabled(True)
 
-            self.x_coordinate_box.setValue(self.selected_points[0].get_x())
-            self.y_coordinate_box.setValue(self.selected_points[0].get_y())
+            self.x_coordinate_box.setValue(self.clicked_point.get_x())
+            self.y_coordinate_box.setValue(self.clicked_point.get_y())
             # Disable y coordinate if it's zero and full edit is not on
-            if self.selected_points[0].get_y() == 0.0 and not self.full_edit_on:
+            if self.clicked_point.get_y() == 0.0 and not self.full_edit_on:
                 self.y_coordinate_box.setEnabled(False)
             else:
                 self.y_coordinate_box.setEnabled(True)
@@ -1685,6 +1690,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Args:
             event: An MPL Mouse event.
         """
+        if self.current_recoil_element is \
+                self.current_element_simulation.recoil_elements[0]:
+            return
+        if not self.current_element_simulation.area_limits:
+            return
+
         menu = QtWidgets.QMenu(self)
 
         action = QtWidgets.QAction(self.tr("Multiply area..."), self)
@@ -1912,14 +1923,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             erelease: Area end event.
         """
         if not self.current_element_simulation:
-
             return
         xmin = eclick.xdata
         xmax = erelease.xdata
         ymin = eclick.ydata
         ymax = erelease.ydata
 
-        if xmin == xmax or ymin == ymax:
+        click_x = self.__rectangle_event_click.x
+
+        if  click_x == self.__rectangle_event_release.x\
+                and round(self.__rectangle_event_click.xdata, 5) != \
+                round(xmin, 5):
+            self.__context_menu(self.__rectangle_event_click)
             return
 
         sel_points = []
@@ -1927,4 +1942,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if xmin <= point.get_x() <= xmax and ymin <= point.get_y() <= ymax:
                 sel_points.append(point)
         self.selected_points = sel_points
+        if sel_points:
+            self.clicked_point = sel_points[0]
         self.update_plot()
