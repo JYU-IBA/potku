@@ -40,6 +40,7 @@ from dialogs.simulation.recoil_element_selection import \
 from dialogs.simulation.recoil_info_dialog import RecoilInfoDialog
 
 from matplotlib import offsetbox
+from matplotlib.widgets import RectangleSelector
 from matplotlib.widgets import SpanSelector
 from modules.element import Element
 from modules.general_functions import find_nearest
@@ -365,6 +366,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                                          facecolor='red'),
                                           button=1, span_stays=True,
                                           onmove_callback=self.on_span_motion)
+
+        self.rectangle_selector = RectangleSelector(self.axes,
+                                                    self.on_rectangle_select,
+                                                    useblit=True,
+                                                    drawtype='box',
+                                                    rectprops=dict(
+                                                        alpha=0.5,
+                                                        facecolor='red'),
+                                                    button=3)
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
@@ -1850,20 +1860,28 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 break
             i = i + 1
 
-    def on_rectangle_select(self, xmin, xmax):
+    def on_rectangle_select(self, eclick, erelease):
         """
         Select multiple points.
 
         Args:
-            xmin: Area start.
-            xmax: Area end.
+            eclick: Area start event.
+            erelease: Area end event.
         """
-        # TODO: update!!!
         if not self.current_element_simulation:
+
             return
+        xmin = eclick.xdata
+        xmax = erelease.xdata
+        ymin = eclick.ydata
+        ymax = erelease.ydata
+
+        if xmin == xmax or ymin == ymax:
+            return
+
         sel_points = []
         for point in self.current_recoil_element.get_points():
-            if xmin <= point.get_x() <= xmax:
+            if xmin <= point.get_x() <= xmax and ymin <= point.get_y() <= ymax:
                 sel_points.append(point)
         self.selected_points = sel_points
         self.update_plot()
