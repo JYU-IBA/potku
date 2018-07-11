@@ -1580,6 +1580,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 if r_n_x <= dr_ps[i].get_x():
                     dr_ps[i].set_x(r_n_x - self.x_res)
 
+            self.__calculate_selected_area()
+
         self.update_plot()
 
     def get_new_checked_coordinates(self, event):
