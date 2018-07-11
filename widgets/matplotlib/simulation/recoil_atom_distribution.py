@@ -1517,14 +1517,19 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # When full edit is not on, zero vy values stay zero, and start and
         # end points can only move in y direction
         for i in range(0, len(dr_ps)):
+            # End point
             if dr_ps[i] == self.current_recoil_element.get_points()[-1] \
                     and not self.full_edit_on:
                 if dr_ps[i].get_y() == 0.0:
                     continue
                 else:
                     dr_ps[i].set_y(new_coords[i][1])
-            if dr_ps[i] == self.current_recoil_element.get_points()[0]:
-                dr_ps[i].set_y(new_coords[i][1])
+            # Start point
+            elif dr_ps[i] == self.current_recoil_element.get_points()[0]:
+                if not self.full_edit_on and dr_ps[i].get_y() == 0.0:
+                    continue
+                else:
+                    dr_ps[i].set_y(new_coords[i][1])
             else:
                 if dr_ps[i].get_y() == 0.0 and not self.full_edit_on:
                     dr_ps[i].set_coordinates((dr_ps[i].get_x(), 0.0))
@@ -1535,6 +1540,22 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                         dr_ps[i].set_coordinates((dr_ps[i].get_x(), 0.0))
                     else:
                         dr_ps[i].set_coordinates(new_coords[i])
+            # Check that dragged point hasn't crossed with neighbors
+            left_neighbor = \
+                self.current_element_simulation.get_left_neighbor(
+                    self.current_recoil_element, dr_ps[i])
+            if left_neighbor:
+                l_n_x = left_neighbor.get_x()
+                if dr_ps[i].get_x() <= l_n_x:
+                    dr_ps[i].set_x(l_n_x + self.x_res)
+
+            right_neighbor = \
+                self.current_element_simulation.get_right_neighbor(
+                    self.current_recoil_element, dr_ps[i])
+            if right_neighbor:
+                r_n_x = right_neighbor.get_x()
+                if r_n_x <= dr_ps[i].get_x():
+                    dr_ps[i].set_x(r_n_x - self.x_res)
 
         self.update_plot()
 
