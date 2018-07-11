@@ -1420,12 +1420,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.x_coordinate_box.setEnabled(False)
             else:
                 self.x_coordinate_box.setEnabled(True)
+
             self.x_coordinate_box.setValue(self.selected_points[0].get_x())
-            self.y_coordinate_box.setEnabled(True)
             self.y_coordinate_box.setValue(self.selected_points[0].get_y())
-            # self.text.set_text('selected: %d %d' %
-            # (self.selected_points[0].get_coordinates()[0],
-            # self.selected_points[0].get_coordinates()[1]))
+            # Disable y coordinate if it's zero and full edit is not on
+            if self.selected_points[0].get_y() == 0.0 and not self.full_edit_on:
+                self.y_coordinate_box.setEnabled(False)
+            else:
+                self.y_coordinate_box.setEnabled(True)
         else:
             self.markers_selected.set_data(
                 self.current_element_simulation.get_xs(
@@ -1716,9 +1718,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 get_xdata()[0]
             for point in reversed(self.current_recoil_element.get_points()):
                 x = point.get_x()
-                if x < lower_limit:
+                if x <= lower_limit:
                     break
-                if upper_limit < x:
+                if upper_limit <= x:
                     continue
                 else:
                     self.current_element_simulation.remove_point(
@@ -1726,6 +1728,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # Add
             points = self.current_element_simulation.\
                 recoil_elements[0].get_points()
+            main_y_lower = None
+            main_y_lower_i = None
+            main_y_upper = None
+            main_y_upper_i = None
 
             for i in range(len(points)):
                 main_p_x = points[i].get_x()
@@ -1737,6 +1743,22 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 else:
                     if main_p_x not in self.current_recoil_element.get_xs():
                         self.add_point((main_p_x, main_p_y))
+                    if main_p_x == lower_limit:
+                        main_y_lower = main_p_y
+                        main_y_lower_i = i
+                    if main_p_x == upper_limit:
+                        main_y_upper = main_p_y
+                        main_y_upper_i = i
+
+            # Adjust the lower and upper limit ys
+            if main_y_lower and main_y_upper:
+                lower_point = self.current_element_simulation.get_point_by_i(
+                    self.current_recoil_element, main_y_lower_i)
+                lower_point.set_y(main_y_lower)
+                upper_point = self.current_element_simulation.get_point_by_i(
+                    self.current_recoil_element, main_y_upper_i)
+                upper_point.set_y(main_y_upper)
+
             # If fraction is defined, use it to calculate new y coordinates
             # for points between limits
             if dialog.fraction:
