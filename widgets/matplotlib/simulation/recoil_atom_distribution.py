@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 10.7.2018
+Updated on 11.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1513,6 +1513,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     continue
                 else:
                     dr_ps[i].set_y(new_coords[i][1])
+            if dr_ps[i] == self.current_recoil_element.get_points()[0]:
+                dr_ps[i].set_y(new_coords[i][1])
             else:
                 if dr_ps[i].get_y() == 0.0 and not self.full_edit_on:
                     dr_ps[i].set_coordinates((dr_ps[i].get_x(), 0.0))
