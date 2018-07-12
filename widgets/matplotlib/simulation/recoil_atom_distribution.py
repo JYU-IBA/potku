@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 11.7.2018
+Updated on 12.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -52,7 +52,6 @@ from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QLocale
-from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QGuiApplication
 
 from shapely.geometry import Polygon
@@ -60,6 +59,7 @@ from shapely.geometry import Polygon
 from widgets.matplotlib.base import MatplotlibWidget
 from widgets.matplotlib.simulation.element import ElementWidget
 from widgets.simulation.controls import SimulationControlsWidget
+from widgets.simulation.point_coordinates import PointCoordinatesWidget
 from widgets.simulation.recoil_element import RecoilElementWidget
 
 
@@ -396,6 +396,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.clipboard.changed.connect(self.__update_multiply_action)
 
         self.__button_area_calculation = None
+        self.coordinates_widget = None
+        self.coordinates_action = None
 
         # This customizes the toolbar buttons
         self.__fork_toolbar_buttons()
@@ -632,7 +634,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         current_end_x = current_end.get_x()
 
         main_end_y = main_end.get_y()
-        current_end_y = current_end.get_y()
         if main_end_x > current_end_x:
             if main_end_y == 0.0:
                 new_point = self.add_zero_point(main_end_x)
@@ -650,7 +651,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         for p in points_to_delete:
             self.current_element_simulation.remove_point(
                 self.current_recoil_element, p)
-        pass
 
     def update_current_recoils_zeros(self):
         """
@@ -803,8 +803,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.current_element_simulation.get_left_neighbor(
                     self.current_recoil_element, left_neighbor)
             # If there is no space for left neighbor, remove it
-            if round(left_left_neighbor and new_point.get_x() - \
-                    left_left_neighbor.get_x(), 2) < 2 * self.x_res:
+            if round(left_left_neighbor and new_point.get_x() -
+               left_left_neighbor.get_x(), 2) < 2 * self.x_res:
                 self.current_element_simulation.remove_point(
                     self.current_recoil_element, left_neighbor)
             else:
@@ -816,8 +816,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.current_element_simulation.get_right_neighbor(
                     self.current_recoil_element, right_neighbor)
             # If there is no space for right neighbor, remove it
-            if round(right_right_neighbor and right_right_neighbor.get_x() - \
-                    new_point.get_x(), 2) < 2 * self.x_res:
+            if round(right_right_neighbor and right_right_neighbor.get_x() -
+               new_point.get_x(), 2) < 2 * self.x_res:
                 self.current_element_simulation.remove_point(
                     self.current_recoil_element, right_neighbor)
             else:
@@ -974,7 +974,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             return  # If clicked Yes, then continue normally
         element_simulation = self.element_manager \
             .get_element_simulation_with_radio_button(
-            self.radios.checkedButton())
+                self.radios.checkedButton())
         # Remove possible other recoil elements
         for recoil_elem in element_simulation.recoil_elements:
             self.remove_recoil_element(recoil_elem.widgets[0],
@@ -1102,65 +1102,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Make own buttons
         self.mpl_toolbar.addSeparator()
 
-        # Point x coordinate spinbox
-        self.x_coordinate_box = QtWidgets.QDoubleSpinBox(self)
-        # Set decimal pointer to .
-        self.x_coordinate_box.setLocale(self.locale)
-        self.x_coordinate_box.setToolTip("X coordinate of selected point")
-        self.x_coordinate_box.setSingleStep(0.1)
-        self.x_coordinate_box.setDecimals(2)
-        self.x_coordinate_box.setMinimum(0)
-        self.x_coordinate_box.setMaximum(1000000000000)
-        self.x_coordinate_box.setMaximumWidth(62)
-        self.x_coordinate_box.setKeyboardTracking(False)
-        self.x_coordinate_box.valueChanged.connect(self.set_selected_point_x)
-        self.x_coordinate_box.setContextMenuPolicy(Qt.ActionsContextMenu)
-        self.actionXMultiply = QtWidgets.QAction(self)
-        self.actionXMultiply.setText("Multiply with value in clipboard\n(" +
-                                     self.ratio_str + ")")
-        self.actionXMultiply.triggered.connect(
-            lambda: self.__multiply_coordinate(self.x_coordinate_box))
-        self.x_coordinate_box.addAction(self.actionXMultiply)
+        # Coordinates widget
+        self.coordinates_widget = PointCoordinatesWidget(self)
+        self.coordinates_action = self.mpl_toolbar.addWidget(
+            self.coordinates_widget)
 
-        self.actionXUndo = QtWidgets.QAction(self)
-        self.actionXUndo.setText("Undo multipy")
-        self.actionXUndo.triggered.connect(
-            lambda: self.undo(self.x_coordinate_box))
-        # self.actionXUndo.setEnabled(False)
-        self.x_coordinate_box.addAction(self.actionXUndo)
-
-        self.x_box_action = self.mpl_toolbar.addWidget(self.x_coordinate_box)
-        self.x_coordinate_box.setEnabled(False)
-
-        # Point y coordinate spinbox
-        self.y_coordinate_box = QtWidgets.QDoubleSpinBox(self)
-        # Set decimal pointer to .
-        self.y_coordinate_box.setLocale(self.locale)
-        self.y_coordinate_box.setToolTip("Y coordinate of selected point")
-        self.y_coordinate_box.setSingleStep(0.1)
-        self.y_coordinate_box.setDecimals(4)
-        self.y_coordinate_box.setMaximum(1000000000000)
-        self.y_coordinate_box.setMaximumWidth(62)
-        self.y_coordinate_box.setMinimum(0.0)
-        self.y_coordinate_box.setKeyboardTracking(False)
-        self.y_coordinate_box.valueChanged.connect(self.set_selected_point_y)
-        self.y_coordinate_box.setContextMenuPolicy(Qt.ActionsContextMenu)
-        self.actionYMultiply = QtWidgets.QAction(self)
-        self.actionYMultiply.setText("Multiply with value in clipboard\n(" +
-                                     self.ratio_str + ")")
-        self.actionYMultiply.triggered.connect(
-            lambda: self.__multiply_coordinate(self.y_coordinate_box))
-        self.y_coordinate_box.addAction(self.actionYMultiply)
-
-        self.actionYUndo = QtWidgets.QAction(self)
-        self.actionYUndo.setText("Undo multiply")
-        self.actionYUndo.triggered.connect(
-            lambda: self.undo(self.y_coordinate_box))
-        self.actionYUndo.setEnabled(False)
-        self.y_coordinate_box.addAction((self.actionYUndo))
-
-        self.y_box_action = self.mpl_toolbar.addWidget(self.y_coordinate_box)
-        self.y_coordinate_box.setEnabled(False)
+        if not self.current_element_simulation:
+            self.coordinates_action.setVisible(False)
+        else:
+            self.coordinates_widget.y_coordinate_box.setEnabled(False)
+            self.coordinates_widget.x_coordinate_box.setEnabled(False)
 
         # Point removal
         point_remove_action = QtWidgets.QAction("Remove point", self)
@@ -1169,13 +1120,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # TODO: Temporary icon
         self.__icon_manager.set_icon(point_remove_action, "del.png")
         self.mpl_toolbar.addAction(point_remove_action)
-
-        if not self.current_element_simulation:
-            self.x_box_action.setVisible(False)
-            self.y_box_action.setVisible(False)
-        else:
-            self.y_coordinate_box.setEnabled(False)
-            self.x_coordinate_box.setEnabled(False)
 
         self.__button_area_calculation = QtWidgets.QToolButton(self)
         self.__button_area_calculation.clicked.connect(
@@ -1187,61 +1131,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.mpl_toolbar.addWidget(self.__button_area_calculation)
         self.__button_area_calculation.setEnabled(False)
 
-    def undo(self, spinbox):
-        """
-        Undo change to spinbox value.
-        """
-        if spinbox == self.x_coordinate_box:
-            old_value = self.selected_points[0].previous_x.pop()
-            if not self.selected_points[0].previous_x:
-                self.actionXUndo.setEnabled(False)
-        else:
-            old_value = self.selected_points[0].previous_y.pop()
-            if not self.selected_points[0].previous_y:
-                self.actionYUndo.setEnabled(False)
-        spinbox.setValue(old_value)
-
     def __update_multiply_action(self):
         self.ratio_str = self.clipboard.text()
-        self.actionXMultiply.setText("Multiply with value in clipboard\n(" +
-                                     self.ratio_str + ")")
-        self.actionYMultiply.setText("Multiply with value in clipboard\n(" +
-                                     self.ratio_str + ")")
-
-    def __multiply_coordinate(self, spinbox):
-        """
-        Multiply the spinbox's value with the value in clipboard.
-
-        Args:
-            spinbox: Spinbox whose value is multiplied.
-        """
-        try:
-            ratio = float(self.ratio_str)
-            coord = spinbox.value()
-            new_coord = round(ratio * coord, 3)
-            if spinbox == self.x_coordinate_box:
-                self.selected_points[0].previous_x.append(
-                    self.selected_points[0].get_x())
-                self.actionXUndo.setEnabled(True)
-            else:
-                self.selected_points[0].previous_y.append(
-                    self.selected_points[0].get_y())
-                self.actionYUndo.setEnabled(True)
-            spinbox.setValue(new_coord)
-        except ValueError:
-            QtWidgets.QMessageBox.critical(self.parent, "Error",
-                                           "Value '" + self.ratio_str +
-                                           "' is not suitable for "
-                                           "multiplying.\n\nPlease copy a "
-                                           "suitable value to clipboard.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+        self.coordinates_widget.actionXMultiply.setText(
+            "Multiply with value in clipboard\n(" + self.ratio_str + ")")
+        self.coordinates_widget.actionYMultiply.setText(
+            "Multiply with value in clipboard\n(" + self.ratio_str + ")")
 
     def set_selected_point_x(self):
         """Sets the selected point's x coordinate
         to the value of the x spinbox.
         """
-        x = self.x_coordinate_box.value()
+        x = self.coordinates_widget.x_coordinate_box.value()
         leftmost_sel_point = self.clicked_point
         left_neighbor = self.current_element_simulation.get_left_neighbor(
             self.current_recoil_element,
@@ -1274,7 +1175,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """Sets the selected point's y coordinate
         to the value of the y spinbox.
         """
-        y = self.y_coordinate_box.value()
+        y = self.coordinates_widget.y_coordinate_box.value()
         leftmost_sel_point = self.clicked_point
         leftmost_sel_point.set_y(y)
         self.update_plot()
@@ -1393,7 +1294,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if error:
                 self.current_element_simulation.remove_point(
                     self.current_recoil_element, new_point)
-                # TODO: Add an error message text label
                 QtWidgets.QMessageBox.critical(self.parent, "Error",
                                                "Can't add a point here.\nThere "
                                                "is no space for it.",
@@ -1431,8 +1331,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.lines.set_visible(True)
 
         if self.selected_points:  # If there are selected points
-            self.x_box_action.setVisible(True)
-            self.y_box_action.setVisible(True)
+            self.coordinates_action.setVisible(True)
             self.markers_selected.set_visible(True)
             selected_xs = []
             selected_ys = []
@@ -1443,17 +1342,19 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if self.selected_points[0] == \
                     self.current_recoil_element.get_points()[-1] \
                     and not self.full_edit_on:
-                self.x_coordinate_box.setEnabled(False)
+                self.coordinates_widget.x_coordinate_box.setEnabled(False)
             else:
-                self.x_coordinate_box.setEnabled(True)
+                self.coordinates_widget.x_coordinate_box.setEnabled(True)
 
-            self.x_coordinate_box.setValue(self.clicked_point.get_x())
-            self.y_coordinate_box.setValue(self.clicked_point.get_y())
+            self.coordinates_widget.x_coordinate_box.setValue(
+                self.clicked_point.get_x())
+            self.coordinates_widget.y_coordinate_box.setValue(
+                self.clicked_point.get_y())
             # Disable y coordinate if it's zero and full edit is not on
             if self.clicked_point.get_y() == 0.0 and not self.full_edit_on:
-                self.y_coordinate_box.setEnabled(False)
+                self.coordinates_widget.y_coordinate_box.setEnabled(False)
             else:
-                self.y_coordinate_box.setEnabled(True)
+                self.coordinates_widget.y_coordinate_box.setEnabled(True)
         else:
             self.markers_selected.set_data(
                 self.current_element_simulation.get_xs(
@@ -1461,8 +1362,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.current_element_simulation.get_ys(
                     self.current_recoil_element))
             self.markers_selected.set_visible(False)
-            self.x_box_action.setVisible(False)
-            self.y_box_action.setVisible(False)
+            self.coordinates_action.setVisible(False)
 
         self.fig.canvas.draw_idle()
 
@@ -1850,12 +1750,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if start_i == len(points_x) - 1:
                 nearest_start_point = self.current_element_simulation. \
                     get_point_by_i(
-                    self.current_recoil_element, start_i - 1)
+                        self.current_recoil_element, start_i - 1)
                 nearest_start = nearest_start_point.get_x()
             else:
                 nearest_end_point = \
                     self.current_element_simulation.get_point_by_i(
-                    self.current_recoil_element, start_i + 1)
+                        self.current_recoil_element, start_i + 1)
                 nearest_end = nearest_end_point.get_x()
 
         for lim in self.current_recoil_element.area_limits:
@@ -1975,9 +1875,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         click_x = self.__rectangle_event_click.x
 
-        if  click_x == self.__rectangle_event_release.x\
-                and round(self.__rectangle_event_click.xdata, 5) != \
-                round(xmin, 5):
+        if click_x == self.__rectangle_event_release.x\
+           and round(self.__rectangle_event_click.xdata, 5) != \
+           round(xmin, 5):
             self.__context_menu(self.__rectangle_event_click)
             return
 
