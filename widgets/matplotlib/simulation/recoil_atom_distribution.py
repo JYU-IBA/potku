@@ -1223,8 +1223,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 else:
                     self.point_remove_action.setEnabled(True)
                 # If clicked point is zero and full edit is not on
-                if self.clicked_point.get_y() == 0.0 and not self.full_edit_on:
-                    self.point_remove_action.setEnabled(False)
+                if self.clicked_point.get_y() == 0.0:
+                    if not self.full_edit_on or self.current_recoil_element !=\
+                       self.current_element_simulation.recoil_elements[0]:
+                        self.point_remove_action.setEnabled(False)
                 self.set_on_click_attributes(event)
 
                 self.update_plot()
@@ -1243,6 +1245,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                         if new_point:
                             self.selected_points = [new_point]
                             self.dragged_points = [new_point]
+                            self.clicked_point = new_point
+                            if new_point.get_y() == 0.0:
+                                if not self.full_edit_on or \
+                                   self.current_recoil_element != \
+                                   self.current_element_simulation.\
+                                   recoil_elements[0]:
+                                    self.point_remove_action.setEnabled(False)
+                                    self.coordinates_widget.y_coordinate_box.\
+                                        setEnabled(False)
                             self.set_on_click_attributes(event)
                             self.update_plot()
 
@@ -1282,8 +1293,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         new_point = Point(coords)
         self.current_element_simulation.add_point(
             self.current_recoil_element, new_point)
-        left_neighbor_x = self.current_element_simulation.get_left_neighbor(
-            self.current_recoil_element, new_point).get_x()
+        left_neighbor = self.current_element_simulation.get_left_neighbor(
+            self.current_recoil_element, new_point)
+        left_neighbor_x = left_neighbor.get_x()
 
         right_neighbor = self.current_element_simulation.get_right_neighbor(
             self.current_recoil_element, new_point)
@@ -1307,6 +1319,17 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     error = True
                 else:
                     new_point.set_x(right_neighbor_x - self.x_res)
+
+            if not self.full_edit_on or \
+               self.current_element_simulation.recoil_elements[0] != \
+               self.current_recoil_element:
+                # Check if point is added between two zeros
+                if right_neighbor.get_y() == 0.0 and left_neighbor.get_y() ==\
+                   0.0:
+                    new_point.set_y(0.0)
+                elif new_point.get_y() < 0.0001:
+                    new_point.set_y(0.0001)
+
 
             if error:
                 self.current_element_simulation.remove_point(
@@ -1363,15 +1386,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             else:
                 self.coordinates_widget.x_coordinate_box.setEnabled(True)
 
-            self.coordinates_widget.x_coordinate_box.setValue(
-                self.clicked_point.get_x())
-            self.coordinates_widget.y_coordinate_box.setValue(
-                self.clicked_point.get_y())
-            # Disable y coordinate if it's zero and full edit is not on
-            if self.clicked_point.get_y() == 0.0 and not self.full_edit_on:
-                self.coordinates_widget.y_coordinate_box.setEnabled(False)
-            else:
-                self.coordinates_widget.y_coordinate_box.setEnabled(True)
+            if self.clicked_point:
+                self.coordinates_widget.x_coordinate_box.setValue(
+                    self.clicked_point.get_x())
+                self.coordinates_widget.y_coordinate_box.setValue(
+                    self.clicked_point.get_y())
+                # Disable y coordinate if it's zero and full edit is not on
+                if self.clicked_point.get_y() == 0.0:
+                    if not self.full_edit_on or \
+                       self.current_element_simulation.recoil_elements[0]\
+                       != self.current_recoil_element:
+                        self.coordinates_widget.y_coordinate_box.setEnabled(
+                            False)
+                else:
+                    self.coordinates_widget.y_coordinate_box.setEnabled(True)
         else:
             self.markers_selected.set_data(
                 self.current_element_simulation.get_xs(
@@ -1476,7 +1504,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 else:
                     dr_ps[i].set_y(new_coords[i][1])
             else:
-                if dr_ps[i].get_y() == 0.0 and not self.full_edit_on:
+                if dr_ps[i].get_y() == 0.0 and not self.full_edit_on and \
+                        self.current_recoil_element == \
+                        self.current_element_simulation.recoil_elements[0]:
                     dr_ps[i].set_coordinates((dr_ps[i].get_x(), 0.0))
                 else:
                     if self.current_recoil_element != \
