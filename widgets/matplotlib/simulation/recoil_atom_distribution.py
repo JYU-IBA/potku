@@ -398,6 +398,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.__button_area_calculation = None
         self.coordinates_widget = None
         self.coordinates_action = None
+        self.point_remove_action = None
 
         # This customizes the toolbar buttons
         self.__fork_toolbar_buttons()
@@ -517,6 +518,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.full_edit_on = True
             self.edit_lock_push_button.setText("Full edit unlocked")
             self.current_element_simulation.y_min = 0.0
+            if self.clicked_point is \
+               self.current_recoil_element.get_points()[-1]:
+                self.point_remove_action.setEnabled(True)
         else:
             # TODO: return to basic view (full edit not on)
             self.current_element_simulation.lock_edit()
@@ -1114,12 +1118,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.coordinates_widget.x_coordinate_box.setEnabled(False)
 
         # Point removal
-        point_remove_action = QtWidgets.QAction("Remove point", self)
-        point_remove_action.triggered.connect(self.remove_points)
-        point_remove_action.setToolTip("Remove selected points")
+        self.point_remove_action = QtWidgets.QAction("Remove point", self)
+        self.point_remove_action.triggered.connect(self.remove_points)
+        self.point_remove_action.setToolTip("Remove selected points")
         # TODO: Temporary icon
-        self.__icon_manager.set_icon(point_remove_action, "del.png")
-        self.mpl_toolbar.addAction(point_remove_action)
+        self.__icon_manager.set_icon(self.point_remove_action, "del.png")
+        self.mpl_toolbar.addAction(self.point_remove_action)
 
         self.__button_area_calculation = QtWidgets.QToolButton(self)
         self.__button_area_calculation.clicked.connect(
@@ -1207,6 +1211,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.selected_points = [clicked_point]
                 self.dragged_points.extend(self.selected_points)
                 self.clicked_point = clicked_point
+                if self.clicked_point is \
+                        self.current_recoil_element.get_points()[0]:
+                    self.point_remove_action.setEnabled(False)
+                elif self.clicked_point is \
+                        self.current_recoil_element.get_points()[-1] and not \
+                        self.full_edit_on:
+                    self.point_remove_action.setEnabled(False)
+                else:
+                    self.point_remove_action.setEnabled(True)
 
                 self.set_on_click_attributes(event)
 
@@ -1576,14 +1589,33 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         if not self.current_element_simulation:
             return
+        ret = False
         if len(self.current_recoil_element.get_points()) - \
-                len(self.selected_points) < 2:
+           len(self.selected_points) < 2:
             QtWidgets.QMessageBox.critical(self.parent, "Error",
-                                           "There must always be at least two"
-                                           " points.",
+                                           "You cannot delete this "
+                                           "point.\nThere must always be at "
+                                           "least two points.",
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
-        else:
+            ret = True
+        if self.current_recoil_element.get_points()[0] in \
+           self.selected_points:
+            QtWidgets.QMessageBox.critical(self.parent, "Error",
+                                           "You cannot delete the first "
+                                           "point.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+            ret = True
+        if self.current_recoil_element.get_points()[-1] in \
+           self.selected_points and not self.full_edit_on:
+            QtWidgets.QMessageBox.critical(self.parent, "Error",
+                                           "You cannot delete the last "
+                                           "point when full edit is locked.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+            ret = True
+        if not ret:
             for sel_point in self.selected_points:
                 self.current_element_simulation.remove_point(
                     self.current_recoil_element, sel_point)
