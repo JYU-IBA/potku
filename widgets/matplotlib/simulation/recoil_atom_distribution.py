@@ -1211,16 +1211,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.selected_points = [clicked_point]
                 self.dragged_points.extend(self.selected_points)
                 self.clicked_point = clicked_point
+                # If clicked point is first
                 if self.clicked_point is \
                         self.current_recoil_element.get_points()[0]:
                     self.point_remove_action.setEnabled(False)
+                # If clicked point is last and full edit is not on
                 elif self.clicked_point is \
                         self.current_recoil_element.get_points()[-1] and not \
                         self.full_edit_on:
                     self.point_remove_action.setEnabled(False)
                 else:
                     self.point_remove_action.setEnabled(True)
-
+                # If clicked point is zero and full edit is not on
+                if self.clicked_point.get_y() == 0.0 and not self.full_edit_on:
+                    self.point_remove_action.setEnabled(False)
                 self.set_on_click_attributes(event)
 
                 self.update_plot()
@@ -1615,6 +1619,19 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
             ret = True
+        if 0.0 in self.current_recoil_element.get_ys() and not \
+           self.full_edit_on:
+            for point in self.selected_points:
+                if point.get_y() == 0.0:
+                    QtWidgets.QMessageBox.critical(self.parent, "Error",
+                                                   "You cannot delete a point "
+                                                   "that has 0 as a y "
+                                                   "coordinate when full edit "
+                                                   "is locked.",
+                                                   QtWidgets.QMessageBox.Ok,
+                                                   QtWidgets.QMessageBox.Ok)
+                    ret = True
+                    break
         if not ret:
             for sel_point in self.selected_points:
                 self.current_element_simulation.remove_point(
