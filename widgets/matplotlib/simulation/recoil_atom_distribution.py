@@ -1227,6 +1227,21 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     if not self.full_edit_on or self.current_recoil_element !=\
                        self.current_element_simulation.recoil_elements[0]:
                         self.point_remove_action.setEnabled(False)
+                elif self.current_element_simulation.recoil_elements[0] != \
+                        self.current_recoil_element or not self.full_edit_on:
+                    # If point is between two zeros, cannot delete
+                    left_neighbor = \
+                        self.current_element_simulation.get_left_neighbor(
+                            self.current_recoil_element,
+                            self.clicked_point)
+                    right_neighbor = \
+                        self.current_element_simulation.get_right_neighbor(
+                            self.current_recoil_element,
+                            self.clicked_point)
+                    if left_neighbor and right_neighbor:
+                        if left_neighbor.get_y() == 0.0 and \
+                                right_neighbor.get_y() == 0.0:
+                            self.point_remove_action.setEnabled(False)
                 self.set_on_click_attributes(event)
 
                 self.update_plot()
@@ -1492,7 +1507,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         for i in range(0, len(dr_ps)):
             # End point
             if dr_ps[i] == self.current_recoil_element.get_points()[-1] \
-                    and not self.full_edit_on:
+               and (not self.full_edit_on or self.current_recoil_element
+               != self.current_element_simulation.recoil_elements[0]):
                 if dr_ps[i].get_y() == 0.0:
                     continue
                 else:
@@ -1649,15 +1665,44 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
             ret = True
-        if 0.0 in self.current_recoil_element.get_ys() and not \
-           self.full_edit_on:
-            for point in self.selected_points:
-                if point.get_y() == 0.0:
+        if 0.0 in self.current_recoil_element.get_ys():
+            show_msg = False
+            reason = "."
+            if not self.full_edit_on:
+                reason = " when full edit is on."
+                show_msg = True
+            if self.current_recoil_element != \
+                    self.current_element_simulation.recoil_elements[0]:
+                reason = " from non-main recoil element."
+                show_msg = True
+            if show_msg:
+                for point in self.selected_points:
+                    if point.get_y() == 0.0:
+                        QtWidgets.QMessageBox.critical(self.parent, "Error",
+                                                       "You cannot delete a "
+                                                       "point that has 0 as a "
+                                                       "y coordinate" + reason,
+                                                       QtWidgets.QMessageBox.Ok,
+                                                       QtWidgets.QMessageBox.Ok)
+                        ret = True
+                        break
+        # Check if trying to delete a non-zero point from between two zero
+        # points
+        for point in self.selected_points:
+            left_neighbor = self.current_element_simulation.get_left_neighbor(
+                self.current_recoil_element, point)
+            right_neighbor = \
+                self.current_element_simulation.get_right_neighbor(
+                    self.current_recoil_element, point)
+            if left_neighbor and right_neighbor:
+                if left_neighbor.get_y() == 0.0and right_neighbor.get_y() == \
+                   0.0 and point.get_y() != 0.0:
                     QtWidgets.QMessageBox.critical(self.parent, "Error",
-                                                   "You cannot delete a point "
-                                                   "that has 0 as a y "
-                                                   "coordinate when full edit "
-                                                   "is locked.",
+                                                   "You cannot delete a "
+                                                   "point that has a non-zero y"
+                                                   " coordinate from between "
+                                                   "two points that have 0 as "
+                                                   "their y coordinate.",
                                                    QtWidgets.QMessageBox.Ok,
                                                    QtWidgets.QMessageBox.Ok)
                     ret = True
@@ -1964,7 +2009,45 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         for point in self.current_recoil_element.get_points():
             if xmin <= point.get_x() <= xmax and ymin <= point.get_y() <= ymax:
                 sel_points.append(point)
+
         self.selected_points = sel_points
         if sel_points:
+            allow_delete = True
             self.clicked_point = sel_points[0]
+            if self.current_recoil_element.get_points()[0] in \
+                    self.selected_points:
+                self.point_remove_action.setEnabled(False)
+                allow_delete = False
+            if self.current_recoil_element.get_points()[-1] in \
+               self.selected_points and not self.full_edit_on and allow_delete:
+                self.point_remove_action.setEnabled(False)
+                allow_delete = False
+            if 0.0 in self.current_recoil_element.get_ys() and allow_delete:
+                if not self.full_edit_on or self.current_recoil_element != \
+                        self.current_element_simulation.recoil_elements[0]:
+                    for point in self.selected_points:
+                        if point.get_y() == 0.0:
+                            self.point_remove_action.setEnabled(False)
+                            allow_delete = False
+                            break
+            # Check if trying to delete a non-zero point from between two zero
+            # points
+            if allow_delete:
+                for point in self.selected_points:
+                    left_neighbor = \
+                        self.current_element_simulation.get_left_neighbor(
+                        self.current_recoil_element, point)
+                    right_neighbor = \
+                        self.current_element_simulation.get_right_neighbor(
+                            self.current_recoil_element, point)
+                    if left_neighbor and right_neighbor:
+                        if left_neighbor.get_y() == 0.0 and right_neighbor.\
+                                get_y() == 0.0 and point.get_y() != 0.0:
+                            self.point_remove_action.setEnabled(False)
+                            allow_delete = False
+                            break
+
+            if allow_delete:
+                self.point_remove_action.setEnabled(True)
+
         self.update_plot()
