@@ -605,6 +605,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.update_recoil_element_info_labels()
             self.dragged_points.clear()
             self.selected_points.clear()
+            self.point_remove_action.setEnabled(False)
 
             # Update limit and area parts
             if self.current_recoil_element.area_limits:
