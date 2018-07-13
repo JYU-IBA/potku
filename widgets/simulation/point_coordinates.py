@@ -1,6 +1,7 @@
 # coding=utf-8
 """
 Created on 12.7.2018
+Updated on 13.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -33,7 +34,7 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
     Class for handling point coordinates spin boxes.
     """
 
-    def  __init__(self, parent):
+    def __init__(self, parent):
         """
         Initializes the widget.
 
@@ -134,14 +135,32 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
         Undo change to spinbox value.
         """
         if spinbox == self.x_coordinate_box:
-            old_value = self.parent.selected_points[0].previous_x.pop()
-            if not self.parent.selected_points[0].previous_x:
-                self.actionXUndo.setEnabled(False)
+            enable = False
+            for point in self.parent.selected_points:
+                if not point.previous_x:
+                    continue
+                old_value = point.previous_x.pop()
+                self.parent.set_selected_point_x(old_value, point)
+                if not point.previous_x:
+                    self.actionXUndo.setEnabled(False)
+                else:
+                    enable = True
+            if enable:
+                self.actionXUndo.setEnabled(True)
         else:
-            old_value = self.parent.selected_points[0].previous_y.pop()
-            if not self.parent.selected_points[0].previous_y:
-                self.actionYUndo.setEnabled(False)
-        spinbox.setValue(old_value)
+            enable = False
+            for point in self.parent.selected_points:
+                if not point.previous_y:
+                    continue
+                old_value = point.previous_y.pop()
+                self.parent.set_selected_point_y(old_value, point)
+                if not point.previous_y:
+                    self.actionYUndo.setEnabled(False)
+                else:
+                    enable = True
+            if enable:
+                self.actionYUndo.setEnabled(True)
+        # spinbox.setValue(old_value)
 
     def __multiply_coordinate(self, spinbox):
         """
@@ -152,17 +171,33 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
         """
         try:
             ratio = float(self.parent.ratio_str)
-            coord = spinbox.value()
-            new_coord = round(ratio * coord, 3)
             if spinbox == self.x_coordinate_box:
-                self.parent.selected_points[0].previous_x.append(
-                    self.parent.selected_points[0].get_x())
+                for point in reversed(self.parent.selected_points):
+                    if point.get_y() == 0.0:
+                        if not self.parent.full_edit_on or \
+                                self.parent.current_element_simulation. \
+                                        recoil_elements[0] != \
+                                self.parent.current_recoil_element:
+                            continue
+                    point.previous_x.append(point.get_x())
+                    coord = point.get_x()
+                    new_coord = round(ratio * coord, 3)
+                    self.parent.set_selected_point_x(new_coord, point)
                 self.actionXUndo.setEnabled(True)
             else:
-                self.parent.selected_points[0].previous_y.append(
-                    self.parent.selected_points[0].get_y())
+                for point in reversed(self.parent.selected_points):
+                    if point.get_y() == 0.0:
+                        if not self.parent.full_edit_on or \
+                                self.parent.current_element_simulation. \
+                                        recoil_elements[0] != \
+                                self.parent.current_recoil_element:
+                            continue
+                    point.previous_y.append(point.get_y())
+                    coord = point.get_y()
+                    new_coord = round(ratio * coord, 3)
+                    self.parent.set_selected_point_y(new_coord, point)
                 self.actionYUndo.setEnabled(True)
-            spinbox.setValue(new_coord)
+            # spinbox.setValue(new_coord)
         except ValueError:
             QtWidgets.QMessageBox.critical(self.parent.parent, "Error",
                                            "Value '" + self.parent.ratio_str +

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 12.7.2018
+Updated on 13.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1144,46 +1144,58 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.coordinates_widget.actionYMultiply.setText(
             "Multiply with value in clipboard\n(" + self.ratio_str + ")")
 
-    def set_selected_point_x(self):
+    def set_selected_point_x(self, x=None, clicked=None):
         """Sets the selected point's x coordinate
         to the value of the x spinbox.
+
+        Args:
+            x: New x coordinate.
+            clicked: Clicked point.
         """
-        x = self.coordinates_widget.x_coordinate_box.value()
-        leftmost_sel_point = self.clicked_point
+        if not x:
+            x = self.coordinates_widget.x_coordinate_box.value()
+        if not clicked:
+            clicked = self.clicked_point
         left_neighbor = self.current_element_simulation.get_left_neighbor(
             self.current_recoil_element,
-            leftmost_sel_point)
+            clicked)
         right_neighbor = self.current_element_simulation.get_right_neighbor(
             self.current_recoil_element,
-            leftmost_sel_point)
+            clicked)
 
         # Can't move past neighbors. If tried, sets x coordinate to
         # distance x_res from neighbor's x coordinate.
         if left_neighbor is None:
             if x < right_neighbor.get_x():
-                leftmost_sel_point.set_x(x)
+                clicked.set_x(x)
             else:
-                leftmost_sel_point.set_x(right_neighbor.get_x() - self.x_res)
+                clicked.set_x(right_neighbor.get_x() - self.x_res)
         elif right_neighbor is None:
             if x > left_neighbor.get_x():
-                leftmost_sel_point.set_x(x)
+                clicked.set_x(x)
             else:
-                leftmost_sel_point.set_x(left_neighbor.get_x() + self.x_res)
+                clicked.set_x(left_neighbor.get_x() + self.x_res)
         elif left_neighbor.get_x() < x < right_neighbor.get_x():
-            leftmost_sel_point.set_x(x)
+            clicked.set_x(x)
         elif left_neighbor.get_x() >= x:
-            leftmost_sel_point.set_x(left_neighbor.get_x() + self.x_res)
+            clicked.set_x(left_neighbor.get_x() + self.x_res)
         elif right_neighbor.get_x() <= x:
-            leftmost_sel_point.set_x(right_neighbor.get_x() - self.x_res)
+            clicked.set_x(right_neighbor.get_x() - self.x_res)
         self.update_plot()
 
-    def set_selected_point_y(self):
+    def set_selected_point_y(self, y=None, clicked=None):
         """Sets the selected point's y coordinate
         to the value of the y spinbox.
+
+        Args:
+            y: New y coordinate.
+            clicked: Clicked point.
         """
-        y = self.coordinates_widget.y_coordinate_box.value()
-        leftmost_sel_point = self.clicked_point
-        leftmost_sel_point.set_y(y)
+        if not y:
+            y = self.coordinates_widget.y_coordinate_box.value()
+        if not clicked:
+            clicked = self.clicked_point
+        clicked.set_y(y)
         self.update_plot()
 
     def on_click(self, event):
@@ -1255,6 +1267,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 else:
                     self.coordinates_widget.x_coordinate_box.setEnabled(True)
                 self.set_on_click_attributes(event)
+
+                # Check if undoing multiply is possible
+                if self.clicked_point.previous_y:
+                    self.coordinates_widget.actionYUndo.setEnabled(True)
+                else:
+                    self.coordinates_widget.actionYUndo.setEnabled(False)
+                if self.clicked_point.previous_x:
+                    self.coordinates_widget.actionXUndo.setEnabled(True)
+                else:
+                    self.coordinates_widget.actionXUndo.setEnabled(False)
 
                 self.update_plot()
             else:
