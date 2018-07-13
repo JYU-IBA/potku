@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 3.7.2018
+Updated on 13.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -455,7 +455,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                     symbol = element.symbol
 
                     label = r"$^{" + str(isotope) + "}$" + symbol + " (exp)"
-                else:
+                elif file_name.endswith(".simu"):
                     for s in file_name:
                         if s != "-":
                             if s.isdigit():
@@ -468,6 +468,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                     recoil_name = recoil_name_with_end.split('.')[0]
 
                     label = r"$^{" + isotope + "}$" + symbol + " " + recoil_name
+                else:
+                    label = file_name
 
                 x = tuple(float(pair[0]) for pair in data)
                 y = tuple(float(pair[1]) for pair in data)
@@ -546,8 +548,10 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 file = os.path.split(key)[1]
                 if file.endswith(".hist"):
                     element = file.rsplit('.', 1)[0]
-                else:
+                elif file.endswith(".simu"):
                     element = file.split('.')[0]
+                else:
+                    element = file
                 if key in self.__ignore_elements:
                     ignore_elements_for_dialog.append(element)
                 elements.append(element)
