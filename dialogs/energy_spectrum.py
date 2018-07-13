@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 3.7.2018
+Updated on 13.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -58,13 +58,15 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     """
     checked_cuts = {}
 
-    def __init__(self, parent, spectrum_type, element_simulation=None):
+    def __init__(self, parent, spectrum_type, element_simulation=None,
+                 recoil_widget=None):
         """Inits energy spectrum dialog.
         
         Args:
             parent: A TabWidget.
             spectrum_type: Whether spectrum is for measurement of simulation.
             element_simulation: ElementSimulation object.
+            recoil_widget: RecoilElement widget.
         """
         super().__init__()
         self.parent = parent
@@ -126,6 +128,12 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.ui.pushButton_OK.clicked.connect(
                 self.__calculate_selected_spectra)
 
+            # Find the corresponding recoil element to recoil widget
+            rec_to_check = None
+            for rec_element in element_simulation.recoil_elements:
+                if rec_element.widgets[0] is recoil_widget:
+                    rec_to_check = rec_element
+
             self.result_files = []
             recoil_prefixes_and_names = []  # .recoil files of the same
             # simulation are shown as one tree item.
@@ -142,7 +150,11 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                             recoil_prefixes_and_names.append(rec_name)
                             item = QtWidgets.QTreeWidgetItem()
                             item.setText(0, rec_name)
-                            item.setCheckState(0, QtCore.Qt.Unchecked)
+                            if rec_to_check and rec_to_check.prefix + "-" + \
+                               rec_to_check.name == rec_name:
+                                item.setCheckState(0, QtCore.Qt.Checked)
+                            else:
+                                item.setCheckState(0, QtCore.Qt.Unchecked)
                             self.ui.treeWidget.addTopLevelItem(item)
                             break
 

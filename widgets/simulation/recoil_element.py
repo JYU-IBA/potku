@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 2.7.2018
-Updated on 4.7.2018
+Updated on 13.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -99,7 +99,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
         # self.element_simulation.calculate_espe()
         dialog = EnergySpectrumParamsDialog(
             self.parent_tab, spectrum_type="simulation",
-            element_simulation=self.element_simulation)
+            element_simulation=self.element_simulation, recoil_widget=self)
         if dialog.result_files:
             self.parent_tab.energy_spectrum_widget = EnergySpectrumWidget(
                 parent=self.parent_tab, use_cuts=dialog.result_files,
@@ -110,7 +110,8 @@ class RecoilElementWidget(QtWidgets.QWidget):
         """
         Remove recoil from element simulation.
         """
-        reply = QtWidgets.QMessageBox.question(self, "Confirmation",
+        reply = QtWidgets.QMessageBox.question(self.parent.parent,
+                                               "Confirmation",
                                                "Deleting selected recoil "
                                                "element will delete possible "
                                                "energy spectra data calculated "
