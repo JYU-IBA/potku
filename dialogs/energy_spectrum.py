@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 18.6.2018
+Updated on 13.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -31,23 +31,25 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import logging
+import modules.masses as masses
 import os
 import sys
 
 from PyQt5 import uic
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import QLocale
 
-import modules.masses as masses
 from modules.cut_file import is_rbs, get_scatter_element
 from modules.element import Element
 from modules.energy_spectrum import EnergySpectrum
+from modules.general_functions import calculate_spectrum
 from modules.general_functions import read_espe_file
+from modules.general_functions import read_tof_list_file
 from modules.measurement import Measurement
+
 from widgets.matplotlib.measurement.energy_spectrum import \
     MatplotlibEnergySpectrumWidget
-from modules.general_functions import read_tof_list_file
-from modules.general_functions import calculate_spectrum
 
 
 class EnergySpectrumParamsDialog(QtWidgets.QDialog):
@@ -56,19 +58,24 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     """
     checked_cuts = {}
 
-    def __init__(self, parent, spectrum_type, element_simulation=None):
+    def __init__(self, parent, spectrum_type, element_simulation=None,
+                 recoil_widget=None):
         """Inits energy spectrum dialog.
         
         Args:
             parent: A TabWidget.
             spectrum_type: Whether spectrum is for measurement of simulation.
             element_simulation: ElementSimulation object.
+            recoil_widget: RecoilElement widget.
         """
         super().__init__()
         self.parent = parent
         self.spectrum_type = spectrum_type
         self.ui = uic.loadUi(
             os.path.join("ui_files", "ui_energy_spectrum_params.ui"), self)
+
+        locale = QLocale.c()
+        self.ui.histogramTicksDoubleSpinBox.setLocale(locale)
 
         # Connect buttons
         self.ui.pushButton_Cancel.clicked.connect(self.close)
@@ -121,21 +128,51 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.ui.pushButton_OK.clicked.connect(
                 self.__calculate_selected_spectra)
 
+            # Find the corresponding recoil element to recoil widget
+            rec_to_check = None
+            for rec_element in element_simulation.recoil_elements:
+                if rec_element.widgets[0] is recoil_widget:
+                    rec_to_check = rec_element
+
             self.result_files = []
-            elem_sim_prefixes = []  # .rec files of the same simulation are
-            # shown as one tree item.
+            recoil_prefixes_and_names = []  # .recoil files of the same
+            # simulation are shown as one tree item.
             for file in os.listdir(self.parent.obj.directory):
                 if file.endswith(".rec"):
-                    sim_name = file.split(".")[0]
+                    rec_name = file.split(".")[0]
 
-                    if sim_name in elem_sim_prefixes:
+                    if rec_name in recoil_prefixes_and_names:
                         continue
 
-                    elem_sim_prefixes.append(sim_name)
-                    item = QtWidgets.QTreeWidgetItem()
-                    item.setText(0, sim_name)
-                    item.setCheckState(0, QtCore.Qt.Unchecked)
-                    self.ui.treeWidget.addTopLevelItem(item)
+                    for f in os.listdir(self.parent.obj.directory):
+                        rec_prefix = rec_name.split('-')[0]
+                        if f.startswith(rec_prefix) and f.endswith(".erd"):
+                            recoil_prefixes_and_names.append(rec_name)
+                            item = QtWidgets.QTreeWidgetItem()
+                            item.setText(0, rec_name)
+                            if rec_to_check and rec_to_check.prefix + "-" + \
+                               rec_to_check.name == rec_name:
+                                item.setCheckState(0, QtCore.Qt.Checked)
+                            else:
+                                item.setCheckState(0, QtCore.Qt.Unchecked)
+                            self.ui.treeWidget.addTopLevelItem(item)
+                            break
+
+                    if rec_name in recoil_prefixes_and_names:
+                        continue
+
+                    # Also list rec files that have a running simulation
+                    for run_sim in self.parent.obj.request.running_simulations:
+                        for rec_elem in run_sim.recoil_elements:
+                            rec_prefix_and_elem = rec_elem.prefix + "-" + \
+                            rec_elem.name
+                            if rec_prefix_and_elem == rec_name:
+                                recoil_prefixes_and_names.append(rec_name)
+                                item = QtWidgets.QTreeWidgetItem()
+                                item.setText(0, rec_name)
+                                item.setCheckState(0, QtCore.Qt.Unchecked)
+                                self.ui.treeWidget.addTopLevelItem(item)
+                                break
 
             # Add calculated tof_list files to tof_list_tree_widget by
             # measurement under the same sample.
@@ -175,7 +212,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                         if rec_elem_prefix_and_name == item.text(0):
                             elem_sim.channel_width = self.ui.\
                                 histogramTicksDoubleSpinBox.value()
-                            elem_sim.calculate_espe()
+                            elem_sim.calculate_espe(rec_elem)
                             self.result_files.append(os.path.join(
                                 self.parent.obj.directory,
                                 rec_elem_prefix_and_name + ".simu"))

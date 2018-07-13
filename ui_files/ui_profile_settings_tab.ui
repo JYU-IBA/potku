@@ -86,12 +86,12 @@
               <item row="1" column="0">
                <widget class="QLabel" name="label_33">
                 <property name="text">
-                 <string>Date:</string>
+                 <string>Modification time:</string>
                 </property>
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QLabel" name="dateLabel_2">
+               <widget class="QLabel" name="dateLabel">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
                   <horstretch>0</horstretch>

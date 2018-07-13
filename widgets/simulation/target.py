@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.3.2018
-Updated on 14.6.2018
+Updated on 4.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,11 +28,14 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import os
-from PyQt5 import QtCore, uic, QtWidgets
 
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+from PyQt5 import uic
+
+from widgets.matplotlib.simulation.composition import TargetCompositionWidget
 from widgets.matplotlib.simulation.recoil_atom_distribution import \
     RecoilAtomDistributionWidget
-from widgets.matplotlib.simulation.composition import TargetCompositionWidget
 
 
 class TargetWidget(QtWidgets.QWidget):
@@ -46,6 +49,9 @@ class TargetWidget(QtWidgets.QWidget):
         recoil atom distribution.
 
         Args:
+            tab: A TabWidget.
+            simulation: A Simulation object.
+            target: A Target object.
             icon_manager: An icon manager class object.
         """
         super().__init__()
@@ -57,12 +63,9 @@ class TargetWidget(QtWidgets.QWidget):
         self.target = target
 
         self.target_widget = TargetCompositionWidget(self, self.target,
-                                                 icon_manager)
-        self.recoil_widget = RecoilAtomDistributionWidget(self,
-                                                          self.simulation,
-                                                          self.target,
-                                                          tab,
-                                                          icon_manager)
+                                                     icon_manager)
+        self.recoil_distribution_widget = RecoilAtomDistributionWidget(
+            self, self.simulation, self.target, tab, icon_manager)
 
         icon_manager.set_icon(self.ui.editPushButton, "edit.svg")
         self.ui.editPushButton.setIconSize(QtCore.QSize(14, 14))
@@ -74,7 +77,7 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.elementInfoWidget.hide()
 
         self.ui.exportElementsButton.clicked.connect(
-            self.recoil_widget.export_elements)
+            self.recoil_distribution_widget.export_elements)
 
         self.ui.targetRadioButton.clicked.connect(self.switch_to_target)
         self.ui.recoilRadioButton.clicked.connect(self.switch_to_recoil)
@@ -93,8 +96,8 @@ class TargetWidget(QtWidgets.QWidget):
         """
         Switch to target view.
         """
-        self.recoil_widget.original_x_limits = self.recoil_widget.\
-            axes.get_xlim()
+        self.recoil_distribution_widget.original_x_limits = \
+            self.recoil_distribution_widget.axes.get_xlim()
         self.ui.stackedWidget.setCurrentIndex(0)
         self.ui.recoilListWidget.hide()
         self.ui.editLockPushButton.hide()
@@ -107,11 +110,11 @@ class TargetWidget(QtWidgets.QWidget):
         Switch to recoil atom distribution view.
         """
         self.ui.stackedWidget.setCurrentIndex(1)
-        self.recoil_widget.update_layer_borders()
+        self.recoil_distribution_widget.update_layer_borders()
         self.ui.exportElementsButton.hide()
         self.ui.recoilListWidget.show()
         self.ui.editLockPushButton.show()
-        self.recoil_widget.recoil_element_info_on_switch()
+        self.recoil_distribution_widget.recoil_element_info_on_switch()
         self.ui.instructionLabel.setText("You can add a new point to the "
                                          "distribution on a line between "
                                          "points using Ctrl+click ("
@@ -128,19 +131,8 @@ class TargetWidget(QtWidgets.QWidget):
                                    ".target")
         self.target.to_file(target_path, None)
 
-        self.recoil_widget.save_mcsimu_rec_profile(self.simulation.directory)
-
-    def add_layer(self):
-        """Adds a layer in the target composition.
-        """
-        self.targetWidget.add_layer()
-
-    def remove_layer(self):
-        """Removes a layer in the target composition.
-        """
-        QtWidgets.QMessageBox.critical(self, "Error", "Not implemented",
-                                       QtWidgets.QMessageBox.Ok,
-                                       QtWidgets.QMessageBox.Ok)
+        self.recoil_distribution_widget.save_mcsimu_rec_profile(
+            self.simulation.directory)
 
     def set_shortcuts(self):
         """
@@ -149,4 +141,4 @@ class TargetWidget(QtWidgets.QWidget):
         self.del_points = QtWidgets.QShortcut(self)
         self.del_points.setKey(QtCore.Qt.Key_Delete)
         self.del_points.activated.connect(
-            lambda: self.recoil_widget.remove_points())
+            lambda: self.recoil_distribution_widget.remove_points())

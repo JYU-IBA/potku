@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 13.6.2018
+Updated on 2.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -32,6 +32,7 @@ import json
 import os
 import shutil
 import time
+import copy
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
@@ -118,6 +119,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.ui.tabs.currentChanged.connect(lambda: self.__check_for_red())
         self.__close = True
 
+        self.use_default_settings = self.ui.defaultSettingsCheckBox.isChecked()
+
         self.exec()
 
     def __change_element(self, button, combo_box):
@@ -186,8 +189,74 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.__close = False
             return
 
+        simulations_run = self.check_if_simulations_run()
+        simulations_running = self.simulations_running()
+
         check_box = self.ui.defaultSettingsCheckBox
-        if check_box.isChecked():
+        if check_box.isChecked() and not self.use_default_settings:
+            if simulations_run and simulations_running:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Simulated and running simulations",
+                    "There are simulations that use simulation settings, "
+                    "and either have been simulated or are currently running."
+                    "\nIf you save changes, the running simulations "
+                    "will be stopped, and the result files of the simulated "
+                    "and stopped simulations are deleted.\n\nDo you want to "
+                    "save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    self.__close = False
+                    return
+                else:
+                    # Stop simulations
+                    tmp_sims = copy.copy(self.simulation.running_simulations)
+                    for elem_sim in tmp_sims:
+                        elem_sim.stop()
+                        elem_sim.controls.state_label.setText("Stopped")
+                        elem_sim.controls.run_button.setEnabled(True)
+                        elem_sim.controls.stop_button.setEnabled(False)
+                    # TODO: Delete files
+            elif simulations_running:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Simulations running",
+                    "There are simulations running that use simulation "
+                    "settings.\nIf you save changes, the running "
+                    "simulations will be stopped, and their result files "
+                    "deleted.\n\nDo you want to save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    self.__close = False
+                    return
+                else:
+                    # Stop simulations
+                    tmp_sims = copy.copy(self.simulation.running_simulations)
+                    for elem_sim in tmp_sims:
+                        elem_sim.stop()
+                        elem_sim.controls.state_label.setText("Stopped")
+                        elem_sim.controls.run_button.setEnabled(True)
+                        elem_sim.controls.stop_button.setEnabled(False)
+                    # TODO: Delete files
+            elif simulations_run:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Simulated simulations",
+                    "There are simulations that use simulation settings, "
+                    "and have been simulated.\nIf you save changes,"
+                    " the result files of the simulated simulations are "
+                    "deleted.\n\nDo you want to save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    self.__close = False
+                    return
+                else:
+                    pass
+                    # TODO: Delete files
+
             # Use request settings
             self.simulation.run = None
             self.simulation.detector = None
@@ -208,7 +277,87 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             if filename_to_remove:
                 os.remove(os.path.join(self.simulation.directory,
                                        filename_to_remove))
+            self.use_default_settings = True
         else:
+            if self.use_default_settings and check_box.isChecked():
+                self.__close = True
+                return
+            if not self.use_default_settings and not check_box.isChecked():
+                # Check that values have been changed
+                if not self.values_changed():
+                    self.__close = True
+                    return
+            if self.use_default_settings:
+                settings = "request"
+                tmp_sims = []
+                for elem_sim in self.simulation.element_simulations:
+                    if elem_sim in \
+                            self.simulation.request.running_simulations:
+                        tmp_sims.append(elem_sim)
+            else:
+                settings = "simulation"
+                tmp_sims = copy.copy(self.simulation.running_simulations)
+            if simulations_run and simulations_running:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Simulated and running simulations",
+                    "There are simulations that use " + settings + " settings, "
+                    "and either have been simulated or are currently running."
+                    "\nIf you save changes, the running simulations "
+                    "will be stopped, and the result files of the simulated "
+                    "and stopped simulations are deleted.\n\nDo you want to "
+                    "save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    self.__close = False
+                    return
+                else:
+                    # Stop simulations
+                    for elem_sim in tmp_sims:
+                        elem_sim.stop()
+                        elem_sim.controls.state_label.setText("Stopped")
+                        elem_sim.controls.run_button.setEnabled(True)
+                        elem_sim.controls.stop_button.setEnabled(False)
+                    # TODO: Delete files
+            elif simulations_running:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Simulations running",
+                    "There are simulations running that use " + settings +
+                    " settings.\nIf you save changes, the running "
+                    "simulations will be stopped, and their result files "
+                    "deleted.\n\nDo you want to save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    self.__close = False
+                    return
+                else:
+                    # Stop simulations
+                    for elem_sim in tmp_sims:
+                        elem_sim.stop()
+                        elem_sim.controls.state_label.setText("Stopped")
+                        elem_sim.controls.run_button.setEnabled(True)
+                        elem_sim.controls.stop_button.setEnabled(False)
+                    # TODO: Delete files
+            elif simulations_run:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Simulated simulations",
+                    "There are simulations that use " + settings +
+                    " settings, and have been simulated.\nIf you save changes,"
+                    " the result files of the simulated simulations are "
+                    "deleted.\n\nDo you want to save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    self.__close = False
+                    return
+                else:
+                    pass
+                    # TODO: Delete files
+
             # Use simulation specific settings
             try:
                 measurement_settings_file_path = os.path.join(
@@ -327,6 +476,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                                " to save them.",
                                                QtWidgets.QMessageBox.Ok,
                                                QtWidgets.QMessageBox.Ok)
+            self.use_default_settings = False
 
     def __save_settings_and_close(self):
         """Save settings and close the dialog.
@@ -334,3 +484,44 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.__update_parameters()
         if self.__close:
             self.close()
+
+    def check_if_simulations_run(self):
+        """
+        Check if the re are any element simulations that have been simulated.
+
+        Return:
+             True or False.
+        """
+        for elem_sim in self.simulation.element_simulations:
+            if elem_sim.simulations_done:
+                return True
+        return False
+
+    def simulations_running(self):
+        """
+        Check if there are any simulations running.
+
+        Return:
+            True or False.
+        """
+        for elem_sim in self.simulation.element_simulations:
+            if elem_sim in self.simulation.request.running_simulations:
+                return True
+            elif elem_sim in self.simulation.running_simulations:
+                return True
+        return False
+
+    def values_changed(self):
+        """
+        Check if measurement or detector settings have
+        changed.
+
+        Return:
+
+            True or False.
+        """
+        if self.measurement_settings_widget.values_changed():
+            return True
+        if self.detector_settings_widget.values_changed():
+            return True
+        return False

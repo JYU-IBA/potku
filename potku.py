@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 18.6.2018
+Updated on 4.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -36,16 +36,9 @@ import platform
 import shutil
 import subprocess
 import sys
+
 from datetime import datetime
 from datetime import timedelta
-
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
-from PyQt5 import uic
-from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QAbstractItemView
-from PyQt5.QtWidgets import QMenu
-from PyQt5.QtWidgets import QTreeWidgetItem
 
 from dialogs.about import AboutDialog
 from dialogs.global_settings import GlobalSettingsDialog
@@ -55,18 +48,27 @@ from dialogs.measurement.load_measurement import LoadMeasurementDialog
 from dialogs.new_request import RequestNewDialog
 from dialogs.request_settings import RequestSettingsDialog
 from dialogs.simulation.new_simulation import SimulationNewDialog
+
 from modules.general_functions import open_file_dialog
 from modules.general_functions import remove_file
 from modules.general_functions import rename_file
+from modules.general_functions import validate_text_input
 from modules.global_settings import GlobalSettings
 from modules.icon_manager import IconManager
 from modules.measurement import Measurement
-from modules.simulation import Simulation
 from modules.request import Request
+from modules.simulation import Simulation
+
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+from PyQt5 import uic
+from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QAbstractItemView
+from PyQt5.QtWidgets import QMenu
+from PyQt5.QtWidgets import QTreeWidgetItem
+
 from widgets.measurement.tab import MeasurementTabWidget
 from widgets.simulation.tab import SimulationTabWidget
-
-from modules.general_functions import validate_text_input
 
 
 class Potku(QtWidgets.QMainWindow):
@@ -1420,7 +1422,7 @@ class Potku(QtWidgets.QMainWindow):
             elif used_os == "Darwin":
                 subprocess.call(("open", manual_filename))
         except FileNotFoundError:
-            QtWidgets.QMessageBox.question(self, "Not found",
+            QtWidgets.QMessageBox.critical(self, "Not found",
                                            "There is no manual to be found!",
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)

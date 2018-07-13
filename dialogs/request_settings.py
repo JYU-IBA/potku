@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 25.6.2018
+Updated on 29.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -32,13 +32,12 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import os
-import time
+import copy
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import uic
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QDesktopWidget
 from PyQt5.QtWidgets import QApplication
 
@@ -105,7 +104,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             .connect(lambda: self.__save_file("DETECTOR_SETTINGS"))
 
         # Add simulation settings view to the settings view
-        self.simulation_settings_widget = SimulationSettingsWidget()
+        self.simulation_settings_widget = SimulationSettingsWidget(
+            self.request.default_element_simulation)
         self.ui.tabs.addTab(self.simulation_settings_widget, "Simulation")
 
         self.simulation_settings_widget.ui.generalParametersGroupBox \
@@ -121,42 +121,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.ui.tabs.addTab(self.profile_settings_widget, "Profile")
         self.__close = True
 
-        self.show_simulation_settings()
-
         self.ui.tabs.currentChanged.connect(lambda: self.__check_for_red())
 
         self.exec_()
-
-    def show_simulation_settings(self):
-        """ Show simulation settings in simulation tab widget.
-        """
-        widget = self.simulation_settings_widget
-        elem_simu = self.request.default_element_simulation
-        widget.nameLineEdit.setText(elem_simu.name)
-        widget.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
-            elem_simu.modification_time)))
-        widget.descriptionPlainTextEdit.setPlainText(elem_simu.description)
-        widget.modeComboBox.setCurrentIndex(widget.modeComboBox.findText(
-            elem_simu.simulation_mode, Qt.MatchFixedString))
-        if elem_simu.simulation_type == "ERD":
-            widget.typeOfSimulationComboBox.setCurrentIndex(
-                widget.typeOfSimulationComboBox.findText(
-                    "REC", Qt.MatchFixedString))
-        else:
-            widget.typeOfSimulationComboBox.setCurrentIndex(
-                widget.typeOfSimulationComboBox.findText("SCT",
-                                                         Qt.MatchFixedString))
-        widget.minimumScatterAngleDoubleSpinBox.setValue(
-            elem_simu.minimum_scattering_angle)
-        widget.minimumMainScatterAngleDoubleSpinBox.setValue(
-            elem_simu.minimum_main_scattering_angle)
-        widget.minimumEnergyDoubleSpinBox.setValue(elem_simu.minimum_energy)
-        widget.numberOfIonsSpinBox.setValue(elem_simu.number_of_ions)
-        widget.numberOfPreIonsSpinBox.setValue(elem_simu.number_of_preions)
-        widget.seedSpinBox.setValue(elem_simu.seed_number)
-        widget.numberOfRecoilsSpinBox.setValue(elem_simu.number_of_recoils)
-        widget.numberOfScalingIonsSpinBox.setValue(
-            elem_simu.number_of_scaling_ions)
 
     def __check_for_red(self):
         """
@@ -211,10 +178,33 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             # Message is already displayed within private method.
             pass
 
+    def values_changed(self):
+        """
+        Check if measurement, detector, simulation or profile settings have
+        changed.
+
+        Return:
+
+            True or False.
+        """
+        if self.measurement_settings_widget.values_changed():
+            return True
+        if self.detector_settings_widget.values_changed():
+            return True
+        if self.simulation_settings_widget.values_changed():
+            return True
+        if self.profile_settings_widget.values_changed():
+            return True
+        return False
+
     def __update_settings(self):
         """Reads values from Request Settings dialog and updates them in
         default objects.
         """
+        # Check that values have been changed
+        if not self.values_changed():
+            self.__close = True
+            return
         # Check the target and detector angles
         ok_pressed = self.measurement_settings_widget.check_angles()
         if ok_pressed:
@@ -228,6 +218,72 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                QtWidgets.QMessageBox.Ok)
                 self.__close = False
                 return
+
+            simulations_run = self.check_if_simulations_run()
+            simulations_running = self.request.simulations_running()
+            if simulations_run and simulations_running:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Simulated and running simulations",
+                    "There are simulations that use request settings, "
+                    "and either have been simulated or are currently running."
+                    "\nIf you save changes, the running simulations "
+                    "will be stopped, and the result files of the simulated "
+                    "and stopped simulations are deleted.\n\nDo you want to "
+                    "save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    self.__close = False
+                    return
+                else:
+                    # Stop simulations
+                    tmp_sims = copy.copy(self.request.running_simulations)
+                    for elem_sim in tmp_sims:
+                        elem_sim.stop()
+                        elem_sim.controls.state_label.setText("Stopped")
+                        elem_sim.controls.run_button.setEnabled(True)
+                        elem_sim.controls.stop_button.setEnabled(False)
+                    # TODO: Delete files
+            elif simulations_running:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Simulations running",
+                    "There are simulations running that use request "
+                    "settings.\nIf you save changes, the running "
+                    "simulations will be stopped, and their result files "
+                    "deleted.\n\nDo you want to save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    self.__close = False
+                    return
+                else:
+                    # Stop simulations
+                    tmp_sims = copy.copy(self.request.running_simulations)
+                    for elem_sim in tmp_sims:
+                        elem_sim.stop()
+                        elem_sim.controls.state_label.setText("Stopped")
+                        elem_sim.controls.run_button.setEnabled(True)
+                        elem_sim.controls.stop_button.setEnabled(False)
+                    # TODO: Delete files
+            elif simulations_run:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Simulated simulations",
+                    "There are simulations that use request settings, "
+                    "and have been simulated.\nIf you save changes,"
+                    " the result files of the simulated simulations are "
+                    "deleted.\n\nDo you want to save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    self.__close = False
+                    return
+                else:
+                    pass
+                    # TODO: Delete files
+
             # TODO: Proper checking for all setting values
             try:
                 self.measurement_settings_widget.update_settings()
@@ -258,43 +314,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     self.request.default_detector_folder, "Default.detector"),
                     default_measurement_settings_file)
 
-                # Simulation settings
-                elem_simu = self.request.default_element_simulation
-                elem_simu.name = self.simulation_settings_widget.nameLineEdit.\
-                    text()
-                elem_simu.description = self.simulation_settings_widget\
-                    .descriptionPlainTextEdit. toPlainText()
-                if self.simulation_settings_widget \
-                   .typeOfSimulationComboBox.currentText() == "REC":
-                    elem_simu.simulation_type = "ERD"
-                else:
-                    elem_simu.simulation_type = "RBS"
-                elem_simu.simulation_mode = self.simulation_settings_widget \
-                    .modeComboBox.currentText().lower()
-                elem_simu.number_of_ions = self.simulation_settings_widget \
-                    .numberOfIonsSpinBox.value()
-                elem_simu.number_of_preions = self.simulation_settings_widget \
-                    .numberOfPreIonsSpinBox.value()
-                elem_simu.seed_number = self.simulation_settings_widget\
-                    .seedSpinBox.value()
-                elem_simu.number_of_recoils = self.simulation_settings_widget \
-                    .numberOfRecoilsSpinBox.value()
-                elem_simu.number_of_scaling_ions = self.\
-                    simulation_settings_widget.numberOfScalingIonsSpinBox.\
-                    value()
-                elem_simu.minimum_scattering_angle = \
-                    self.simulation_settings_widget\
-                        .minimumScatterAngleDoubleSpinBox.value()
-                elem_simu.minimum_main_scattering_angle = self \
-                    .simulation_settings_widget \
-                    .minimumMainScatterAngleDoubleSpinBox.value()
-                elem_simu .minimum_energy = self.simulation_settings_widget \
-                    .minimumEnergyDoubleSpinBox.value()
-
                 self.request.default_simulation.to_file(os.path.join(
                     self.request.default_folder, "Default.simulation"))
-                elem_simu.mcsimu_to_file(os.path.join(
-                    self.request.default_folder, "Default.mcsimu"))
+                self.request.default_element_simulation.mcsimu_to_file(
+                    os.path.join(self.request.default_folder, "Default.mcsimu"))
 
                 self.__close = True
             except TypeError:
@@ -310,6 +333,21 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         else:
             self.__close = False
+
+    def check_if_simulations_run(self):
+        """
+        Check if the re are any element simulations that have been simulated.
+
+        Return:
+             True or False.
+        """
+        for sample in self.request.samples.samples:
+            for simulation in sample.simulations.simulations.values():
+                for elem_sim in simulation.element_simulations:
+                    if elem_sim.simulations_done and \
+                       elem_sim.use_default_settings:
+                        return True
+        return False
 
     def __change_element(self, button, combo_box):
         """ Opens element selection dialog and loads selected element's isotopes

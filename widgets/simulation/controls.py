@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 26.6.2018
+Updated on 4.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -49,12 +49,13 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         super().__init__()
 
         self.element_simulation = element_simulation
+        self.element_simulation.controls = self
 
         main_layout = QtWidgets.QHBoxLayout()
-        element = self.element_simulation.recoil_elements[
-            0].element
-        controls_group_box = QtWidgets.QGroupBox(str(element.isotope)
-                                                 + element.symbol)
+        recoil_element = self.element_simulation.recoil_elements[
+            0]
+        controls_group_box = QtWidgets.QGroupBox(recoil_element.prefix + "-"
+                                                 + recoil_element.name)
         controls_group_box.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
                                          QtWidgets.QSizePolicy.Preferred)
 
@@ -135,6 +136,13 @@ class SimulationControlsWidget(QtWidgets.QWidget):
             error_box.setText("Energy spectrum data could not be generated.")
             error_box.setWindowTitle("Error")
             error_box.exec()
+        self.show_stop()
         self.state_label.setText("Stopped")
+
+    def show_stop(self):
+        """
+        Set controls to show that simulation has ended.
+        """
+        self.state_label.setText("Finished")
         self.run_button.setEnabled(True)
         self.stop_button.setEnabled(False)

@@ -35,7 +35,7 @@
    <item row="0" column="1">
     <layout class="QVBoxLayout" name="verticalLayout">
      <item>
-      <widget class="QGroupBox" name="groupBox_10">
+      <widget class="QGroupBox" name="infoGroupBox">
        <property name="title">
         <string>Recoil element</string>
        </property>
@@ -74,7 +74,7 @@
           <item row="1" column="0">
            <widget class="QLabel" name="label_33">
             <property name="text">
-             <string>Date:</string>
+             <string>Modification time:</string>
             </property>
            </widget>
           </item>

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 26.6.2018
+Updated on 3.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -38,6 +38,8 @@ import modules.masses as masses
 from modules.foil import CircularFoil
 
 import tempfile
+import threading
+import time
 
 
 class MCERD:
@@ -46,16 +48,19 @@ class MCERD:
     files it needs.
     """
 
-    def __init__(self, settings):
+    def __init__(self, settings, parent):
         """Create an MCERD object. This automatically starts the simulation.
 
         Args:
             settings: All settings that MCERD needs in one dictionary.
+            parent: ElementSimulation object.
         """
         self.__settings = settings
+        self.parent = parent
 
-        self.__filename = self.__settings["recoil_element"].prefix \
+        self.__rec_filename = self.__settings["recoil_element"].prefix \
             + "-" + self.__settings["recoil_element"].name
+        self.__filename = self.parent.name_prefix + "-" + self.parent.name
 
         # OS specific directory where temporary MCERD files will be stored.
         # In case of Linux and Mac this will be /tmp and in Windows this will
@@ -63,8 +68,9 @@ class MCERD:
         self.tmp = tempfile.gettempdir()
 
         # The recoil file and erd file are later passed to get_espe.
-        self.recoil_file = os.path.join(self.tmp, self.__filename + ".recoil")
-        self.result_file = os.path.join(self.tmp, self.__filename + "." +
+        self.recoil_file = os.path.join(self.tmp, self.__rec_filename +
+                                        ".recoil")
+        self.result_file = os.path.join(self.tmp, self.__rec_filename + "." +
                                         str(self.__settings["seed_number"]) +
                                         ".erd")
         self.__create_mcerd_files()
@@ -72,15 +78,34 @@ class MCERD:
         # The command that is used to start the MCERD process.
         mcerd_command = os.path.join("external", "Potku-bin", "mcerd" +
                                      (".exe " if platform.system() == "Windows"
+                                      else "_mac " if platform.system() == "Darwin"
                                       else " ") +
-                                     os.path.join(self.tmp, self.__filename))
+                                     os.path.join(self.tmp,
+                                                  self.__rec_filename))
 
         # Start the MCERD process.
-        # TODO: MCERD needs to be fixed so we can get rid of this ulimit.
+        # MCERD needs to be fixed so we can get rid of this ulimit.
         ulimit = "" if platform.system() == "Windows" else "ulimit -s 64000; "
         exec_command = "" if platform.system() == "Windows" else "exec "
         self.__process = subprocess.Popen(ulimit + exec_command + mcerd_command,
                                           shell=True)
+        # Use thread for checking if process has terminated
+        thread = threading.Thread(target=self.check_if_mcerd_running)
+        thread.daemon = True
+        thread.start()
+
+    def check_if_mcerd_running(self):
+        """
+        Check if MCERD process is still running. If not, notify parent.
+        """
+        while True:
+            try:
+                time.sleep(5)
+                if self.__process.poll() == 0:
+                    self.parent.notify(self)
+                    break
+            except AttributeError:
+                break
 
     def stop_process(self):
         """Stop the MCERD process and delete the MCERD object."""
@@ -101,7 +126,7 @@ class MCERD:
         are placed to the directory of the temporary files of the operating
         system.
         """
-        self.__command_file = os.path.join(self.tmp, self.__filename)
+        self.__command_file = os.path.join(self.tmp, self.__rec_filename)
         self.__target_file = os.path.join(self.tmp, self.__filename +
                                           ".erd_target")
         self.__detector_file = os.path.join(self.tmp, self.__filename +

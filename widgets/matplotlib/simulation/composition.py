@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 26.6.2018
+Updated on 2.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -54,8 +54,7 @@ class _CompositionWidget(MatplotlibWidget):
 
         # Remove Y-axis ticks and label
         self.axes.yaxis.set_tick_params("both", left="off", labelleft="off")
-        self.axes.fmt_xdata = lambda x: "{0:1.4f}".format(x)
-        self.axes.fmt_ydata = lambda y: "N/A"
+        self.axes.format_coord = self.format_coord
         self.name_x_axis = "Depth [nm]"
         self.foil_behaviour = foil_behaviour
 
@@ -78,6 +77,19 @@ class _CompositionWidget(MatplotlibWidget):
 
         if self.layers:
             self.__update_figure(True)
+
+    def format_coord(self, x, y):
+        """
+        Format mouse coordinates.
+
+        Args:
+            x: X coordinate.
+            y: Y coordinate.
+
+        Return:
+            Formatted text.
+        """
+        return "x:{0:1.4f}".format(x)
 
     def on_click(self, event):
         """

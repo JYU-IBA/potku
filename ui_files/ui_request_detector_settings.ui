@@ -147,7 +147,7 @@
                  </sizepolicy>
                 </property>
                 <property name="text">
-                 <string>Date:</string>
+                 <string>Modification itme:</string>
                 </property>
                </widget>
               </item>

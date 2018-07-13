@@ -35,19 +35,25 @@ from modules.general_functions import set_input_field_red
 from modules.general_functions import check_text
 from modules.general_functions import validate_text_input
 from PyQt5.QtCore import QLocale
+from PyQt5.QtCore import Qt
+import time
 
 
 class SimulationSettingsWidget(QtWidgets.QWidget):
     """Class for creating a simulation settings tab.
     """
-    def __init__(self):
+    def __init__(self, obj):
         """
         Initializes the widget.
+
+        Args:
+            obj: Element simulation object.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_request_simulation_settings.ui"),
                              self)
+        self.obj = obj
 
         set_input_field_red(self.ui.nameLineEdit)
         self.fields_are_valid = False
@@ -60,6 +66,38 @@ class SimulationSettingsWidget(QtWidgets.QWidget):
         self.ui.minimumScatterAngleDoubleSpinBox.setLocale(locale)
         self.ui.minimumMainScatterAngleDoubleSpinBox.setLocale(locale)
         self.ui.minimumEnergyDoubleSpinBox.setLocale(locale)
+
+        self.show_settings()
+
+    def show_settings(self):
+        """
+        Show simualtion settings.
+        """
+        self.ui.nameLineEdit.setText(self.obj.name)
+        self.ui.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+            self.obj.modification_time)))
+        self.ui.descriptionPlainTextEdit.setPlainText(self.obj.description)
+        self.ui.modeComboBox.setCurrentIndex(self.ui.modeComboBox.findText(
+            self.obj.simulation_mode, Qt.MatchFixedString))
+        if self.obj.simulation_type == "ERD":
+            self.ui.typeOfSimulationComboBox.setCurrentIndex(
+                self.ui.typeOfSimulationComboBox.findText(
+                    "REC", Qt.MatchFixedString))
+        else:
+            self.ui.typeOfSimulationComboBox.setCurrentIndex(
+                self.ui.typeOfSimulationComboBox.findText("SCT",
+                                                         Qt.MatchFixedString))
+        self.ui.minimumScatterAngleDoubleSpinBox.setValue(
+            self.obj.minimum_scattering_angle)
+        self.ui.minimumMainScatterAngleDoubleSpinBox.setValue(
+            self.obj.minimum_main_scattering_angle)
+        self.ui.minimumEnergyDoubleSpinBox.setValue(self.obj.minimum_energy)
+        self.ui.numberOfIonsSpinBox.setValue(self.obj.number_of_ions)
+        self.ui.numberOfPreIonsSpinBox.setValue(self.obj.number_of_preions)
+        self.ui.seedSpinBox.setValue(self.obj.seed_number)
+        self.ui.numberOfRecoilsSpinBox.setValue(self.obj.number_of_recoils)
+        self.ui.numberOfScalingIonsSpinBox.setValue(
+            self.obj.number_of_scaling_ions)
 
     @staticmethod
     def __check_text(input_field, settings):
@@ -80,3 +118,70 @@ class SimulationSettingsWidget(QtWidgets.QWidget):
         valid_text = validate_text_input(text, regex)
 
         self.ui.nameLineEdit.setText(valid_text)
+
+    def update_settings(self):
+        """
+        Update simulation settings.
+        """
+        self.obj.name = self.ui.nameLineEdit.text()
+        self.obj.description = self.ui.descriptionPlainTextEdit.toPlainText()
+        if self.ui.typeOfSimulationComboBox.currentText() == "REC":
+            self.obj.simulation_type = "ERD"
+        else:
+            self.obj.simulation_type = "RBS"
+        self.obj.simulation_mode = self.ui.modeComboBox.currentText().lower()
+        self.obj.number_of_ions = self.ui.numberOfIonsSpinBox.value()
+        self.obj.number_of_preions = self.ui.numberOfPreIonsSpinBox.value()
+        self.obj.seed_number = self.ui.seedSpinBox.value()
+        self.obj.number_of_recoils = self.ui.numberOfRecoilsSpinBox.value()
+        self.obj.number_of_scaling_ions = self.ui.numberOfScalingIonsSpinBox. \
+            value()
+        self.obj.minimum_scattering_angle = \
+            self.ui.minimumScatterAngleDoubleSpinBox.value()
+        self.obj.minimum_main_scattering_angle = \
+            self.ui.minimumMainScatterAngleDoubleSpinBox.value()
+        self.obj.minimum_energy = self.ui.minimumEnergyDoubleSpinBox.value()
+
+    def values_changed(self):
+        """
+        Check if simulation settings have been changed. Seed number change is
+        not registered as value change.
+
+        Return:
+            True or False.
+        """
+        if self.obj.name != self.ui.nameLineEdit.text():
+            return True
+        if self.obj.description != \
+                self.ui.descriptionPlainTextEdit.toPlainText():
+            return True
+        if self.ui.typeOfSimulationComboBox.currentText() == "REC":
+            if self.obj.simulation_type != "ERD":
+                return True
+        else:
+            if self.obj.simulation_type != "RBS":
+                return True
+        if self.obj.simulation_mode != self.ui.modeComboBox.currentText().\
+           lower():
+            return True
+        if self.obj.number_of_ions != self.ui.numberOfIonsSpinBox.value():
+            return True
+        if self.obj.number_of_preions != self.ui.numberOfPreIonsSpinBox.value():
+            return True
+        if self.obj.seed_number != self.ui.seedSpinBox.value():
+            return True
+        if self.obj.number_of_recoils != self.ui.numberOfRecoilsSpinBox.value():
+            return True
+        if self.obj.number_of_scaling_ions != \
+                self.ui.numberOfScalingIonsSpinBox.value():
+            return True
+        if self.obj.minimum_scattering_angle != \
+            self.ui.minimumScatterAngleDoubleSpinBox.value():
+            return True
+        if self.obj.minimum_main_scattering_angle != \
+            self.ui.minimumMainScatterAngleDoubleSpinBox.value():
+            return True
+        if self.obj.minimum_energy != \
+                self.ui.minimumEnergyDoubleSpinBox.value():
+            return True
+        return False

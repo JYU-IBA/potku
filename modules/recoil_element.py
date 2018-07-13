@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 20.6.2018
+Updated on 11.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -35,15 +35,16 @@ class RecoilElement:
     """An element that has a list of points and a widget. The points are kept
     in ascending order by their x coordinate.
     """
-    def __init__(self, element, points):
+    def __init__(self, element, points, name="Default"):
         """Inits recoil element.
 
         Args:
             element: An Element class object.
             points: A list of Point class objects.
+            name: Name of the RecoilElement object anf file.
         """
         self.element = element
-        self.name = "Default"
+        self.name = name
         self.prefix = (Element.__str__(element)).split(" ")[0]
         self.description = "These are default recoil settings."
         self.type = "rec"
@@ -56,6 +57,17 @@ class RecoilElement:
         self._edit_lock_on = False
 
         self.modification_time = None
+
+        # List for keeping track of intervals that are zero
+        self.zero_intervals_on_x = []
+        # List for keeping track of singular zero points
+        self.zero_values_on_x = []
+
+        # Area of certain limits
+        self.area = None
+        self.area_limits = []
+
+        self.update_zero_values()
 
     def delete_widgets(self):
         """
@@ -75,6 +87,40 @@ class RecoilElement:
         Unlock full edit.
         """
         self._edit_lock_on = False
+
+    def update_zero_values(self):
+        """
+        Update recoil element's zero value lists.
+        """
+        self.zero_values_on_x = []
+        self.zero_intervals_on_x = []
+        start_zero_point = None
+        end_zero_point = None
+        for point in self._points:
+            if point.get_y() == 0.0 and start_zero_point is None:
+                start_zero_point = point
+                end_zero_point = point
+            elif point.get_y() == 0.0 and start_zero_point is not None:
+                end_zero_point = point
+            elif start_zero_point and end_zero_point:
+                # Add one zero point's x to values list
+                if start_zero_point is end_zero_point:
+                    self.zero_values_on_x.append(start_zero_point.get_x())
+                # Add start x and end x of zero interval to interval list
+                else:
+                    self.zero_intervals_on_x.append(
+                        (start_zero_point.get_x(), end_zero_point.get_x())
+                    )
+                start_zero_point = None
+                end_zero_point = None
+        if start_zero_point and end_zero_point:
+            if start_zero_point is end_zero_point:
+                self.zero_values_on_x.append(start_zero_point.get_x())
+                # Add start x and end x of zero interval to interval list
+            else:
+                self.zero_intervals_on_x.append(
+                    (start_zero_point.get_x(), end_zero_point.get_x())
+                )
 
     def get_edit_lock_on(self):
         """

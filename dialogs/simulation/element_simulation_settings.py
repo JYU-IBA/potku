@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.4.2018
-Updated on 25.6.2018
+Updated on 2.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -58,7 +58,6 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         self.ui.cancelPushButton.clicked.connect(self.close)
 
         self.element_simulation = element_simulation
-        self.temp_settings = {}
 
         self.use_default_settings = element_simulation.use_default_settings
 
@@ -71,6 +70,8 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         self.fields_are_valid = False
         self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
             self.ui.nameLineEdit, self))
+        self.original_use_default_settings = \
+            self.ui.useRequestSettingsValuesCheckBox.isChecked()
 
         self.show_settings()
 
@@ -126,6 +127,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         else:
             elem_simu = self.element_simulation
             self.ui.useRequestSettingsValuesCheckBox.setCheckState(0)
+            self.original_use_default_settings = False
             self.ui.settingsGroupBox.setEnabled(True)
             self.use_default_settings = False
         self.ui.nameLineEdit.setText(
@@ -188,7 +190,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         If default settings are not used, read settings from dialog,
         put them to element simulation and save them to file.
         """
-        if not self.fields_are_valid:
+        if not self.fields_are_valid and not self.use_default_settings:
             QtWidgets.QMessageBox.critical(self, "Warning",
                                            "Some of the setting values have"
                                            " not been set.\n" +
@@ -198,6 +200,61 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                                            QtWidgets.QMessageBox.Ok)
             self.__close = False
             return
+
+        # If default settings have been used before opening the dialog
+        if self.original_use_default_settings and self.use_default_settings:
+            self.__close = True
+            return
+
+        # If element simulation settings are used and they have not been changed
+        if not self.use_default_settings and not self.values_changed():
+            self.__close = True
+            return
+
+        simulation_run = self.element_simulation.simulations_done
+        simulation_running = self.simulation_running()
+
+        if self.original_use_default_settings:
+            settings = "request"
+        else:
+            settings = "element simulation"
+
+        if simulation_run:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Simulated simulation",
+                "This is a simulation that uses " + settings +
+                " settings, and has been simulated.\nIf you save changes,"
+                " the result files of the simulated simulation are "
+                "deleted.\n\nDo you want to save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                pass
+                # TODO: Delete files
+        elif simulation_running:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Simulation running",
+                "This simulation is running and uses " + settings +
+                " settings.\nIf you save changes, the running "
+                "simulation will be stopped, and its result files "
+                "deleted.\n\nDo you want to save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                # Stop simulation
+                self.element_simulation.stop()
+                self.element_simulation.controls.state_label.setText("Stopped")
+                self.element_simulation.controls.run_button.setEnabled(True)
+                self.element_simulation.controls.stop_button.setEnabled(False)
+                # TODO: Delete files
 
         # Delete .mcsimu file if exists
         filename_to_remove = ""
@@ -286,6 +343,67 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             self.element_simulation.mcsimu_to_file(
                 os.path.join(self.element_simulation.directory,
                              self.element_simulation.name_prefix + "-" +
-                             self.element_simulation.name + ".mcsimu"))
+                             self.element_simulation.request.
+                             default_element_simulation.name + ".mcsimu"))
 
         self.__close = True
+
+    def values_changed(self):
+        """
+        Check if simulation settings have been changed. Seed number change is
+        not registered as value change.
+
+        Return:
+            True or False.
+        """
+        if self.element_simulation.name != self.ui.nameLineEdit.text():
+            return True
+        if self.element_simulation.description != \
+           self.ui.descriptionPlainTextEdit.toPlainText():
+            return True
+        if self.element_simulation.simulation_mode != \
+           self.ui.modeComboBox.currentText():
+            return True
+        if self.ui.typeOfSimulationComboBox.currentText() == "REC":
+            if self.element_simulation.simulation_type != "ERD":
+                return True
+        else:
+            if self.element_simulation.simulation_type != "RBS":
+                return True
+        if self.element_simulation.number_of_ions != \
+           self.ui.numberOfIonsSpinBox.value():
+            return True
+        if self.element_simulation.number_of_preions != \
+           self.ui.numberOfPreIonsSpinBox.value():
+            return True
+        if self.element_simulation.number_of_recoils != \
+           self.ui.numberOfRecoilsSpinBox.value():
+            return True
+        if self.element_simulation.number_of_scaling_ions != \
+           self.ui.numberOfScalingIonsSpinBox.value():
+            return True
+        if self.element_simulation.minimum_scattering_angle != \
+           self.ui.minimumScatterAngleDoubleSpinBox.value():
+            return True
+        if self.element_simulation.minimum_main_scattering_angle != \
+           self.ui.minimumMainScatterAngleDoubleSpinBox.value():
+            return True
+        if self.element_simulation.minimum_energy != \
+           self.ui.minimumEnergyDoubleSpinBox.value():
+            return True
+        return False
+
+    def simulation_running(self):
+        """
+        Check if element simulation is running.
+
+        Return:
+            True or False.
+        """
+        if self.element_simulation in \
+                self.element_simulation.simulation.request.running_simulations:
+            return True
+        elif self.element_simulation in \
+                self.element_simulation.simulation.running_simulations:
+            return True
+        return False

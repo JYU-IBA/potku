@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 13.6.2018
+Updated on 5.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -27,35 +27,45 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-from PyQt5 import QtWidgets
-from PyQt5.QtGui import QIcon
+import copy
+
+import modules.general_functions as general
+
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog, \
     EnergySpectrumWidget
-import modules.general_functions as general
+from dialogs.simulation.element_simulation_settings import \
+    ElementSimulationSettingsDialog
+
+from modules.recoil_element import RecoilElement
+
+from PyQt5.QtGui import QIcon
+from PyQt5 import QtWidgets
+
+from widgets.simulation.recoil_element import RecoilElementWidget
 
 
 class ElementWidget(QtWidgets.QWidget):
     """Class for creating an element widget for the recoil atom distribution.
-    Args:
-        parent: A SimulationTabWidget.
         """
 
-    def __init__(self, parent, element, icon_manager, element_simulation):
+    def __init__(self, parent, element, parent_tab, element_simulation):
         """
         Initializes the ElementWidget.
 
         Args:
-            parent: Parent widget.
+            parent: A RecoilAtomDistributionWidget.
             element: An Element object.
-            icon_manager: IconManager object.
+            parent_tab: A SimulationTabWidget.
             element_simulation: ElementSimulation object.
         """
         super().__init__()
 
         self.parent = parent
+        self.parent_tab = parent_tab
         self.element_simulation = element_simulation
 
         horizontal_layout = QtWidgets.QHBoxLayout()
+        horizontal_layout.setContentsMargins(0, 0, 0, 0)
 
         self.radio_button = QtWidgets.QRadioButton()
 
@@ -73,11 +83,31 @@ class ElementWidget(QtWidgets.QWidget):
         draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                            QtWidgets.QSizePolicy.Fixed)
         draw_spectrum_button.clicked.connect(self.plot_spectrum)
+        draw_spectrum_button.setToolTip("Draw energy spectra")
+
+        settings_button = QtWidgets.QPushButton()
+        settings_button.setIcon(QIcon("ui_icons/reinhardt/gear.svg"))
+        settings_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                      QtWidgets.QSizePolicy.Fixed)
+        settings_button.clicked.connect(
+            self.open_element_simulation_settings)
+        settings_button.setToolTip("Edit element simulation settings")
+
+        add_recoil_button = QtWidgets.QPushButton()
+        add_recoil_button.setIcon(QIcon("ui_icons/reinhardt/edit_add.svg"))
+        add_recoil_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
+                                        QtWidgets.QSizePolicy.Fixed)
+        add_recoil_button.clicked.connect(self.add_new_recoil)
+        add_recoil_button.setToolTip("Add a new recoil to element")
 
         horizontal_layout.addWidget(self.radio_button)
         horizontal_layout.addWidget(draw_spectrum_button)
+        horizontal_layout.addWidget(settings_button)
+        horizontal_layout.addWidget(add_recoil_button)
 
         self.setLayout(horizontal_layout)
+
+        self.running_int_recoil = 1
 
     def add_element_simulation_reference(self, element_simulation):
         """
@@ -85,16 +115,48 @@ class ElementWidget(QtWidgets.QWidget):
         """
         self.element_simulation = element_simulation
 
+    def add_new_recoil(self):
+        """
+        Add new recoil to element simulation.
+        """
+        points = copy.deepcopy(self.element_simulation.recoil_elements[
+                                   0].get_points())
+
+        element = copy.copy(self.element_simulation.recoil_elements[0].element)
+        name = "Default-" + str(self.running_int_recoil)
+        recoil_element = RecoilElement(element, points, name)
+        self.running_int_recoil = self.running_int_recoil + 1
+        recoil_widget = RecoilElementWidget(self.parent, element,
+                                            self.parent_tab, self,
+                                            self.element_simulation)
+        recoil_element.widgets.append(recoil_widget)
+        self.element_simulation.recoil_elements.append(recoil_element)
+
+        self.parent.radios.addButton(recoil_widget.radio_button)
+        # Add recoil widget under ite element simulation's element widget
+        for i in range(self.parent.recoil_vertical_layout.count()):
+            if self.parent.recoil_vertical_layout.itemAt(i).widget() == self:
+                self.parent.recoil_vertical_layout.insertWidget(i + 1,
+                                                                recoil_widget)
+                break
+        recoil_widget.radio_button.setChecked(True)
+
+    def open_element_simulation_settings(self):
+        """
+        Open element simulation settings.
+        """
+        ElementSimulationSettingsDialog(self.element_simulation)
+
     def plot_spectrum(self):
         """
         Plot an energy spectrum.
         """
         # self.element_simulation.calculate_espe()
         dialog = EnergySpectrumParamsDialog(
-            self.parent, spectrum_type="simulation",
+            self.parent_tab, spectrum_type="simulation",
             element_simulation=self.element_simulation)
         if dialog.result_files:
-            self.parent.energy_spectrum_widget = EnergySpectrumWidget(
-                parent=self.parent, use_cuts=dialog.result_files,
+            self.parent_tab.energy_spectrum_widget = EnergySpectrumWidget(
+                parent=self.parent_tab, use_cuts=dialog.result_files,
                 bin_width=dialog.bin_width, spectrum_type="simulation")
-            self.parent.add_widget(self.parent.energy_spectrum_widget)
+            self.parent_tab.add_widget(self.parent_tab.energy_spectrum_widget)

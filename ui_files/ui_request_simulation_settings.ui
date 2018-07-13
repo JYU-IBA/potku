@@ -168,7 +168,7 @@
                  </size>
                 </property>
                 <property name="text">
-                 <string>Date:</string>
+                 <string>Modification time:</string>
                 </property>
                </widget>
               </item>
