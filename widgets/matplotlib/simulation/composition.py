@@ -185,6 +185,7 @@ class _CompositionWidget(MatplotlibWidget):
         #     color='b', alpha=0.2)
         self.__layer_selector = layer_patch
         self.axes.add_patch(layer_patch)
+
         self.canvas.draw_idle()
 
     def on_draw(self):
@@ -367,7 +368,12 @@ class _CompositionWidget(MatplotlibWidget):
                 view_bound += layer.thickness
             self.axes.set_xbound(x_bounds[0], view_bound)
 
+        if not self.__selected_layer and self.layers:
+            self.__selected_layer = self.layers[0]
         self.__update_selected_layer()
+
+        if self.__selected_layer:
+            self.__enable_layer_buttons()
         self.canvas.draw_idle()
         self.mpl_toolbar.update()
 
