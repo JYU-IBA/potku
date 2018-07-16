@@ -410,6 +410,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.name_x_axis = "Depth [nm]"
 
         self.anchored_box = None
+        self.__show_all_recoil = True
 
         self.on_draw()
 
@@ -443,6 +444,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         for element_simulation in self.simulation.element_simulations:
             self.add_element(element_simulation.recoil_elements[0].element,
                              element_simulation)
+
             element_simulation.recoil_elements[0].widgets[0]. \
                 radio_button.setChecked(select_first_elem_sim)
             select_first_elem_sim = False
@@ -1067,8 +1069,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         if self.__button_drag.isChecked():
             self.mpl_toolbar.mode_tool = 1
+            self.__show_all_recoil = False
         else:
             self.mpl_toolbar.mode_tool = 0
+            self.__show_all_recoil = True
         self.canvas.draw_idle()
 
     def __toggle_tool_zoom(self):
@@ -1077,8 +1081,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         if self.__button_zoom.isChecked():
             self.mpl_toolbar.mode_tool = 2
+            self.__show_all_recoil = False
         else:
             self.mpl_toolbar.mode_tool = 0
+            self.__show_all_recoil = True
         self.canvas.draw_idle()
 
     def __toggle_drag_zoom(self):
@@ -1428,12 +1434,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 selected_xs.append(point.get_x())
                 selected_ys.append(point.get_y())
             self.markers_selected.set_data(selected_xs, selected_ys)
-            # if self.selected_points[0] == \
-            #         self.current_recoil_element.get_points()[-1] \
-            #         and not self.full_edit_on:
-            #     self.coordinates_widget.x_coordinate_box.setEnabled(False)
-            # else:
-            #     self.coordinates_widget.x_coordinate_box.setEnabled(True)
 
             if self.clicked_point:
                 self.coordinates_widget.x_coordinate_box.setValue(
@@ -1457,6 +1457,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.current_recoil_element))
             self.markers_selected.set_visible(False)
             self.coordinates_action.setVisible(False)
+
+        # Show all of recoil
+        if self.__show_all_recoil:
+            last_point = self.current_recoil_element.get_point_by_i(len(
+                self.current_recoil_element.get_points()) - 1)
+            last_point_x = last_point.get_x()
+            x_min, xmax = self.axes.get_xlim()
+            if xmax < last_point_x:
+                self.axes.set_xlim(x_min, last_point_x + 0.04 * last_point_x)
 
         self.fig.canvas.draw_idle()
 
@@ -1498,6 +1507,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         else:
             end = next_layer_position - last_layer_thickness * 0.7
             start = 0 - end * 0.05
+
+        if self.__show_all_recoil:
+            last_point = self.current_recoil_element.get_point_by_i(len(
+                self.current_recoil_element.get_points()) - 1)
+            last_point_x = last_point.get_x()
+            if end < last_point_x:
+                end = last_point_x + 0.04 * last_point_x
 
         self.axes.set_xlim(start, end)
         self.fig.canvas.draw_idle()
