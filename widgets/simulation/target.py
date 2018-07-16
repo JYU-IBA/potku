@@ -63,7 +63,8 @@ class TargetWidget(QtWidgets.QWidget):
         self.target = target
 
         self.target_widget = TargetCompositionWidget(self, self.target,
-                                                     icon_manager)
+                                                     icon_manager,
+                                                     self.simulation)
         self.recoil_distribution_widget = RecoilAtomDistributionWidget(
             self, self.simulation, self.target, tab, icon_manager)
 
@@ -75,6 +76,11 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.recoilListWidget.hide()
         self.ui.editLockPushButton.hide()
         self.ui.elementInfoWidget.hide()
+
+        icon_manager.set_icon(self.ui.editTargetInfoButton, "edit.svg")
+        self.ui.editTargetInfoButton.setIconSize(QtCore.QSize(14, 14))
+        self.ui.editTargetInfoButton.setToolTip(
+            "Edit name and description of the target")
 
         self.ui.exportElementsButton.clicked.connect(
             self.recoil_distribution_widget.export_elements)
@@ -107,6 +113,7 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.exportElementsButton.show()
         self.ui.elementInfoWidget.hide()
         self.ui.instructionLabel.setText("")
+        self.ui.targetInfoWidget.show()
 
     def switch_to_recoil(self):
         """
@@ -117,6 +124,7 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.exportElementsButton.hide()
         self.ui.recoilListWidget.show()
         self.ui.editLockPushButton.show()
+        self.ui.targetInfoWidget.hide()
         self.recoil_distribution_widget.recoil_element_info_on_switch()
         self.ui.instructionLabel.setText("You can add a new point to the "
                                          "distribution on a line between "

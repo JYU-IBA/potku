@@ -28,10 +28,14 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import matplotlib
+import os
 
 import widgets
 
 from dialogs.simulation.layer_properties import LayerPropertiesDialog
+from dialogs.simulation.target_info_dialog import TargetInfoDialog
+
+from modules.general_functions import remove_file
 
 from PyQt5 import QtWidgets
 
@@ -404,7 +408,7 @@ class TargetCompositionWidget(_CompositionWidget):
     layers to the user. Using this widget user can also modify the layers of the
     target.
     """
-    def __init__(self, parent, target, icon_manager):
+    def __init__(self, parent, target, icon_manager, simulation):
         """Initializes a TargetCompositionWidget object.
 
         Args:
@@ -413,12 +417,36 @@ class TargetCompositionWidget(_CompositionWidget):
             target:       A Target object. This is needed in order to get
                           the current state of the target layers.
             icon_manager: An icon manager class object.
+            simulation:   A Simulation that has the Target object.
         """
         _CompositionWidget.__init__(self, parent, target.layers,
                                     icon_manager)
 
         self.layers = target.layers
+        self.simulation = simulation
         self.canvas.manager.set_title("Target composition")
+
+        self.parent.ui.targetNameLabel.setText(
+            "Name: " + target.name)
+
+        self.parent.ui.editTargetInfoButton.clicked.connect(
+            lambda: self.edit_target_info(target))
+
+    def edit_target_info(self, target):
+        """
+        Open a dialog to edit Target information.
+        """
+        dialog = TargetInfoDialog(target)
+
+        if dialog.isOk:
+            old_target = os.path.join(self.simulation.directory, target.name
+                                      + ".target")
+            remove_file(old_target)  # TODO: Winerror
+            target.name = dialog.name
+            target.description = dialog.description
+            target_path = os.path.join(self.simulation.directory, target.name
+                                       + ".target")
+            target.to_file(target_path, None)
 
 
 class FoilCompositionWidget(_CompositionWidget):
