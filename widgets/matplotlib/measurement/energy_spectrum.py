@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 13.7.2018
+Updated on 16.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -370,6 +370,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         # Values for zoom
         x_min, x_max = self.axes.get_xlim()
         y_min, y_max = self.axes.get_ylim()
+        x_min_changed = False
 
         self.axes.clear()  # Clear old stuff
 
@@ -410,6 +411,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
                 if x[0] < x_min:
                     x_min = x[0]
+                    x_min_changed = True
 
                 if isotope is None:
                     isotope = ""
@@ -476,6 +478,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
                 if x[0] < x_min:
                     x_min = x[0]
+                    x_min_changed = True
                 self.axes.plot(x, y, label=label)
 
         if self.draw_legend:
@@ -503,7 +506,10 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         # Set limits accordingly
         self.axes.set_ylim([y_min, y_max])
-        self.axes.set_xlim([x_min - self.parent.bin_width, x_max])
+        if x_min_changed:
+            self.axes.set_xlim([x_min - self.parent.bin_width, x_max])
+        else:
+            self.axes.set_xlim([x_min, x_max])
 
         if self.__log_scale:
             self.axes.set_yscale('symlog')
