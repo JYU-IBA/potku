@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 2.7.2018
+Updated on 16.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,8 +29,12 @@ __version__ = "2.0"
 
 import matplotlib
 
+import widgets
+
 from dialogs.simulation.layer_properties import LayerPropertiesDialog
+
 from PyQt5 import QtWidgets
+
 from widgets.matplotlib.base import MatplotlibWidget
 
 
@@ -57,6 +61,8 @@ class _CompositionWidget(MatplotlibWidget):
         self.axes.format_coord = self.format_coord
         self.name_x_axis = "Depth [nm]"
         self.foil_behaviour = foil_behaviour
+
+        self.parent = parent
 
         self.__icon_manager = icon_manager
         self.__selected_layer = None
@@ -142,6 +148,10 @@ class _CompositionWidget(MatplotlibWidget):
         self.update_start_depths()
         # Update canvas
         self.__update_figure()
+
+        if type(self.parent) is widgets.simulation.target.TargetWidget and \
+                not self.layers:
+            self.parent.ui.recoilRadioButton.setEnabled(False)
 
     def __modify_layer(self):
         """
@@ -285,6 +295,9 @@ class _CompositionWidget(MatplotlibWidget):
             self.update_start_depths()
             self.__selected_layer = dialog.layer
             self.__update_figure(add=True)
+
+        if type(self.parent) is widgets.simulation.target.TargetWidget:
+            self.parent.ui.recoilRadioButton.setEnabled(True)
 
     def __update_figure(self, init=False, add=False):
         """Updates the figure to match the information of the layers.
