@@ -143,8 +143,24 @@ class ElementManager:
             Created ElementSimulation
         """
         # Default points
-        xs = [0.00, 35.00]
-        ys = [1.0, 1.0]
+        xs = [0.00]
+        ys = [1.0]
+
+        # Make two points for each change between layers
+        for layer in self.parent.target.layers:
+            x_1 = layer.start_depth + layer.thickness
+            y_1 = 1.0
+            xs.append(x_1)
+            ys.append(y_1)
+
+            x_2 = x_1 + self.parent.x_res
+            y_2 = 1.0
+            xs.append(x_2)
+            ys.append(y_2)
+
+        xs.pop()
+        ys.pop()
+
         xys = list(zip(xs, ys))
         points = []
         for xy in xys:
@@ -869,12 +885,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             element_simulation = self.add_element(Element(
                 dialog.element, isotope))
 
-            if self.current_element_simulation is None:
-                self.current_element_simulation = element_simulation
-                self.current_recoil_element = element_simulation. \
-                    recoil_elements[0]
-                element_simulation.recoil_elements[0].widgets[0].radio_button \
-                    .setChecked(True)
+            self.current_element_simulation = element_simulation
+            self.current_recoil_element = element_simulation. \
+                recoil_elements[0]
+            element_simulation.recoil_elements[0].widgets[0].radio_button \
+                .setChecked(True)
 
     def add_element(self, element, element_simulation=None):
         """
