@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 13.7.2018
+Updated on 16.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -288,10 +288,18 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 self.result_files.append(os.path.join(
                     measurement.directory_energy_spectra, name + ".hist"))
 
+        root_for_ext_files = self.external_tree_widget.invisibleRootItem()
+        child_count = root_for_ext_files.childCount()
+
         # Add external files to result files
-        for ext in os.listdir(self.imported_files_folder):
-            self.result_files.append(os.path.join(self.imported_files_folder,
-                                                  ext))
+        for k in range(child_count):
+            item = root_for_ext_files.child(k)
+            if item.checkState(0):
+                for ext in os.listdir(self.imported_files_folder):
+                    if ext == item.text(0):
+                        self.result_files.append(
+                            os.path.join(self.imported_files_folder, ext))
+                        break
 
         self.bin_width = self.ui.histogramTicksDoubleSpinBox.value()
 
@@ -376,6 +384,14 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         """
         Import an external file that matches the format of hist and simu files.
         """
+        QtWidgets.QMessageBox.information(self, "Notice",
+                                          "The external file needs to have the "
+                                          "following format:\n\nenergy count\n"
+                                          "energy count\nenergy count\n...\n\n"
+                                          "to match the simulation and "
+                                          "measurement energy spectra files.",
+                                          QtWidgets.QMessageBox.Ok,
+                                          QtWidgets.QMessageBox.Ok)
         file_path = open_file_dialog(
             self, self.element_simulation.request.directory, "Select a file "
                                                              "to import", "")
