@@ -28,6 +28,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
+import copy
 import os
 import modules.masses as masses
 
@@ -49,17 +50,20 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
     """Dialog for adding a new layer or editing an existing one.
     """
 
-    def __init__(self, layer=None, modify=False):
+    def __init__(self, layer=None, modify=False, simulation=None):
         """Inits a layer dialog.
 
         Args:
             layer: Layer object to be modified. None if creating a new layer.
+            modify: If dialog is used to modify a layer.
+            simulation: A Simulation object.
         """
         super().__init__()
         self.__ui = uic.loadUi(os.path.join("ui_files", "ui_layer_dialog.ui"),
                                self)
         self.layer = layer
         self.ok_pressed = False
+        self.simulation = simulation
 
         set_input_field_red(self.__ui.nameEdit)
         self.fields_are_valid = False
@@ -173,6 +177,72 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.fields_are_valid = True
             return
 
+        simulations_run = self.check_if_simulations_run()
+        simulations_running = self.simulations_running()
+
+        if simulations_run and simulations_running:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Simulated and running simulations",
+                "There are simulations that use the current target, "
+                "and either have been simulated or are currently running."
+                "\nIf you save changes, the running simulations "
+                "will be stopped, and the result files of the simulated "
+                "and stopped simulations are deleted.\n\nDo you want to "
+                "save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                # Stop simulations
+                tmp_sims = copy.copy(self.simulation.running_simulations)
+                for elem_sim in tmp_sims:
+                    elem_sim.stop()
+                    elem_sim.controls.state_label.setText("Stopped")
+                    elem_sim.controls.run_button.setEnabled(True)
+                    elem_sim.controls.stop_button.setEnabled(False)
+                # TODO: Delete files
+        elif simulations_running:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Simulations running",
+                "There are simulations running that use the current "
+                "target.\nIf you save changes, the running "
+                "simulations will be stopped, and their result files "
+                "deleted.\n\nDo you want to save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                # Stop simulations
+                tmp_sims = copy.copy(self.simulation.running_simulations)
+                for elem_sim in tmp_sims:
+                    elem_sim.stop()
+                    elem_sim.controls.state_label.setText("Stopped")
+                    elem_sim.controls.run_button.setEnabled(True)
+                    elem_sim.controls.stop_button.setEnabled(False)
+                # TODO: Delete files
+        elif simulations_run:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Simulated simulations",
+                "There are simulations that use the current target, "
+                "and have been simulated.\nIf you save changes,"
+                " the result files of the simulated simulations are "
+                "deleted.\n\nDo you want to save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                pass
+                # TODO: Delete files
+
         name = self.__ui.nameEdit.text()
         thickness = self.__ui.thicknessEdit.value()
         density = self.__ui.densityEdit.value()
@@ -206,6 +276,37 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.placement_under = False
         self.ok_pressed = True
         self.__close = True
+
+    def check_if_simulations_run(self):
+        """
+        Check if simulation have been run.
+
+        Return:
+             True or False.
+        """
+        if not self.simulation:
+            return False
+        for elem_sim in self.simulation.element_simulations:
+            if elem_sim.simulations_done and \
+               elem_sim.use_default_settings:
+                return True
+        return False
+
+    def simulations_running(self):
+        """
+        Check if there are any simulations running.
+
+        Return:
+            True or False.
+        """
+        if not self.simulation:
+            return False
+        for elem_sim in self.simulation.element_simulations:
+            if elem_sim in self.simulation.request.running_simulations:
+                return True
+            elif elem_sim in self.simulation.running_simulations:
+                return True
+        return False
 
     def __missing_information_message(self, empty_fields):
         """Show the user a message about missing information.

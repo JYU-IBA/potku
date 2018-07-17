@@ -27,6 +27,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
+import copy
 import matplotlib
 import os
 import widgets
@@ -70,6 +71,10 @@ class _CompositionWidget(MatplotlibWidget):
         self.__layer_selector = None
         self.__layer_actions = []
         self.__annotations = []
+
+        self.simulation = None
+        if type(self.parent) is widgets.simulation.target.TargetWidget:
+            self.simulation = self.parent.simulation
 
         self.__fork_toolbar_buttons()
 
@@ -123,6 +128,37 @@ class _CompositionWidget(MatplotlibWidget):
         for action in self.__layer_actions:
             action.setEnabled(True)
 
+    def check_if_simulations_run(self):
+        """
+        Check if simulation have been run.
+
+        Return:
+             True or False.
+        """
+        if not self.simulation:
+            return False
+        for elem_sim in self.simulation.element_simulations:
+            if elem_sim.simulations_done and \
+               elem_sim.use_default_settings:
+                return True
+        return False
+
+    def simulations_running(self):
+        """
+        Check if there are any simulations running.
+
+        Return:
+            True or False.
+        """
+        if not self.simulation:
+            return False
+        for elem_sim in self.simulation.element_simulations:
+            if elem_sim in self.simulation.request.running_simulations:
+                return True
+            elif elem_sim in self.simulation.running_simulations:
+                return True
+        return False
+
     def __delete_layer(self):
         """
         Delete selected layer.
@@ -138,6 +174,72 @@ class _CompositionWidget(MatplotlibWidget):
                 QtWidgets.QMessageBox.Cancel:
             return  # If clicked Yes, then continue normally
 
+        simulations_run = self.check_if_simulations_run()
+        simulations_running = self.simulations_running()
+
+        if simulations_run and simulations_running:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Simulated and running simulations",
+                "There are simulations that use the current target, "
+                "and either have been simulated or are currently running."
+                "\nIf you save changes, the running simulations "
+                "will be stopped, and the result files of the simulated "
+                "and stopped simulations are deleted.\n\nDo you want to "
+                "save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                # Stop simulations
+                tmp_sims = copy.copy(self.simulation.running_simulations)
+                for elem_sim in tmp_sims:
+                    elem_sim.stop()
+                    elem_sim.controls.state_label.setText("Stopped")
+                    elem_sim.controls.run_button.setEnabled(True)
+                    elem_sim.controls.stop_button.setEnabled(False)
+                # TODO: Delete files
+        elif simulations_running:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Simulations running",
+                "There are simulations running that use the current "
+                "target.\nIf you save changes, the running "
+                "simulations will be stopped, and their result files "
+                "deleted.\n\nDo you want to save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                # Stop simulations
+                tmp_sims = copy.copy(self.simulation.running_simulations)
+                for elem_sim in tmp_sims:
+                    elem_sim.stop()
+                    elem_sim.controls.state_label.setText("Stopped")
+                    elem_sim.controls.run_button.setEnabled(True)
+                    elem_sim.controls.stop_button.setEnabled(False)
+                # TODO: Delete files
+        elif simulations_run:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Simulated simulations",
+                "There are simulations that use the current target, "
+                "and have been simulated.\nIf you save changes,"
+                " the result files of the simulated simulations are "
+                "deleted.\n\nDo you want to save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                pass
+                # TODO: Delete files
+
         # Delete from layers list
         if self.__selected_layer in self.layers:
             self.layers.remove(self.__selected_layer)
@@ -150,8 +252,7 @@ class _CompositionWidget(MatplotlibWidget):
         # Update canvas
         self.__update_figure()
 
-        if type(self.parent) is widgets.simulation.target.TargetWidget and \
-                not self.layers:
+        if self.simulation and not self.layers:
             self.parent.ui.recoilRadioButton.setEnabled(False)
 
     def __modify_layer(self):
@@ -159,7 +260,9 @@ class _CompositionWidget(MatplotlibWidget):
         Open a layer properties dialog for modifying the selected layer.
         """
         if self.__selected_layer:
-            dialog = LayerPropertiesDialog(self.__selected_layer, modify=True)
+            dialog = LayerPropertiesDialog(self.__selected_layer,
+                                           modify=True,
+                                           simulation=self.simulation)
             if dialog.ok_pressed:
                 self.update_start_depths()
                 self.__update_figure(add=self.foil_behaviour)
@@ -282,7 +385,7 @@ class _CompositionWidget(MatplotlibWidget):
         if position > len(self.layers):
             ValueError("There are not that many layers.")
 
-        dialog = LayerPropertiesDialog()
+        dialog = LayerPropertiesDialog(simulation=self.simulation)
 
         if dialog.layer and dialog.placement_under:
             position = self.layers.index(self.__selected_layer) + 1
