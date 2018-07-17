@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 27.6.2018
+Updated on 17.7.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -33,18 +33,19 @@ __version__ = "2.0"
 import configparser
 import logging
 import os
-import time
 import re
+import time
 
+from modules.detector import Detector
 from modules.element import Element
 from modules.element_simulation import ElementSimulation
-from modules.run import Run
-from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
-from modules.sample import Samples
 from modules.measurement import Measurement
+from modules.run import Run
+from modules.sample import Samples
 from modules.simulation import Simulation
-from modules.detector import Detector
 from modules.target import Target
+
+from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 
 
 class Request:
@@ -495,3 +496,18 @@ class Request:
         if self.running_simulations:
             ret = True
         return ret
+
+    def running_simulation_by_seed(self, seed):
+        """
+        Find if there are any running simulation with the given seed number.
+
+        Args:
+             seed: Seed number.
+
+        Return:
+            Running element simulation.
+        """
+        for elem_sim in self.running_simulations:
+            if seed in elem_sim.mcerd_objects.keys():
+                return elem_sim
+        return None

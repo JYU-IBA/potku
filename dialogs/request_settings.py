@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 29.6.2018
+Updated on 17.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -31,19 +31,21 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
 import copy
+import modules.masses as masses
+import os
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
-from PyQt5 import uic
 from PyQt5 import QtWidgets
+from PyQt5 import uic
 from PyQt5.QtWidgets import QDesktopWidget
 from PyQt5.QtWidgets import QApplication
 
-import modules.masses as masses
 from dialogs.element_selection import ElementSelectionDialog
+
 from modules.input_validator import InputValidator
+
 from widgets.detector_settings import DetectorSettingsWidget
 from widgets.measurement.settings import MeasurementSettingsWidget
 from widgets.profile_settings import ProfileSettingsWidget
@@ -201,10 +203,16 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         """Reads values from Request Settings dialog and updates them in
         default objects.
         """
+        only_seed_changed = False
         # Check that values have been changed
         if not self.values_changed():
-            self.__close = True
-            return
+            # If only seed number has been changed, allow the change
+            if self.simulation_settings_widget.ui.seedSpinBox.value() != \
+                    self.request.default_element_simulation.seed_number:
+                only_seed_changed = True
+            else:
+                self.__close = True
+                return
         # Check the target and detector angles
         ok_pressed = self.measurement_settings_widget.check_angles()
         if ok_pressed:
@@ -221,7 +229,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
             simulations_run = self.check_if_simulations_run()
             simulations_running = self.request.simulations_running()
-            if simulations_run and simulations_running:
+            if simulations_run and simulations_running and \
+                    not only_seed_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulated and running simulations",
                     "There are simulations that use request settings, "
@@ -245,7 +254,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         elem_sim.controls.run_button.setEnabled(True)
                         elem_sim.controls.stop_button.setEnabled(False)
                     # TODO: Delete files
-            elif simulations_running:
+            elif simulations_running and not only_seed_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulations running",
                     "There are simulations running that use request "
@@ -267,7 +276,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         elem_sim.controls.run_button.setEnabled(True)
                         elem_sim.controls.stop_button.setEnabled(False)
                     # TODO: Delete files
-            elif simulations_run:
+            elif simulations_run and not only_seed_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulated simulations",
                     "There are simulations that use request settings, "
@@ -283,6 +292,29 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 else:
                     pass
                     # TODO: Delete files
+
+            if only_seed_changed:
+                # If there are running simulation that use the same seed as the
+                # new one, stop them
+                running_simulation = self.request.running_simulation_by_seed(
+                        self.simulation_settings_widget.ui.seedSpinBox.value())
+                if running_simulation:
+                    reply = QtWidgets.QMessageBox.question(
+                        self, "Running simulations",
+                        "There is a simulation that has the same seed number as"
+                        " the new one.\nIf you save changes, this simulation "
+                        "will be stopped (but its results will not be deleted)."
+                        "\n\nDo you want save changes anyway?",
+                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                        QtWidgets.QMessageBox.Cancel,
+                        QtWidgets.QMessageBox.Cancel)
+                    if reply == QtWidgets.QMessageBox.No or reply == \
+                            QtWidgets.QMessageBox.Cancel:
+                        self.__close = False
+                        return
+                    else:
+                        pass
+                        # TODO: stop the running simulation
 
             # TODO: Proper checking for all setting values
             try:
@@ -309,6 +341,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 for file in \
                         self.request.default_detector.efficiencies_to_remove:
                     self.request.default_detector.remove_efficiency_file(file)
+
+                # Simulation settings
+                self.simulation_settings_widget.update_settings()
 
                 self.request.default_detector.to_file(os.path.join(
                     self.request.default_detector_folder, "Default.detector"),

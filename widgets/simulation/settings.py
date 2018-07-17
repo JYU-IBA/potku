@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2018
-Updated on 13.6.2018
+Updated on 17.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,15 +28,16 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import os
-from PyQt5 import uic
-from PyQt5 import QtWidgets
+import time
 
-from modules.general_functions import set_input_field_red
 from modules.general_functions import check_text
+from modules.general_functions import set_input_field_red
 from modules.general_functions import validate_text_input
+
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 from PyQt5.QtCore import Qt
-import time
 
 
 class SimulationSettingsWidget(QtWidgets.QWidget):
@@ -167,8 +168,6 @@ class SimulationSettingsWidget(QtWidgets.QWidget):
         if self.obj.number_of_ions != self.ui.numberOfIonsSpinBox.value():
             return True
         if self.obj.number_of_preions != self.ui.numberOfPreIonsSpinBox.value():
-            return True
-        if self.obj.seed_number != self.ui.seedSpinBox.value():
             return True
         if self.obj.number_of_recoils != self.ui.numberOfRecoilsSpinBox.value():
             return True
