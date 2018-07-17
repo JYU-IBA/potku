@@ -159,7 +159,7 @@ class _CompositionWidget(MatplotlibWidget):
         Open a layer properties dialog for modifying the selected layer.
         """
         if self.__selected_layer:
-            dialog = LayerPropertiesDialog(self.__selected_layer)
+            dialog = LayerPropertiesDialog(self.__selected_layer, modify=True)
             if dialog.ok_pressed:
                 self.update_start_depths()
                 self.__update_figure(add=self.foil_behaviour)

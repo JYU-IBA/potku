@@ -49,7 +49,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
     """Dialog for adding a new layer or editing an existing one.
     """
 
-    def __init__(self, layer=None):
+    def __init__(self, layer=None, modify=False):
         """Inits a layer dialog.
 
         Args:
@@ -82,6 +82,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
         self.__ui.thicknessEdit.setLocale(QLocale.c())
         self.__ui.densityEdit.setLocale(QLocale.c())
+
+        if modify:
+            self.__ui.groupBox_2.hide()
 
         self.placement_under = True
 
