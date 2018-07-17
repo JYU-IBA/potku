@@ -284,17 +284,24 @@ class _CompositionWidget(MatplotlibWidget):
 
         dialog = LayerPropertiesDialog()
 
-        if dialog.layer and position < 0:
+        if dialog.layer and dialog.placement_under:
+            position = self.layers.index(self.__selected_layer) + 1
+            self.layers.insert(position, dialog.layer)
+            self.update_start_depths()
+            self.__selected_layer = dialog.layer
+            self.__update_figure(add=True)
+        elif dialog.layer and not dialog.placement_under:
+            position = self.layers.index(self.__selected_layer)
+            self.layers.insert(position, dialog.layer)
+            self.update_start_depths()
+            self.__selected_layer = dialog.layer
+            self.__update_figure(add=True)
+        elif dialog.layer and position < 0:
             depth = 0.0
             for layer in self.layers:
                 depth += layer.thickness
             dialog.layer.start_depth = depth
             self.layers.append(dialog.layer)
-            self.__selected_layer = dialog.layer
-            self.__update_figure(add=True)
-        elif dialog.layer:
-            self.layers.insert(position, dialog.layer)
-            self.update_start_depths()
             self.__selected_layer = dialog.layer
             self.__update_figure(add=True)
 

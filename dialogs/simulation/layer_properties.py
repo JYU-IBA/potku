@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 26.6.2018
+Updated on 17.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,20 +29,20 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __version__ = "2.0"
 
 import os
+import modules.masses as masses
 
-from PyQt5 import uic
+from dialogs.element_selection import ElementSelectionDialog
+
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
+from PyQt5 import uic
+from PyQt5.QtCore import QLocale
 
-import modules.masses as masses
-from dialogs.element_selection import ElementSelectionDialog
 from modules.element import Element
-from modules.layer import Layer
-
-from modules.general_functions import validate_text_input
 from modules.general_functions import check_text
 from modules.general_functions import set_input_field_red
-from PyQt5.QtCore import QLocale
+from modules.general_functions import validate_text_input
+from modules.layer import Layer
 
 
 class LayerPropertiesDialog(QtWidgets.QDialog):
@@ -82,6 +82,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
         self.__ui.thicknessEdit.setLocale(QLocale.c())
         self.__ui.densityEdit.setLocale(QLocale.c())
+
+        self.placement_under = True
 
         self.exec_()
 
@@ -195,6 +197,10 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.layer.density = density
         else:
             self.layer = Layer(name, elements, thickness, density)
+        if self.__ui.comboBox.currentText().startswith("Under"):
+            self.placement_under = True
+        else:
+            self.placement_under = False
         self.ok_pressed = True
         self.__close = True
 
