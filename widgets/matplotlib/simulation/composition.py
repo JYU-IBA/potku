@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 16.7.2018
+Updated on 17.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,13 +29,10 @@ __version__ = "2.0"
 
 import matplotlib
 import os
-
 import widgets
 
 from dialogs.simulation.layer_properties import LayerPropertiesDialog
 from dialogs.simulation.target_info_dialog import TargetInfoDialog
-
-from modules.general_functions import remove_file
 
 from PyQt5 import QtWidgets
 
@@ -441,12 +438,13 @@ class TargetCompositionWidget(_CompositionWidget):
         if dialog.isOk:
             old_target = os.path.join(self.simulation.directory, target.name
                                       + ".target")
-            remove_file(old_target)  # TODO: Winerror
+            os.remove(old_target)
             target.name = dialog.name
             target.description = dialog.description
             target_path = os.path.join(self.simulation.directory, target.name
                                        + ".target")
             target.to_file(target_path, None)
+            self.parent.ui.targetNameLabel.setText(target.name)
 
 
 class FoilCompositionWidget(_CompositionWidget):
