@@ -161,6 +161,61 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         """
         dialog.fields_are_valid = check_text(input_field)
 
+    def values_changed(self):
+        """
+        Check if layer's values have been changed.
+
+        Return:
+            True or False.
+        """
+        if self.layer.name != self.__ui.nameEdit.text():
+            return True
+        if self.layer.thickness != self.__ui.thicknessEdit.value():
+            return True
+        if self.layer.density != self.__ui.densityEdit.value():
+            return True
+        if self.elements_changed():
+            return True
+        return False
+
+    def elements_changed(self):
+        """
+        Check if elements have been chnaged in the layer.
+        """
+        new_elements = []
+        self.find_elements(new_elements)
+        if len(self.layer.elements) != len(new_elements):
+            return True
+        for i in range(len(self.layer.elements)):
+            elem1 = self.layer.elements[i]
+            elem2 = new_elements[i]
+            if elem1 != elem2:
+                return True
+        return False
+
+    def find_elements(self, lst):
+        """
+        Find all the layer's element from the dialog.
+
+        Args:
+            lst: List to append the elements to.
+        """
+        children = self.__ui.scrollAreaWidgetContents.children()
+
+        # TODO: Explain the following. Maybe better implementation?
+        i = 1
+        while i < len(children):
+            elem_symbol = children[i].text()
+            i += 1
+            try:
+                elem_isotope = int(children[i].currentText().split(" ")[0])
+            except ValueError:
+                elem_isotope = masses.get_standard_isotope(elem_symbol)
+            i += 1
+            elem_amount = children[i].value()
+            lst.append(Element(elem_symbol, elem_isotope, elem_amount))
+            i += 2
+
     def __accept_settings(self):
         """Function for accepting the current settings and closing the dialog
         window.
@@ -175,6 +230,12 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                                            QtWidgets.QMessageBox.Ok)
             self.__close = False
             self.fields_are_valid = True
+            return
+
+        if self.layer and not self.values_changed():
+            self.__close = True
+            self.fields_are_valid = True
+            self.ok_pressed = False  # No update needed
             return
 
         simulations_run = self.check_if_simulations_run()
@@ -247,21 +308,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         thickness = self.__ui.thicknessEdit.value()
         density = self.__ui.densityEdit.value()
         elements = []
-        children = self.__ui.scrollAreaWidgetContents.children()
-
-        # TODO: Explain the following. Maybe better implementation?
-        i = 1
-        while i < len(children):
-            elem_symbol = children[i].text()
-            i += 1
-            try:
-                elem_isotope = int(children[i].currentText().split(" ")[0])
-            except ValueError:
-                elem_isotope = masses.get_standard_isotope(elem_symbol)
-            i += 1
-            elem_amount = children[i].value()
-            elements.append(Element(elem_symbol, elem_isotope, elem_amount))
-            i += 2
+        self.find_elements(elements)
 
         if self.layer:
             self.layer.name = name
