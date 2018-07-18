@@ -172,12 +172,8 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         """
         if self.ui.useRequestSettingsValuesCheckBox.isChecked():
             self.ui.settingsGroupBox.setEnabled(False)
-            self.use_default_settings = True
-            self.element_simulation.use_default_settings = True
         else:
             self.ui.settingsGroupBox.setEnabled(True)
-            self.use_default_settings = False
-            self.element_simulation.use_default_settings = False
 
     def update_settings_and_close(self):
         """Updates settings and closes the dialog."""
@@ -192,6 +188,13 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         If default settings are not used, read settings from dialog,
         put them to element simulation and save them to file.
         """
+        if self.ui.useRequestSettingsValuesCheckBox.isChecked():
+            self.use_default_settings = True
+            self.element_simulation.use_default_settings = True
+        else:
+            self.use_default_settings = False
+            self.element_simulation.use_default_settings = False
+
         if not self.fields_are_valid and not self.use_default_settings:
             QtWidgets.QMessageBox.critical(self, "Warning",
                                            "Some of the setting values have"
