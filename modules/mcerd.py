@@ -64,6 +64,7 @@ class MCERD:
         # In case of Linux and Mac this will be /tmp and in Windows this will
         # be the C:\Users\<username>\AppData\Local\Temp.
         self.tmp = tempfile.gettempdir()
+        self.tmp = self.__settings["sim_dir"]
 
         # The recoil file and erd file are later passed to get_espe.
         self.recoil_file = os.path.join(self.tmp, self.__rec_filename +
@@ -339,3 +340,30 @@ class MCERD:
             shutil.copy(self.recoil_file, destination)
         except FileNotFoundError:
             raise
+
+    def delete_unneeded_files(self):
+        """
+        Delete mcerd files that are not needed anymore.
+        """
+        try:
+            os.remove(self.__command_file)
+            os.remove(self.__detector_file)
+            os.remove(self.__target_file)
+            os.remove(self.__foils_file)
+        except OSError:
+            pass  # Could not delete all the files
+
+        for file in os.listdir(self.tmp):
+            if file.startswith(self.__rec_filename + "." + str(self.__settings[
+                                                               "seed_number"])):
+                if file.endswith(".out") or file.endswith(".dat") or \
+                        file.endswith(".range"):
+                    try:
+                        os.remove(os.path.join(self.tmp, file))
+                    except OSError:
+                        continue
+            if file.startswith(self.__rec_filename) and file.endswith(".pre"):
+                try:
+                    os.remove(os.path.join(self.tmp, file))
+                except OSError:
+                    pass  # Could not delete the file

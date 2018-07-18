@@ -645,6 +645,7 @@ class ElementSimulation:
                 "target": self.target,
                 "detector": detector,
                 "recoil_element": self.recoil_elements[0],
+                "sim_dir": self.directory
             }
             self.mcerd_objects[seed_number] = MCERD(settings, self)
             seed_number = seed_number + 1
@@ -667,7 +668,8 @@ class ElementSimulation:
         for key, value in self.mcerd_objects.items():
             if value == sim:
                 key_to_delete = key
-        self.mcerd_objects[key_to_delete].copy_results(self.directory)
+        # self.mcerd_objects[key_to_delete].copy_results(self.directory)
+        self.mcerd_objects[key_to_delete].delete_unneeded_files()
 
         if key_to_delete:
             del (self.mcerd_objects[key_to_delete])
@@ -685,7 +687,8 @@ class ElementSimulation:
         for sim in list(self.mcerd_objects.keys()):
             self.mcerd_objects[sim].stop_process()
             try:
-                self.mcerd_objects[sim].copy_results(self.directory)
+                # self.mcerd_objects[sim].copy_results(self.directory)
+                self.mcerd_objects[sim].delete_unneeded_files()
             except FileNotFoundError:
                 pass
             del (self.mcerd_objects[sim])
@@ -731,10 +734,4 @@ class ElementSimulation:
                                           ".simu"),
             "recoil_file": recoil_file
         }
-        if self.mcerd_objects:
-            for sim in list(self.mcerd_objects.keys()):
-                try:
-                    self.mcerd_objects[sim].copy_results(self.directory)
-                except FileNotFoundError:
-                    raise
         self.get_espe = GetEspe(espe_settings)
