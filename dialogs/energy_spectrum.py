@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 16.7.2018
+Updated on 18.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -140,19 +140,13 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     rec_to_check = rec_element
 
             self.result_files = []
-            recoil_prefixes_and_names = []  # .recoil files of the same
-            # simulation are shown as one tree item.
             for file in os.listdir(self.parent.obj.directory):
                 if file.endswith(".rec"):
                     rec_name = file.split(".")[0]
 
-                    if rec_name in recoil_prefixes_and_names:
-                        continue
-
                     for f in os.listdir(self.parent.obj.directory):
                         rec_prefix = rec_name.split('-')[0]
                         if f.startswith(rec_prefix) and f.endswith(".erd"):
-                            recoil_prefixes_and_names.append(rec_name)
                             item = QtWidgets.QTreeWidgetItem()
                             item.setText(0, rec_name)
                             if rec_to_check and rec_to_check.prefix + "-" + \
@@ -163,16 +157,12 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                             self.ui.treeWidget.addTopLevelItem(item)
                             break
 
-                    if rec_name in recoil_prefixes_and_names:
-                        continue
-
                     # Also list rec files that have a running simulation
                     for run_sim in self.parent.obj.request.running_simulations:
                         for rec_elem in run_sim.recoil_elements:
                             rec_prefix_and_elem = rec_elem.prefix + "-" + \
                             rec_elem.name
                             if rec_prefix_and_elem == rec_name:
-                                recoil_prefixes_and_names.append(rec_name)
                                 item = QtWidgets.QTreeWidgetItem()
                                 item.setText(0, rec_name)
                                 item.setCheckState(0, QtCore.Qt.Unchecked)
