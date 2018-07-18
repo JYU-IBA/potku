@@ -302,10 +302,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 if running_simulations:
                     reply = QtWidgets.QMessageBox.question(
                         self, "Running simulations",
-                        "There is a simulation that has the same seed number as"
-                        " the new one.\nIf you save changes, this simulation "
-                        "will be stopped (but its results will not be deleted)."
-                        "\n\nDo you want save changes anyway?",
+                        "There are simulatio processes that have the same seed "
+                        "number as the new one.\nIf you save changes, these "
+                        "simulation processes will be stopped (but their "
+                        "results will not be deleted).\n\nDo you want save "
+                        "changes anyway?",
                         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
                         QtWidgets.QMessageBox.Cancel,
                         QtWidgets.QMessageBox.Cancel)

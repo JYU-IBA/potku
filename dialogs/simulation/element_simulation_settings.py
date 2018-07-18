@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.4.2018
-Updated on 2.7.2018
+Updated on 18.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,14 +28,16 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 
 import os
+import time
+
+from modules.general_functions import check_text
+from modules.general_functions import set_input_field_red
+from modules.general_functions import validate_text_input
+
 from PyQt5 import uic
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt
-import time
-from modules.general_functions import set_input_field_red
-from modules.general_functions import check_text
-from modules.general_functions import validate_text_input
 from PyQt5.QtCore import QLocale
+from PyQt5.QtCore import Qt
 
 
 class ElementSimulationSettingsDialog(QtWidgets.QDialog):
@@ -206,10 +208,15 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             self.__close = True
             return
 
+        only_seed_changed = False
         # If element simulation settings are used and they have not been changed
         if not self.use_default_settings and not self.values_changed():
-            self.__close = True
-            return
+            if self.ui.seedSpinBox.value() != \
+                    self.element_simulation.seed_number:
+                only_seed_changed = True
+            else:
+                self.__close = True
+                return
 
         simulation_run = self.element_simulation.simulations_done
         simulation_running = self.simulation_running()
@@ -219,7 +226,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         else:
             settings = "element simulation"
 
-        if simulation_run:
+        if simulation_run and not only_seed_changed:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulated simulation",
                 "This is a simulation that uses " + settings +
@@ -235,7 +242,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             else:
                 pass
                 # TODO: Delete files
-        elif simulation_running:
+        elif simulation_running and not only_seed_changed:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulation running",
                 "This simulation is running and uses " + settings +
@@ -255,6 +262,31 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 self.element_simulation.controls.run_button.setEnabled(True)
                 self.element_simulation.controls.stop_button.setEnabled(False)
                 # TODO: Delete files
+
+        if only_seed_changed:
+            # If there are running simulation that use the same seed as the
+            # new one, stop them
+            seed = self.ui.seedSpinBox.value()
+            running_simulation = self.running_simulation_by_seed(seed)
+            if running_simulation:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Running simulations",
+                    "There is a simulation process that has the same seed "
+                    "number as the new one.\nIf you save changes, this "
+                    "simulation process will be stopped (but its results will "
+                    "not be deleted).\n\nDo you want save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel,
+                    QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    self.__close = False
+                    return
+                else:
+                    # Stop the running simulation's mcerd process
+                    # that corresponds to seed
+                    running_simulation.mcerd_objects[seed].stop_process()
+                    del (running_simulation.mcerd_objects[seed])
 
         # Delete .mcsimu file if exists
         filename_to_remove = ""
@@ -407,3 +439,17 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 self.element_simulation.simulation.running_simulations:
             return True
         return False
+
+    def running_simulation_by_seed(self, seed):
+        """
+        Check if element simulation has man mcerd process with the given seed.
+
+        Args:
+            seed: Seed number.
+
+        Return:
+            Current element simulation.
+        """
+        if seed in self.element_simulation.mcerd_objects.keys():
+            return self.element_simulation
+        return None

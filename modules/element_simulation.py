@@ -648,7 +648,7 @@ class ElementSimulation:
             }
             self.mcerd_objects[seed_number] = MCERD(settings, self)
             seed_number = seed_number + 1
-            time.sleep(2)  # This is done to avoid having a mixup in mcerd
+            time.sleep(5)  # This is done to avoid having a mixup in mcerd
             # command file content when there are more than one process
             # (without this, Potku would crash)
 
