@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 11.7.2018
+Updated on 18.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -627,8 +627,8 @@ class ElementSimulation:
             detector = self.detector
 
         # Start as many processes as is given in number of processes
+        seed_number = elem_sim.seed_number
         for i in range(number_of_processes):
-            seed_number = elem_sim.seed_number + i
             settings = {
                 "simulation_type": elem_sim.simulation_type,
                 "number_of_ions": elem_sim.number_of_ions,
@@ -647,6 +647,11 @@ class ElementSimulation:
                 "recoil_element": self.recoil_elements[0],
             }
             self.mcerd_objects[seed_number] = MCERD(settings, self)
+            seed_number = seed_number + 1
+            time.sleep(2)  # This is done to avoid having a mixup in mcerd
+            # command file content when there are more than one process
+            # (without this, Potku would crash)
+
         if self.use_default_settings:
             self.request.running_simulations.append(self)
         else:
@@ -669,10 +674,10 @@ class ElementSimulation:
         if not self.mcerd_objects:
             if self.controls:
                 self.controls.show_stop()
-        if self.use_default_settings:
-            self.request.running_simulations.remove(self)
-        else:
-            self.simulation.running_simulations.remove(self)
+            if self.use_default_settings:
+                self.request.running_simulations.remove(self)
+            else:
+                self.simulation.running_simulations.remove(self)
         self.simulations_done = True
 
     def stop(self):
@@ -682,7 +687,7 @@ class ElementSimulation:
             try:
                 self.mcerd_objects[sim].copy_results(self.directory)
             except FileNotFoundError:
-                raise
+                pass
             del (self.mcerd_objects[sim])
         if self.use_default_settings:
             self.request.running_simulations.remove(self)

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 3.7.2018
+Updated on 18.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,18 +28,16 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import platform
-import subprocess
-
-import shutil
-import os
-
 import modules.masses as masses
-from modules.foil import CircularFoil
-
+import os
+import platform
+import shutil
+import subprocess
 import tempfile
 import threading
 import time
+
+from modules.foil import CircularFoil
 
 
 class MCERD:
@@ -100,7 +98,7 @@ class MCERD:
         """
         while True:
             try:
-                time.sleep(5)
+                time.sleep(10)
                 if self.__process.poll() == 0:
                     self.parent.notify(self)
                     break

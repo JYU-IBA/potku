@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 17.7.2018
+Updated on 18.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -296,9 +296,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             if only_seed_changed:
                 # If there are running simulation that use the same seed as the
                 # new one, stop them
-                running_simulation = self.request.running_simulation_by_seed(
-                        self.simulation_settings_widget.ui.seedSpinBox.value())
-                if running_simulation:
+                seed = self.simulation_settings_widget.ui.seedSpinBox.value()
+                running_simulations = self.request.running_simulations_by_seed(
+                    seed)
+                if running_simulations:
                     reply = QtWidgets.QMessageBox.question(
                         self, "Running simulations",
                         "There is a simulation that has the same seed number as"
@@ -313,8 +314,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         self.__close = False
                         return
                     else:
-                        pass
-                        # TODO: stop the running simulation
+                        # Stop the running simulations' mcerd process
+                        # that corresponds to seed
+                        for run_sim in running_simulations:
+                            run_sim.mcerd_objects[seed].stop_process()
+                            del (run_sim.mcerd_objects[seed])
 
             # TODO: Proper checking for all setting values
             try:

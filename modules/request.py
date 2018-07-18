@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 17.7.2018
+Updated on 18.7.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -497,17 +497,18 @@ class Request:
             ret = True
         return ret
 
-    def running_simulation_by_seed(self, seed):
+    def running_simulations_by_seed(self, seed):
         """
-        Find if there are any running simulation with the given seed number.
+        Find if there are any running simulations with the given seed number.
 
         Args:
              seed: Seed number.
 
         Return:
-            Running element simulation.
+            List of running element simulations.
         """
+        running_simulations = []
         for elem_sim in self.running_simulations:
             if seed in elem_sim.mcerd_objects.keys():
-                return elem_sim
-        return None
+                running_simulations.append(elem_sim)
+        return running_simulations
