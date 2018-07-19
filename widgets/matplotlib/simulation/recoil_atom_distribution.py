@@ -428,6 +428,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.anchored_box = None
         self.__show_all_recoil = True
 
+        # This holds all the recoils that aren't current ly selected
+        self.other_recoils = []
+        self.other_recoils_lines = []
+
         self.on_draw()
 
         if self.simulation.element_simulations:
@@ -456,14 +460,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Update figure.
         """
-        select_first_elem_sim = True
         for element_simulation in self.simulation.element_simulations:
             self.add_element(element_simulation.recoil_elements[0].element,
                              element_simulation)
 
             element_simulation.recoil_elements[0].widgets[0]. \
-                radio_button.setChecked(select_first_elem_sim)
-            select_first_elem_sim = False
+                radio_button.setChecked(False)
+        self.simulation.element_simulations[0].recoil_elements[0].widgets[
+            0].radio_button.setChecked(True)
+        self.show_other_recoils()
 
     def open_element_simulation_settings(self):
         """
@@ -584,6 +589,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     limit.set_linestyle("None")
                 if self.anchored_box:
                     self.anchored_box.set_visible(False)
+
+            # Do necessary changes in adding and deleting recoil elements pt 1
+            if self.current_recoil_element:
+                self.other_recoils.append(self.current_recoil_element)
             current_element_simulation = self.element_manager \
                 .get_element_simulation_with_radio_button(button)
             self.current_element_simulation = \
@@ -591,6 +600,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.current_recoil_element = \
                 self.element_manager.get_recoil_element_with_radio_button(
                     button, self.current_element_simulation)
+            # pt 2
+            try:
+                self.other_recoils.remove(self.current_recoil_element)
+            except ValueError:
+                pass  # Not in list
             # Disable element simulation deletion button and full edit for
             # other than main recoil element
             if self.current_recoil_element is not \
@@ -657,9 +671,38 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.current_recoil_element.area, 2))
                 box = self.anchored_box.get_child()
                 box.set_text(text)
+
+            # Make all other recoils grey
+            self.show_other_recoils()
+
             self.update_plot()
             # self.axes.relim()
             # self.axes.autoscale()
+        else:
+            # Add not selected recoils to their list
+            current_element_simulation = self.element_manager \
+                .get_element_simulation_with_radio_button(button)
+            current_recoil_element = \
+                self.element_manager.get_recoil_element_with_radio_button(
+                    button, current_element_simulation)
+            self.other_recoils.append(current_recoil_element)
+
+    def show_other_recoils(self):
+        """
+        Show other recoils than current recoil in grey.
+        """
+        for line in self.other_recoils_lines:
+            line.set_visible(False)
+        self.other_recoils_lines = []
+        for element_simulation in self.simulation.element_simulations:
+            for recoil in element_simulation.recoil_elements:
+                if recoil in self.other_recoils:
+                    xs = recoil.get_xs()
+                    ys = recoil.get_ys()
+                    rec_line = self.axes.plot(xs, ys, color="grey",
+                                              visible=True)
+                    self.other_recoils_lines.append(rec_line[0])
+        self.fig.canvas.draw_idle()
 
     def delete_and_add_possible_extra_points(self):
         """
