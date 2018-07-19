@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 10.7.2018
+Updated on 19.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -44,7 +44,9 @@ import sys
 import tempfile
 
 from decimal import Decimal
+
 from PyQt5 import QtWidgets
+
 from subprocess import Popen
 
 
@@ -96,7 +98,7 @@ def open_files_dialog(parent, default_folder, title, files):
     filenames = QtWidgets.QFileDialog.getOpenFileNames(parent, title,
                                                        default_folder,
                                                        parent.tr(files))
-    return filenames
+    return filenames[0]
 
 
 def save_file_dialog(parent, default_folder, title, files):
