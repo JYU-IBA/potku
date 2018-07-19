@@ -519,11 +519,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Unlock or lock full edit.
         """
         if self.edit_lock_push_button.text() == "Unlock full edit":
+            stop_simulation  = False
+            # Check if current element simulation is running
+            if self.current_element_simulation.mcerd_objects:
+                add = "Are you sure you want to unlock full edit for this" \
+                      " running element simulation?\nIt will be stopped and " \
+                      "all its simulation results will be deleted.\n\nUnlock " \
+                      "full edit anyway?"
+                stop_simulation = True
+            else:
+                add = "Are you sure you want to unlock full edit for this " \
+                      "element simulation?\nAll its simulation results will " \
+                      "be deleted.\n\nUnlock full edit anyway?"
             reply = QtWidgets.QMessageBox.warning(
-                self.parent, "Confirm", "Are you sure you want to unlock full "
-                                        "edit for this element simulation?\n"
-                                        "All its previous results will be "
-                                        "deleted.\n\nUnlock full edit anyway?",
+                self.parent, "Confirm", add,
                 QtWidgets.QMessageBox.Yes |
                 QtWidgets.QMessageBox.No |
                 QtWidgets.QMessageBox.Cancel,
@@ -531,6 +540,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if reply == QtWidgets.QMessageBox.No or reply == \
                     QtWidgets.QMessageBox.Cancel:
                 return
+            
+            # Stop possible running processes
+            if stop_simulation:
+                # Stop simulation
+                self.current_element_simulation.stop()
+                self.current_element_simulation.controls.state_label.setText(
+                    "Stopped")
+                self.current_element_simulation.controls.run_button.setEnabled(
+                    True)
+                self.current_element_simulation.controls.stop_button.setEnabled(
+                    False)
+
             self.current_element_simulation.unlock_edit()
             # TODO: Delete result files (erds, recoil, simu)
             self.full_edit_on = True
