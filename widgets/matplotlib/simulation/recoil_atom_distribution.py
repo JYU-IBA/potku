@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 13.7.2018
+Updated on 19.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -541,7 +541,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.point_remove_action.setEnabled(True)
             self.coordinates_widget.x_coordinate_box.setEnabled(True)
         else:
-            # TODO: return to basic view (full edit not on)
             self.current_element_simulation.lock_edit()
             self.full_edit_on = False
             self.edit_lock_push_button.setText("Unlock full edit")
@@ -1400,7 +1399,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 elif new_point.get_y() < 0.0001:
                     new_point.set_y(0.0001)
 
-
             if error:
                 self.current_element_simulation.remove_point(
                     self.current_recoil_element, new_point)
@@ -1533,7 +1531,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.set_xlim(start, end)
         self.fig.canvas.draw_idle()
 
-    def on_span_motion(self, min, max):
+    def on_span_motion(self, xmin, xmax):
         """
         Check if there are no dragged points before showing the span.
         """
@@ -2111,7 +2109,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 for point in self.selected_points:
                     left_neighbor = \
                         self.current_element_simulation.get_left_neighbor(
-                        self.current_recoil_element, point)
+                            self.current_recoil_element, point)
                     right_neighbor = \
                         self.current_element_simulation.get_right_neighbor(
                             self.current_recoil_element, point)

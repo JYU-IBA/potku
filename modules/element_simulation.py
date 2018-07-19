@@ -685,13 +685,17 @@ class ElementSimulation:
 
     def stop(self):
         """ Stop the simulation."""
+        ref_key = None
         for sim in list(self.mcerd_objects.keys()):
+            if ref_key is None:
+                ref_key = sim
             self.mcerd_objects[sim].stop_process()
-            try:
-                # self.mcerd_objects[sim].copy_results(self.directory)
-                self.mcerd_objects[sim].delete_unneeded_files()
-            except FileNotFoundError:
-                pass
+        try:
+            # self.mcerd_objects[sim].copy_results(self.directory)
+            self.mcerd_objects[ref_key].delete_unneeded_files()
+        except FileNotFoundError:
+            pass
+        for sim in list(self.mcerd_objects.keys()):
             del (self.mcerd_objects[sim])
         if self.use_default_settings:
             self.request.running_simulations.remove(self)

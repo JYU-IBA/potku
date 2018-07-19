@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 4.7.2018
+Updated on 19.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -117,10 +117,10 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         """ Calls ElementSimulation's start method.
         """
         number_of_processes = self.processes_spinbox.value()
-        self.element_simulation.start(number_of_processes)
         self.state_label.setText("Running")
         self.run_button.setEnabled(False)
         self.stop_button.setEnabled(True)
+        self.element_simulation.start(number_of_processes)
 
     def __stop_simulation(self):
         """ Calls ElementSimulation's stop method.

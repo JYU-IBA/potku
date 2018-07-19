@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 18.7.2018
+Updated on 19.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -75,12 +75,11 @@ class MCERD:
         self.__create_mcerd_files()
 
         # The command that is used to start the MCERD process.
-        mcerd_command = os.path.join("external", "Potku-bin", "mcerd" +
-                                     (".exe " if platform.system() == "Windows"
-                                      else "_mac " if platform.system() == "Darwin"
-                                      else " ") +
-                                     os.path.join(self.tmp,
-                                                  self.__rec_filename))
+        mcerd_command = os.path.join(
+            "external", "Potku-bin", "mcerd" +
+            (".exe " if platform.system() == "Windows"
+             else "_mac " if platform.system() == "Darwin"
+             else " ") + os.path.join(self.tmp, self.__rec_filename))
 
         # Start the MCERD process.
         # MCERD needs to be fixed so we can get rid of this ulimit.
@@ -111,7 +110,7 @@ class MCERD:
         used_os = platform.system()
         if used_os == "Windows":
             cmd = "TASKKILL /F /PID " + str(self.__process.pid) + " /T"
-            subprocess.Popen(cmd)
+            subprocess.call(cmd)
             self.__process = None
         elif used_os == "Linux" or used_os == "Darwin":
             self.__process.kill()
@@ -354,16 +353,15 @@ class MCERD:
             pass  # Could not delete all the files
 
         for file in os.listdir(self.tmp):
-            if file.startswith(self.__rec_filename + "." + str(self.__settings[
-                                                               "seed_number"])):
+            if file.startswith(self.__rec_filename):
                 if file.endswith(".out") or file.endswith(".dat") or \
-                        file.endswith(".range"):
+                   file.endswith(".range"):
                     try:
                         os.remove(os.path.join(self.tmp, file))
                     except OSError:
-                        continue
+                        continue  # Could not delete the file
             if file.startswith(self.__rec_filename) and file.endswith(".pre"):
                 try:
                     os.remove(os.path.join(self.tmp, file))
                 except OSError:
-                    pass  # Could not delete the file
+                    pass
