@@ -181,7 +181,7 @@ class ElementManager:
 
         # Add simulation controls widget
         simulation_controls_widget = SimulationControlsWidget(
-            element_simulation)
+            element_simulation, self.parent)
         simulation_controls_widget.element_simulation = element_simulation
         self.parent_tab.ui.contentsLayout.addWidget(simulation_controls_widget)
         element_simulation.recoil_elements[0] \
@@ -206,7 +206,7 @@ class ElementManager:
 
         # Add simulation controls widget
         simulation_controls_widget = SimulationControlsWidget(
-            element_simulation)
+            element_simulation, self.parent)
         simulation_controls_widget.element_simulation = element_simulation
         self.parent_tab.ui.contentsLayout.addWidget(simulation_controls_widget)
         element_simulation.recoil_elements[0] \

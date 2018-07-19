@@ -39,17 +39,19 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         element_simulation: ElementSimulation object.
     """
 
-    def __init__(self, element_simulation):
+    def __init__(self, element_simulation, recoil_dist_widget):
         """
         Initializes a SimulationControlsWidget.
 
         Args:
              element_simulation: An ElementSimulation class object.
+             recoil_dist_widget: RecoilAtomDistributionWidget.
         """
         super().__init__()
 
         self.element_simulation = element_simulation
         self.element_simulation.controls = self
+        self.recoil_dist_widget = recoil_dist_widget
 
         main_layout = QtWidgets.QHBoxLayout()
         recoil_element = self.element_simulation.recoil_elements[
@@ -120,6 +122,17 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.state_label.setText("Running")
         self.run_button.setEnabled(False)
         self.stop_button.setEnabled(True)
+
+        # Lock full edit
+        self.element_simulation.lock_edit()
+        if self.recoil_dist_widget.current_element_simulation is \
+           self.element_simulation:
+            self.recoil_dist_widget.full_edit_on = False
+            self.recoil_dist_widget.edit_lock_push_button.setText(
+                "Unlock full edit")
+            self.recoil_dist_widget.update_plot()
+        self.element_simulation.y_min = 0.0001
+
         self.element_simulation.start(number_of_processes)
 
     def __stop_simulation(self):
