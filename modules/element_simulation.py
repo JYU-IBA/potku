@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 18.7.2018
+Updated on 19.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -322,13 +322,14 @@ class ElementSimulation:
                            + ".recoil"
                 rename_file(recoil_file, new_name)
 
-            erd_file = os.path.join(self.directory, recoil_element.prefix +
-                                    "-" + old_name + "." + str(self.seed_number)
-                                    + ".erd")
-            if os.path.exists(erd_file):
-                new_name = recoil_element.prefix + "-" + recoil_element.name \
-                           + "." + str(self.seed_number) + ".erd"
-                rename_file(erd_file, new_name)
+            for file in os.listdir(self.directory):
+                if file.startswith(recoil_element.prefix) and file.endswith(
+                        ".erd"):
+                    erd_file = os.path.join(self.directory, file)
+                    seed = file.split('.')[1]
+                    new_name = recoil_element.prefix + "-" + \
+                               recoil_element.name + "." + seed + ".erd"
+                    rename_file(erd_file, new_name)
 
             simu_file = os.path.join(self.directory, recoil_element.prefix +
                                      "-" + old_name + ".simu")
