@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 16.7.2018
+Updated on 19.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -110,12 +110,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         if self.spectrum_type == "simulation":
             self.__button_area_calculation = QtWidgets.QToolButton(self)
             self.__button_area_calculation.clicked.connect(
-                self.__calculate_selected_area)
+                self.__toggle_area_limits)
             self.__button_area_calculation.setToolTip(
-                "Calculate the area ratio between the two spectra inside the "
-                "selected interval")
+                "Toggle the area limits")
             self.__icon_manager.set_icon(self.__button_area_calculation,
-                                         "depth_profile_lim_in.svg")
+                                         "depth_profile_lim_lines.svg")
             self.mpl_toolbar.addWidget(self.__button_area_calculation)
             self.__button_area_calculation.setEnabled(False)
 
@@ -126,6 +125,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                               button=1, span_stays=True)
 
         self.limits = []
+        self.limits_visible = False
         self.leg = None  # Original legend
         self.anchored_box = None
         self.lines_of_area = []
@@ -137,6 +137,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         """
         Calculate the ratio between the two spectra areas.
         """
+        if not self.limits:
+            return
+        if not self.limits_visible:
+            return
+
         lower_limit = self.limits[0].get_xdata()[0]
         upper_limit = self.limits[1].get_xdata()[0]
 
@@ -349,11 +354,32 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.limits.append(self.axes.axvline(x=nearest_low, linestyle="--"))
         self.limits.append(self.axes.axvline(x=nearest_high, linestyle="--",
                                              color='red'))
+        self.limits_visible = True
 
         self.axes.set_ybound(ylim[0], ylim[1])
 
         self.__button_area_calculation.setEnabled(True)
         self.canvas.draw_idle()
+
+        self.__calculate_selected_area()
+
+    def __toggle_area_limits(self):
+        """
+        Toggle the area limits on and off.
+        """
+        if self.limits_visible:
+            for lim in self.limits:
+                lim.set_linestyle('None')
+            self.limits_visible = False
+            self.anchored_box.set_visible(False)
+            self.anchored_box = None
+            self.canvas.draw_idle()
+        else:
+            for lim in self.limits:
+                lim.set_linestyle('--')
+            if self.limits:
+                self.limits_visible = True
+                self.__calculate_selected_area()
 
     def __sortt(self, key):
         cut_file = key.split('.')
@@ -540,6 +566,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         """
         self.__log_scale = self.__button_toggle_log.isChecked()
         self.on_draw()
+        if self.limits:
+            self.axes.add_artist(self.limits[0])
+            self.axes.add_artist(self.limits[1])
+        if self.limits_visible:
+            self.__calculate_selected_area()
 
     def __ignore_elements_from_graph(self):
         """Ignore elements from elements ratio calculation.
@@ -574,3 +605,4 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             dialog = GraphIgnoreElements(elements, self.__ignore_elements)
             self.__ignore_elements = dialog.ignored_elements
         self.on_draw()
+        self.limits = []
