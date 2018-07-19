@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 4.7.2018
+Updated on 19.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -131,7 +131,8 @@ class Potku(QtWidgets.QMainWindow):
 
         self.ui.actionNew_Request_2.triggered.connect(self.make_new_request)
         self.ui.actionOpen_Request_2.triggered.connect(self.open_request)
-        self.ui.actionExit.triggered.connect(self.close)  # Should save changes
+        self.ui.actionExit.triggered.connect(self.closeEvent)  # Should
+        # save changes
 
         self.ui.menuImport.setEnabled(False)
         self.panel_shown = True
@@ -403,6 +404,22 @@ class Potku(QtWidgets.QMainWindow):
                     self.ui.tabs.removeTab(i)
                     break
             self.tab_widgets.pop(clicked_item.obj.tab_id)
+
+    def closeEvent(self, event):
+        """
+        Save recoil elements and simulation targets and close the program.
+        """
+        if self.request:
+            for sample in self.request.samples.samples:
+                for simulation in sample.simulations.simulations.values():
+                    for elem_sim in simulation.element_simulations:
+                        for recoil_element in elem_sim.recoil_elements:
+                            elem_sim.recoil_to_file(elem_sim.directory,
+                                                    recoil_element)
+                    simulation.target.to_file(
+                        os.path.join(simulation.directory,
+                                     simulation.target.name + ".target"), None)
+        self.close()
 
     def create_report(self):
         """

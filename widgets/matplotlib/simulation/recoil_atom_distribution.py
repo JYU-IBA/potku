@@ -551,7 +551,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     True)
                 self.current_element_simulation.controls.stop_button.setEnabled(
                     False)
-
+            
             self.current_element_simulation.unlock_edit()
             # TODO: Delete result files (erds, recoil, simu)
             self.full_edit_on = True
