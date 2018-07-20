@@ -432,6 +432,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.other_recoils = []
         self.other_recoils_lines = []
 
+        self.target_thickness = 0
+
         self.on_draw()
 
         if self.simulation.element_simulations:
@@ -1570,7 +1572,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         y = 0.95
         next_layer_position = 0
+        self.target_thickness = 0
         for idx, layer in enumerate(self.target.layers):
+            self.target_thickness += layer.thickness
             self.axes.axvspan(
                 next_layer_position, next_layer_position + layer.thickness,
                 facecolor=self.layer_colors[idx % 2]
@@ -1645,6 +1649,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # When full edit is not on, zero vy values stay zero, and start and
         # end points can only move in y direction
         for i in range(0, len(dr_ps)):
+            old_x = dr_ps[i].get_x()
             # End point
             if dr_ps[i] == self.current_recoil_element.get_points()[-1] \
                and (not self.full_edit_on or self.current_recoil_element
@@ -1671,6 +1676,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                         dr_ps[i].set_coordinates((dr_ps[i].get_x(), 0.0))
                     else:
                         dr_ps[i].set_coordinates(new_coords[i])
+
+            if dr_ps[i] == self.current_recoil_element.get_points()[-1]:
+                if dr_ps[i].get_x() > self.target_thickness:
+                    dr_ps[i].set_x(self.target_thickness)
+
             # Check that dragged point hasn't crossed with neighbors
             left_neighbor = \
                 self.current_element_simulation.get_left_neighbor(

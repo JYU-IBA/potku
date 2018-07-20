@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.7.2018
-Updated on 13.7.2018
+Updated on 20.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -182,6 +182,8 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
                     point.previous_x.append(point.get_x())
                     coord = point.get_x()
                     new_coord = round(ratio * coord, 3)
+                    if new_coord > self.parent.target_thickness:
+                        new_coord = self.parent.target_thickness
                     self.parent.set_selected_point_x(new_coord, point)
                 self.actionXUndo.setEnabled(True)
             else:
