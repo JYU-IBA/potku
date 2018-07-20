@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 11.7.2018
+Updated on 20.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -35,7 +35,7 @@ class RecoilElement:
     """An element that has a list of points and a widget. The points are kept
     in ascending order by their x coordinate.
     """
-    def __init__(self, element, points, name="Default"):
+    def __init__(self, element, points, color, name="Default"):
         """Inits recoil element.
 
         Args:
@@ -66,6 +66,9 @@ class RecoilElement:
         # Area of certain limits
         self.area = None
         self.area_limits = []
+
+        # Color of the recoil
+        self.color = color
 
         self.update_zero_values()
 

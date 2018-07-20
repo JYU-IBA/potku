@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 17.7.2018
+Updated on 20.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -393,7 +393,8 @@ class _CompositionWidget(MatplotlibWidget):
             self.update_start_depths()
             self.__selected_layer = dialog.layer
             self.__update_figure(add=True)
-        elif dialog.layer and not dialog.placement_under:
+        elif dialog.layer and not dialog.placement_under and \
+                self.__selected_layer:
             position = self.layers.index(self.__selected_layer)
             self.layers.insert(position, dialog.layer)
             self.update_start_depths()

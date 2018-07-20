@@ -132,7 +132,7 @@ class ElementManager:
             if recoil_element.widgets[0].radio_button == radio_button:
                 return recoil_element
 
-    def add_new_element_simulation(self, element):
+    def add_new_element_simulation(self, element, color):
         """
         Create a new ElementSimulation and RecoilElement with default points.
 
@@ -172,7 +172,7 @@ class ElementManager:
 
         element_widget = ElementWidget(self.parent, element,
                                        self.parent_tab, None)
-        recoil_element = RecoilElement(element, points)
+        recoil_element = RecoilElement(element, points, color)
         recoil_element.widgets.append(element_widget)
         element_simulation = self.simulation.add_element_simulation(
             recoil_element)
@@ -945,7 +945,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             else:
                 isotope = dialog.isotope
             element_simulation = self.add_element(Element(
-                dialog.element, isotope))
+                dialog.element, isotope), color=dialog.color)
 
             self.current_element_simulation = element_simulation
             self.current_recoil_element = element_simulation. \
@@ -955,7 +955,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.other_recoils.remove(element_simulation.recoil_elements[0])
             self.show_other_recoils()
 
-    def add_element(self, element, element_simulation=None):
+    def add_element(self, element, element_simulation=None, color=None):
         """
         Adds a new ElementSimulation based on the element. If elem_sim is
          not None, only UI widgets need to be added.
@@ -967,7 +967,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if element_simulation is None:
             # Create new ElementSimulation
             element_simulation = self.element_manager \
-                .add_new_element_simulation(element)
+                .add_new_element_simulation(element, color)
         else:
             element_simulation = element_simulation
             self.element_manager.add_element_simulation(element_simulation)
@@ -1602,7 +1602,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             end = next_layer_position - last_layer_thickness * 0.7
             start = 0 - end * 0.05
 
-        if self.__show_all_recoil:
+        if self.__show_all_recoil and self.current_recoil_element:
             last_point = self.current_recoil_element.get_point_by_i(len(
                 self.current_recoil_element.get_points()) - 1)
             last_point_x = last_point.get_x()

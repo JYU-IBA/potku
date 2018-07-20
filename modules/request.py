@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 18.7.2018
+Updated on 20.7.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -44,6 +44,8 @@ from modules.run import Run
 from modules.sample import Samples
 from modules.simulation import Simulation
 from modules.target import Target
+
+from PyQt5 import QtGui
 
 from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 
@@ -292,7 +294,8 @@ class Request:
             # Create default element simulation for request
             self.default_element_simulation = ElementSimulation(
                 self.default_folder, self,
-                [RecoilElement(Element.from_string("4He 3.0"), [])],
+                [RecoilElement(Element.from_string("4He 3.0"), [],
+                               QtGui.QColor("#0000ff"))],
                 self.default_simulation,
                 description="These are default simulation parameters.",
                 use_default_settings=False)

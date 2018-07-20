@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 19.7.2018
+Updated on 20.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -38,6 +38,8 @@ from modules.foil import CircularFoil
 from modules.general_functions import rename_file
 from modules.get_espe import GetEspe
 from modules.mcerd import MCERD
+
+from PyQt5 import QtGui
 
 from widgets.matplotlib.simulation.recoil_atom_distribution import Point
 from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
@@ -439,8 +441,11 @@ class ElementSimulation:
                 for dictionary_point in obj["profile"]:
                     x, y = dictionary_point["Point"].split(" ")
                     points.append(Point((float(x), float(y))))
+                # Read color
+                # color = obj["color"]
+                color = QtGui.QColor(obj["color"])
                 element = RecoilElement(Element.from_string(obj["element"]),
-                                        points)
+                                        points, color=color)
                 element.name = obj["name"]
                 element.description = obj["description"]
                 element.reference_density = obj["reference_density"] / 1e22
@@ -569,7 +574,8 @@ class ElementSimulation:
             "simulation_type": recoil_element.type,
             "element": element_str,
             "reference_density": recoil_element.reference_density * 1e22,
-            "profile": []
+            "profile": [],
+            "color": str(recoil_element.color.name())
         }
 
         for point in recoil_element.get_points():
