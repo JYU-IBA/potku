@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 19.7.2018
+Updated on 20.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -463,9 +463,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         for element_simulation in self.simulation.element_simulations:
             self.add_element(element_simulation.recoil_elements[0].element,
                              element_simulation)
-
-            element_simulation.recoil_elements[0].widgets[0]. \
-                radio_button.setChecked(False)
         self.simulation.element_simulations[0].recoil_elements[0].widgets[
             0].radio_button.setChecked(True)
         self.show_other_recoils()
@@ -678,14 +675,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.update_plot()
             # self.axes.relim()
             # self.axes.autoscale()
-        else:
-            # Add not selected recoils to their list
-            current_element_simulation = self.element_manager \
-                .get_element_simulation_with_radio_button(button)
-            current_recoil_element = \
-                self.element_manager.get_recoil_element_with_radio_button(
-                    button, current_element_simulation)
-            self.other_recoils.append(current_recoil_element)
+        # else:
+        #     # Add not selected recoils to their list
+        #     current_element_simulation = self.element_manager \
+        #         .get_element_simulation_with_radio_button(button)
+        #     current_recoil_element = \
+        #         self.element_manager.get_recoil_element_with_radio_button(
+        #             button, current_element_simulation)
+        #     self.other_recoils.append(current_recoil_element)
 
     def show_other_recoils(self):
         """
@@ -700,7 +697,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     xs = recoil.get_xs()
                     ys = recoil.get_ys()
                     rec_line = self.axes.plot(xs, ys, color="grey",
-                                              visible=True)
+                                              visible=True, zorder=1)
                     self.other_recoils_lines.append(rec_line[0])
         self.fig.canvas.draw_idle()
 
@@ -953,6 +950,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 recoil_elements[0]
             element_simulation.recoil_elements[0].widgets[0].radio_button \
                 .setChecked(True)
+            self.other_recoils.remove(element_simulation.recoil_elements[0])
+            self.show_other_recoils()
 
     def add_element(self, element, element_simulation=None):
         """
@@ -976,6 +975,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             recoil_element_widget = recoil_element.widgets[0]
             self.radios.addButton(recoil_element_widget.radio_button)
             self.recoil_vertical_layout.addWidget(recoil_element_widget)
+            self.other_recoils.append(recoil_element)
 
         return element_simulation
 
@@ -1017,6 +1017,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             recoil_widget.deleteLater()
             # Remove recoil element from element simulation
             element_simulation.recoil_elements.remove(recoil_to_delete)
+            # Remove other recoil line
+            try:
+                self.other_recoils.remove(recoil_to_delete)
+            except ValueError:
+                pass  # Recoil was not in list
+            self.show_other_recoils()
             # Delete rec, recoil and simu files.
             rec_file = os.path.join(element_simulation.directory,
                                     recoil_to_delete.prefix + "-" +
@@ -1063,10 +1069,17 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.radios.checkedButton())
         # Remove possible other recoil elements
         for recoil_elem in element_simulation.recoil_elements:
+            if recoil_elem is element_simulation.recoil_elements[0]:
+                continue
             self.remove_recoil_element(recoil_elem.widgets[0],
                                        element_simulation, recoil_elem)
         self.current_recoil_element = None
         self.remove_element(element_simulation)
+        # Remove recoil lines
+        for recoil in element_simulation.recoil_elements:
+            if recoil in self.other_recoils:
+                self.other_recoils.remove(recoil)
+        self.show_other_recoils()
         self.current_element_simulation = None
         self.parent_ui.elementInfoWidget.hide()
         self.update_plot()
