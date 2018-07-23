@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 19.7.2018
+Updated on 23.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -123,6 +123,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                               rectprops=dict(alpha=0.5,
                                                              facecolor='red'),
                                               button=1, span_stays=True)
+            self.__used_recoils = self.__find_used_recoils()
 
         self.limits = []
         self.limits_visible = False
@@ -390,6 +391,21 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             isotope = masses.get_standard_isotope(element)
         return isotope
 
+    def __find_used_recoils(self):
+        """
+        Find all the recoils that will be drawn.
+        """
+        recoils = []
+        for elem_sim in self.parent.parent.obj.element_simulations:
+            for recoil in elem_sim.recoil_elements:
+                for used_file in self.histed_files.keys():
+                    used_file_name = os.path.split(used_file)[1]
+                    if used_file_name == recoil.prefix + "-" + recoil.name + \
+                            ".simu":
+                        recoils.append(recoil)
+                        break
+        return recoils
+
     def on_draw(self):
         """Draw method for matplotlib.
         """
@@ -483,6 +499,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                     symbol = element.symbol
 
                     label = r"$^{" + str(isotope) + "}$" + symbol + " (exp)"
+                    color = "black"
                 elif file_name.endswith(".simu"):
                     for s in file_name:
                         if s != "-":
@@ -496,8 +513,16 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                     recoil_name = recoil_name_with_end.split('.')[0]
 
                     label = r"$^{" + isotope + "}$" + symbol + " " + recoil_name
+
+                    for used_recoil in self.__used_recoils:
+                        used_recoil_file_name = used_recoil.prefix + "-" + \
+                                                used_recoil.name + ".simu"
+                        if used_recoil_file_name == file_name:
+                            color = str(used_recoil.color.name())
+
                 else:
                     label = file_name
+                    color = "grey"
 
                 x = tuple(float(pair[0]) for pair in data)
                 y = tuple(float(pair[1]) for pair in data)
@@ -505,7 +530,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 if x[0] < x_min:
                     x_min = x[0]
                     x_min_changed = True
-                self.axes.plot(x, y, label=label)
+
+                self.axes.plot(x, y, label=label, color=color)
 
         if self.draw_legend:
             if not self.__initiated_box:
