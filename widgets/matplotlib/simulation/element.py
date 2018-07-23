@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 20.7.2018
+Updated on 23.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -37,9 +37,10 @@ from dialogs.simulation.element_simulation_settings import \
 
 from modules.recoil_element import RecoilElement
 
-from PyQt5.QtGui import QIcon
+from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 
+from widgets.simulation.circle import Circle
 from widgets.simulation.recoil_element import RecoilElementWidget
 
 
@@ -47,7 +48,7 @@ class ElementWidget(QtWidgets.QWidget):
     """Class for creating an element widget for the recoil atom distribution.
         """
 
-    def __init__(self, parent, element, parent_tab, element_simulation):
+    def __init__(self, parent, element, parent_tab, element_simulation, color):
         """
         Initializes the ElementWidget.
 
@@ -56,6 +57,7 @@ class ElementWidget(QtWidgets.QWidget):
             element: An Element object.
             parent_tab: A SimulationTabWidget.
             element_simulation: ElementSimulation object.
+            color: Color for the circle.
         """
         super().__init__()
 
@@ -76,8 +78,11 @@ class ElementWidget(QtWidgets.QWidget):
 
         self.radio_button.setText(button_text)
 
+        # Circle for showing the recoil color
+        self.circle = Circle(color)
+
         draw_spectrum_button = QtWidgets.QPushButton()
-        draw_spectrum_button.setIcon(QIcon(
+        draw_spectrum_button.setIcon(QtGui.QIcon(
             "ui_icons/potku/energy_spectrum_icon.svg"))
         draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                            QtWidgets.QSizePolicy.Fixed)
@@ -85,7 +90,7 @@ class ElementWidget(QtWidgets.QWidget):
         draw_spectrum_button.setToolTip("Draw energy spectra")
 
         settings_button = QtWidgets.QPushButton()
-        settings_button.setIcon(QIcon("ui_icons/reinhardt/gear.svg"))
+        settings_button.setIcon(QtGui.QIcon("ui_icons/reinhardt/gear.svg"))
         settings_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                       QtWidgets.QSizePolicy.Fixed)
         settings_button.clicked.connect(
@@ -93,13 +98,15 @@ class ElementWidget(QtWidgets.QWidget):
         settings_button.setToolTip("Edit element simulation settings")
 
         add_recoil_button = QtWidgets.QPushButton()
-        add_recoil_button.setIcon(QIcon("ui_icons/reinhardt/edit_add.svg"))
+        add_recoil_button.setIcon(QtGui.QIcon(
+            "ui_icons/reinhardt/edit_add.svg"))
         add_recoil_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                         QtWidgets.QSizePolicy.Fixed)
         add_recoil_button.clicked.connect(self.add_new_recoil)
         add_recoil_button.setToolTip("Add a new recoil to element")
 
         horizontal_layout.addWidget(self.radio_button)
+        horizontal_layout.addWidget(self.circle)
         horizontal_layout.addWidget(draw_spectrum_button)
         horizontal_layout.addWidget(settings_button)
         horizontal_layout.addWidget(add_recoil_button)
@@ -123,13 +130,15 @@ class ElementWidget(QtWidgets.QWidget):
 
         element = copy.copy(self.element_simulation.recoil_elements[0].element)
         name = "Default-" + str(self.running_int_recoil)
-        recoil_element = RecoilElement(
-            element, points, self.element_simulation.recoil_elements[0].color,
-            name)
+
+        color = self.element_simulation.recoil_elements[0].color
+
+        recoil_element = RecoilElement(element, points, color, name)
         self.running_int_recoil = self.running_int_recoil + 1
         recoil_widget = RecoilElementWidget(self.parent, element,
                                             self.parent_tab, self,
-                                            self.element_simulation)
+                                            self.element_simulation,
+                                            color)
         recoil_element.widgets.append(recoil_widget)
         self.element_simulation.recoil_elements.append(recoil_element)
 

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 2.7.2018
-Updated on 13.7.2018
+Updated on 23.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -33,13 +33,15 @@ from  dialogs.energy_spectrum import EnergySpectrumWidget
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
 
+from widgets.simulation.circle import Circle
+
 
 class RecoilElementWidget(QtWidgets.QWidget):
     """
     Class that shows a recoil element that is connected to an ElementSimulation.
     """
     def __init__(self, parent, element, parent_tab, parent_element_widget,
-        element_simulation):
+                 element_simulation, color):
         """
         Initialize the widget.
 
@@ -49,6 +51,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
             parent_tab: A SimulationTabWidget.
             parent_element_widget: An ElementWidget.
             element_simulation: ElementSimulation object.
+            color: Color for the circle.
         """
         super().__init__()
 
@@ -71,6 +74,9 @@ class RecoilElementWidget(QtWidgets.QWidget):
 
         self.radio_button.setText(button_text)
 
+        # Circle for showing the recoil color
+        self.circle = Circle(color)
+
         draw_spectrum_button = QtWidgets.QPushButton()
         draw_spectrum_button.setIcon(QIcon(
             "ui_icons/potku/energy_spectrum_icon.svg"))
@@ -87,6 +93,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
         remove_recoil_button.setToolTip("Add a new recoil to element")
 
         horizontal_layout.addWidget(self.radio_button)
+        horizontal_layout.addWidget(self.circle)
         horizontal_layout.addWidget(draw_spectrum_button)
         horizontal_layout.addWidget(remove_recoil_button)
 

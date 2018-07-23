@@ -138,6 +138,7 @@ class ElementManager:
 
         Args:
              element: Element that tells the element to add.
+             color: QColor object for recoil color.
 
         Return:
             Created ElementSimulation
@@ -170,9 +171,9 @@ class ElementManager:
             element.isotope = int(round(masses.get_standard_isotope(
                 element.symbol)))
 
-        element_widget = ElementWidget(self.parent, element,
-                                       self.parent_tab, None)
         recoil_element = RecoilElement(element, points, color)
+        element_widget = ElementWidget(self.parent, element,
+                                       self.parent_tab, None, color)
         recoil_element.widgets.append(element_widget)
         element_simulation = self.simulation.add_element_simulation(
             recoil_element)
@@ -199,7 +200,8 @@ class ElementManager:
         main_element_widget = \
             ElementWidget(self.parent,
                           element_simulation.recoil_elements[0].element,
-                          self.parent_tab, element_simulation)
+                          self.parent_tab, element_simulation,
+                          element_simulation.recoil_elements[0].color)
         element_simulation.recoil_elements[0] \
             .widgets.append(main_element_widget)
         main_element_widget.element_simulation = element_simulation
@@ -218,7 +220,8 @@ class ElementManager:
             recoil_element_widget = RecoilElementWidget(
                 self.parent,
                 element_simulation.recoil_elements[i].element,
-                self.parent_tab, main_element_widget, element_simulation)
+                self.parent_tab, main_element_widget, element_simulation,
+                element_simulation.recoil_elements[0].color)
             element_simulation.recoil_elements[i].widgets.append(
                 recoil_element_widget)
             recoil_element_widget.element_simulation = element_simulation
