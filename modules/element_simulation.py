@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 20.7.2018
+Updated on 23.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -147,7 +147,7 @@ class ElementSimulation:
             else:
                 prefix = self.name_prefix
         self.mcsimu_to_file(os.path.join(self.directory,
-                                          name + ".mcsimu"))
+                                         name + ".mcsimu"))
         for recoil_element in self.recoil_elements:
             self.recoil_to_file(self.directory, recoil_element)
         self.profile_to_file(os.path.join(self.directory,
@@ -303,6 +303,7 @@ class ElementSimulation:
             recoil_element.name = new_values["name"]
             recoil_element.description = new_values["description"]
             recoil_element.reference_density = new_values["reference_density"]
+            recoil_element.color = new_values["color"]
         except KeyError:
             raise
         # Delete possible extra rec files.
@@ -330,7 +331,7 @@ class ElementSimulation:
                     erd_file = os.path.join(self.directory, file)
                     seed = file.split('.')[1]
                     new_name = recoil_element.prefix + "-" + \
-                               recoil_element.name + "." + seed + ".erd"
+                        recoil_element.name + "." + seed + ".erd"
                     rename_file(erd_file, new_name)
 
             simu_file = os.path.join(self.directory, recoil_element.prefix +

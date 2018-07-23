@@ -437,8 +437,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.target_thickness = 0
 
-        self.colormap = self.simulation.request \
-            .global_settings.get_element_colors()
+        self.colormap = self.simulation.request.global_settings.\
+            get_element_colors()
 
         self.on_draw()
 
@@ -487,17 +487,18 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Open recoil element info.
         """
-        dialog = RecoilInfoDialog(
-            self.current_recoil_element)
+        dialog = RecoilInfoDialog(self.current_recoil_element, self.colormap)
         if dialog.isOk:
             new_values = {"name": dialog.name,
                           "description": dialog.description,
-                          "reference_density": dialog.reference_density}
+                          "reference_density": dialog.reference_density,
+                          "color": dialog.color}
             try:
                 self.current_element_simulation.update_recoil_element(
                     self.current_recoil_element,
                     new_values)
                 self.update_recoil_element_info_labels()
+                self.update_colors()
             except KeyError:
                 error_box = QtWidgets.QMessageBox()
                 error_box.setIcon(QtWidgets.QMessageBox.Warning)
@@ -576,6 +577,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.full_edit_on = False
             self.edit_lock_push_button.setText("Unlock full edit")
             self.current_element_simulation.y_min = 0.0001
+        self.update_plot()
+
+    def update_colors(self):
+        """
+        Update the view with current recoil element's color.
+        """
+        self.current_recoil_element.widgets[0].circle.set_color(
+            self.current_recoil_element.color)
         self.update_plot()
 
     def choose_element(self, button, checked):

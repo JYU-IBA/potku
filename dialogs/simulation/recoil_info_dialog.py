@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 3.5.2018
-Updated on 2.72018
+Updated on 23.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,15 +29,15 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __version__ = "2.0"
 
 import os
-
-from PyQt5 import uic
-from PyQt5 import QtWidgets
 import time
 
-from modules.general_functions import set_input_field_red
-from modules.general_functions import check_text
-from modules.general_functions import validate_text_input
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 from PyQt5.QtCore import QLocale
+
+from modules.general_functions import check_text
+from modules.general_functions import set_input_field_red
+from modules.general_functions import validate_text_input
 
 
 class RecoilInfoDialog(QtWidgets.QDialog):
@@ -45,8 +45,12 @@ class RecoilInfoDialog(QtWidgets.QDialog):
     of a recoil element.
     """
 
-    def __init__(self, recoil_element):
+    def __init__(self, recoil_element, colormap):
         """Inits a recoil info dialog.
+
+        Args:
+            recoil_element: A RecoilElement object.
+            colormap: Colormap for elements.
         """
         super().__init__()
         self.__ui = uic.loadUi(os.path.join("ui_files",
@@ -58,6 +62,7 @@ class RecoilInfoDialog(QtWidgets.QDialog):
 
         self.__ui.okPushButton.clicked.connect(self.__accept_settings)
         self.__ui.cancelPushButton.clicked.connect(self.close)
+        self.__ui.colorPushButton.clicked.connect(self.__change_color)
 
         set_input_field_red(self.__ui.nameLineEdit)
         self.fields_are_valid = False
@@ -82,7 +87,14 @@ class RecoilInfoDialog(QtWidgets.QDialog):
                                         str(recoil_element.element.isotope) +
                                         recoil_element.element.symbol)
 
+        self.recoil_element = recoil_element
+
         self.__close = True
+        self.color = None
+        self.tmp_color = self.recoil_element.color
+        self.colormap = colormap
+
+        self.__set_color_button_color(recoil_element.element.symbol)
 
         self.exec_()
 
@@ -104,10 +116,43 @@ class RecoilInfoDialog(QtWidgets.QDialog):
             self.description = self.__ui.descriptionLineEdit.toPlainText()
             self.reference_density = self.__ui.referenceDensityDoubleSpinBox\
                 .value()
+            self.color = self.tmp_color
             self.isOk = True
             self.__close = True
         if self.__close:
             self.close()
+
+    def __change_color(self):
+        """
+        Change the color of the recoil element.
+        """
+        dialog = QtWidgets.QColorDialog(self)
+        color = dialog.getColor(self.tmp_color)
+        if color.isValid():
+            self.tmp_color = color
+            self.__change_color_button_color(self.recoil_element.element.symbol)
+
+    def __change_color_button_color(self, element):
+        """
+        Change color button's color.
+
+        Args:
+            element: String representing element name.
+        """
+        text_color = "black"
+        luminance = 0.2126 * self.tmp_color.red() + 0.7152 * \
+            self.tmp_color.green()
+        luminance += 0.0722 * self.tmp_color.blue()
+        if luminance < 50:
+            text_color = "white"
+        style = "background-color: {0}; color: {1};".format(
+            self.tmp_color.name(), text_color)
+        self.__ui.colorPushButton.setStyleSheet(style)
+
+        if self.tmp_color.name() == self.colormap[element]:
+            self.__ui.colorPushButton.setText("Automatic [{0}]".format(element))
+        else:
+            self.__ui.colorPushButton.setText("")
 
     @staticmethod
     def __check_text(input_field, settings):
@@ -118,6 +163,16 @@ class RecoilInfoDialog(QtWidgets.QDialog):
             settings: Settings dialog.
         """
         settings.fields_are_valid = check_text(input_field)
+
+    def __set_color_button_color(self, element):
+        """Set default color of element to color button.
+
+        Args:
+            element: String representing element.
+        """
+        self.__ui.colorPushButton.setEnabled(True)
+        self.tmp_color = self.recoil_element.color
+        self.__change_color_button_color(element)
 
     def __validate(self):
         """
