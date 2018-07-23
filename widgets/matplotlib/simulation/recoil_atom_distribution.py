@@ -434,6 +434,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.target_thickness = 0
 
+        self.colormap = self.simulation.request \
+            .global_settings.get_element_colors()
+
         self.on_draw()
 
         if self.simulation.element_simulations:
@@ -523,7 +526,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Unlock or lock full edit.
         """
         if self.edit_lock_push_button.text() == "Unlock full edit":
-            stop_simulation  = False
+            stop_simulation = False
             # Check if current element simulation is running
             if self.current_element_simulation.mcerd_objects:
                 add = "Are you sure you want to unlock full edit for this" \
@@ -675,16 +678,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.show_other_recoils()
 
             self.update_plot()
-            # self.axes.relim()
-            # self.axes.autoscale()
-        # else:
-        #     # Add not selected recoils to their list
-        #     current_element_simulation = self.element_manager \
-        #         .get_element_simulation_with_radio_button(button)
-        #     current_recoil_element = \
-        #         self.element_manager.get_recoil_element_with_radio_button(
-        #             button, current_element_simulation)
-        #     self.other_recoils.append(current_recoil_element)
 
     def show_other_recoils(self):
         """
@@ -947,13 +940,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             element_simulation = self.add_element(Element(
                 dialog.element, isotope), color=dialog.color)
 
-            self.current_element_simulation = element_simulation
-            self.current_recoil_element = element_simulation. \
-                recoil_elements[0]
             element_simulation.recoil_elements[0].widgets[0].radio_button \
                 .setChecked(True)
-            self.other_recoils.remove(element_simulation.recoil_elements[0])
-            self.show_other_recoils()
 
     def add_element(self, element, element_simulation=None, color=None):
         """
@@ -963,6 +951,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
          Args:
              element: Element that is added.
              element_simulation: ElementSimulation that needs the UI widgets.
+             color: A QColor object.
         """
         if element_simulation is None:
             # Create new ElementSimulation
@@ -1107,7 +1096,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             already_exists = True
                             break
                 if not already_exists:
-                    self.add_element(layer_element)
+                    elem_str = layer_element.symbol
+                    color = QtGui.QColor(self.colormap[elem_str])
+                    self.add_element(layer_element, color=color)
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -1653,7 +1644,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # When full edit is not on, zero vy values stay zero, and start and
         # end points can only move in y direction
         for i in range(0, len(dr_ps)):
-            old_x = dr_ps[i].get_x()
             # End point
             if dr_ps[i] == self.current_recoil_element.get_points()[-1] \
                and (not self.full_edit_on or self.current_recoil_element

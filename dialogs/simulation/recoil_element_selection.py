@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.4.2018
-Updated on 20.7.2018
+Updated on 23.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -49,9 +49,9 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         """Inits simulation element selection dialog.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                  "ui_recoil_element_selection_dialog.ui"),
-                             self)
+        self.ui = uic.loadUi(
+            os.path.join("ui_files", "ui_recoil_element_selection_dialog.ui"),
+            self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.recoil_atom_distribution = recoil_atom_distribution
 
@@ -59,8 +59,7 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         self.isotope = None
         self.color = None
         self.tmp_element = None
-        self.colormap = self.recoil_atom_distribution.simulation.request \
-            .global_settings.get_element_colors()
+        self.colormap = self.recoil_atom_distribution.colormap
 
         # Setup connections
         self.ui.element_button.clicked.connect(self.__change_sample_element)
