@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 20.7.2018
+Updated on 23.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1118,19 +1118,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.set_xlabel(self.name_x_axis)
 
         if self.current_element_simulation:
+            color = str(self.current_recoil_element.color.name())
             self.lines, = self.axes.plot(
                 self.current_element_simulation.get_xs(
                     self.current_recoil_element),
                 self.current_element_simulation.get_ys(
                     self.current_recoil_element),
-                color="blue")
+                color=color)
 
             self.markers, = self.axes.plot(
                 self.current_element_simulation.get_xs(
                     self.current_recoil_element),
                 self.current_element_simulation.get_ys(
                     self.current_recoil_element),
-                color="blue", marker="o",
+                color=color, marker="o",
                 markersize=10, linestyle="None")
 
             self.markers_selected, = self.axes.plot(0, 0, marker="o",
@@ -1513,6 +1514,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.current_recoil_element),
             self.current_element_simulation.get_ys(
                 self.current_recoil_element))
+
+        self.markers.set_color(str(self.current_recoil_element.color.name()))
+        self.lines.set_color(str(self.current_recoil_element.color.name()))
 
         self.markers.set_visible(True)
         self.lines.set_visible(True)
