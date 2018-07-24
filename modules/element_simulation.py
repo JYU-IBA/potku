@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 23.7.2018
+Updated on 24.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -621,6 +621,7 @@ class ElementSimulation:
         Args:
             number_of_processes: How many processes are started.
         """
+        self.simulations_done = False
         if self.run is None:
             run = self.request.default_run
         else:
@@ -704,9 +705,9 @@ class ElementSimulation:
             pass
         for sim in list(self.mcerd_objects.keys()):
             del (self.mcerd_objects[sim])
-        if self.use_default_settings:
+        try:
             self.request.running_simulations.remove(self)
-        else:
+        except ValueError:
             self.simulation.running_simulations.remove(self)
         self.simulations_done = True
 

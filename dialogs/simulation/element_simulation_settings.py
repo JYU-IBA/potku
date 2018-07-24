@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.4.2018
-Updated on 18.7.2018
+Updated on 24.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -31,6 +31,7 @@ import os
 import time
 
 from modules.general_functions import check_text
+from modules.general_functions import delete_simulation_results
 from modules.general_functions import set_input_field_red
 from modules.general_functions import validate_text_input
 
@@ -243,8 +244,15 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 self.__close = False
                 return
             else:
-                pass
-                # TODO: Delete files
+                for recoil in self.element_simulation.recoil_elements:
+                    # Delete files
+                    delete_simulation_results(self.element_simulation, recoil)
+                # Change full edit unlocked
+                self.element_simulation.recoil_elements[0].widgets[0].\
+                    parent.edit_lock_push_button.setText(
+                    "Full edit unlocked")
+                self.element_simulation.simulations_done = False
+
         elif simulation_running and not only_seed_changed:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulation running",
@@ -264,7 +272,15 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 self.element_simulation.controls.state_label.setText("Stopped")
                 self.element_simulation.controls.run_button.setEnabled(True)
                 self.element_simulation.controls.stop_button.setEnabled(False)
-                # TODO: Delete files
+                # Delete files
+                for recoil in self.element_simulation.recoil_elements:
+                    # Delete files
+                    delete_simulation_results(self.element_simulation, recoil)
+                # Change full edit unlocked
+                self.element_simulation.recoil_elements[0].widgets[0].\
+                    parent.edit_lock_push_button.setText(
+                    "Full edit unlocked")
+                self.element_simulation.simulations_done = False
 
         if only_seed_changed:
             # If there are running simulation that use the same seed as the

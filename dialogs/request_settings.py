@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 18.7.2018
+Updated on 24.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -35,16 +35,17 @@ import copy
 import modules.masses as masses
 import os
 
+from dialogs.element_selection import ElementSelectionDialog
+
+from modules.input_validator import InputValidator
+from modules.general_functions import delete_simulation_results
+
 from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtWidgets import QDesktopWidget
 from PyQt5.QtWidgets import QApplication
-
-from dialogs.element_selection import ElementSelectionDialog
-
-from modules.input_validator import InputValidator
 
 from widgets.detector_settings import DetectorSettingsWidget
 from widgets.measurement.settings import MeasurementSettingsWidget
@@ -62,6 +63,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         Args:
             request: Request class object.
+            icon_manager: IconManager object.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_settings.ui"), self)
@@ -253,7 +255,14 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         elem_sim.controls.state_label.setText("Stopped")
                         elem_sim.controls.run_button.setEnabled(True)
                         elem_sim.controls.stop_button.setEnabled(False)
-                    # TODO: Delete files
+                        for recoil in elem_sim.recoil_elements:
+                            # Delete files
+                            delete_simulation_results(elem_sim, recoil)
+                        # Change full edit unlocked
+                        elem_sim.recoil_elements[0].widgets[0].parent.\
+                            edit_lock_push_button.setText("Full edit unlocked")
+                        elem_sim.simulations_done = False
+
             elif simulations_running and not only_seed_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulations running",
@@ -275,7 +284,14 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         elem_sim.controls.state_label.setText("Stopped")
                         elem_sim.controls.run_button.setEnabled(True)
                         elem_sim.controls.stop_button.setEnabled(False)
-                    # TODO: Delete files
+                        for recoil in elem_sim.recoil_elements:
+                            # Delete files
+                            delete_simulation_results(elem_sim, recoil)
+                        # Change full edit unlocked
+                        elem_sim.recoil_elements[0].widgets[0].parent. \
+                            edit_lock_push_button.setText("Full edit unlocked")
+                        elem_sim.simulations_done = False
+
             elif simulations_run and not only_seed_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulated simulations",
@@ -290,8 +306,14 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     self.__close = False
                     return
                 else:
-                    pass
-                    # TODO: Delete files
+                    for elem_sim in simulations_run:
+                        for recoil in elem_sim.recoil_elements:
+                            # Delete files
+                            delete_simulation_results(elem_sim, recoil)
+                        # Change full edit unlocked
+                        elem_sim.recoil_elements[0].widgets[0].parent. \
+                            edit_lock_push_button.setText("Full edit unlocked")
+                        elem_sim.simulations_done = False
 
             if only_seed_changed:
                 # If there are running simulation that use the same seed as the
@@ -379,15 +401,16 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         Check if the re are any element simulations that have been simulated.
 
         Return:
-             True or False.
+             List of run element simulations.
         """
+        simulations_run = []
         for sample in self.request.samples.samples:
             for simulation in sample.simulations.simulations.values():
                 for elem_sim in simulation.element_simulations:
                     if elem_sim.simulations_done and \
                        elem_sim.use_default_settings:
-                        return True
-        return False
+                        simulations_run.append(elem_sim)
+        return simulations_run
 
     def __change_element(self, button, combo_box):
         """ Opens element selection dialog and loads selected element's isotopes

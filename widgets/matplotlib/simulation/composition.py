@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 20.7.2018
+Updated on 24.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -34,6 +34,8 @@ import widgets
 
 from dialogs.simulation.layer_properties import LayerPropertiesDialog
 from dialogs.simulation.target_info_dialog import TargetInfoDialog
+
+from modules.general_functions import delete_simulation_results
 
 from PyQt5 import QtWidgets
 
@@ -133,15 +135,16 @@ class _CompositionWidget(MatplotlibWidget):
         Check if simulation have been run.
 
         Return:
-             True or False.
+             List of run simulations.
         """
         if not self.simulation:
             return False
+        simulations_run = []
         for elem_sim in self.simulation.element_simulations:
             if elem_sim.simulations_done and \
                elem_sim.use_default_settings:
-                return True
-        return False
+                simulations_run.append(elem_sim)
+        return simulations_run
 
     def simulations_running(self):
         """
@@ -200,7 +203,14 @@ class _CompositionWidget(MatplotlibWidget):
                     elem_sim.controls.state_label.setText("Stopped")
                     elem_sim.controls.run_button.setEnabled(True)
                     elem_sim.controls.stop_button.setEnabled(False)
-                # TODO: Delete files
+                    # Delete files
+                    for recoil in elem_sim.recoil_elements:
+                        delete_simulation_results(elem_sim, recoil)
+                    # Change full edit unlocked
+                    elem_sim.recoil_elements[0].widgets[0].parent. \
+                        edit_lock_push_button.setText("Full edit unlocked")
+                    elem_sim.simulations_done = False
+
         elif simulations_running:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulations running",
@@ -222,7 +232,13 @@ class _CompositionWidget(MatplotlibWidget):
                     elem_sim.controls.state_label.setText("Stopped")
                     elem_sim.controls.run_button.setEnabled(True)
                     elem_sim.controls.stop_button.setEnabled(False)
-                # TODO: Delete files
+                    # Delete files
+                    for recoil in elem_sim.recoil_elements:
+                        delete_simulation_results(elem_sim, recoil)
+                    # Change full edit unlocked
+                    elem_sim.recoil_elements[0].widgets[0].parent. \
+                        edit_lock_push_button.setText("Full edit unlocked")
+                    elem_sim.simulations_done = False
         elif simulations_run:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulated simulations",
@@ -238,7 +254,13 @@ class _CompositionWidget(MatplotlibWidget):
                 return
             else:
                 pass
-                # TODO: Delete files
+                for elem_sim in simulations_run:
+                    for recoil in elem_sim.recoil_elements:
+                        delete_simulation_results(elem_sim, recoil)
+                    # Change full edit unlocked
+                    elem_sim.recoil_elements[0].widgets[0].parent. \
+                        edit_lock_push_button.setText("Full edit unlocked")
+                    elem_sim.simulations_done = False
 
         # Delete from layers list
         if self.__selected_layer in self.layers:

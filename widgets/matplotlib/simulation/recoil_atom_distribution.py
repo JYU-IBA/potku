@@ -43,6 +43,7 @@ from matplotlib import offsetbox
 from matplotlib.widgets import RectangleSelector
 from matplotlib.widgets import SpanSelector
 from modules.element import Element
+from modules.general_functions import delete_simulation_results
 from modules.general_functions import find_nearest
 from modules.general_functions import find_y_on_line
 from modules.point import Point
@@ -567,15 +568,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
             # Delete result files (erds, recoil, simu) for element simulation's
             # all recoils
-            files_to_delete = []
-            for file in os.listdir(self.current_element_simulation.directory):
-                if file.startswith(self.current_recoil_element.prefix):
-                    if file.endswith(".recoil") or file.endswith("erd") or \
-                            file.endswith(".simu"):
-                        files_to_delete.append(os.path.join(
-                            self.current_element_simulation.directory, file))
-            for f in files_to_delete:
-                os.remove(f)
+            delete_simulation_results(self.current_element_simulation,
+                                      self.current_recoil_element)
+            self.current_element_simulation.simulations_done = False
 
             self.full_edit_on = True
             self.edit_lock_push_button.setText("Full edit unlocked")

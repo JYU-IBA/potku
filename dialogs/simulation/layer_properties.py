@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 17.7.2018
+Updated on 24.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -34,16 +34,17 @@ import modules.masses as masses
 
 from dialogs.element_selection import ElementSelectionDialog
 
+from modules.element import Element
+from modules.general_functions import check_text
+from modules.general_functions import delete_simulation_results
+from modules.general_functions import set_input_field_red
+from modules.general_functions import validate_text_input
+from modules.layer import Layer
+
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
-
-from modules.element import Element
-from modules.general_functions import check_text
-from modules.general_functions import set_input_field_red
-from modules.general_functions import validate_text_input
-from modules.layer import Layer
 
 
 class LayerPropertiesDialog(QtWidgets.QDialog):
@@ -264,7 +265,14 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                     elem_sim.controls.state_label.setText("Stopped")
                     elem_sim.controls.run_button.setEnabled(True)
                     elem_sim.controls.stop_button.setEnabled(False)
-                # TODO: Delete files
+                    # Delete files
+                    for recoil in elem_sim.recoil_elements:
+                        delete_simulation_results(elem_sim, recoil)
+                    # Change full edit unlocked
+                    elem_sim.recoil_elements[0].widgets[0].parent. \
+                        edit_lock_push_button.setText("Full edit unlocked")
+                    elem_sim.simulations_done = False
+
         elif simulations_running:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulations running",
@@ -286,7 +294,13 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                     elem_sim.controls.state_label.setText("Stopped")
                     elem_sim.controls.run_button.setEnabled(True)
                     elem_sim.controls.stop_button.setEnabled(False)
-                # TODO: Delete files
+                    # Delete files
+                    for recoil in elem_sim.recoil_elements:
+                        delete_simulation_results(elem_sim, recoil)
+                    # Change full edit unlocked
+                    elem_sim.recoil_elements[0].widgets[0].parent. \
+                        edit_lock_push_button.setText("Full edit unlocked")
+                    elem_sim.simulations_done = False
         elif simulations_run:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulated simulations",
@@ -301,8 +315,14 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 self.__close = False
                 return
             else:
-                pass
-                # TODO: Delete files
+                # Delete files
+                for elem_sim in simulations_run:
+                    for recoil in elem_sim.recoil_elements:
+                        delete_simulation_results(elem_sim, recoil)
+                    # Change full edit unlocked
+                    elem_sim.recoil_elements[0].widgets[0].parent. \
+                        edit_lock_push_button.setText("Full edit unlocked")
+                    elem_sim.simulations_done = False
 
         name = self.__ui.nameEdit.text()
         thickness = self.__ui.thicknessEdit.value()
@@ -329,15 +349,16 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         Check if simulation have been run.
 
         Return:
-             True or False.
+             List of run element simulations.
         """
         if not self.simulation:
             return False
+        simulations_run = []
         for elem_sim in self.simulation.element_simulations:
             if elem_sim.simulations_done and \
                elem_sim.use_default_settings:
-                return True
-        return False
+                simulations_run.append(elem_sim)
+        return simulations_run
 
     def simulations_running(self):
         """
