@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 23.7.2018
+Updated on 24.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -564,10 +564,23 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     False)
             
             self.current_element_simulation.unlock_edit()
-            # TODO: Delete result files (erds, recoil, simu)
+
+            # Delete result files (erds, recoil, simu) for element simulation's
+            # all recoils
+            files_to_delete = []
+            for file in os.listdir(self.current_element_simulation.directory):
+                if file.startswith(self.current_recoil_element.prefix):
+                    if file.endswith(".recoil") or file.endswith("erd") or \
+                            file.endswith(".simu"):
+                        files_to_delete.append(os.path.join(
+                            self.current_element_simulation.directory, file))
+            for f in files_to_delete:
+                os.remove(f)
+
             self.full_edit_on = True
             self.edit_lock_push_button.setText("Full edit unlocked")
             self.current_element_simulation.y_min = 0.0
+
             if self.clicked_point is \
                self.current_recoil_element.get_points()[-1]:
                 self.point_remove_action.setEnabled(True)
@@ -1226,7 +1239,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.point_remove_action = QtWidgets.QAction("Remove point", self)
         self.point_remove_action.triggered.connect(self.remove_points)
         self.point_remove_action.setToolTip("Remove selected points")
-        # TODO: Temporary icon
         self.__icon_manager.set_icon(self.point_remove_action, "del.png")
         self.mpl_toolbar.addAction(self.point_remove_action)
 
