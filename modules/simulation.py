@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 20.7.2018
+Updated on 25.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -293,6 +293,9 @@ class Simulation:
         self.name_prefix = "MC_simulation_"
         self.serial_number = 0
 
+        self.defaultlog = None
+        self.errorlog = None
+
         self.directory, self.simulation_file = os.path.split(self.path)
         self.create_folder_structure()
         self.running_simulations = []
@@ -344,6 +347,11 @@ class Simulation:
 
         name = self.request.default_element_simulation.name
 
+        if recoil_element.type == "rec":
+            simulation_type = "ERD"
+        else:
+            simulation_type = "RBS"
+
         element_simulation = ElementSimulation(directory=self.directory,
                                                request=self.request,
                                                simulation=self,
@@ -353,7 +361,9 @@ class Simulation:
                                                detector=self.detector,
                                                recoil_elements=[
                                                    recoil_element],
-                                               run=self.run, sample=self.sample)
+                                               run=self.run,
+                                               sample=self.sample,
+                                               simulation_type=simulation_type)
         # element_simulation.recoil_elements.append(recoil_element)
         self.element_simulations.append(element_simulation)
         return element_simulation

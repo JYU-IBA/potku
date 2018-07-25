@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2018
-Updated on 17.7.2018
+Updated on 25.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -127,9 +127,34 @@ class SimulationSettingsWidget(QtWidgets.QWidget):
         self.obj.name = self.ui.nameLineEdit.text()
         self.obj.description = self.ui.descriptionPlainTextEdit.toPlainText()
         if self.ui.typeOfSimulationComboBox.currentText() == "REC":
-            self.obj.simulation_type = "ERD"
+            if self.obj.simulation_type != "ERD":
+                self.obj.simulation_type = "ERD"
+                for recoil in self.obj.recoil_elements:
+                    recoil.type = "rec"
+                    try:
+                        path_to_rec = os.path.join(
+                            self.obj.directory,
+                            recoil.prefix + "-" + recoil.name + ".sct")
+                        os.remove(path_to_rec)
+                    except OSError:
+                        pass
+                    self.obj.recoil_to_file(
+                        self.obj.directory, recoil)
         else:
-            self.obj.simulation_type = "RBS"
+            if self.obj.simulation_type != "RBS":
+                self.obj.simulation_type = "RBS"
+                for recoil in self.obj.recoil_elements:
+                    recoil.type = "sct"
+                    try:
+                        path_to_rec = os.path.join(
+                            self.obj.directory,
+                            recoil.prefix + "-" + recoil.name + ".rec")
+                        os.remove(path_to_rec)
+                    except OSError:
+                        pass
+                    self.obj.recoil_to_file(
+                        self.obj.directory, recoil)
+
         self.obj.simulation_mode = self.ui.modeComboBox.currentText().lower()
         self.obj.number_of_ions = self.ui.numberOfIonsSpinBox.value()
         self.obj.number_of_preions = self.ui.numberOfPreIonsSpinBox.value()

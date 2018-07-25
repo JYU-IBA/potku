@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 24.7.2018
+Updated on 25.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -172,7 +172,14 @@ class ElementManager:
             element.isotope = int(round(masses.get_standard_isotope(
                 element.symbol)))
 
-        recoil_element = RecoilElement(element, points, color)
+        if self.simulation.request.default_element_simulation.simulation_type\
+                == "ERD":
+            rec_type = "rec"
+        else:
+            rec_type = "sct"
+
+        recoil_element = RecoilElement(element, points, color,
+                                       rec_type=rec_type)
         element_widget = ElementWidget(self.parent, element,
                                        self.parent_tab, None, color)
         recoil_element.widgets.append(element_widget)
@@ -254,7 +261,7 @@ class ElementManager:
         for file in os.listdir(element_simulation.directory):
             if file.startswith(element_simulation.name_prefix) and \
                     (file.endswith(".mcsimu") or file.endswith(".rec") or
-                     file.endswith(".profile")):
+                     file.endswith(".profile") or file.endswith(".sct")):
                 file_path = os.path.join(element_simulation.directory, file)
                 files_to_be_removed.append(file_path)
 
@@ -1035,14 +1042,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 pass  # Recoil was not in list
             self.show_other_recoils()
             # Delete rec, recoil and simu files.
+            if element_simulation.simulation_type == "ERD":
+                rec_suffix = ".rec"
+                recoil_suffix = ".recoil"
+            else:
+                rec_suffix = ".sct"
+                recoil_suffix = ".scatter"
             rec_file = os.path.join(element_simulation.directory,
                                     recoil_to_delete.prefix + "-" +
-                                    recoil_to_delete.name + ".rec")
+                                    recoil_to_delete.name + rec_suffix)
             if os.path.exists(rec_file):
                 os.remove(rec_file)
             recoil_file = os.path.join(element_simulation.directory,
                                        recoil_to_delete.prefix + "-" +
-                                       recoil_to_delete.name + ".recoil")
+                                       recoil_to_delete.name + recoil_suffix)
             if os.path.exists(recoil_file):
                 os.remove(recoil_file)
             simu_file = os.path.join(element_simulation.directory,

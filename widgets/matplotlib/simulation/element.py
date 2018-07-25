@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 23.7.2018
+Updated on 25.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -133,7 +133,13 @@ class ElementWidget(QtWidgets.QWidget):
 
         color = self.element_simulation.recoil_elements[0].color
 
-        recoil_element = RecoilElement(element, points, color, name)
+        if self.element_simulation.simulation_type == "ERD":
+            rec_type = "rec"
+        else:
+            rec_type = "sct"
+
+        recoil_element = RecoilElement(element, points, color, name,
+                                       rec_type=rec_type)
         self.running_int_recoil = self.running_int_recoil + 1
         recoil_widget = RecoilElementWidget(self.parent, element,
                                             self.parent_tab, self,

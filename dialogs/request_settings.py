@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 24.7.2018
+Updated on 25.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -126,6 +126,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.__close = True
 
         self.ui.tabs.currentChanged.connect(lambda: self.__check_for_red())
+
+        self.original_simulation_type = \
+            self.request.default_element_simulation.simulation_type
 
         self.exec_()
 
@@ -380,6 +383,43 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     self.request.default_folder, "Default.simulation"))
                 self.request.default_element_simulation.mcsimu_to_file(
                     os.path.join(self.request.default_folder, "Default.mcsimu"))
+
+                # Update all element simulations that use request settings to
+                #  have the correct simulation type
+                current_sim_type = self.request.default_element_simulation.\
+                    simulation_type
+                if self.original_simulation_type != current_sim_type:
+                    if current_sim_type == "ERD":
+                        rec_type = "rec"
+                        rec_suffix_to_delete = ".sct"
+                    else:
+                        rec_type = "sct"
+                        rec_suffix_to_delete = ".rec"
+
+                    for sample in self.request.samples.samples:
+                        for simulation in sample.simulations.simulations.\
+                                values():
+                            for elem_sim in simulation.element_simulations:
+                                if elem_sim.use_default_settings:
+                                    elem_sim.simulation_type = current_sim_type
+                                    for recoil in elem_sim.recoil_elements:
+                                        try:
+                                            recoil.type = rec_type
+                                            path_to_rec = os.path.join(
+                                                elem_sim.directory,
+                                                recoil.prefix + "-" +
+                                                recoil.name +
+                                                rec_suffix_to_delete)
+                                            os.remove(path_to_rec)
+                                        except OSError:
+                                            pass
+                                        elem_sim.recoil_to_file(
+                                            elem_sim.directory, recoil)
+                                    fp = os.path.join(elem_sim.directory,
+                                                      elem_sim.name_prefix +
+                                                      "-" + elem_sim.name +
+                                                      ".mcsimu")
+                                    elem_sim.mcsimu_to_file(fp)
 
                 self.__close = True
             except TypeError:

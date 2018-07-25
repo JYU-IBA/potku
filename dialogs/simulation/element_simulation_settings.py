@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.4.2018
-Updated on 24.7.2018
+Updated on 25.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -75,6 +75,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             self.ui.nameLineEdit, self))
         self.original_use_default_settings = \
             self.ui.useRequestSettingsValuesCheckBox.isChecked()
+        self.original_simulation_type = self.element_simulation.simulation_type
 
         self.show_settings()
 
@@ -396,6 +397,32 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                              self.element_simulation.name_prefix + "-" +
                              self.element_simulation.request.
                              default_element_simulation.name + ".mcsimu"))
+
+        # Update recoil type
+        if self.original_simulation_type != \
+                self.element_simulation.simulation_type:
+            for recoil in self.element_simulation.recoil_elements:
+                if self.element_simulation.simulation_type == "ERD":
+                    recoil.type = "rec"
+                    try:
+                        path_to_rec = os.path.join(
+                            self.element_simulation.directory,
+                            recoil.prefix + "-" + recoil.name + ".sct")
+                        os.remove(path_to_rec)
+                    except OSError:
+                        pass
+
+                else:
+                    recoil.type = "sct"
+                    try:
+                        path_to_sct = os.path.join(
+                            self.element_simulation.directory,
+                            recoil.prefix + "-" + recoil.name + ".rec")
+                        os.remove(path_to_sct)
+                    except OSError:
+                        pass
+                self.element_simulation.recoil_to_file(
+                    self.element_simulation.directory, recoil)
 
         self.__close = True
 

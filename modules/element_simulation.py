@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 24.7.2018
+Updated on 25.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -309,7 +309,8 @@ class ElementSimulation:
         # Delete possible extra rec files.
         filename_to_delete = ""
         for file in os.listdir(self.directory):
-            if file.startswith(recoil_element.prefix) and file.endswith(".rec"):
+            if file.startswith(recoil_element.prefix + "-" + old_name) and \
+                    (file.endswith(".rec") or file.endswith(".sct")):
                 filename_to_delete = file
                 break
         if filename_to_delete:
@@ -318,11 +319,15 @@ class ElementSimulation:
         self.recoil_to_file(self.directory, recoil_element)
 
         if old_name != recoil_element.name:
+            if recoil_element.type == "rec":
+                recoil_suffix = ".recoil"
+            else:
+                recoil_suffix = ".scatter"
             recoil_file = os.path.join(self.directory, recoil_element.prefix
-                                       + "-" + old_name + ".recoil")
+                                       + "-" + old_name + recoil_suffix)
             if os.path.exists(recoil_file):
                 new_name = recoil_element.prefix + "-" + recoil_element.name \
-                           + ".recoil"
+                           + recoil_suffix
                 rename_file(recoil_file, new_name)
 
             for file in os.listdir(self.directory):
@@ -435,8 +440,14 @@ class ElementSimulation:
 
         # Read .rec files from simulation folder
         recoil_elements = []
+
+        if simulation_type == "ERD":
+            rec_type = "rec"
+        else:
+            rec_type = "sct"
         for file in os.listdir(simulation_folder):
-            if file.startswith(prefix) and file.endswith(".rec"):
+            if file.startswith(prefix) and (file.endswith(".rec") or
+                                            file.endswith(".sct")):
                 obj = json.load(open(os.path.join(simulation_folder, file)))
                 points = []
                 for dictionary_point in obj["profile"]:
@@ -446,7 +457,7 @@ class ElementSimulation:
                 # color = obj["color"]
                 color = QtGui.QColor(obj["color"])
                 element = RecoilElement(Element.from_string(obj["element"]),
-                                        points, color=color)
+                                        points, color=color, rec_type=rec_type)
                 element.name = obj["name"]
                 element.description = obj["description"]
                 element.reference_density = obj["reference_density"] / 1e22
@@ -553,13 +564,17 @@ class ElementSimulation:
         """Save recoil settings to file.
 
         Args:
-            simulation_folder: Path to simulation folder in which ".rec"
-            files are stored.
+            simulation_folder: Path to simulation folder in which ".rec" or
+            ".sct" files are stored.
             recoil_element: RecoilElement object to write to file to.
         """
+        if recoil_element.type == "rec":
+            suffix = ".rec"
+        else:
+            suffix = ".sct"
         recoil_file = os.path.join(simulation_folder,
                                    recoil_element.prefix + "-" +
-                                   recoil_element.name + ".rec")
+                                   recoil_element.name + suffix)
         if recoil_element.element.isotope:
             element_str = "{0}{1}".format(recoil_element.element.isotope,
                                           recoil_element.element.symbol)
@@ -715,10 +730,13 @@ class ElementSimulation:
         """
         Calculate the energy spectrum from the MCERD result file.
         """
+        if self.simulation_type == "ERD":
+            suffix = ".recoil"
+        else:
+            suffix = ".scatter"
         recoil_file = os.path.join(self.directory,
                                    recoil_element.prefix + "-" +
-                                   recoil_element.name +
-                                   ".recoil")
+                                   recoil_element.name + suffix)
         recoil_element.write_recoil_file(recoil_file)
 
         if self.run is None:

@@ -141,7 +141,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
             self.result_files = []
             for file in os.listdir(self.parent.obj.directory):
-                if file.endswith(".rec"):
+                if file.endswith(".rec") or file.endswith(".sct"):
                     rec_name = file.split(".")[0]
 
                     for f in os.listdir(self.parent.obj.directory):

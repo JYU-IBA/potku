@@ -66,9 +66,15 @@ class MCERD:
         self.tmp = tempfile.gettempdir()
         self.tmp = self.__settings["sim_dir"]
 
+        simulation_type = self.__settings["simulation_type"]
+        if simulation_type == "ERD":
+            suffix = ".recoil"
+        else:
+            suffix = ".scatter"
+
         # The recoil file and erd file are later passed to get_espe.
         self.recoil_file = os.path.join(self.tmp, self.__rec_filename +
-                                        ".recoil")
+                                        suffix)
         self.result_file = os.path.join(self.tmp, self.__rec_filename + "." +
                                         str(self.__settings["seed_number"]) +
                                         ".erd")

@@ -702,7 +702,7 @@ def delete_simulation_results(element_simulation, recoil_element):
     for file in os.listdir(element_simulation.directory):
         if file.startswith(recoil_element.prefix):
             if file.endswith(".recoil") or file.endswith("erd") or \
-                    file.endswith(".simu"):
+                    file.endswith(".simu") or file.endswith(".scatter"):
                 files_to_delete.append(os.path.join(
                     element_simulation.directory, file))
     for f in files_to_delete:
