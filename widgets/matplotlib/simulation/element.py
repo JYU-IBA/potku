@@ -115,12 +115,6 @@ class ElementWidget(QtWidgets.QWidget):
 
         self.running_int_recoil = 1
 
-    def add_element_simulation_reference(self, element_simulation):
-        """
-        Add reference to an Element Simulation object.
-        """
-        self.element_simulation = element_simulation
-
     def add_new_recoil(self):
         """
         Add new recoil to element simulation.

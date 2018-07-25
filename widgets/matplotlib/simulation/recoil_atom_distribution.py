@@ -186,7 +186,6 @@ class ElementManager:
         element_simulation = self.simulation.add_element_simulation(
             recoil_element)
         element_widget.element_simulation = element_simulation
-        element_widget.add_element_simulation_reference(element_simulation)
 
         # Add simulation controls widget
         simulation_controls_widget = SimulationControlsWidget(

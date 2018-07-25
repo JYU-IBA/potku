@@ -61,7 +61,7 @@ class ElementSimulation:
                 "__mcerd_command", "__process", "settings", "espe_settings", \
                 "description", "run", "spectra", "name", \
                 "use_default_settings", "sample", "controls", "simulation", \
-                "simulations_done", "__full_edit_on", "y_min"
+                "simulations_done", "__full_edit_on", "y_min", "main_recoil"
 
     def __init__(self, directory, request, recoil_elements,
                  simulation=None, name_prefix="",
@@ -73,7 +73,7 @@ class ElementSimulation:
                  minimum_main_scattering_angle=20, simulation_mode="narrow",
                  seed_number=101, minimum_energy=1.0, channel_width=0.1,
                  use_default_settings=True, sample=None,
-                 simulations_done=False):
+                 simulations_done=False, main_recoil=None):
         """ Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
@@ -101,6 +101,7 @@ class ElementSimulation:
             sample: Sample object under which Element Simualtion belongs.
             simulations_done: Whether any simulations have been run for this
             element simulation.
+            main_recoil: Main recoil element.
         """
         self.directory = directory
         self.request = request
@@ -115,6 +116,11 @@ class ElementSimulation:
         self.sample = sample
 
         self.recoil_elements = recoil_elements
+
+        if len(self.recoil_elements) == 1:
+            self.main_recoil = self.recoil_elements[0]
+        else:
+            self.main_recoil = main_recoil
         self.target = target
         if detector:
             self.detector = detector
@@ -433,6 +439,7 @@ class ElementSimulation:
         minimum_scattering_angle = obj["minimum_scattering_angle"]
         minimum_main_scattering_angle = obj["minimum_main_scattering_angle"]
         minimum_energy = obj["minimum_energy"]
+        main_recoil_name = obj["main_recoil"]
 
         # Read channel width from .profile file.
         obj = json.load(open(profile_file_path))
@@ -445,6 +452,8 @@ class ElementSimulation:
             rec_type = "rec"
         else:
             rec_type = "sct"
+
+        main_recoil = None
         for file in os.listdir(simulation_folder):
             if file.startswith(prefix) and (file.endswith(".rec") or
                                             file.endswith(".sct")):
@@ -459,6 +468,10 @@ class ElementSimulation:
                 element = RecoilElement(Element.from_string(obj["element"]),
                                         points, color=color, rec_type=rec_type)
                 element.name = obj["name"]
+
+                if element.name == main_recoil_name:
+                    main_recoil = element
+
                 element.description = obj["description"]
                 element.reference_density = obj["reference_density"] / 1e22
                 element.simulation_type = obj["simulation_type"]
@@ -473,10 +486,14 @@ class ElementSimulation:
                     if f.startswith(prefix + "-" + element.name) \
                        and f.endswith(".erd"):
                         recoil_elements.insert(0, element)
+                        main_recoil = element
                         is_simulated = True
                         break
                 if not is_simulated:
-                    recoil_elements.append(element)
+                    if element is main_recoil:
+                        recoil_elements.insert(0, element)
+                    else:
+                        recoil_elements.append(element)
 
         # Check if there are any files to tell that simulations have
         # been run previously
@@ -505,7 +522,7 @@ class ElementSimulation:
                    minimum_energy=minimum_energy,
                    use_default_settings=use_default_settings,
                    channel_width=channel_width,
-                   simulations_done=simulations_done)
+                   simulations_done=simulations_done, main_recoil=main_recoil)
 
     def mcsimu_to_file(self, file_path):
         """Save mcsimu settings to file.
@@ -534,7 +551,8 @@ class ElementSimulation:
                 "minimum_scattering_angle": self.minimum_scattering_angle,
                 "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
                 "minimum_energy": self.minimum_energy,
-                "use_default_settings": str(self.use_default_settings)
+                "use_default_settings": str(self.use_default_settings),
+                "main_recoil": self.main_recoil.name
             }
         else:
             elem_sim = self.request.default_element_simulation
@@ -554,7 +572,8 @@ class ElementSimulation:
                 "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
                 "minimum_main_scattering_angle": elem_sim.minimum_main_scattering_angle,
                 "minimum_energy": elem_sim.minimum_energy,
-                "use_default_settings": str(self.use_default_settings)
+                "use_default_settings": str(self.use_default_settings),
+                "main_recoil": self.main_recoil.name
             }
 
         with open(file_path, "w") as file:
