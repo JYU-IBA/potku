@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 25.7.2018
+Updated on 1.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -228,7 +228,7 @@ class ElementManager:
                 self.parent,
                 element_simulation.recoil_elements[i].element,
                 self.parent_tab, main_element_widget, element_simulation,
-                element_simulation.recoil_elements[0].color)
+                element_simulation.recoil_elements[i].color)
             element_simulation.recoil_elements[i].widgets.append(
                 recoil_element_widget)
             recoil_element_widget.element_simulation = element_simulation
