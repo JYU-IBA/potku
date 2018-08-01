@@ -70,7 +70,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         set_input_field_red(self.__ui.nameEdit)
         set_input_field_red(self.__ui.thicknessEdit)
         set_input_field_red(self.__ui.densityEdit)
-        self.fields_are_valid = False
+        self.fields_are_valid = True
+        self.amount_mismatch = False
         self.__ui.nameEdit.textChanged.connect(
             lambda: self.__check_text(self.__ui.nameEdit, self))
 
@@ -131,6 +132,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
              are empty.
         """
         help_sum = 0
+        spinboxes = []
 
         # Check if 'scrollArea' is empty (no elements).
         if self.__ui.scrollAreaWidgetContents.layout().isEmpty():
@@ -157,9 +159,20 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 if child.isEnabled():
                     if child.value():
                         help_sum += child.value()
+                        spinboxes.append(child)
                     else:
                         set_input_field_red(child)
                         self.fields_are_valid = False
+
+        if help_sum != 1.0 and help_sum != 100.0:
+            for sb in spinboxes:
+                set_input_field_red(sb)
+            self.fields_are_valid = False
+            self.amount_mismatch = True
+        else:
+            for sb in spinboxes:
+                set_input_field_white(sb)
+            self.amount_mismatch = False
 
     @staticmethod
     def __check_text(input_field, dialog):
@@ -182,8 +195,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.fields_are_valid = False
             set_input_field_red(spinbox)
         else:
-            if self.fields_are_valid:
-                self.fields_are_valid = True
+            self.fields_are_valid = True
             set_input_field_white(spinbox)
 
     def values_changed(self):
@@ -246,11 +258,16 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         window.
         """
         if not self.fields_are_valid:
+            if self.amount_mismatch:
+                hint = "(Hint: element amounts need to sum up to either 1 or " \
+                       "100.)"
+            else:
+                hint = ""
             QtWidgets.QMessageBox.critical(self, "Warning",
                                            "Some of the parameter values have"
-                                           " not been set.\n" +
+                                           " not been set.\n\n" +
                                            "Please input values in fields "
-                                           "indicated in red.",
+                                           "indicated in red.\n" + hint,
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
             self.__close = False
@@ -379,8 +396,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             return False
         simulations_run = []
         for elem_sim in self.simulation.element_simulations:
-            if elem_sim.simulations_done and \
-               elem_sim.use_default_settings:
+            if elem_sim.simulations_done:
                 simulations_run.append(elem_sim)
         return simulations_run
 

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 19.7.2018
+Updated on 1.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -291,8 +291,12 @@ class MCERD:
                 file_target.write("ZBL" + "\n")
                 file_target.write(str(layer.density) + " g/cm3" + "\n")
                 for element in layer.elements:
+                    if element.amount > 1:
+                        amount = element.amount / 100
+                    else:
+                        amount = element.amount
                     file_target.write(str(count) +
-                                      (" %0.3f" % element.amount) + "\n")
+                                      (" %0.3f" % amount) + "\n")
                     count += 1
 
         # Create the MCERD foils file
@@ -315,8 +319,12 @@ class MCERD:
                     file_foils.write("ZBL" + "\n")
                     file_foils.write(str(layer.density) + " g/cm3" + "\n")
                     for element in layer.elements:
+                        if element.amount > 1:
+                            amount = element.amount / 100
+                        else:
+                            amount = element.amount
                         file_foils.write(str(count) +
-                                         (" %0.3f" % element.amount) + "\n")
+                                         (" %0.3f" % amount) + "\n")
                         count += 1
 
         recoil_element.write_recoil_file(self.recoil_file)
