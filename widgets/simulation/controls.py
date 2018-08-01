@@ -105,12 +105,18 @@ class SimulationControlsWidget(QtWidgets.QWidget):
 
         # Show finished processes
         self.finished_processes_widget = QtWidgets.QWidget()
-        r_p_layout = QtWidgets.QHBoxLayout()
+        r_p_layout = QtWidgets.QFormLayout()
         r_p_layout.setContentsMargins(0, 6, 0, 0)
         l_1 = QtWidgets.QLabel("Finished processes: ")
-        r_p_layout.addWidget(l_1)
         self.finished_processes_label = QtWidgets.QLabel("0/1")
-        r_p_layout.addWidget(self.finished_processes_label)
+
+        # Observed atom count
+        l_2 = QtWidgets.QLabel("Observed atoms: ")
+        self.observed_atom_count_label = QtWidgets.QLabel("0")
+
+        r_p_layout.addRow(l_1, self.finished_processes_label)
+        r_p_layout.addRow(l_2, self.observed_atom_count_label)
+
         self.finished_processes_widget.setLayout(r_p_layout)
 
         state_and_controls_layout = QtWidgets.QVBoxLayout()
@@ -151,6 +157,15 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.element_simulation.y_min = 0.0001
 
         self.element_simulation.start(number_of_processes)
+
+    def show_number_of_observed_atoms(self, number):
+        """
+        Show the number of observed atoms in the coltrols.
+
+        Args:
+            number: Observed atom number.
+        """
+        self.observed_atom_count_label.setText(str(number))
 
     def update_finished_processes(self, running_processes):
         """

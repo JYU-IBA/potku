@@ -31,6 +31,7 @@ import json
 import math
 import os
 import platform
+import threading
 import time
 
 from modules.element import Element
@@ -63,7 +64,8 @@ class ElementSimulation:
                 "__mcerd_command", "__process", "settings", "espe_settings", \
                 "description", "run", "spectra", "name", \
                 "use_default_settings", "sample", "controls", "simulation", \
-                "simulations_done", "__full_edit_on", "y_min", "main_recoil"
+                "simulations_done", "__full_edit_on", "y_min", "main_recoil",\
+                "__erd_files"
 
     def __init__(self, directory, request, recoil_elements,
                  simulation=None, name_prefix="",
@@ -182,6 +184,9 @@ class ElementSimulation:
         else:
             self.__full_edit_on = True
             self.y_min = 0.0
+
+        # List for erd files to count their lines
+        self.__erd_files = []
 
     def unlock_edit(self):
         """
@@ -671,6 +676,8 @@ class ElementSimulation:
         else:
             detector = self.detector
 
+        self.__erd_files = []
+
         # Start as many processes as is given in number of processes
         seed_number = elem_sim.seed_number
         QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
@@ -693,6 +700,15 @@ class ElementSimulation:
                 "recoil_element": self.recoil_elements[0],
                 "sim_dir": self.directory
             }
+            # Delete corresponding erd file
+            erd_file = os.path.join(self.directory, self.recoil_elements[
+                0].prefix + "-" + self.recoil_elements[0].name + "." + str(
+                seed_number) + ".erd")
+            if os.path.exists(erd_file):
+                os.remove(erd_file)
+
+            self.__erd_files.append(erd_file)
+
             self.mcerd_objects[seed_number] = MCERD(settings, self)
             seed_number = seed_number + 1
             if i + 1 < number_of_processes:
@@ -705,6 +721,27 @@ class ElementSimulation:
             self.request.running_simulations.append(self)
         else:
             self.simulation.running_simulations.append(self)
+
+        # Start calculating the erd files' lines
+        thread = threading.Thread(target=self.calculate_erd_lines)
+        thread.daemon = True
+        thread.start()
+
+    def calculate_erd_lines(self):
+        """
+        Calculate the lines in the erd files.
+        """
+        while True:
+            if not self.mcerd_objects:
+                break
+            time.sleep(1)
+            lines_count = 0
+            for f in self.__erd_files:
+                if os.path.exists(f):
+                    with open(f, 'r') as file:
+                        lines_count = lines_count + len(file.readlines())
+            if self.controls:
+                self.controls.show_number_of_observed_atoms(lines_count)
 
     def notify(self, sim):
         """
