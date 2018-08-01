@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 24.7.2018
+Updated on 1.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -38,6 +38,7 @@ from modules.element import Element
 from modules.general_functions import check_text
 from modules.general_functions import delete_simulation_results
 from modules.general_functions import set_input_field_red
+from modules.general_functions import set_input_field_white
 from modules.general_functions import validate_text_input
 from modules.layer import Layer
 
@@ -67,6 +68,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.simulation = simulation
 
         set_input_field_red(self.__ui.nameEdit)
+        set_input_field_red(self.__ui.thicknessEdit)
+        set_input_field_red(self.__ui.densityEdit)
         self.fields_are_valid = False
         self.__ui.nameEdit.textChanged.connect(
             lambda: self.__check_text(self.__ui.nameEdit, self))
@@ -75,6 +78,12 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.__ui.addElementButton.clicked.connect(self.__add_element_layout)
         self.__ui.okButton.clicked.connect(self.__save_layer)
         self.__ui.cancelButton.clicked.connect(self.close)
+
+        self.__ui.thicknessEdit.valueChanged.connect(
+            lambda: self.validate_spinbox(self.__ui.thicknessEdit))
+        self.__ui.densityEdit.valueChanged.connect(lambda:
+                                                   self.validate_spinbox(
+                                                       self.__ui.densityEdit))
 
         self.__element_layouts = []
         if self.layer:
@@ -134,7 +143,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.fields_are_valid = False
 
         # Check if 'densityEdit' is empty.
-        if not self.__ui.densityEdit.text():
+        if not self.__ui.densityEdit.value():
             set_input_field_red(self.__ui.densityEdit)
             self.fields_are_valid = False
 
@@ -144,10 +153,10 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 if child.text() == "Select":
                     set_input_field_red(child)
                     self.fields_are_valid = False
-            if type(child) is QtWidgets.QLineEdit:
+            if type(child) is QtWidgets.QDoubleSpinBox:
                 if child.isEnabled():
-                    if child.text():
-                        help_sum += float(child.text())
+                    if child.value():
+                        help_sum += child.value()
                     else:
                         set_input_field_red(child)
                         self.fields_are_valid = False
@@ -161,6 +170,21 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             dialog: Layer dialog.
         """
         dialog.fields_are_valid = check_text(input_field)
+
+    def validate_spinbox(self, spinbox):
+        """
+        Check if given spinbox has a proper value.
+
+        Args:
+            spinbox: Spinbox to check.
+        """
+        if spinbox.value() == 0.0:
+            self.fields_are_valid = False
+            set_input_field_red(spinbox)
+        else:
+            if self.fields_are_valid:
+                self.fields_are_valid = True
+            set_input_field_white(spinbox)
 
     def values_changed(self):
         """
@@ -397,7 +421,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         """
         self.__ui.scrollArea.setStyleSheet("")
         self.__element_layouts.append(ElementLayout(
-            self.__ui.scrollAreaWidgetContents, element))
+            self.__ui.scrollAreaWidgetContents, element, self))
 
     def __validate(self):
         """
@@ -413,12 +437,13 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 class ElementLayout(QtWidgets.QHBoxLayout):
     """ElementLayout that holds element information input fields."""
 
-    def __init__(self, parent, element):
+    def __init__(self, parent, element, dialog):
         """Initializes the layout.
         Args:
             parent: A QWidget into which the layout is added.
             element: Element object whose info is shown. None adding a
             default layout.
+            dialog: LayerPropertiesDialog.
         """
         parent.parentWidget().setStyleSheet("")
 
@@ -442,7 +467,7 @@ class ElementLayout(QtWidgets.QHBoxLayout):
         self.amount_spinbox.setDecimals(3)
         self.amount_spinbox.setEnabled(enabled)
         self.amount_spinbox.valueChanged\
-            .connect(lambda: self.amount_spinbox.setStyleSheet(""))
+            .connect(lambda: dialog.validate_spinbox(self.amount_spinbox))
         self.amount_spinbox.setLocale(QLocale.c())
 
         if enabled:
@@ -484,6 +509,7 @@ class ElementLayout(QtWidgets.QHBoxLayout):
             self.__load_isotopes()
             self.isotope_combobox.setEnabled(True)
             self.amount_spinbox.setEnabled(True)
+            set_input_field_red(self.amount_spinbox)
 
     def __load_isotopes(self, current_isotope=None):
         """Loads isotopes of the element into the combobox.

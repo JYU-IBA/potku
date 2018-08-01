@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2018
-Updated on 25.6.2018
+Updated on 1.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,18 +28,20 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
+import copy
 import os
-from PyQt5 import uic
-from PyQt5 import QtWidgets
-from widgets.matplotlib.simulation.composition import FoilCompositionWidget
+
 from modules.foil import CircularFoil
 from modules.foil import RectangularFoil
-
 from modules.general_functions import set_input_field_red
 from modules.general_functions import check_text
 from modules.general_functions import validate_text_input
-import copy
+
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 from PyQt5.QtCore import QLocale
+
+from widgets.matplotlib.simulation.composition import FoilCompositionWidget
 
 
 class FoilDialog(QtWidgets.QDialog):
@@ -68,6 +70,8 @@ class FoilDialog(QtWidgets.QDialog):
 
         self.dimension_edits = []
         self.first_dimension_edit = QtWidgets.QDoubleSpinBox()
+        self.first_dimension_edit.setMinimum(0.01)
+        self.first_dimension_edit.setMaximumWidth(9999.99)
         self.first_dimension_edit.setMaximumWidth(70)
         self.locale = QLocale.c()
         self.first_dimension_edit.setLocale(self.locale)
@@ -118,6 +122,8 @@ class FoilDialog(QtWidgets.QDialog):
             self.ui.typeComboBox.setCurrentIndex(1)
             self.dimension_label.setText("Size (mm):")
             self.second_dimension_edit = QtWidgets.QDoubleSpinBox()
+            self.second_dimension_edit.setMinimum(0.01)
+            self.second_dimension_edit.setMaximumWidth(9999.99)
             self.dimension_edits.append(self.second_dimension_edit)
             self.ui.dimensionLayout.addWidget(self.dimension_edits[1])
             self.first_dimension_edit.setValue(self.tmp_foil.size[0])
