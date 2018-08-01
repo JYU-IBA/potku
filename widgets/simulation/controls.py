@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 19.7.2018
+Updated on 1.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -103,11 +103,24 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         processes_widget = QtWidgets.QWidget()
         processes_widget.setLayout(processes_layout)
 
+        # Show finished processes
+        self.finished_processes_widget = QtWidgets.QWidget()
+        r_p_layout = QtWidgets.QHBoxLayout()
+        r_p_layout.setContentsMargins(0, 6, 0, 0)
+        l_1 = QtWidgets.QLabel("Finished processes: ")
+        r_p_layout.addWidget(l_1)
+        self.finished_processes_label = QtWidgets.QLabel("0/1")
+        r_p_layout.addWidget(self.finished_processes_label)
+        self.finished_processes_widget.setLayout(r_p_layout)
+
         state_and_controls_layout = QtWidgets.QVBoxLayout()
         state_and_controls_layout.setContentsMargins(6, 6, 6, 6)
         state_and_controls_layout.addWidget(processes_widget)
+        state_and_controls_layout.addWidget(self.finished_processes_widget)
         state_and_controls_layout.addWidget(state_widget)
         state_and_controls_layout.addWidget(controls_widget)
+
+        self.finished_processes_widget.hide()
 
         controls_group_box.setLayout(state_and_controls_layout)
 
@@ -123,6 +136,10 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.run_button.setEnabled(False)
         self.stop_button.setEnabled(True)
 
+        self.finished_processes_label.setText("0/" + str(number_of_processes))
+        self.finished_processes_widget.show()
+        self.processes_spinbox.setEnabled(False)
+
         # Lock full edit
         self.element_simulation.lock_edit()
         if self.recoil_dist_widget.current_element_simulation is \
@@ -134,6 +151,19 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.element_simulation.y_min = 0.0001
 
         self.element_simulation.start(number_of_processes)
+
+    def update_finished_processes(self, running_processes):
+        """
+        Update the amount of finished processes.
+
+        Args:
+            running_processes: Number of running processes.
+        """
+        all_proc = self.processes_spinbox.value()
+        finished = all_proc - running_processes
+
+        self.finished_processes_label.setText(
+            str(finished) + "/" + str(all_proc))
 
     def __stop_simulation(self):
         """ Calls ElementSimulation's stop method.
@@ -159,3 +189,4 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.state_label.setText("Finished")
         self.run_button.setEnabled(True)
         self.stop_button.setEnabled(False)
+        self.processes_spinbox.setEnabled(True)

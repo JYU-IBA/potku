@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 25.7.2018
+Updated on 1.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -40,6 +40,8 @@ from modules.get_espe import GetEspe
 from modules.mcerd import MCERD
 
 from PyQt5 import QtGui
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt
 
 from widgets.matplotlib.simulation.recoil_atom_distribution import Point
 from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
@@ -671,6 +673,7 @@ class ElementSimulation:
 
         # Start as many processes as is given in number of processes
         seed_number = elem_sim.seed_number
+        QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
         for i in range(number_of_processes):
             settings = {
                 "simulation_type": elem_sim.simulation_type,
@@ -692,9 +695,11 @@ class ElementSimulation:
             }
             self.mcerd_objects[seed_number] = MCERD(settings, self)
             seed_number = seed_number + 1
-            time.sleep(5)  # This is done to avoid having a mixup in mcerd
-            # command file content when there are more than one process
-            # (without this, Potku would crash)
+            if i + 1 < number_of_processes:
+                time.sleep(5)  # This is done to avoid having a mixup in mcerd
+                # command file content when there are more than one process
+                # (without this, Potku would crash)
+        QtWidgets.QApplication.restoreOverrideCursor()
 
         if self.use_default_settings:
             self.request.running_simulations.append(self)
@@ -711,11 +716,13 @@ class ElementSimulation:
         for key, value in self.mcerd_objects.items():
             if value == sim:
                 key_to_delete = key
-        # self.mcerd_objects[key_to_delete].copy_results(self.directory)
-        self.mcerd_objects[key_to_delete].delete_unneeded_files()
 
         if key_to_delete:
+            self.mcerd_objects[key_to_delete].delete_unneeded_files()
             del (self.mcerd_objects[key_to_delete])
+            if self.controls:
+                # Update finished processes count
+                self.controls.update_finished_processes(len(self.mcerd_objects))
         if not self.mcerd_objects:
             if self.controls:
                 self.controls.show_stop()
