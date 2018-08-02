@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 24.7.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -180,6 +180,10 @@ class _CompositionWidget(MatplotlibWidget):
         simulations_run = self.check_if_simulations_run()
         simulations_running = self.simulations_running()
 
+        if self.foil_behaviour:
+            simulations_run = []
+            simulations_running = False
+
         if simulations_run and simulations_running:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulated and running simulations",
@@ -206,10 +210,15 @@ class _CompositionWidget(MatplotlibWidget):
                     # Delete files
                     for recoil in elem_sim.recoil_elements:
                         delete_simulation_results(elem_sim, recoil)
+
                     # Change full edit unlocked
                     elem_sim.recoil_elements[0].widgets[0].parent. \
                         edit_lock_push_button.setText("Full edit unlocked")
                     elem_sim.simulations_done = False
+
+                for energy_spectra in self.parent.tab.energy_spectrum_widgets:
+                    self.parent.tab.del_widget(energy_spectra)
+                self.parent.tab.energy_spectrum_widgets = []
 
         elif simulations_running:
             reply = QtWidgets.QMessageBox.question(
@@ -235,10 +244,17 @@ class _CompositionWidget(MatplotlibWidget):
                     # Delete files
                     for recoil in elem_sim.recoil_elements:
                         delete_simulation_results(elem_sim, recoil)
+
                     # Change full edit unlocked
                     elem_sim.recoil_elements[0].widgets[0].parent. \
                         edit_lock_push_button.setText("Full edit unlocked")
                     elem_sim.simulations_done = False
+
+                for energy_spectra in \
+                        self.parent.tab.energy_spectrum_widgets:
+                    self.parent.tab.del_widget(energy_spectra)
+                self.parent.tab.energy_spectrum_widgets = []
+
         elif simulations_run:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulated simulations",
@@ -257,10 +273,16 @@ class _CompositionWidget(MatplotlibWidget):
                 for elem_sim in simulations_run:
                     for recoil in elem_sim.recoil_elements:
                         delete_simulation_results(elem_sim, recoil)
+
                     # Change full edit unlocked
                     elem_sim.recoil_elements[0].widgets[0].parent. \
                         edit_lock_push_button.setText("Full edit unlocked")
                     elem_sim.simulations_done = False
+
+                for energy_spectra in \
+                        self.parent.tab.energy_spectrum_widgets:
+                    self.parent.tab.del_widget(energy_spectra)
+                self.parent.tab.energy_spectrum_widgets = []
 
         # Delete from layers list
         if self.__selected_layer in self.layers:
@@ -283,6 +305,7 @@ class _CompositionWidget(MatplotlibWidget):
         """
         if self.__selected_layer:
             dialog = LayerPropertiesDialog(self.__selected_layer,
+                                           self.parent.tab,
                                            modify=True,
                                            simulation=self.simulation)
             if dialog.ok_pressed:
@@ -407,7 +430,8 @@ class _CompositionWidget(MatplotlibWidget):
         if position > len(self.layers):
             ValueError("There are not that many layers.")
 
-        dialog = LayerPropertiesDialog(simulation=self.simulation)
+        dialog = LayerPropertiesDialog(simulation=self.simulation,
+                                       tab=self.parent.tab)
 
         if dialog.layer and dialog.placement_under:
             position = self.layers.index(self.__selected_layer) + 1

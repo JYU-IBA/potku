@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 1.8.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -52,10 +52,11 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
     """Dialog for adding a new layer or editing an existing one.
     """
 
-    def __init__(self, layer=None, modify=False, simulation=None):
+    def __init__(self, tab, layer=None, modify=False, simulation=None):
         """Inits a layer dialog.
 
         Args:
+            tab: A SimulationTabWidget
             layer: Layer object to be modified. None if creating a new layer.
             modify: If dialog is used to modify a layer.
             simulation: A Simulation object.
@@ -63,6 +64,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         super().__init__()
         self.__ui = uic.loadUi(os.path.join("ui_files", "ui_layer_dialog.ui"),
                                self)
+        self.tab = tab
         self.layer = layer
         self.ok_pressed = False
         self.simulation = simulation
@@ -314,6 +316,10 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                         edit_lock_push_button.setText("Full edit unlocked")
                     elem_sim.simulations_done = False
 
+                for energy_spectra in self.tab.energy_spectrum_widgets:
+                    self.tab.del_widget(energy_spectra)
+                self.tab.energy_spectrum_widgets = []
+
         elif simulations_running:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulations running",
@@ -342,6 +348,11 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                     elem_sim.recoil_elements[0].widgets[0].parent. \
                         edit_lock_push_button.setText("Full edit unlocked")
                     elem_sim.simulations_done = False
+
+                for energy_spectra in self.tab.energy_spectrum_widgets:
+                    self.tab.del_widget(energy_spectra)
+                self.tab.energy_spectrum_widgets = []
+
         elif simulations_run:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulated simulations",
@@ -364,6 +375,10 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                     elem_sim.recoil_elements[0].widgets[0].parent. \
                         edit_lock_push_button.setText("Full edit unlocked")
                     elem_sim.simulations_done = False
+
+                for energy_spectra in self.tab.energy_spectrum_widgets:
+                    self.tab.del_widget(energy_spectra)
+                self.tab.energy_spectrum_widgets = []
 
         name = self.__ui.nameEdit.text()
         thickness = self.__ui.thicknessEdit.value()

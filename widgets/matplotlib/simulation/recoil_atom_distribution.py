@@ -488,7 +488,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         if not self.current_element_simulation:
             return
-        ElementSimulationSettingsDialog(self.current_element_simulation)
+        ElementSimulationSettingsDialog(self.current_element_simulation,
+                                        self.tab)
 
     def open_recoil_element_info(self):
         """
@@ -1102,6 +1103,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         element_simulation = self.element_manager \
             .get_element_simulation_with_radio_button(
                 self.radios.checkedButton())
+
+        # TODO: Stop simulation if running
         # Remove possible other recoil elements
         for recoil_elem in element_simulation.recoil_elements:
             if recoil_elem is element_simulation.recoil_elements[0]:

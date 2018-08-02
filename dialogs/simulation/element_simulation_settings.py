@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.4.2018
-Updated on 25.7.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -44,12 +44,13 @@ from PyQt5.QtCore import Qt
 class ElementSimulationSettingsDialog(QtWidgets.QDialog):
     """Class for creating an element simulation settings tab.
     """
-    def __init__(self, element_simulation):
+    def __init__(self, element_simulation, tab):
         """
-        Inintializes the dialog.
+        Initializes the dialog.
 
         Args:
             element_simulation: An ElementSimulation object.
+            tab: A SimulationTabWidget.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
@@ -61,6 +62,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         self.ui.cancelPushButton.clicked.connect(self.close)
 
         self.element_simulation = element_simulation
+        self.tab = tab
 
         self.use_default_settings = element_simulation.use_default_settings
 
@@ -248,6 +250,20 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 for recoil in self.element_simulation.recoil_elements:
                     # Delete files
                     delete_simulation_results(self.element_simulation, recoil)
+
+                    # Delete energy spectra that use recoil
+                    for energy_spectra in self.tab.energy_spectrum_widgets:
+                        for element_path in energy_spectra.\
+                          energy_spectrum_data.keys():
+                            elem = recoil.prefix + "-" + recoil.name
+                            if elem in element_path:
+                                index = element_path.find(elem)
+                                if element_path[index - 1] == os.path.sep and \
+                                   element_path[index + len(elem)] == '.':
+                                    self.tab.del_widget(energy_spectra)
+                                    self.tab.energy_spectrum_widgets.remove(
+                                        energy_spectra)
+                                    break
                 # Change full edit unlocked
                 self.element_simulation.recoil_elements[0].widgets[0].\
                     parent.edit_lock_push_button.setText(
@@ -277,6 +293,21 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 for recoil in self.element_simulation.recoil_elements:
                     # Delete files
                     delete_simulation_results(self.element_simulation, recoil)
+
+                    # Delete energy spectra that use recoil
+                    for energy_spectra in self.tab.energy_spectrum_widgets:
+                        for element_path in energy_spectra. \
+                                energy_spectrum_data.keys():
+                            elem = recoil.prefix + "-" + recoil.name
+                            if elem in element_path:
+                                index = element_path.find(elem)
+                                if element_path[index - 1] == os.path.sep and \
+                                        element_path[index + len(elem)] == '.':
+                                    self.tab.del_widget(energy_spectra)
+                                    self.tab.energy_spectrum_widgets.remove(
+                                        energy_spectra)
+                                    break
+
                 # Change full edit unlocked
                 self.element_simulation.recoil_elements[0].widgets[0].\
                     parent.edit_lock_push_button.setText(

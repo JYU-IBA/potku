@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 25.7.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -58,10 +58,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
     A Dialog for modifying request settings.
     """
 
-    def __init__(self, request, icon_manager):
+    def __init__(self, main_window, request, icon_manager):
         """Constructor for the program
 
         Args:
+            main_window: Potku window.
             request: Request class object.
             icon_manager: IconManager object.
         """
@@ -73,6 +74,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.resize(self.geometry().width(),
                     screen_geometry.size().height() * 0.8)
 
+        self.main_window = main_window
         self.request = request
         self.icon_manager = icon_manager
 
@@ -266,6 +268,24 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                             edit_lock_push_button.setText("Full edit unlocked")
                         elem_sim.simulations_done = False
 
+                        # Find element simulation's tab
+                        tab_id = elem_sim.simulation.tab_id
+                        if tab_id != -1:
+                            tab = self.main_window.ui.tabs.widget(tab_id)
+                            for recoil in elem_sim.recoil_elements:
+                                # Delete energy spectra that use recoil
+                                for es in tab.energy_spectrum_widgets:
+                                    for ep in es.energy_spectrum_data.keys():
+                                        elem = recoil.prefix + "-" + recoil.name
+                                        if elem in ep:
+                                            index = ep.find(elem)
+                                            if ep[index - 1] == os.path.sep and\
+                                               ep[index + len(elem)] == '.':
+                                                tab.del_widget(es)
+                                                tab.energy_spectrum_widgets.\
+                                                    remove(es)
+                                                break
+
             elif simulations_running and not only_seed_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulations running",
@@ -295,6 +315,24 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                             edit_lock_push_button.setText("Full edit unlocked")
                         elem_sim.simulations_done = False
 
+                        # Find element simulation's tab
+                        tab_id = elem_sim.simulation.tab_id
+                        if tab_id != -1:
+                            tab = self.main_window.ui.tabs.widget(tab_id)
+                            for recoil in elem_sim.recoil_elements:
+                                # Delete energy spectra that use recoil
+                                for es in tab.energy_spectrum_widgets:
+                                    for ep in es.energy_spectrum_data.keys():
+                                        elem = recoil.prefix + "-" + recoil.name
+                                        if elem in ep:
+                                            index = ep.find(elem)
+                                            if ep[index - 1] == os.path.sep and\
+                                               ep[index + len(elem)] == '.':
+                                                tab.del_widget(es)
+                                                tab.energy_spectrum_widgets. \
+                                                    remove(es)
+                                                break
+
             elif simulations_run and not only_seed_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulated simulations",
@@ -317,6 +355,24 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         elem_sim.recoil_elements[0].widgets[0].parent. \
                             edit_lock_push_button.setText("Full edit unlocked")
                         elem_sim.simulations_done = False
+
+                        # Find element simulation's tab
+                        tab_id = elem_sim.simulation.tab_id
+                        if tab_id != -1:
+                            tab = self.main_window.ui.tabs.widget(tab_id)
+                            for recoil in elem_sim.recoil_elements:
+                                # Delete energy spectra that use recoil
+                                for es in tab.energy_spectrum_widgets:
+                                    for ep in es.energy_spectrum_data.keys():
+                                        elem = recoil.prefix + "-" + recoil.name
+                                        if elem in ep:
+                                            index = ep.find(elem)
+                                            if ep[index - 1] == os.path.sep and\
+                                               ep[index + len(elem)] == '.':
+                                                tab.del_widget(es)
+                                                tab.energy_spectrum_widgets. \
+                                                    remove(es)
+                                                break
 
             if only_seed_changed:
                 # If there are running simulation that use the same seed as the
@@ -346,7 +402,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                             run_sim.mcerd_objects[seed].stop_process()
                             del (run_sim.mcerd_objects[seed])
 
-            # TODO: Proper checking for all setting values
             try:
                 self.measurement_settings_widget.update_settings()
                 self.profile_settings_widget.update_settings()

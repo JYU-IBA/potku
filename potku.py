@@ -976,7 +976,7 @@ class Potku(QtWidgets.QMainWindow):
     def open_request_settings(self):
         """Opens request settings dialog.
         """
-        RequestSettingsDialog(self.request, self.icon_manager)
+        RequestSettingsDialog(self, self.request, self.icon_manager)
 
     def remove_tab(self, tab_index):
         """Remove tab.

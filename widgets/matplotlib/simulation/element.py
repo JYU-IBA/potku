@@ -161,7 +161,8 @@ class ElementWidget(QtWidgets.QWidget):
         """
         Open element simulation settings.
         """
-        ElementSimulationSettingsDialog(self.element_simulation)
+        ElementSimulationSettingsDialog(self.element_simulation,
+                                        self.parent_tab)
 
     def plot_spectrum(self):
         """
