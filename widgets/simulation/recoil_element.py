@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 2.7.2018
-Updated on 23.7.2018
+Updated on 2.82018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -26,6 +26,8 @@ __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
 import modules.general_functions
+
+from collections import Counter
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from  dialogs.energy_spectrum import EnergySpectrumWidget
@@ -108,10 +110,22 @@ class RecoilElementWidget(QtWidgets.QWidget):
             self.parent_tab, spectrum_type="simulation",
             element_simulation=self.element_simulation, recoil_widget=self)
         if dialog.result_files:
-            self.parent_tab.energy_spectrum_widget = EnergySpectrumWidget(
+            energy_spectrum_widget = EnergySpectrumWidget(
                 parent=self.parent_tab, use_cuts=dialog.result_files,
                 bin_width=dialog.bin_width, spectrum_type="simulation")
-            self.parent_tab.add_widget(self.parent_tab.energy_spectrum_widget)
+
+            # Check all energy spectrum widgets, if one has the same
+            # elements, delete it
+            for e_widget in self.parent_tab.energy_spectrum_widgets:
+                keys = e_widget.energy_spectrum_data.keys()
+                if Counter(keys) == Counter(
+                        energy_spectrum_widget.energy_spectrum_data.keys()):
+                    self.parent_tab.energy_spectrum_widgets.remove(e_widget)
+                    self.parent_tab.del_widget(e_widget)
+                    break
+            self.parent_tab.energy_spectrum_widgets.append(
+                energy_spectrum_widget)
+            self.parent_tab.add_widget(energy_spectrum_widget)
 
     def remove_recoil(self):
         """

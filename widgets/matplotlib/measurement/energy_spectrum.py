@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 23.7.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -622,7 +622,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             for elem in dialog.ignored_elements:
                 for path in paths:
                     if elem in path:
-                        ignored_elements.append(path)
+                        index = path.find(elem)
+                        if path[index - 1] == os.path.sep and path[index +
+                                                                   len(elem)]\
+                                == '.':
+                            ignored_elements.append(path)
             self.__ignore_elements = ignored_elements
         else:
             elements = [item[0] for item in sorted(self.histed_files.items(),

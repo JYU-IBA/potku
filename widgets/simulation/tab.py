@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 28.6.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -27,19 +27,22 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
 import logging
+import os
 import sys
-from PyQt5 import QtCore
-from PyQt5 import uic
-from PyQt5 import QtWidgets
 
 from dialogs.measurement.element_losses import ElementLossesDialog
 from dialogs.measurement.element_losses import ElementLossesWidget
-from widgets.simulation.target import TargetWidget
-from modules.ui_log_handlers import CustomLogHandler
-from widgets.log import LogWidget
 from dialogs.simulation.settings import SimulationSettingsDialog
+
+from modules.ui_log_handlers import CustomLogHandler
+
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+from PyQt5 import uic
+
+from widgets.log import LogWidget
+from widgets.simulation.target import TargetWidget
 
 
 class SimulationTabWidget(QtWidgets.QWidget):
@@ -66,10 +69,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.icon_manager = icon_manager
 
         self.simulation_target = None
-        self.energy_spectrum_widget = None
+        self.energy_spectrum_widgets = []
         self.log = None
-        self.depth_profile_widget = None
-        self.elemental_losses_widget = None
 
         self.data_loaded = False
         self.panel_shown = True
@@ -173,7 +174,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         # process.
             
     def del_widget(self, widget):
-        """Delete a widget from current (measurement) tab.
+        """Delete a widget from current tab.
 
         Args:
             widget: QWidget to be removed.
