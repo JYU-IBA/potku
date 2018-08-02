@@ -105,12 +105,15 @@ class SimulationTabWidget(QtWidgets.QWidget):
         else: 
             widget.show()
 
-    def add_simulation_target_and_recoil(self):
+    def add_simulation_target_and_recoil(self, progress_bar=None):
         """ Adds depth profile for modifying the elements into tab if it
         doesn't have one already.
+
+        Args:
+            progress_bar: A progress bar used when opening a simulation.
         """
         self.simulation_target = TargetWidget(self, self.obj, self.obj.target,
-                                              self.icon_manager)
+                                              self.icon_manager, progress_bar)
         self.add_widget(self.simulation_target, has_close_button=False)
 
     def add_log(self):        

@@ -43,7 +43,8 @@ class TargetWidget(QtWidgets.QWidget):
         recoil atom distribution.
     """
 
-    def __init__(self, tab, simulation, target, icon_manager):
+    def __init__(self, tab, simulation, target, icon_manager,
+                 progress_bar=None):
         """Initializes thw widget that can be used to define target composition
         and
         recoil atom distribution.
@@ -53,10 +54,16 @@ class TargetWidget(QtWidgets.QWidget):
             simulation: A Simulation object.
             target: A Target object.
             icon_manager: An icon manager class object.
+            progress_bar: A progress bar used when opening a simulation.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_target_widget.ui"),
                              self)
+
+        if progress_bar:
+            progress_bar.setValue(0)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
 
         self.tab = tab
         self.simulation = simulation
@@ -65,6 +72,12 @@ class TargetWidget(QtWidgets.QWidget):
         self.target_widget = TargetCompositionWidget(self, self.target,
                                                      icon_manager,
                                                      self.simulation)
+
+        if progress_bar:
+            progress_bar.setValue(45)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
+
         self.recoil_distribution_widget = RecoilAtomDistributionWidget(
             self, self.simulation, self.target, tab, icon_manager)
 
@@ -100,6 +113,10 @@ class TargetWidget(QtWidgets.QWidget):
         self.del_points = None
 
         self.set_shortcuts()
+        if progress_bar:
+            progress_bar.setValue(50)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
 
     def switch_to_target(self):
         """

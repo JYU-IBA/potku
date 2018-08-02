@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 8.6.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -31,17 +31,21 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
 import logging
-
-from math import sqrt
-from matplotlib.path import Path
-from matplotlib.lines import Line2D
-from PyQt5 import QtWidgets
+import os
 
 from dialogs.measurement.selection import SelectionSettingsDialog
+
+from math import sqrt
+
+from matplotlib.path import Path
+from matplotlib.lines import Line2D
+
 from modules.element import Element
 from modules.general_functions import rename_file
+
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
 
 
 class AxesLimits:
@@ -460,13 +464,14 @@ class Selector:
                 fp.write(sel.save_string(self.is_transposed) + "\n")
             fp.close()
 
-    def load(self, filename):
+    def load(self, filename, progress_bar=None):
         """Load selections from a file.
         
         Removes all current selections and loads selections from given filename.
         
         Args:
             filename: String representing (full) path to selection file.
+            progress_bar: A preogress bar used when opening a measurement.
         """
         self.remove_all()
         with open(filename) as fp:
@@ -488,7 +493,7 @@ class Selector:
         self.update_axes_limits()
         self.draw()  # Draw all selections
         self.auto_save()
-        self.update_selection_points()
+        self.update_selection_points(progress_bar)
         message = "Selection file {0} was read successfully!".format(filename)
         logging.getLogger(self.measurement_name).info(message)
 
@@ -526,10 +531,14 @@ class Selector:
             selection.point_inside(data[n])
         selection.events_counted = True
 
-    def update_selection_points(self):
+    def update_selection_points(self, progress_bar=None):
         """Update all selections event counts.
+
+        Args:
+            progress_bar: A progress bar when a measurement is opened.
         """
         data = self.measurement.data
+        dirtyinteger = 0
         for selection in self.selections:
             selection.events_counted = False
             selection.event_count = 0
@@ -538,6 +547,10 @@ class Selector:
             for selection in self.selections:
                 if selection.is_closed:
                     selection.point_inside(point)
+            dirtyinteger += 1
+            progress_bar.setValue(40 + (dirtyinteger / len(data) * 5))
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
         for selection in self.selections:
             selection.events_counted = True
 
