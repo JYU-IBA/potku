@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.3.2018
-Updated on 16.7.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -135,6 +135,14 @@ class TargetWidget(QtWidgets.QWidget):
         """
         Save target and element simulations.
         """
+        # Add progress bar
+        progress_bar = QtWidgets.QProgressBar()
+        self.simulation.statusbar.addWidget(progress_bar, 1)
+        progress_bar.show()
+        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+        # Mac requires event processing to show progress bar and its
+        # process.
+
         target_name = "temp"
         if self.target.name is not "":
             target_name = self.target.name
@@ -142,8 +150,17 @@ class TargetWidget(QtWidgets.QWidget):
                                    ".target")
         self.target.to_file(target_path, None)
 
+        progress_bar.setValue(50)
+        QtCore.QCoreApplication.processEvents(
+            QtCore.QEventLoop.AllEvents)
+        # Mac requires event processing to show progress bar and its
+        # process
+
         self.recoil_distribution_widget.save_mcsimu_rec_profile(
-            self.simulation.directory)
+            self.simulation.directory, progress_bar)
+
+        self.simulation.statusbar.removeWidget(progress_bar)
+        progress_bar.hide()
 
     def set_shortcuts(self):
         """

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 1.8.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -515,10 +515,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 error_box.setWindowTitle("Error")
                 error_box.exec()
 
-    def save_mcsimu_rec_profile(self, directory):
+    def save_mcsimu_rec_profile(self, directory, progress_bar):
         """
         Save information to .mcsimu and .profile files.
+
+        Args:
+            directory: Directory where to save to.
+            progress_bar: Progress bar.
         """
+        length = len(self.element_manager.element_simulations)
+        round = 1
         for element_simulation in self.element_manager \
                 .element_simulations:
 
@@ -531,6 +537,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             element_simulation.profile_to_file(
                 os.path.join(directory, element_simulation.name_prefix +
                              ".profile"))
+            progress_bar.setValue((round / length) * 100)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
+            # Mac requires event processing to show progress bar and its
+            # process
+            round = round + 1
 
     def unlock_or_lock_edit(self):
         """
