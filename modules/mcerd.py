@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 1.8.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -303,10 +303,13 @@ class MCERD:
         with open(self.__foils_file, "w") as file_foils:
             for foil in detector.foils:
                 for layer in foil.layers:
+                    # Write only one layer since mcerd soesn't know how to
+                    # handle multiple layers in a foil
                     for element in layer.elements:
                         mass = masses.find_mass_of_isotope(element)
                         file_foils.write("%0.2f %s" % (mass,
                                                        element.symbol) + "\n")
+                    break
 
             # An indexed list of all elements is written first.
             # Then layers and their elements referencing the index.
@@ -326,6 +329,7 @@ class MCERD:
                         file_foils.write(str(count) +
                                          (" %0.3f" % amount) + "\n")
                         count += 1
+                    break
 
         recoil_element.write_recoil_file(self.recoil_file)
 
