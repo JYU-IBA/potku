@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 18.7.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -36,11 +36,6 @@ import os
 import shutil
 import sys
 
-from PyQt5 import uic
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import QLocale
-
 from modules.cut_file import is_rbs, get_scatter_element
 from modules.element import Element
 from modules.energy_spectrum import EnergySpectrum
@@ -49,6 +44,11 @@ from modules.general_functions import calculate_spectrum
 from modules.general_functions import read_espe_file
 from modules.general_functions import read_tof_list_file
 from modules.measurement import Measurement
+
+from PyQt5 import uic
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import QLocale
 
 from widgets.matplotlib.measurement.energy_spectrum import \
     MatplotlibEnergySpectrumWidget
@@ -228,8 +228,22 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     def __calculate_selected_spectra(self):
         """Calculate selected spectra.
         """
+        self.close()
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()
+
+        if self.parent.obj.statusbar:
+            progress_bar = QtWidgets.QProgressBar()
+            self.parent.obj.statusbar.addWidget(progress_bar, 1)
+            progress_bar.show()
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
+            # Mac requires event processing to show progress bar and its
+            # process.
+        else:
+            progress_bar = None
+        dirtyinteger = 0
+
         for i in range(child_count):
             item = root.child(i)
             if item.checkState(0):
@@ -244,6 +258,15 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                             self.result_files.append(os.path.join(
                                 self.parent.obj.directory,
                                 rec_elem_prefix_and_name + ".simu"))
+                        dirtyinteger += 1
+                        progress_bar.setValue((dirtyinteger / child_count) * 33)
+                        QtCore.QCoreApplication.processEvents(
+                            QtCore.QEventLoop.AllEvents)
+
+        if child_count == 0:
+            progress_bar.setValue(33)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
 
         root_for_tof_list_files = self.tof_list_tree_widget.invisibleRootItem()
         child_count = root_for_tof_list_files.childCount()
@@ -252,6 +275,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         tof_listed_files = {}
         item_texts = []
         used_measurements = []
+
         for i in range(child_count):
             measurement_item = root_for_tof_list_files.child(i)
             mes_child_count = measurement_item.childCount()
@@ -266,7 +290,17 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     tof_list = item.text(0).split('.', 1)[1]
                     tof_listed_files[tof_list] = read_tof_list_file(
                         tof_list_file)
+            dirtyinteger += 1
+            progress_bar.setValue((dirtyinteger / child_count) * 33)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
 
+        if child_count == 0:
+            progress_bar.setValue(66)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
+
+        length = len(used_measurements)
         # Calculate energy spectra from histed files
         for measurement in used_measurements:
             calculate_spectrum(tof_listed_files, self.ui.
@@ -277,6 +311,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             for name in item_texts:
                 self.result_files.append(os.path.join(
                     measurement.directory_energy_spectra, name + ".hist"))
+                dirtyinteger += 1
+                progress_bar.setValue((dirtyinteger / length) * 33)
+                QtCore.QCoreApplication.processEvents(
+                    QtCore.QEventLoop.AllEvents)
 
         root_for_ext_files = self.external_tree_widget.invisibleRootItem()
         child_count = root_for_ext_files.childCount()
@@ -291,9 +329,17 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                             os.path.join(self.imported_files_folder, ext))
                         break
 
+        progress_bar.setValue(100)
+        QtCore.QCoreApplication.processEvents(
+            QtCore.QEventLoop.AllEvents)
+
+        if progress_bar:
+            self.parent.obj.statusbar.removeWidget(progress_bar)
+            progress_bar.hide()
+
         self.bin_width = self.ui.histogramTicksDoubleSpinBox.value()
 
-        self.close()
+        # self.close()
 
     def __accept_params(self):
         """Accept given parameters and cut files.
@@ -514,7 +560,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
 
             else:
                 for file in use_cuts:
-                    self.energy_spectrum_data[file] = read_espe_file(file)
+                    self.energy_spectrum_data[file] = read_espe_file(
+                        file)
 
             # Graph in matplotlib widget and add to window
             self.matplotlib = MatplotlibEnergySpectrumWidget(
