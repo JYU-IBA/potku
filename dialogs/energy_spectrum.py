@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 2.8.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -156,18 +156,6 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                                 item.setCheckState(0, QtCore.Qt.Unchecked)
                             self.ui.treeWidget.addTopLevelItem(item)
                             break
-
-                    # Also list rec files that have a running simulation
-                    for run_sim in self.parent.obj.request.running_simulations:
-                        for rec_elem in run_sim.recoil_elements:
-                            rec_prefix_and_elem = rec_elem.prefix + "-" + \
-                            rec_elem.name
-                            if rec_prefix_and_elem == rec_name:
-                                item = QtWidgets.QTreeWidgetItem()
-                                item.setText(0, rec_name)
-                                item.setCheckState(0, QtCore.Qt.Unchecked)
-                                self.ui.treeWidget.addTopLevelItem(item)
-                                break
 
             # Add calculated tof_list files to tof_list_tree_widget by
             # measurement under the same sample.
