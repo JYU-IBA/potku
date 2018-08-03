@@ -885,7 +885,7 @@ class Potku(QtWidgets.QMainWindow):
                 self.request.directory, sample_item.obj.directory,
                 "MC_simulation_" + "%02d" % serial_number + "-" + dialog.name,
                 dialog.name + ".simulation"), sample_item.obj, progress_bar,
-                               load_data=False)
+                               load_data=True)
             self.__remove_info_tab()
             self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
@@ -1102,8 +1102,12 @@ class Potku(QtWidgets.QMainWindow):
                 # tab.add_log()
                 tab.data_loaded = load_data
                 if load_data:
-                    simulation.load_data()
                     tab.add_simulation_target_and_recoil()
+
+                    progress_bar.setValue(100)
+                    QtCore.QCoreApplication.processEvents(
+                        QtCore.QEventLoop.AllEvents)
+
                     self.ui.tabs.addTab(tab, simulation.name)
                     self.ui.tabs.setCurrentWidget(tab)
 
