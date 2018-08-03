@@ -209,7 +209,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         # Tof foils
         if self.obj.tof_foils != self.tof_foils:
             return True
-        # TODO: efficiencies
+        # Efficiencies
         existing_efficiency_files = [os.path.join(
             self.obj.efficiency_directory, x) for x in
             self.obj.get_efficiency_files()]

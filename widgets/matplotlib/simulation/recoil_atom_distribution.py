@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 2.8.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1085,12 +1085,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if self.current_recoil_element is not \
                 self.current_element_simulation.recoil_elements[0]:
             return
+
+        # Check if current element simulation is running
+        if self.current_element_simulation.mcerd_objects:
+            add = "\nAlso its simulation will be stopped."
+        else:
+            add = ""
+
         reply = QtWidgets.QMessageBox.question(self.parent, "Confirmation",
                                                "If you delete selected "
                                                "element simulation, "
                                                "all possible recoils "
                                                "connected to it will be "
-                                               "also deleted.\n\nAre you sure "
+                                               "also deleted." + add
+                                               + "\n\nAre you sure "
                                                "you want to delete selected "
                                                "element simulation?",
                                                QtWidgets.QMessageBox.Yes |
@@ -1104,7 +1112,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             .get_element_simulation_with_radio_button(
                 self.radios.checkedButton())
 
-        # TODO: Stop simulation if running
+        # Stop simulation if running
+        if add:
+            self.current_element_simulation.stop()
         # Remove possible other recoil elements
         for recoil_elem in element_simulation.recoil_elements:
             if recoil_elem is element_simulation.recoil_elements[0]:
@@ -1117,6 +1127,19 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         for recoil in element_simulation.recoil_elements:
             if recoil in self.other_recoils:
                 self.other_recoils.remove(recoil)
+            # Delete energy spectra that use recoil
+            for energy_spectra in self.tab.energy_spectrum_widgets:
+                for element_path in energy_spectra. \
+                        energy_spectrum_data.keys():
+                    elem = recoil.prefix + "-" + recoil.name
+                    if elem in element_path:
+                        index = element_path.find(elem)
+                        if element_path[index - 1] == os.path.sep and \
+                                element_path[index + len(elem)] == '.':
+                            self.tab.del_widget(energy_spectra)
+                            self.tab.energy_spectrum_widgets.remove(
+                                energy_spectra)
+                            break
         self.show_other_recoils()
         self.current_element_simulation = None
         self.parent_ui.elementInfoWidget.hide()
