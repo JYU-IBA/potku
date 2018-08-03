@@ -134,6 +134,14 @@ class SimulationControlsWidget(QtWidgets.QWidget):
 
         self.setLayout(main_layout)
 
+    def reset_controls(self):
+        """
+        Reset controls to default.
+        """
+        self.finished_processes_widget.hide()
+        self.observed_atom_count_label.setText("0")
+        self.state_label.setText("Not started")
+
     def __start_simulation(self):
         """ Calls ElementSimulation's start method.
         """

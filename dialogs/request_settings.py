@@ -285,6 +285,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                 tab.energy_spectrum_widgets.\
                                                     remove(es)
                                                 break
+                        # Reset controls
+                        if elem_sim.controls:
+                            elem_sim.controls.reset_controls()
 
             elif simulations_running and not only_seed_changed:
                 reply = QtWidgets.QMessageBox.question(
@@ -332,6 +335,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                 tab.energy_spectrum_widgets. \
                                                     remove(es)
                                                 break
+                        # Reset controls
+                        if elem_sim.controls:
+                            elem_sim.controls.reset_controls()
 
             elif simulations_run and not only_seed_changed:
                 reply = QtWidgets.QMessageBox.question(
@@ -373,6 +379,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                 tab.energy_spectrum_widgets. \
                                                     remove(es)
                                                 break
+                        # Reset controls
+                        if elem_sim.controls:
+                            elem_sim.controls.reset_controls()
 
             if only_seed_changed:
                 # If there are running simulation that use the same seed as the

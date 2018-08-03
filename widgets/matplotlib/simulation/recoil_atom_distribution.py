@@ -587,8 +587,27 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
             # Delete result files (erds, recoil, simu) for element simulation's
             # all recoils
-            delete_simulation_results(self.current_element_simulation,
-                                      self.current_recoil_element)
+            for recoil in self.current_element_simulation.recoil_elements:
+                # Delete files
+                delete_simulation_results(self.element_simulation, recoil)
+
+                # Delete energy spectra that use recoil
+                for energy_spectra in self.tab.energy_spectrum_widgets:
+                    for element_path in energy_spectra. \
+                            energy_spectrum_data.keys():
+                        elem = recoil.prefix + "-" + recoil.name
+                        if elem in element_path:
+                            index = element_path.find(elem)
+                            if element_path[index - 1] == os.path.sep and \
+                                    element_path[index + len(elem)] == '.':
+                                self.tab.del_widget(energy_spectra)
+                                self.tab.energy_spectrum_widgets.remove(
+                                    energy_spectra)
+                                break
+
+            # Reset controls
+            if self.current_element_simulation.controls:
+                self.current_element_simulation.controls.reset_controls()
             self.current_element_simulation.simulations_done = False
 
             self.full_edit_on = True

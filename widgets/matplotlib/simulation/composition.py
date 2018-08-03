@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 2.8.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -216,6 +216,10 @@ class _CompositionWidget(MatplotlibWidget):
                         edit_lock_push_button.setText("Full edit unlocked")
                     elem_sim.simulations_done = False
 
+                    # Reset controls
+                    if elem_sim.controls:
+                        elem_sim.controls.reset_controls()
+
                 for energy_spectra in self.parent.tab.energy_spectrum_widgets:
                     self.parent.tab.del_widget(energy_spectra)
                 self.parent.tab.energy_spectrum_widgets = []
@@ -249,6 +253,10 @@ class _CompositionWidget(MatplotlibWidget):
                     elem_sim.recoil_elements[0].widgets[0].parent. \
                         edit_lock_push_button.setText("Full edit unlocked")
                     elem_sim.simulations_done = False
+
+                    # Reset controls
+                    if elem_sim.controls:
+                        elem_sim.controls.reset_controls()
 
                 for energy_spectra in \
                         self.parent.tab.energy_spectrum_widgets:

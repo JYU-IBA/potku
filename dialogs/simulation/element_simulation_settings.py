@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.4.2018
-Updated on 2.8.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -264,6 +264,9 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                                     self.tab.energy_spectrum_widgets.remove(
                                         energy_spectra)
                                     break
+                # Reset controls
+                if self.element_simulation.controls:
+                    self.element_simulation.controls.reset_controls()
                 # Change full edit unlocked
                 self.element_simulation.recoil_elements[0].widgets[0].\
                     parent.edit_lock_push_button.setText(
@@ -308,6 +311,9 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                                         energy_spectra)
                                     break
 
+                # Reset controls
+                if self.element_simulation.controls:
+                    self.element_simulation.controls.reset_controls()
                 # Change full edit unlocked
                 self.element_simulation.recoil_elements[0].widgets[0].\
                     parent.edit_lock_push_button.setText(
