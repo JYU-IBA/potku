@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 25.7.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -51,6 +51,7 @@ class RecoilElement:
         self.type = rec_type
         # This is multiplied by 1e22
         self.reference_density = 4.98
+        self.multiplier = 1e22
         self._points = sorted(points)
 
         # Contains ElementWidget and SimulationControlsWidget.

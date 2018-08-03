@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 27.4.2018
-Updated on 11.7.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -82,7 +82,7 @@ class GetEspe:
         self.__channel_width = settings["ch"]
         self.__fluence = settings["fluence"]  # from Run object
         self.__timeres = settings["timeres"]
-        self.__density = settings["reference_density"] * 1e16
+        self.__density = settings["reference_density"] * settings["multiplier"]
         self.__solid = settings["solid"]
         self.__recoil_file = settings["recoil_file"]
         self.__erd_file = settings["erd_file"]

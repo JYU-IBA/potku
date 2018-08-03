@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 1.8.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -480,7 +480,8 @@ class ElementSimulation:
                     main_recoil = element
 
                 element.description = obj["description"]
-                element.reference_density = obj["reference_density"] / 1e22
+                element.multiplier = obj["multiplier"]
+                element.reference_density = obj["reference_density"]
                 element.simulation_type = obj["simulation_type"]
 
                 element.modification_time = obj["modification_time_unix"]
@@ -615,7 +616,8 @@ class ElementSimulation:
             "modification_time_unix": time.time(),
             "simulation_type": recoil_element.type,
             "element": element_str,
-            "reference_density": recoil_element.reference_density * 1e22,
+            "reference_density": recoil_element.reference_density,
+            "multiplier": recoil_element.multiplier,
             "profile": [],
             "color": str(recoil_element.color.name())
         }
@@ -816,6 +818,7 @@ class ElementSimulation:
             "target": self.target,
             "ch": self.channel_width,
             "reference_density": recoil_element.reference_density,
+            "multiplier": recoil_element.multiplier,
             "fluence": run.fluence,
             "timeres": detector.timeres,
             "solid": self.calculate_solid(),

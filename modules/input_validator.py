@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.5.2013
-Updated on 30.5.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -28,29 +28,24 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
-from PyQt5.QtGui import QDoubleValidator
+
+import re
+
 from PyQt5.QtGui import QValidator
-from sys import float_info
 
 
-class InputValidator(QDoubleValidator):
+class InputValidator(QValidator):
     """Validator to check the validity of user inputs.
     
     Accepts double values with scientific notation (i.e. 0.232, 12.5e-12) and
     turns empty input to 0.0 and commas (,) to points (.).
     """
-    def __init__(self, bottom=float_info.min, top=float_info.max,
-                 decimals=float_info.dig, parent=None):
+    def __init__(self):
         """Initiates the class.
-        
-        Args:
-            bottom: Float minimum value.
-            top: Float maximum value.
-            decimals: Integer representing decimals.
-            parent: Parent object.
         """
-        QDoubleValidator.__init__(self, bottom, top, decimals, parent)
-        self.setNotation(QDoubleValidator.ScientificNotation)
+        super().__init__()
+
+        self.float_re = re.compile(r'(([+-]?\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)')
 
     def validate(self, input_value, pos):
         """Validates the given input. Overrides the QDoubleValidator's validate 
@@ -60,11 +55,28 @@ class InputValidator(QDoubleValidator):
             input_value: User given string to be validated.
             pos: Cursor position (if required).
         """
-        input_value = input_value.replace(",", ".")
-        state, pos, a = QDoubleValidator.validate(self, input_value, pos)
-        if input_value == "" or input_value == '.':
-            pos = "0.0"
-            return QValidator.Intermediate, pos, a
-        if state != QValidator.Acceptable:
-            return QValidator.Invalid, pos, a
-        return QValidator.Acceptable, pos, a
+        match = self.float_re.search(input_value)
+        if match.groups()[0] == input_value:
+            return QValidator.Acceptable
+        if input_value == "" or input_value[pos - 1] in "e.-+":
+            return QValidator.Intermediate
+        return QValidator.Invalid
+
+        # input_value = input_value.replace(",", ".")
+        # state, pos, a = QValidator.validate(self, input_value, pos)
+        # if input_value == "" or input_value == '.':
+        #     pos = "0.0"
+        #     return QValidator.Intermediate, pos, a
+        # if state != QValidator.Acceptable:
+        #     return QValidator.Invalid, pos, a
+        # return QValidator.Acceptable, pos, a
+
+    def fixup(self, text):
+        """
+        Fix the text
+        """
+        match = self.float_re.search(text)
+        if match:
+            return match.groups()[0]
+        else:
+            return ""
