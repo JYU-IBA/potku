@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 2.8.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1070,19 +1070,17 @@ class Potku(QtWidgets.QMainWindow):
                 tab.add_log()
                 tab.data_loaded = load_data
                 if load_data:
-                    loading_bar = QtWidgets.QProgressBar()
-                    loading_bar.setMinimum(0)
-                    loading_bar.setMaximum(0)
-                    self.statusbar.addWidget(loading_bar, 1)
-                    loading_bar.show()
-
                     measurement.load_data()
-                    tab.add_histogram()
+
+                    tab.add_histogram(progress_bar)
                     self.ui.tabs.addTab(tab, measurement.name)
                     self.ui.tabs.setCurrentWidget(tab)
 
-                    loading_bar.hide()
-                    self.statusbar.removeWidget(loading_bar)
+                    if progress_bar:
+                        progress_bar.setValue(100)
+                        QtCore.QCoreApplication.processEvents(
+                            QtCore.QEventLoop.AllEvents)
+
                 sample_item = (self.tree_widget.findItems(
                     "%02d" % sample.serial_number + " " + sample.name,
                     Qt.MatchEndsWith, 0))[0]
