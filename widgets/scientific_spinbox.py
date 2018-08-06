@@ -1,6 +1,7 @@
 # coding=utf-8
 """
 Created on 3.8.2018
+Updated on 6.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -24,52 +25,54 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-import re
+import os
 
 from modules.input_validator import InputValidator
 
 from PyQt5 import QtWidgets
+from PyQt5 import uic
 
-from sys import float_info
 
-
-class ScientificDoubleSpinBox(QtWidgets.QDoubleSpinBox):
+class ScientificDoubleSpinBox(QtWidgets.QWidget):
     """
     Class for custom double spinbox that handles scientific notation.
     """
-    def __init__(self):
+    def __init__(self, recoil_element, minimum, maximum, decimals):
         """
         Initializes the spinbox.
+
+        Args:
+            recoil_element: A RecoilElement object.
+            minimum: Minimum allowed value.
+            maximum: Maximum allowed value.
+            decimals: Number of decimals.
         """
         super().__init__()
-        self.setMinimum(float_info.min)
-        self.setMaximum(float_info.max)
+        self.ui = uic.loadUi(os.path.join("ui_files",
+                                          "ui_scientific_spinbox_widget.ui"),
+                             self)
 
         self.validator = InputValidator()
-        self.setDecimals(1000)
+        self.minimum = minimum
+        self.maximum = maximum
+        self.decimals = decimals
 
-        self.__float_re = re.compile(
-            r'(([+-]?\d+(\.\d*)?|\.\d+)([eE][+-]?\d+)?)')
+        self.recoil_element = recoil_element
+        self.ui.scientificLineEdit.setText(str(
+            self.recoil_element.reference_density) + str(
+            self.recoil_element.multiplier)[1:])
 
-    def validate(self, p_str, p_int):
-        return self.validator.validate(p_str, p_int)
+        self.ui.scientificLineEdit.textChanged.connect(lambda: self.validate(
+            self.ui.scientificLineEdit.cursorPosition()
+        ))
 
-    def fixup(self, p_str):
-        return self.validator.fixup(p_str)
-
-    def textFromValue(self, p_float):
-        string = "{:g}".format(p_float).replace("e+", "e")
-        string_2 = re.sub("e(-?)0*(\d+)", r"e\1\2", string)
-
-        return string_2
-
-    def valueFromText(self, p_str):
-        return float(p_str)
-
-    def stepBy(self, p_int):
-        text = self.cleanText()
-        groups = self.__float_re.search(text).groups()
-        decimal = float(groups[1])
-        decimal += p_int
-        new_string = "{:g}".format(decimal) + (groups[3] if groups[3] else "")
-        self.lineEdit().setText(new_string)
+    def validate(self, pos):
+        str = self.ui.scientificLineEdit.text()
+        match = self.validator.validate(str, pos)
+        try:
+            if not self.minimum <= float(match) <= self.maximum:
+                match = match[:pos - 1]
+        except ValueError:
+            pass
+        self.ui.scientificLineEdit.setText(match)
+        self.ui.scientificLineEdit.setCursorPosition(pos)

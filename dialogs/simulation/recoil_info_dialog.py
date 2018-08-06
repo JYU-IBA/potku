@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 3.5.2018
-Updated on 3.8.2018
+Updated on 6.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -79,7 +79,9 @@ class RecoilInfoDialog(QtWidgets.QDialog):
             recoil_element.description)
         self.__ui.referenceDensityDoubleSpinBox.setValue(
             recoil_element.reference_density)
-        self.__ui.formLayout.addWidget(ScientificDoubleSpinBox())
+        self.__scientific_spinbox = ScientificDoubleSpinBox(recoil_element,
+                                                            0.00, 99.99e22, 2)
+        # self.__ui.formLayout.addWidget(self.__scientific_spinbox)
         self.description = ""
         self.isOk = False
 
