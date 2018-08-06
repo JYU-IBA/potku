@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 3.8.2018
+Updated on 6.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -37,7 +37,6 @@ import os
 
 from dialogs.element_selection import ElementSelectionDialog
 
-from modules.input_validator import InputValidator
 from modules.general_functions import delete_simulation_results
 
 from PyQt5 import QtCore
@@ -82,8 +81,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.ui.OKButton.clicked.connect(self.update_and_close_settings)
         self.ui.applyButton.clicked.connect(self.update_settings)
         self.ui.cancelButton.clicked.connect(self.close)
-        double_validator = InputValidator()
-        positive_double_validator = InputValidator(bottom=0)
 
         # Add measurement settings view to the settings view
         self.measurement_settings_widget = MeasurementSettingsWidget(
