@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 29.6.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -23,27 +23,29 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-import time
-
-from PyQt5.QtCore import Qt
-
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
+import copy
 import os
-from PyQt5 import uic, QtWidgets
+import time
 
 from dialogs.measurement.calibration import CalibrationDialog
 from dialogs.simulation.foil import FoilDialog
+
 from modules.foil import CircularFoil
-from widgets.foil import FoilWidget
+from modules.general_functions import check_text
 from modules.general_functions import open_file_dialog
 from modules.general_functions import set_input_field_red
-from modules.general_functions import check_text
 from modules.general_functions import validate_text_input
-import copy
+
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 from PyQt5.QtCore import QLocale
+from PyQt5.QtCore import Qt
+
+from widgets.foil import FoilWidget
 
 
 class DetectorSettingsWidget(QtWidgets.QWidget):
@@ -207,6 +209,24 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         # Tof foils
         if self.obj.tof_foils != self.tof_foils:
             return True
+        # Efficiencies
+        existing_efficiency_files = [os.path.join(
+            self.obj.efficiency_directory, x) for x in
+            self.obj.get_efficiency_files()]
+        modified_efficiencies = copy.deepcopy(existing_efficiency_files)
+        for file in self.obj.efficiencies:
+            file_name = os.path.split(file)[1]
+            new_path = os.path.join(self.obj.efficiency_directory, file_name)
+            if new_path not in modified_efficiencies:
+                modified_efficiencies.append(new_path)
+
+        for file in self.obj.efficiencies_to_remove:
+            modified_efficiencies.remove(file)
+
+        if existing_efficiency_files != modified_efficiencies:
+            return True
+
+        return False
 
     def foils_changed(self):
         """

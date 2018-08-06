@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 4.7.2018
+Updated on 1.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,15 +28,15 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 
 import time
 
+from modules.general_functions import check_text
+from modules.general_functions import set_input_field_red
+from modules.general_functions import validate_text_input
+
 from os import path
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
-
-from modules.general_functions import check_text
-from modules.general_functions import set_input_field_red
-from modules.general_functions import validate_text_input
 
 
 class ProfileSettingsWidget(QtWidgets.QWidget):
@@ -68,6 +68,32 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
         self.channelWidthDoubleSpinBox.setLocale(locale)
 
         self.show_settings()
+
+        self.depthForConcentrationFromDoubleSpinBox.valueChanged.connect(
+            lambda: self.__check_values(
+                self.depthForConcentrationFromDoubleSpinBox))
+        self.depthForConcentrationToDoubleSpinBox.valueChanged.connect(
+            lambda: self.__check_values(
+                self.depthForConcentrationToDoubleSpinBox))
+
+    def __check_values(self, spinbox):
+        """
+        Check that depth for concentration from isn't bigger than depth for
+        concentration to value and other way around.
+
+        Args:
+            spinbox: Spinbox whose value is changed.
+        """
+        from_value = self.depthForConcentrationFromDoubleSpinBox.value()
+        to_value = self.depthForConcentrationToDoubleSpinBox.value()
+        if spinbox is self.depthForConcentrationFromDoubleSpinBox:
+            if from_value > to_value:
+                self.depthForConcentrationFromDoubleSpinBox.setValue(to_value -
+                                                                     0.01)
+        else:
+            if to_value < from_value:
+                self.depthForConcentrationToDoubleSpinBox.setValue(from_value +
+                                                                   0.01)
 
     def show_settings(self):
         """

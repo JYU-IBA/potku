@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 30.5.2018
+Updated on 19.7.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -28,14 +28,15 @@ __author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
              "Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import struct
 import numpy
 import os
-from PyQt5 import uic
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
+import struct
 
 from modules.general_functions import open_files_dialog
+
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 
 
 class ImportDialogBinary(QtWidgets.QDialog):
@@ -73,6 +74,8 @@ class ImportDialogBinary(QtWidgets.QDialog):
                                   self.__request.directory,
                                   "Select binary files to be imported",
                                   "Binary format (*.lst)")
+        if not files:
+            return
         for file in files:
             if file in self.__files_added:
                 continue

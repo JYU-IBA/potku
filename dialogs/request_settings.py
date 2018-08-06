@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 29.6.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -31,19 +31,22 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
 import copy
+import modules.masses as masses
+import os
+
+from dialogs.element_selection import ElementSelectionDialog
+
+from modules.input_validator import InputValidator
+from modules.general_functions import delete_simulation_results
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
-from PyQt5 import uic
 from PyQt5 import QtWidgets
+from PyQt5 import uic
 from PyQt5.QtWidgets import QDesktopWidget
 from PyQt5.QtWidgets import QApplication
 
-import modules.masses as masses
-from dialogs.element_selection import ElementSelectionDialog
-from modules.input_validator import InputValidator
 from widgets.detector_settings import DetectorSettingsWidget
 from widgets.measurement.settings import MeasurementSettingsWidget
 from widgets.profile_settings import ProfileSettingsWidget
@@ -55,11 +58,13 @@ class RequestSettingsDialog(QtWidgets.QDialog):
     A Dialog for modifying request settings.
     """
 
-    def __init__(self, request, icon_manager):
+    def __init__(self, main_window, request, icon_manager):
         """Constructor for the program
 
         Args:
+            main_window: Potku window.
             request: Request class object.
+            icon_manager: IconManager object.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_settings.ui"), self)
@@ -69,6 +74,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.resize(self.geometry().width(),
                     screen_geometry.size().height() * 0.8)
 
+        self.main_window = main_window
         self.request = request
         self.icon_manager = icon_manager
 
@@ -122,6 +128,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.__close = True
 
         self.ui.tabs.currentChanged.connect(lambda: self.__check_for_red())
+
+        self.original_simulation_type = \
+            self.request.default_element_simulation.simulation_type
 
         self.exec_()
 
@@ -201,10 +210,16 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         """Reads values from Request Settings dialog and updates them in
         default objects.
         """
+        only_seed_changed = False
         # Check that values have been changed
         if not self.values_changed():
-            self.__close = True
-            return
+            # If only seed number has been changed, allow the change
+            if self.simulation_settings_widget.ui.seedSpinBox.value() != \
+                    self.request.default_element_simulation.seed_number:
+                only_seed_changed = True
+            else:
+                self.__close = True
+                return
         # Check the target and detector angles
         ok_pressed = self.measurement_settings_widget.check_angles()
         if ok_pressed:
@@ -221,7 +236,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
             simulations_run = self.check_if_simulations_run()
             simulations_running = self.request.simulations_running()
-            if simulations_run and simulations_running:
+            if simulations_run and simulations_running and \
+                    not only_seed_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulated and running simulations",
                     "There are simulations that use request settings, "
@@ -244,8 +260,36 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         elem_sim.controls.state_label.setText("Stopped")
                         elem_sim.controls.run_button.setEnabled(True)
                         elem_sim.controls.stop_button.setEnabled(False)
-                    # TODO: Delete files
-            elif simulations_running:
+                        for recoil in elem_sim.recoil_elements:
+                            # Delete files
+                            delete_simulation_results(elem_sim, recoil)
+                        # Change full edit unlocked
+                        elem_sim.recoil_elements[0].widgets[0].parent.\
+                            edit_lock_push_button.setText("Full edit unlocked")
+                        elem_sim.simulations_done = False
+
+                        # Find element simulation's tab
+                        tab_id = elem_sim.simulation.tab_id
+                        if tab_id != -1:
+                            tab = self.main_window.ui.tabs.widget(tab_id)
+                            for recoil in elem_sim.recoil_elements:
+                                # Delete energy spectra that use recoil
+                                for es in tab.energy_spectrum_widgets:
+                                    for ep in es.energy_spectrum_data.keys():
+                                        elem = recoil.prefix + "-" + recoil.name
+                                        if elem in ep:
+                                            index = ep.find(elem)
+                                            if ep[index - 1] == os.path.sep and\
+                                               ep[index + len(elem)] == '.':
+                                                tab.del_widget(es)
+                                                tab.energy_spectrum_widgets.\
+                                                    remove(es)
+                                                break
+                        # Reset controls
+                        if elem_sim.controls:
+                            elem_sim.controls.reset_controls()
+
+            elif simulations_running and not only_seed_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulations running",
                     "There are simulations running that use request "
@@ -266,8 +310,36 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         elem_sim.controls.state_label.setText("Stopped")
                         elem_sim.controls.run_button.setEnabled(True)
                         elem_sim.controls.stop_button.setEnabled(False)
-                    # TODO: Delete files
-            elif simulations_run:
+                        for recoil in elem_sim.recoil_elements:
+                            # Delete files
+                            delete_simulation_results(elem_sim, recoil)
+                        # Change full edit unlocked
+                        elem_sim.recoil_elements[0].widgets[0].parent. \
+                            edit_lock_push_button.setText("Full edit unlocked")
+                        elem_sim.simulations_done = False
+
+                        # Find element simulation's tab
+                        tab_id = elem_sim.simulation.tab_id
+                        if tab_id != -1:
+                            tab = self.main_window.ui.tabs.widget(tab_id)
+                            for recoil in elem_sim.recoil_elements:
+                                # Delete energy spectra that use recoil
+                                for es in tab.energy_spectrum_widgets:
+                                    for ep in es.energy_spectrum_data.keys():
+                                        elem = recoil.prefix + "-" + recoil.name
+                                        if elem in ep:
+                                            index = ep.find(elem)
+                                            if ep[index - 1] == os.path.sep and\
+                                               ep[index + len(elem)] == '.':
+                                                tab.del_widget(es)
+                                                tab.energy_spectrum_widgets. \
+                                                    remove(es)
+                                                break
+                        # Reset controls
+                        if elem_sim.controls:
+                            elem_sim.controls.reset_controls()
+
+            elif simulations_run and not only_seed_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulated simulations",
                     "There are simulations that use request settings, "
@@ -281,10 +353,64 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     self.__close = False
                     return
                 else:
-                    pass
-                    # TODO: Delete files
+                    for elem_sim in simulations_run:
+                        for recoil in elem_sim.recoil_elements:
+                            # Delete files
+                            delete_simulation_results(elem_sim, recoil)
+                        # Change full edit unlocked
+                        elem_sim.recoil_elements[0].widgets[0].parent. \
+                            edit_lock_push_button.setText("Full edit unlocked")
+                        elem_sim.simulations_done = False
 
-            # TODO: Proper checking for all setting values
+                        # Find element simulation's tab
+                        tab_id = elem_sim.simulation.tab_id
+                        if tab_id != -1:
+                            tab = self.main_window.ui.tabs.widget(tab_id)
+                            for recoil in elem_sim.recoil_elements:
+                                # Delete energy spectra that use recoil
+                                for es in tab.energy_spectrum_widgets:
+                                    for ep in es.energy_spectrum_data.keys():
+                                        elem = recoil.prefix + "-" + recoil.name
+                                        if elem in ep:
+                                            index = ep.find(elem)
+                                            if ep[index - 1] == os.path.sep and\
+                                               ep[index + len(elem)] == '.':
+                                                tab.del_widget(es)
+                                                tab.energy_spectrum_widgets. \
+                                                    remove(es)
+                                                break
+                        # Reset controls
+                        if elem_sim.controls:
+                            elem_sim.controls.reset_controls()
+
+            if only_seed_changed:
+                # If there are running simulation that use the same seed as the
+                # new one, stop them
+                seed = self.simulation_settings_widget.ui.seedSpinBox.value()
+                running_simulations = self.request.running_simulations_by_seed(
+                    seed)
+                if running_simulations:
+                    reply = QtWidgets.QMessageBox.question(
+                        self, "Running simulations",
+                        "There are simulatio processes that have the same seed "
+                        "number as the new one.\nIf you save changes, these "
+                        "simulation processes will be stopped (but their "
+                        "results will not be deleted).\n\nDo you want save "
+                        "changes anyway?",
+                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                        QtWidgets.QMessageBox.Cancel,
+                        QtWidgets.QMessageBox.Cancel)
+                    if reply == QtWidgets.QMessageBox.No or reply == \
+                            QtWidgets.QMessageBox.Cancel:
+                        self.__close = False
+                        return
+                    else:
+                        # Stop the running simulations' mcerd process
+                        # that corresponds to seed
+                        for run_sim in running_simulations:
+                            run_sim.mcerd_objects[seed].stop_process()
+                            del (run_sim.mcerd_objects[seed])
+
             try:
                 self.measurement_settings_widget.update_settings()
                 self.profile_settings_widget.update_settings()
@@ -306,9 +432,16 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 for file in self.request.default_detector.efficiencies:
                         self.request.default_detector.add_efficiency_file(file)
 
+                self.request.default_detector.efficiencies = []
+
                 for file in \
                         self.request.default_detector.efficiencies_to_remove:
                     self.request.default_detector.remove_efficiency_file(file)
+
+                self.request.default_detector.efficiencies_to_remove = []
+
+                # Simulation settings
+                self.simulation_settings_widget.update_settings()
 
                 self.request.default_detector.to_file(os.path.join(
                     self.request.default_detector_folder, "Default.detector"),
@@ -318,6 +451,43 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     self.request.default_folder, "Default.simulation"))
                 self.request.default_element_simulation.mcsimu_to_file(
                     os.path.join(self.request.default_folder, "Default.mcsimu"))
+
+                # Update all element simulations that use request settings to
+                #  have the correct simulation type
+                current_sim_type = self.request.default_element_simulation.\
+                    simulation_type
+                if self.original_simulation_type != current_sim_type:
+                    if current_sim_type == "ERD":
+                        rec_type = "rec"
+                        rec_suffix_to_delete = ".sct"
+                    else:
+                        rec_type = "sct"
+                        rec_suffix_to_delete = ".rec"
+
+                    for sample in self.request.samples.samples:
+                        for simulation in sample.simulations.simulations.\
+                                values():
+                            for elem_sim in simulation.element_simulations:
+                                if elem_sim.use_default_settings:
+                                    elem_sim.simulation_type = current_sim_type
+                                    for recoil in elem_sim.recoil_elements:
+                                        try:
+                                            recoil.type = rec_type
+                                            path_to_rec = os.path.join(
+                                                elem_sim.directory,
+                                                recoil.prefix + "-" +
+                                                recoil.name +
+                                                rec_suffix_to_delete)
+                                            os.remove(path_to_rec)
+                                        except OSError:
+                                            pass
+                                        elem_sim.recoil_to_file(
+                                            elem_sim.directory, recoil)
+                                    fp = os.path.join(elem_sim.directory,
+                                                      elem_sim.name_prefix +
+                                                      "-" + elem_sim.name +
+                                                      ".mcsimu")
+                                    elem_sim.mcsimu_to_file(fp)
 
                 self.__close = True
             except TypeError:
@@ -339,15 +509,16 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         Check if the re are any element simulations that have been simulated.
 
         Return:
-             True or False.
+             List of run element simulations.
         """
+        simulations_run = []
         for sample in self.request.samples.samples:
             for simulation in sample.simulations.simulations.values():
                 for elem_sim in simulation.element_simulations:
                     if elem_sim.simulations_done and \
                        elem_sim.use_default_settings:
-                        return True
-        return False
+                        simulations_run.append(elem_sim)
+        return simulations_run
 
     def __change_element(self, button, combo_box):
         """ Opens element selection dialog and loads selected element's isotopes

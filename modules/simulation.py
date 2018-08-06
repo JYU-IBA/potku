@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 2.7.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -25,24 +25,22 @@ along with this program (file named 'LICENCE').
 
 Simulation.py runs the MCERD simulation with a command file.
 """
-import datetime
-import json
-import re
-import time
-
-from modules.element_simulation import ElementSimulation
-from modules.general_functions import rename_file
-from modules.target import Target
-from modules.run import Run
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
+import json
 import logging
 import os
 import sys
+import time
+
 from modules.detector import Detector
+from modules.element_simulation import ElementSimulation
+from modules.general_functions import rename_file
+from modules.run import Run
+from modules.target import Target
 
 
 class Simulations:
@@ -242,7 +240,7 @@ class Simulation:
                 "target", "element_simulations", "name_prefix", \
                 "serial_number", "directory", "measurement_setting_file_name", \
                 "measurement_setting_file_description", "defaultlog", \
-                "errorlog", "sample", "running_simulations"
+                "errorlog", "sample", "running_simulations", "statusbar"
 
     def __init__(self, path, request, name="Default",
                  description="",
@@ -272,6 +270,8 @@ class Simulation:
         self.request = request
         self.sample = sample
 
+        self.statusbar = self.request.statusbar
+
         self.name = name
         self.description = description
         if not modification_time:
@@ -294,6 +294,9 @@ class Simulation:
 
         self.name_prefix = "MC_simulation_"
         self.serial_number = 0
+
+        self.defaultlog = None
+        self.errorlog = None
 
         self.directory, self.simulation_file = os.path.split(self.path)
         self.create_folder_structure()
@@ -346,6 +349,11 @@ class Simulation:
 
         name = self.request.default_element_simulation.name
 
+        if recoil_element.type == "rec":
+            simulation_type = "ERD"
+        else:
+            simulation_type = "RBS"
+
         element_simulation = ElementSimulation(directory=self.directory,
                                                request=self.request,
                                                simulation=self,
@@ -355,8 +363,10 @@ class Simulation:
                                                detector=self.detector,
                                                recoil_elements=[
                                                    recoil_element],
-                                               run=self.run, sample=self.sample)
-        element_simulation.recoil_elements.append(recoil_element)
+                                               run=self.run,
+                                               sample=self.sample,
+                                               simulation_type=simulation_type)
+        # element_simulation.recoil_elements.append(recoil_element)
         self.element_simulations.append(element_simulation)
         return element_simulation
 

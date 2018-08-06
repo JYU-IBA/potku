@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.3.2018
-Updated on 4.7.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -43,7 +43,8 @@ class TargetWidget(QtWidgets.QWidget):
         recoil atom distribution.
     """
 
-    def __init__(self, tab, simulation, target, icon_manager):
+    def __init__(self, tab, simulation, target, icon_manager,
+                 progress_bar=None):
         """Initializes thw widget that can be used to define target composition
         and
         recoil atom distribution.
@@ -53,17 +54,30 @@ class TargetWidget(QtWidgets.QWidget):
             simulation: A Simulation object.
             target: A Target object.
             icon_manager: An icon manager class object.
+            progress_bar: A progress bar used when opening a simulation.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_target_widget.ui"),
                              self)
+
+        if progress_bar:
+            progress_bar.setValue(0)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
 
         self.tab = tab
         self.simulation = simulation
         self.target = target
 
         self.target_widget = TargetCompositionWidget(self, self.target,
-                                                     icon_manager)
+                                                     icon_manager,
+                                                     self.simulation)
+
+        if progress_bar:
+            progress_bar.setValue(45)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
+
         self.recoil_distribution_widget = RecoilAtomDistributionWidget(
             self, self.simulation, self.target, tab, icon_manager)
 
@@ -76,11 +90,19 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.editLockPushButton.hide()
         self.ui.elementInfoWidget.hide()
 
+        icon_manager.set_icon(self.ui.editTargetInfoButton, "edit.svg")
+        self.ui.editTargetInfoButton.setIconSize(QtCore.QSize(14, 14))
+        self.ui.editTargetInfoButton.setToolTip(
+            "Edit name and description of the target")
+
         self.ui.exportElementsButton.clicked.connect(
             self.recoil_distribution_widget.export_elements)
 
         self.ui.targetRadioButton.clicked.connect(self.switch_to_target)
         self.ui.recoilRadioButton.clicked.connect(self.switch_to_recoil)
+
+        if not self.target.layers:
+            self.ui.recoilRadioButton.setEnabled(False)
 
         self.ui.targetRadioButton.setChecked(True)
         self.ui.stackedWidget.setCurrentIndex(0)
@@ -91,6 +113,10 @@ class TargetWidget(QtWidgets.QWidget):
         self.del_points = None
 
         self.set_shortcuts()
+        if progress_bar:
+            progress_bar.setValue(50)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
 
     def switch_to_target(self):
         """
@@ -104,6 +130,7 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.exportElementsButton.show()
         self.ui.elementInfoWidget.hide()
         self.ui.instructionLabel.setText("")
+        self.ui.targetInfoWidget.show()
 
     def switch_to_recoil(self):
         """
@@ -114,6 +141,7 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.exportElementsButton.hide()
         self.ui.recoilListWidget.show()
         self.ui.editLockPushButton.show()
+        self.ui.targetInfoWidget.hide()
         self.recoil_distribution_widget.recoil_element_info_on_switch()
         self.ui.instructionLabel.setText("You can add a new point to the "
                                          "distribution on a line between "
@@ -124,6 +152,14 @@ class TargetWidget(QtWidgets.QWidget):
         """
         Save target and element simulations.
         """
+        # Add progress bar
+        progress_bar = QtWidgets.QProgressBar()
+        self.simulation.statusbar.addWidget(progress_bar, 1)
+        progress_bar.show()
+        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+        # Mac requires event processing to show progress bar and its
+        # process.
+
         target_name = "temp"
         if self.target.name is not "":
             target_name = self.target.name
@@ -131,8 +167,17 @@ class TargetWidget(QtWidgets.QWidget):
                                    ".target")
         self.target.to_file(target_path, None)
 
+        progress_bar.setValue(50)
+        QtCore.QCoreApplication.processEvents(
+            QtCore.QEventLoop.AllEvents)
+        # Mac requires event processing to show progress bar and its
+        # process
+
         self.recoil_distribution_widget.save_mcsimu_rec_profile(
-            self.simulation.directory)
+            self.simulation.directory, progress_bar)
+
+        self.simulation.statusbar.removeWidget(progress_bar)
+        progress_bar.hide()
 
     def set_shortcuts(self):
         """

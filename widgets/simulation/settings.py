@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2018
-Updated on 13.6.2018
+Updated on 25.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,15 +28,16 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import os
-from PyQt5 import uic
-from PyQt5 import QtWidgets
+import time
 
-from modules.general_functions import set_input_field_red
 from modules.general_functions import check_text
+from modules.general_functions import set_input_field_red
 from modules.general_functions import validate_text_input
+
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 from PyQt5.QtCore import Qt
-import time
 
 
 class SimulationSettingsWidget(QtWidgets.QWidget):
@@ -126,9 +127,34 @@ class SimulationSettingsWidget(QtWidgets.QWidget):
         self.obj.name = self.ui.nameLineEdit.text()
         self.obj.description = self.ui.descriptionPlainTextEdit.toPlainText()
         if self.ui.typeOfSimulationComboBox.currentText() == "REC":
-            self.obj.simulation_type = "ERD"
+            if self.obj.simulation_type != "ERD":
+                self.obj.simulation_type = "ERD"
+                for recoil in self.obj.recoil_elements:
+                    recoil.type = "rec"
+                    try:
+                        path_to_rec = os.path.join(
+                            self.obj.directory,
+                            recoil.prefix + "-" + recoil.name + ".sct")
+                        os.remove(path_to_rec)
+                    except OSError:
+                        pass
+                    self.obj.recoil_to_file(
+                        self.obj.directory, recoil)
         else:
-            self.obj.simulation_type = "RBS"
+            if self.obj.simulation_type != "RBS":
+                self.obj.simulation_type = "RBS"
+                for recoil in self.obj.recoil_elements:
+                    recoil.type = "sct"
+                    try:
+                        path_to_rec = os.path.join(
+                            self.obj.directory,
+                            recoil.prefix + "-" + recoil.name + ".rec")
+                        os.remove(path_to_rec)
+                    except OSError:
+                        pass
+                    self.obj.recoil_to_file(
+                        self.obj.directory, recoil)
+
         self.obj.simulation_mode = self.ui.modeComboBox.currentText().lower()
         self.obj.number_of_ions = self.ui.numberOfIonsSpinBox.value()
         self.obj.number_of_preions = self.ui.numberOfPreIonsSpinBox.value()
@@ -167,8 +193,6 @@ class SimulationSettingsWidget(QtWidgets.QWidget):
         if self.obj.number_of_ions != self.ui.numberOfIonsSpinBox.value():
             return True
         if self.obj.number_of_preions != self.ui.numberOfPreIonsSpinBox.value():
-            return True
-        if self.obj.seed_number != self.ui.seedSpinBox.value():
             return True
         if self.obj.number_of_recoils != self.ui.numberOfRecoilsSpinBox.value():
             return True

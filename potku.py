@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 4.7.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -131,7 +131,8 @@ class Potku(QtWidgets.QMainWindow):
 
         self.ui.actionNew_Request_2.triggered.connect(self.make_new_request)
         self.ui.actionOpen_Request_2.triggered.connect(self.open_request)
-        self.ui.actionExit.triggered.connect(self.close)  # Should save changes
+        self.ui.actionExit.triggered.connect(self.closeEvent)  # Should
+        # save changes
 
         self.ui.menuImport.setEnabled(False)
         self.panel_shown = True
@@ -404,6 +405,22 @@ class Potku(QtWidgets.QMainWindow):
                     break
             self.tab_widgets.pop(clicked_item.obj.tab_id)
 
+    def closeEvent(self, event):
+        """
+        Save recoil elements and simulation targets and close the program.
+        """
+        if self.request:
+            for sample in self.request.samples.samples:
+                for simulation in sample.simulations.simulations.values():
+                    for elem_sim in simulation.element_simulations:
+                        for recoil_element in elem_sim.recoil_elements:
+                            elem_sim.recoil_to_file(elem_sim.directory,
+                                                    recoil_element)
+                    simulation.target.to_file(
+                        os.path.join(simulation.directory,
+                                     simulation.target.name + ".target"), None)
+        self.close()
+
     def create_report(self):
         """
         Opens a dialog for making a report.
@@ -563,8 +580,9 @@ class Potku(QtWidgets.QMainWindow):
         # Blocking signals from tree view to prevent edit event
         self.tree_widget.blockSignals(True)
 
-        if hasattr(clicked_item, "tab_id"):
-            tab = self.tab_widgets[clicked_item.tab_id]
+        try:
+            tab_id = clicked_item.tab_id
+            tab = self.tab_widgets[tab_id]
 
             if type(tab) is MeasurementTabWidget:
                 name = tab.obj.name
@@ -573,13 +591,8 @@ class Potku(QtWidgets.QMainWindow):
                 if not tab.data_loaded:
                     tab.data_loaded = True
                     progress_bar = QtWidgets.QProgressBar()
-                    loading_bar = QtWidgets.QProgressBar()
-                    loading_bar.setMinimum(0)
-                    loading_bar.setMaximum(0)
                     self.statusbar.addWidget(progress_bar, 1)
-                    self.statusbar.addWidget(loading_bar, 2)
                     progress_bar.show()
-                    loading_bar.show()
                     progress_bar.setValue(5)
                     QtCore.QCoreApplication.processEvents(
                         QtCore.QEventLoop.AllEvents)
@@ -589,17 +602,20 @@ class Potku(QtWidgets.QMainWindow):
                     QtCore.QCoreApplication.processEvents(
                         QtCore.QEventLoop.AllEvents)
 
-                    tab.add_histogram()
-                    loading_bar.hide()
-                    self.statusbar.removeWidget(loading_bar)
+                    tab.add_histogram(progress_bar)
 
                     progress_bar.setValue(50)
                     QtCore.QCoreApplication.processEvents(
                         QtCore.QEventLoop.AllEvents)
                     # Load previous states.
                     tab.check_previous_state_files(progress_bar)
+                    progress_bar.setValue(100)
+                    QtCore.QCoreApplication.processEvents(
+                        QtCore.QEventLoop.AllEvents)
+
                     self.statusbar.removeWidget(progress_bar)
                     progress_bar.hide()
+
                     self.__change_tab_icon(clicked_item)
                     master_mea = tab.obj.request.get_master()
                     if master_mea and tab.obj.name == master_mea.name:
@@ -611,17 +627,30 @@ class Potku(QtWidgets.QMainWindow):
                 # Check that the data is read.
                 if not tab.data_loaded:
                     tab.data_loaded = True
-                    # tab.simulation.load_data()
-                    tab.add_simulation_target_and_recoil()
+                    progress_bar = QtWidgets.QProgressBar()
+                    self.statusbar.addWidget(progress_bar, 1)
+                    progress_bar.show()
+
+                    tab.add_simulation_target_and_recoil(progress_bar)
+
+                    progress_bar.setValue(100)
+                    QtCore.QCoreApplication.processEvents(
+                        QtCore.QEventLoop.AllEvents)
+
+                    self.statusbar.removeWidget(progress_bar)
+                    progress_bar.hide()
+
                     self.__change_tab_icon(clicked_item)
             else:
                 raise TabError("No such tab widget")
 
             # Check that the tab to be focused exists.
-            if not self.__tab_exists(clicked_item.tab_id):
+            if not self.__tab_exists(tab_id):
                 self.ui.tabs.addTab(tab, name)
             self.ui.tabs.setCurrentWidget(tab)
 
+        except AttributeError:
+            pass
         self.tree_widget.blockSignals(False)
 
     def hide_panel(self, enable_hide=None):
@@ -856,7 +885,7 @@ class Potku(QtWidgets.QMainWindow):
                 self.request.directory, sample_item.obj.directory,
                 "MC_simulation_" + "%02d" % serial_number + "-" + dialog.name,
                 dialog.name + ".simulation"), sample_item.obj, progress_bar,
-                               load_data=False)
+                               load_data=True)
             self.__remove_info_tab()
             self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
@@ -947,7 +976,7 @@ class Potku(QtWidgets.QMainWindow):
     def open_request_settings(self):
         """Opens request settings dialog.
         """
-        RequestSettingsDialog(self.request, self.icon_manager)
+        RequestSettingsDialog(self, self.request, self.icon_manager)
 
     def remove_tab(self, tab_index):
         """Remove tab.
@@ -1041,19 +1070,17 @@ class Potku(QtWidgets.QMainWindow):
                 tab.add_log()
                 tab.data_loaded = load_data
                 if load_data:
-                    loading_bar = QtWidgets.QProgressBar()
-                    loading_bar.setMinimum(0)
-                    loading_bar.setMaximum(0)
-                    self.statusbar.addWidget(loading_bar, 1)
-                    loading_bar.show()
-
                     measurement.load_data()
-                    tab.add_histogram()
+
+                    tab.add_histogram(progress_bar)
                     self.ui.tabs.addTab(tab, measurement.name)
                     self.ui.tabs.setCurrentWidget(tab)
 
-                    loading_bar.hide()
-                    self.statusbar.removeWidget(loading_bar)
+                    if progress_bar:
+                        progress_bar.setValue(100)
+                        QtCore.QCoreApplication.processEvents(
+                            QtCore.QEventLoop.AllEvents)
+
                 sample_item = (self.tree_widget.findItems(
                     "%02d" % sample.serial_number + " " + sample.name,
                     Qt.MatchEndsWith, 0))[0]
@@ -1075,8 +1102,12 @@ class Potku(QtWidgets.QMainWindow):
                 # tab.add_log()
                 tab.data_loaded = load_data
                 if load_data:
-                    simulation.load_data()
                     tab.add_simulation_target_and_recoil()
+
+                    progress_bar.setValue(100)
+                    QtCore.QCoreApplication.processEvents(
+                        QtCore.QEventLoop.AllEvents)
+
                     self.ui.tabs.addTab(tab, simulation.name)
                     self.ui.tabs.setCurrentWidget(tab)
 

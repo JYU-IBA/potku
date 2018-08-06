@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 7.6.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -32,9 +32,6 @@ __version__ = "2.0"
 import logging
 import os
 import sys
-from PyQt5 import QtCore
-from PyQt5 import uic
-from PyQt5 import QtWidgets
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.energy_spectrum import EnergySpectrumWidget
@@ -42,11 +39,17 @@ from dialogs.measurement.depth_profile import DepthProfileDialog
 from dialogs.measurement.depth_profile import DepthProfileWidget
 from dialogs.measurement.element_losses import ElementLossesDialog
 from dialogs.measurement.element_losses import ElementLossesWidget
+from dialogs.measurement.settings import MeasurementSettingsDialog
+
 from modules.element import Element
 from modules.ui_log_handlers import CustomLogHandler
+
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+from PyQt5 import uic
+
 from widgets.log import LogWidget
 from widgets.measurement.tofe_histogram import TofeHistogramWidget
-from dialogs.measurement.settings import MeasurementSettingsDialog
 
 
 class MeasurementTabWidget(QtWidgets.QWidget):
@@ -124,20 +127,35 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             widget.show()
         self.__set_icons()
 
-    def add_histogram(self):
+    def add_histogram(self, progress_bar):
         """Adds ToF-E histogram into tab if it doesn't have one already.
+
+        Args:
+            progress_bar: A progress bar.
         """
         self.histogram = TofeHistogramWidget(self.obj,
                                              self.icon_manager)
-        self.obj.set_axes(self.histogram.matplotlib.axes)
+        if progress_bar:
+            progress_bar.setValue(40)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
+
+        self.obj.set_axes(self.histogram.matplotlib.axes, progress_bar)
+
         self.ui.makeSelectionsButton.clicked.connect(
             lambda: self.histogram.matplotlib.elementSelectionButton.setChecked(
                 True))
         self.histogram.matplotlib.selectionsChanged.connect(
             self.__set_cut_button_enabled)
 
+        if progress_bar:
+            progress_bar.setValue(45)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
+
         # Draw after giving axes -> selections set properly
         self.histogram.matplotlib.on_draw()
+
         if not self.obj.selector.is_empty():
             self.histogram.matplotlib.elementSelectionSelectButton.setEnabled(
                 True)

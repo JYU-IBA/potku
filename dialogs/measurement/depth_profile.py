@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 25.6.2018
+Updated on 23.7.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -30,25 +30,27 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import logging
+import modules.masses as masses
 import os
 import sys
-from PyQt5 import uic
+import time
+
+from modules.beam import Beam
+from modules.cut_file import get_scatter_element
+from modules.cut_file import is_rbs
+from modules.depth_files import DepthFiles
+from modules.detector import Detector
+from modules.element import Element
+from modules.run import Run
+from modules.target import Target
+
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
+from PyQt5 import uic
+from PyQt5.QtCore import QLocale
 
-from modules.cut_file import is_rbs
-from modules.cut_file import get_scatter_element
-from modules.depth_files import DepthFiles
-from modules.element import Element
 from widgets.matplotlib.measurement.depth_profile import \
     MatplotlibDepthProfileWidget
-import modules.masses as masses
-from modules.detector import Detector
-import time
-from modules.run import Run
-from modules.beam import Beam
-from modules.target import Target
-from PyQt5.QtCore import QLocale
 
 
 class DepthProfileDialog(QtWidgets.QDialog):
@@ -198,7 +200,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                         self.__reference_density_spinbox.value()
                     if self.parent.obj.reference_density != \
                             self.parent.obj.request.default_measurement\
-                                    .reference_density:
+                            .reference_density:
                         self.parent.obj.use_default_profile_settings = False
                         measurement_file_path = os.path.join(
                             self.parent.obj.directory,
@@ -264,7 +266,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                         if self.parent.obj.target is None:
                             default_target = \
                                 self.parent.obj.request.default_measurement.\
-                                    target
+                                target
                             self.parent.obj.target = Target(
                                 default_target.name, time.time(),
                                 default_target.description,
@@ -350,15 +352,16 @@ class DepthProfileDialog(QtWidgets.QDialog):
     def __update_eff_files(self):
         """Update efficiency files to UI which are used.
         """
-        # This is probably not the most effective way, or practical for 
-        # that matter, to get all efficiency files from directory defined
-        # in global settings that match the cut files of measurements.
-        eff_files = self.__global_settings.get_efficiencies()
+        if self.parent.obj.detector is None:
+            eff_files = self.parent.obj.request.default_detector\
+                .get_efficiency_files()
+        else:
+            eff_files = self.parent.obj.detector.get_efficiency_files()
         eff_files_used = []
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()
         for eff in eff_files:
-            str_element, unused_ext = eff.split(".")
+            str_element = eff.split(".")[0]
             element = Element.from_string(str_element)
             for i in range(child_count): 
                 item = root.child(i)
@@ -425,6 +428,8 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.ui.label_depthscale.setText("{0} - {1}".format(
             depth_for_concentration_from,
             depth_for_concentration_to))
+
+        self.__update_eff_files()
         
 
 class DepthProfileWidget(QtWidgets.QWidget):

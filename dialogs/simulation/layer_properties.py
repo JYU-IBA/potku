@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 26.6.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,20 +28,23 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
+import copy
 import os
-
-from PyQt5 import uic
-from PyQt5 import QtGui
-from PyQt5 import QtWidgets
-
 import modules.masses as masses
+
 from dialogs.element_selection import ElementSelectionDialog
+
 from modules.element import Element
+from modules.general_functions import check_text
+from modules.general_functions import delete_simulation_results
+from modules.general_functions import set_input_field_red
+from modules.general_functions import set_input_field_white
+from modules.general_functions import validate_text_input
 from modules.layer import Layer
 
-from modules.general_functions import validate_text_input
-from modules.general_functions import check_text
-from modules.general_functions import set_input_field_red
+from PyQt5 import QtGui
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 
 
@@ -49,20 +52,28 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
     """Dialog for adding a new layer or editing an existing one.
     """
 
-    def __init__(self, layer=None):
+    def __init__(self, tab, layer=None, modify=False, simulation=None):
         """Inits a layer dialog.
 
         Args:
+            tab: A SimulationTabWidget
             layer: Layer object to be modified. None if creating a new layer.
+            modify: If dialog is used to modify a layer.
+            simulation: A Simulation object.
         """
         super().__init__()
         self.__ui = uic.loadUi(os.path.join("ui_files", "ui_layer_dialog.ui"),
                                self)
+        self.tab = tab
         self.layer = layer
         self.ok_pressed = False
+        self.simulation = simulation
 
         set_input_field_red(self.__ui.nameEdit)
-        self.fields_are_valid = False
+        set_input_field_red(self.__ui.thicknessEdit)
+        set_input_field_red(self.__ui.densityEdit)
+        self.fields_are_valid = True
+        self.amount_mismatch = False
         self.__ui.nameEdit.textChanged.connect(
             lambda: self.__check_text(self.__ui.nameEdit, self))
 
@@ -70,6 +81,12 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.__ui.addElementButton.clicked.connect(self.__add_element_layout)
         self.__ui.okButton.clicked.connect(self.__save_layer)
         self.__ui.cancelButton.clicked.connect(self.close)
+
+        self.__ui.thicknessEdit.valueChanged.connect(
+            lambda: self.validate_spinbox(self.__ui.thicknessEdit))
+        self.__ui.densityEdit.valueChanged.connect(lambda:
+                                                   self.validate_spinbox(
+                                                       self.__ui.densityEdit))
 
         self.__element_layouts = []
         if self.layer:
@@ -82,6 +99,11 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
         self.__ui.thicknessEdit.setLocale(QLocale.c())
         self.__ui.densityEdit.setLocale(QLocale.c())
+
+        if modify:
+            self.__ui.groupBox_2.hide()
+
+        self.placement_under = True
 
         self.exec_()
 
@@ -112,6 +134,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
              are empty.
         """
         help_sum = 0
+        spinboxes = []
 
         # Check if 'scrollArea' is empty (no elements).
         if self.__ui.scrollAreaWidgetContents.layout().isEmpty():
@@ -124,7 +147,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.fields_are_valid = False
 
         # Check if 'densityEdit' is empty.
-        if not self.__ui.densityEdit.text():
+        if not self.__ui.densityEdit.value():
             set_input_field_red(self.__ui.densityEdit)
             self.fields_are_valid = False
 
@@ -134,13 +157,24 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 if child.text() == "Select":
                     set_input_field_red(child)
                     self.fields_are_valid = False
-            if type(child) is QtWidgets.QLineEdit:
+            if type(child) is QtWidgets.QDoubleSpinBox:
                 if child.isEnabled():
-                    if child.text():
-                        help_sum += float(child.text())
+                    if child.value():
+                        help_sum += child.value()
+                        spinboxes.append(child)
                     else:
                         set_input_field_red(child)
                         self.fields_are_valid = False
+
+        if help_sum != 1.0 and help_sum != 100.0:
+            for sb in spinboxes:
+                set_input_field_red(sb)
+            self.fields_are_valid = False
+            self.amount_mismatch = True
+        else:
+            for sb in spinboxes:
+                set_input_field_white(sb)
+            self.amount_mismatch = False
 
     @staticmethod
     def __check_text(input_field, dialog):
@@ -152,26 +186,59 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         """
         dialog.fields_are_valid = check_text(input_field)
 
-    def __accept_settings(self):
-        """Function for accepting the current settings and closing the dialog
-        window.
+    def validate_spinbox(self, spinbox):
         """
-        if not self.fields_are_valid:
-            QtWidgets.QMessageBox.critical(self, "Warning",
-                                           "Some of the parameter values have"
-                                           " not been set.\n" +
-                                           "Please input values in fields "
-                                           "indicated in red.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
-            self.__close = False
-            self.fields_are_valid = True
-            return
+        Check if given spinbox has a proper value.
 
-        name = self.__ui.nameEdit.text()
-        thickness = self.__ui.thicknessEdit.value()
-        density = self.__ui.densityEdit.value()
-        elements = []
+        Args:
+            spinbox: Spinbox to check.
+        """
+        if spinbox.value() == 0.0:
+            self.fields_are_valid = False
+            set_input_field_red(spinbox)
+        else:
+            self.fields_are_valid = True
+            set_input_field_white(spinbox)
+
+    def values_changed(self):
+        """
+        Check if layer's values have been changed.
+
+        Return:
+            True or False.
+        """
+        if self.layer.name != self.__ui.nameEdit.text():
+            return True
+        if self.layer.thickness != self.__ui.thicknessEdit.value():
+            return True
+        if self.layer.density != self.__ui.densityEdit.value():
+            return True
+        if self.elements_changed():
+            return True
+        return False
+
+    def elements_changed(self):
+        """
+        Check if elements have been chnaged in the layer.
+        """
+        new_elements = []
+        self.find_elements(new_elements)
+        if len(self.layer.elements) != len(new_elements):
+            return True
+        for i in range(len(self.layer.elements)):
+            elem1 = self.layer.elements[i]
+            elem2 = new_elements[i]
+            if elem1 != elem2:
+                return True
+        return False
+
+    def find_elements(self, lst):
+        """
+        Find all the layer's element from the dialog.
+
+        Args:
+            lst: List to append the elements to.
+        """
         children = self.__ui.scrollAreaWidgetContents.children()
 
         # TODO: Explain the following. Maybe better implementation?
@@ -185,8 +252,142 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 elem_isotope = masses.get_standard_isotope(elem_symbol)
             i += 1
             elem_amount = children[i].value()
-            elements.append(Element(elem_symbol, elem_isotope, elem_amount))
+            lst.append(Element(elem_symbol, elem_isotope, elem_amount))
             i += 2
+
+    def __accept_settings(self):
+        """Function for accepting the current settings and closing the dialog
+        window.
+        """
+        if not self.fields_are_valid:
+            if self.amount_mismatch:
+                hint = "(Hint: element amounts need to sum up to either 1 or " \
+                       "100.)"
+            else:
+                hint = ""
+            QtWidgets.QMessageBox.critical(self, "Warning",
+                                           "Some of the parameter values have"
+                                           " not been set.\n\n" +
+                                           "Please input values in fields "
+                                           "indicated in red.\n" + hint,
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+            self.__close = False
+            self.fields_are_valid = True
+            return
+
+        if self.layer and not self.values_changed():
+            self.__close = True
+            self.fields_are_valid = True
+            self.ok_pressed = False  # No update needed
+            return
+
+        simulations_run = self.check_if_simulations_run()
+        simulations_running = self.simulations_running()
+
+        if simulations_run and simulations_running:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Simulated and running simulations",
+                "There are simulations that use the current target, "
+                "and either have been simulated or are currently running."
+                "\nIf you save changes, the running simulations "
+                "will be stopped, and the result files of the simulated "
+                "and stopped simulations are deleted.\n\nDo you want to "
+                "save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                # Stop simulations
+                tmp_sims = copy.copy(self.simulation.running_simulations)
+                for elem_sim in tmp_sims:
+                    elem_sim.stop()
+                    elem_sim.controls.state_label.setText("Stopped")
+                    elem_sim.controls.run_button.setEnabled(True)
+                    elem_sim.controls.stop_button.setEnabled(False)
+                    # Delete files
+                    for recoil in elem_sim.recoil_elements:
+                        delete_simulation_results(elem_sim, recoil)
+                    # Change full edit unlocked
+                    elem_sim.recoil_elements[0].widgets[0].parent. \
+                        edit_lock_push_button.setText("Full edit unlocked")
+                    elem_sim.simulations_done = False
+                    # Reset controls
+                    if elem_sim.controls:
+                        elem_sim.controls.reset_controls()
+
+                for energy_spectra in self.tab.energy_spectrum_widgets:
+                    self.tab.del_widget(energy_spectra)
+                self.tab.energy_spectrum_widgets = []
+
+        elif simulations_running:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Simulations running",
+                "There are simulations running that use the current "
+                "target.\nIf you save changes, the running "
+                "simulations will be stopped, and their result files "
+                "deleted.\n\nDo you want to save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                # Stop simulations
+                tmp_sims = copy.copy(self.simulation.running_simulations)
+                for elem_sim in tmp_sims:
+                    elem_sim.stop()
+                    elem_sim.controls.state_label.setText("Stopped")
+                    elem_sim.controls.run_button.setEnabled(True)
+                    elem_sim.controls.stop_button.setEnabled(False)
+                    # Delete files
+                    for recoil in elem_sim.recoil_elements:
+                        delete_simulation_results(elem_sim, recoil)
+                    # Change full edit unlocked
+                    elem_sim.recoil_elements[0].widgets[0].parent. \
+                        edit_lock_push_button.setText("Full edit unlocked")
+                    elem_sim.simulations_done = False
+
+                for energy_spectra in self.tab.energy_spectrum_widgets:
+                    self.tab.del_widget(energy_spectra)
+                self.tab.energy_spectrum_widgets = []
+
+        elif simulations_run:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Simulated simulations",
+                "There are simulations that use the current target, "
+                "and have been simulated.\nIf you save changes,"
+                " the result files of the simulated simulations are "
+                "deleted.\n\nDo you want to save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                # Delete files
+                for elem_sim in simulations_run:
+                    for recoil in elem_sim.recoil_elements:
+                        delete_simulation_results(elem_sim, recoil)
+                    # Change full edit unlocked
+                    elem_sim.recoil_elements[0].widgets[0].parent. \
+                        edit_lock_push_button.setText("Full edit unlocked")
+                    elem_sim.simulations_done = False
+
+                for energy_spectra in self.tab.energy_spectrum_widgets:
+                    self.tab.del_widget(energy_spectra)
+                self.tab.energy_spectrum_widgets = []
+
+        name = self.__ui.nameEdit.text()
+        thickness = self.__ui.thicknessEdit.value()
+        density = self.__ui.densityEdit.value()
+        elements = []
+        self.find_elements(elements)
 
         if self.layer:
             self.layer.name = name
@@ -195,8 +396,43 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.layer.density = density
         else:
             self.layer = Layer(name, elements, thickness, density)
+        if self.__ui.comboBox.currentText().startswith("Under"):
+            self.placement_under = True
+        else:
+            self.placement_under = False
         self.ok_pressed = True
         self.__close = True
+
+    def check_if_simulations_run(self):
+        """
+        Check if simulation have been run.
+
+        Return:
+             List of run element simulations.
+        """
+        if not self.simulation:
+            return False
+        simulations_run = []
+        for elem_sim in self.simulation.element_simulations:
+            if elem_sim.simulations_done:
+                simulations_run.append(elem_sim)
+        return simulations_run
+
+    def simulations_running(self):
+        """
+        Check if there are any simulations running.
+
+        Return:
+            True or False.
+        """
+        if not self.simulation:
+            return False
+        for elem_sim in self.simulation.element_simulations:
+            if elem_sim in self.simulation.request.running_simulations:
+                return True
+            elif elem_sim in self.simulation.running_simulations:
+                return True
+        return False
 
     def __missing_information_message(self, empty_fields):
         """Show the user a message about missing information.
@@ -219,7 +455,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         """
         self.__ui.scrollArea.setStyleSheet("")
         self.__element_layouts.append(ElementLayout(
-            self.__ui.scrollAreaWidgetContents, element))
+            self.__ui.scrollAreaWidgetContents, element, self))
 
     def __validate(self):
         """
@@ -235,12 +471,13 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 class ElementLayout(QtWidgets.QHBoxLayout):
     """ElementLayout that holds element information input fields."""
 
-    def __init__(self, parent, element):
+    def __init__(self, parent, element, dialog):
         """Initializes the layout.
         Args:
             parent: A QWidget into which the layout is added.
             element: Element object whose info is shown. None adding a
             default layout.
+            dialog: LayerPropertiesDialog.
         """
         parent.parentWidget().setStyleSheet("")
 
@@ -264,7 +501,7 @@ class ElementLayout(QtWidgets.QHBoxLayout):
         self.amount_spinbox.setDecimals(3)
         self.amount_spinbox.setEnabled(enabled)
         self.amount_spinbox.valueChanged\
-            .connect(lambda: self.amount_spinbox.setStyleSheet(""))
+            .connect(lambda: dialog.validate_spinbox(self.amount_spinbox))
         self.amount_spinbox.setLocale(QLocale.c())
 
         if enabled:
@@ -306,6 +543,7 @@ class ElementLayout(QtWidgets.QHBoxLayout):
             self.__load_isotopes()
             self.isotope_combobox.setEnabled(True)
             self.amount_spinbox.setEnabled(True)
+            set_input_field_red(self.amount_spinbox)
 
     def __load_isotopes(self, current_isotope=None):
         """Loads isotopes of the element into the combobox.

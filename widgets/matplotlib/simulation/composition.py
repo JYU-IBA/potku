@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 2.7.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -27,10 +27,18 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
+import copy
 import matplotlib
+import os
+import widgets
 
 from dialogs.simulation.layer_properties import LayerPropertiesDialog
+from dialogs.simulation.target_info_dialog import TargetInfoDialog
+
+from modules.general_functions import delete_simulation_results
+
 from PyQt5 import QtWidgets
+
 from widgets.matplotlib.base import MatplotlibWidget
 
 
@@ -58,11 +66,17 @@ class _CompositionWidget(MatplotlibWidget):
         self.name_x_axis = "Depth [nm]"
         self.foil_behaviour = foil_behaviour
 
+        self.parent = parent
+
         self.__icon_manager = icon_manager
         self.__selected_layer = None
         self.__layer_selector = None
         self.__layer_actions = []
         self.__annotations = []
+
+        self.simulation = None
+        if type(self.parent) is widgets.simulation.target.TargetWidget:
+            self.simulation = self.parent.simulation
 
         self.__fork_toolbar_buttons()
 
@@ -116,6 +130,38 @@ class _CompositionWidget(MatplotlibWidget):
         for action in self.__layer_actions:
             action.setEnabled(True)
 
+    def check_if_simulations_run(self):
+        """
+        Check if simulation have been run.
+
+        Return:
+             List of run simulations.
+        """
+        if not self.simulation:
+            return False
+        simulations_run = []
+        for elem_sim in self.simulation.element_simulations:
+            if elem_sim.simulations_done and \
+               elem_sim.use_default_settings:
+                simulations_run.append(elem_sim)
+        return simulations_run
+
+    def simulations_running(self):
+        """
+        Check if there are any simulations running.
+
+        Return:
+            True or False.
+        """
+        if not self.simulation:
+            return False
+        for elem_sim in self.simulation.element_simulations:
+            if elem_sim in self.simulation.request.running_simulations:
+                return True
+            elif elem_sim in self.simulation.running_simulations:
+                return True
+        return False
+
     def __delete_layer(self):
         """
         Delete selected layer.
@@ -131,6 +177,121 @@ class _CompositionWidget(MatplotlibWidget):
                 QtWidgets.QMessageBox.Cancel:
             return  # If clicked Yes, then continue normally
 
+        simulations_run = self.check_if_simulations_run()
+        simulations_running = self.simulations_running()
+
+        if self.foil_behaviour:
+            simulations_run = []
+            simulations_running = False
+
+        if simulations_run and simulations_running:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Simulated and running simulations",
+                "There are simulations that use the current target, "
+                "and either have been simulated or are currently running."
+                "\nIf you save changes, the running simulations "
+                "will be stopped, and the result files of the simulated "
+                "and stopped simulations are deleted.\n\nDo you want to "
+                "save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                # Stop simulations
+                tmp_sims = copy.copy(self.simulation.running_simulations)
+                for elem_sim in tmp_sims:
+                    elem_sim.stop()
+                    elem_sim.controls.state_label.setText("Stopped")
+                    elem_sim.controls.run_button.setEnabled(True)
+                    elem_sim.controls.stop_button.setEnabled(False)
+                    # Delete files
+                    for recoil in elem_sim.recoil_elements:
+                        delete_simulation_results(elem_sim, recoil)
+
+                    # Change full edit unlocked
+                    elem_sim.recoil_elements[0].widgets[0].parent. \
+                        edit_lock_push_button.setText("Full edit unlocked")
+                    elem_sim.simulations_done = False
+
+                    # Reset controls
+                    if elem_sim.controls:
+                        elem_sim.controls.reset_controls()
+
+                for energy_spectra in self.parent.tab.energy_spectrum_widgets:
+                    self.parent.tab.del_widget(energy_spectra)
+                self.parent.tab.energy_spectrum_widgets = []
+
+        elif simulations_running:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Simulations running",
+                "There are simulations running that use the current "
+                "target.\nIf you save changes, the running "
+                "simulations will be stopped, and their result files "
+                "deleted.\n\nDo you want to save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                # Stop simulations
+                tmp_sims = copy.copy(self.simulation.running_simulations)
+                for elem_sim in tmp_sims:
+                    elem_sim.stop()
+                    elem_sim.controls.state_label.setText("Stopped")
+                    elem_sim.controls.run_button.setEnabled(True)
+                    elem_sim.controls.stop_button.setEnabled(False)
+                    # Delete files
+                    for recoil in elem_sim.recoil_elements:
+                        delete_simulation_results(elem_sim, recoil)
+
+                    # Change full edit unlocked
+                    elem_sim.recoil_elements[0].widgets[0].parent. \
+                        edit_lock_push_button.setText("Full edit unlocked")
+                    elem_sim.simulations_done = False
+
+                    # Reset controls
+                    if elem_sim.controls:
+                        elem_sim.controls.reset_controls()
+
+                for energy_spectra in \
+                        self.parent.tab.energy_spectrum_widgets:
+                    self.parent.tab.del_widget(energy_spectra)
+                self.parent.tab.energy_spectrum_widgets = []
+
+        elif simulations_run:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Simulated simulations",
+                "There are simulations that use the current target, "
+                "and have been simulated.\nIf you save changes,"
+                " the result files of the simulated simulations are "
+                "deleted.\n\nDo you want to save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                pass
+                for elem_sim in simulations_run:
+                    for recoil in elem_sim.recoil_elements:
+                        delete_simulation_results(elem_sim, recoil)
+
+                    # Change full edit unlocked
+                    elem_sim.recoil_elements[0].widgets[0].parent. \
+                        edit_lock_push_button.setText("Full edit unlocked")
+                    elem_sim.simulations_done = False
+
+                for energy_spectra in \
+                        self.parent.tab.energy_spectrum_widgets:
+                    self.parent.tab.del_widget(energy_spectra)
+                self.parent.tab.energy_spectrum_widgets = []
+
         # Delete from layers list
         if self.__selected_layer in self.layers:
             self.layers.remove(self.__selected_layer)
@@ -143,12 +304,18 @@ class _CompositionWidget(MatplotlibWidget):
         # Update canvas
         self.__update_figure()
 
+        if self.simulation and not self.layers:
+            self.parent.ui.recoilRadioButton.setEnabled(False)
+
     def __modify_layer(self):
         """
         Open a layer properties dialog for modifying the selected layer.
         """
         if self.__selected_layer:
-            dialog = LayerPropertiesDialog(self.__selected_layer)
+            dialog = LayerPropertiesDialog(self.__selected_layer,
+                                           self.parent.tab,
+                                           modify=True,
+                                           simulation=self.simulation)
             if dialog.ok_pressed:
                 self.update_start_depths()
                 self.__update_figure(add=self.foil_behaviour)
@@ -175,6 +342,7 @@ class _CompositionWidget(MatplotlibWidget):
         #     color='b', alpha=0.2)
         self.__layer_selector = layer_patch
         self.axes.add_patch(layer_patch)
+
         self.canvas.draw_idle()
 
     def on_draw(self):
@@ -270,9 +438,23 @@ class _CompositionWidget(MatplotlibWidget):
         if position > len(self.layers):
             ValueError("There are not that many layers.")
 
-        dialog = LayerPropertiesDialog()
+        dialog = LayerPropertiesDialog(simulation=self.simulation,
+                                       tab=self.parent.tab)
 
-        if dialog.layer and position < 0:
+        if dialog.layer and dialog.placement_under:
+            position = self.layers.index(self.__selected_layer) + 1
+            self.layers.insert(position, dialog.layer)
+            self.update_start_depths()
+            self.__selected_layer = dialog.layer
+            self.__update_figure(add=True)
+        elif dialog.layer and not dialog.placement_under and \
+                self.__selected_layer:
+            position = self.layers.index(self.__selected_layer)
+            self.layers.insert(position, dialog.layer)
+            self.update_start_depths()
+            self.__selected_layer = dialog.layer
+            self.__update_figure(add=True)
+        elif dialog.layer and position < 0:
             depth = 0.0
             for layer in self.layers:
                 depth += layer.thickness
@@ -280,11 +462,9 @@ class _CompositionWidget(MatplotlibWidget):
             self.layers.append(dialog.layer)
             self.__selected_layer = dialog.layer
             self.__update_figure(add=True)
-        elif dialog.layer:
-            self.layers.insert(position, dialog.layer)
-            self.update_start_depths()
-            self.__selected_layer = dialog.layer
-            self.__update_figure(add=True)
+
+        if type(self.parent) is widgets.simulation.target.TargetWidget:
+            self.parent.ui.recoilRadioButton.setEnabled(True)
 
     def __update_figure(self, init=False, add=False):
         """Updates the figure to match the information of the layers.
@@ -354,7 +534,12 @@ class _CompositionWidget(MatplotlibWidget):
                 view_bound += layer.thickness
             self.axes.set_xbound(x_bounds[0], view_bound)
 
+        if not self.__selected_layer and self.layers:
+            self.__selected_layer = self.layers[0]
         self.__update_selected_layer()
+
+        if self.__selected_layer:
+            self.__enable_layer_buttons()
         self.canvas.draw_idle()
         self.mpl_toolbar.update()
 
@@ -385,7 +570,7 @@ class TargetCompositionWidget(_CompositionWidget):
     layers to the user. Using this widget user can also modify the layers of the
     target.
     """
-    def __init__(self, parent, target, icon_manager):
+    def __init__(self, parent, target, icon_manager, simulation):
         """Initializes a TargetCompositionWidget object.
 
         Args:
@@ -394,12 +579,37 @@ class TargetCompositionWidget(_CompositionWidget):
             target:       A Target object. This is needed in order to get
                           the current state of the target layers.
             icon_manager: An icon manager class object.
+            simulation:   A Simulation that has the Target object.
         """
         _CompositionWidget.__init__(self, parent, target.layers,
                                     icon_manager)
 
         self.layers = target.layers
+        self.simulation = simulation
         self.canvas.manager.set_title("Target composition")
+
+        self.parent.ui.targetNameLabel.setText(
+            "Name: " + target.name)
+
+        self.parent.ui.editTargetInfoButton.clicked.connect(
+            lambda: self.edit_target_info(target))
+
+    def edit_target_info(self, target):
+        """
+        Open a dialog to edit Target information.
+        """
+        dialog = TargetInfoDialog(target)
+
+        if dialog.isOk:
+            old_target = os.path.join(self.simulation.directory, target.name
+                                      + ".target")
+            os.remove(old_target)
+            target.name = dialog.name
+            target.description = dialog.description
+            target_path = os.path.join(self.simulation.directory, target.name
+                                       + ".target")
+            target.to_file(target_path, None)
+            self.parent.ui.targetNameLabel.setText(target.name)
 
 
 class FoilCompositionWidget(_CompositionWidget):

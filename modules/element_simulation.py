@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 11.7.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -31,6 +31,7 @@ import json
 import math
 import os
 import platform
+import threading
 import time
 
 from modules.element import Element
@@ -38,6 +39,10 @@ from modules.foil import CircularFoil
 from modules.general_functions import rename_file
 from modules.get_espe import GetEspe
 from modules.mcerd import MCERD
+
+from PyQt5 import QtGui
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import Qt
 
 from widgets.matplotlib.simulation.recoil_atom_distribution import Point
 from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
@@ -59,7 +64,8 @@ class ElementSimulation:
                 "__mcerd_command", "__process", "settings", "espe_settings", \
                 "description", "run", "spectra", "name", \
                 "use_default_settings", "sample", "controls", "simulation", \
-                "simulations_done", "__full_edit_on", "y_min"
+                "simulations_done", "__full_edit_on", "y_min", "main_recoil",\
+                "__erd_files"
 
     def __init__(self, directory, request, recoil_elements,
                  simulation=None, name_prefix="",
@@ -71,7 +77,7 @@ class ElementSimulation:
                  minimum_main_scattering_angle=20, simulation_mode="narrow",
                  seed_number=101, minimum_energy=1.0, channel_width=0.1,
                  use_default_settings=True, sample=None,
-                 simulations_done=False):
+                 simulations_done=False, main_recoil=None):
         """ Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
@@ -99,6 +105,7 @@ class ElementSimulation:
             sample: Sample object under which Element Simualtion belongs.
             simulations_done: Whether any simulations have been run for this
             element simulation.
+            main_recoil: Main recoil element.
         """
         self.directory = directory
         self.request = request
@@ -113,6 +120,11 @@ class ElementSimulation:
         self.sample = sample
 
         self.recoil_elements = recoil_elements
+
+        if len(self.recoil_elements) == 1:
+            self.main_recoil = self.recoil_elements[0]
+        else:
+            self.main_recoil = main_recoil
         self.target = target
         if detector:
             self.detector = detector
@@ -145,7 +157,7 @@ class ElementSimulation:
             else:
                 prefix = self.name_prefix
         self.mcsimu_to_file(os.path.join(self.directory,
-                                          name + ".mcsimu"))
+                                         name + ".mcsimu"))
         for recoil_element in self.recoil_elements:
             self.recoil_to_file(self.directory, recoil_element)
         self.profile_to_file(os.path.join(self.directory,
@@ -172,6 +184,9 @@ class ElementSimulation:
         else:
             self.__full_edit_on = True
             self.y_min = 0.0
+
+        # List for erd files to count their lines
+        self.__erd_files = []
 
     def unlock_edit(self):
         """
@@ -301,12 +316,14 @@ class ElementSimulation:
             recoil_element.name = new_values["name"]
             recoil_element.description = new_values["description"]
             recoil_element.reference_density = new_values["reference_density"]
+            recoil_element.color = new_values["color"]
         except KeyError:
             raise
         # Delete possible extra rec files.
         filename_to_delete = ""
         for file in os.listdir(self.directory):
-            if file.startswith(recoil_element.prefix) and file.endswith(".rec"):
+            if file.startswith(recoil_element.prefix + "-" + old_name) and \
+                    (file.endswith(".rec") or file.endswith(".sct")):
                 filename_to_delete = file
                 break
         if filename_to_delete:
@@ -315,20 +332,25 @@ class ElementSimulation:
         self.recoil_to_file(self.directory, recoil_element)
 
         if old_name != recoil_element.name:
+            if recoil_element.type == "rec":
+                recoil_suffix = ".recoil"
+            else:
+                recoil_suffix = ".scatter"
             recoil_file = os.path.join(self.directory, recoil_element.prefix
-                                       + "-" + old_name + ".recoil")
+                                       + "-" + old_name + recoil_suffix)
             if os.path.exists(recoil_file):
                 new_name = recoil_element.prefix + "-" + recoil_element.name \
-                           + ".recoil"
+                           + recoil_suffix
                 rename_file(recoil_file, new_name)
 
-            erd_file = os.path.join(self.directory, recoil_element.prefix +
-                                    "-" + old_name + "." + str(self.seed_number)
-                                    + ".erd")
-            if os.path.exists(erd_file):
-                new_name = recoil_element.prefix + "-" + recoil_element.name \
-                           + "." + str(self.seed_number) + ".erd"
-                rename_file(erd_file, new_name)
+            for file in os.listdir(self.directory):
+                if file.startswith(recoil_element.prefix) and file.endswith(
+                        ".erd"):
+                    erd_file = os.path.join(self.directory, file)
+                    seed = file.split('.')[1]
+                    new_name = recoil_element.prefix + "-" + \
+                        recoil_element.name + "." + seed + ".erd"
+                    rename_file(erd_file, new_name)
 
             simu_file = os.path.join(self.directory, recoil_element.prefix +
                                      "-" + old_name + ".simu")
@@ -424,6 +446,7 @@ class ElementSimulation:
         minimum_scattering_angle = obj["minimum_scattering_angle"]
         minimum_main_scattering_angle = obj["minimum_main_scattering_angle"]
         minimum_energy = obj["minimum_energy"]
+        main_recoil_name = obj["main_recoil"]
 
         # Read channel width from .profile file.
         obj = json.load(open(profile_file_path))
@@ -431,18 +454,34 @@ class ElementSimulation:
 
         # Read .rec files from simulation folder
         recoil_elements = []
+
+        if simulation_type == "ERD":
+            rec_type = "rec"
+        else:
+            rec_type = "sct"
+
+        main_recoil = None
         for file in os.listdir(simulation_folder):
-            if file.startswith(prefix) and file.endswith(".rec"):
+            if file.startswith(prefix) and (file.endswith(".rec") or
+                                            file.endswith(".sct")):
                 obj = json.load(open(os.path.join(simulation_folder, file)))
                 points = []
                 for dictionary_point in obj["profile"]:
                     x, y = dictionary_point["Point"].split(" ")
                     points.append(Point((float(x), float(y))))
+                # Read color
+                # color = obj["color"]
+                color = QtGui.QColor(obj["color"])
                 element = RecoilElement(Element.from_string(obj["element"]),
-                                        points)
+                                        points, color=color, rec_type=rec_type)
                 element.name = obj["name"]
+
+                if element.name == main_recoil_name:
+                    main_recoil = element
+
                 element.description = obj["description"]
-                element.reference_density = obj["reference_density"] / 1e22
+                element.multiplier = obj["multiplier"]
+                element.reference_density = obj["reference_density"]
                 element.simulation_type = obj["simulation_type"]
 
                 element.modification_time = obj["modification_time_unix"]
@@ -455,10 +494,14 @@ class ElementSimulation:
                     if f.startswith(prefix + "-" + element.name) \
                        and f.endswith(".erd"):
                         recoil_elements.insert(0, element)
+                        main_recoil = element
                         is_simulated = True
                         break
                 if not is_simulated:
-                    recoil_elements.append(element)
+                    if element is main_recoil:
+                        recoil_elements.insert(0, element)
+                    else:
+                        recoil_elements.append(element)
 
         # Check if there are any files to tell that simulations have
         # been run previously
@@ -487,7 +530,7 @@ class ElementSimulation:
                    minimum_energy=minimum_energy,
                    use_default_settings=use_default_settings,
                    channel_width=channel_width,
-                   simulations_done=simulations_done)
+                   simulations_done=simulations_done, main_recoil=main_recoil)
 
     def mcsimu_to_file(self, file_path):
         """Save mcsimu settings to file.
@@ -516,7 +559,8 @@ class ElementSimulation:
                 "minimum_scattering_angle": self.minimum_scattering_angle,
                 "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
                 "minimum_energy": self.minimum_energy,
-                "use_default_settings": str(self.use_default_settings)
+                "use_default_settings": str(self.use_default_settings),
+                "main_recoil": self.main_recoil.name
             }
         else:
             elem_sim = self.request.default_element_simulation
@@ -536,7 +580,8 @@ class ElementSimulation:
                 "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
                 "minimum_main_scattering_angle": elem_sim.minimum_main_scattering_angle,
                 "minimum_energy": elem_sim.minimum_energy,
-                "use_default_settings": str(self.use_default_settings)
+                "use_default_settings": str(self.use_default_settings),
+                "main_recoil": self.main_recoil.name
             }
 
         with open(file_path, "w") as file:
@@ -546,13 +591,17 @@ class ElementSimulation:
         """Save recoil settings to file.
 
         Args:
-            simulation_folder: Path to simulation folder in which ".rec"
-            files are stored.
+            simulation_folder: Path to simulation folder in which ".rec" or
+            ".sct" files are stored.
             recoil_element: RecoilElement object to write to file to.
         """
+        if recoil_element.type == "rec":
+            suffix = ".rec"
+        else:
+            suffix = ".sct"
         recoil_file = os.path.join(simulation_folder,
                                    recoil_element.prefix + "-" +
-                                   recoil_element.name + ".rec")
+                                   recoil_element.name + suffix)
         if recoil_element.element.isotope:
             element_str = "{0}{1}".format(recoil_element.element.isotope,
                                           recoil_element.element.symbol)
@@ -567,8 +616,10 @@ class ElementSimulation:
             "modification_time_unix": time.time(),
             "simulation_type": recoil_element.type,
             "element": element_str,
-            "reference_density": recoil_element.reference_density * 1e22,
-            "profile": []
+            "reference_density": recoil_element.reference_density,
+            "multiplier": recoil_element.multiplier,
+            "profile": [],
+            "color": str(recoil_element.color.name())
         }
 
         for point in recoil_element.get_points():
@@ -613,6 +664,7 @@ class ElementSimulation:
         Args:
             number_of_processes: How many processes are started.
         """
+        self.simulations_done = False
         if self.run is None:
             run = self.request.default_run
         else:
@@ -626,9 +678,12 @@ class ElementSimulation:
         else:
             detector = self.detector
 
+        self.__erd_files = []
+
         # Start as many processes as is given in number of processes
+        seed_number = elem_sim.seed_number
+        QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
         for i in range(number_of_processes):
-            seed_number = elem_sim.seed_number + i
             settings = {
                 "simulation_type": elem_sim.simulation_type,
                 "number_of_ions": elem_sim.number_of_ions,
@@ -645,12 +700,50 @@ class ElementSimulation:
                 "target": self.target,
                 "detector": detector,
                 "recoil_element": self.recoil_elements[0],
+                "sim_dir": self.directory
             }
+            # Delete corresponding erd file
+            erd_file = os.path.join(self.directory, self.recoil_elements[
+                0].prefix + "-" + self.recoil_elements[0].name + "." + str(
+                seed_number) + ".erd")
+            if os.path.exists(erd_file):
+                os.remove(erd_file)
+
+            self.__erd_files.append(erd_file)
+
             self.mcerd_objects[seed_number] = MCERD(settings, self)
+            seed_number = seed_number + 1
+            if i + 1 < number_of_processes:
+                time.sleep(5)  # This is done to avoid having a mixup in mcerd
+                # command file content when there are more than one process
+                # (without this, Potku would crash)
+        QtWidgets.QApplication.restoreOverrideCursor()
+
         if self.use_default_settings:
             self.request.running_simulations.append(self)
         else:
             self.simulation.running_simulations.append(self)
+
+        # Start calculating the erd files' lines
+        thread = threading.Thread(target=self.calculate_erd_lines)
+        thread.daemon = True
+        thread.start()
+
+    def calculate_erd_lines(self):
+        """
+        Calculate the lines in the erd files.
+        """
+        while True:
+            if not self.mcerd_objects:
+                break
+            time.sleep(1)
+            lines_count = 0
+            for f in self.__erd_files:
+                if os.path.exists(f):
+                    with open(f, 'r') as file:
+                        lines_count = lines_count + len(file.readlines())
+            if self.controls:
+                self.controls.show_number_of_observed_atoms(lines_count)
 
     def notify(self, sim):
         """
@@ -662,31 +755,39 @@ class ElementSimulation:
         for key, value in self.mcerd_objects.items():
             if value == sim:
                 key_to_delete = key
-        self.mcerd_objects[key_to_delete].copy_results(self.directory)
 
         if key_to_delete:
+            self.mcerd_objects[key_to_delete].delete_unneeded_files()
             del (self.mcerd_objects[key_to_delete])
+            if self.controls:
+                # Update finished processes count
+                self.controls.update_finished_processes(len(self.mcerd_objects))
         if not self.mcerd_objects:
             if self.controls:
                 self.controls.show_stop()
-        if self.use_default_settings:
-            self.request.running_simulations.remove(self)
-        else:
-            self.simulation.running_simulations.remove(self)
+            if self.use_default_settings:
+                self.request.running_simulations.remove(self)
+            else:
+                self.simulation.running_simulations.remove(self)
         self.simulations_done = True
 
     def stop(self):
         """ Stop the simulation."""
+        ref_key = None
         for sim in list(self.mcerd_objects.keys()):
+            if ref_key is None:
+                ref_key = sim
             self.mcerd_objects[sim].stop_process()
-            try:
-                self.mcerd_objects[sim].copy_results(self.directory)
-            except FileNotFoundError:
-                raise
+        try:
+            # self.mcerd_objects[sim].copy_results(self.directory)
+            self.mcerd_objects[ref_key].delete_unneeded_files()
+        except FileNotFoundError:
+            pass
+        for sim in list(self.mcerd_objects.keys()):
             del (self.mcerd_objects[sim])
-        if self.use_default_settings:
+        try:
             self.request.running_simulations.remove(self)
-        else:
+        except ValueError:
             self.simulation.running_simulations.remove(self)
         self.simulations_done = True
 
@@ -694,10 +795,13 @@ class ElementSimulation:
         """
         Calculate the energy spectrum from the MCERD result file.
         """
+        if self.simulation_type == "ERD":
+            suffix = ".recoil"
+        else:
+            suffix = ".scatter"
         recoil_file = os.path.join(self.directory,
                                    recoil_element.prefix + "-" +
-                                   recoil_element.name +
-                                   ".recoil")
+                                   recoil_element.name + suffix)
         recoil_element.write_recoil_file(recoil_file)
 
         if self.run is None:
@@ -714,6 +818,7 @@ class ElementSimulation:
             "target": self.target,
             "ch": self.channel_width,
             "reference_density": recoil_element.reference_density,
+            "multiplier": recoil_element.multiplier,
             "fluence": run.fluence,
             "timeres": detector.timeres,
             "solid": self.calculate_solid(),
@@ -726,10 +831,4 @@ class ElementSimulation:
                                           ".simu"),
             "recoil_file": recoil_file
         }
-        if self.mcerd_objects:
-            for sim in list(self.mcerd_objects.keys()):
-                try:
-                    self.mcerd_objects[sim].copy_results(self.directory)
-                except FileNotFoundError:
-                    raise
         self.get_espe = GetEspe(espe_settings)

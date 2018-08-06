@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 3.7.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -110,12 +110,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         if self.spectrum_type == "simulation":
             self.__button_area_calculation = QtWidgets.QToolButton(self)
             self.__button_area_calculation.clicked.connect(
-                self.__calculate_selected_area)
+                self.__toggle_area_limits)
             self.__button_area_calculation.setToolTip(
-                "Calculate the area ratio between the two spectra inside the "
-                "selected interval")
+                "Toggle the area limits")
             self.__icon_manager.set_icon(self.__button_area_calculation,
-                                         "depth_profile_lim_in.svg")
+                                         "depth_profile_lim_lines.svg")
             self.mpl_toolbar.addWidget(self.__button_area_calculation)
             self.__button_area_calculation.setEnabled(False)
 
@@ -124,8 +123,10 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                               rectprops=dict(alpha=0.5,
                                                              facecolor='red'),
                                               button=1, span_stays=True)
+            self.__used_recoils = self.__find_used_recoils()
 
         self.limits = []
+        self.limits_visible = False
         self.leg = None  # Original legend
         self.anchored_box = None
         self.lines_of_area = []
@@ -137,6 +138,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         """
         Calculate the ratio between the two spectra areas.
         """
+        if not self.limits:
+            return
+        if not self.limits_visible:
+            return
+
         lower_limit = self.limits[0].get_xdata()[0]
         upper_limit = self.limits[1].get_xdata()[0]
 
@@ -349,11 +355,32 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.limits.append(self.axes.axvline(x=nearest_low, linestyle="--"))
         self.limits.append(self.axes.axvline(x=nearest_high, linestyle="--",
                                              color='red'))
+        self.limits_visible = True
 
         self.axes.set_ybound(ylim[0], ylim[1])
 
         self.__button_area_calculation.setEnabled(True)
         self.canvas.draw_idle()
+
+        self.__calculate_selected_area()
+
+    def __toggle_area_limits(self):
+        """
+        Toggle the area limits on and off.
+        """
+        if self.limits_visible:
+            for lim in self.limits:
+                lim.set_linestyle('None')
+            self.limits_visible = False
+            self.anchored_box.set_visible(False)
+            self.anchored_box = None
+            self.canvas.draw_idle()
+        else:
+            for lim in self.limits:
+                lim.set_linestyle('--')
+            if self.limits:
+                self.limits_visible = True
+                self.__calculate_selected_area()
 
     def __sortt(self, key):
         cut_file = key.split('.')
@@ -364,12 +391,28 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             isotope = masses.get_standard_isotope(element)
         return isotope
 
+    def __find_used_recoils(self):
+        """
+        Find all the recoils that will be drawn.
+        """
+        recoils = []
+        for elem_sim in self.parent.parent.obj.element_simulations:
+            for recoil in elem_sim.recoil_elements:
+                for used_file in self.histed_files.keys():
+                    used_file_name = os.path.split(used_file)[1]
+                    if used_file_name == recoil.prefix + "-" + recoil.name + \
+                            ".simu":
+                        recoils.append(recoil)
+                        break
+        return recoils
+
     def on_draw(self):
         """Draw method for matplotlib.
         """
         # Values for zoom
         x_min, x_max = self.axes.get_xlim()
         y_min, y_max = self.axes.get_ylim()
+        x_min_changed = False
 
         self.axes.clear()  # Clear old stuff
 
@@ -410,6 +453,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
                 if x[0] < x_min:
                     x_min = x[0]
+                    x_min_changed = True
 
                 if isotope is None:
                     isotope = ""
@@ -455,7 +499,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                     symbol = element.symbol
 
                     label = r"$^{" + str(isotope) + "}$" + symbol + " (exp)"
-                else:
+                    color = "black"
+                elif file_name.endswith(".simu"):
                     for s in file_name:
                         if s != "-":
                             if s.isdigit():
@@ -469,12 +514,24 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
                     label = r"$^{" + isotope + "}$" + symbol + " " + recoil_name
 
+                    for used_recoil in self.__used_recoils:
+                        used_recoil_file_name = used_recoil.prefix + "-" + \
+                                                used_recoil.name + ".simu"
+                        if used_recoil_file_name == file_name:
+                            color = str(used_recoil.color.name())
+
+                else:
+                    label = file_name
+                    color = "grey"
+
                 x = tuple(float(pair[0]) for pair in data)
                 y = tuple(float(pair[1]) for pair in data)
 
                 if x[0] < x_min:
                     x_min = x[0]
-                self.axes.plot(x, y, label=label)
+                    x_min_changed = True
+
+                self.axes.plot(x, y, label=label, color=color)
 
         if self.draw_legend:
             if not self.__initiated_box:
@@ -501,7 +558,10 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         # Set limits accordingly
         self.axes.set_ylim([y_min, y_max])
-        self.axes.set_xlim([x_min - self.parent.bin_width, x_max])
+        if x_min_changed:
+            self.axes.set_xlim([x_min - self.parent.bin_width, x_max])
+        else:
+            self.axes.set_xlim([x_min, x_max])
 
         if self.__log_scale:
             self.axes.set_yscale('symlog')
@@ -532,6 +592,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         """
         self.__log_scale = self.__button_toggle_log.isChecked()
         self.on_draw()
+        if self.limits:
+            self.axes.add_artist(self.limits[0])
+            self.axes.add_artist(self.limits[1])
+        if self.limits_visible:
+            self.__calculate_selected_area()
 
     def __ignore_elements_from_graph(self):
         """Ignore elements from elements ratio calculation.
@@ -546,8 +611,10 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 file = os.path.split(key)[1]
                 if file.endswith(".hist"):
                     element = file.rsplit('.', 1)[0]
-                else:
+                elif file.endswith(".simu"):
                     element = file.split('.')[0]
+                else:
+                    element = file
                 if key in self.__ignore_elements:
                     ignore_elements_for_dialog.append(element)
                 elements.append(element)
@@ -555,7 +622,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             for elem in dialog.ignored_elements:
                 for path in paths:
                     if elem in path:
-                        ignored_elements.append(path)
+                        index = path.find(elem)
+                        if path[index - 1] == os.path.sep and path[index +
+                                                                   len(elem)]\
+                                == '.':
+                            ignored_elements.append(path)
             self.__ignore_elements = ignored_elements
         else:
             elements = [item[0] for item in sorted(self.histed_files.items(),
@@ -564,3 +635,4 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             dialog = GraphIgnoreElements(elements, self.__ignore_elements)
             self.__ignore_elements = dialog.ignored_elements
         self.on_draw()
+        self.limits = []

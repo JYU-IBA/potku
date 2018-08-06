@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 10.7.2018
+Updated on 24.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -44,7 +44,9 @@ import sys
 import tempfile
 
 from decimal import Decimal
+
 from PyQt5 import QtWidgets
+
 from subprocess import Popen
 
 
@@ -96,7 +98,7 @@ def open_files_dialog(parent, default_folder, title, files):
     filenames = QtWidgets.QFileDialog.getOpenFileNames(parent, title,
                                                        default_folder,
                                                        parent.tr(files))
-    return filenames
+    return filenames[0]
 
 
 def save_file_dialog(parent, default_folder, title, files):
@@ -639,7 +641,6 @@ def find_y_on_line(point1, point2, x):
     return y
 
 
-
 def validate_text_input(text, regex):
     """
     Validate the text using given regular expression. If not valid, remove
@@ -681,9 +682,28 @@ def find_nearest(x, lst):
         return lst[0]
     if position == len(lst):
         return lst[len(lst) - 1]
-    before = lst[position -1]
+    before = lst[position - 1]
     after = lst[position]
     if after - x < x - before:
         return after
     else:
         return before
+
+
+def delete_simulation_results(element_simulation, recoil_element):
+    """
+    Delete simulation result files.
+
+    Args:
+         element_simulation: Element simulation object.
+         recoil_element: Recoil element object.
+    """
+    files_to_delete = []
+    for file in os.listdir(element_simulation.directory):
+        if file.startswith(recoil_element.prefix):
+            if file.endswith(".recoil") or file.endswith("erd") or \
+                    file.endswith(".simu") or file.endswith(".scatter"):
+                files_to_delete.append(os.path.join(
+                    element_simulation.directory, file))
+    for f in files_to_delete:
+        os.remove(f)

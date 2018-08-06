@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 18.6.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -33,23 +33,24 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
+import hashlib
 import json
 import logging
-
-import hashlib
 import os
 import shutil
 import sys
 import time
-from PyQt5 import QtCore, QtWidgets
 
 from modules.cut_file import CutFile
+from modules.detector import Detector
 from modules.general_functions import md5_for_file
 from modules.general_functions import rename_file
 from modules.run import Run
 from modules.selection import Selector
 from modules.target import Target
-from modules.detector import Detector
+
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
 
 
 class Measurements:
@@ -793,7 +794,7 @@ class Measurement:
         log_filehandler.flush()
         log_filehandler.close()
 
-    def set_axes(self, axes):
+    def set_axes(self, axes, progress_bar):
         """ Set axes information to selector within measurement.
         
         Sets axes information to selector to add selection points. Since 
@@ -802,19 +803,23 @@ class Measurement:
         
         Args:
             axes: Matplotlib FigureCanvas's subplot
+            progress_bar: A progress bar used when opening a measurement.
         """
         self.selector.axes = axes
         # We've set axes information, check for old selection.
-        self.__check_for_old_selection()
+        self.__check_for_old_selection(progress_bar)
 
-    def __check_for_old_selection(self):
+    def __check_for_old_selection(self, progress_bar):
         """ Use old selection file_path if exists.
+
+        Args:
+            progress_bar: A progress bar used when opening a measurement.
         """
         try:
             selection_file = os.path.join(self.directory, self.directory_data,
                                           "{0}.selections".format(self.name))
             with open(selection_file):
-                self.load_selection(selection_file)
+                self.load_selection(selection_file, progress_bar)
         except:
             # TODO: Is it necessary to inform user with this?
             log_msg = "There was no old selection file to add to this request."
@@ -1067,7 +1072,7 @@ class Measurement:
                 elem_root.addChild(item)
             treewidget.addTopLevelItem(elem_root)
 
-    def load_selection(self, filename):
+    def load_selection(self, filename, progress_bar):
         """ Load selections from a file_path.
         
         Removes all current selections and loads selections from given filename.
@@ -1075,8 +1080,9 @@ class Measurement:
         Args:
             filename: String representing (full) directory to selection
             file_path.
+            progress_bar: A progress bar used when opening a measurement.
         """
-        self.selector.load(filename)
+        self.selector.load(filename, progress_bar)
 
     def generate_tof_in(self):
         """ Generate tof.in file for external programs.

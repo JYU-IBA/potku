@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 3.7.2018
+Updated on 2.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,18 +28,16 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import platform
-import subprocess
-
-import shutil
-import os
-
 import modules.masses as masses
-from modules.foil import CircularFoil
-
+import os
+import platform
+import shutil
+import subprocess
 import tempfile
 import threading
 import time
+
+from modules.foil import CircularFoil
 
 
 class MCERD:
@@ -66,22 +64,28 @@ class MCERD:
         # In case of Linux and Mac this will be /tmp and in Windows this will
         # be the C:\Users\<username>\AppData\Local\Temp.
         self.tmp = tempfile.gettempdir()
+        self.tmp = self.__settings["sim_dir"]
+
+        simulation_type = self.__settings["simulation_type"]
+        if simulation_type == "ERD":
+            suffix = ".recoil"
+        else:
+            suffix = ".scatter"
 
         # The recoil file and erd file are later passed to get_espe.
         self.recoil_file = os.path.join(self.tmp, self.__rec_filename +
-                                        ".recoil")
+                                        suffix)
         self.result_file = os.path.join(self.tmp, self.__rec_filename + "." +
                                         str(self.__settings["seed_number"]) +
                                         ".erd")
         self.__create_mcerd_files()
 
         # The command that is used to start the MCERD process.
-        mcerd_command = os.path.join("external", "Potku-bin", "mcerd" +
-                                     (".exe " if platform.system() == "Windows"
-                                      else "_mac " if platform.system() == "Darwin"
-                                      else " ") +
-                                     os.path.join(self.tmp,
-                                                  self.__rec_filename))
+        mcerd_command = os.path.join(
+            "external", "Potku-bin", "mcerd" +
+            (".exe " if platform.system() == "Windows"
+             else "_mac " if platform.system() == "Darwin"
+             else " ") + os.path.join(self.tmp, self.__rec_filename))
 
         # Start the MCERD process.
         # MCERD needs to be fixed so we can get rid of this ulimit.
@@ -100,7 +104,7 @@ class MCERD:
         """
         while True:
             try:
-                time.sleep(5)
+                time.sleep(10)
                 if self.__process.poll() == 0:
                     self.parent.notify(self)
                     break
@@ -112,7 +116,7 @@ class MCERD:
         used_os = platform.system()
         if used_os == "Windows":
             cmd = "TASKKILL /F /PID " + str(self.__process.pid) + " /T"
-            subprocess.Popen(cmd)
+            subprocess.call(cmd)
             self.__process = None
         elif used_os == "Linux" or used_os == "Darwin":
             self.__process.kill()
@@ -287,18 +291,25 @@ class MCERD:
                 file_target.write("ZBL" + "\n")
                 file_target.write(str(layer.density) + " g/cm3" + "\n")
                 for element in layer.elements:
+                    if element.amount > 1:
+                        amount = element.amount / 100
+                    else:
+                        amount = element.amount
                     file_target.write(str(count) +
-                                      (" %0.3f" % element.amount) + "\n")
+                                      (" %0.3f" % amount) + "\n")
                     count += 1
 
         # Create the MCERD foils file
         with open(self.__foils_file, "w") as file_foils:
             for foil in detector.foils:
                 for layer in foil.layers:
+                    # Write only one layer since mcerd soesn't know how to
+                    # handle multiple layers in a foil
                     for element in layer.elements:
                         mass = masses.find_mass_of_isotope(element)
                         file_foils.write("%0.2f %s" % (mass,
                                                        element.symbol) + "\n")
+                    break
 
             # An indexed list of all elements is written first.
             # Then layers and their elements referencing the index.
@@ -311,9 +322,14 @@ class MCERD:
                     file_foils.write("ZBL" + "\n")
                     file_foils.write(str(layer.density) + " g/cm3" + "\n")
                     for element in layer.elements:
+                        if element.amount > 1:
+                            amount = element.amount / 100
+                        else:
+                            amount = element.amount
                         file_foils.write(str(count) +
-                                         (" %0.3f" % element.amount) + "\n")
+                                         (" %0.3f" % amount) + "\n")
                         count += 1
+                    break
 
         recoil_element.write_recoil_file(self.recoil_file)
 
@@ -341,3 +357,29 @@ class MCERD:
             shutil.copy(self.recoil_file, destination)
         except FileNotFoundError:
             raise
+
+    def delete_unneeded_files(self):
+        """
+        Delete mcerd files that are not needed anymore.
+        """
+        try:
+            os.remove(self.__command_file)
+            os.remove(self.__detector_file)
+            os.remove(self.__target_file)
+            os.remove(self.__foils_file)
+        except OSError:
+            pass  # Could not delete all the files
+
+        for file in os.listdir(self.tmp):
+            if file.startswith(self.__rec_filename):
+                if file.endswith(".out") or file.endswith(".dat") or \
+                   file.endswith(".range"):
+                    try:
+                        os.remove(os.path.join(self.tmp, file))
+                    except OSError:
+                        continue  # Could not delete the file
+            if file.startswith(self.__rec_filename) and file.endswith(".pre"):
+                try:
+                    os.remove(os.path.join(self.tmp, file))
+                except OSError:
+                    pass

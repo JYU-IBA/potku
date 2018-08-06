@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 11.7.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -35,21 +35,23 @@ class RecoilElement:
     """An element that has a list of points and a widget. The points are kept
     in ascending order by their x coordinate.
     """
-    def __init__(self, element, points, name="Default"):
+    def __init__(self, element, points, color, name="Default", rec_type="rec"):
         """Inits recoil element.
 
         Args:
             element: An Element class object.
             points: A list of Point class objects.
             name: Name of the RecoilElement object anf file.
+            rec_type: Type recoil element (rec or sct).
         """
         self.element = element
         self.name = name
         self.prefix = (Element.__str__(element)).split(" ")[0]
         self.description = "These are default recoil settings."
-        self.type = "rec"
+        self.type = rec_type
         # This is multiplied by 1e22
         self.reference_density = 4.98
+        self.multiplier = 1e22
         self._points = sorted(points)
 
         # Contains ElementWidget and SimulationControlsWidget.
@@ -66,6 +68,9 @@ class RecoilElement:
         # Area of certain limits
         self.area = None
         self.area_limits = []
+
+        # Color of the recoil
+        self.color = color
 
         self.update_zero_values()
 
@@ -191,7 +196,8 @@ class RecoilElement:
         """Writes a file of points that is given to MCERD and get_espe.
 
         Args:
-            recoil_file: File path to recoil file that ends with ".recoil".
+            recoil_file: File path to recoil file that ends with ".recoil" or
+            ".scatter".
         """
         with open(recoil_file, "w") as file_rec:
             # If there are not points all the way from 0 to 10, add this

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 30.5.2018
+Updated on 19.7.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -28,18 +28,22 @@ __author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
              "Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-from collections import OrderedDict
 import logging
 import os
+import re
+
+from collections import OrderedDict
+
+from dialogs.measurement.import_timing_graph import ImportTimingGraphDialog
+
+from modules.general_functions import coinc
+from modules.general_functions import open_files_dialog
+
 from PyQt5 import uic
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
-import re
-from time import clock
 
-from dialogs.measurement.import_timing_graph import ImportTimingGraphDialog
-from modules.general_functions import open_files_dialog
-from modules.general_functions import coinc
+from time import clock
 
 
 class ImportMeasurementsDialog(QtWidgets.QDialog):
@@ -95,7 +99,9 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         files = open_files_dialog(self,
                                   self.request.directory,
                                   "Select an event collection to be imported",
-                                  "Event collection (*.evnt)")[0]
+                                  "Event collection (*.evnt)")
+        if not files:
+            return
         for file in files:
             if file in self.__files_added:
                 continue

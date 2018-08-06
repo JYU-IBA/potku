@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.4.2018
-Updated on 30.5.2018
+Updated on 23.7.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,14 +28,16 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
+import modules.masses as masses
+
 import os
 
-from PyQt5 import QtCore
-from PyQt5 import uic
-from PyQt5 import QtWidgets
-
-import modules.masses as masses
 from dialogs.element_selection import ElementSelectionDialog
+
+from PyQt5 import QtCore
+from PyQt5 import QtGui
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 
 
 class RecoilElementSelectionDialog(QtWidgets.QDialog):
@@ -47,11 +49,17 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         """Inits simulation element selection dialog.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                  "ui_recoil_element_selection_dialog.ui"),
-                             self)
+        self.ui = uic.loadUi(
+            os.path.join("ui_files", "ui_recoil_element_selection_dialog.ui"),
+            self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.recoil_atom_distribution = recoil_atom_distribution
+
+        self.element = None
+        self.isotope = None
+        self.color = None
+        self.tmp_element = None
+        self.colormap = self.recoil_atom_distribution.colormap
 
         # Setup connections
         self.ui.element_button.clicked.connect(self.__change_sample_element)
@@ -59,14 +67,54 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
 
         self.ui.OKButton.clicked.connect(self.__accept_settings)
         self.ui.cancelButton.clicked.connect(self.close)
-
-        self.element = None
-        self.isotope = None
+        self.ui.colorPushButton.clicked.connect(self.__change_color)
 
         # Whether we accept or cancel selection, then remove selection if
         # cancel.
         self.isOk = False
         self.exec_()
+
+    def __set_color_button_color(self, element):
+        """Set default color of element to color button.
+
+        Args:
+            element: String representing element.
+        """
+        self.ui.colorPushButton.setEnabled(True)
+        if element and element != "Select":
+            self.color = QtGui.QColor(self.colormap[element])
+            self.__change_color_button_color(element)
+
+    def __change_color(self):
+        """
+        Change the color of the recoil element.
+        """
+        dialog = QtWidgets.QColorDialog(self)
+        color = dialog.getColor(QtGui.QColor(self.color))
+        if color.isValid():
+            self.color = color
+            self.__change_color_button_color(self.tmp_element)
+
+    def __change_color_button_color(self, element):
+        """
+        Change color button's color.
+
+        Args:
+            element: String representing element name.
+        """
+        text_color = "black"
+        luminance = 0.2126 * self.color.red() + 0.7152 * self.color.green()
+        luminance += 0.0722 * self.color.blue()
+        if luminance < 50:
+            text_color = "white"
+        style = "background-color: {0}; color: {1};".format(self.color.name(),
+                                                            text_color)
+        self.ui.colorPushButton.setStyleSheet(style)
+
+        if self.color.name() == self.colormap[element]:
+            self.ui.colorPushButton.setText("Automatic [{0}]".format(element))
+        else:
+            self.ui.colorPushButton.setText("")
 
     def __change_sample_element(self):
         """Shows dialog to change selection element.
@@ -103,6 +151,8 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
             self.__enable_element_fields(dialog.element, isotope_combobox,
                                          isotope_radio, standard_mass_radio,
                                          standard_mass_label, sample)
+            self.__set_color_button_color(dialog.element)
+            self.tmp_element = dialog.element
 
     def __enable_element_fields(self, element, isotope_combobox,
                                 isotope_radio, standard_mass_radio,

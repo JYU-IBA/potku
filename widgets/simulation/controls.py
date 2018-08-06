@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 4.7.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -39,17 +39,19 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         element_simulation: ElementSimulation object.
     """
 
-    def __init__(self, element_simulation):
+    def __init__(self, element_simulation, recoil_dist_widget):
         """
         Initializes a SimulationControlsWidget.
 
         Args:
              element_simulation: An ElementSimulation class object.
+             recoil_dist_widget: RecoilAtomDistributionWidget.
         """
         super().__init__()
 
         self.element_simulation = element_simulation
         self.element_simulation.controls = self
+        self.recoil_dist_widget = recoil_dist_widget
 
         main_layout = QtWidgets.QHBoxLayout()
         recoil_element = self.element_simulation.recoil_elements[
@@ -101,11 +103,30 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         processes_widget = QtWidgets.QWidget()
         processes_widget.setLayout(processes_layout)
 
+        # Show finished processes
+        self.finished_processes_widget = QtWidgets.QWidget()
+        r_p_layout = QtWidgets.QFormLayout()
+        r_p_layout.setContentsMargins(0, 6, 0, 0)
+        l_1 = QtWidgets.QLabel("Finished processes: ")
+        self.finished_processes_label = QtWidgets.QLabel("0/1")
+
+        # Observed atom count
+        l_2 = QtWidgets.QLabel("Observed atoms: ")
+        self.observed_atom_count_label = QtWidgets.QLabel("0")
+
+        r_p_layout.addRow(l_1, self.finished_processes_label)
+        r_p_layout.addRow(l_2, self.observed_atom_count_label)
+
+        self.finished_processes_widget.setLayout(r_p_layout)
+
         state_and_controls_layout = QtWidgets.QVBoxLayout()
         state_and_controls_layout.setContentsMargins(6, 6, 6, 6)
         state_and_controls_layout.addWidget(processes_widget)
+        state_and_controls_layout.addWidget(self.finished_processes_widget)
         state_and_controls_layout.addWidget(state_widget)
         state_and_controls_layout.addWidget(controls_widget)
+
+        self.finished_processes_widget.hide()
 
         controls_group_box.setLayout(state_and_controls_layout)
 
@@ -113,14 +134,62 @@ class SimulationControlsWidget(QtWidgets.QWidget):
 
         self.setLayout(main_layout)
 
+    def reset_controls(self):
+        """
+        Reset controls to default.
+        """
+        self.finished_processes_widget.hide()
+        self.observed_atom_count_label.setText("0")
+        self.state_label.setText("Not started")
+
     def __start_simulation(self):
         """ Calls ElementSimulation's start method.
         """
         number_of_processes = self.processes_spinbox.value()
-        self.element_simulation.start(number_of_processes)
         self.state_label.setText("Running")
         self.run_button.setEnabled(False)
         self.stop_button.setEnabled(True)
+
+        self.finished_processes_label.setText("0/" + str(number_of_processes))
+        self.finished_processes_widget.show()
+        self.processes_spinbox.setEnabled(False)
+
+        # Lock full edit
+        self.element_simulation.lock_edit()
+        if self.recoil_dist_widget.current_element_simulation is \
+           self.element_simulation:
+            self.recoil_dist_widget.full_edit_on = False
+            self.recoil_dist_widget.edit_lock_push_button.setText(
+                "Unlock full edit")
+            self.recoil_dist_widget.update_plot()
+        self.element_simulation.y_min = 0.0001
+
+        self.element_simulation.start(number_of_processes)
+
+    def show_number_of_observed_atoms(self, number):
+        """
+        Show the number of observed atoms in the coltrols.
+
+        Args:
+            number: Observed atom number.
+        """
+        try:
+            self.observed_atom_count_label.setText(str(number))
+        except RuntimeError:
+            pass
+
+    def update_finished_processes(self, running_processes):
+        """
+        Update the amount of finished processes.
+
+        Args:
+            running_processes: Number of running processes.
+        """
+        all_proc = self.processes_spinbox.value()
+        finished = all_proc - running_processes
+
+        self.finished_processes_label.setText(
+            str(finished) + "/" + str(all_proc))
 
     def __stop_simulation(self):
         """ Calls ElementSimulation's stop method.
@@ -146,3 +215,4 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.state_label.setText("Finished")
         self.run_button.setEnabled(True)
         self.stop_button.setEnabled(False)
+        self.processes_spinbox.setEnabled(True)

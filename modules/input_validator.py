@@ -1,15 +1,13 @@
 # coding=utf-8
 """
-Created on 10.5.2013
-Updated on 30.5.2018
+Created on 3.8.2018
+Updated on 6.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
 telescope. For physics calculations Potku uses external 
 analyzation components.  
-Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
-Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
-Sinikka Siironen
+Copyright (C) 2018 Heta Rekilä
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,33 +22,28 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
-             "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
-             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+__author__ = "Heta Rekilä"
 __version__ = "2.0"
-from PyQt5.QtGui import QDoubleValidator
+
+import re
+
 from PyQt5.QtGui import QValidator
-from sys import float_info
 
 
-class InputValidator(QDoubleValidator):
+class InputValidator(QValidator):
     """Validator to check the validity of user inputs.
     
     Accepts double values with scientific notation (i.e. 0.232, 12.5e-12) and
     turns empty input to 0.0 and commas (,) to points (.).
     """
-    def __init__(self, bottom=float_info.min, top=float_info.max,
-                 decimals=float_info.dig, parent=None):
+    def __init__(self):
         """Initiates the class.
-        
-        Args:
-            bottom: Float minimum value.
-            top: Float maximum value.
-            decimals: Integer representing decimals.
-            parent: Parent object.
         """
-        QDoubleValidator.__init__(self, bottom, top, decimals, parent)
-        self.setNotation(QDoubleValidator.ScientificNotation)
+        super().__init__()
+
+        self.float_re_1 = re.compile(
+            r'(-?\d+(((\.\d+)|\d*)[eE]?[+-]?\d*))|(-?)')
+        self.float_re_2 = re.compile(r'(-?\d+\.)')
 
     def validate(self, input_value, pos):
         """Validates the given input. Overrides the QDoubleValidator's validate 
@@ -60,11 +53,13 @@ class InputValidator(QDoubleValidator):
             input_value: User given string to be validated.
             pos: Cursor position (if required).
         """
-        input_value = input_value.replace(",", ".")
-        state, pos, a = QDoubleValidator.validate(self, input_value, pos)
-        if input_value == "" or input_value == '.':
-            pos = "0.0"
-            return QValidator.Intermediate, pos, a
-        if state != QValidator.Acceptable:
-            return QValidator.Invalid, pos, a
-        return QValidator.Acceptable, pos, a
+        match = re.match(self.float_re_2, input_value)
+        if match and match.group(0) == input_value:
+            return match.group(0)
+        else:
+            match = re.match(self.float_re_1, input_value)
+            if match:
+                return match.group(0)
+            else:
+                return ""
+

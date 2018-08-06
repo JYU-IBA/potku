@@ -249,12 +249,16 @@
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_6">
             <item>
-             <widget class="QLabel" name="label_efficiency_files">
-              <property name="toolTip">
-               <string>Efficiency files used to calculate Depth Profile. The folder in which efficiency files are looked for can be changed in global settings.</string>
-              </property>
+             <widget class="QLabel" name="label_10">
               <property name="text">
-               <string>Efficiency files label</string>
+               <string>Number of depth steps:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="label_depthnumber">
+              <property name="text">
+               <string>TextLabel</string>
               </property>
              </widget>
             </item>
@@ -276,16 +280,12 @@
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_15">
             <item>
-             <widget class="QLabel" name="label_10">
-              <property name="text">
-               <string>Number of depth steps:</string>
+             <widget class="QLabel" name="label_efficiency_files">
+              <property name="toolTip">
+               <string>Efficiency files used to calculate Depth Profile. The folder in which efficiency files are looked for can be changed in global settings.</string>
               </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="label_depthnumber">
               <property name="text">
-               <string>TextLabel</string>
+               <string>Efficiency files label</string>
               </property>
              </widget>
             </item>

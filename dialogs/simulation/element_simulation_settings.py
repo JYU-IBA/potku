@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.4.2018
-Updated on 2.7.2018
+Updated on 3.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,25 +28,29 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 
 import os
+import time
+
+from modules.general_functions import check_text
+from modules.general_functions import delete_simulation_results
+from modules.general_functions import set_input_field_red
+from modules.general_functions import validate_text_input
+
 from PyQt5 import uic
 from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt
-import time
-from modules.general_functions import set_input_field_red
-from modules.general_functions import check_text
-from modules.general_functions import validate_text_input
 from PyQt5.QtCore import QLocale
+from PyQt5.QtCore import Qt
 
 
 class ElementSimulationSettingsDialog(QtWidgets.QDialog):
     """Class for creating an element simulation settings tab.
     """
-    def __init__(self, element_simulation):
+    def __init__(self, element_simulation, tab):
         """
-        Inintializes the dialog.
+        Initializes the dialog.
 
         Args:
             element_simulation: An ElementSimulation object.
+            tab: A SimulationTabWidget.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
@@ -58,6 +62,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         self.ui.cancelPushButton.clicked.connect(self.close)
 
         self.element_simulation = element_simulation
+        self.tab = tab
 
         self.use_default_settings = element_simulation.use_default_settings
 
@@ -72,6 +77,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             self.ui.nameLineEdit, self))
         self.original_use_default_settings = \
             self.ui.useRequestSettingsValuesCheckBox.isChecked()
+        self.original_simulation_type = self.element_simulation.simulation_type
 
         self.show_settings()
 
@@ -170,12 +176,8 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         """
         if self.ui.useRequestSettingsValuesCheckBox.isChecked():
             self.ui.settingsGroupBox.setEnabled(False)
-            self.use_default_settings = True
-            self.element_simulation.use_default_settings = True
         else:
             self.ui.settingsGroupBox.setEnabled(True)
-            self.use_default_settings = False
-            self.element_simulation.use_default_settings = False
 
     def update_settings_and_close(self):
         """Updates settings and closes the dialog."""
@@ -190,6 +192,13 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         If default settings are not used, read settings from dialog,
         put them to element simulation and save them to file.
         """
+        if self.ui.useRequestSettingsValuesCheckBox.isChecked():
+            self.use_default_settings = True
+            self.element_simulation.use_default_settings = True
+        else:
+            self.use_default_settings = False
+            self.element_simulation.use_default_settings = False
+
         if not self.fields_are_valid and not self.use_default_settings:
             QtWidgets.QMessageBox.critical(self, "Warning",
                                            "Some of the setting values have"
@@ -206,10 +215,15 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             self.__close = True
             return
 
+        only_seed_changed = False
         # If element simulation settings are used and they have not been changed
         if not self.use_default_settings and not self.values_changed():
-            self.__close = True
-            return
+            if self.ui.seedSpinBox.value() != \
+                    self.element_simulation.seed_number:
+                only_seed_changed = True
+            else:
+                self.__close = True
+                return
 
         simulation_run = self.element_simulation.simulations_done
         simulation_running = self.simulation_running()
@@ -219,7 +233,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         else:
             settings = "element simulation"
 
-        if simulation_run:
+        if simulation_run and not only_seed_changed:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulated simulation",
                 "This is a simulation that uses " + settings +
@@ -233,9 +247,33 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 self.__close = False
                 return
             else:
-                pass
-                # TODO: Delete files
-        elif simulation_running:
+                for recoil in self.element_simulation.recoil_elements:
+                    # Delete files
+                    delete_simulation_results(self.element_simulation, recoil)
+
+                    # Delete energy spectra that use recoil
+                    for energy_spectra in self.tab.energy_spectrum_widgets:
+                        for element_path in energy_spectra.\
+                          energy_spectrum_data.keys():
+                            elem = recoil.prefix + "-" + recoil.name
+                            if elem in element_path:
+                                index = element_path.find(elem)
+                                if element_path[index - 1] == os.path.sep and \
+                                   element_path[index + len(elem)] == '.':
+                                    self.tab.del_widget(energy_spectra)
+                                    self.tab.energy_spectrum_widgets.remove(
+                                        energy_spectra)
+                                    break
+                # Reset controls
+                if self.element_simulation.controls:
+                    self.element_simulation.controls.reset_controls()
+                # Change full edit unlocked
+                self.element_simulation.recoil_elements[0].widgets[0].\
+                    parent.edit_lock_push_button.setText(
+                    "Full edit unlocked")
+                self.element_simulation.simulations_done = False
+
+        elif simulation_running and not only_seed_changed:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulation running",
                 "This simulation is running and uses " + settings +
@@ -254,7 +292,58 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 self.element_simulation.controls.state_label.setText("Stopped")
                 self.element_simulation.controls.run_button.setEnabled(True)
                 self.element_simulation.controls.stop_button.setEnabled(False)
-                # TODO: Delete files
+                # Delete files
+                for recoil in self.element_simulation.recoil_elements:
+                    # Delete files
+                    delete_simulation_results(self.element_simulation, recoil)
+
+                    # Delete energy spectra that use recoil
+                    for energy_spectra in self.tab.energy_spectrum_widgets:
+                        for element_path in energy_spectra. \
+                                energy_spectrum_data.keys():
+                            elem = recoil.prefix + "-" + recoil.name
+                            if elem in element_path:
+                                index = element_path.find(elem)
+                                if element_path[index - 1] == os.path.sep and \
+                                        element_path[index + len(elem)] == '.':
+                                    self.tab.del_widget(energy_spectra)
+                                    self.tab.energy_spectrum_widgets.remove(
+                                        energy_spectra)
+                                    break
+
+                # Reset controls
+                if self.element_simulation.controls:
+                    self.element_simulation.controls.reset_controls()
+                # Change full edit unlocked
+                self.element_simulation.recoil_elements[0].widgets[0].\
+                    parent.edit_lock_push_button.setText(
+                    "Full edit unlocked")
+                self.element_simulation.simulations_done = False
+
+        if only_seed_changed:
+            # If there are running simulation that use the same seed as the
+            # new one, stop them
+            seed = self.ui.seedSpinBox.value()
+            running_simulation = self.running_simulation_by_seed(seed)
+            if running_simulation:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Running simulations",
+                    "There is a simulation process that has the same seed "
+                    "number as the new one.\nIf you save changes, this "
+                    "simulation process will be stopped (but its results will "
+                    "not be deleted).\n\nDo you want save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel,
+                    QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    self.__close = False
+                    return
+                else:
+                    # Stop the running simulation's mcerd process
+                    # that corresponds to seed
+                    running_simulation.mcerd_objects[seed].stop_process()
+                    del (running_simulation.mcerd_objects[seed])
 
         # Delete .mcsimu file if exists
         filename_to_remove = ""
@@ -346,6 +435,32 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                              self.element_simulation.request.
                              default_element_simulation.name + ".mcsimu"))
 
+        # Update recoil type
+        if self.original_simulation_type != \
+                self.element_simulation.simulation_type:
+            for recoil in self.element_simulation.recoil_elements:
+                if self.element_simulation.simulation_type == "ERD":
+                    recoil.type = "rec"
+                    try:
+                        path_to_rec = os.path.join(
+                            self.element_simulation.directory,
+                            recoil.prefix + "-" + recoil.name + ".sct")
+                        os.remove(path_to_rec)
+                    except OSError:
+                        pass
+
+                else:
+                    recoil.type = "sct"
+                    try:
+                        path_to_sct = os.path.join(
+                            self.element_simulation.directory,
+                            recoil.prefix + "-" + recoil.name + ".rec")
+                        os.remove(path_to_sct)
+                    except OSError:
+                        pass
+                self.element_simulation.recoil_to_file(
+                    self.element_simulation.directory, recoil)
+
         self.__close = True
 
     def values_changed(self):
@@ -407,3 +522,17 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 self.element_simulation.simulation.running_simulations:
             return True
         return False
+
+    def running_simulation_by_seed(self, seed):
+        """
+        Check if element simulation has man mcerd process with the given seed.
+
+        Args:
+            seed: Seed number.
+
+        Return:
+            Current element simulation.
+        """
+        if seed in self.element_simulation.mcerd_objects.keys():
+            return self.element_simulation
+        return None
