@@ -80,8 +80,8 @@ class RecoilInfoDialog(QtWidgets.QDialog):
         self.__ui.referenceDensityDoubleSpinBox.setValue(
             recoil_element.reference_density)
         self.__scientific_spinbox = ScientificDoubleSpinBox(recoil_element,
-                                                            0.00, 99.99e22, 2)
-        # self.__ui.formLayout.addWidget(self.__scientific_spinbox)
+                                                            0.00, 99.99e22)
+        self.__ui.formLayout.addWidget(self.__scientific_spinbox)
         self.description = ""
         self.isOk = False
 
