@@ -1,7 +1,7 @@
 ﻿# coding=utf-8
 """
 Created on 18.4.2013
-Updated on 8.6.2018
+Updated on 7.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,15 +28,21 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
+
+import modules.masses as masses
+
+from dialogs.graph_settings import TofeGraphSettingsWidget
+from dialogs.measurement.selection import SelectionSettingsDialog
+
 from matplotlib import cm
 from matplotlib.colors import LogNorm
-from PyQt5 import QtCore, QtWidgets
 
-from dialogs.measurement.selection import SelectionSettingsDialog
-from dialogs.graph_settings import TofeGraphSettingsWidget
 from modules.general_functions import open_file_dialog
+
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+
 from widgets.matplotlib.base import MatplotlibWidget
-import modules.masses as masses
 
 
 class MatplotlibHistogramWidget(MatplotlibWidget):
@@ -313,11 +319,13 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
             if element.isotope:
                 isotope_str = str(int(element.isotope))
+                add = r"$^{" + isotope_str + "}$"
             else:
                 isotope_str = str(
                     int(masses.get_standard_isotope(element.symbol)))
+                add = ""
 
-            label = r"$^{" + isotope_str + "}$" + element.symbol + rbs_string
+            label = add + element.symbol + rbs_string
 
             selection_legend[key_string] = (label, isotope_str, sel.points)
 

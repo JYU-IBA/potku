@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 3.8.2018
+Updated on 7.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,7 +29,6 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __version__ = "2.0"
 
 import matplotlib
-import modules.masses as masses
 import os
 
 from dialogs.simulation.element_simulation_settings import \
@@ -42,6 +41,7 @@ from dialogs.simulation.recoil_info_dialog import RecoilInfoDialog
 from matplotlib import offsetbox
 from matplotlib.widgets import RectangleSelector
 from matplotlib.widgets import SpanSelector
+
 from modules.element import Element
 from modules.general_functions import delete_simulation_results
 from modules.general_functions import find_nearest
@@ -168,9 +168,9 @@ class ElementManager:
         for xy in xys:
             points.append(Point(xy))
 
-        if element.isotope is None:
-            element.isotope = int(round(masses.get_standard_isotope(
-                element.symbol)))
+        # if element.isotope is None:
+        #     element.isotope = int(round(masses.get_standard_isotope(
+        #         element.symbol)))
 
         if self.simulation.request.default_element_simulation.simulation_type\
                 == "ERD":
@@ -990,11 +990,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         dialog = RecoilElementSelectionDialog(self)
         if dialog.isOk:
-            if dialog.isotope is None:
-                isotope = int(round(masses.get_standard_isotope(
-                    dialog.element)))
-            else:
-                isotope = dialog.isotope
+            # if dialog.isotope is None:
+            #     isotope = int(round(masses.get_standard_isotope(
+            #         dialog.element)))
+            # else:
+            isotope = dialog.isotope
             element_simulation = self.add_element(Element(
                 dialog.element, isotope), color=dialog.color)
 

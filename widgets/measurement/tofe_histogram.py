@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2013
-Updated on 30.5.2018
+Updated on 7.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -30,6 +30,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import os
+
 from PyQt5 import QtCore
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -91,6 +92,8 @@ class TofeHistogramWidget(QtWidgets.QWidget):
         measurement.
         """
         # self.measurement.request.save_cuts(self.measurement)
+        # TODO: Fix this to work when there are masters and slaves
+        pass
 
     def __set_shortcuts(self):
         """Set shortcuts for the ToF-E histogram.
