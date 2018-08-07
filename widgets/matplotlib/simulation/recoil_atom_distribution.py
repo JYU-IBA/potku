@@ -500,7 +500,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             new_values = {"name": dialog.name,
                           "description": dialog.description,
                           "reference_density": dialog.reference_density,
-                          "color": dialog.color}
+                          "color": dialog.color,
+                          "multiplier": dialog.multiplier}
             try:
                 self.current_element_simulation.update_recoil_element(
                     self.current_recoil_element,
@@ -1317,6 +1318,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.__button_area_calculation.setEnabled(False)
 
     def __update_multiply_action(self):
+        """
+        Update the correct value to show from clipboard.
+        """
         self.ratio_str = self.clipboard.text()
         self.coordinates_widget.actionXMultiply.setText(
             "Multiply with value in clipboard\n(" + self.ratio_str + ")")

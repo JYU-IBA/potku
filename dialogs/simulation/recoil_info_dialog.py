@@ -33,15 +33,12 @@ import time
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
-from PyQt5.QtCore import QLocale
 
 from modules.general_functions import check_text
 from modules.general_functions import set_input_field_red
 from modules.general_functions import validate_text_input
 
-from widgets.scientific_spinbox import ScientificDoubleSpinBox
-
-from modules.input_validator import InputValidator
+from widgets.scientific_spinbox import ScientificSpinBox
 
 
 class RecoilInfoDialog(QtWidgets.QDialog):
@@ -61,15 +58,12 @@ class RecoilInfoDialog(QtWidgets.QDialog):
                                             "ui_recoil_info_dialog.ui"),
                                self)
 
-        locale = QLocale.c()
-        self.__ui.referenceDensityDoubleSpinBox.setLocale(locale)
-
         self.__ui.okPushButton.clicked.connect(self.__accept_settings)
         self.__ui.cancelPushButton.clicked.connect(self.close)
         self.__ui.colorPushButton.clicked.connect(self.__change_color)
 
         set_input_field_red(self.__ui.nameLineEdit)
-        self.fields_are_valid = False
+        self.text_is_valid = True
         self.__ui.nameLineEdit.textChanged.connect(
             lambda: self.__check_text(self.__ui.nameLineEdit, self))
 
@@ -77,11 +71,16 @@ class RecoilInfoDialog(QtWidgets.QDialog):
         self.__ui.nameLineEdit.setText(recoil_element.name)
         self.__ui.descriptionLineEdit.setPlainText(
             recoil_element.description)
-        self.__ui.referenceDensityDoubleSpinBox.setValue(
-            recoil_element.reference_density)
-        self.__scientific_spinbox = ScientificDoubleSpinBox(recoil_element,
-                                                            0.00, 99.99e22)
-        # self.__ui.formLayout.addWidget(self.__scientific_spinbox)
+
+        self.__scientific_spinbox = ScientificSpinBox(recoil_element,
+                                                            0.01, 99.99e22)
+        self.__ui.formLayout.insertRow(4, QtWidgets.QLabel(r"Reference "
+                                                           "density "
+                                                           "[at./cm"
+                                                           "<sup>2</sup>]:"),
+                                       self.__scientific_spinbox)
+        self.__ui.formLayout.removeRow(self.__ui.widget)
+
         self.description = ""
         self.isOk = False
 
@@ -109,14 +108,25 @@ class RecoilInfoDialog(QtWidgets.QDialog):
 
         self.exec_()
 
+    def __density_valid(self):
+        """
+        Check if density value is valid and in limits.
+
+        Return:
+            True or False.
+        """
+        if self.__scientific_spinbox.check_min_and_max():
+            return True
+        return False
+
     def __accept_settings(self):
         """Function for accepting the current settings and closing the dialog
         window.
         """
-        if not self.fields_are_valid:
+        if not self.text_is_valid or not self.__density_valid():
             QtWidgets.QMessageBox.critical(self, "Warning",
-                                           "Some of the setting values have"
-                                           " not been set.\n" +
+                                           "Some of the setting values are "
+                                           "invalid.\n" +
                                            "Please input values in fields "
                                            "indicated in red.",
                                            QtWidgets.QMessageBox.Ok,
@@ -125,8 +135,8 @@ class RecoilInfoDialog(QtWidgets.QDialog):
         else:
             self.name = self.__ui.nameLineEdit.text()
             self.description = self.__ui.descriptionLineEdit.toPlainText()
-            self.reference_density = self.__ui.referenceDensityDoubleSpinBox\
-                .value()
+            self.reference_density = self.__scientific_spinbox.value
+            self.multiplier = self.__scientific_spinbox.multiplier
             self.color = self.tmp_color
             self.isOk = True
             self.__close = True
