@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 14.6.2018
+Updated on 7.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -96,7 +96,7 @@ class Detector:
                                        [Layer("Layer_12C",
                                               [Element("C", 12.011, 1)],
                                               13.0, 2.25, 0.0)]),
-                          CircularFoil("Foil3", 18.0, 942.0,
+                          CircularFoil("Foil3", 18.0, 979.0,
                                        [Layer("Layer_12C",
                                               [Element("C", 12.011, 1)],
                                               44.4, 2.25, 0.0)]),
