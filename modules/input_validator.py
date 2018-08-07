@@ -43,7 +43,8 @@ class InputValidator(QValidator):
 
         self.float_re_1 = re.compile(
             r'(-?\d+(((\.\d+)|\d*)[eE]?[+-]?\d*))|(-?)')
-        self.float_re_2 = re.compile(r'(-?\d+\.)')
+        self.float_re_2 = re.compile(r'(-?\d+\.$)')
+        self.float_re_3 = re.compile(r'(.*[^eE][+-].*)')
 
     def validate(self, input_value, pos):
         """Validates the given input. Overrides the QDoubleValidator's validate 
@@ -53,11 +54,32 @@ class InputValidator(QValidator):
             input_value: User given string to be validated.
             pos: Cursor position (if required).
         """
-        match = re.match(self.float_re_2, input_value)
-        if match and match.group(0) == input_value:
+        new_result_2 = None
+        match_2 = re.match(self.float_re_3, input_value)
+        if match_2:
+            new_result = input_value[1:].replace("-", "")
+            new_result_2 = input_value[0] + new_result.replace("+", "")
+            if "e+" in input_value and not "e+" in new_result_2:
+                nr = new_result_2[1:].replace("e", "e+")
+                new_result_2 = input_value[0] + nr
+            elif "e-" in input_value and not "e-" in new_result_2:
+                nr = new_result_2[1:].replace("e", "e-")
+                new_result_2 = input_value[0] + nr
+
+        if new_result_2:
+            input = new_result_2
+        else:
+            input = input_value
+
+        match = re.match(self.float_re_2, input)
+        if match:
             return match.group(0)
         else:
-            match = re.match(self.float_re_1, input_value)
+            if len(input) > 1 and input[len(input) - 1] == 'e':
+                match = re.match(self.float_re_2, input[:len(input) - 1])
+                if match:
+                    return match.group(0)
+            match = re.match(self.float_re_1, input)
             if match:
                 return match.group(0)
             else:

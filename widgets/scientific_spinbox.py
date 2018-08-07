@@ -27,6 +27,8 @@ __version__ = "2.0"
 
 import os
 
+from decimal import Decimal
+
 from modules.input_validator import InputValidator
 
 from PyQt5 import QtWidgets
@@ -37,7 +39,7 @@ class ScientificDoubleSpinBox(QtWidgets.QWidget):
     """
     Class for custom double spinbox that handles scientific notation.
     """
-    def __init__(self, recoil_element, minimum, maximum, decimals):
+    def __init__(self, recoil_element, minimum, maximum):
         """
         Initializes the spinbox.
 
@@ -45,7 +47,6 @@ class ScientificDoubleSpinBox(QtWidgets.QWidget):
             recoil_element: A RecoilElement object.
             minimum: Minimum allowed value.
             maximum: Maximum allowed value.
-            decimals: Number of decimals.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
@@ -55,23 +56,84 @@ class ScientificDoubleSpinBox(QtWidgets.QWidget):
         self.validator = InputValidator()
         self.minimum = minimum
         self.maximum = maximum
-        self.decimals = decimals
 
         self.recoil_element = recoil_element
         self.ui.scientificLineEdit.setText(str(
             self.recoil_element.reference_density) + str(
             self.recoil_element.multiplier)[1:])
+        self.value = self.recoil_element.reference_density
+        self.multiplier = self.recoil_element.multiplier
 
         self.ui.scientificLineEdit.textChanged.connect(lambda: self.validate(
             self.ui.scientificLineEdit.cursorPosition()
         ))
 
+        self.ui.upButton.clicked.connect(self.increase_value)
+        self.ui.downButton.clicked.connect(self.decrease_value)
+
+    def decrease_value(self):
+        """
+        Decrease the value of the spinbox. If scientific notation is used,
+        decrease before the 'e'. If not, decrease the smallest decimal.
+        """
+        value_str = self.ui.scientificLineEdit.text()
+        try:
+            # If scientific notation in use
+            e_index = value_str.index('e')
+            number_part = value_str[:e_index]
+            multiply_part = value_str[e_index:]
+            parts = number_part.split('.')
+            if len(parts) == 1:  # No decimal
+                final_value = float(parts[0]) - 1
+                if final_value < 0:
+                    final_value = 0.01
+                new_text = str(final_value) + multiply_part
+            else:
+                decimals = parts[1]
+                decimal_length = len(decimals)
+                decrease = 1 / (10 ** decimal_length)
+                value_f = float(parts[0]) + float("0." + decimals) - decrease
+
+                final_value = round(value_f, decimal_length)
+
+                check_split = str(final_value).split('.')
+                add_zero = False
+                if len(check_split[1]) < len(parts[1]):
+                    add_zero = True
+
+                if add_zero:
+                    new_text = str(final_value) + "0" + multiply_part
+                else:
+                    new_text = str(final_value) + multiply_part
+
+                if final_value < 0:
+                    new_text = "0.01" + multiply_part
+
+            self.ui.scientificLineEdit.setText(new_text)
+        except ValueError:
+            pass
+            # Not scientific notation
+
+    def increase_value(self):
+        """
+        Increase the value of the spinbox. If scientific notation is used,
+       increase before the 'e'. If not, increase the smallest decimal.
+        """
+
     def validate(self, pos):
-        str = self.ui.scientificLineEdit.text()
-        match = self.validator.validate(str, pos)
+        """
+        Validate the input.
+
+        Args:
+            pos: Position of the cursor on the string of text.
+        """
+        string = self.ui.scientificLineEdit.text()
+        match = self.validator.validate(string, pos)
         try:
             if not self.minimum <= float(match) <= self.maximum:
-                match = match[:pos - 1]
+                match = match[:len(match) - 1]
+            if not float(match) <= self.maximum:
+                match = str(self.maximum)
         except ValueError:
             pass
         self.ui.scientificLineEdit.setText(match)
