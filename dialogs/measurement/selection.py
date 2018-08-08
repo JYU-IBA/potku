@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 7.8.2018
+Updated on 8.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -30,7 +30,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import modules.masses as masses
-
 import os
 
 from dialogs.element_selection import ElementSelectionDialog
@@ -143,6 +142,14 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         for i in range(self.ui.sampleType.count()):
             if self.ui.sampleType.itemText(i) == self.selection.type:
                 self.ui.sampleType.setCurrentIndex(i)
+
+        if self.selection.type == "ERD":
+            if not self.selection.element.isotope:
+                self.ui.rbs_standard_mass_radio.setChecked(True)
+
+        else:
+            if not self.selection.element_scatter.isotope:
+                self.ui.sample_standard_mass_radio.setChecked(True)
 
         self.ui.sampleWeightFactor.setValue(self.selection.weight_factor)
 

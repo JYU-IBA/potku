@@ -268,7 +268,10 @@ class MCERD:
         with open(self.__target_file, "w") as file_target:
             for layer in target.layers:
                 for element in layer.elements:
-                    mass = masses.find_mass_of_isotope(element)
+                    if element.isotope:
+                        mass = masses.find_mass_of_isotope(element)
+                    else:
+                        mass = masses.get_standard_isotope(element.symbol)
                     file_target.write("%0.2f %s" % (mass,
                                                     element.symbol) + "\n")
 

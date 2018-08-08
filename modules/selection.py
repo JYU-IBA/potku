@@ -38,8 +38,8 @@ from dialogs.measurement.selection import SelectionSettingsDialog
 
 from math import sqrt
 
-from matplotlib.path import Path
 from matplotlib.lines import Line2D
+from matplotlib.path import Path
 
 from modules.element import Element
 from modules.general_functions import rename_file
@@ -122,7 +122,7 @@ class Selector:
         self.selection_file = os.path.join(
             self.directory,
             "{0}.selections".format(self.measurement_name))
-        # List is sufficient enough. TODO: Perhaps add a new class for it.
+        # List is sufficient enough
         self.selections = []
         self.new_selection_is_allowed = True
         self.is_transposed = False
@@ -365,7 +365,8 @@ class Selector:
                 self.__remove_last()
             self.reset_colors()
             self.auto_save()
-            self.update_single_selection_points(sel)
+            if selection_is_ok:
+                self.update_single_selection_points(sel)
             self.new_selection_is_allowed = True
             return 1
         return 0

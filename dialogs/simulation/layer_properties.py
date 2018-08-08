@@ -52,7 +52,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
     """Dialog for adding a new layer or editing an existing one.
     """
 
-    def __init__(self, tab, layer=None, modify=False, simulation=None):
+    def __init__(self, tab, layer=None, modify=False, simulation=None,
+                 first_layer=False):
         """Inits a layer dialog.
 
         Args:
@@ -60,6 +61,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             layer: Layer object to be modified. None if creating a new layer.
             modify: If dialog is used to modify a layer.
             simulation: A Simulation object.
+            first_layer: Whether the dialog is used to add the first layer.
         """
         super().__init__()
         self.__ui = uic.loadUi(os.path.join("ui_files", "ui_layer_dialog.ui"),
@@ -93,6 +95,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.__show_layer_info()
         else:
             self.__add_element_layout()
+
+        if first_layer:
+            self.__ui.groupBox_2.hide()
 
         self.__ui.nameEdit.textEdited.connect(lambda: self.__validate())
         self.__close = True
