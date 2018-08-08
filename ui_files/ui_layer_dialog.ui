@@ -328,12 +328,12 @@
        <widget class="QComboBox" name="comboBox">
         <item>
          <property name="text">
-          <string>On top of the selected layer</string>
+          <string>Under the selected layer</string>
          </property>
         </item>
         <item>
          <property name="text">
-          <string>Under the selected layer</string>
+          <string>On top of the selected layer</string>
          </property>
         </item>
        </widget>
