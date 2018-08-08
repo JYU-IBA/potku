@@ -249,7 +249,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             try:
                 elem_isotope = int(children[i].currentText().split(" ")[0])
             except ValueError:
-                elem_isotope = masses.get_standard_isotope(elem_symbol)
+                elem_isotope = None
             i += 1
             elem_amount = children[i].value()
             lst.append(Element(elem_symbol, elem_isotope, elem_amount))
@@ -568,3 +568,9 @@ class ElementLayout(QtWidgets.QHBoxLayout):
         """
         masses.load_isotopes(self.element_button.text(), self.isotope_combobox,
                              current_isotope)
+        standard_isotope = masses.get_standard_isotope(
+            self.element_button.text())
+        self.isotope_combobox.insertItem(0,
+                                         "{0} (st. mass)".format(
+                                             round(standard_isotope, 3)))
+        self.isotope_combobox.setCurrentIndex(0)
