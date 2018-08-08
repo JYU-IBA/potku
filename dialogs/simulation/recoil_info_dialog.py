@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 3.5.2018
-Updated on 7.8.2018
+Updated on 8.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -46,12 +46,13 @@ class RecoilInfoDialog(QtWidgets.QDialog):
     of a recoil element.
     """
 
-    def __init__(self, recoil_element, colormap):
+    def __init__(self, recoil_element, colormap, element_simulation):
         """Inits a recoil info dialog.
 
         Args:
             recoil_element: A RecoilElement object.
             colormap: Colormap for elements.
+            element_simulation: Element simulation that has the recoil element.
         """
         super().__init__()
         self.__ui = uic.loadUi(os.path.join("ui_files",
@@ -67,7 +68,7 @@ class RecoilInfoDialog(QtWidgets.QDialog):
         self.__ui.nameLineEdit.textChanged.connect(
             lambda: self.__check_text(self.__ui.nameLineEdit, self))
 
-        self.name = ""
+        self.name = recoil_element.name
         self.__ui.nameLineEdit.setText(recoil_element.name)
         self.__ui.descriptionLineEdit.setPlainText(
             recoil_element.description)
@@ -81,7 +82,7 @@ class RecoilInfoDialog(QtWidgets.QDialog):
                                        self.__scientific_spinbox)
         self.__ui.formLayout.removeRow(self.__ui.widget)
 
-        self.description = ""
+        self.description = recoil_element.description
         self.isOk = False
 
         self.__ui.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
@@ -98,6 +99,7 @@ class RecoilInfoDialog(QtWidgets.QDialog):
         self.__ui.infoGroupBox.setTitle(title)
 
         self.recoil_element = recoil_element
+        self.element_simulation = element_simulation
 
         self.__close = True
         self.color = None
@@ -133,15 +135,45 @@ class RecoilInfoDialog(QtWidgets.QDialog):
                                            QtWidgets.QMessageBox.Ok)
             self.__close = False
         else:
-            self.name = self.__ui.nameLineEdit.text()
-            self.description = self.__ui.descriptionLineEdit.toPlainText()
-            self.reference_density = self.__scientific_spinbox.value
-            self.multiplier = self.__scientific_spinbox.multiplier
-            self.color = self.tmp_color
-            self.isOk = True
-            self.__close = True
+            # If current recoil is used in a running simulation
+            if self.recoil_element is \
+                    self.element_simulation.recoil_elements[0]:
+                if self.element_simulation.mcerd_objects and self.name != \
+                        self.__ui.nameLineEdit.text():
+                    reply = QtWidgets.QMessageBox.question(
+                        self, "Recoil used in simulation",
+                        "This recoil is used in a simulation that is "
+                        "currently running.\nIf you change the name of "
+                        "the recoil, the running simulation will be "
+                        "stopped.\n\n"
+                        "Do you want to save changes anyway?",
+                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                        QtWidgets.QMessageBox.Cancel,
+                        QtWidgets.QMessageBox.Cancel)
+                    if reply == QtWidgets.QMessageBox.No or reply == \
+                            QtWidgets.QMessageBox.Cancel:
+                        self.__close = False
+                    else:
+                        self.element_simulation.controls.stop_simulation()
+                        self.__update_values()
+                else:
+                    self.__update_values()
+            else:
+                self.__update_values()
         if self.__close:
             self.close()
+
+    def __update_values(self):
+        """
+        Update values in the dialog to be accessed outside of the dialog.
+        """
+        self.name = self.__ui.nameLineEdit.text()
+        self.description = self.__ui.descriptionLineEdit.toPlainText()
+        self.reference_density = self.__scientific_spinbox.value
+        self.multiplier = self.__scientific_spinbox.multiplier
+        self.color = self.tmp_color
+        self.isOk = True
+        self.__close = True
 
     def __change_color(self):
         """
