@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 3.8.2018
+Updated on 8.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -140,6 +140,7 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         """
         self.finished_processes_widget.hide()
         self.observed_atom_count_label.setText("0")
+        self.processes_spinbox.setEnabled(True)
         self.state_label.setText("Not started")
 
     def __start_simulation(self):
