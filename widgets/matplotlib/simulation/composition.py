@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 3.8.2018
+Updated on 8.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -224,6 +224,17 @@ class _CompositionWidget(MatplotlibWidget):
                     self.parent.tab.del_widget(energy_spectra)
                 self.parent.tab.energy_spectrum_widgets = []
 
+                for elem_sim in simulations_run:
+                    for recoil in elem_sim.recoil_elements:
+                        delete_simulation_results(elem_sim, recoil)
+                    # Change full edit unlocked
+                    elem_sim.recoil_elements[0].widgets[0].parent. \
+                        edit_lock_push_button.setText("Full edit unlocked")
+                    elem_sim.simulations_done = False
+
+                    if elem_sim.controls:
+                        elem_sim.controls.reset_controls()
+
         elif simulations_running:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulations running",
@@ -277,7 +288,6 @@ class _CompositionWidget(MatplotlibWidget):
                 self.__close = False
                 return
             else:
-                pass
                 for elem_sim in simulations_run:
                     for recoil in elem_sim.recoil_elements:
                         delete_simulation_results(elem_sim, recoil)
@@ -286,6 +296,9 @@ class _CompositionWidget(MatplotlibWidget):
                     elem_sim.recoil_elements[0].widgets[0].parent. \
                         edit_lock_push_button.setText("Full edit unlocked")
                     elem_sim.simulations_done = False
+
+                    if elem_sim.controls:
+                        elem_sim.controls.reset_controls()
 
                 for energy_spectra in \
                         self.parent.tab.energy_spectrum_widgets:
@@ -312,8 +325,8 @@ class _CompositionWidget(MatplotlibWidget):
         Open a layer properties dialog for modifying the selected layer.
         """
         if self.__selected_layer:
-            dialog = LayerPropertiesDialog(self.__selected_layer,
-                                           self.parent.tab,
+            dialog = LayerPropertiesDialog(self.parent.tab,
+                                           self.__selected_layer,
                                            modify=True,
                                            simulation=self.simulation)
             if dialog.ok_pressed:

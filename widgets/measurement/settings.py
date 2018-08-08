@@ -28,17 +28,18 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
+import copy
+import modules.masses as masses
 import os
 import time
-from PyQt5 import uic, QtWidgets
-from modules.element import Element
-import modules.masses as masses
 
+from modules.element import Element
 from modules.general_functions import set_input_field_red
 from modules.general_functions import check_text
 from modules.general_functions import validate_text_input
+
+from PyQt5 import uic, QtWidgets
 from PyQt5.QtCore import QLocale
-import copy
 
 
 class MeasurementSettingsWidget(QtWidgets.QWidget):
@@ -70,7 +71,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.spotSizeXdoubleSpinBox.setLocale(locale)
         self.spotSizeYdoubleSpinBox.setLocale(locale)
         self.divergenceDoubleSpinBox.setLocale(locale)
-        self.fluenceDoubleSpinBox.setLocale(locale)
+        # self.fluenceDoubleSpinBox.setLocale(locale)
         self.currentDoubleSpinBox.setLocale(locale)
         self.timeDoubleSpinBox.setLocale(locale)
         self.runChargeDoubleSpinBox.setLocale(locale)

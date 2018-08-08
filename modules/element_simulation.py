@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 3.8.2018
+Updated on 8.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -317,6 +317,7 @@ class ElementSimulation:
             recoil_element.description = new_values["description"]
             recoil_element.reference_density = new_values["reference_density"]
             recoil_element.color = new_values["color"]
+            recoil_element.multiplier = new_values["multiplier"]
         except KeyError:
             raise
         # Delete possible extra rec files.
@@ -343,14 +344,20 @@ class ElementSimulation:
                            + recoil_suffix
                 rename_file(recoil_file, new_name)
 
-            for file in os.listdir(self.directory):
-                if file.startswith(recoil_element.prefix) and file.endswith(
-                        ".erd"):
-                    erd_file = os.path.join(self.directory, file)
-                    seed = file.split('.')[1]
-                    new_name = recoil_element.prefix + "-" + \
-                        recoil_element.name + "." + seed + ".erd"
-                    rename_file(erd_file, new_name)
+            if recoil_element is self.main_recoil:  # Only main recoil
+                # updates erd file names
+                for file in os.listdir(self.directory):
+                    if file.startswith(recoil_element.prefix) and file.endswith(
+                            ".erd"):
+                        erd_file = os.path.join(self.directory, file)
+                        seed = file.split('.')[1]
+                        new_name = recoil_element.prefix + "-" + \
+                            recoil_element.name + "." + seed + ".erd"
+                        rename_file(erd_file, new_name)
+                # Write mcsimu file
+                self.mcsimu_to_file(os.path.join(self.directory,
+                                         self.name_prefix + "-" + self.name + \
+                                                          ".mcsimu"))
 
             simu_file = os.path.join(self.directory, recoil_element.prefix +
                                      "-" + old_name + ".simu")

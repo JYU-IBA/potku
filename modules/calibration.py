@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 25.6.2018
+Updated on 7.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -28,20 +28,23 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-from modules.general_functions import hist
+import collections
+import modules.masses as masses
+import scipy.optimize as optimize
+
 from modules.general_functions import carbon_stopping
 from modules.general_functions import convert_mev_to_joule
 from modules.general_functions import convert_amu_to_kg
+from modules.general_functions import hist
+
+from numpy import array
+from numpy import linspace
+
 from scipy import cos
 from scipy import sin
 from scipy import sqrt
 from scipy import pi
-import scipy.optimize as optimize
 from scipy.special import erf
-from numpy import array
-from numpy import linspace
-import collections
-import modules.masses as masses
 
 
 class TOFCalibrationHistogram:
@@ -402,11 +405,11 @@ class TOFCalibrationPoint:
 
         if self.type == "RBS":
             element_scatter = self.cut.element_scatter
-            if element_scatter.isotope.mass:
-                mass_scatter = float(element_scatter.isotope)
+            if element_scatter.isotope:
+                mass_scatter = masses.find_mass_of_isotope(element_scatter)
             else:
                 mass_scatter = masses.get_standard_isotope(
-                    self.cut.element_scatter.name)
+                    self.cut.element_scatter.symbol)
             self.scatter_element_mass = convert_amu_to_kg(mass_scatter)
 
         beam_mass = float(run.beam.ion.isotope)
@@ -520,11 +523,11 @@ class TOFCalibrationPoint:
             M_R2 = M_R * M_R
             M_I2 = M_I * M_I
             mass_sum = M_I + M_R
-            square = M_R2 - M_I2 * sine2
+            square = (M_R2 - M_I2 * sine2) + M_I * cosin
             if square <= 0:
                 print("{0}".format(error_msg))
                 return None
-            k = (sqrt(square) + M_I * cosin) / mass_sum
+            k = sqrt(square) / mass_sum
             kinematic_factor = k * k
             return kinematic_factor
         else:

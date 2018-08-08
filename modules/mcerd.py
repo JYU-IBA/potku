@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 2.8.2018
+Updated on 8.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -107,6 +107,7 @@ class MCERD:
                 time.sleep(10)
                 if self.__process.poll() == 0:
                     self.parent.notify(self)
+                    self.__process = None
                     break
             except AttributeError:
                 break
@@ -117,10 +118,8 @@ class MCERD:
         if used_os == "Windows":
             cmd = "TASKKILL /F /PID " + str(self.__process.pid) + " /T"
             subprocess.call(cmd)
-            self.__process = None
         elif used_os == "Linux" or used_os == "Darwin":
             self.__process.kill()
-            self.__process = None
         else:
             print("It appears we do not support your OS.")
 

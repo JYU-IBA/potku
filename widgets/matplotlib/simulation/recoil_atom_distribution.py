@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 7.8.2018
+Updated on 8.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,6 +28,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
+import copy
 import matplotlib
 import os
 
@@ -304,6 +305,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         Args:
             parent: A TargetWidget class object.
+            simulation: A simulation object.
+            target: A Target object.
+            tab: A
             icon_manager: An IconManager class object.
         """
 
@@ -495,16 +499,36 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Open recoil element info.
         """
-        dialog = RecoilInfoDialog(self.current_recoil_element, self.colormap)
+        dialog = RecoilInfoDialog(self.current_recoil_element, self.colormap,
+                                  self.current_element_simulation)
         if dialog.isOk:
             new_values = {"name": dialog.name,
                           "description": dialog.description,
                           "reference_density": dialog.reference_density,
-                          "color": dialog.color}
+                          "color": dialog.color,
+                          "multiplier": dialog.multiplier}
             try:
+                old_recoil_name = self.current_recoil_element.name
                 self.current_element_simulation.update_recoil_element(
                     self.current_recoil_element,
                     new_values)
+                # If name has changed
+                if old_recoil_name != self.current_recoil_element.name:
+                    # Delete energy spectra that use recoil
+                    for energy_spectra in self.tab.energy_spectrum_widgets:
+                        for element_path in energy_spectra. \
+                                energy_spectrum_data.keys():
+                            elem = self.current_recoil_element.prefix + "-" + \
+                                   old_recoil_name
+                            if elem in element_path:
+                                index = element_path.find(elem)
+                                if element_path[index - 1] == os.path.sep and \
+                                        element_path[index + len(elem)] == '.':
+                                    self.tab.del_widget(energy_spectra)
+                                    self.tab.energy_spectrum_widgets.remove(
+                                        energy_spectra)
+                                    break
+
                 self.update_recoil_element_info_labels()
                 self.update_colors()
             except KeyError:
@@ -974,6 +998,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.current_recoil_element.reference_density) +
             str(self.current_recoil_element.multiplier) + " at./cm\xb2"
         )
+        # Ypdate controls widget text
+        if self.current_recoil_element is \
+                self.current_element_simulation.main_recoil:
+            self.current_element_simulation.controls.controls_group_box\
+                .setTitle(self.current_recoil_element.prefix + "-"
+                                                 +
+                          self.current_recoil_element.name)
 
     def recoil_element_info_on_switch(self):
         """
@@ -1317,6 +1348,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.__button_area_calculation.setEnabled(False)
 
     def __update_multiply_action(self):
+        """
+        Update the correct value to show from clipboard.
+        """
         self.ratio_str = self.clipboard.text()
         self.coordinates_widget.actionXMultiply.setText(
             "Multiply with value in clipboard\n(" + self.ratio_str + ")")

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 3.8.2018
+Updated on 8.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -249,6 +249,35 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                         elem_sim.recoil_elements[0].widgets[0].parent.\
                             edit_lock_push_button.setText("Full edit unlocked")
                         elem_sim.simulations_done = False
+
+                    for elem_sim in simulations_run:
+                        for recoil in elem_sim.recoil_elements:
+                            delete_simulation_results(elem_sim, recoil)
+                            # Delete energy spectra that use recoil
+                            for es in self.tab.energy_spectrum_widgets:
+                                for element_path in es. \
+                                        energy_spectrum_data.keys():
+                                    elem = recoil.prefix + "-" + recoil.name
+                                    if elem in element_path:
+                                        index = element_path.find(elem)
+                                        if element_path[
+                                            index - 1] == os.path.sep and \
+                                                element_path[index + len(
+                                                    elem)] == '.':
+                                            self.tab.del_widget(es)
+                                            self.tab.energy_spectrum_widgets.\
+                                                remove(es)
+                                            break
+
+                        # Reset controls
+                        if elem_sim.controls:
+                            elem_sim.controls.reset_controls()
+
+                        # Change full edit unlocked
+                        elem_sim.recoil_elements[0].widgets[0].parent.\
+                            edit_lock_push_button.setText("Full edit unlocked")
+                        elem_sim.simulations_done = False
+
             elif simulations_running:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulations running",
@@ -297,6 +326,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                         elem_sim.recoil_elements[0].widgets[0].parent. \
                             edit_lock_push_button.setText("Full edit unlocked")
                         elem_sim.simulations_done = False
+
             elif simulations_run:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulated simulations",

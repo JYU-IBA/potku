@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 3.8.2018
+Updated on 8.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -56,9 +56,9 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         main_layout = QtWidgets.QHBoxLayout()
         recoil_element = self.element_simulation.recoil_elements[
             0]
-        controls_group_box = QtWidgets.QGroupBox(recoil_element.prefix + "-"
+        self.controls_group_box = QtWidgets.QGroupBox(recoil_element.prefix + "-"
                                                  + recoil_element.name)
-        controls_group_box.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
+        self.controls_group_box.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
                                          QtWidgets.QSizePolicy.Preferred)
 
         state_layout = QtWidgets.QHBoxLayout()
@@ -83,7 +83,7 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.stop_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                   QtWidgets.QSizePolicy.Fixed)
         self.stop_button.setToolTip("Stop simulation")
-        self.stop_button.clicked.connect(self.__stop_simulation)
+        self.stop_button.clicked.connect(self.stop_simulation)
         self.stop_button.setEnabled(False)
 
         controls_layout.addWidget(self.run_button)
@@ -128,9 +128,9 @@ class SimulationControlsWidget(QtWidgets.QWidget):
 
         self.finished_processes_widget.hide()
 
-        controls_group_box.setLayout(state_and_controls_layout)
+        self.controls_group_box.setLayout(state_and_controls_layout)
 
-        main_layout.addWidget(controls_group_box)
+        main_layout.addWidget(self.controls_group_box)
 
         self.setLayout(main_layout)
 
@@ -140,6 +140,7 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         """
         self.finished_processes_widget.hide()
         self.observed_atom_count_label.setText("0")
+        self.processes_spinbox.setEnabled(True)
         self.state_label.setText("Not started")
 
     def __start_simulation(self):
@@ -149,6 +150,7 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.state_label.setText("Running")
         self.run_button.setEnabled(False)
         self.stop_button.setEnabled(True)
+        self.observed_atom_count_label.setText("0 (pre sim)")
 
         self.finished_processes_label.setText("0/" + str(number_of_processes))
         self.finished_processes_widget.show()
@@ -174,7 +176,11 @@ class SimulationControlsWidget(QtWidgets.QWidget):
             number: Observed atom number.
         """
         try:
-            self.observed_atom_count_label.setText(str(number))
+            if number == 0:
+                text = str(number) + " (pre sim)"
+            else:
+                text = str(number)
+            self.observed_atom_count_label.setText(text)
         except RuntimeError:
             pass
 
@@ -191,7 +197,7 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.finished_processes_label.setText(
             str(finished) + "/" + str(all_proc))
 
-    def __stop_simulation(self):
+    def stop_simulation(self):
         """ Calls ElementSimulation's stop method.
         """
         try:

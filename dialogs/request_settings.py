@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 6.8.2018
+Updated on 8.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -261,27 +261,67 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                             # Delete files
                             delete_simulation_results(elem_sim, recoil)
                         # Change full edit unlocked
-                        elem_sim.recoil_elements[0].widgets[0].parent.\
-                            edit_lock_push_button.setText("Full edit unlocked")
+                        if elem_sim.recoil_elements[0].widgets:
+                            elem_sim.recoil_elements[0].widgets[0].parent.\
+                                edit_lock_push_button.setText("Full edit "
+                                                              "unlocked")
                         elem_sim.simulations_done = False
 
                         # Find element simulation's tab
                         tab_id = elem_sim.simulation.tab_id
                         if tab_id != -1:
                             tab = self.main_window.ui.tabs.widget(tab_id)
-                            for recoil in elem_sim.recoil_elements:
-                                # Delete energy spectra that use recoil
-                                for es in tab.energy_spectrum_widgets:
-                                    for ep in es.energy_spectrum_data.keys():
-                                        elem = recoil.prefix + "-" + recoil.name
-                                        if elem in ep:
-                                            index = ep.find(elem)
-                                            if ep[index - 1] == os.path.sep and\
-                                               ep[index + len(elem)] == '.':
-                                                tab.del_widget(es)
-                                                tab.energy_spectrum_widgets.\
-                                                    remove(es)
-                                                break
+                            if tab:
+                                for recoil in elem_sim.recoil_elements:
+                                    # Delete energy spectra that use recoil
+                                    for es in tab.energy_spectrum_widgets:
+                                        for ep in es.energy_spectrum_data.keys():
+                                            elem = recoil.prefix + "-" + \
+                                                   recoil.name
+                                            if elem in ep:
+                                                index = ep.find(elem)
+                                                if ep[index - 1] == os.path.sep\
+                                                        and ep[index + len(
+                                                        elem)] == '.':
+                                                    tab.del_widget(es)
+                                                    tab.energy_spectrum_widgets.\
+                                                        remove(es)
+                                                    break
+                        # Reset controls
+                        if elem_sim.controls:
+                            elem_sim.controls.reset_controls()
+
+                    for elem_sim in simulations_run:
+                        for recoil in elem_sim.recoil_elements:
+                            # Delete files
+                            delete_simulation_results(elem_sim, recoil)
+                        # Change full edit unlocked
+                        if elem_sim.recoil_elements[0].widgets:
+                            elem_sim.recoil_elements[0].widgets[0].parent.\
+                                edit_lock_push_button.setText("Full edit "
+                                                              "unlocked")
+                        elem_sim.simulations_done = False
+
+                        # Find element simulation's tab
+                        tab_id = elem_sim.simulation.tab_id
+                        if tab_id != -1:
+                            tab = self.main_window.ui.tabs.widget(tab_id)
+                            if tab:
+                                for recoil in elem_sim.recoil_elements:
+                                    # Delete energy spectra that use recoil
+                                    for es in tab.energy_spectrum_widgets:
+                                        for ep in es.energy_spectrum_data.keys():
+                                            elem = recoil.prefix + "-" + \
+                                                   recoil.name
+                                            if elem in ep:
+                                                index = ep.find(elem)
+                                                if ep[index - 1] == os.path.sep\
+                                                        and ep[index + len(
+                                                        elem)] == '.':
+                                                    tab.del_widget(es)
+                                                    tab.energy_spectrum_widgets.\
+                                                        remove(es)
+                                                    break
                         # Reset controls
                         if elem_sim.controls:
                             elem_sim.controls.reset_controls()
@@ -311,27 +351,32 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                             # Delete files
                             delete_simulation_results(elem_sim, recoil)
                         # Change full edit unlocked
-                        elem_sim.recoil_elements[0].widgets[0].parent. \
-                            edit_lock_push_button.setText("Full edit unlocked")
+                        if elem_sim.recoil_elements[0].widgets:
+                            elem_sim.recoil_elements[0].widgets[0].parent. \
+                                edit_lock_push_button.setText("Full edit "
+                                                              "unlocked")
                         elem_sim.simulations_done = False
 
                         # Find element simulation's tab
                         tab_id = elem_sim.simulation.tab_id
                         if tab_id != -1:
                             tab = self.main_window.ui.tabs.widget(tab_id)
-                            for recoil in elem_sim.recoil_elements:
-                                # Delete energy spectra that use recoil
-                                for es in tab.energy_spectrum_widgets:
-                                    for ep in es.energy_spectrum_data.keys():
-                                        elem = recoil.prefix + "-" + recoil.name
-                                        if elem in ep:
-                                            index = ep.find(elem)
-                                            if ep[index - 1] == os.path.sep and\
-                                               ep[index + len(elem)] == '.':
-                                                tab.del_widget(es)
-                                                tab.energy_spectrum_widgets. \
-                                                    remove(es)
-                                                break
+                            if tab:
+                                for recoil in elem_sim.recoil_elements:
+                                    # Delete energy spectra that use recoil
+                                    for es in tab.energy_spectrum_widgets:
+                                        for ep in es.energy_spectrum_data.keys():
+                                            elem = recoil.prefix + "-" + \
+                                                   recoil.name
+                                            if elem in ep:
+                                                index = ep.find(elem)
+                                                if ep[index - 1] == os.path.sep\
+                                                        and ep[index + len(
+                                                    elem)] == '.':
+                                                    tab.del_widget(es)
+                                                    tab.energy_spectrum_widgets.\
+                                                        remove(es)
+                                                    break
                         # Reset controls
                         if elem_sim.controls:
                             elem_sim.controls.reset_controls()
@@ -355,27 +400,32 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                             # Delete files
                             delete_simulation_results(elem_sim, recoil)
                         # Change full edit unlocked
-                        elem_sim.recoil_elements[0].widgets[0].parent. \
-                            edit_lock_push_button.setText("Full edit unlocked")
+                        if elem_sim.recoil_elements[0].widgets:
+                            elem_sim.recoil_elements[0].widgets[0].parent. \
+                                edit_lock_push_button.setText("Full edit "
+                                                              "unlocked")
                         elem_sim.simulations_done = False
 
                         # Find element simulation's tab
                         tab_id = elem_sim.simulation.tab_id
                         if tab_id != -1:
                             tab = self.main_window.ui.tabs.widget(tab_id)
-                            for recoil in elem_sim.recoil_elements:
-                                # Delete energy spectra that use recoil
-                                for es in tab.energy_spectrum_widgets:
-                                    for ep in es.energy_spectrum_data.keys():
-                                        elem = recoil.prefix + "-" + recoil.name
-                                        if elem in ep:
-                                            index = ep.find(elem)
-                                            if ep[index - 1] == os.path.sep and\
-                                               ep[index + len(elem)] == '.':
-                                                tab.del_widget(es)
-                                                tab.energy_spectrum_widgets. \
+                            if tab:
+                                for recoil in elem_sim.recoil_elements:
+                                    # Delete energy spectra that use recoil
+                                    for es in tab.energy_spectrum_widgets:
+                                        for ep in es.energy_spectrum_data.keys():
+                                            elem = recoil.prefix + "-" \
+                                                   + recoil.name
+                                            if elem in ep:
+                                                index = ep.find(elem)
+                                                if ep[index - 1] == os.path.sep\
+                                                        and ep[index + len(
+                                                        elem)] == '.':
+                                                    tab.del_widget(es)
+                                                    tab.energy_spectrum_widgets.\
                                                     remove(es)
-                                                break
+                                                    break
                         # Reset controls
                         if elem_sim.controls:
                             elem_sim.controls.reset_controls()

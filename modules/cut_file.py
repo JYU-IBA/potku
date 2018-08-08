@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.3.2013
-Updated on 4.6.2018
+Updated on 7.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -31,6 +31,7 @@ __version__ = "2.0"
 
 import os
 import pathlib
+
 from modules.element import Element
 
 
@@ -154,10 +155,10 @@ class CutFile:
             measurement_name_with_prefix = \
                 str(pathlib.Path(self.directory).parents[1])
             # First "-" is in sample name, second in measurement name
-            measurement_name_start = measurement_name_with_prefix.find(
-                "-", measurement_name_with_prefix.find("-") + 1)
-            measurement_name = \
-                measurement_name_with_prefix[measurement_name_start + 1:]
+            # NOT IF THERE ARE - IN NAME PART!!
+            name_with_number = measurement_name_with_prefix.split(
+                "Measurement_")[1]
+            measurement_name = name_with_number.split('-', 1)[1]
             if element is not "":
                 element = element.__str__()
             if self.is_elem_loss:

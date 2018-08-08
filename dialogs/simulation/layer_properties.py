@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 3.8.2018
+Updated on 8.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -249,7 +249,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             try:
                 elem_isotope = int(children[i].currentText().split(" ")[0])
             except ValueError:
-                elem_isotope = masses.get_standard_isotope(elem_symbol)
+                elem_isotope = None
             i += 1
             elem_amount = children[i].value()
             lst.append(Element(elem_symbol, elem_isotope, elem_amount))
@@ -323,6 +323,18 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                     self.tab.del_widget(energy_spectra)
                 self.tab.energy_spectrum_widgets = []
 
+                for elem_sim in simulations_run:
+                    for recoil in elem_sim.recoil_elements:
+                        delete_simulation_results(elem_sim, recoil)
+                    # Reset controls
+                    if elem_sim.controls:
+                        elem_sim.controls.reset_controls()
+
+                    # Change full edit unlocked
+                    elem_sim.recoil_elements[0].widgets[0].parent. \
+                        edit_lock_push_button.setText("Full edit unlocked")
+                    elem_sim.simulations_done = False
+
         elif simulations_running:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulations running",
@@ -352,6 +364,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                         edit_lock_push_button.setText("Full edit unlocked")
                     elem_sim.simulations_done = False
 
+                    if elem_sim.controls:
+                        elem_sim.controls.reset_controls()
+
                 for energy_spectra in self.tab.energy_spectrum_widgets:
                     self.tab.del_widget(energy_spectra)
                 self.tab.energy_spectrum_widgets = []
@@ -378,6 +393,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                     elem_sim.recoil_elements[0].widgets[0].parent. \
                         edit_lock_push_button.setText("Full edit unlocked")
                     elem_sim.simulations_done = False
+
+                    if elem_sim.controls:
+                        elem_sim.controls.reset_controls()
 
                 for energy_spectra in self.tab.energy_spectrum_widgets:
                     self.tab.del_widget(energy_spectra)
@@ -550,3 +568,9 @@ class ElementLayout(QtWidgets.QHBoxLayout):
         """
         masses.load_isotopes(self.element_button.text(), self.isotope_combobox,
                              current_isotope)
+        standard_isotope = masses.get_standard_isotope(
+            self.element_button.text())
+        self.isotope_combobox.insertItem(0,
+                                         "{0} (st. mass)".format(
+                                             round(standard_isotope, 3)))
+        self.isotope_combobox.setCurrentIndex(0)

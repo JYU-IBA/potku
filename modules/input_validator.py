@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 3.8.2018
-Updated on 6.8.2018
+Updated on 7.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -36,15 +36,25 @@ class InputValidator(QValidator):
     Accepts double values with scientific notation (i.e. 0.232, 12.5e-12) and
     turns empty input to 0.0 and commas (,) to points (.).
     """
-    def __init__(self):
+    def __init__(self, double):
         """Initiates the class.
+
+        Args:
+            double: Whether to validate for double or int.
         """
         super().__init__()
 
-        self.float_re_1 = re.compile(
-            r'(-?\d+(((\.\d+)|\d*)[eE]?[+-]?\d*))|(-?)')
-        self.float_re_2 = re.compile(r'(-?\d+\.$)')
-        self.float_re_3 = re.compile(r'(.*[^eE][+-].*)')
+        if double:
+            self.float_re_1 = re.compile(
+                r'(-?\d+(((\.\d+)|\d*)[eE]?[+-]?\d*))|(-?)')
+            self.float_re_2 = re.compile(r'(-?\d+\.$)')
+            self.float_re_4 = re.compile(r'(-?\d+\.$)')
+            self.float_re_3 = re.compile(r'(.*[^eE][+-].*)')
+        else:
+            self.float_re_1 = re.compile(r'(-?\d+([eE]?[+-]?\d*))|(-?)')
+            self.float_re_2 = re.compile(r'(-?\d+$)')
+            self.float_re_4 = re.compile(r'(-?\d+\.$)')
+            self.float_re_3 = re.compile(r'(.*[^eE][+-].*)')
 
     def validate(self, input_value, pos):
         """Validates the given input. Overrides the QDoubleValidator's validate 
@@ -59,29 +69,28 @@ class InputValidator(QValidator):
         if match_2:
             new_result = input_value[1:].replace("-", "")
             new_result_2 = input_value[0] + new_result.replace("+", "")
-            if "e+" in input_value and not "e+" in new_result_2:
+            if "e+" in input_value and "e+" not in new_result_2:
                 nr = new_result_2[1:].replace("e", "e+")
                 new_result_2 = input_value[0] + nr
-            elif "e-" in input_value and not "e-" in new_result_2:
+            elif "e-" in input_value and "e-" not in new_result_2:
                 nr = new_result_2[1:].replace("e", "e-")
                 new_result_2 = input_value[0] + nr
 
         if new_result_2:
-            input = new_result_2
+            inp = new_result_2
         else:
-            input = input_value
+            inp = input_value
 
-        match = re.match(self.float_re_2, input)
+        match = re.match(self.float_re_2, inp)
         if match:
             return match.group(0)
         else:
-            if len(input) > 1 and input[len(input) - 1] == 'e':
-                match = re.match(self.float_re_2, input[:len(input) - 1])
+            if len(inp) > 1 and inp[len(inp) - 1] == 'e':
+                match = re.match(self.float_re_4, input[:len(inp) - 1])
                 if match:
                     return match.group(0)
-            match = re.match(self.float_re_1, input)
+            match = re.match(self.float_re_1, inp)
             if match:
                 return match.group(0)
             else:
                 return ""
-
