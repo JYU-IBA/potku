@@ -282,14 +282,17 @@
               </item>
               <item row="0" column="1">
                <widget class="QDoubleSpinBox" name="channelWidthDoubleSpinBox">
+                <property name="decimals">
+                 <number>3</number>
+                </property>
                 <property name="maximum">
                  <double>1000000000000000044885712678075916785549312.000000000000000</double>
                 </property>
                 <property name="singleStep">
-                 <double>0.100000000000000</double>
+                 <double>0.001000000000000</double>
                 </property>
                 <property name="value">
-                 <double>0.100000000000000</double>
+                 <double>0.025000000000000</double>
                 </property>
                </widget>
               </item>
