@@ -1,7 +1,7 @@
 ﻿# coding=utf-8
 """
 Created on 18.4.2013
-Updated on 7.8.2018
+Updated on 9.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -571,9 +571,24 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                                     "Load Element Selection",
                                     "Selection file (*.selections)")
         if filename:
-            self.measurement.load_selection(filename)
+            progress_bar = QtWidgets.QProgressBar()
+            self.measurement.statusbar.addWidget(progress_bar, 1)
+            progress_bar.show()
+            progress_bar.setValue(40)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
+
+            self.measurement.load_selection(filename, progress_bar, 50)
             self.on_draw()
             self.elementSelectionSelectButton.setEnabled(True)
+
+            progress_bar.setValue(100)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
+
+            self.measurement.statusbar.removeWidget(progress_bar)
+            progress_bar.hide()
+
         self.__emit_selections_changed()
 
     def save_cuts(self):

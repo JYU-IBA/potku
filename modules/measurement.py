@@ -1072,7 +1072,7 @@ class Measurement:
                 elem_root.addChild(item)
             treewidget.addTopLevelItem(elem_root)
 
-    def load_selection(self, filename, progress_bar):
+    def load_selection(self, filename, progress_bar, percent_add=10):
         """ Load selections from a file_path.
         
         Removes all current selections and loads selections from given filename.
@@ -1081,8 +1081,9 @@ class Measurement:
             filename: String representing (full) directory to selection
             file_path.
             progress_bar: A progress bar used when opening a measurement.
+            percent_add: How many percents are added to progress bar.
         """
-        self.selector.load(filename, progress_bar)
+        self.selector.load(filename, progress_bar, percent_add)
 
     def generate_tof_in(self):
         """ Generate tof.in file for external programs.
