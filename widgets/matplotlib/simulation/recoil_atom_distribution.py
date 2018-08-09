@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 8.8.2018
+Updated on 9.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,7 +28,6 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import copy
 import matplotlib
 import os
 
@@ -582,19 +581,19 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                       "all its simulation results will be deleted.\n\nUnlock " \
                       "full edit anyway?"
                 stop_simulation = True
-            else:
+            elif self.current_element_simulation.simulations_done:
                 add = "Are you sure you want to unlock full edit for this " \
                       "element simulation?\nAll its simulation results will " \
                       "be deleted.\n\nUnlock full edit anyway?"
-            reply = QtWidgets.QMessageBox.warning(
-                self.parent, "Confirm", add,
-                QtWidgets.QMessageBox.Yes |
-                QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel,
-                QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                return
+                reply = QtWidgets.QMessageBox.warning(
+                    self.parent, "Confirm", add,
+                    QtWidgets.QMessageBox.Yes |
+                    QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel,
+                    QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    return
             
             # Stop possible running processes
             if stop_simulation:
@@ -613,7 +612,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # all recoils
             for recoil in self.current_element_simulation.recoil_elements:
                 # Delete files
-                delete_simulation_results(self.element_simulation, recoil)
+                delete_simulation_results(
+                    self.current_element_simulation, recoil)
 
                 # Delete energy spectra that use recoil
                 for energy_spectra in self.tab.energy_spectrum_widgets:

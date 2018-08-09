@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 17.4.2013
-Updated on 15.6.2018
+Updated on 9.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -32,16 +32,19 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
+import modules.depth_files as df
+import modules.masses as masses
 import os
 import re
-from PyQt5 import QtWidgets
 
 from dialogs.measurement.depth_profile_ignore_elements \
     import DepthProfileIgnoreElements
-import modules.depth_files as df
+
 from modules.element import Element
+
+from PyQt5 import QtWidgets
+
 from widgets.matplotlib.base import MatplotlibWidget
-import modules.masses as masses
 
 
 class MatplotlibDepthProfileWidget(MatplotlibWidget):
@@ -272,9 +275,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
 
         # If drawing for "the first time", get limits from the drawn data.
         if 0.09 < x_max < 1.01:  # This works...
-            x_min, x_max = self.axes.get_xlim()
+            x_max = self.axes.get_xlim()[1]
         if 0.09 < y_max < 1.01:
-            y_min, y_max = self.axes.get_ylim()
+            y_max = self.axes.get_ylim()[1]
 
         # Set limits accordingly
         self.axes.set_ylim([y_min, y_max])

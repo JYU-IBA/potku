@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 2.8.2018
+Updated on 9.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -277,7 +277,7 @@ class Measurement:
                  reference_density=3.5, number_of_depth_steps=100,
                  depth_step_for_stopping=10, depth_step_for_output=10,
                  depth_for_concentration_from=800,
-                 depth_for_concentration_to=1500, channel_width=0.1,
+                 depth_for_concentration_to=1500, channel_width=0.025,
                  reference_cut="", number_of_splits=10, normalization="First",
                  measurement_setting_file_name="Default",
                  measurement_setting_file_description="",
@@ -1072,7 +1072,7 @@ class Measurement:
                 elem_root.addChild(item)
             treewidget.addTopLevelItem(elem_root)
 
-    def load_selection(self, filename, progress_bar):
+    def load_selection(self, filename, progress_bar, percent_add=10):
         """ Load selections from a file_path.
         
         Removes all current selections and loads selections from given filename.
@@ -1081,8 +1081,9 @@ class Measurement:
             filename: String representing (full) directory to selection
             file_path.
             progress_bar: A progress bar used when opening a measurement.
+            percent_add: How many percents are added to progress bar.
         """
-        self.selector.load(filename, progress_bar)
+        self.selector.load(filename, progress_bar, percent_add)
 
     def generate_tof_in(self):
         """ Generate tof.in file for external programs.

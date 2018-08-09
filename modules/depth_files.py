@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 8.6.2018
+Updated on 9.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -37,6 +37,7 @@ import os
 import platform
 import re
 import subprocess
+
 from modules.general_functions import copy_cut_file_to_temp
 from modules.general_functions import remove_file
 
@@ -121,9 +122,15 @@ def extract_from_depth_files(files, elements, x_column, y_column):
         for line in open(file):
             columns = re.split(' +', line.strip())
             axe1.append(float(columns[x_column]))
-            axe2.append(float(columns[y_column]) * 100)
+            try:
+                axe2.append(float(columns[y_column]) * 100)
+            except ValueError:
+                axe3.append(0.0)
             if file_element != "total":
-                axe3.append(int(columns[-1]))
+                try:
+                    axe3.append(int(columns[-1]))
+                except ValueError:
+                    axe3.append(0.0)
         read_files.append([file_element, axe1, axe2, axe3])
     return read_files
 

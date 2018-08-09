@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 3.8.2018
-Updated on 7.8.2018
+Updated on 9.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -42,15 +42,16 @@ class ScientificSpinBox(QtWidgets.QWidget):
     """
     Class for custom double spinbox that handles scientific notation.
     """
-    def __init__(self, recoil_element, minimum, maximum, double=True):
+    def __init__(self, value, multiplier, minimum, maximum, double=True):
         """
         Initializes the spinbox.
 
         Args:
-            recoil_element: A RecoilElement object.
+            value: Number for spinbox.
+            multiplier: Multiplier for number.
             minimum: Minimum allowed value.
             maximum: Maximum allowed value.
-            double: Wheter to validate for double or int.
+            double: Whether to validate for double or int.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
@@ -61,12 +62,10 @@ class ScientificSpinBox(QtWidgets.QWidget):
         self.minimum = minimum
         self.maximum = maximum
 
-        self.recoil_element = recoil_element
-        self.ui.scientificLineEdit.setText(str(
-            self.recoil_element.reference_density) + str(
-            self.recoil_element.multiplier)[1:])
-        self.value = self.recoil_element.reference_density
-        self.multiplier = self.recoil_element.multiplier
+        self.value = value
+        self.multiplier = multiplier
+        self.ui.scientificLineEdit.setText(str(self.value)
+                                           + str(self.multiplier)[1:])
 
         self.ui.scientificLineEdit.textChanged.connect(lambda: self.validate(
             self.ui.scientificLineEdit.cursorPosition()
