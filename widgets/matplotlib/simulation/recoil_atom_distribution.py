@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 9.8.2018
+Updated on 10.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -391,6 +391,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.__rectangle_event_click = None
         # Event for releasing right click
         self.__rectangle_event_release = None
+        # List for limits that are used for every recoil to calculate their area
+        self.area_limits_for_all = []
+        self.area_limits_for_all_on = False
 
         self.annotations = []
         self.trans = matplotlib.transforms.blended_transform_factory(
@@ -404,6 +407,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                                          facecolor='red'),
                                           button=1, span_stays=True,
                                           onmove_callback=self.on_span_motion)
+        self.span_selector.set_active(False)
 
         self.rectangle_selector = RectangleSelector(self.axes,
                                                     self.on_rectangle_select,
@@ -1337,6 +1341,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.__icon_manager.set_icon(self.point_remove_action, "del.png")
         self.mpl_toolbar.addAction(self.point_remove_action)
 
+        # Add separator
+        self.mpl_toolbar.addSeparator()
+
+        self.__button_span_limits = QtWidgets.QToolButton(self)
+        self.__button_span_limits.clicked.connect(self.__toggle_span_limits)
+        self.__button_span_limits.setToolTip("Toggle limits that are used for "
+                                             "all recoil elements")
+        self.mpl_toolbar.addWidget(self.__button_span_limits)
+
         self.__button_area_calculation = QtWidgets.QToolButton(self)
         self.__button_area_calculation.clicked.connect(
             self.__calculate_selected_area)
@@ -1346,6 +1359,23 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                      "depth_profile_lim_in.svg")
         self.mpl_toolbar.addWidget(self.__button_area_calculation)
         self.__button_area_calculation.setEnabled(False)
+
+    def __toggle_span_limits(self):
+        """
+        Toggle span limits visible and non-visible.
+        """
+        if self.area_limits_for_all_on:
+            for lim in self.area_limits_for_all:
+                lim.set_linestyle("None")
+            self.area_limits_for_all_on = False
+            self.span_selector.set_active(False)
+        else:
+            for lim in self.area_limits_for_all:
+                lim.set_linestyle("--")
+            self.area_limits_for_all_on = True
+            self.span_selector.set_active(True)
+
+        self.canvas.draw_idle()
 
     def __update_multiply_action(self):
         """
@@ -1736,6 +1766,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if self.dragged_points or self.point_clicked:
             self.span_selector.set_active(False)
 
+        if not self.area_limits_for_all_on:
+            self.span_selector.set_active(False)
+
     def on_motion(self, event):
         """Callback method for mouse motion event. Moves points that are being
         dragged.
@@ -1991,6 +2024,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Don't do anything if drag tool or zoom tool is active.
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
             return
+        if not self.area_limits_for_all_on:
+            return
         if event.button == 1:
             self.dragged_points.clear()
             self.span_selector.set_active(True)
@@ -2130,34 +2165,34 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         low_x = round(xmin, 3)
         high_x = round(xmax, 3)
 
-        # Find the nearest points matching the low_x and high_x
-        points_x = self.current_recoil_element.get_xs()
-        nearest_start = find_nearest(low_x, points_x)
-        nearest_end = find_nearest(high_x, points_x)
+        # # Find the nearest points matching the low_x and high_x
+        # points_x = self.current_recoil_element.get_xs()
+        # nearest_start = find_nearest(low_x, points_x)
+        # nearest_end = find_nearest(high_x, points_x)
+        #
+        # if nearest_start == nearest_end:
+        #     start_i = points_x.index(nearest_start)
+        #     if start_i == len(points_x) - 1:
+        #         nearest_start_point = self.current_element_simulation. \
+        #             get_point_by_i(
+        #                 self.current_recoil_element, start_i - 1)
+        #         nearest_start = nearest_start_point.get_x()
+        #     else:
+        #         nearest_end_point = \
+        #             self.current_element_simulation.get_point_by_i(
+        #                 self.current_recoil_element, start_i + 1)
+        #         nearest_end = nearest_end_point.get_x()
 
-        if nearest_start == nearest_end:
-            start_i = points_x.index(nearest_start)
-            if start_i == len(points_x) - 1:
-                nearest_start_point = self.current_element_simulation. \
-                    get_point_by_i(
-                        self.current_recoil_element, start_i - 1)
-                nearest_start = nearest_start_point.get_x()
-            else:
-                nearest_end_point = \
-                    self.current_element_simulation.get_point_by_i(
-                        self.current_recoil_element, start_i + 1)
-                nearest_end = nearest_end_point.get_x()
-
-        for lim in self.current_recoil_element.area_limits:
+        for lim in self.area_limits_for_all:
             lim.set_linestyle('None')
 
-        self.current_recoil_element.area_limits = []
+        self.area_limits_for_all = []
 
         ylim = self.axes.get_ylim()
-        self.current_recoil_element.area_limits.append(self.axes.axvline(
-            x=nearest_start, linestyle="--"))
-        self.current_recoil_element.area_limits.append(self.axes.axvline(
-            x=nearest_end, linestyle="--", color='red'))
+        self.area_limits_for_all.append(self.axes.axvline(
+            x=low_x, linestyle="--"))
+        self.area_limits_for_all.append(self.axes.axvline(
+            x=high_x, linestyle="--", color='red'))
 
         self.axes.set_ybound(ylim[0], ylim[1])
         self.__button_area_calculation.setEnabled(True)
