@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 9.8.2018
+Updated on 10.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -159,9 +159,13 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
             # Add calculated tof_list files to tof_list_tree_widget by
             # measurement under the same sample.
+
             for sample in self.parent.obj.request.samples.samples:
                 for measurement in sample.measurements.measurements.values():
                     if self.element_simulation.sample is measurement.sample:
+
+                        all_cuts = []
+
                         tree_item = QtWidgets.QTreeWidgetItem()
                         tree_item.setText(0, measurement.name)
                         tree_item.obj = measurement
@@ -169,15 +173,29 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                         self.tof_list_tree_widget.addTopLevelItem(tree_item)
 
                         for file in os.listdir(
-                                measurement.directory_energy_spectra):
-                            if file.endswith("tof_list"):
-                                item = QtWidgets.QTreeWidgetItem()
+                                measurement.directory_cuts):
+                            if file.endswith(".cut"):
                                 file_name_without_suffix = \
                                     file.rsplit('.', 1)[0]
-                                item.setText(0, file_name_without_suffix)
-                                item.setCheckState(0, QtCore.Qt.Unchecked)
-                                tree_item.addChild(item)
-                                tree_item.setExpanded(True)
+                                all_cuts.append(file_name_without_suffix)
+
+                        for file_2 in os.listdir(
+                                os.path.join(
+                                    measurement.directory_composition_changes,
+                                    "Changes")):
+                            if file_2.endswith(".cut"):
+                                file_name_without_suffix = \
+                                    file_2.rsplit('.', 1)[0]
+                                all_cuts.append(file_name_without_suffix)
+
+                        all_cuts.sort()
+
+                        for cut in all_cuts:
+                            item = QtWidgets.QTreeWidgetItem()
+                            item.setText(0, cut)
+                            item.setCheckState(0, QtCore.Qt.Unchecked)
+                            tree_item.addChild(item)
+                            tree_item.setExpanded(True)
 
             # Add a view for adding external files to draw
             self.external_tree_widget = QtWidgets.QTreeWidget()
@@ -259,8 +277,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         root_for_tof_list_files = self.tof_list_tree_widget.invisibleRootItem()
         child_count = root_for_tof_list_files.childCount()
 
-        # Read selected tof_list files
-        tof_listed_files = {}
+        cut_files = {}
         item_texts = []
         used_measurements = []
 
@@ -270,14 +287,21 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             for j in range(mes_child_count):
                 item = measurement_item.child(j)
                 if item.checkState(0):
-                    used_measurements.append(item.parent().obj)
+                    measurement = item.parent().obj
+                    if measurement not in cut_files.keys():
+                        cut_files[measurement] = []
+                    used_measurements.append(measurement)
+                    # Calculate energy spectra for cut
                     item_texts.append(item.text(0))
-                    tof_list_file = os.path.join(
-                        item.parent().obj.directory_energy_spectra,
-                        item.text(0) + ".tof_list")
-                    tof_list = item.text(0).split('.', 1)[1]
-                    tof_listed_files[tof_list] = read_tof_list_file(
-                        tof_list_file)
+                    if len(item.text(0).split('.')) < 4:
+                        # Normal cut
+                        cut_file = os.path.join(measurement.directory_cuts,
+                                                item.text(0)) + ".cut"
+                    else:
+                        cut_file = os.path.join(
+                            measurement.directory_composition_changes,
+                            "Changes", item.text(0)) + ".cut"
+                    cut_files[measurement].append(cut_file)
             dirtyinteger += 1
             progress_bar.setValue((dirtyinteger / child_count) * 33)
             QtCore.QCoreApplication.processEvents(
@@ -289,20 +313,24 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 QtCore.QEventLoop.AllEvents)
 
         length = len(used_measurements)
-        # Calculate energy spectra from histed files
+        # Hist all selected cut files
         for measurement in used_measurements:
-            calculate_spectrum(tof_listed_files, self.ui.
-                               histogramTicksDoubleSpinBox.value(),
-                               measurement,
-                               measurement.directory_energy_spectra)
+            es = EnergySpectrum(measurement, cut_files[measurement],
+                                self.ui.histogramTicksDoubleSpinBox.value(),
+                                None)
+            es.calculate_spectrum()
             # Add result files
             for name in item_texts:
-                self.result_files.append(os.path.join(
-                    measurement.directory_energy_spectra, name + ".hist"))
-                dirtyinteger += 1
-                progress_bar.setValue((dirtyinteger / length) * 33)
-                QtCore.QCoreApplication.processEvents(
-                    QtCore.QEventLoop.AllEvents)
+                file_path = os.path.join(
+                    measurement.directory_energy_spectra, name + ".hist")
+                if os.path.exists(file_path):
+                    if file_path in self.result_files:
+                        continue
+                    self.result_files.append(file_path)
+                    dirtyinteger += 1
+                    progress_bar.setValue((dirtyinteger / length) * 33)
+                    QtCore.QCoreApplication.processEvents(
+                        QtCore.QEventLoop.AllEvents)
 
         root_for_ext_files = self.external_tree_widget.invisibleRootItem()
         child_count = root_for_ext_files.childCount()
@@ -326,8 +354,6 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             progress_bar.hide()
 
         self.bin_width = self.ui.histogramTicksDoubleSpinBox.value()
-
-        # self.close()
 
     def __accept_params(self):
         """Accept given parameters and cut files.
