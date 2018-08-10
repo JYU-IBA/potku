@@ -1348,6 +1348,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.__button_span_limits.clicked.connect(self.__toggle_span_limits)
         self.__button_span_limits.setToolTip("Toggle limits that are used for "
                                              "all recoil elements")
+        self.__icon_manager.set_icon(self.__button_span_limits,
+                                     "recoil_toggle_span_limits.png")
         self.mpl_toolbar.addWidget(self.__button_span_limits)
 
         self.__button_area_calculation = QtWidgets.QToolButton(self)
@@ -1364,6 +1366,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Toggle span limits visible and non-visible.
         """
+        if not self.current_recoil_element:
+            return
         if self.area_limits_for_all_on:
             for lim in self.area_limits_for_all:
                 lim.set_linestyle("None")
@@ -1372,6 +1376,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         else:
             for lim in self.area_limits_for_all:
                 lim.set_linestyle("--")
+            if not self.area_limits_for_all:
+                xs = self.current_recoil_element.get_xs()
+                low_x = xs[0]
+                high_x = xs[len(xs) - 1]
+                self.area_limits_for_all.append(self.axes.axvline(
+                    x=low_x, linestyle="--"))
+                self.area_limits_for_all.append(self.axes.axvline(
+                    x=high_x, linestyle="--", color='red'))
             self.area_limits_for_all_on = True
             self.span_selector.set_active(True)
 
@@ -2024,11 +2036,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Don't do anything if drag tool or zoom tool is active.
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
             return
-        if not self.area_limits_for_all_on:
-            return
         if event.button == 1:
             self.dragged_points.clear()
-            self.span_selector.set_active(True)
+            # self.span_selector.set_active(True)
             self.update_plot()
 
     def __context_menu(self, event):

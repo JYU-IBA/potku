@@ -6,14 +6,14 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>870</width>
-    <height>534</height>
+    <width>950</width>
+    <height>564</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>870</width>
-    <height>534</height>
+    <width>950</width>
+    <height>564</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -219,7 +219,7 @@
        </property>
        <layout class="QVBoxLayout" name="recoil_layout">
         <property name="leftMargin">
-         <number>9</number>
+         <number>0</number>
         </property>
         <property name="rightMargin">
          <number>0</number>
@@ -234,8 +234,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>189</width>
-             <height>400</height>
+             <width>198</width>
+             <height>430</height>
             </rect>
            </property>
           </widget>
