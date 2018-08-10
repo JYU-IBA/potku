@@ -44,7 +44,6 @@ from matplotlib.widgets import SpanSelector
 
 from modules.element import Element
 from modules.general_functions import delete_simulation_results
-from modules.general_functions import find_nearest
 from modules.general_functions import find_y_on_line
 from modules.point import Point
 from modules.recoil_element import RecoilElement
@@ -60,6 +59,7 @@ from shapely.geometry import Polygon
 from widgets.matplotlib.base import MatplotlibWidget
 from widgets.matplotlib.simulation.element import ElementWidget
 from widgets.simulation.controls import SimulationControlsWidget
+from widgets.simulation.percentage_widget import PercentageWidget
 from widgets.simulation.point_coordinates import PointCoordinatesWidget
 from widgets.simulation.recoil_element import RecoilElementWidget
 
@@ -454,6 +454,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.colormap = self.simulation.request.global_settings.\
             get_element_colors()
 
+        self.parent.ui.percentButton.clicked.connect(
+            self.__create_percent_widget)
+
         self.on_draw()
 
         if self.simulation.element_simulations:
@@ -488,6 +491,21 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.simulation.element_simulations[0].recoil_elements[0].widgets[
             0].radio_button.setChecked(True)
         self.show_other_recoils()
+
+    def __create_percent_widget(self):
+        """
+        Create a widget that calculates and shows the percentages of recoils
+        on the same interval and their individual intervals.
+        """
+        recoils = []
+        for element_simulation in self.simulation.element_simulations:
+            for recoil in element_simulation.recoil_elements:
+                recoils.append(recoil)
+
+        limits = [x.get_xdata()[0] for x in self.area_limits_for_all]
+
+        percentage_widget = PercentageWidget(recoils, limits)
+        self.tab.add_widget(percentage_widget)
 
     def open_element_simulation_settings(self):
         """
@@ -1384,6 +1402,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     x=low_x, linestyle="--"))
                 self.area_limits_for_all.append(self.axes.axvline(
                     x=high_x, linestyle="--", color='red'))
+                self.parent.ui.percentButton.setEnabled(True)
             self.area_limits_for_all_on = True
             self.span_selector.set_active(True)
 
