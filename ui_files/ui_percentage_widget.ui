@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>268</width>
+    <width>250</width>
     <height>200</height>
    </rect>
   </property>
@@ -66,6 +66,15 @@
      <property name="title">
       <string>Percentages</string>
      </property>
+     <layout class="QVBoxLayout" name="verticalLayout_4">
+      <item>
+       <layout class="QVBoxLayout" name="percentageLayout">
+        <property name="spacing">
+         <number>0</number>
+        </property>
+       </layout>
+      </item>
+     </layout>
     </widget>
    </item>
   </layout>

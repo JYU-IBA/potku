@@ -37,7 +37,8 @@ class PercentageWidget(QtWidgets.QWidget):
     intervals.
     """
 
-    def __init__(self, recoil_elements, same_interval, use_same_interval):
+    def __init__(self, recoil_elements, same_interval, use_same_interval,
+                 use_individual_intervals):
         """
         Initialize the widget.
 
@@ -46,18 +47,26 @@ class PercentageWidget(QtWidgets.QWidget):
             same_interval: Interval that used for all the recoils.
             use_same_interval: Whether to use the same interval for all
             recoils or not.
+            use_individual_intervals: Whether to use individual intervals or
+            not.
         """
         super().__init__()
         self.recoil_elements = recoil_elements
         self.common_interval = same_interval
         self.use_same_interval = use_same_interval
+        self.use_individual_intervals = use_individual_intervals
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_percentage_widget.ui"), self)
 
         self.setWindowTitle("Percentages")
+        self.ui.comboBox.currentIndexChanged.connect(
+            lambda: self.__show_percents())
 
         self.__common_percentages = {}
         self.__common_areas = {}
+
+        self.__individual_percentages = {}
+        self.__individual_areas = {}
 
         self.__calculate_percents()
         self.__show_percents()
@@ -85,16 +94,35 @@ class PercentageWidget(QtWidgets.QWidget):
                 self.__common_percentages[recoil] = round(
                     ((area / total_area) * 100), 2)
 
+        if self.use_individual_intervals:
+            for recoil in self.recoil_elements:
+                area = recoil.calculate_area_for_interval()
+                self.__individual_areas[recoil] = area
+
+            total_area = 0
+            for area in self.__individual_areas.values():
+                total_area += area
+
+            for recoil, area in self.__individual_areas.items():
+                self.__individual_percentages[recoil] = round(
+                    ((area / total_area) * 100), 2)
+
     def __show_percents(self):
         """
         Show the percentages of the recoil elements.
         """
         # Show percentages in widget with element information and color (also
         #  interval which was used?)
-        layout = QtWidgets.QVBoxLayout()
-        if self.use_same_interval:
+        for i in range(self.ui.percentageLayout.count()):
+            self.ui.percentageLayout.itemAt(i).widget().close()
+
+        if self.ui.comboBox.currentText().startswith("Same"):
             for recoil, percentage in self.__common_percentages.items():
                 text = "Element: " + recoil.prefix + " " + recoil.name + \
                     "  " + str(percentage) + "%"
-                layout.addWidget(QtWidgets.QLabel(text))
-            self.ui.groupBox.setLayout(layout)
+                self.ui.percentageLayout.addWidget(QtWidgets.QLabel(text))
+        else:
+            for recoil, percentage in self.__individual_percentages.items():
+                text = "Element: " + recoil.prefix + " " + recoil.name + \
+                    "  " + str(percentage) + "%"
+                self.ui.percentageLayout.addWidget(QtWidgets.QLabel(text))
