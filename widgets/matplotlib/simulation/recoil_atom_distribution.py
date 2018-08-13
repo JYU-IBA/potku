@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 10.8.2018
+Updated on 13.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -504,7 +504,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         limits = [x.get_xdata()[0] for x in self.area_limits_for_all]
 
-        percentage_widget = PercentageWidget(recoils, limits)
+        percentage_widget = PercentageWidget(recoils, limits,
+                                             self.area_limits_for_all_on)
         self.tab.add_widget(percentage_widget)
 
     def open_element_simulation_settings(self):
@@ -2217,7 +2218,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.area_limits_for_all = []
 
+        # Check that limits don't go further than target dimensions
+        if low_x < 0:
+            low_x = 0
+        if high_x > self.target_thickness:
+            high_x = self.target_thickness
+
         ylim = self.axes.get_ylim()
+
         self.area_limits_for_all.append(self.axes.axvline(
             x=low_x, linestyle="--"))
         self.area_limits_for_all.append(self.axes.axvline(
@@ -2255,7 +2263,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         polygon_points = []
         for value in limited_points:
-            polygon_points.append([value[0], value[1]])
+            polygon_points.append((value[0], value[1]))
 
         # Add two points that have zero y coordinate to make a rectangle
         point1_x = polygon_points[len(polygon_points) - 1][0]

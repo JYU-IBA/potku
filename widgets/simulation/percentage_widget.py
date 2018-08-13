@@ -1,6 +1,7 @@
 # coding=utf-8
 """
 Created on 10.8.2018
+Updated on 13.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -36,19 +37,64 @@ class PercentageWidget(QtWidgets.QWidget):
     intervals.
     """
 
-    def __init__(self, recoil_elements, same_interval):
+    def __init__(self, recoil_elements, same_interval, use_same_interval):
         """
         Initialize the widget.
 
         Args:
             recoil_elements: List of recoil elements.
             same_interval: Interval that used for all the recoils.
+            use_same_interval: Whether to use the same interval for all
+            recoils or not.
         """
         super().__init__()
         self.recoil_elements = recoil_elements
         self.common_interval = same_interval
+        self.use_same_interval = use_same_interval
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_percentage_widget.ui"), self)
 
         self.setWindowTitle("Percentages")
 
+        self.__common_percentages = {}
+        self.__common_areas = {}
+
+        self.__calculate_percents()
+        self.__show_percents()
+
+    def __calculate_percents(self):
+        """
+        Calculate percents for recoil elements.
+        """
+        # Calculate the areas of the recoils
+        # Calculate percentages for same interval (if is used)
+        # Calculate percentage for individual intervals (if all have none,
+        # don't count, if some don't have, use all area)
+        if self.use_same_interval:
+            start = self.common_interval[0]
+            end = self.common_interval[1]
+            for recoil in self.recoil_elements:
+                area = recoil.calculate_area_for_interval(start, end)
+                self.__common_areas[recoil] = area
+
+            total_area = 0
+            for area in self.__common_areas.values():
+                total_area += area
+
+            for recoil, area in self.__common_areas.items():
+                self.__common_percentages[recoil] = round(
+                    ((area / total_area) * 100), 2)
+
+    def __show_percents(self):
+        """
+        Show the percentages of the recoil elements.
+        """
+        # Show percentages in widget with element information and color (also
+        #  interval which was used?)
+        layout = QtWidgets.QVBoxLayout()
+        if self.use_same_interval:
+            for recoil, percentage in self.__common_percentages.items():
+                text = "Element: " + recoil.prefix + " " + recoil.name + \
+                    "  " + str(percentage) + "%"
+                layout.addWidget(QtWidgets.QLabel(text))
+            self.ui.groupBox.setLayout(layout)

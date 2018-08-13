@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 3.8.2018
+Updated on 13.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,6 +29,8 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __version__ = "2.0"
 
 from modules.element import Element
+
+from shapely.geometry import Polygon
 
 
 class RecoilElement:
@@ -68,6 +70,8 @@ class RecoilElement:
         # Area of certain limits
         self.area = None
         self.area_limits = []
+
+        self.__common_area_points = []
 
         # Color of the recoil
         self.color = color
@@ -225,3 +229,95 @@ class RecoilElement:
                 " 0.0\n" +
                 str(round(self.get_points()[-1].get_x() + 10.03, 2)) +
                 " 0.0\n")
+
+    def calculate_area_for_interval(self, start, end):
+        """
+        Calculate area for given interval.
+
+        Args:
+            start: Start x.
+            end: End x.
+
+        Return:
+            Area between intervals and recoil points and x axis.
+        """
+        self.__common_area_points = []
+        for i, point in enumerate(self._points):
+            x = point.get_x()
+            y = point.get_y()
+            if x < start:
+                continue
+            if start <= x:
+                if i > 0:
+                    previous_point = self._points[i - 1]
+                    if previous_point.get_x() < start < x:
+                        # Calculate new point to be added
+                        self.__calculate_new_point(previous_point, start,
+                                                   point)
+                if x <= end:
+                    self.__common_area_points.append((x, y))
+                else:
+                    if i > 0:
+                        previous_point = self._points[i - 1]
+                        if previous_point.get_x() < end < x:
+                            self.__calculate_new_point(previous_point, end,
+                                                       point)
+                    break
+
+        # If common points are empty, no recoil inside area
+        if not self.__common_area_points:
+            return 0.0
+
+        if self.__common_area_points[-1][0] < end:
+            self.__common_area_points.append((end, 0))
+
+        polygon_points = []
+        for value in self.__common_area_points:
+            polygon_points.append(value)
+
+        # Add two points that have zero y coordinate to make a rectangle
+        if not polygon_points[-1][1] == 0.0:
+            point1_x = polygon_points[-1][0]
+            point1 = (point1_x, 0.0)
+            polygon_points.append(point1)
+
+        point2_x = polygon_points[0][0]
+        point2 = (point2_x, 0.0)
+
+        polygon_points.append(point2)
+
+        # Add the first point again to close the rectangle
+        polygon_points.append(polygon_points[0])
+
+        polygon = Polygon(polygon_points)
+        area = polygon.area
+        return area
+
+    def __calculate_new_point(self, previous_point, new_x, next_point):
+        """
+        Calculate a new point whose x coordinate is given, between previous
+        and next point.
+
+        Args:
+            previous_point: Previous point.
+            new_x: X coordinate for new point.
+            next_point: Next point.
+        """
+        previous_x = previous_point.get_x()
+        previous_y = previous_point.get_y()
+
+        next_x = next_point.get_x()
+        next_y = next_point.get_y()
+
+        x_diff = round(next_x - previous_x, 4)
+        y_diff = round(next_y - previous_y, 4)
+
+        if x_diff == 0.0:
+            # If existing points are close enough
+            return
+
+        k =  y_diff / x_diff
+        new_y = k * new_x - k * previous_x + previous_y
+
+        new_point = (new_x, new_y)
+        self.__common_area_points.append(new_point)
