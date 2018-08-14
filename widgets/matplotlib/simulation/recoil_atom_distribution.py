@@ -1645,21 +1645,23 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                               - self.dragged_points[self.lowest_dr_p_i].get_y()
                               for i in range(len(self.dragged_points))]
 
-    def add_point(self, coords, special=False):
+    def add_point(self, coords, special=False, recoil=None):
         """Adds a point if there is space for it.
         Returns the point if a point was added, None if not.
         """
         if not self.current_element_simulation:
             return
+
+        if not recoil:
+            recoil = self.current_recoil_element
         new_point = Point(coords)
-        self.current_element_simulation.add_point(
-            self.current_recoil_element, new_point)
+        self.current_element_simulation.add_point(recoil, new_point)
         left_neighbor = self.current_element_simulation.get_left_neighbor(
-            self.current_recoil_element, new_point)
+            recoil, new_point)
         left_neighbor_x = left_neighbor.get_x()
 
         right_neighbor = self.current_element_simulation.get_right_neighbor(
-            self.current_recoil_element, new_point)
+            recoil, new_point)
 
         if right_neighbor:
             right_neighbor_x = right_neighbor.get_x()
@@ -1682,8 +1684,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     new_point.set_x(right_neighbor_x - self.x_res)
 
             if not self.full_edit_on or \
-               self.current_element_simulation.recoil_elements[0] != \
-               self.current_recoil_element:
+               self.current_element_simulation.recoil_elements[0] != recoil:
                 # Check if point is added between two zeros
                 if right_neighbor.get_y() == 0.0 and left_neighbor.get_y() ==\
                    0.0:
@@ -1693,7 +1694,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
             if error:
                 self.current_element_simulation.remove_point(
-                    self.current_recoil_element, new_point)
+                    recoil, new_point)
                 QtWidgets.QMessageBox.critical(self.parent, "Error",
                                                "Can't add a point here.\nThere "
                                                "is no space for it.",
@@ -2098,6 +2099,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.dragged_points.clear()
             self.update_plot()
 
+            if self.point_clicked:
+                self.span_selector.set_active(True)
+
             # If graph was clicked and span not used
             if self.__x_start and self.__x_end and self.__x_start == \
                     self.__x_end:
@@ -2149,7 +2153,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if self.current_recoil_element is \
                 self.current_element_simulation.recoil_elements[0]:
             return
-        if not self.current_recoil_element.area_limits:
+        if not self.area_limits_for_all_on:
             return
 
         menu = QtWidgets.QMenu(self)
@@ -2160,12 +2164,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         coords = self.canvas.geometry().getCoords()
         point = QtCore.QPoint(event.x, coords[3] - event.y - coords[1])
-
-        if self.current_element_simulation.recoil_elements[0].area and \
-                self.limits_match():
-            action.setEnabled(True)
-        else:
-            action.setEnabled(False)
 
         menu.exec_(self.canvas.mapToGlobal(point))
 
@@ -2192,16 +2190,43 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Multiply recoil element area and change the distribution accordingly.
         """
         dialog = MultiplyAreaDialog(
-            self.current_element_simulation.recoil_elements[0])
+            self.current_element_simulation.recoil_elements[0],
+            self.area_limits_for_all)
 
         # If there are proper areas to handle
-        if dialog.reference_area and dialog.new_area:
+        if dialog.ok_pressed and dialog.reference_area and dialog.new_area:
             # Delete/add points between limits to have matching number of points
+            lower_limit = round(self.area_limits_for_all[0].get_xdata()[0], 2)
+            upper_limit = round(self.area_limits_for_all[1].get_xdata()[0], 2)
+
+            # Add missing start and end
+            x_coords = self.current_recoil_element.get_xs()
+            current_points = self.current_recoil_element.get_points()
+            if lower_limit not in x_coords:
+                point_to_add = None
+                for i, p in enumerate(current_points):
+                    if i > 0:
+                        previous_point = current_points[i - 1]
+                        if previous_point.get_x() < lower_limit < p.get_x():
+                            y = find_y_on_line(previous_point, p, lower_limit)
+                            point_to_add = (lower_limit, y)
+                            break
+                if point_to_add:
+                    self.add_point(point_to_add)
+
+            if upper_limit not in x_coords:
+                point_to_add = None
+                for i, p in enumerate(current_points):
+                    if i > 0:
+                        previous_point = current_points[i - 1]
+                        if previous_point.get_x() < upper_limit < p.get_x():
+                            y = find_y_on_line(previous_point, p, upper_limit)
+                            point_to_add = (upper_limit, y)
+                            break
+                if point_to_add:
+                    self.add_point(point_to_add)
+
             # Delete
-            lower_limit = self.current_recoil_element.area_limits[0]. \
-                get_xdata()[0]
-            upper_limit = self.current_recoil_element.area_limits[1]. \
-                get_xdata()[0]
             for point in reversed(self.current_recoil_element.get_points()):
                 x = point.get_x()
                 if x <= lower_limit:
@@ -2214,10 +2239,45 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # Add
             points = self.current_element_simulation.\
                 recoil_elements[0].get_points()
+            main_x_coords = self.current_element_simulation.recoil_elements[
+                0].get_xs()
             main_y_lower = None
             main_y_lower_i = None
             main_y_upper = None
             main_y_upper_i = None
+            main_points_to_add = []
+
+            # Add lower and upper limit temporarily to main recoil points
+            if lower_limit not in main_x_coords:
+                point_to_add = None
+                for i, p in enumerate(points):
+                    if i > 0:
+                        previous_point = points[i - 1]
+                        if previous_point.get_x() < lower_limit < p.get_x():
+                            y = find_y_on_line(previous_point, p, lower_limit)
+                            point_to_add = (lower_limit, y)
+                            break
+                if point_to_add:
+                    point = self.add_point(
+                        point_to_add,
+                        recoil=self.current_element_simulation
+                            .recoil_elements[0])
+                    main_points_to_add.append(point)
+
+            if upper_limit not in main_x_coords:
+                point_to_add = None
+                for i, p in enumerate(points):
+                    if i > 0:
+                        previous_point = points[i - 1]
+                        if previous_point.get_x() < upper_limit < p.get_x():
+                            y = find_y_on_line(previous_point, p, upper_limit)
+                            point_to_add = (upper_limit, y)
+                            break
+                if point_to_add:
+                    point = self.add_point(
+                        point_to_add, recoil=self.current_element_simulation
+                            .recoil_elements[0])
+                    main_points_to_add.append(point)
 
             for i in range(len(points)):
                 main_p_x = points[i].get_x()
@@ -2237,10 +2297,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                         main_y_upper_i = i
 
             # Adjust the lower and upper limit ys
-            if main_y_lower and main_y_upper:
+            if main_y_lower is not None:
                 lower_point = self.current_element_simulation.get_point_by_i(
                     self.current_recoil_element, main_y_lower_i)
                 lower_point.set_y(main_y_lower)
+            if main_y_upper is not None:
                 upper_point = self.current_element_simulation.get_point_by_i(
                     self.current_recoil_element, main_y_upper_i)
                 upper_point.set_y(main_y_upper)
@@ -2256,6 +2317,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                         if 0.00 < new_y < 0.0001:
                             new_y = 0.0001
                         sec_p.set_y(new_y)
+
+            for r_p in main_points_to_add:
+                self.current_element_simulation.remove_point(
+                    self.current_element_simulation.recoil_elements[0], r_p)
+
         self.__calculate_selected_area()
         self.update_plot()
 

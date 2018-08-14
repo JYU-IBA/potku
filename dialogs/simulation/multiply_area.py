@@ -1,6 +1,7 @@
 # coding=utf-8
 """
 Created on 10.7.2018
+Updated on 14.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -36,12 +37,13 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
     """
     Dialog for choosing area multiplication parameters.
     """
-    def __init__(self, main_recoil):
+    def __init__(self, main_recoil, area_limits):
         """
         Initializes the dialog.
 
         Args:
             main_recoil: Main RecoilElement object.
+            area_limits: Limits for area.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
@@ -53,23 +55,23 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
         self.ui.fractionDoubleSpinBox.setLocale(locale)
 
         self.ui.cancelButton.clicked.connect(self.close)
-        self.ui.okButton.clicked.connect(self.close)
+        self.ui.okButton.clicked.connect(self.ok_pressed)
 
         self.ui.fractionCheckBox.stateChanged.connect(self.change_custom)
         self.ui.fractionDoubleSpinBox.valueChanged.connect(
             self.calculate_new_area)
 
-        if self.main_recoil.area is None:
-            text = str(None)
-        else:
-            text = str(round(self.main_recoil.area, 2))
+        self.main_area = self.main_recoil.calculate_area_for_interval()
+        text = str(round(self.main_area, 2))
 
         self.ui.mainAreaLabel.setText(text)
         self.ui.totalAreaLabel.setText(text)
 
-        self.new_area = self.main_recoil.area
-        self.reference_area = self.main_recoil.area
+        self.new_area = self.main_area
+        self.reference_area = self.main_area
         self.fraction = None
+
+        self.ok_pressed = False
 
         self.exec_()
 
@@ -77,7 +79,7 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
         """
         Calculate new area based on dialog's values.
         """
-        ref_area = self.main_recoil.area
+        ref_area = self.main_area
 
         if not ref_area:
             return
@@ -103,3 +105,10 @@ class MultiplyAreaDialog(QtWidgets.QDialog):
             checked = self.ui.fractionCheckBox.isChecked()
             self.ui.fractionDoubleSpinBox.setEnabled(checked)
         self.calculate_new_area()
+
+    def ok_pressed(self):
+        """
+        Note that Ok was pressed.
+        """
+        self.ok_pressed = True
+        self.close()
