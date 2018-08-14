@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 13.8.2018
+Updated on 14.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -396,6 +396,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.area_limits_for_all_on = False
         # Are individual limits for recoils on or not
         self.area_limits_individual_on = False
+        # Which individual area limit needs to be moved
+        self.__move_lower = True
 
         self.annotations = []
         self.trans = matplotlib.transforms.blended_transform_factory(
@@ -1609,6 +1611,45 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                         setEnabled(False)
                             self.set_on_click_attributes(event)
                             self.update_plot()
+
+                else:
+                    # If possible, move individual area limits
+                    if self.area_limits_individual_on:
+                        x = event.xdata
+                        if x < 0.0:
+                            x = 0.0
+                        if x > self.target_thickness:
+                            x = self.target_thickness
+                        # First move the lower limit, then the upper
+                        # If upper limit is lower, change it to lower
+                        if self.__move_lower:
+                            lim = self.current_recoil_element.area_limits[0]
+                            lim.set_xdata([x])
+                            upper = self.current_recoil_element.area_limits[1]
+                            if x > upper.get_xdata()[0]:
+                                self.current_recoil_element.area_limits = []
+                                self.current_recoil_element.area_limits.append(
+                                    upper)
+                                self.current_recoil_element.area_limits.append(
+                                    lim)
+                                upper.set_color('orange')
+                                lim.set_color('green')
+                            self.__move_lower = False
+                        else:
+                            lim = self.current_recoil_element.area_limits[1]
+                            lim.set_xdata([x])
+                            lower = self.current_recoil_element.area_limits[0]
+                            if x < lower.get_xdata()[0]:
+                                self.current_recoil_element.area_limits = []
+                                self.current_recoil_element.area_limits.append(
+                                    lim)
+                                self.current_recoil_element.area_limits.append(
+                                    lower)
+                                lower.set_color('green')
+                                lim.set_color('orange')
+                            self.__move_lower = True
+
+                        self.__calculate_selected_area()
 
         elif event.button == 3:  # Right click
             self.__rectangle_event_click = event
