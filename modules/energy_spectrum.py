@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.4.2013
-Updated on 18.6.2018
+Updated on 10.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -32,11 +32,12 @@ __version__ = "2.0"
 import logging
 import os
 import sys
-from PyQt5 import QtCore
 
 from modules.element import Element
 from modules.general_functions import calculate_spectrum
 from modules.general_functions import tof_list
+
+from PyQt5 import QtCore
 
 
 class EnergySpectrum:
@@ -99,9 +100,10 @@ class EnergySpectrum:
                                          save_output)
     
                 dirtyinteger += 1
-                self.__progress_bar.setValue((dirtyinteger / count) * 100)
-                QtCore.QCoreApplication.processEvents(
-                    QtCore.QEventLoop.AllEvents)
+                if self.__progress_bar:
+                    self.__progress_bar.setValue((dirtyinteger / count) * 100)
+                    QtCore.QCoreApplication.processEvents(
+                        QtCore.QEventLoop.AllEvents)
                 # Mac requires event processing to show progress bar and its
                 # process.
         except:
@@ -113,5 +115,5 @@ class EnergySpectrum:
                                  err_file,
                                 str(sys.exc_info()[2].tb_lineno)])
             msg += str_err
-            logging.getLogger(self.__measurement.measurement_name).error(msg)
+            logging.getLogger(self.__measurement.name).error(msg)
         return cut_dict
