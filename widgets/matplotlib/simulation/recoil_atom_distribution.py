@@ -399,6 +399,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Which individual area limit needs to be moved
         self.__move_lower = True
 
+        # Used in checking whether graph was clicked or span select was used
+        self.__x_start = None
+        self.__x_end = None
+
         self.annotations = []
         self.trans = matplotlib.transforms.blended_transform_factory(
             self.axes.transData, self.axes.transAxes)
@@ -1611,45 +1615,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                         setEnabled(False)
                             self.set_on_click_attributes(event)
                             self.update_plot()
-
                 else:
-                    # If possible, move individual area limits
-                    if self.area_limits_individual_on:
-                        x = event.xdata
-                        if x < 0.0:
-                            x = 0.0
-                        if x > self.target_thickness:
-                            x = self.target_thickness
-                        # First move the lower limit, then the upper
-                        # If upper limit is lower, change it to lower
-                        if self.__move_lower:
-                            lim = self.current_recoil_element.area_limits[0]
-                            lim.set_xdata([x])
-                            upper = self.current_recoil_element.area_limits[1]
-                            if x > upper.get_xdata()[0]:
-                                self.current_recoil_element.area_limits = []
-                                self.current_recoil_element.area_limits.append(
-                                    upper)
-                                self.current_recoil_element.area_limits.append(
-                                    lim)
-                                upper.set_color('orange')
-                                lim.set_color('green')
-                            self.__move_lower = False
-                        else:
-                            lim = self.current_recoil_element.area_limits[1]
-                            lim.set_xdata([x])
-                            lower = self.current_recoil_element.area_limits[0]
-                            if x < lower.get_xdata()[0]:
-                                self.current_recoil_element.area_limits = []
-                                self.current_recoil_element.area_limits.append(
-                                    lim)
-                                self.current_recoil_element.area_limits.append(
-                                    lower)
-                                lower.set_color('green')
-                                lim.set_color('orange')
-                            self.__move_lower = True
-
-                        self.__calculate_selected_area()
+                    self.__x_start = event.xdata
 
         elif event.button == 3:  # Right click
             self.__rectangle_event_click = event
@@ -2127,9 +2094,50 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if self.__button_drag.isChecked() or self.__button_zoom.isChecked():
             return
         if event.button == 1:
+            self.__x_end = event.xdata
             self.dragged_points.clear()
-            # self.span_selector.set_active(True)
             self.update_plot()
+
+            # If graph was clicked and span not used
+            if self.__x_start and self.__x_end and self.__x_start == \
+                    self.__x_end:
+                # If possible, move individual area limits
+                if self.area_limits_individual_on:
+                    x = event.xdata
+                    if x < 0.0:
+                        x = 0.0
+                    if x > self.target_thickness:
+                        x = self.target_thickness
+                    # First move the lower limit, then the upper
+                    # If upper limit is lower, change it to lower
+                    if self.__move_lower:
+                        lim = self.current_recoil_element.area_limits[0]
+                        lim.set_xdata([x])
+                        upper = self.current_recoil_element.area_limits[1]
+                        if x > upper.get_xdata()[0]:
+                            self.current_recoil_element.area_limits = []
+                            self.current_recoil_element.area_limits.append(
+                                upper)
+                            self.current_recoil_element.area_limits.append(
+                                lim)
+                            upper.set_color('orange')
+                            lim.set_color('green')
+                        self.__move_lower = False
+                    else:
+                        lim = self.current_recoil_element.area_limits[1]
+                        lim.set_xdata([x])
+                        lower = self.current_recoil_element.area_limits[0]
+                        if x < lower.get_xdata()[0]:
+                            self.current_recoil_element.area_limits = []
+                            self.current_recoil_element.area_limits.append(
+                                lim)
+                            self.current_recoil_element.area_limits.append(
+                                lower)
+                            lower.set_color('green')
+                            lim.set_color('orange')
+                        self.__move_lower = True
+
+                    self.__calculate_selected_area()
 
     def __context_menu(self, event):
         """
