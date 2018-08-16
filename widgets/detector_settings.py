@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 3.8.2018
+Updated on 16.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,6 +28,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import copy
+import math
 import os
 import time
 
@@ -46,6 +47,7 @@ from PyQt5.QtCore import QLocale
 from PyQt5.QtCore import Qt
 
 from widgets.foil import FoilWidget
+from widgets.scientific_spinbox import ScientificSpinBox
 
 
 class DetectorSettingsWidget(QtWidgets.QWidget):
@@ -122,6 +124,39 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.virtualSizeXSpinBox.setLocale(locale)
         self.virtualSizeYSpinBox.setLocale(locale)
 
+        # Create scientific spinboxes for tof slope and tof offset
+        self.ui.formLayout_2.removeRow(self.ui.slopeLineEdit)
+        self.ui.formLayout_2.removeRow(self.ui.offsetLineEdit)
+
+        # Parse the value and multiplier
+        slope_value_and_mult = str(self.obj.tof_slope)
+        try:
+            e_index = slope_value_and_mult.index('e')
+            number_part = slope_value_and_mult[:e_index]
+            multiply_part = "1" + slope_value_and_mult[e_index:]
+        except ValueError:
+            number_part = slope_value_and_mult
+            multiply_part = 1
+        self.scientific_tof_slope = ScientificSpinBox(number_part,
+                                                      multiply_part,
+                                                      -math.inf, math.inf)
+        # Parse the value and multiplier
+        offset_value_and_mult = str(self.obj.tof_offset)
+        try:
+            e_index = offset_value_and_mult.index('e')
+            number_part = offset_value_and_mult[:e_index]
+            multiply_part = "1" + offset_value_and_mult[e_index:]
+        except ValueError:
+            number_part = offset_value_and_mult
+            multiply_part = 1
+        self.scientific_tof_offset = ScientificSpinBox(number_part,
+                                                       multiply_part,
+                                                       -math.inf, math.inf)
+        self.ui.formLayout_2.insertRow(0, "ToF slope [s/channel]:",
+                                       self.scientific_tof_slope)
+        self.ui.formLayout_2.insertRow(1, "ToF offset[s]:",
+                                       self.scientific_tof_offset)
+
         self.show_settings()
 
     def show_settings(self):
@@ -139,10 +174,6 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             str(self.obj.angle_slope))
         self.angleOffsetLineEdit.setText(
             str(self.obj.angle_offset))
-        self.slopeLineEdit.setText(
-            str(self.obj.tof_slope))
-        self.offsetLineEdit.setText(
-            str(self.obj.tof_offset))
 
         self.timeResSpinBox.setValue(self.obj.timeres)
         self.virtualSizeXSpinBox.setValue(self.obj.virtual_size[0])
@@ -164,8 +195,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.obj.type = self.typeComboBox.currentText()
         self.obj.angle_offset = self.angleOffsetLineEdit.text()
         self.obj.angle_slope = self.angleSlopeLineEdit.text()
-        self.obj.tof_offset = self.offsetLineEdit.text()
-        self.obj.tof_slope = self.slopeLineEdit.text()
+        self.obj.tof_slope = self.scientific_tof_slope.value_str
+        self.obj.tof_offset = self.scientific_tof_offset.value_str
 
         self.obj.virtual_size = self.virtualSizeXSpinBox.value(), \
                                 self.virtualSizeYSpinBox.value()
@@ -193,9 +224,9 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             return True
         if self.obj.angle_slope != self.angleSlopeLineEdit.text():
             return True
-        if self.obj.tof_offset != self.offsetLineEdit.text():
+        if self.obj.tof_offset != self.scientific_tof_offset.value_str:
             return True
-        if self.obj.tof_slope != self.slopeLineEdit.text():
+        if self.obj.tof_slope != self.scientific_tof_slope.value_str:
             return True
         if self.obj.virtual_size != (self.virtualSizeXSpinBox.value(),
                                 self.virtualSizeYSpinBox.value()):

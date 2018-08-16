@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 3.8.2018
-Updated on 9.8.2018
+Updated on 16.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -62,8 +62,13 @@ class ScientificSpinBox(QtWidgets.QWidget):
         self.minimum = minimum
         self.maximum = maximum
 
+        # There can only be 17 characters in the value part
+        if len(str(value)) > 17:
+            new_value = str(value)[:18]
+            value = float(new_value)
         self.value = value
         self.multiplier = multiplier
+        self.value_str = str(self.value) + str(self.multiplier)[1:]
         self.ui.scientificLineEdit.setText(str(self.value)
                                            + str(self.multiplier)[1:])
 
@@ -96,6 +101,7 @@ class ScientificSpinBox(QtWidgets.QWidget):
             else:
                 self.value = float(value_str)
                 self.multiplier = 1
+            self.value_str = value_str
             return True
         return False
 
@@ -290,6 +296,20 @@ class ScientificSpinBox(QtWidgets.QWidget):
                 pass
         except ValueError:
             pass
+        # Find out if number part is longer than 17
+        if 'e' in match:
+            e_index = match.index('e')
+            e_part = match[e_index:]
+            number_part = match[:e_index]
+            if len(number_part) > 17 and '.' in number_part:
+                while len(number_part) > 17:
+                    number_part = number_part[:len(number_part) - 1]
+                match = number_part + e_part
+        else:
+            if len(match) > 17 and '.' in match:
+                while len(match) > 17:
+                    match = match[:len(match) - 1]
+
         self.ui.scientificLineEdit.setText(match)
         self.ui.scientificLineEdit.setCursorPosition(pos)
         set_input_field_white(self.ui.scientificLineEdit)

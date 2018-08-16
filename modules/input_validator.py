@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 3.8.2018
-Updated on 7.8.2018
+Updated on 16.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -86,7 +86,7 @@ class InputValidator(QValidator):
             return match.group(0)
         else:
             if len(inp) > 1 and inp[len(inp) - 1] == 'e':
-                match = re.match(self.float_re_4, input[:len(inp) - 1])
+                match = re.match(self.float_re_4, inp[:len(inp) - 1])
                 if match:
                     return match.group(0)
             match = re.match(self.float_re_1, inp)
