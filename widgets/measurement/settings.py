@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 29.6.2018
+Updated on 16.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -38,7 +38,8 @@ from modules.general_functions import set_input_field_red
 from modules.general_functions import check_text
 from modules.general_functions import validate_text_input
 
-from PyQt5 import uic, QtWidgets
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 
 
@@ -71,7 +72,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.spotSizeXdoubleSpinBox.setLocale(locale)
         self.spotSizeYdoubleSpinBox.setLocale(locale)
         self.divergenceDoubleSpinBox.setLocale(locale)
-        # self.fluenceDoubleSpinBox.setLocale(locale)
+        self.fluenceDoubleSpinBox.setLocale(locale)
         self.currentDoubleSpinBox.setLocale(locale)
         self.timeDoubleSpinBox.setLocale(locale)
         self.runChargeDoubleSpinBox.setLocale(locale)

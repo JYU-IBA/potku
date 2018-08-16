@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 10.8.2018
+Updated on 16.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -354,6 +354,17 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             progress_bar.hide()
 
         self.bin_width = self.ui.histogramTicksDoubleSpinBox.value()
+
+        simulation_name = self.element_simulation.simulation.name
+        msg = "[{0}] Created Energy Spectrum. {1} {2}".format(
+            simulation_name,
+            "Bin width: {0}".format(self.bin_width),
+            "Used files: {0}".format(", ".join(self.result_files))
+        )
+        logging.getLogger("request").info(msg)
+        logging.getLogger(simulation_name).info(
+            "Created Energy Spectrum. Bin width: {0} Used files: {1}".format(
+                self.bin_width, ", ".join(self.result_files)))
 
     def __accept_params(self):
         """Accept given parameters and cut files.

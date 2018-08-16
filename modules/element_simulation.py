@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 9.8.2018
+Updated on 16.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,6 +28,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
 __version__ = "2.0"
 
 import json
+import logging
 import math
 import os
 import platform
@@ -770,17 +771,40 @@ class ElementSimulation:
                 # Update finished processes count
                 self.controls.update_finished_processes(len(self.mcerd_objects))
         if not self.mcerd_objects:
+            processes = "N/a"
             if self.controls:
                 self.controls.show_stop()
+                processes = self.controls.processes_spinbox.value()
             if self.use_default_settings:
                 self.request.running_simulations.remove(self)
             else:
                 self.simulation.running_simulations.remove(self)
+
+            # Calculate erd lines for log
+            lines_count = 0
+            for f in self.__erd_files:
+                if os.path.exists(f):
+                    with open(f, 'r') as file:
+                        lines_count = lines_count + len(file.readlines())
+
+            simulation_name = self.simulation.name
+            element = self.recoil_elements[0].element
+            if element.isotope:
+                element_name = str(element.isotope) + element.symbol
+            else:
+                element_name = element.symbol
+            msg = "Simulation finished. " + "Element: " \
+                  + element_name + " Processes:" + str(processes) + \
+                  " Number of observed atoms: " + str(lines_count)
+            logging.getLogger(simulation_name).info(msg)
+
         self.simulations_done = True
 
     def stop(self):
         """ Stop the simulation."""
         ref_key = None
+        processes = len(self.mcerd_objects.keys())
+
         for sim in list(self.mcerd_objects.keys()):
             if ref_key is None:
                 ref_key = sim
@@ -797,6 +821,24 @@ class ElementSimulation:
         except ValueError:
             self.simulation.running_simulations.remove(self)
         self.simulations_done = True
+
+        # Calculate erd lines for log
+        lines_count = 0
+        for f in self.__erd_files:
+            if os.path.exists(f):
+                with open(f, 'r') as file:
+                    lines_count = lines_count + len(file.readlines())
+
+        simulation_name = self.simulation.name
+        element = self.recoil_elements[0].element
+        if element.isotope:
+            element_name = str(element.isotope) + element.symbol
+        else:
+            element_name = element.symbol
+        msg = "Simulation stopped. " + "Element: " \
+              + element_name + " Processes:" + str(processes) + \
+              " Number of observed atoms: " + str(lines_count)
+        logging.getLogger(simulation_name).info(msg)
 
     def calculate_espe(self, recoil_element):
         """

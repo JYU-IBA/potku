@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 2.8.2018
+Updated on 16.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -401,7 +401,7 @@ class Simulation:
         requestlog = logging.FileHandler(os.path.join(self.request.directory,
                                                       'request.log'))
         requestlogformat = logging.Formatter(
-            '%(asctime)s - %(levelname)s - [Measurement : '
+            '%(asctime)s - %(levelname)s - [Simulation : '
             '%(name)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
         # Set the formatters to the logs.
