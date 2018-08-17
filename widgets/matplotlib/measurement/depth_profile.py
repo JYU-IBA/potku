@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 17.4.2013
-Updated on 9.8.2018
+Updated on 17.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -52,8 +52,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
     """
 
     def __init__(self, parent, depth_dir, elements, rbs_list, depth_scale,
-                 x_units='nm', legend=True, line_zero=False, line_scale=False,
-                 systematic_error=3.0):
+                 used_cuts, x_units='nm', legend=True, line_zero=False,
+                 line_scale=False, systematic_error=3.0):
         """Inits depth profile widget.
 
         Args:
@@ -63,6 +63,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             rbs_list: A dictionary of RBS selection elements containing
                       scatter elements.
             depth_scale: A tuple of depth scaling values.
+            used_cuts: List of cut file paths that are sed to create depth
+            profile.
             x_units: An unit to be used as x axis.
             legend: A boolean of whether to show the legend.
             line_zero: A boolean representing if vertical line is drawn at zero.
@@ -80,10 +82,12 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.elements = elements
         self.depth_dir = depth_dir
         self.__depth_scale = depth_scale
+        self.__used_cuts = used_cuts
         self.__line_zero = line_zero
         self.__line_scale = line_scale
         self.__systerr = systematic_error
-        self.depth_files = df.get_depth_files(self.elements, self.depth_dir)
+        self.depth_files = df.get_depth_files(self.elements, self.depth_dir,
+                                              self.__used_cuts)
         self.read_files = []
         self.rel_files = []
         self.hyb_files = []
@@ -263,6 +267,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             # label = r"$^{\mathtt{" + filler_prefix + str(isotope) + \
             #        "}}\mathtt{" + element + rbs_string + filler_suffix + "}$" 
             label = str(isotope) + element
+
+            if len(axe1) > len(axe2):
+                axe2.append(0.0)
             self.axes.plot(axe1, axe2, label=label,
                            color=self.selection_colors[color_key])
 

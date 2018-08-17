@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 23.7.2018
+Updated on 17.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -510,6 +510,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
                                                            rbs_list,
                                                            (depth_scale_from,
                                                             depth_scale_to),
+                                                           self.__use_cuts,
                                                            self.x_units,
                                                            True,  # legend
                                                            self.__line_zero,
