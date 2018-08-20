@@ -25,12 +25,14 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-import modules.general_functions
+import os
 
 from collections import Counter
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from  dialogs.energy_spectrum import EnergySpectrumWidget
+
+from modules.general_functions import to_superscript
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
@@ -43,7 +45,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
     Class that shows a recoil element that is connected to an ElementSimulation.
     """
     def __init__(self, parent, element, parent_tab, parent_element_widget,
-                 element_simulation, color, icon_manager):
+                 element_simulation, color, recoil_element):
         """
         Initialize the widget.
 
@@ -54,7 +56,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
             parent_element_widget: An ElementWidget.
             element_simulation: ElementSimulation object.
             color: Color for the circle.
-            icon_manager: Icon manager.
+            recoil_element: RecoilElement object.
         """
         super().__init__()
 
@@ -62,6 +64,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
         self.parent_tab = parent_tab
         self.element_simulation = element_simulation
         self.parent_element_widget = parent_element_widget
+        self.recoil_element = recoil_element
 
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setContentsMargins(12, 0, 0, 0)
@@ -69,7 +72,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
         self.radio_button = QtWidgets.QRadioButton()
 
         if element.isotope:
-            isotope_superscript = modules.general_functions.to_superscript(
+            isotope_superscript = to_superscript(
                 str(element.isotope))
             button_text = isotope_superscript + " " + element.symbol
         else:
@@ -159,3 +162,23 @@ class RecoilElementWidget(QtWidgets.QWidget):
                 QtWidgets.QMessageBox.Cancel:
             return  # If clicked Yes, then continue normally
         self.parent.remove_recoil_element(self)
+
+        # Delete energy spectra that use recoil
+        for energy_spectra in self.parent_tab.energy_spectrum_widgets:
+            for element_path in energy_spectra. \
+                    energy_spectrum_data.keys():
+                elem = self.recoil_element.prefix + "-" + \
+                       self.recoil_element.name
+                if elem in element_path:
+                    index = element_path.find(elem)
+                    if element_path[index - 1] == os.path.sep and \
+                            element_path[index + len(elem)] == '.':
+                        self.parent_tab.del_widget(energy_spectra)
+                        self.parent_tab.energy_spectrum_widgets.remove(
+                            energy_spectra)
+                        save_file_path = os.path.join(
+                            self.element_simulation.directory, energy_spectra
+                                .save_file)
+                        if os.path.exists(save_file_path):
+                            os.remove(save_file_path)
+                        break

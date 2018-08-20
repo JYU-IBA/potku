@@ -142,7 +142,8 @@ class ElementWidget(QtWidgets.QWidget):
         recoil_widget = RecoilElementWidget(self.parent, element,
                                             self.parent_tab, self,
                                             self.element_simulation,
-                                            color, self.parent.icon_manager)
+                                            color,
+                                            recoil_element)
         recoil_element.widgets.append(recoil_widget)
         self.element_simulation.recoil_elements.append(recoil_element)
 

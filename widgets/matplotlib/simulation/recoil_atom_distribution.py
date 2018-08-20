@@ -230,7 +230,8 @@ class ElementManager:
                 self.parent,
                 element_simulation.recoil_elements[i].element,
                 self.parent_tab, main_element_widget, element_simulation,
-                element_simulation.recoil_elements[i].color, self.icon_manager)
+                element_simulation.recoil_elements[i].color,
+                element_simulation.recoil_elements[i])
             element_simulation.recoil_elements[i].widgets.append(
                 recoil_element_widget)
             recoil_element_widget.element_simulation = element_simulation
@@ -1203,6 +1204,25 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 continue
             self.remove_recoil_element(recoil_elem.widgets[0],
                                        element_simulation, recoil_elem)
+            # Delete energy spectra that use recoil
+            for energy_spectra in self.tab.energy_spectrum_widgets:
+                for element_path in energy_spectra. \
+                        energy_spectrum_data.keys():
+                    elem = recoil_elem.prefix + "-" + recoil_elem.name
+                    if elem in element_path:
+                        index = element_path.find(elem)
+                        if element_path[index - 1] == os.path.sep and \
+                                element_path[index + len(elem)] == '.':
+                            self.tab.del_widget(energy_spectra)
+                            self.tab.energy_spectrum_widgets.remove(
+                                energy_spectra)
+                            save_file_path = os.path.join(
+                                self.simulation.directory,
+                                energy_spectra
+                                    .save_file)
+                            if os.path.exists(save_file_path):
+                                os.remove(save_file_path)
+                            break
         self.current_recoil_element = None
         self.remove_element(element_simulation)
         # Remove recoil lines
@@ -1221,6 +1241,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             self.tab.del_widget(energy_spectra)
                             self.tab.energy_spectrum_widgets.remove(
                                 energy_spectra)
+                            save_file_path = os.path.join(
+                                self.simulation.directory,
+                                energy_spectra.save_file)
+                            if os.path.exists(save_file_path):
+                                os.remove(save_file_path)
                             break
         self.show_other_recoils()
         self.current_element_simulation = None

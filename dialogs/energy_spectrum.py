@@ -589,6 +589,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             else:
                 self.simulation = self.parent.obj
                 self.save_file_int = save_file_int
+                self.save_file = "widget_energy_spectrum_" + str(
+                    save_file_int) + ".save"
                 for file in use_cuts:
                     self.energy_spectrum_data[file] = read_espe_file(
                         file)
