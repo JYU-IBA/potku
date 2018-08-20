@@ -43,7 +43,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
     Class that shows a recoil element that is connected to an ElementSimulation.
     """
     def __init__(self, parent, element, parent_tab, parent_element_widget,
-                 element_simulation, color):
+                 element_simulation, color, icon_manager):
         """
         Initialize the widget.
 
@@ -54,6 +54,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
             parent_element_widget: An ElementWidget.
             element_simulation: ElementSimulation object.
             color: Color for the circle.
+            icon_manager: Icon manager.
         """
         super().__init__()
 
@@ -126,7 +127,9 @@ class RecoilElementWidget(QtWidgets.QWidget):
                     break
             self.parent_tab.energy_spectrum_widgets.append(
                 energy_spectrum_widget)
-            self.parent_tab.add_widget(energy_spectrum_widget)
+            icon = self.parent.element_manager.icon_manager.get_icon(
+                "energy_spectrum_icon_16.png")
+            self.parent_tab.add_widget(energy_spectrum_widget, icon=icon)
 
             if previous and energy_spectrum_widget is not None:
                 energy_spectrum_widget.save_file_int = previous.save_file_int

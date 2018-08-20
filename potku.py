@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 9.8.2018
+Updated on 20.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -177,7 +177,9 @@ class Potku(QtWidgets.QMainWindow):
         self.tree_widget.customContextMenuRequested.connect(self.__open_menu)
         self.tree_widget.setDropIndicatorShown(True)
         self.tree_widget.setDragDropMode(QAbstractItemView.InternalMove)
-        self.tree_widget.setDragEnabled(True)
+        # Disable dragging since it doesn't do anything yet
+        # TODO: Dragging changes the order of the items in tree and directory
+        self.tree_widget.setDragEnabled(False)
         self.tree_widget.setSelectionMode(QAbstractItemView.SingleSelection)
         self.tree_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.tree_widget.itemChanged[QTreeWidgetItem, int].connect(
@@ -632,6 +634,8 @@ class Potku(QtWidgets.QMainWindow):
                     progress_bar.show()
 
                     tab.add_simulation_target_and_recoil(progress_bar)
+
+                    tab.check_previous_state_files(progress_bar)
 
                     progress_bar.setValue(100)
                     QtCore.QCoreApplication.processEvents(
@@ -1288,7 +1292,7 @@ class Potku(QtWidgets.QMainWindow):
                         QtCore.QCoreApplication.processEvents(
                             QtCore.QEventLoop.AllEvents)
 
-                        tab.add_histogram()
+                        tab.add_histogram(progress_bar)
                         progress_bar_data.hide()
                         self.statusbar.removeWidget(progress_bar_data)
                         QtCore.QCoreApplication.processEvents(

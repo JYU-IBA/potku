@@ -50,7 +50,8 @@ class ElementWidget(QtWidgets.QWidget):
     """Class for creating an element widget for the recoil atom distribution.
         """
 
-    def __init__(self, parent, element, parent_tab, element_simulation, color):
+    def __init__(self, parent, element, parent_tab, element_simulation,
+                 color, icon_manager):
         """
         Initializes the ElementWidget.
 
@@ -60,6 +61,7 @@ class ElementWidget(QtWidgets.QWidget):
             parent_tab: A SimulationTabWidget.
             element_simulation: ElementSimulation object.
             color: Color for the circle.
+            icon_manager: Icon manager.
         """
         super().__init__()
 
@@ -140,7 +142,7 @@ class ElementWidget(QtWidgets.QWidget):
         recoil_widget = RecoilElementWidget(self.parent, element,
                                             self.parent_tab, self,
                                             self.element_simulation,
-                                            color)
+                                            color, self.parent.icon_manager)
         recoil_element.widgets.append(recoil_widget)
         self.element_simulation.recoil_elements.append(recoil_element)
 
@@ -190,7 +192,9 @@ class ElementWidget(QtWidgets.QWidget):
 
             self.parent_tab.energy_spectrum_widgets.append(
                 energy_spectrum_widget)
-            self.parent_tab.add_widget(energy_spectrum_widget)
+            icon = self.parent.element_manager.icon_manager.get_icon(
+                "energy_spectrum_icon_16.png")
+            self.parent_tab.add_widget(energy_spectrum_widget, icon=icon)
 
             if previous and energy_spectrum_widget is not None:
                 energy_spectrum_widget.save_file_int = previous.save_file_int

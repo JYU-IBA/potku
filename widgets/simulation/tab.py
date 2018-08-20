@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 3.8.2018
+Updated on 20.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,10 +29,10 @@ __version__ = "2.0"
 
 import logging
 import os
-import sys
 
-from dialogs.measurement.element_losses import ElementLossesDialog
-from dialogs.measurement.element_losses import ElementLossesWidget
+from collections import Counter
+
+from dialogs.energy_spectrum import EnergySpectrumWidget
 from dialogs.simulation.settings import SimulationSettingsDialog
 
 from modules.ui_log_handlers import CustomLogHandler
@@ -122,7 +122,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
         Checks also if there's already some logging for this simulation
         and appends the text field of the user interface with this log.
         """
-        # TODO: Perhaps add a simulation log.
         self.log = LogWidget()
         self.add_widget(self.log, minimized=True, has_close_button=False)
         self.add_ui_logger(self.log)
@@ -149,32 +148,53 @@ class SimulationTabWidget(QtWidgets.QWidget):
                                                 log_widget)
         logger.addHandler(widgetlogger_default)
     
-    def check_previous_state_files(self, progress_bar=None, directory=None):
-        """Check if saved state for Elemental Losses, Energy Spectrum or Depth
-        Profile exists. If yes, load them also.
+    def check_previous_state_files(self, progress_bar):
+        """Check if saved state for Energy Spectra exist.
+        If yes, make widgets.
 
         Args:
             progress_bar: A QtWidgets.QProgressBar where loading of previous
                           graph can be shown.
-            directory: Directory path.
         """
-        if not directory:
-            directory = self.obj.directory
-        self.make_elemental_losses(directory, self.obj.name)
-        progress_bar.setValue(66)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        # Mac requires event processing to show progress bar and its
-        # process.
-        self.make_energy_spectrum(directory, self.obj.name)
+        self.make_energy_spectra()
         progress_bar.setValue(82)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-        self.make_depth_profile(directory, self.obj.name)
-        progress_bar.setValue(98)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        # Mac requires event processing to show progress bar and its
-        # process.
+
+    def make_energy_spectra(self):
+        """
+        Make corresponding energy spectra for each save file in simulation
+        directory.
+        """
+        save_energy_spectrum = False
+        for file in os.listdir(self.simulation.directory):
+            if file.endswith(".save"):
+                file_path = os.path.join(self.simulation.directory, file)
+                save_file_int = file.rsplit('_', 1)[1].split(".save")[0]
+                lines = []
+                with open(file_path, 'r') as save_file:
+                    lines = save_file.readlines()
+                if not lines:
+                    return
+                used_files = lines[0].strip().split("\t")
+                used_files_confirmed = []
+                for u_f in used_files:
+                    if os.path.exists(u_f):
+                        used_files_confirmed.append(u_f)
+                if Counter(used_files) != Counter(used_files_confirmed):
+                    save_energy_spectrum = True
+                bin_width = float(lines[1].strip())
+                icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
+                energy_spectrum_widget = EnergySpectrumWidget(
+                    self, "simulation", used_files_confirmed, bin_width,
+                    save_file_int)
+                self.energy_spectrum_widgets.append(energy_spectrum_widget)
+                self.add_widget(energy_spectrum_widget, icon=icon)
+
+                if save_energy_spectrum:
+                    energy_spectrum_widget.save_to_file(measurement=False,
+                                                        update=True)
             
     def del_widget(self, widget):
         """Delete a widget from current tab.
@@ -207,42 +227,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
             self.ui.hidePanelButton.setText('<')
 
         self.ui.frame.setVisible(self.panel_shown)
-
-    def make_elemental_losses(self, directory, name):
-        """Make elemental losses from loaded lines from saved file.
-
-        Args:
-            directory: A string representing directory.
-            name: A string representing measurement's name.
-        """
-        file = os.path.join(directory, ElementLossesWidget.save_file)
-        lines = self.__load_file(file)
-        if not lines:
-            return
-        m_name = self.obj.name
-        try:
-            reference_cut = self.__confirm_filepath(lines[0].strip(), name,
-                                                    m_name)
-            checked_cuts = self.__confirm_filepath(
-                lines[1].strip().split("\t"), name,
-                m_name)
-            cut_names = [os.path.basename(cut) for cut in checked_cuts]
-            split_count = int(lines[2])
-            y_scale = int(lines[3])
-            ElementLossesDialog.reference_cut[m_name] = \
-                os.path.basename(reference_cut)
-            ElementLossesDialog.checked_cuts[m_name] = cut_names
-            ElementLossesDialog.split_count = split_count
-            ElementLossesDialog.y_scale = y_scale
-            self.elemental_losses_widget = ElementLossesWidget(self,
-                                                               reference_cut,
-                                                               checked_cuts,
-                                                               split_count,
-                                                               y_scale)
-            icon = self.icon_manager.get_icon("elemental_losses_icon_16.png")
-            self.add_widget(self.elemental_losses_widget, icon=icon)
-        except:  # We do not need duplicate error logs, log in widget instead
-            print(sys.exc_info())  # TODO: Remove this.
 
     def __open_settings(self):
         SimulationSettingsDialog(self, self.simulation, self.icon_manager)
