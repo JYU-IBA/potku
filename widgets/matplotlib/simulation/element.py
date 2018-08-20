@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 2.8.2018
+Updated on 20.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -168,6 +168,7 @@ class ElementWidget(QtWidgets.QWidget):
         """
         Plot an energy spectrum and show it in a widget.
         """
+        previous = None
         dialog = EnergySpectrumParamsDialog(
             self.parent_tab, spectrum_type="simulation",
             element_simulation=self.element_simulation, recoil_widget=self)
@@ -182,6 +183,7 @@ class ElementWidget(QtWidgets.QWidget):
                 keys = e_widget.energy_spectrum_data.keys()
                 if Counter(keys) == Counter(
                         energy_spectrum_widget.energy_spectrum_data.keys()):
+                    previous = e_widget
                     self.parent_tab.energy_spectrum_widgets.remove(e_widget)
                     self.parent_tab.del_widget(e_widget)
                     break
@@ -189,3 +191,11 @@ class ElementWidget(QtWidgets.QWidget):
             self.parent_tab.energy_spectrum_widgets.append(
                 energy_spectrum_widget)
             self.parent_tab.add_widget(energy_spectrum_widget)
+
+            if previous and energy_spectrum_widget is not None:
+                energy_spectrum_widget.save_file_int = previous.save_file_int
+                energy_spectrum_widget.save_to_file(measurement=False,
+                                                    update=True)
+            elif not previous and energy_spectrum_widget is not None:
+                energy_spectrum_widget.save_to_file(measurement=False,
+                                                    update=False)

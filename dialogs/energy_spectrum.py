@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 16.8.2018
+Updated on 20.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -522,7 +522,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     """
     save_file = "widget_energy_spectrum.save"
 
-    def __init__(self, parent, spectrum_type, use_cuts=None, bin_width=0.025):
+    def __init__(self, parent, spectrum_type, use_cuts=None, bin_width=0.025,
+                 save_file_int=0):
         """Inits widget.
         
         Args:
@@ -530,6 +531,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             use_cuts: A string list representing Cut files.
             bin_width: A float representing Energy Spectrum histogram's bin
             width.
+            save_file_int: n integer to have unique save file names for
+            simulation energy spectra combinations.
         """
         try:
             super().__init__()
@@ -584,6 +587,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                         rbs_list[key] = get_scatter_element(cut)
 
             else:
+                self.simulation = self.parent.obj
+                self.save_file_int = save_file_int
                 for file in use_cuts:
                     self.energy_spectrum_data[file] = read_espe_file(
                         file)
@@ -660,14 +665,36 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             pass
         super().closeEvent(evnt)
 
-    def save_to_file(self):
+    def save_to_file(self, measurement=True, update=False):
         """Save object information to file.
+
+        Args:
+            measurement: Whether energy spectrum belong to measurement or
+            simulation.
         """
-        files = "\t".join([tmp.replace(self.measurement.directory + "\\",
-                                       "")
-                           for tmp in self.use_cuts])
-        file = os.path.join(self.measurement.directory_energy_spectra,
-                            self.save_file)
+        if measurement:
+            files = "\t".join([tmp.replace(self.measurement.directory + "\\",
+                                           "")
+                               for tmp in self.use_cuts])
+            file = os.path.join(self.measurement.directory_energy_spectra,
+                                self.save_file)
+        else:
+            files = "\t".join([tmp for tmp in self.use_cuts])
+
+            file_name_start = "widget_energy_spectrum_"
+            i = self.save_file_int
+            file_name_end = ".save"
+            file_name = file_name_start + str(i) + file_name_end
+            if self.save_file_int == 0 or not update:
+                i = 1
+                file_name = file_name_start + str(i) + file_name_end
+                while os.path.exists(os.path.join(self.simulation.directory,
+                                                  file_name)):
+                    file_name = file_name_start + str(i) + file_name_end
+                    i += 1
+                self.save_file_int = i
+            self.save_file = file_name
+            file = os.path.join(self.simulation.directory, file_name)
         fh = open(file, "wt")
         fh.write("{0}\n".format(files))
         fh.write("{0}".format(self.bin_width))
