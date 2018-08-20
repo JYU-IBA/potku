@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 16.8.2018
+Updated on 20.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -454,7 +454,29 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
                                                "Efficiency File (*.eff)")
         if not new_efficiency_file:
             return
-        # self.obj.add_efficiency_file(new_efficiency_file)
+        for path in self.obj.efficiencies:
+            existing_eff_name = os.path.split(path)[1]
+            new_eff_name = os.path.split(new_efficiency_file)[1]
+            if existing_eff_name == new_eff_name:
+                QtWidgets.QMessageBox.critical(self, "Error",
+                                               "There already is an "
+                                               "efficiency file for this "
+                                               "element.\n",
+                                               QtWidgets.QMessageBox.Ok,
+                                               QtWidgets.QMessageBox.Ok)
+                return
+            existing_element = existing_eff_name.split('-')[0]
+            if existing_element.endswith(".eff"):
+                existing_element = existing_element.split('.')[0]
+            new_element = new_eff_name.split('-')[0]
+            if existing_element == new_element:
+                QtWidgets.QMessageBox.critical(self, "Error",
+                                               "There already is an "
+                                               "efficiency file for this "
+                                               "element.\n",
+                                               QtWidgets.QMessageBox.Ok,
+                                               QtWidgets.QMessageBox.Ok)
+                return
         self.obj.save_efficiency_file_path(new_efficiency_file)
         self.ui.efficiencyListWidget.clear()
         self.ui.efficiencyListWidget.addItems(
