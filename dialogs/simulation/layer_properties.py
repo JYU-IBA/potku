@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 8.8.2018
+Updated on 20.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -326,6 +326,11 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
                 for energy_spectra in self.tab.energy_spectrum_widgets:
                     self.tab.del_widget(energy_spectra)
+                    save_file_path = os.path.join(
+                        self.tab.simulation.directory,
+                        energy_spectra.save_file)
+                    if os.path.exists(save_file_path):
+                        os.remove(save_file_path)
                 self.tab.energy_spectrum_widgets = []
 
                 for elem_sim in simulations_run:
@@ -374,6 +379,11 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
                 for energy_spectra in self.tab.energy_spectrum_widgets:
                     self.tab.del_widget(energy_spectra)
+                    save_file_path = os.path.join(
+                        self.tab.simulation.directory,
+                        energy_spectra.save_file)
+                    if os.path.exists(save_file_path):
+                        os.remove(save_file_path)
                 self.tab.energy_spectrum_widgets = []
 
         elif simulations_run:
@@ -404,6 +414,11 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
                 for energy_spectra in self.tab.energy_spectrum_widgets:
                     self.tab.del_widget(energy_spectra)
+                    save_file_path = os.path.join(
+                        self.tab.simulation.directory,
+                        energy_spectra.save_file)
+                    if os.path.exists(save_file_path):
+                        os.remove(save_file_path)
                 self.tab.energy_spectrum_widgets = []
 
         name = self.__ui.nameEdit.text()

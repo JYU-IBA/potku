@@ -562,6 +562,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                     self.tab.del_widget(energy_spectra)
                                     self.tab.energy_spectrum_widgets.remove(
                                         energy_spectra)
+                                    save_file_path = os.path.join(
+                                        self.tab.simulation.directory,
+                                        energy_spectra.save_file)
+                                    if os.path.exists(save_file_path):
+                                        os.remove(save_file_path)
                                     break
 
                 self.update_recoil_element_info_labels()
@@ -663,6 +668,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                 self.tab.del_widget(energy_spectra)
                                 self.tab.energy_spectrum_widgets.remove(
                                     energy_spectra)
+                                save_file_path = os.path.join(
+                                    self.tab.simulation.directory,
+                                    energy_spectra.save_file)
+                                if os.path.exists(save_file_path):
+                                    os.remove(save_file_path)
                                 break
 
             # Reset controls
