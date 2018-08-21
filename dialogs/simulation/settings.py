@@ -74,8 +74,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         screen_geometry = QtWidgets.QDesktopWidget.availableGeometry(
             QtWidgets.QApplication.desktop())
-        self.resize(self.geometry().width(), screen_geometry.size().height()
-                    * 0.8)
+        self.resize(self.geometry().width() * 1.1,
+                    screen_geometry.size().height() * 0.8)
         self.ui.defaultSettingsCheckBox.stateChanged.connect(
             lambda: self.__change_used_settings())
         self.ui.OKButton.clicked.connect(lambda:
@@ -89,7 +89,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
         self.measurement_settings_widget.ui.picture.setScaledContents(True)
-        pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
+        pixmap = QtGui.QPixmap(os.path.join("images",
+                                            "measurement_setup_angles.png"))
         self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
 
         self.measurement_settings_widget.ui.beamIonButton.clicked.connect(
