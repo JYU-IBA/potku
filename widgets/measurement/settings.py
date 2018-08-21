@@ -41,6 +41,8 @@ from modules.general_functions import validate_text_input
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QGuiApplication
 
 
 class MeasurementSettingsWidget(QtWidgets.QWidget):
@@ -92,6 +94,26 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.show_settings()
 
         self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+
+        self.clipboard = QGuiApplication.clipboard()
+        self.ratio_str = self.clipboard.text()
+        self.clipboard.changed.connect(self.__update_multiply_action)
+
+        self.fluenceDoubleSpinBox.setContextMenuPolicy(Qt.ActionsContextMenu)
+        self.actionMultiply = QtWidgets.QAction(self.fluenceDoubleSpinBox)
+        self.actionMultiply.setText("Multiply with value in clipboard\n(" +
+                                    self.ratio_str + ")")
+        self.actionMultiply.triggered.connect(self.__multiply_fluence)
+        self.fluenceDoubleSpinBox.addAction(self.actionMultiply)
+
+        self.actionUndo = QtWidgets.QAction(self.fluenceDoubleSpinBox)
+        self.actionUndo.setText("Undo multipy")
+        self.actionUndo.triggered.connect(self.__undo_fluence)
+        if self.tmp_run.previous_fluence:
+            self.actionUndo.setEnabled(True)
+        else:
+            self.actionUndo.setEnabled(False)
+        self.fluenceDoubleSpinBox.addAction(self.actionUndo)
 
     def show_settings(self):
         """
@@ -150,13 +172,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
                 target_object.target_theta)
         self.detectorThetaDoubleSpinBox.setValue(
             detector_object.detector_theta)
-        # TODO: Fix the angles!
-        # self.detectorFiiDoubleSpinBox.setValue(
-        #     detector_object.detector_theta + 180)
-
-        # TODO: update angles!
-        # self.targetFiiDoubleSpinBox.setValue(
-        #     target_object.target_theta + 180)
 
     def check_angles(self):
         """
@@ -210,6 +225,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             self.obj.run.fluence = self.fluenceDoubleSpinBox.value()
             self.obj.run.current = self.currentDoubleSpinBox.value()
             self.obj.run.time = self.timeDoubleSpinBox.value()
+            self.obj.run.previous_fluence = self.tmp_run.previous_fluence
             self.obj.detector.detector_theta = self \
                 .detectorThetaDoubleSpinBox.value()
             self.obj.target.target_theta = self \
@@ -311,4 +327,43 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         valid_text = validate_text_input(text, regex)
 
         self.ui.nameLineEdit.setText(valid_text)
+
+    def __multiply_fluence(self):
+        """
+        Multiply fluence with clipboard's value.
+        """
+        try:
+            ratio = float(self.ratio_str)
+            old_fluence = self.fluenceDoubleSpinBox.value()
+            self.tmp_run.previous_fluence.append(old_fluence)
+            new_fluence = round(ratio * old_fluence, 2)
+            self.fluenceDoubleSpinBox.setValue(new_fluence)
+            self.actionUndo.setEnabled(True)
+        except ValueError:
+            QtWidgets.QMessageBox.critical(self, "Error",
+                                           "Value '" + self.ratio_str +
+                                           "' is not suitable for "
+                                           "multiplying.\n\nPlease copy a "
+                                           "suitable value to clipboard.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+
+    def __undo_fluence(self):
+        """
+        Undo latest change to fluence.
+        """
+        old_value = self.tmp_run.previous_fluence.pop()
+        self.fluenceDoubleSpinBox.setValue(old_value)
+        if not self.tmp_run.previous_fluence:
+            self.actionUndo.setEnabled(False)
+        else:
+            self.actionUndo.setEnabled(True)
+
+    def __update_multiply_action(self):
+        """
+        Update the value with which the multiplication is done.
+        """
+        self.ratio_str = self.clipboard.text()
+        self.actionMultiply.setText("Multiply with value in clipboard\n(" +
+                                    self.ratio_str + ")")
 

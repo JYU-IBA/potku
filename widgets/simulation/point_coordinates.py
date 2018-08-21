@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.7.2018
-Updated on 20.7.2018
+Updated on 21.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -160,7 +160,6 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
                     enable = True
             if enable:
                 self.actionYUndo.setEnabled(True)
-        # spinbox.setValue(old_value)
 
     def __multiply_coordinate(self, spinbox):
         """
