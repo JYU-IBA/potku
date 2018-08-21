@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 20.8.2018
+Updated on 21.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -340,7 +340,10 @@ class _CompositionWidget(MatplotlibWidget):
         Open a layer properties dialog for modifying the selected layer.
         """
         if self.__selected_layer:
-            dialog = LayerPropertiesDialog(self.parent.tab,
+            tab = None
+            if type(self.parent) is widgets.simulation.target.TargetWidget:
+                tab = self.parent.tab
+            dialog = LayerPropertiesDialog(tab,
                                            self.__selected_layer,
                                            modify=True,
                                            simulation=self.simulation)
