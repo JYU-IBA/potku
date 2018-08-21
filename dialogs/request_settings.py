@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 8.8.2018
+Updated on 21.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -208,13 +208,17 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         default objects.
         """
         only_seed_changed = False
+        only_fluence_changed = False
         # Check that values have been changed
         if not self.values_changed():
             # If only seed number has been changed, allow the change
             if self.simulation_settings_widget.ui.seedSpinBox.value() != \
                     self.request.default_element_simulation.seed_number:
                 only_seed_changed = True
-            else:
+            if self.measurement_settings_widget.fluenceDoubleSpinBox.value() !=\
+                self.request.default_measurement.run.fluence:
+                only_fluence_changed = True
+            if not only_fluence_changed and not only_seed_changed:
                 self.__close = True
                 return
         # Check the target and detector angles
@@ -234,7 +238,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             simulations_run = self.check_if_simulations_run()
             simulations_running = self.request.simulations_running()
             if simulations_run and simulations_running and \
-                    not only_seed_changed:
+                    not only_seed_changed and not only_fluence_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulated and running simulations",
                     "There are simulations that use request settings, "
@@ -326,7 +330,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         if elem_sim.controls:
                             elem_sim.controls.reset_controls()
 
-            elif simulations_running and not only_seed_changed:
+            elif simulations_running and not only_seed_changed and \
+                    not only_fluence_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulations running",
                     "There are simulations running that use request "
@@ -381,7 +386,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         if elem_sim.controls:
                             elem_sim.controls.reset_controls()
 
-            elif simulations_run and not only_seed_changed:
+            elif simulations_run and not only_seed_changed and \
+                    not only_fluence_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulated simulations",
                     "There are simulations that use request settings, "

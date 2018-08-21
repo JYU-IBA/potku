@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 16.8.2018
+Updated on 21.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -257,8 +257,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
                 self.divergenceDoubleSpinBox.value():
                 return True
             if self.obj.run.beam.profile != self.profileComboBox.currentText():
-                return True
-            if self.obj.run.fluence != self.fluenceDoubleSpinBox.value():
                 return True
             if self.obj.run.current != self.currentDoubleSpinBox.value():
                 return True
