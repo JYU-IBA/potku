@@ -474,7 +474,11 @@ class _CompositionWidget(MatplotlibWidget):
         else:
             first = False
 
-        dialog = LayerPropertiesDialog(self.parent.tab,
+        tab = None
+        if type(self.parent) is widgets.simulation.target.TargetWidget:
+            tab = self.parent.tab
+
+        dialog = LayerPropertiesDialog(tab,
                                        simulation=self.simulation,
                                        first_layer=first)
 
