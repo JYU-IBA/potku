@@ -37,6 +37,7 @@ import time
 from dialogs.element_selection import ElementSelectionDialog
 
 from modules.detector import Detector
+from modules.general_functions import set_input_field_red
 from modules.run import Run
 from modules.target import Target
 
@@ -144,6 +145,20 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.__enabled_element_information()
             masses.load_isotopes(dialog.element, combo_box)
 
+            # Check if no isotopes
+            if combo_box.count() == 0:
+                self.measurement_settings_widget.ui.isotopeInfoLabel \
+                    .setVisible(True)
+                self.measurement_settings_widget.fields_are_valid = False
+                set_input_field_red(combo_box)
+            else:
+                self.measurement_settings_widget.ui.isotopeInfoLabel \
+                    .setVisible(False)
+                self.measurement_settings_widget.check_text(
+                    self.measurement_settings_widget.ui.nameLineEdit,
+                    self.measurement_settings_widget)
+                combo_box.setStyleSheet("background-color: %s" % "None")
+
     def __change_used_settings(self):
         check_box = self.sender()
         if check_box.isChecked():
@@ -175,6 +190,17 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         """ Update Measurement's Run, Detector and Target objects. If measurement
          specific parameters are in use, save them into a file.
         """
+        if self.measurement_settings_widget.ui.isotopeComboBox.currentIndex()\
+                == -1:
+            QtWidgets.QMessageBox.critical(self, "Warning",
+                                           "No isotope selected.\n\nPlease "
+                                           "select an isotope for the beam "
+                                           "element.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+            self.__close = False
+            return
+
         if not self.measurement.measurement_setting_file_name:
             self.measurement.measurement_setting_file_name = \
                 self.measurement.name

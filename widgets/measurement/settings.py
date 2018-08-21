@@ -64,7 +64,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
 
         set_input_field_red(self.ui.nameLineEdit)
         self.fields_are_valid = False
-        self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
+        self.ui.nameLineEdit.textChanged.connect(lambda: self.check_text(
             self.ui.nameLineEdit, self))
 
         locale = QLocale.c()
@@ -90,6 +90,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
 
         self.tmp_run = copy.deepcopy(run_object)  # Copy of measurement's run
         #  or default run
+
+        self.ui.isotopeInfoLabel.setVisible(False)
 
         self.show_settings()
 
@@ -308,9 +310,16 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             self.tmp_run.fluence = self.fluenceDoubleSpinBox.value()
             self.tmp_run.current = self.currentDoubleSpinBox.value()
             self.tmp_run.time = self.timeDoubleSpinBox.value()
+        else:
+            QtWidgets.QMessageBox.critical(self, "Warning",
+                                           "No isotope selected.\n\nPlease "
+                                           "select an isotope for the beam "
+                                           "element.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
 
     @staticmethod
-    def __check_text(input_field, settings):
+    def check_text(input_field, settings):
         """Checks if there is text in given input field.
 
         Args:
