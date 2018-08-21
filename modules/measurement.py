@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 20.8.2018
+Updated on 21.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -93,7 +93,7 @@ class Measurements:
         return self.measurements[key]
 
     def add_measurement_file(self, sample, file_path, tab_id, name,
-                             import_evnt):
+                             import_evnt_or_binary):
         """ Add a new file to measurements.
 
         Args:
@@ -102,7 +102,8 @@ class Measurements:
             creating a new measurement.
             tab_id: Integer representing identifier for measurement's tab.
             name: Name for the Measurement object.
-            import_evnt: Whether evnt data is being imported or not.
+            import_evnt_or_binary: Whether evnt or lst data is being imported
+            or not.
 
         Return:
             Returns new measurement or None if it wasn't added
@@ -110,7 +111,7 @@ class Measurements:
         directory_prefix = "Measurement_"
         measurement = None
 
-        if import_evnt:
+        if import_evnt_or_binary:
             next_serial = sample.get_running_int_measurement()
             measurement_directory = \
                 os.path.join(self.request.directory, sample.directory,

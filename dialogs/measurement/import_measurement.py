@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 19.7.2018
+Updated on 21.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -193,7 +193,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             self.parent.add_root_item_to_tree(sample)
             measurement = self.parent.add_new_tab("measurement", "", sample,
                                                   object_name=item.name,
-                                                  import_evnt=True)
+                                                  import_evnt_or_binary=True)
             output_file = os.path.join(measurement.directory_data, item.name
                                        + ".asc")
             n = 2

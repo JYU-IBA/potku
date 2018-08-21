@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 19.7.2018
+Updated on 21.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -116,12 +116,11 @@ class ImportDialogBinary(QtWidgets.QDialog):
                 byte = f.read(4)
         numpy_array = numpy.array(data)
         numpy.savetxt(output_file, numpy_array, delimiter=" ", fmt="%d %d")  
-        
-    # TODO: This part needs to be fixed, sample adding done wrong and there
-    # is no Measurement object.
+
     def __import_files(self):
         """Import binary files.
         """
+        # TODO: Check with file, in theory this is correct.
         imported_files = {}
         progress_bar = QtWidgets.QProgressBar()
         self.__statusbar.addWidget(progress_bar, 1)
@@ -130,26 +129,27 @@ class ImportDialogBinary(QtWidgets.QDialog):
         root = self.treeWidget.invisibleRootItem()
         root_child_count = root.childCount()
 
-        sample_count = 0
         for i in range(root_child_count):
             progress_bar.setValue(i / root_child_count)
             item = root.child(i)
             input_file = item.file
 
-            sample_path = os.path.join(self.__request.directory, "Sample_" +
-                                       str(sample_count))
-            sample_count += 1
-            self.request.samples.add_sample(sample_path)
-            measurement_path = os.path.join(sample_path, item.name)
-
-            output_file = "{0}.{1}".format(measurement_path, "asc")
+            sample = self.request.samples.add_sample()
+            self.__parent.add_root_item_to_tree(sample)
+            measurement = self.__parent.add_new_tab("measurement", "",
+                                                    sample,
+                                                    object_name=item.name,
+                                                    import_evnt_or_binary=True)
+            output_file = "{0}.{1}".format(measurement.directory_data,
+                                           item.name + "asc")
             n = 2
             while True:  # Allow import of same named files.
                 if not os.path.isfile(output_file):
                     break
-                output_file = "{0}-{2}.{1}".format(measurement_path, "asc", n)
+                output_file = "{0}-{2}.{1}".format(measurement.directory_data
+                 + os.sep + item.name, "asc", n)
                 n += 1
-            imported_files[sample_path] = output_file
+            imported_files[sample] = output_file
             self.__convert_file(input_file, output_file)
         self.__statusbar.removeWidget(progress_bar)
         progress_bar.hide()

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 20.8.2018
+Updated on 21.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1031,7 +1031,7 @@ class Potku(QtWidgets.QMainWindow):
 
     def add_new_tab(self, tab_type, filepath, sample, progress_bar=None,
                     file_current=0, file_count=1, load_data=False,
-                    object_name="", import_evnt=False):
+                    object_name="", import_evnt_or_binary=False):
         """Add new tab into TabWidget.
 
         Adds a new tab into program's tabWidget. Makes a new measurement or
@@ -1051,7 +1051,8 @@ class Potku(QtWidgets.QMainWindow):
             every measurement.
             object_name: When creating a new Measurement, this is the name
             for it.
-            import_evnt: Whether evnt data is being imported or not.
+            import_evnt_or_binary: Whether evnt or lst data is being imported
+            or not.
         """
         if progress_bar:
             progress_bar.setValue((100 / file_count) * file_current)
@@ -1061,7 +1062,7 @@ class Potku(QtWidgets.QMainWindow):
             measurement = \
                 self.request.samples.measurements.add_measurement_file(
                     sample, filepath, self.tab_id, object_name,
-                    import_evnt=import_evnt)
+                    import_evnt_or_binary=import_evnt_or_binary)
             if measurement == "already exists":
                 return None
             if measurement:  # TODO: Finish this (load_data)
