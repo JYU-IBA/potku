@@ -942,6 +942,11 @@ class Measurement:
         """
         if self.selector.is_empty():
             self.__remove_old_cut_files()
+            # Remove .selections file
+            selection_file = os.path.join(self.directory_data, self.name +
+                                          ".selections")
+            if os.path.exists(selection_file):
+                os.remove(selection_file)
             return 0
         if not os.path.exists(os.path.join(self.directory,
                                            self.directory_cuts)):
