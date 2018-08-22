@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 21.8.2018
+Updated on 22.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -266,6 +266,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                             self.tab.del_widget(es)
                                             self.tab.energy_spectrum_widgets.\
                                                 remove(es)
+                                            save_file_path = os.path.join(
+                                                self.tab.simulation.directory,
+                                                es.save_file)
+                                            if os.path.exists(
+                                                    save_file_path):
+                                                os.remove(
+                                                    save_file_path)
                                             break
 
                         # Reset controls
@@ -294,6 +301,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                             self.tab.del_widget(es)
                                             self.tab.energy_spectrum_widgets.\
                                                 remove(es)
+                                            save_file_path = os.path.join(
+                                                self.tab.simulation.directory,
+                                                es.save_file)
+                                            if os.path.exists(
+                                                    save_file_path):
+                                                os.remove(
+                                                    save_file_path)
                                             break
 
                         # Reset controls
@@ -343,6 +357,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                             self.tab.del_widget(es)
                                             self.tab.energy_spectrum_widgets. \
                                                 remove(es)
+                                            save_file_path = os.path.join(
+                                                self.tab.simulation.directory,
+                                                es.save_file)
+                                            if os.path.exists(
+                                                    save_file_path):
+                                                os.remove(
+                                                    save_file_path)
                                             break
 
                         # Reset controls
@@ -386,6 +407,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                             self.tab.del_widget(es)
                                             self.tab.energy_spectrum_widgets. \
                                                 remove(es)
+                                            save_file_path = os.path.join(
+                                                self.tab.simulation.directory,
+                                                es.save_file)
+                                            if os.path.exists(
+                                                    save_file_path):
+                                                os.remove(
+                                                    save_file_path)
                                             break
 
                         # Reset controls
@@ -481,6 +509,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                             self.tab.del_widget(es)
                                             self.tab.energy_spectrum_widgets. \
                                                 remove(es)
+                                            save_file_path = os.path.join(
+                                                self.tab.simulation.directory,
+                                                es.save_file)
+                                            if os.path.exists(
+                                                    save_file_path):
+                                                os.remove(
+                                                    save_file_path)
                                             break
 
                         # Reset controls
@@ -527,6 +562,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                             self.tab.del_widget(es)
                                             self.tab.energy_spectrum_widgets. \
                                                 remove(es)
+                                            save_file_path = os.path.join(
+                                                self.tab.simulation.directory,
+                                                es.save_file)
+                                            if os.path.exists(
+                                                    save_file_path):
+                                                os.remove(
+                                                    save_file_path)
                                             break
 
                         # Reset controls
@@ -567,6 +609,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                             self.tab.del_widget(es)
                                             self.tab.energy_spectrum_widgets. \
                                                 remove(es)
+                                            save_file_path = os.path.join(
+                                                self.tab.simulation.directory,
+                                                es.save_file)
+                                            if os.path.exists(
+                                                    save_file_path):
+                                                os.remove(
+                                                    save_file_path)
                                             break
                         # Reset controls
                         if elem_sim.controls:
