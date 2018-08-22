@@ -121,17 +121,17 @@ class ImportDialogBinary(QtWidgets.QDialog):
     def __import_files(self):
         """Import binary files.
         """
-        # TODO: Check with file, in theory this is correct.
         imported_files = {}
         progress_bar = QtWidgets.QProgressBar()
         self.__statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
+        progress_bar.setValue(10)
+        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         
         root = self.treeWidget.invisibleRootItem()
         root_child_count = root.childCount()
 
         for i in range(root_child_count):
-            progress_bar.setValue(i / root_child_count)
             item = root.child(i)
             input_file = item.file
 
@@ -158,10 +158,18 @@ class ImportDialogBinary(QtWidgets.QDialog):
             imported_files[sample] = output_file
             self.__convert_file(input_file, output_file)
             measurement.measurement_file = output_file
+
+            percentage = 10 + (i + 1 / root_child_count) * 90
+            progress_bar.setValue(percentage)
+            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+
+        progress_bar.setValue(100)
+        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+
         self.__statusbar.removeWidget(progress_bar)
         progress_bar.hide()
         self.imported = True
-        # self.__parent.load_request_measurements(imported_files)
+
         self.close()
 
     def __remove_selected(self):

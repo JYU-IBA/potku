@@ -177,16 +177,13 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         progress_bar = QtWidgets.QProgressBar()
         self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
+        progress_bar.setValue(10)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
         
         filename_list = []
         for i in range(root_child_count):
-            progress_bar.setValue(i / root_child_count)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process.
             item = root.child(i)
             filename_list.append(item.filename)
 
@@ -220,8 +217,17 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                   columns=string_column,
                   nevents=self.spin_eventcount.value())
             measurement.measurement_file = output_file
+
+            progress_bar.setValue(10 + (i + 1) / root_child_count * 90)
+            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+            # Mac requires event processing to show progress bar and its
+            # process.
         
         filenames = ", ".join(filename_list)
+
+        progress_bar.setValue(100)
+        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+
         self.statusbar.removeWidget(progress_bar)
         progress_bar.hide()
         elapsed = clock() - start_time
