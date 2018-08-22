@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 21.8.2018
+Updated on 22.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -33,6 +33,7 @@ import os
 import struct
 
 from modules.general_functions import open_files_dialog
+from modules.general_functions import validate_text_input
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -134,27 +135,33 @@ class ImportDialogBinary(QtWidgets.QDialog):
             item = root.child(i)
             input_file = item.file
 
-            sample = self.request.samples.add_sample()
+            sample = self.__request.samples.add_sample()
             self.__parent.add_root_item_to_tree(sample)
+            item_name = item.name.replace("_", "-")
+
+            regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+            item_name = validate_text_input(item_name, regex)
+
             measurement = self.__parent.add_new_tab("measurement", "",
                                                     sample,
-                                                    object_name=item.name,
+                                                    object_name=item_name,
                                                     import_evnt_or_binary=True)
-            output_file = "{0}.{1}".format(measurement.directory_data,
-                                           item.name + "asc")
+            output_file = "{0}.{1}".format(measurement.directory_data +
+                                           os.sep + item_name, "asc")
             n = 2
             while True:  # Allow import of same named files.
                 if not os.path.isfile(output_file):
                     break
                 output_file = "{0}-{2}.{1}".format(measurement.directory_data
-                 + os.sep + item.name, "asc", n)
+                 + os.sep + item_name, "asc", n)
                 n += 1
             imported_files[sample] = output_file
             self.__convert_file(input_file, output_file)
+            measurement.measurement_file = output_file
         self.__statusbar.removeWidget(progress_bar)
         progress_bar.hide()
         self.imported = True
-        self.__parent.load_request_measurements(imported_files)
+        # self.__parent.load_request_measurements(imported_files)
         self.close()
 
     def __remove_selected(self):
