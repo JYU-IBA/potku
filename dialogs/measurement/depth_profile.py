@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 17.8.2018
+Updated on 22.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -461,7 +461,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
             self.output_dir = output_dir
             self.elements = elements
             self.x_units = x_units
-            self.__use_cuts = use_cuts
+            self.use_cuts = use_cuts
             self.__line_zero = line_zero
             self.__line_scale = line_scale
             self.__systerr = systematic_error
@@ -473,14 +473,14 @@ class DepthProfileWidget(QtWidgets.QWidget):
             if not os.path.exists(self.output_dir):
                 os.makedirs(self.output_dir)
             output_files = os.path.join(self.output_dir, "depth")
-            dp = DepthFiles(self.__use_cuts, output_files)
+            dp = DepthFiles(self.use_cuts, output_files)
             # This has to be before create_depth_files()
             self.measurement.generate_tof_in()
             dp.create_depth_files()
             
             # Check for RBS selections.
             rbs_list = {}
-            for cut in self.__use_cuts:
+            for cut in self.use_cuts:
                 filename = os.path.basename(cut)
                 split = filename.split(".")
                 element = Element.from_string(split[1])
@@ -510,7 +510,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
                                                            rbs_list,
                                                            (depth_scale_from,
                                                             depth_scale_to),
-                                                           self.__use_cuts,
+                                                           self.use_cuts,
                                                            self.x_units,
                                                            True,  # legend
                                                            self.__line_zero,
@@ -561,7 +561,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
         fh.write("{0}\n".format(output_dir))
         fh.write("{0}\n".format("\t".join([str(element)
                                            for element in self.elements])))
-        fh.write("{0}\n".format("\t".join([cut for cut in self.__use_cuts])))
+        fh.write("{0}\n".format("\t".join([cut for cut in self.use_cuts])))
         fh.write("{0}\n".format(self.x_units))
         fh.write("{0}\n".format(self.__line_zero))
         fh.write("{0}\n".format(self.__line_scale))
@@ -573,27 +573,27 @@ class DepthProfileWidget(QtWidgets.QWidget):
         Update used cuts list with new Measurement cuts.
         """
         for file in os.listdir(self.parent.obj.directory_cuts):
-            for i in range(len(self.__use_cuts)):
-                cut = self.__use_cuts[i]
+            for i in range(len(self.use_cuts)):
+                cut = self.use_cuts[i]
                 cut_split = cut.split('.')  # There is one dot more (.potku)
                 file_split = file.split('.')
                 if cut_split[2] == file_split[1] and cut_split[3] == \
                         file_split[2] and cut_split[4] == file_split[3]:
                     cut_file = os.path.join(self.parent.obj.directory_cuts,
                                             file)
-                    self.__use_cuts[i] = cut_file
+                    self.use_cuts[i] = cut_file
 
         changes_dir = os.path.join(
             self.parent.obj.directory_composition_changes, "Changes")
         if os.path.exists(changes_dir):
             for file in os.listdir(changes_dir):
-                for i in range(len(self.__use_cuts)):
-                    cut = self.__use_cuts[i]
+                for i in range(len(self.use_cuts)):
+                    cut = self.use_cuts[i]
                     cut_split = cut.split('.')  # There is one dot more (.potku)
                     file_split = file.split('.')
                     if cut_split[2] == file_split[1] and cut_split[3] == \
                             file_split[2] and cut_split[4] == file_split[3]:
                         cut_file = os.path.join(changes_dir, file)
-                        self.__use_cuts[i] = cut_file
+                        self.use_cuts[i] = cut_file
 
         self.output_dir = self.parent.obj.directory_depth_profiles

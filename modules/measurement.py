@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 21.8.2018
+Updated on 22.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -24,9 +24,6 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-import datetime
-
-from modules.element import Element
 
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
@@ -44,6 +41,7 @@ import time
 from modules.cut_file import CutFile
 from modules.detector import Detector
 from modules.general_functions import md5_for_file
+from modules.general_functions import remove_file
 from modules.general_functions import rename_file
 from modules.run import Run
 from modules.selection import Selector
@@ -923,13 +921,27 @@ class Measurement:
         """
         self.selector.remove_selected()
 
-    # TODO: UI stuff here. Something should be in the widgets...?
+    def delete_all_cuts(self):
+        """
+        Delete all cuts from cut folder.
+
+        Return:
+            If something was deletd or not.
+        """
+        deleted = False
+        for file in os.listdir(self.directory_cuts):
+            file_path = os.path.join(self.directory_cuts, file)
+            remove_file(file_path)
+            deleted = True
+        return deleted
+
     def save_cuts(self):
         """ Save cut files
         
         Saves data points within selections into cut files.
         """
         if self.selector.is_empty():
+            self.__remove_old_cut_files()
             return 0
         if not os.path.exists(os.path.join(self.directory,
                                            self.directory_cuts)):
@@ -1000,7 +1012,7 @@ class Measurement:
         """
         Remove old cut files.
         """
-        self.__unlink_files(os.path.join(self.directory, self.directory_cuts))
+        self.__unlink_files(os.path.join(self.directory_cuts))
         directory_changes = os.path.join(
             self.directory_composition_changes, "Changes")
         if not os.path.exists(directory_changes):

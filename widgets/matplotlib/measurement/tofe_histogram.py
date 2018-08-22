@@ -1,7 +1,7 @@
 ﻿# coding=utf-8
 """
 Created on 18.4.2013
-Updated on 9.8.2018
+Updated on 22.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -30,6 +30,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import modules.masses as masses
+import os
 
 from dialogs.graph_settings import TofeGraphSettingsWidget
 from dialogs.measurement.selection import SelectionSettingsDialog
@@ -75,6 +76,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.axes.fmt_xdata = lambda x: "{0:1.0f}".format(x)
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
         self.__icon_manager = icon_manager
+        self.parent = parent
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
@@ -647,6 +649,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         """Remove selected selection.
         """
         reply = QtWidgets.QMessageBox.question(self, "Confirmation",
+                                               "Deleting this selection will "
+                                               "delete possible cut and split "
+                                               "files.\n\n"
                                                "Are you sure you want to "
                                                "delete selected selection?",
                                                QtWidgets.QMessageBox.Yes |
@@ -660,6 +665,66 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.measurement.remove_selected()
         self.measurement.reset_select()  # Nothing is now selected, reset colors
         self.measurement.selector.auto_save()
+
+        self.measurement.save_cuts()
+        # Update energy spectrum
+        es_widget = self.parent.tab.energy_spectrum_widget
+        if es_widget:
+            delete_es = False
+            for cut in es_widget.use_cuts:
+                if not os.path.exists(cut):
+                    delete_es = True
+                    # Remove unnecessary tof_list and hist files
+                    cut_file_name = os.path.split(cut)[1].rsplit('.', 1)[0]
+                    removed_files = []
+                    for file in \
+                            os.listdir(
+                                self.measurement.directory_energy_spectra):
+                        if file == cut_file_name + ".hist" or file == \
+                                cut_file_name + ".tof_list":
+                            removed_files.append(file)
+                    for f in removed_files:
+                        os.remove(os.path.join(
+                            self.measurement.directory_energy_spectra, f))
+            if delete_es:
+                save_file = os.path.join(
+                    self.measurement.directory_energy_spectra,
+                    es_widget.save_file)
+                if os.path.exists(save_file):
+                    os.remove(save_file)
+                self.parent.tab.del_widget(es_widget)
+
+        # Update depth profile
+        delete_depth = False
+        depth_widget = self.parent.tab.depth_profile_widget
+        if depth_widget:
+            for cut in depth_widget.use_cuts:
+                if not os.path.exists(cut):
+                    delete_depth = True
+                    # TODO: Delete depth files
+            if delete_depth:
+                save_file = os.path.join(
+                    self.measurement.directory_depth_profiles,
+                    depth_widget.save_file)
+                if os.path.exists(save_file):
+                    os.remove(save_file)
+                self.parent.tab.del_widget(depth_widget)
+
+        # Update composition changes
+        delete_comp = False
+        comp_widget = self.parent.tab.elemental_losses_widget
+        if comp_widget:
+            for cut in comp_widget.checked_cuts:
+                if not os.path.exists(cut):
+                    delete_comp = True
+            if delete_comp:
+                save_file = os.path.join(
+                    self.measurement.directory_composition_changes,
+                    comp_widget.save_file)
+                if os.path.exists(save_file):
+                    os.remove(save_file)
+                self.parent.tab.del_widget(comp_widget)
+
         self.elementSelectDeleteButton.setEnabled(False)
         self.__on_draw_legend()
         self.canvas.draw_idle()

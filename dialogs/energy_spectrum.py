@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 20.8.2018
+Updated on 22.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -544,6 +544,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.use_cuts = use_cuts
             self.bin_width = bin_width
             self.energy_spectrum_data = {}
+            self.spectrum_type = spectrum_type
             rbs_list = {}
 
             self.ui = uic.loadUi(os.path.join("ui_files",
@@ -659,12 +660,13 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
         """
-        file = os.path.join(self.parent.obj.directory, self.save_file)
-        try:
-            if os.path.isfile(file):
-                os.unlink(file)
-        except:
-            pass
+        if self.spectrum_type == "simulation":
+            file = os.path.join(self.parent.obj.directory, self.save_file)
+            try:
+                if os.path.isfile(file):
+                    os.unlink(file)
+            except:
+                pass
         super().closeEvent(evnt)
 
     def save_to_file(self, measurement=True, update=False):
