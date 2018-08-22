@@ -666,7 +666,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.measurement.reset_select()  # Nothing is now selected, reset colors
         self.measurement.selector.auto_save()
 
-        self.save_cuts()
+        self.measurement.save_cuts()
         # Update energy spectrum
         es_widget = self.parent.tab.energy_spectrum_widget
         if es_widget:
@@ -735,16 +735,48 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         """
         reply = QtWidgets.QMessageBox.question(self,
                                                "Delete all selections",
+                                               "If you delete all selections, "
+                                               "all possible cut and split "
+                                               "files will be deleted.\n\n"
                                                "Do you want to delete all "
-                                               "selections?\nThis cannot be "
-                                               "reversed.",
+                                               "selections anyway?",
                                                QtWidgets.QMessageBox.Yes,
                                                QtWidgets.QMessageBox.No)
         if reply == QtWidgets.QMessageBox.Yes:
             self.measurement.remove_all()
+            # Delete files and widgets
+            self.measurement.save_cuts()
+
+            es_widget = self.parent.tab.energy_spectrum_widget
+            if es_widget:
+                save_file = os.path.join(
+                    self.measurement.directory_energy_spectra,
+                    es_widget.save_file)
+                if os.path.exists(save_file):
+                    os.remove(save_file)
+                self.parent.tab.del_widget(es_widget)
+
+            comp_widget = self.parent.tab.elemental_losses_widget
+            if comp_widget:
+                save_file = os.path.join(
+                    self.measurement.directory_composition_changes,
+                    comp_widget.save_file)
+                if os.path.exists(save_file):
+                    os.remove(save_file)
+                self.parent.tab.del_widget(comp_widget)
+
+            depth_widget = self.parent.tab.depth_profile_widget
+            if depth_widget:
+                save_file = os.path.join(
+                    self.measurement.directory_depth_profiles,
+                    depth_widget.save_file)
+                if os.path.exists(save_file):
+                    os.remove(save_file)
+                self.parent.tab.del_widget(depth_widget)
+
             self.__on_draw_legend()
             self.canvas.draw_idle()
-        self.__emit_selections_changed()
+            self.__emit_selections_changed()
 
     def undo_point(self):
         """Undo last point in open selection.
