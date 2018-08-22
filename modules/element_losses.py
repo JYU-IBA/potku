@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 30.5.2018
+Updated on 22.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -30,10 +30,11 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import os
-from PyQt5 import QtCore
 
 from modules.cut_file import CutFile
 from modules.element import Element
+
+from PyQt5 import QtCore
 
 
 class ElementLosses:
@@ -59,7 +60,7 @@ class ElementLosses:
         self.partition_count = partition_count
         self.checked_cuts = checked_cuts
         self.progress_bar = progress_bar
-        # self.cut_splits_dict = {}
+
         self.reference_cut_file = reference_cut_file
         filename_split = reference_cut_file.split('.')
         element = Element.from_string(filename_split[2])
@@ -105,13 +106,14 @@ class ElementLosses:
                 new_cut.copy_info(main_cut, new_dir, split, split_count)
                 new_cut.save(main_cut.element_number)
                 split_number += 1
-                self.progress_bar.setValue(
-                    (100 / count) * dirtyinteger + (100 / count)
-                    * (split_number / split_count))
-                QtCore.QCoreApplication.processEvents(
-                    QtCore.QEventLoop.AllEvents)
-                # Mac requires event processing to show progress bar and its
-                # process.
+                if self.progress_bar:
+                    self.progress_bar.setValue(
+                        (100 / count) * dirtyinteger + (100 / count)
+                        * (split_number / split_count))
+                    QtCore.QCoreApplication.processEvents(
+                        QtCore.QEventLoop.AllEvents)
+                    # Mac requires event processing to show progress bar and its
+                    # process.
             dirtyinteger += 1
 
     def __load_cut_splits(self, save=False):
@@ -130,10 +132,11 @@ class ElementLosses:
         dirtyinteger = 0
         count = len(self.checked_cuts)
         for file in self.checked_cuts:
-            self.progress_bar.setValue((dirtyinteger / count) * 80)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar
-            # and its process.
+            if self.progress_bar:
+                self.progress_bar.setValue((dirtyinteger / count) * 80)
+                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+                # Mac requires event processing to show progress bar
+                # and its process.
             cut = CutFile()
             cut.load_file(file)
             filename_split = file.split('.')
@@ -178,10 +181,11 @@ class ElementLosses:
         count = self.cut_splits.count()
         # for key in self.cut_splits_dict.keys():
         for key in self.cut_splits.get_keys():
-            self.progress_bar.setValue((dirtyinteger / count) * 20 + 80)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar
-            # and its process.
+            if self.progress_bar:
+                self.progress_bar.setValue((dirtyinteger / count) * 20 + 80)
+                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+                # Mac requires event processing to show progress bar
+                # and its process.
 
             # Reference cut is not counted, excluded from graph.
             if key != self.reference_key:

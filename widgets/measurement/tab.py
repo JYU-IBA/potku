@@ -198,28 +198,28 @@ class MeasurementTabWidget(QtWidgets.QWidget):
                                                 log_widget)
         logger.addHandler(widgetlogger_default)
 
-    def check_previous_state_files(self, progress_bar=None, directory=None):
+    def check_previous_state_files(self, progress_bar=None):
         """Check if saved state for Elemental Losses, Energy Spectrum or Depth
         Profile exists. If yes, load them also.
 
         Args:
             progress_bar: A QtWidgets.QProgressBar where loading of previous
                           graph can be shown.
-            directory: directory path.
         """
-        if not directory:
-            directory = self.obj.directory
-        self.make_elemental_losses(directory, self.obj.name)
-        progress_bar.setValue(66)
+        directory_c = self.obj.directory_composition_changes
+        self.make_elemental_losses(directory_c, self.obj.name)
+        progress_bar.setValue(72)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-        self.make_energy_spectrum(directory, self.obj.name)
+        directory_e = self.obj.directory_energy_spectra
+        self.make_energy_spectrum(directory_e, self.obj.name)
         progress_bar.setValue(82)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-        self.make_depth_profile(directory, self.obj.name)
+        directory_d = self.obj.directory_depth_profiles
+        self.make_depth_profile(directory_d, self.obj.name)
         progress_bar.setValue(98)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
@@ -289,14 +289,9 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             DepthProfileDialog.line_zero = line_zero
             DepthProfileDialog.line_scale = line_scale
             DepthProfileDialog.systerr = systerr
-            self.depth_profile_widget = DepthProfileWidget(self,
-                                                           output_dir,
-                                                           use_cuts,
-                                                           elements,
-                                                           x_unit,
-                                                           line_zero,
-                                                           line_scale,
-                                                           systerr)
+            self.depth_profile_widget = DepthProfileWidget(
+                self, output_dir, use_cuts, elements, x_unit, line_zero,
+                line_scale, systerr)
             icon = self.icon_manager.get_icon("depth_profile_icon_2_16.png")
             self.add_widget(self.depth_profile_widget, icon=icon)
         except:  # We do not need duplicate error logs, log in widget instead
@@ -327,11 +322,9 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             ElementLossesDialog.checked_cuts[m_name] = cut_names
             ElementLossesDialog.split_count = split_count
             ElementLossesDialog.y_scale = y_scale
-            self.elemental_losses_widget = ElementLossesWidget(self,
-                                                               reference_cut,
-                                                               checked_cuts,
-                                                               split_count,
-                                                               y_scale)
+            self.elemental_losses_widget = ElementLossesWidget(
+                self, reference_cut, checked_cuts, split_count, y_scale,
+                use_progress_bar=False)
             icon = self.icon_manager.get_icon("elemental_losses_icon_16.png")
             self.add_widget(self.elemental_losses_widget, icon=icon)
         except:  # We do not need duplicate error logs, log in widget instead
@@ -357,9 +350,9 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             EnergySpectrumParamsDialog.bin_width = width
             EnergySpectrumParamsDialog.checked_cuts[m_name] = cut_names
             self.energy_spectrum_widget = EnergySpectrumWidget(
-                self,
-                use_cuts,
-                width)
+                self, spectrum_type="measurement",
+                use_cuts=use_cuts,
+                bin_width=width, use_progress_bar=False)
             icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
             self.add_widget(self.energy_spectrum_widget, icon=icon)
         except:  # We do not need duplicate error logs, log in widget instead
@@ -463,7 +456,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             with open(file, "rt") as fp:
                 for line in fp:
                     lines.append(line)
-        except:
+        except IOError:
             pass
         return lines
 

@@ -666,7 +666,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.measurement.reset_select()  # Nothing is now selected, reset colors
         self.measurement.selector.auto_save()
 
-        self.measurement.save_cuts()
+        self.save_cuts()
         # Update energy spectrum
         es_widget = self.parent.tab.energy_spectrum_widget
         if es_widget:

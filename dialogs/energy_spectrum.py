@@ -523,7 +523,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     save_file = "widget_energy_spectrum.save"
 
     def __init__(self, parent, spectrum_type, use_cuts=None, bin_width=0.025,
-                 save_file_int=0):
+                 save_file_int=0, use_progress_bar=True):
         """Inits widget.
         
         Args:
@@ -533,6 +533,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             width.
             save_file_int: n integer to have unique save file names for
             simulation energy spectra combinations.
+            use_progress_bar: Whether to add a new progress bar or not.
         """
         try:
             super().__init__()
@@ -557,13 +558,17 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             if isinstance(self.parent.obj, Measurement):
                 self.measurement = self.parent.obj
                 if self.measurement.statusbar:
-                    self.progress_bar = QtWidgets.QProgressBar()
-                    self.measurement.statusbar.addWidget(self.progress_bar, 1)
-                    self.progress_bar.show()
-                    QtCore.QCoreApplication.processEvents(
-                        QtCore.QEventLoop.AllEvents)
-                    # Mac requires event processing to show progress bar and its
-                    # process.
+                    if use_progress_bar:
+                        self.progress_bar = QtWidgets.QProgressBar()
+                        self.measurement.statusbar.addWidget(
+                            self.progress_bar, 1)
+                        self.progress_bar.show()
+                        QtCore.QCoreApplication.processEvents(
+                            QtCore.QEventLoop.AllEvents)
+                        # Mac requires event processing to show progress bar
+                        # and its process.
+                    else:
+                        self.progress_bar = None
                 else:
                     self.progress_bar = None
 

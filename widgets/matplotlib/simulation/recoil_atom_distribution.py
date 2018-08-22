@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 20.8.2018
+Updated on 22.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -291,8 +291,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     Using this widget, the user can edit the recoil atom distribution
     for the simulation.
     """
-    selectionsChanged = QtCore.pyqtSignal("PyQt_PyObject")
-    saveCuts = QtCore.pyqtSignal("PyQt_PyObject")
     color_scheme = {"Default color": "jet",
                     "Greyscale": "Greys",
                     "Greyscale (inverted)": "gray"}

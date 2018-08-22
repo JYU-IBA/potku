@@ -175,7 +175,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 if radio_button.isChecked():
                     x_unit = radio_button.text()
             DepthProfileDialog.x_unit = x_unit
-            progress_bar.setValue(30)
+            progress_bar.setValue(57)
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
             # Mac requires event processing to show progress bar and its
             # process.
