@@ -1304,25 +1304,20 @@ class Potku(QtWidgets.QMainWindow):
                             QtCore.QEventLoop.AllEvents)
 
                         # Update tree item icon to open folder
-                        # tree_item = None
-                        # root = self.tree_widget.invisibleRootItem()
-                        # root_child_count = root.childCount()
-                        # for j in range(root_child_count):
-                        #     item = root.child(j)
-                        #     if item.tab_id == tab.tab_id:
-                        #         tree_item = item
-                        #         break
-                        # if tree_item:
-                        #     self.__change_tab_icon(tree_item)
                         self.tree_widget.blockSignals(True)
                         self.__change_tab_icon(tree_item)
                         self.tree_widget.blockSignals(False)
 
+                    sample_folder_name = "Sample_" + "%02d" % \
+                                         master.sample.serial_number + "-" \
+                                         + master.sample.name
                     # Check all widgets of master and do them for slaves.
                     if master_tab.depth_profile_widget and tab.data_loaded:
                         if tab.depth_profile_widget:
                             tab.del_widget(tab.depth_profile_widget)
-                        tab.make_depth_profile(directory_d, master_name)
+                        tab.make_depth_profile(directory_d, master_name,
+                                               master.serial_number,
+                                               sample_folder_name)
                         tab.depth_profile_widget.save_to_file()
                         progress_bar.setValue(start + 0.6 * item_percentage)
                         QtCore.QCoreApplication.processEvents(
@@ -1331,7 +1326,9 @@ class Potku(QtWidgets.QMainWindow):
                     if master_tab.elemental_losses_widget and tab.data_loaded:
                         if tab.elemental_losses_widget:
                             tab.del_widget(tab.elemental_losses_widget)
-                        tab.make_elemental_losses(directory_c, master_name)
+                        tab.make_elemental_losses(directory_c, master_name,
+                                                  master.serial_number,
+                                                  sample_folder_name)
                         tab.elemental_losses_widget.save_to_file()
                         progress_bar.setValue(start + 0.8 * item_percentage)
                         QtCore.QCoreApplication.processEvents(
@@ -1340,7 +1337,9 @@ class Potku(QtWidgets.QMainWindow):
                     if master_tab.energy_spectrum_widget and tab.data_loaded:
                         if tab.energy_spectrum_widget:
                             tab.del_widget(tab.energy_spectrum_widget)
-                        tab.make_energy_spectrum(directory_e, master_name)
+                        tab.make_energy_spectrum(directory_e, master_name,
+                                                 master.serial_number,
+                                                 sample_folder_name)
                         tab.energy_spectrum_widget.save_to_file()
                         progress_bar.setValue(start + 0.95 * item_percentage)
                         QtCore.QCoreApplication.processEvents(
