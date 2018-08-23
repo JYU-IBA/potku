@@ -457,7 +457,11 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         measurementtabwidget.
         """
         measurement_name = self.obj.name
-        master_name = self.obj.request.has_master()
+        master = self.obj.request.has_master()
+        if master != "":
+            master_name = master.name
+        else:
+            master_name = None
         self.ui.command_master.setEnabled(measurement_name == master_name)
 
     def __confirm_filepath(self, filepath, name, m_name, old_folder_prefix,
@@ -522,7 +526,11 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         to all slave measurements in the request.
         """
         meas_name = self.obj.name
-        master_name = self.obj.request.has_master()
+        master = self.obj.request.has_master()
+        if master != "":
+            master_name = master.name
+        else:
+            master_name = None
         if meas_name == master_name:
             self.issueMaster.emit()
 

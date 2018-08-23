@@ -1,7 +1,7 @@
 ﻿# coding=utf-8
 """
 Created on 18.4.2013
-Updated on 22.8.2018
+Updated on 23.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -32,7 +32,10 @@ __version__ = "2.0"
 import modules.masses as masses
 import os
 
+from dialogs.energy_spectrum import EnergySpectrumWidget
 from dialogs.graph_settings import TofeGraphSettingsWidget
+from dialogs.measurement.depth_profile import DepthProfileWidget
+from dialogs.measurement.element_losses import ElementLossesWidget
 from dialogs.measurement.selection import SelectionSettingsDialog
 
 from matplotlib import cm
@@ -752,27 +755,39 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 save_file = os.path.join(
                     self.measurement.directory_energy_spectra,
                     es_widget.save_file)
-                if os.path.exists(save_file):
-                    os.remove(save_file)
                 self.parent.tab.del_widget(es_widget)
+            else:
+                save_file = os.path.join(
+                    self.measurement.directory_energy_spectra,
+                    EnergySpectrumWidget.save_file)
+            if os.path.exists(save_file):
+                os.remove(save_file)
 
             comp_widget = self.parent.tab.elemental_losses_widget
             if comp_widget:
                 save_file = os.path.join(
                     self.measurement.directory_composition_changes,
                     comp_widget.save_file)
-                if os.path.exists(save_file):
-                    os.remove(save_file)
                 self.parent.tab.del_widget(comp_widget)
+            else:
+                save_file = os.path.join(
+                    self.measurement.directory_composition_changes,
+                    ElementLossesWidget.save_file)
+            if os.path.exists(save_file):
+                os.remove(save_file)
 
             depth_widget = self.parent.tab.depth_profile_widget
             if depth_widget:
                 save_file = os.path.join(
                     self.measurement.directory_depth_profiles,
                     depth_widget.save_file)
-                if os.path.exists(save_file):
-                    os.remove(save_file)
                 self.parent.tab.del_widget(depth_widget)
+            else:
+                save_file = os.path.join(
+                    self.measurement.directory_depth_profiles,
+                    DepthProfileWidget.save_file)
+            if os.path.exists(save_file):
+                os.remove(save_file)
 
             self.__on_draw_legend()
             self.canvas.draw_idle()

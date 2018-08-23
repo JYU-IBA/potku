@@ -465,7 +465,7 @@ class Selector:
                 fp.write(sel.save_string(self.is_transposed) + "\n")
             fp.close()
 
-    def load(self, filename, progress_bar, add, base):
+    def load(self, filename, progress_bar=None, add=None, base=None):
         """Load selections from a file.
         
         Removes all current selections and loads selections from given filename.
@@ -554,10 +554,11 @@ class Selector:
                 if selection.is_closed:
                     selection.point_inside(point)
             dirtyinteger += 1
-            progress_bar.setValue(
-                base + (dirtyinteger / len(data) * percentage))
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+            if progress_bar:
+                progress_bar.setValue(
+                    base + (dirtyinteger / len(data) * percentage))
+                QtCore.QCoreApplication.processEvents(
+                    QtCore.QEventLoop.AllEvents)
         for selection in self.selections:
             selection.events_counted = True
 

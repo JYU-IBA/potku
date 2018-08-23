@@ -930,18 +930,13 @@ class Potku(QtWidgets.QMainWindow):
             self.__remove_introduction_tab()
             self.__set_request_buttons_enabled(True)
 
-            master_measurement_name = self.request.has_master()
+            master_measurement = self.request.has_master()
             nonslaves = self.request.get_nonslaves()
-            if master_measurement_name:
-                master_measurement = None
-                keys = self.request.samples.measurements.measurements.keys()
-                for key in keys:
-                    measurement = \
-                        self.request.samples.measurements.measurements[key]
-                    if measurement.name == master_measurement_name:
-                        master_measurement = measurement
-                        self.request.set_master(measurement)
-                        break
+            if master_measurement != "":
+                self.request.set_master(master_measurement)
+                master_measurement_name = master_measurement.name
+            else:
+                master_measurement_name = None
 
             for sample in self.request.samples.samples:
                 # Get Sample item from tree
@@ -959,8 +954,9 @@ class Potku(QtWidgets.QMainWindow):
                             item.setText(0,
                                          "{0} (master)".format(
                                              master_measurement_name))
-                        elif tab_name in nonslaves or \
-                                not master_measurement_name:
+                        elif tab_widget.obj in nonslaves or \
+                                not master_measurement_name or type(
+                            tab_widget.obj) == Simulation:
                             item.setText(0, tab_name)
                         else:
                             item.setText(0, "{0} (slave)".format(tab_name))
@@ -1141,24 +1137,27 @@ class Potku(QtWidgets.QMainWindow):
             self.tab_id = 0
 
     def __make_nonslave_measurement(self):
-        """Exclude selected measurements from slave category.
+        """Exclude selected measurement from slave category.
         """
         self.tree_widget.blockSignals(True)
         items = self.ui.treeWidget.selectedItems()
         if not items:
             return
-        master = self.request.get_master()
+        clicked_item = self.tree_widget.currentItem()
 
-        tree_root = self.tree_widget.invisibleRootItem()
-        for i in range(tree_root.childCount()):
-            sample_item = tree_root.child(i)
-            for j in range(sample_item.childCount()):
-                tree_item = sample_item.child(j)
-                if isinstance(tree_item.obj, Measurement):
-                    tab_widget = self.tab_widgets[tree_item.tab_id]
-                    if master and tab_widget.obj.directory != master.directory:
-                        self.request.exclude_slave(tab_widget.obj)
-                        tree_item.setText(0, tab_widget.obj.name)
+        self.request.exclude_slave(clicked_item.obj)
+        clicked_item.setText(0, clicked_item.obj.name)
+
+        # tree_root = self.tree_widget.invisibleRootItem()
+        # for i in range(tree_root.childCount()):
+        #     sample_item = tree_root.child(i)
+        #     for j in range(sample_item.childCount()):
+        #         tree_item = sample_item.child(j)
+        #         if isinstance(tree_item.obj, Measurement):
+        #             tab_widget = self.tab_widgets[tree_item.tab_id]
+        #             if master and tab_widget.obj.directory != master.directory:
+        #                 self.request.exclude_slave(tab_widget.obj)
+        #                 tree_item.setText(0, tab_widget.obj.name)
         self.tree_widget.blockSignals(False)
 
     def __make_slave_measurement(self):
@@ -1168,19 +1167,21 @@ class Potku(QtWidgets.QMainWindow):
         items = self.ui.treeWidget.selectedItems()
         if not items:
             return
-        master = self.request.get_master()
+        clicked_item = self.tree_widget.currentItem()
+        self.request.include_slave(clicked_item.obj)
+        clicked_item.setText(0, clicked_item.obj.name + " (slave)")
 
-        tree_root = self.tree_widget.invisibleRootItem()
-        for i in range(tree_root.childCount()):
-            sample_item = tree_root.child(i)
-            for j in range(sample_item.childCount()):
-                tree_item = sample_item.child(j)
-                if isinstance(tree_item.obj, Measurement):
-                    tab_widget = self.tab_widgets[tree_item.tab_id]
-                    if master and master.directory != tab_widget.obj.directory:
-                        self.request.include_slave(tab_widget.obj)
-                        tree_item.setText(0, "{0} (slave)".format(
-                            tab_widget.obj.name))
+        # tree_root = self.tree_widget.invisibleRootItem()
+        # for i in range(tree_root.childCount()):
+        #     sample_item = tree_root.child(i)
+        #     for j in range(sample_item.childCount()):
+        #         tree_item = sample_item.child(j)
+        #         if isinstance(tree_item.obj, Measurement):
+        #             tab_widget = self.tab_widgets[tree_item.tab_id]
+        #             if master and master.directory != tab_widget.obj.directory:
+        #                 self.request.include_slave(tab_widget.obj)
+        #                 tree_item.setText(0, "{0} (slave)".format(
+        #                     tab_widget.obj.name))
         self.tree_widget.blockSignals(False)
 
     def __make_master_measurement(self):
@@ -1208,7 +1209,7 @@ class Potku(QtWidgets.QMainWindow):
                     tab_name = tab_widget.obj.name
                     if tree_item.tab_id == master_tab.tab_id:
                         tree_item.setText(0, "{0} (master)".format(tab_name))
-                    elif tab_name in nonslaves:
+                    elif tab_widget.obj in nonslaves:
                         tree_item.setText(0, tab_name)
                     else:
                         tree_item.setText(0, "{0} (slave)".format(tab_name))
@@ -1278,9 +1279,9 @@ class Potku(QtWidgets.QMainWindow):
                 tree_item = sample_item.child(j)
                 if isinstance(tree_item.obj, Measurement):
                     tab = self.tab_widgets[tree_item.tab_id]
-                    tabs = tab.obj
-                    tab_name = tabs.name
-                    if tab_name == master_name or tab_name in nonslaves:
+                    tab_obj = tab.obj
+                    tab_name = tab_obj.name
+                    if tab_name == master_name or tab_obj in nonslaves:
                         progress_bar.setValue(start + item_percentage)
                         QtCore.QCoreApplication.processEvents(
                             QtCore.QEventLoop.AllEvents)
@@ -1291,6 +1292,7 @@ class Potku(QtWidgets.QMainWindow):
                         tab.data_loaded = True
 
                         tab.obj.load_data()
+
                         after_load = start + 0.2 * item_percentage
                         progress_bar.setValue(after_load)
                         QtCore.QCoreApplication.processEvents(
@@ -1302,6 +1304,17 @@ class Potku(QtWidgets.QMainWindow):
                         progress_bar.setValue(after_hist)
                         QtCore.QCoreApplication.processEvents(
                             QtCore.QEventLoop.AllEvents)
+
+                        # Load selection
+                        directory = master.directory_data
+                        selection_file = "{0}.selections".format(
+                            os.path.join(directory, master_name))
+                        tab.obj.selector.load(selection_file)
+                        tab.histogram.matplotlib.on_draw()
+
+                        # Save cuts
+                        tab.obj.save_cuts(progress_bar, after_hist,
+                                          0.1 * item_percentage)
 
                         # Update tree item icon to open folder
                         self.tree_widget.blockSignals(True)
