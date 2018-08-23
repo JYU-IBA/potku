@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 22.8.2018
+Updated on 23.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -127,20 +127,23 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             widget.show()
         self.__set_icons()
 
-    def add_histogram(self, progress_bar):
+    def add_histogram(self, progress_bar, start=None, add=None):
         """Adds ToF-E histogram into tab if it doesn't have one already.
 
         Args:
             progress_bar: A progress bar.
+            start: Start value of progress bar.
+            add: Value added to progress bar.
         """
         self.histogram = TofeHistogramWidget(self.obj,
                                              self.icon_manager, self)
-        if progress_bar:
+        if progress_bar and not start:
             progress_bar.setValue(40)
             QtCore.QCoreApplication.processEvents(
                 QtCore.QEventLoop.AllEvents)
 
-        self.obj.set_axes(self.histogram.matplotlib.axes, progress_bar)
+        self.obj.set_axes(self.histogram.matplotlib.axes, progress_bar,
+                          start, add)
 
         self.ui.makeSelectionsButton.clicked.connect(
             lambda: self.histogram.matplotlib.elementSelectionButton.setChecked(
@@ -148,7 +151,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         self.histogram.matplotlib.selectionsChanged.connect(
             self.__set_cut_button_enabled)
 
-        if progress_bar:
+        if progress_bar and not add:
             progress_bar.setValue(60)
             QtCore.QCoreApplication.processEvents(
                 QtCore.QEventLoop.AllEvents)
@@ -261,7 +264,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         """Make depth profile from loaded lines from saved file.
         
         Args:
-            directory: A string representing directory.
+            directory: A string representing directory to depth files.
             name: A string representing measurement's name.
         """
         file = os.path.join(directory, DepthProfileWidget.save_file)
@@ -467,7 +470,6 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         meas_name = self.obj.name
         master_name = self.obj.request.has_master()
         if meas_name == master_name:
-            # self.emit(QtCore.SIGNAL("issueMaster"))
             self.issueMaster.emit()
 
     def __read_log_file(self, file, state=1):

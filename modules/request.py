@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 20.7.2018
+Updated on 23.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -385,9 +385,13 @@ class Request:
         """ Get measurement tabs of a request.
         """
         list_m = []
-        keys = list(filter((exclude_id).__ne__, self.__measurement_tabs.keys()))
-        for key in keys:
-            list_m.append(self.__measurement_tabs[key])
+        for tab in self.__tabs.values():
+            if type(tab.obj) is Measurement:
+                if not tab.tab_id == exclude_id:
+                    list_m.append(tab)
+        # keys = list(filter((exclude_id).__ne__, self.__measurement_tabs.keys()))
+        # for key in keys:
+        #     list_m.append(self.__measurement_tabs[key])
         return list_m
 
     def get_nonslaves(self):
@@ -420,28 +424,40 @@ class Request:
         with open(self.request_file, "wt+") as configfile:
             self.__request_information.write(configfile)
 
-    def save_cuts(self, measurement):
+    def save_cuts(self, measurement, progress_bar=None, percentage=None,
+                  add=None):
         """ Save cuts for all measurements except for master.
         
         Args:
             measurement: A measurement class object that issued save cuts.
+            progress_bar: A porgress bar.
+            percentage: Base percentage in progress bar.
+            add: Percentage to add.
         """
         name = measurement.name
         if name == self.has_master():
             nonslaves = self.get_nonslaves()
             tabs = self.get_measurement_tabs(measurement.tab_id)
+            start = percentage
+            added = None
+            if add:
+                added = add / len(tabs)
             for tab in tabs:
-                tab_name = tab.measurement.name
+                tab_name = tab.obj.name
                 if tab.data_loaded and tab_name not in nonslaves and \
                         tab_name != name:
                     # No need to save same measurement twice.
-                    tab.measurement.save_cuts()
+                    tab.obj.save_cuts(progress_bar, start, added)
+                    if added:
+                        start += added
 
-    def save_selection(self, measurement):
+    def save_selection(self, measurement, progress_bar, percentage):
         """ Save selection for all measurements except for master.
         
         Args:
             measurement: A measurement class object that issued save cuts.
+            progress_bar: A progress bar.
+            percentage: Percentage to add to progress bar.
         """
         directory = measurement.directory_data
         name = measurement.name
@@ -449,12 +465,16 @@ class Request:
         if name == self.has_master():
             nonslaves = self.get_nonslaves()
             tabs = self.get_measurement_tabs(measurement.tab_id)
+            start = 1
+            add = percentage / len(tabs)
             for tab in tabs:
-                tab_name = tab.measurement.name
+                tab_name = tab.obj.name
                 if tab.data_loaded and tab_name not in nonslaves and \
                         tab_name != name:
-                    tab.measurement.selector.load(selection_file)
+                    tab.obj.selector.load(selection_file, progress_bar,
+                                          add, start)
                     tab.histogram.matplotlib.on_draw()
+                    start += add
 
     def set_master(self, measurement=None):
         """ Set master measurement for the request.

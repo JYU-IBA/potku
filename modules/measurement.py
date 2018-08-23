@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 22.8.2018
+Updated on 23.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -793,7 +793,7 @@ class Measurement:
         log_filehandler.flush()
         log_filehandler.close()
 
-    def set_axes(self, axes, progress_bar):
+    def set_axes(self, axes, progress_bar, start, add):
         """ Set axes information to selector within measurement.
         
         Sets axes information to selector to add selection points. Since 
@@ -803,22 +803,30 @@ class Measurement:
         Args:
             axes: Matplotlib FigureCanvas's subplot
             progress_bar: A progress bar used when opening a measurement.
+            start: Start value for progress bar.
+            add: Value added to progress bar.
         """
         self.selector.axes = axes
         # We've set axes information, check for old selection.
-        self.__check_for_old_selection(progress_bar)
+        self.__check_for_old_selection(progress_bar, start, add)
 
-    def __check_for_old_selection(self, progress_bar):
+    def __check_for_old_selection(self, progress_bar, start, add):
         """ Use old selection file_path if exists.
 
         Args:
             progress_bar: A progress bar used when opening a measurement.
+            start: Start value for progress bar.
+            add: Value added to progress bar.
         """
         try:
             selection_file = os.path.join(self.directory, self.directory_data,
                                           "{0}.selections".format(self.name))
             with open(selection_file):
-                self.load_selection(selection_file, progress_bar)
+                if not add:
+                    add = 10
+                if not start:
+                    start = 40
+                self.load_selection(selection_file, progress_bar, add, start)
         except:
             # TODO: Is it necessary to inform user with this?
             log_msg = "There was no old selection file to add to this request."
@@ -935,7 +943,7 @@ class Measurement:
             deleted = True
         return deleted
 
-    def save_cuts(self):
+    def save_cuts(self, progress_bar=None, percentage=None, add=None):
         """ Save cut files
         
         Saves data points within selections into cut files.
@@ -952,12 +960,19 @@ class Measurement:
                                            self.directory_cuts)):
             self.__make_directories(self.directory_cuts)
 
-        progress_bar = QtWidgets.QProgressBar()
-        self.statusbar.addWidget(progress_bar, 1)
-        progress_bar.show()
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        # Mac requires event processing to show progress bar and its
-        # process.
+        new_created = False
+        if not progress_bar:
+            progress_bar = QtWidgets.QProgressBar()
+            self.statusbar.addWidget(progress_bar, 1)
+            progress_bar.show()
+            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+            # Mac requires event processing to show progress bar and its
+            # process.
+            percentage = 0
+            add = 100
+            new_created = True
+        first_add = add * 0.9
+        second_add = add * 0.1
 
         starttime = time.time()
 
@@ -971,7 +986,7 @@ class Measurement:
         for n in range(data_count):  # while n < data_count: 
             if n % 5000 == 0:
                 # Do not always update UI to make it faster.
-                progress_bar.setValue((n / data_count) * 90)
+                progress_bar.setValue(percentage + (n / data_count) * first_add)
                 QtCore.QCoreApplication.processEvents(
                     QtCore.QEventLoop.AllEvents)
                 # Mac requires event processing to show progress bar and its
@@ -992,7 +1007,7 @@ class Measurement:
         # left there.
 
         dirtyinteger = 0  # Increases with for, for each selection
-        content_lenght = len(points_in_selection)
+        content_length = len(points_in_selection)
         for points in points_in_selection:
             if points:  # If not empty selection -> save
                 selection = self.selector.get_at(dirtyinteger)
@@ -1001,13 +1016,15 @@ class Measurement:
                 cut_file.set_info(selection, points)
                 cut_file.save()
             dirtyinteger += 1
-            progress_bar.setValue(90 + (dirtyinteger / content_lenght) * 10)
+            progress_bar.setValue(percentage + first_add +
+                                  (dirtyinteger / content_length) * second_add)
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
             # Mac requires event processing to show progress bar and its
             # process.
 
-        self.statusbar.removeWidget(progress_bar)
-        progress_bar.hide()
+        if new_created:
+            self.statusbar.removeWidget(progress_bar)
+            progress_bar.hide()
 
         log_msg = "Saving finished in {0} seconds.".format(time.time() -
                                                            starttime)
@@ -1090,7 +1107,7 @@ class Measurement:
                 elem_root.addChild(item)
             treewidget.addTopLevelItem(elem_root)
 
-    def load_selection(self, filename, progress_bar, percent_add=10):
+    def load_selection(self, filename, progress_bar, percent_add, start=40):
         """ Load selections from a file_path.
         
         Removes all current selections and loads selections from given filename.
@@ -1100,8 +1117,9 @@ class Measurement:
             file_path.
             progress_bar: A progress bar used when opening a measurement.
             percent_add: How many percents are added to progress bar.
+            start: Start value for progress bar.
         """
-        self.selector.load(filename, progress_bar, percent_add)
+        self.selector.load(filename, progress_bar, percent_add, start)
 
     def generate_tof_in(self):
         """ Generate tof.in file for external programs.

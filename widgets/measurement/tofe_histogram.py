@@ -89,13 +89,11 @@ class TofeHistogramWidget(QtWidgets.QWidget):
             self.ui.saveCutsButton.setEnabled(True)
             # self.measurement.request.save_selection(self.measurement)
 
-    def __save_cuts(self, unused_measurement):
+    def __save_cuts(self):
         """Connect to saving cuts. Issue it to request for every other
         measurement.
         """
-        # self.measurement.request.save_cuts(self.measurement)
-        # TODO: Fix this to work when there are masters and slaves
-        pass
+        self.measurement.request.save_cuts(self.measurement)
 
     def __set_shortcuts(self):
         """Set shortcuts for the ToF-E histogram.

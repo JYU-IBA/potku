@@ -48,8 +48,6 @@ from widgets.simulation.target import TargetWidget
 class SimulationTabWidget(QtWidgets.QWidget):
     """Tab widget where simulation stuff is added.
     """
-    issueMaster = QtCore.pyqtSignal()
-
     def __init__(self, request, tab_id, simulation, icon_manager):
         """ Init simulation tab class.
         

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 21.8.2018
+Updated on 23.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -508,8 +508,6 @@ class Potku(QtWidgets.QMainWindow):
         """Deletes the selected tree widget items.
         """
         # TODO: Memory isn't released correctly. Maybe because of matplotlib.
-        # TODO: Remove 'measurement_tab_widgets' variable and add tab reference
-        # to treewidgetitem.
         selected_tabs = [self.tab_widgets[item.tab_id] for
                          item in self.ui.treeWidget.selectedItems()]
         if selected_tabs:  # Ask user a confirmation.
@@ -715,7 +713,6 @@ class Potku(QtWidgets.QMainWindow):
         """
         if measurements is None:
             measurements = []
-        # TODO: fix this for import_binary.py
         if measurements:
             samples_with_measurements = measurements
             load_data = True
@@ -1065,7 +1062,7 @@ class Potku(QtWidgets.QMainWindow):
                     import_evnt_or_binary=import_evnt_or_binary)
             if measurement == "already exists":
                 return None
-            if measurement:  # TODO: Finish this (load_data)
+            if measurement:
                 tab = MeasurementTabWidget(self.tab_id, measurement,
                                            self.icon_manager)
                 tab.issueMaster.connect(self.__master_issue_commands)
@@ -1254,48 +1251,55 @@ class Potku(QtWidgets.QMainWindow):
         master = self.request.get_master()
         master_tab = self.tab_widgets[master.tab_id]
         master_name = master.name
-        directory = master.directory
+        directory_d = master.directory_depth_profiles
+        directory_e = master.directory_energy_spectra
+        directory_c = master.directory_composition_changes
         progress_bar.setValue(1)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Load selections and save cut files
         # TODO: Make a check for these if identical already -> don't redo.
-        self.request.save_selection(master)
-        progress_bar.setValue(10)
+        self.request.save_selection(master, progress_bar, 20)
+        progress_bar.setValue(21)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
 
-        self.request.save_cuts(master)
-        progress_bar.setValue(25)
+        self.request.save_cuts(master, progress_bar, 21, 11)
+        progress_bar.setValue(33)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
 
         tree_root = self.tree_widget.invisibleRootItem()
-        for i in range(tree_root.childCount()):
+        tree_child_count = tree_root.childCount()
+        start = 33
+        sample_percentage = 67 / tree_child_count
+        for i in range(tree_child_count):
             sample_item = tree_root.child(i)
-            for j in range(sample_item.childCount()):
+            sample_child_count = sample_item.childCount()
+            for j in range(sample_child_count):
+                item_percentage = sample_percentage / sample_child_count
                 tree_item = sample_item.child(j)
                 if isinstance(tree_item.obj, Measurement):
                     tab = self.tab_widgets[tree_item.tab_id]
                     tabs = tab.obj
                     tab_name = tabs.name
                     if tab_name == master_name or tab_name in nonslaves:
+                        progress_bar.setValue(start + item_percentage)
+                        QtCore.QCoreApplication.processEvents(
+                            QtCore.QEventLoop.AllEvents)
+                        start += item_percentage
                         continue
                     # Load measurement data if the slave is
                     if not tab.data_loaded:
                         tab.data_loaded = True
-                        progress_bar_data = QtWidgets.QProgressBar()
-                        self.statusbar.addWidget(progress_bar_data, 1)
-                        progress_bar_data.show()
-                        progress_bar_data.setValue(5)
-                        QtCore.QCoreApplication.processEvents(
-                            QtCore.QEventLoop.AllEvents)
 
                         tab.obj.load_data()
-                        progress_bar_data.setValue(35)
+                        after_load = start + 0.2 * item_percentage
+                        progress_bar.setValue(after_load)
                         QtCore.QCoreApplication.processEvents(
                             QtCore.QEventLoop.AllEvents)
 
-                        tab.add_histogram(progress_bar)
-                        progress_bar_data.hide()
-                        self.statusbar.removeWidget(progress_bar_data)
+                        after_hist = start + 0.4 * item_percentage
+                        add = after_hist - after_load
+                        tab.add_histogram(progress_bar, after_load, add)
+                        progress_bar.setValue(after_hist)
                         QtCore.QCoreApplication.processEvents(
                             QtCore.QEventLoop.AllEvents)
 
@@ -1310,27 +1314,44 @@ class Potku(QtWidgets.QMainWindow):
                         #         break
                         # if tree_item:
                         #     self.__change_tab_icon(tree_item)
+                        self.tree_widget.blockSignals(True)
+                        self.__change_tab_icon(tree_item)
+                        self.tree_widget.blockSignals(False)
 
                     # Check all widgets of master and do them for slaves.
                     if master_tab.depth_profile_widget and tab.data_loaded:
                         if tab.depth_profile_widget:
                             tab.del_widget(tab.depth_profile_widget)
-                        tab.make_depth_profile(directory, master_name)
+                        tab.make_depth_profile(directory_d, master_name)
                         tab.depth_profile_widget.save_to_file()
+                        progress_bar.setValue(start + 0.6 * item_percentage)
+                        QtCore.QCoreApplication.processEvents(
+                            QtCore.QEventLoop.AllEvents)
+
                     if master_tab.elemental_losses_widget and tab.data_loaded:
                         if tab.elemental_losses_widget:
                             tab.del_widget(tab.elemental_losses_widget)
-                        tab.make_elemental_losses(directory, master_name)
+                        tab.make_elemental_losses(directory_c, master_name)
                         tab.elemental_losses_widget.save_to_file()
+                        progress_bar.setValue(start + 0.8 * item_percentage)
+                        QtCore.QCoreApplication.processEvents(
+                            QtCore.QEventLoop.AllEvents)
+
                     if master_tab.energy_spectrum_widget and tab.data_loaded:
                         if tab.energy_spectrum_widget:
                             tab.del_widget(tab.energy_spectrum_widget)
-                        tab.make_energy_spectrum(directory, master_name)
+                        tab.make_energy_spectrum(directory_e, master_name)
                         tab.energy_spectrum_widget.save_to_file()
-                    # progress_bar.setValue(25 + (i / root_child_count) * 75)
-                    # QtCore.QCoreApplication.processEvents(
-                    # QtCore.QEventLoop.AllEvents)
-                    # i += 1
+                        progress_bar.setValue(start + 0.95 * item_percentage)
+                        QtCore.QCoreApplication.processEvents(
+                            QtCore.QEventLoop.AllEvents)
+
+                progress_bar.setValue(start + item_percentage)
+                QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
+
+                start += item_percentage
+
         self.statusbar.removeWidget(progress_bar)
         progress_bar.hide()
         time_end = datetime.now()
