@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.7.2018
-Updated on 21.8.2018
+Updated on 24.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -73,14 +73,6 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
         self.actionXMultiply.triggered.connect(
             lambda: self.__multiply_coordinate(self.x_coordinate_box))
         self.x_coordinate_box.addAction(self.actionXMultiply)
-
-        self.actionXUndo = QtWidgets.QAction(self)
-        self.actionXUndo.setText("Undo multipy")
-        self.actionXUndo.triggered.connect(
-            lambda: self.undo(self.x_coordinate_box))
-        self.actionXUndo.setEnabled(False)
-        self.x_coordinate_box.addAction(self.actionXUndo)
-
         self.x_coordinate_box.setEnabled(False)
 
         # X label
@@ -107,13 +99,6 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
             lambda: self.__multiply_coordinate(self.y_coordinate_box))
         self.y_coordinate_box.addAction(self.actionYMultiply)
 
-        self.actionYUndo = QtWidgets.QAction(self)
-        self.actionYUndo.setText("Undo multiply")
-        self.actionYUndo.triggered.connect(
-            lambda: self.undo(self.y_coordinate_box))
-        self.actionYUndo.setEnabled(False)
-        self.y_coordinate_box.addAction(self.actionYUndo)
-
         self.y_coordinate_box.setEnabled(False)
 
         # Y label
@@ -130,37 +115,6 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
 
         self.setLayout(vertical_layout)
 
-    def undo(self, spinbox):
-        """
-        Undo change to spinbox value.
-        """
-        if spinbox == self.x_coordinate_box:
-            enable = False
-            for point in self.parent.selected_points:
-                if not point.previous_x:
-                    continue
-                old_value = point.previous_x.pop()
-                self.parent.set_selected_point_x(old_value, point)
-                if not point.previous_x:
-                    self.actionXUndo.setEnabled(False)
-                else:
-                    enable = True
-            if enable:
-                self.actionXUndo.setEnabled(True)
-        else:
-            enable = False
-            for point in self.parent.selected_points:
-                if not point.previous_y:
-                    continue
-                old_value = point.previous_y.pop()
-                self.parent.set_selected_point_y(old_value, point)
-                if not point.previous_y:
-                    self.actionYUndo.setEnabled(False)
-                else:
-                    enable = True
-            if enable:
-                self.actionYUndo.setEnabled(True)
-
     def __multiply_coordinate(self, spinbox):
         """
         Multiply the spinbox's value with the value in clipboard.
@@ -170,6 +124,10 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
         """
         try:
             ratio = float(self.parent.ratio_str)
+            # Make backlog entry
+            self.parent.current_recoil_element.save_current_points(
+                self.parent.full_edit_on)
+
             if spinbox == self.x_coordinate_box:
                 for point in reversed(self.parent.selected_points):
                     if point.get_y() == 0.0:
@@ -178,13 +136,12 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
                                         recoil_elements[0] != \
                                 self.parent.current_recoil_element:
                             continue
-                    point.previous_x.append(point.get_x())
+                    # point.previous_x.append(point.get_x())
                     coord = point.get_x()
                     new_coord = round(ratio * coord, 3)
                     if new_coord > self.parent.target_thickness:
                         new_coord = self.parent.target_thickness
                     self.parent.set_selected_point_x(new_coord, point)
-                self.actionXUndo.setEnabled(True)
             else:
                 for point in reversed(self.parent.selected_points):
                     if point.get_y() == 0.0:
@@ -193,12 +150,11 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
                                         recoil_elements[0] != \
                                 self.parent.current_recoil_element:
                             continue
-                    point.previous_y.append(point.get_y())
+                    # point.previous_y.append(point.get_y())
                     coord = point.get_y()
                     new_coord = round(ratio * coord, 3)
                     self.parent.set_selected_point_y(new_coord, point)
-                self.actionYUndo.setEnabled(True)
-            # spinbox.setValue(new_coord)
+
         except ValueError:
             QtWidgets.QMessageBox.critical(self.parent.parent, "Error",
                                            "Value '" + self.parent.ratio_str +

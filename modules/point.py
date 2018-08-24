@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 27.6.2018
+Updated on 24.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -41,8 +41,6 @@ class Point:
         # TODO: Precision
         self._x = xy[0]
         self._y = xy[1]
-        self.previous_x = []
-        self.previous_y = []
 
     def __lt__(self, other):
         """

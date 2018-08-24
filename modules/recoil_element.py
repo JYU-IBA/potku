@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 13.8.2018
+Updated on 24.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -27,6 +27,8 @@ along with this program (file named 'LICENCE').
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
+
+import copy
 
 from modules.element import Element
 from modules.general_functions import calculate_new_point
@@ -56,6 +58,13 @@ class RecoilElement:
         self.reference_density = 4.98
         self.multiplier = 1e22
         self._points = sorted(points)
+        self.points_backlog = []
+        # This is out of bounds if no undo is done, telss the index of the
+        # next points to be added
+        self.points_backlog_i_add = 0
+        # List corresponding to poins backlog entry, tells if entry was done
+        # in full edit or not
+        self.entry_in_full_edit = []
 
         # Contains ElementWidget and SimulationControlsWidget.
         self.widgets = []
@@ -98,6 +107,102 @@ class RecoilElement:
         Unlock full edit.
         """
         self._edit_lock_on = False
+
+    def previous_points_in_full_edit(self):
+        """
+        Check if previous points
+        """
+        prev_i = self.points_backlog_i_add - 1
+        if prev_i >= 0:
+            full_edit_used = self.entry_in_full_edit[prev_i]
+            return full_edit_used
+
+    def save_current_points(self, full_edit_used, exclude=None):
+        """
+        Save current points for undoing or redoing.
+
+        Args:
+            exclude: A point that needs to be excluded from backlog entry.
+        """
+        points = []
+        if exclude:
+            for p in self._points:
+                if p is exclude:
+                    continue
+                else:
+                    points.append(p)
+        else:
+            points = self._points
+
+        copy_points = copy.deepcopy(points)
+
+        # Check that copied points differ form the last edded one
+        are_same = False
+        if self.points_backlog_i_add - 1 >= 0:
+            previous = self.points_backlog[self.points_backlog_i_add - 1]
+            if len(copy_points) == len(previous):
+                for j in range(len(copy_points)):
+                    c_p = copy_points[j]
+                    p_p = previous[j]
+                    if not c_p.get_x() == p_p.get_x() or not c_p.get_y() == \
+                            p_p.get_y():
+                        are_same = False
+                        break
+                    else:
+                        are_same = True
+        if are_same:
+            return
+
+        # Remove obsolete entries
+        removed_points = []
+        i = len(self.points_backlog) - 1
+        while i >= 0:
+            collection = self.points_backlog[i]
+            if i == self.points_backlog_i_add - 1:
+                break
+            else:
+                removed_points.append(collection)
+            i -= 1
+
+        self.entry_in_full_edit = \
+            self.entry_in_full_edit[:self.points_backlog_i_add]
+
+        for r in removed_points:
+            self.points_backlog.remove(r)
+
+        self.points_backlog.append(copy_points)
+        self.entry_in_full_edit.append(full_edit_used)
+        self.points_backlog_i_add += 1
+
+        # Remove previous x's and y's from self._points' points
+        # for point in self._points:
+        #     if point.previous_y:
+        #         point.previous_y = []
+        #     if  point.previous_x:
+        #         point.previous_x = []
+
+    def change_points_to_previous(self):
+        """
+        Change the points list reference to another list.
+        """
+
+        self._points = self.points_backlog[self.points_backlog_i_add - 1]
+        self.points_backlog_i_add -= 1
+
+    def delete_backlog(self):
+        """
+        Delete backlog.
+        """
+        self.points_backlog = []
+        self.points_backlog_i_add = 0
+        self.entry_in_full_edit = []
+
+    def get_previous_backlog_index(self):
+        """
+        Return:
+             Index where previous points are in the backlog list.
+        """
+        return self.points_backlog_i_add - 1
 
     def update_zero_values(self):
         """
