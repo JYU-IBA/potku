@@ -117,7 +117,8 @@ class RecoilElement:
             full_edit_used = self.entry_in_full_edit[prev_i]
             return full_edit_used
 
-    def save_current_points(self, full_edit_used, exclude=None):
+    def save_current_points(self, full_edit_used, exclude=None,
+                            save_before_undo=False):
         """
         Save current points for undoing or redoing.
 
@@ -136,7 +137,7 @@ class RecoilElement:
 
         copy_points = copy.deepcopy(points)
 
-        # Check that copied points differ form the last edded one
+        # Check that copied points differ form the last added one
         are_same = False
         if self.points_backlog_i_add - 1 >= 0:
             previous = self.points_backlog[self.points_backlog_i_add - 1]
@@ -151,6 +152,13 @@ class RecoilElement:
                     else:
                         are_same = True
         if are_same:
+            return
+
+        if save_before_undo:
+            try:
+                self.points_backlog[self.points_backlog_i_add]
+            except IndexError:
+                self.points_backlog.append(copy_points)
             return
 
         # Remove obsolete entries
@@ -174,12 +182,18 @@ class RecoilElement:
         self.entry_in_full_edit.append(full_edit_used)
         self.points_backlog_i_add += 1
 
-        # Remove previous x's and y's from self._points' points
-        # for point in self._points:
-        #     if point.previous_y:
-        #         point.previous_y = []
-        #     if  point.previous_x:
-        #         point.previous_x = []
+    def next_backlog_entry_done(self):
+        """
+        Check if next backlog entry has been done.
+
+        Return:
+             True or False.
+        """
+        try:
+            self.points_backlog[self.points_backlog_i_add + 1]
+        except IndexError:
+            return False
+        return True
 
     def change_points_to_previous(self):
         """
@@ -188,6 +202,13 @@ class RecoilElement:
 
         self._points = self.points_backlog[self.points_backlog_i_add - 1]
         self.points_backlog_i_add -= 1
+
+    def change_points_to_next(self):
+        """
+        Change the points list reference to another list.
+        """
+        self._points = self.points_backlog[self.points_backlog_i_add + 1]
+        self.points_backlog_i_add += 1
 
     def delete_backlog(self):
         """

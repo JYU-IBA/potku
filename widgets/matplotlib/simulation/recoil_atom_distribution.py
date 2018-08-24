@@ -2192,7 +2192,15 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Undo recoil changes.
         """
+        self.current_recoil_element.save_current_points(self.full_edit_on,
+                                                        save_before_undo=True)
         self.current_recoil_element.change_points_to_previous()
+        self.reset_movables()
+
+    def reset_movables(self):
+        """
+        Reset values that are needed for moving points.
+        """
         self.clicked_point = None
         self.dragged_points = []
         self.click_locations = []
@@ -2201,6 +2209,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.coordinates_widget.x_coordinate_box.setVisible(False)
         self.coordinates_widget.y_coordinate_box.setVisible(False)
         self.update_plot()
+
+    def redo_recoil_changes(self):
+        """
+        Redo recoil changes.
+        """
+        self.current_recoil_element.change_points_to_next()
+        self.reset_movables()
 
     def __context_menu(self, event):
         """
@@ -2224,6 +2239,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if not self.full_edit_on:
             if self.current_recoil_element.previous_points_in_full_edit():
                 action.setEnabled(False)
+
+        action_3 = QtWidgets.QAction(self.tr("Redo changes"), self)
+        action_3.triggered.connect(self.redo_recoil_changes)
+        menu.addAction(action_3)
+
+        if not self.current_recoil_element.next_backlog_entry_done():
+            action_3.setEnabled(False)
 
         if self.current_recoil_element is not \
             self.current_element_simulation.recoil_elements[0] and \
