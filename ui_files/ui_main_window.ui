@@ -539,7 +539,7 @@ simulation</string>
      <x>0</x>
      <y>0</y>
      <width>1467</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -611,10 +611,16 @@ simulation</string>
    <property name="text">
     <string>New Request</string>
    </property>
+   <property name="toolTip">
+    <string>New request</string>
+   </property>
   </action>
   <action name="actionOpen_Request">
    <property name="text">
     <string>Open Request</string>
+   </property>
+   <property name="toolTip">
+    <string>Open request</string>
    </property>
   </action>
   <action name="actionSave_Request">
@@ -624,6 +630,9 @@ simulation</string>
    <property name="text">
     <string>Save Request</string>
    </property>
+   <property name="toolTip">
+    <string>Save request</string>
+   </property>
   </action>
   <action name="actionNew_Measurement">
    <property name="enabled">
@@ -631,6 +640,9 @@ simulation</string>
    </property>
    <property name="text">
     <string>New Measurement</string>
+   </property>
+   <property name="toolTip">
+    <string>New measurement</string>
    </property>
   </action>
   <action name="actionNew_Request_2">
@@ -721,12 +733,12 @@ simulation</string>
     <bool>false</bool>
    </property>
    <property name="text">
-    <string>Request Settings...</string>
+    <string>Request settings...</string>
    </property>
   </action>
   <action name="actionGlobal_Settings">
    <property name="text">
-    <string>General Settings...</string>
+    <string>General settings...</string>
    </property>
   </action>
   <action name="action_manual">

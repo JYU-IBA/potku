@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 23.8.2018
+Updated on 24.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1437,6 +1437,8 @@ class Potku(QtWidgets.QMainWindow):
         self.icon_manager.set_icon(self.ui.actionSave_Request,
                                    "amarok_save.svg")
         self.icon_manager.set_icon(self.ui.actionNew_Measurement, "log.svg")
+        self.icon_manager.set_icon(self.ui.actionNew_Simulation,
+                                   "new_simulation.png")
 
     def __set_request_buttons_enabled(self, state=False):
         """Enables 'request settings', 'save request' and 'new measurement'
