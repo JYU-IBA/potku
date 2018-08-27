@@ -39,12 +39,12 @@ from modules.detector import Detector
 from modules.foil import CircularFoil
 from modules.general_functions import check_text
 from modules.general_functions import open_file_dialog
+from modules.general_functions import save_file_dialog
 from modules.general_functions import set_input_field_red
 from modules.general_functions import validate_text_input
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
-from PyQt5 import QtCore
 from PyQt5.QtCore import QLocale
 from PyQt5.QtCore import Qt
 
@@ -261,10 +261,23 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
     def __save_file(self):
         """Opens file dialog and sets and saves the settings to a file.
         """
-        # TODO: implement
-        QtWidgets.QMessageBox.critical(self, "Error", "Not implemented",
-                                       QtWidgets.QMessageBox.Ok,
-                                       QtWidgets.QMessageBox.Ok)
+        file = save_file_dialog(self, self.request.default_folder,
+                                "Save detector file", "Detector File "
+                                                      "(*.detector)")
+        if not file:
+            return
+        if not self.values_changed():
+            self.obj.to_file(file, None)
+        else:
+            # Make temp detector, modify it according to widget values,
+            # and write it to file.
+            temp_detector = copy.deepcopy(self.obj)
+            original_obj = self.obj
+            self.obj = temp_detector
+            self.update_settings()
+            self.obj.to_file(file, None)
+            self.obj = original_obj
+            pass
 
     def show_settings(self):
         """

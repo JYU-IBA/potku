@@ -387,6 +387,8 @@ class Detector:
         with open(detector_file_path, "w") as file:
             json.dump(obj, file, indent=4)
 
+        if measurement_file_path is None:
+            return
         # Read .measurement to obj to update only detector angles
         try:
             obj = json.load(open(measurement_file_path))
