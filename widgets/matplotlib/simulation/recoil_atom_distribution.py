@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 24.8.2018
+Updated on 27.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1474,10 +1474,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Update the correct value to show from clipboard.
         """
         self.ratio_str = self.clipboard.text()
-        self.coordinates_widget.actionXMultiply.setText(
-            "Multiply with value in clipboard\n(" + self.ratio_str + ")")
-        self.coordinates_widget.actionYMultiply.setText(
-            "Multiply with value in clipboard\n(" + self.ratio_str + ")")
 
     def set_selected_point_x(self, x=None, clicked=None):
         """Sets the selected point's x coordinate
