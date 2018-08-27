@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 22.8.2018
+Updated on 27.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -104,9 +104,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.measurement_settings_widget.tmp_run)
         self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
 
-        self.detector_settings_widget.ui.saveButton.clicked \
-            .connect(lambda: self.__save_file("DETECTOR_SETTINGS"))
-
         # Add simulation settings view to the settings view
         self.simulation_settings_widget = SimulationSettingsWidget(
             self.request.default_element_simulation)
@@ -116,8 +113,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             .setEnabled(True)
         self.simulation_settings_widget.ui.physicalParametersGroupBox \
             .setEnabled(True)
-        self.simulation_settings_widget.ui.saveButton.clicked \
-            .connect(lambda: self.__save_file("SIMULATION_SETTINGS"))
 
         # Add profile settings view to the settings view
         self.profile_settings_widget = ProfileSettingsWidget(
@@ -146,23 +141,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 break
         # Save run and beam parameters to tmp_run
         self.measurement_settings_widget.save_to_tmp_run()
-
-    def __load_file(self, settings_type):
-        """
-        Load settings from file.
-        """
-        # TODO: implement
-        QtWidgets.QMessageBox.critical(self, "Error", "Not implemented",
-                                       QtWidgets.QMessageBox.Ok,
-                                       QtWidgets.QMessageBox.Ok)
-
-    def __save_file(self, settings_type):
-        """Opens file dialog and sets and saves the settings to a file.
-        """
-        # TODO: implement
-        QtWidgets.QMessageBox.critical(self, "Error", "Not implemented",
-                                       QtWidgets.QMessageBox.Ok,
-                                       QtWidgets.QMessageBox.Ok)
 
     def update_and_close_settings(self):
         """Updates measuring settings values with the dialog's values and

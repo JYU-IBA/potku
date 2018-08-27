@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 20.8.2018
+Updated on 27.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -35,6 +35,7 @@ import time
 from dialogs.measurement.calibration import CalibrationDialog
 from dialogs.simulation.foil import FoilDialog
 
+from modules.detector import Detector
 from modules.foil import CircularFoil
 from modules.general_functions import check_text
 from modules.general_functions import open_file_dialog
@@ -43,6 +44,7 @@ from modules.general_functions import validate_text_input
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
+from PyQt5 import QtCore
 from PyQt5.QtCore import QLocale
 from PyQt5.QtCore import Qt
 
@@ -103,10 +105,6 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             lambda: self.__remove_efficiency())
 
         # Calibration settings
-        self.ui.loadCalibrationParametersButton. \
-            clicked.connect(lambda: self.__load_file("CALIBRATION_SETTINGS"))
-        self.ui.saveCalibrationParametersButton. \
-            clicked.connect(lambda: self.__save_file("CALIBRATION_SETTINGS"))
         self.ui.executeCalibrationButton.clicked. \
             connect(self.__open_calibration_dialog)
         self.ui.executeCalibrationButton.setEnabled(
@@ -157,7 +155,116 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.ui.formLayout_2.insertRow(1, "ToF offset[s]:",
                                        self.scientific_tof_offset)
 
+        # Save as and load
+        self.ui.saveButton.clicked.connect( self.__save_file)
+        self.ui.loadButton.clicked.connect(self.__load_file)
+
         self.show_settings()
+
+    def __load_file(self):
+        """
+        Load settings from file.
+        """
+        file = open_file_dialog(self,
+                                self.request.default_folder,
+                                "Select detector file",
+                                "Detector File (*.detector)")
+        if not file:
+            return
+        # Read the file into a temp detector object
+        temp_detector = Detector.from_file(file, file, self.request, False)
+
+        original_obj = self.obj
+        self.obj = temp_detector
+        self.obj.efficiency_directory = os.path.join(os.path.split(
+            self.obj.path)[0], "Efficiency_files")
+
+        self.tmp_foil_info = []
+        self.tof_foils = []
+        self.detector_structure_widgets = []
+        # Remove old widgets
+        for i in range(self.ui.detectorScrollAreaContents.layout().count()):
+            layout_item = self.ui.detectorScrollAreaContents.layout().itemAt(i)
+            if layout_item == self.foils_layout:
+                self.ui.detectorScrollAreaContents.layout().removeItem(
+                    layout_item)
+                for j in reversed(range(layout_item.count())):
+                    layout_item.itemAt(j).widget().deleteLater()
+
+        # Add foil widgets and foil objects
+        self.foils_layout = self._add_default_foils()
+        self.ui.detectorScrollAreaContents.layout() \
+            .addLayout(self.foils_layout)
+
+        # Efficiency files
+        efficiency_files = self.obj.get_efficiency_files()
+        # Remove old efficiency items
+        all_items = []
+        for i in range(self.ui.efficiencyListWidget.count()):
+            all_items.append(self.ui.efficiencyListWidget.item(i))
+        for item in all_items:
+            self.ui.efficiencyListWidget.takeItem(
+                self.ui.efficiencyListWidget.row(item))
+        for orig_eff in original_obj.get_efficiency_files():
+            path = os.path.join(original_obj.efficiency_directory, orig_eff)
+            original_obj.remove_efficiency_file_path(path)
+
+        self.ui.efficiencyListWidget.addItems(efficiency_files)
+        self.obj.efficiencies = []
+        for f in efficiency_files:
+            self.obj.efficiencies.append(os.path.join(
+                self.obj.efficiency_directory, f))
+            self.obj.save_efficiency_file_path(os.path.join(
+                self.obj.efficiency_directory, f))
+
+        self.show_settings()
+
+        # Calibration spinboxes
+        # Parse the value and multiplier
+        slope_value_and_mult = str(self.obj.tof_slope)
+        try:
+            e_index = slope_value_and_mult.index('e')
+            number_part = slope_value_and_mult[:e_index]
+            multiply_part = "1" + slope_value_and_mult[e_index:]
+        except ValueError:
+            number_part = slope_value_and_mult
+            multiply_part = 1
+
+        self.scientific_tof_slope.value = number_part
+        self.scientific_tof_slope.multiplier = multiply_part
+        self.scientific_tof_slope.value_str = str(number_part) + str(
+            multiply_part)[1:]
+        self.scientific_tof_slope.ui.scientificLineEdit.setText(
+            str(number_part) + str(multiply_part)[1:])
+
+        # Parse the value and multiplier
+        offset_value_and_mult = str(self.obj.tof_offset)
+        try:
+            e_index = offset_value_and_mult.index('e')
+            number_part = offset_value_and_mult[:e_index]
+            multiply_part = "1" + offset_value_and_mult[e_index:]
+        except ValueError:
+            number_part = offset_value_and_mult
+            multiply_part = 1
+        self.scientific_tof_offset.value = number_part
+        self.scientific_tof_offset.multiplier = multiply_part
+        self.scientific_tof_offset.value_str = str(number_part) + str(
+            multiply_part)[1:]
+        self.scientific_tof_offset.ui.scientificLineEdit.setText(
+            str(number_part) + str(multiply_part)[1:])
+
+        # Transfer efficiency files
+        original_obj.efficiencies = self.obj.efficiencies
+        # Reset obj reference
+        self.obj = original_obj
+
+    def __save_file(self):
+        """Opens file dialog and sets and saves the settings to a file.
+        """
+        # TODO: implement
+        QtWidgets.QMessageBox.critical(self, "Error", "Not implemented",
+                                       QtWidgets.QMessageBox.Ok,
+                                       QtWidgets.QMessageBox.Ok)
 
     def show_settings(self):
         """
@@ -180,8 +287,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.virtualSizeYSpinBox.setValue(self.obj.virtual_size[1])
 
         # Detector foils
-        self.calculate_distance()
         self.tmp_foil_info = copy.deepcopy(self.obj.foils)
+        self.calculate_distance()
 
         # Tof foils
         self.tof_foils = copy.deepcopy(self.obj.tof_foils)
