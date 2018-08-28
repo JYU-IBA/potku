@@ -262,7 +262,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             i += 1
             elem_amount = children[i].value()
             lst.append(Element(elem_symbol, elem_isotope, elem_amount))
-            i += 2
+            i += 3
 
     def __accept_settings(self):
         """Function for accepting the current settings and closing the dialog
