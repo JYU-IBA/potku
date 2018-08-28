@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 20.8.2018
+Updated on 28.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,6 +29,7 @@ __version__ = "2.0"
 
 import copy
 import modules.general_functions as general
+import platform
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.energy_spectrum import EnergySpectrumWidget
@@ -90,6 +91,7 @@ class ElementWidget(QtWidgets.QWidget):
             "ui_icons/potku/energy_spectrum_icon.svg"))
         draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                            QtWidgets.QSizePolicy.Fixed)
+
         draw_spectrum_button.clicked.connect(self.plot_spectrum)
         draw_spectrum_button.setToolTip("Draw energy spectra")
 
@@ -108,6 +110,12 @@ class ElementWidget(QtWidgets.QWidget):
                                         QtWidgets.QSizePolicy.Fixed)
         add_recoil_button.clicked.connect(self.add_new_recoil)
         add_recoil_button.setToolTip("Add a new recoil to element")
+
+        if platform.system() == "Darwin":
+            horizontal_layout.setContentsMargins(0, 0, 12, 0)
+            draw_spectrum_button.setMaximumWidth(30)
+            settings_button.setMaximumWidth(30)
+            add_recoil_button.setMaximumWidth(30)
 
         horizontal_layout.addWidget(self.radio_button)
         horizontal_layout.addWidget(self.circle)

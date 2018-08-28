@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.3.2018
-Updated on 2.8.2018
+Updated on 28.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,6 +28,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import os
+import platform
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -94,6 +95,9 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.editTargetInfoButton.setIconSize(QtCore.QSize(14, 14))
         self.ui.editTargetInfoButton.setToolTip(
             "Edit name and description of the target")
+
+        if platform.system() == "Darwin":
+            self.ui.percentButton.setText("Calculate\npercents")
 
         self.ui.exportElementsButton.clicked.connect(
             self.recoil_distribution_widget.export_elements)
