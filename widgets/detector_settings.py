@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 27.8.2018
+Updated on 28.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -30,6 +30,7 @@ __version__ = "2.0"
 import copy
 import math
 import os
+import platform
 import time
 
 from dialogs.measurement.calibration import CalibrationDialog
@@ -154,6 +155,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
                                        self.scientific_tof_slope)
         self.ui.formLayout_2.insertRow(1, "ToF offset[s]:",
                                        self.scientific_tof_offset)
+
+        if platform.system() == "Darwin":
+            self.scientific_tof_offset.ui.scientificLineEdit.setFixedWidth(170)
+            self.scientific_tof_slope.ui.scientificLineEdit.setFixedWidth(170)
 
         # Save as and load
         self.ui.saveButton.clicked.connect( self.__save_file)
