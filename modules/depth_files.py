@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 17.8.2018
+Updated on 28.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -39,7 +39,6 @@ import re
 import subprocess
 
 from modules.general_functions import copy_cut_file_to_temp
-from modules.general_functions import remove_file
 
 
 class DepthFiles(object):
@@ -325,13 +324,20 @@ def get_depth_files(elements, dir_depth, cut_files):
         A list of depth files which matched the elements.
     """
     depth_files = ['depth.total']
-    strip_elements = []
-    for element in elements:
-        strip_element = re.sub("\d+", "", str(element))
-        strip_elements.append(strip_element)
-    files = os.listdir(dir_depth)
-    for file in files:
-        file_element = file.split('.')[-1]
-        if file_element in strip_elements:
+    orig_elements = [elem.__str__() for elem in elements]
+    strip_elements = [re.sub("\d+", "", e.__str__()) for e in elements]
+    for file in os.listdir(dir_depth):
+        file_ending = file.split('.')[-1]
+        if file_ending in orig_elements:
             depth_files.append(file)
+            orig_elements.remove(file_ending)
+            stripped = re.sub("\d+", "", file_ending)
+            strip_elements.remove(stripped)
+        else:
+            if file_ending in strip_elements:
+                depth_files.append(file)
+                index = strip_elements.index(file_ending)
+                orig_elements.remove(orig_elements[index])
+                strip_elements.remove(file_ending)
+
     return depth_files
