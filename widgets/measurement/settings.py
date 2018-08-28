@@ -117,6 +117,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             self.actionUndo.setEnabled(False)
         self.fluenceDoubleSpinBox.addAction(self.actionUndo)
 
+        self.energyDoubleSpinBox.setToolTip("Enery set in MeV with .")
+
     def show_settings(self):
         """
         Show measurement settings.
