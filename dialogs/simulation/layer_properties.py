@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 21.8.2018
+Updated on 28.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,8 +29,9 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __version__ = "2.0"
 
 import copy
-import os
 import modules.masses as masses
+import os
+import platform
 
 from dialogs.element_selection import ElementSelectionDialog
 
@@ -109,6 +110,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.ui.groupBox_2.hide()
 
         self.placement_under = True
+
+        if platform.system() == "Darwin":
+            self.setMinimumWidth(450)
 
         self.exec_()
 
@@ -538,6 +542,9 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.isotope_combobox = QtWidgets.QComboBox()
         self.isotope_combobox.setFixedWidth(120)
         self.isotope_combobox.setEnabled(enabled)
+
+        if platform.system() == "Darwin":
+            self.isotope_combobox.setFixedWidth(150)
 
         self.amount_spinbox = QtWidgets.QDoubleSpinBox()
         self.amount_spinbox.setMaximum(9999.00)

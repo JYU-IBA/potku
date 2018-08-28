@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 30.4.2013
-Updated on 1.6.2018
+Updated on 28.6.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,6 +28,8 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
+
+import platform
 
 from os import path
 
@@ -61,6 +63,10 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         buttons = self.ui.findChild(QtWidgets.QButtonGroup, "elementButtons")
         buttons.buttonClicked.connect(self.__change_element_color)
         self.line_coinc_count.setValidator(QtGui.QIntValidator(0, 1000000))
+
+        if platform.system() == "Darwin":
+            self.ui.gridLayout.setVerticalSpacing(15)
+            self.ui.gridLayout.setHorizontalSpacing(15)
 
         self.__set_values()
         self.exec_()
