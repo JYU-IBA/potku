@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 23.8.2018
+Updated on 29.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1229,19 +1229,19 @@ class Measurement:
         eff_directory_final = os.path.join(eff_directory, "Used_efficiencies")
         if not os.path.exists(eff_directory_final):
             os.makedirs(eff_directory_final)
-            # Copy efficiencies with proper name
-            # File name in format 1H.eff or 1H-example.eff
-            for eff in os.listdir(eff_directory):
-                if not eff.endswith(".eff"):
-                    continue
-                old_file = os.path.join(eff_directory, eff)
-                element = eff.split('-')[0]
-                if element.endswith(".eff"):
-                    file_to_copy = os.path.join(eff_directory_final, eff)
-                else:
-                    file_to_copy = os.path.join(eff_directory_final, element
-                                                + ".eff")
-                shutil.copy(old_file, file_to_copy)
+        # Copy efficiencies with proper name
+        # File name in format 1H.eff or 1H-example.eff
+        for eff in os.listdir(eff_directory):
+            if not eff.endswith(".eff"):
+                continue
+            old_file = os.path.join(eff_directory, eff)
+            element = eff.split('-')[0]
+            if element.endswith(".eff"):
+                file_to_copy = os.path.join(eff_directory_final, eff)
+            else:
+                file_to_copy = os.path.join(eff_directory_final, element
+                                            + ".eff")
+            shutil.copy(old_file, file_to_copy)
         str_eff_dir = "Efficiency directory: {0}".format(eff_directory_final)
 
         # Combine strings
