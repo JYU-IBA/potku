@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 17.4.2013
-Updated on 17.8.2018
+Updated on 29.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -282,7 +282,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
 
         # If drawing for "the first time", get limits from the drawn data.
         if 0.09 < x_max < 1.01:  # This works...
-            x_max = self.axes.get_xlim()[1]
+            x_min, x_max = self.axes.get_xlim()
         if 0.09 < y_max < 1.01:
             y_max = self.axes.get_ylim()[1]
 
