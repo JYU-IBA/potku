@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 21.8.2018
+Updated on 29.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -117,7 +117,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             self.actionUndo.setEnabled(False)
         self.fluenceDoubleSpinBox.addAction(self.actionUndo)
 
-        self.energyDoubleSpinBox.setToolTip("Enery set in MeV with .")
+        self.energyDoubleSpinBox.setToolTip("Energy set in MeV with .")
 
     def show_settings(self):
         """
