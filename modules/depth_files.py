@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 9.8.2018
+Updated on 28.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -39,7 +39,6 @@ import re
 import subprocess
 
 from modules.general_functions import copy_cut_file_to_temp
-from modules.general_functions import remove_file
 
 
 class DepthFiles(object):
@@ -59,6 +58,7 @@ class DepthFiles(object):
             self.__new_cut_files.append(new)
 
         file_paths_str = ' '.join(self.__new_cut_files)
+
         self.bin_dir = '%s%s%s' % ('external', os.sep, 'Potku-bin')
         self.command_win = 'cd ' + self.bin_dir + ' && tof_list.exe ' \
                            + file_paths_str + ' | erd_depth.exe ' \
@@ -83,11 +83,6 @@ class DepthFiles(object):
             subprocess.call(self.command_mac, shell=True)
         else:
             print('It appears we do no support your OS.')
-
-        for cut_file in self.__new_cut_files:
-            # remove unnecessary cut files.
-            remove_file(cut_file)
-        self.__new_cut_files = []
 
 
 def extract_from_depth_files(files, elements, x_column, y_column):
@@ -125,7 +120,7 @@ def extract_from_depth_files(files, elements, x_column, y_column):
             try:
                 axe2.append(float(columns[y_column]) * 100)
             except ValueError:
-                axe3.append(0.0)
+                axe2.append(0.0)
             if file_element != "total":
                 try:
                     axe3.append(int(columns[-1]))
@@ -302,7 +297,10 @@ def integrate_lists(depth_files, ignore_elements, lim_a, lim_b,
                 element_conc.append((prev_val + curr_val) / 2)
                 element_event.append(element_e[j])
                 break
-        percentages[element] = (sum(element_conc) / total_values_sum) * 100
+        if total_values_sum == 0.0:
+            percentages[element] = 0.0
+        else:
+            percentages[element] = (sum(element_conc) / total_values_sum) * 100
         if sum(element_event) > 0:
             stat_err = (1 / math.sqrt(sum(element_event))) * percentages[
                 element]
@@ -314,24 +312,32 @@ def integrate_lists(depth_files, ignore_elements, lim_a, lim_b,
     return percentages, margin_of_errors
 
 
-def get_depth_files(elements, dir_cuts):
-    """Returns a list of depth files in a directory
+def get_depth_files(elements, dir_depth, cut_files):
+    """Returns a list of depth files in a directory that match the cut files.
 
     Args:
         elements: List of Element objects that should have a
         corresponding depth file.
-        dir_cuts: Directory of the cut files.
+        dir_depth: Directory of the erd depth result files.
+        cut_files: List of cut files that were used.
     Returns:
         A list of depth files which matched the elements.
     """
     depth_files = ['depth.total']
-    strip_elements = []
-    for element in elements:
-        strip_element = re.sub("\d+", "", str(element))
-        strip_elements.append(strip_element)
-    files = os.listdir(dir_cuts)
-    for file in files:
-        file_element = file.split('.')[-1]
-        if file_element in strip_elements:
+    orig_elements = [elem.__str__() for elem in elements]
+    strip_elements = [re.sub("\d+", "", e.__str__()) for e in elements]
+    for file in os.listdir(dir_depth):
+        file_ending = file.split('.')[-1]
+        if file_ending in orig_elements:
             depth_files.append(file)
+            orig_elements.remove(file_ending)
+            stripped = re.sub("\d+", "", file_ending)
+            strip_elements.remove(stripped)
+        else:
+            if file_ending in strip_elements:
+                depth_files.append(file)
+                index = strip_elements.index(file_ending)
+                orig_elements.remove(orig_elements[index])
+                strip_elements.remove(file_ending)
+
     return depth_files

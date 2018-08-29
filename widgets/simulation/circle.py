@@ -33,12 +33,20 @@ class Circle(QtWidgets.QWidget):
     Class to show a circle with certain color.
     """
 
-    def __init__(self, color):
+    def __init__(self, color, size=None):
         """
         Initialize the class.
+
+        Args:
+            color: Color of circle.
+            size:
         """
         super().__init__()
         self.color = color
+        if size is None:
+            self.size = (1, 8, 8, 8)
+        else:
+            self.size = size
 
     def set_color(self, color):
         """
@@ -62,5 +70,6 @@ class Circle(QtWidgets.QWidget):
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         painter.setPen(self.color)
         painter.setBrush(self.color)
-        painter.drawEllipse(1, 8, 8, 8)
+        painter.drawEllipse(self.size[0], self.size[1], self.size[2],
+                            self.size[3])
         painter.end()

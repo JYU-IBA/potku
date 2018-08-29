@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 11.4.2013
-Updated on 20.7.2018
+Updated on 23.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -308,13 +308,13 @@ class Request:
         Args:
             measurement: A measurement class object.
         """
-        name = measurement.name
         # Check if measurement is already excluded.
-        if name in self.__non_slaves:
+        if measurement in self.__non_slaves:
             return
-        self.__non_slaves.append(name)
+        self.__non_slaves.append(measurement)
+        paths = [m.path for m in self.__non_slaves]
         self.__request_information["meta"]["nonslave"] = "|".join(
-            self.__non_slaves)
+            paths)
         self.save()
 
     def include_slave(self, measurement):
@@ -323,13 +323,13 @@ class Request:
         Args:
             measurement: A measurement class object.
         """
-        name = measurement.name
         # Check if measurement is in the list.
-        if name not in self.__non_slaves:
+        if measurement not in self.__non_slaves:
             return
-        self.__non_slaves.remove(name)
+        self.__non_slaves.remove(measurement)
+        paths = [m.path for m in self.__non_slaves]
         self.__request_information["meta"]["nonslave"] = "|".join(
-            self.__non_slaves)
+            paths)
         self.save()
 
     def get_name(self):
@@ -385,14 +385,23 @@ class Request:
         """ Get measurement tabs of a request.
         """
         list_m = []
-        keys = list(filter((exclude_id).__ne__, self.__measurement_tabs.keys()))
-        for key in keys:
-            list_m.append(self.__measurement_tabs[key])
+        for tab in self.__tabs.values():
+            if type(tab.obj) is Measurement:
+                if not tab.tab_id == exclude_id:
+                    list_m.append(tab)
         return list_m
 
     def get_nonslaves(self):
         """ Get measurement names that will be excluded from slave category.
         """
+        paths = self.__request_information["meta"]["nonslave"] \
+            .split("|")
+        for measurement in self.samples.measurements.measurements.values():
+            for path in paths:
+                if path == measurement.path:
+                    if measurement in self.__non_slaves:
+                        continue
+                    self.__non_slaves.append(measurement)
         return self.__non_slaves
 
     def has_master(self):
@@ -403,15 +412,26 @@ class Request:
         when inited so check is made in potku.py after loading all measurements
         via this method. The corresponding master title in treewidget is then
         set.
+
+        Return:
+            Measurement object.
         """
-        return self.__request_information["meta"]["master"]
+        path = self.__request_information["meta"]["master"]
+        for measurement in self.samples.measurements.measurements.values():
+            if measurement.path == path:
+                return measurement
+        return ""
 
     def load(self):
         """ Load request.
         """
         self.__request_information.read(self.request_file)
-        self.__non_slaves = self.__request_information["meta"]["nonslave"] \
+        paths = self.__request_information["meta"]["nonslave"] \
             .split("|")
+        for measurement in self.samples.measurements.measurements.values():
+            for path in paths:
+                if path == measurement.path:
+                    self.__non_slaves.append(measurement)
 
     def save(self):
         """ Save request.
@@ -420,41 +440,59 @@ class Request:
         with open(self.request_file, "wt+") as configfile:
             self.__request_information.write(configfile)
 
-    def save_cuts(self, measurement):
+    def save_cuts(self, measurement, progress_bar=None, percentage=None,
+                  add=None):
         """ Save cuts for all measurements except for master.
         
         Args:
             measurement: A measurement class object that issued save cuts.
+            progress_bar: A porgress bar.
+            percentage: Base percentage in progress bar.
+            add: Percentage to add.
         """
         name = measurement.name
-        if name == self.has_master():
+        master = self.has_master()
+        if master != "" and name == master.name:
             nonslaves = self.get_nonslaves()
             tabs = self.get_measurement_tabs(measurement.tab_id)
+            start = percentage
+            added = None
+            if add:
+                added = add / len(tabs)
             for tab in tabs:
-                tab_name = tab.measurement.name
-                if tab.data_loaded and tab_name not in nonslaves and \
+                tab_name = tab.obj.name
+                if tab.data_loaded and tab.obj not in nonslaves and \
                         tab_name != name:
                     # No need to save same measurement twice.
-                    tab.measurement.save_cuts()
+                    tab.obj.save_cuts(progress_bar, start, added)
+                    if added:
+                        start += added
 
-    def save_selection(self, measurement):
+    def save_selection(self, measurement, progress_bar, percentage):
         """ Save selection for all measurements except for master.
         
         Args:
             measurement: A measurement class object that issued save cuts.
+            progress_bar: A progress bar.
+            percentage: Percentage to add to progress bar.
         """
         directory = measurement.directory_data
         name = measurement.name
         selection_file = "{0}.selections".format(os.path.join(directory, name))
-        if name == self.has_master():
+        master = self.has_master()
+        if master != "" and name == master.name:
             nonslaves = self.get_nonslaves()
             tabs = self.get_measurement_tabs(measurement.tab_id)
+            start = 1
+            add = percentage / len(tabs)
             for tab in tabs:
-                tab_name = tab.measurement.name
-                if tab.data_loaded and tab_name not in nonslaves and \
+                tab_name = tab.obj.name
+                if tab.data_loaded and tab.obj not in nonslaves and \
                         tab_name != name:
-                    tab.measurement.selector.load(selection_file)
+                    tab.obj.selector.load(selection_file, progress_bar,
+                                          add, start)
                     tab.histogram.matplotlib.on_draw()
+                    start += add
 
     def set_master(self, measurement=None):
         """ Set master measurement for the request.
@@ -466,8 +504,9 @@ class Request:
         if not measurement:
             self.__request_information["meta"]["master"] = ""
         else:
-            name = measurement.name
-            self.__request_information["meta"]["master"] = name
+            # name = measurement.name
+            path = measurement.path
+            self.__request_information["meta"]["master"] = path
         self.save()
 
     def __set_request_logger(self):

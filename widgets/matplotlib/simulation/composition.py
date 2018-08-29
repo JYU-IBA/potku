@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 8.8.2018
+Updated on 21.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -222,6 +222,11 @@ class _CompositionWidget(MatplotlibWidget):
 
                 for energy_spectra in self.parent.tab.energy_spectrum_widgets:
                     self.parent.tab.del_widget(energy_spectra)
+                    save_file_path = os.path.join(
+                        self.parent.tab.simulation.directory,
+                        energy_spectra.save_file)
+                    if os.path.exists(save_file_path):
+                        os.remove(save_file_path)
                 self.parent.tab.energy_spectrum_widgets = []
 
                 for elem_sim in simulations_run:
@@ -272,6 +277,11 @@ class _CompositionWidget(MatplotlibWidget):
                 for energy_spectra in \
                         self.parent.tab.energy_spectrum_widgets:
                     self.parent.tab.del_widget(energy_spectra)
+                    save_file_path = os.path.join(
+                        self.parent.tab.simulation.directory,
+                        energy_spectra.save_file)
+                    if os.path.exists(save_file_path):
+                        os.remove(save_file_path)
                 self.parent.tab.energy_spectrum_widgets = []
 
         elif simulations_run:
@@ -303,6 +313,11 @@ class _CompositionWidget(MatplotlibWidget):
                 for energy_spectra in \
                         self.parent.tab.energy_spectrum_widgets:
                     self.parent.tab.del_widget(energy_spectra)
+                    save_file_path = os.path.join(
+                        self.parent.tab.simulation.directory,
+                        energy_spectra.save_file)
+                    if os.path.exists(save_file_path):
+                        os.remove(save_file_path)
                 self.parent.tab.energy_spectrum_widgets = []
 
         # Delete from layers list
@@ -325,7 +340,10 @@ class _CompositionWidget(MatplotlibWidget):
         Open a layer properties dialog for modifying the selected layer.
         """
         if self.__selected_layer:
-            dialog = LayerPropertiesDialog(self.parent.tab,
+            tab = None
+            if type(self.parent) is widgets.simulation.target.TargetWidget:
+                tab = self.parent.tab
+            dialog = LayerPropertiesDialog(tab,
                                            self.__selected_layer,
                                            modify=True,
                                            simulation=self.simulation)
@@ -456,7 +474,11 @@ class _CompositionWidget(MatplotlibWidget):
         else:
             first = False
 
-        dialog = LayerPropertiesDialog(self.parent.tab,
+        tab = None
+        if type(self.parent) is widgets.simulation.target.TargetWidget:
+            tab = self.parent.tab
+
+        dialog = LayerPropertiesDialog(tab,
                                        simulation=self.simulation,
                                        first_layer=first)
 

@@ -22,3 +22,6 @@
 /__pycache__
 /venv
 *.bak
+/external
+.gitignore
+Pipfile.lock

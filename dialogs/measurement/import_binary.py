@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 19.7.2018
+Updated on 22.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -33,6 +33,7 @@ import os
 import struct
 
 from modules.general_functions import open_files_dialog
+from modules.general_functions import validate_text_input
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -116,9 +117,7 @@ class ImportDialogBinary(QtWidgets.QDialog):
                 byte = f.read(4)
         numpy_array = numpy.array(data)
         numpy.savetxt(output_file, numpy_array, delimiter=" ", fmt="%d %d")  
-        
-    # TODO: This part needs to be fixed, sample adding done wrong and there
-    # is no Measurement object.
+
     def __import_files(self):
         """Import binary files.
         """
@@ -126,35 +125,51 @@ class ImportDialogBinary(QtWidgets.QDialog):
         progress_bar = QtWidgets.QProgressBar()
         self.__statusbar.addWidget(progress_bar, 1)
         progress_bar.show()
+        progress_bar.setValue(10)
+        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         
         root = self.treeWidget.invisibleRootItem()
         root_child_count = root.childCount()
 
-        sample_count = 0
         for i in range(root_child_count):
-            progress_bar.setValue(i / root_child_count)
             item = root.child(i)
             input_file = item.file
 
-            sample_path = os.path.join(self.__request.directory, "Sample_" +
-                                       str(sample_count))
-            sample_count += 1
-            self.request.samples.add_sample(sample_path)
-            measurement_path = os.path.join(sample_path, item.name)
+            sample = self.__request.samples.add_sample()
+            self.__parent.add_root_item_to_tree(sample)
+            item_name = item.name.replace("_", "-")
 
-            output_file = "{0}.{1}".format(measurement_path, "asc")
+            regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+            item_name = validate_text_input(item_name, regex)
+
+            measurement = self.__parent.add_new_tab("measurement", "",
+                                                    sample,
+                                                    object_name=item_name,
+                                                    import_evnt_or_binary=True)
+            output_file = "{0}.{1}".format(measurement.directory_data +
+                                           os.sep + item_name, "asc")
             n = 2
             while True:  # Allow import of same named files.
                 if not os.path.isfile(output_file):
                     break
-                output_file = "{0}-{2}.{1}".format(measurement_path, "asc", n)
+                output_file = "{0}-{2}.{1}".format(measurement.directory_data
+                 + os.sep + item_name, "asc", n)
                 n += 1
-            imported_files[sample_path] = output_file
+            imported_files[sample] = output_file
             self.__convert_file(input_file, output_file)
+            measurement.measurement_file = output_file
+
+            percentage = 10 + (i + 1 / root_child_count) * 90
+            progress_bar.setValue(percentage)
+            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+
+        progress_bar.setValue(100)
+        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+
         self.__statusbar.removeWidget(progress_bar)
         progress_bar.hide()
         self.imported = True
-        self.__parent.load_request_measurements(imported_files)
+
         self.close()
 
     def __remove_selected(self):

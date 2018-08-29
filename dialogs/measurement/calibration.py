@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.4.2013
-Updated on 25.6.2018
+Updated on 29.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -30,13 +30,16 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import os
-from PyQt5 import QtCore
-from PyQt5 import QtGui
-from PyQt5 import uic
-from PyQt5 import QtWidgets
+import platform
 
 from modules.cut_file import CutFile
 from modules.calibration import TOFCalibration
+
+from PyQt5 import QtCore
+from PyQt5 import QtGui
+from PyQt5 import QtWidgets
+from PyQt5 import uic
+
 from widgets.matplotlib.calibration.curve_fitting \
     import MatplotlibCalibrationCurveFittingWidget
 from widgets.matplotlib.calibration.linear_fitting \
@@ -136,6 +139,18 @@ class CalibrationDialog(QtWidgets.QDialog):
         self.ui.tofChannelLineEdit.setValidator(double_validator)
         
         self.timer = QtCore.QTimer(interval=1500, timeout=self.timeout)
+
+        if platform.system() == "Darwin":
+            self.ui.tofSecondsLineEdit.setFixedWidth(170)
+            self.ui.tofChannelLineEdit.setFixedWidth(170)
+            self.ui.offsetLineEdit.setFixedWidth(170)
+            self.ui.slopeLineEdit.setFixedWidth(170)
+
+        if platform.system() == "Linux":
+            self.ui.tofSecondsLineEdit.setFixedWidth(190)
+            self.ui.tofChannelLineEdit.setFixedWidth(190)
+            self.ui.offsetLineEdit.setFixedWidth(190)
+            self.ui.slopeLineEdit.setFixedWidth(190)
         self.exec_()
 
     def remove_selected_points(self):
@@ -164,9 +179,11 @@ class CalibrationDialog(QtWidgets.QDialog):
         fields.
         """
         if self.parent_settings_widget:
-            self.parent_settings_widget.ui.slopeLineEdit.\
+            self.parent_settings_widget.scientific_tof_slope\
+                .scientificLineEdit.\
                 setText(self.ui.slopeLineEdit.text())
-            self.parent_settings_widget.ui.offsetLineEdit.\
+            self.parent_settings_widget.scientific_tof_offset\
+                .scientificLineEdit.\
                 setText(self.ui.offsetLineEdit.text())
             return True
         return False

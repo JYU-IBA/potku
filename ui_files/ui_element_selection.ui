@@ -55,8 +55,8 @@
     <rect>
      <x>10</x>
      <y>10</y>
-     <width>631</width>
-     <height>311</height>
+     <width>659</width>
+     <height>327</height>
     </rect>
    </property>
    <property name="sizePolicy">
@@ -74,12 +74,12 @@
    <property name="flat">
     <bool>false</bool>
    </property>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>15</x>
       <y>33</y>
-      <width>601</width>
+      <width>629</width>
       <height>261</height>
      </rect>
     </property>
@@ -1596,25 +1596,6 @@
        </attribute>
       </widget>
      </item>
-     <item row="8" column="7">
-      <widget class="QPushButton" name="pushButton_107">
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
-       </property>
-       <property name="text">
-        <string>Eu</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
      <item row="9" column="3">
       <widget class="QPushButton" name="pushButton_101">
        <property name="maximumSize">
@@ -1647,66 +1628,6 @@
        </property>
        <property name="text">
         <string>Nd</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="9" column="7">
-      <widget class="QPushButton" name="pushButton_98">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
-       </property>
-       <property name="text">
-        <string>Am</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="8" column="8">
-      <widget class="QPushButton" name="pushButton_116">
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
-       </property>
-       <property name="text">
-        <string>Gd</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="8" column="11">
-      <widget class="QPushButton" name="pushButton_105">
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
-       </property>
-       <property name="text">
-        <string>Ho</string>
        </property>
        <attribute name="buttonGroup">
         <string notr="true">elementButtons</string>
@@ -1754,47 +1675,6 @@
        </attribute>
       </widget>
      </item>
-     <item row="8" column="13">
-      <widget class="QPushButton" name="pushButton_104">
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
-       </property>
-       <property name="text">
-        <string>Tm</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="9" column="10">
-      <widget class="QPushButton" name="pushButton_114">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
-       </property>
-       <property name="text">
-        <string>Cf</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
      <item row="9" column="4">
       <widget class="QPushButton" name="pushButton_113">
        <property name="maximumSize">
@@ -1827,28 +1707,6 @@
        </property>
        <property name="text">
         <string>La</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="9" column="9">
-      <widget class="QPushButton" name="pushButton_108">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
-       </property>
-       <property name="text">
-        <string>Bk</string>
        </property>
        <attribute name="buttonGroup">
         <string notr="true">elementButtons</string>
@@ -1893,129 +1751,6 @@
        </attribute>
       </widget>
      </item>
-     <item row="9" column="11">
-      <widget class="QPushButton" name="pushButton_120">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
-       </property>
-       <property name="text">
-        <string>Es</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="8" column="14">
-      <widget class="QPushButton" name="pushButton_109">
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
-       </property>
-       <property name="text">
-        <string>Yb</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="9" column="13">
-      <widget class="QPushButton" name="pushButton_94">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
-       </property>
-       <property name="text">
-        <string>Md</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="8" column="12">
-      <widget class="QPushButton" name="pushButton_112">
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
-       </property>
-       <property name="text">
-        <string>Er</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="9" column="15">
-      <widget class="QPushButton" name="pushButton_91">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
-       </property>
-       <property name="text">
-        <string>Lr</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="8" column="10">
-      <widget class="QPushButton" name="pushButton_106">
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
-       </property>
-       <property name="text">
-        <string>Dy</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
      <item row="7" column="2">
       <spacer name="verticalSpacer_2">
        <property name="orientation">
@@ -2031,25 +1766,6 @@
         </size>
        </property>
       </spacer>
-     </item>
-     <item row="8" column="15">
-      <widget class="QPushButton" name="pushButton_119">
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
-       </property>
-       <property name="text">
-        <string>Lu</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
      </item>
      <item row="6" column="12">
       <widget class="QPushButton" name="pushButton_83">
@@ -2259,47 +1975,6 @@
        </attribute>
       </widget>
      </item>
-     <item row="9" column="14">
-      <widget class="QPushButton" name="pushButton_117">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
-       </property>
-       <property name="text">
-        <string>No</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="8" column="9">
-      <widget class="QPushButton" name="pushButton_118">
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
-       </property>
-       <property name="text">
-        <string>Tb</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
      <item row="8" column="4">
       <widget class="QPushButton" name="pushButton_110">
        <property name="maximumSize">
@@ -2313,28 +1988,6 @@
        </property>
        <property name="text">
         <string>Pr</string>
-       </property>
-       <attribute name="buttonGroup">
-        <string notr="true">elementButtons</string>
-       </attribute>
-      </widget>
-     </item>
-     <item row="9" column="12">
-      <widget class="QPushButton" name="pushButton_115">
-       <property name="enabled">
-        <bool>false</bool>
-       </property>
-       <property name="maximumSize">
-        <size>
-         <width>32</width>
-         <height>16777215</height>
-        </size>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
-       </property>
-       <property name="text">
-        <string>Fm</string>
        </property>
        <attribute name="buttonGroup">
         <string notr="true">elementButtons</string>
@@ -2360,7 +2013,313 @@
        </attribute>
       </widget>
      </item>
-     <item row="9" column="8">
+     <item row="8" column="16">
+      <widget class="QPushButton" name="pushButton_119">
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
+       </property>
+       <property name="text">
+        <string>Lu</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="9" column="16">
+      <widget class="QPushButton" name="pushButton_91">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
+       </property>
+       <property name="text">
+        <string>Lr</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="8" column="15">
+      <widget class="QPushButton" name="pushButton_109">
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
+       </property>
+       <property name="text">
+        <string>Yb</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="9" column="15">
+      <widget class="QPushButton" name="pushButton_117">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
+       </property>
+       <property name="text">
+        <string>No</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="8" column="14">
+      <widget class="QPushButton" name="pushButton_104">
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
+       </property>
+       <property name="text">
+        <string>Tm</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="9" column="14">
+      <widget class="QPushButton" name="pushButton_94">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
+       </property>
+       <property name="text">
+        <string>Md</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="8" column="13">
+      <widget class="QPushButton" name="pushButton_112">
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
+       </property>
+       <property name="text">
+        <string>Er</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="9" column="13">
+      <widget class="QPushButton" name="pushButton_115">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
+       </property>
+       <property name="text">
+        <string>Fm</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="8" column="12">
+      <widget class="QPushButton" name="pushButton_105">
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
+       </property>
+       <property name="text">
+        <string>Ho</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="9" column="12">
+      <widget class="QPushButton" name="pushButton_120">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
+       </property>
+       <property name="text">
+        <string>Es</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="8" column="11">
+      <widget class="QPushButton" name="pushButton_106">
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
+       </property>
+       <property name="text">
+        <string>Dy</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="9" column="11">
+      <widget class="QPushButton" name="pushButton_114">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
+       </property>
+       <property name="text">
+        <string>Cf</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="8" column="10">
+      <widget class="QPushButton" name="pushButton_118">
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
+       </property>
+       <property name="text">
+        <string>Tb</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="9" column="10">
+      <widget class="QPushButton" name="pushButton_108">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
+       </property>
+       <property name="text">
+        <string>Bk</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="8" column="9">
+      <widget class="QPushButton" name="pushButton_116">
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
+       </property>
+       <property name="text">
+        <string>Gd</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="9" column="9">
       <widget class="QPushButton" name="pushButton_111">
        <property name="enabled">
         <bool>false</bool>
@@ -2376,6 +2335,88 @@
        </property>
        <property name="text">
         <string>Cm</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="8" column="8">
+      <widget class="QPushButton" name="pushButton_107">
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
+       </property>
+       <property name="text">
+        <string>Eu</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="9" column="8">
+      <widget class="QPushButton" name="pushButton_98">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
+       </property>
+       <property name="text">
+        <string>Am</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="8" column="7">
+      <widget class="QPushButton" name="pushButton_103">
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 200, 200);}</string>
+       </property>
+       <property name="text">
+        <string>Sm</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">elementButtons</string>
+       </attribute>
+      </widget>
+     </item>
+     <item row="9" column="7">
+      <widget class="QPushButton" name="pushButton_121">
+       <property name="enabled">
+        <bool>false</bool>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>32</width>
+         <height>16777215</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QPushButton{background: rgb(255, 90, 255);}</string>
+       </property>
+       <property name="text">
+        <string>Pu</string>
        </property>
        <attribute name="buttonGroup">
         <string notr="true">elementButtons</string>

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 25.6.2018
+Updated on 21.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,20 +29,23 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
+import modules.masses as masses
 import os
 import shutil
 import time
+
+from dialogs.element_selection import ElementSelectionDialog
+
+from modules.detector import Detector
+from modules.general_functions import set_input_field_red
+from modules.run import Run
+from modules.target import Target
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
-import modules.masses as masses
-from dialogs.element_selection import ElementSelectionDialog
-from modules.detector import Detector
-from modules.run import Run
-from modules.target import Target
 from widgets.detector_settings import DetectorSettingsWidget
 from widgets.measurement.settings import MeasurementSettingsWidget
 from widgets.profile_settings import ProfileSettingsWidget
@@ -70,7 +73,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         screen_geometry = QtWidgets.QDesktopWidget.availableGeometry(
             QtWidgets.QApplication.desktop())
-        self.resize(self.geometry().width(), screen_geometry.size().height()
+        self.resize(self.geometry().width() * 1.1,
+                    screen_geometry.size().height()
                     * 0.8)
         self.ui.defaultSettingsCheckBox.stateChanged.connect(
             lambda: self.__change_used_settings())
@@ -85,7 +89,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
         self.measurement_settings_widget.ui.picture.setScaledContents(True)
-        pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
+        pixmap = QtGui.QPixmap(os.path.join("images",
+                                            "measurement_setup_angles.png"))
         self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
 
         self.measurement_settings_widget.ui.beamIonButton.clicked.connect(
@@ -140,6 +145,20 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.__enabled_element_information()
             masses.load_isotopes(dialog.element, combo_box)
 
+            # Check if no isotopes
+            if combo_box.count() == 0:
+                self.measurement_settings_widget.ui.isotopeInfoLabel \
+                    .setVisible(True)
+                self.measurement_settings_widget.fields_are_valid = False
+                set_input_field_red(combo_box)
+            else:
+                self.measurement_settings_widget.ui.isotopeInfoLabel \
+                    .setVisible(False)
+                self.measurement_settings_widget.check_text(
+                    self.measurement_settings_widget.ui.nameLineEdit,
+                    self.measurement_settings_widget)
+                combo_box.setStyleSheet("background-color: %s" % "None")
+
     def __change_used_settings(self):
         check_box = self.sender()
         if check_box.isChecked():
@@ -171,6 +190,17 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         """ Update Measurement's Run, Detector and Target objects. If measurement
          specific parameters are in use, save them into a file.
         """
+        if self.measurement_settings_widget.ui.isotopeComboBox.currentIndex()\
+                == -1:
+            QtWidgets.QMessageBox.critical(self, "Warning",
+                                           "No isotope selected.\n\nPlease "
+                                           "select an isotope for the beam "
+                                           "element.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+            self.__close = False
+            return
+
         if not self.measurement.measurement_setting_file_name:
             self.measurement.measurement_setting_file_name = \
                 self.measurement.name

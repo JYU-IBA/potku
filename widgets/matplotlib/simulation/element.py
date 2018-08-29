@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 2.8.2018
+Updated on 28.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,6 +29,7 @@ __version__ = "2.0"
 
 import copy
 import modules.general_functions as general
+import platform
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.energy_spectrum import EnergySpectrumWidget
@@ -50,7 +51,8 @@ class ElementWidget(QtWidgets.QWidget):
     """Class for creating an element widget for the recoil atom distribution.
         """
 
-    def __init__(self, parent, element, parent_tab, element_simulation, color):
+    def __init__(self, parent, element, parent_tab, element_simulation,
+                 color, icon_manager):
         """
         Initializes the ElementWidget.
 
@@ -60,6 +62,7 @@ class ElementWidget(QtWidgets.QWidget):
             parent_tab: A SimulationTabWidget.
             element_simulation: ElementSimulation object.
             color: Color for the circle.
+            icon_manager: Icon manager.
         """
         super().__init__()
 
@@ -88,6 +91,7 @@ class ElementWidget(QtWidgets.QWidget):
             "ui_icons/potku/energy_spectrum_icon.svg"))
         draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                            QtWidgets.QSizePolicy.Fixed)
+
         draw_spectrum_button.clicked.connect(self.plot_spectrum)
         draw_spectrum_button.setToolTip("Draw energy spectra")
 
@@ -106,6 +110,12 @@ class ElementWidget(QtWidgets.QWidget):
                                         QtWidgets.QSizePolicy.Fixed)
         add_recoil_button.clicked.connect(self.add_new_recoil)
         add_recoil_button.setToolTip("Add a new recoil to element")
+
+        if platform.system() == "Darwin":
+            horizontal_layout.setContentsMargins(0, 0, 12, 0)
+            draw_spectrum_button.setMaximumWidth(30)
+            settings_button.setMaximumWidth(30)
+            add_recoil_button.setMaximumWidth(30)
 
         horizontal_layout.addWidget(self.radio_button)
         horizontal_layout.addWidget(self.circle)
@@ -140,7 +150,8 @@ class ElementWidget(QtWidgets.QWidget):
         recoil_widget = RecoilElementWidget(self.parent, element,
                                             self.parent_tab, self,
                                             self.element_simulation,
-                                            color)
+                                            color,
+                                            recoil_element)
         recoil_element.widgets.append(recoil_widget)
         self.element_simulation.recoil_elements.append(recoil_element)
 
@@ -168,6 +179,7 @@ class ElementWidget(QtWidgets.QWidget):
         """
         Plot an energy spectrum and show it in a widget.
         """
+        previous = None
         dialog = EnergySpectrumParamsDialog(
             self.parent_tab, spectrum_type="simulation",
             element_simulation=self.element_simulation, recoil_widget=self)
@@ -182,10 +194,21 @@ class ElementWidget(QtWidgets.QWidget):
                 keys = e_widget.energy_spectrum_data.keys()
                 if Counter(keys) == Counter(
                         energy_spectrum_widget.energy_spectrum_data.keys()):
+                    previous = e_widget
                     self.parent_tab.energy_spectrum_widgets.remove(e_widget)
                     self.parent_tab.del_widget(e_widget)
                     break
 
             self.parent_tab.energy_spectrum_widgets.append(
                 energy_spectrum_widget)
-            self.parent_tab.add_widget(energy_spectrum_widget)
+            icon = self.parent.element_manager.icon_manager.get_icon(
+                "energy_spectrum_icon_16.png")
+            self.parent_tab.add_widget(energy_spectrum_widget, icon=icon)
+
+            if previous and energy_spectrum_widget is not None:
+                energy_spectrum_widget.save_file_int = previous.save_file_int
+                energy_spectrum_widget.save_to_file(measurement=False,
+                                                    update=True)
+            elif not previous and energy_spectrum_widget is not None:
+                energy_spectrum_widget.save_to_file(measurement=False,
+                                                    update=False)

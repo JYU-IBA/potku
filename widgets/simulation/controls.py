@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 8.8.2018
+Updated on 27.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -27,6 +27,10 @@ along with this program (file named 'LICENCE').
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
+
+import os
+
+from modules.general_functions import delete_simulation_results
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
@@ -143,9 +147,61 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.processes_spinbox.setEnabled(True)
         self.state_label.setText("Not started")
 
+    def find_old_biggest_seed(self):
+        """
+        From possible old erd files, find biggest seed number.
+
+        Return:
+             Biggest seed for simulation.
+        """
+        biggest_seed = 0
+        old_files = []
+        for file in os.listdir(self.element_simulation.directory):
+            start_part = self.element_simulation.recoil_elements[0].prefix + \
+                "-" + self.element_simulation.recoil_elements[0].name + "."
+            end = ".erd"
+            if file.startswith(start_part) and file.endswith(end):
+                seed = file.rsplit('.', 2)[1]
+                old_files.append(os.path.join(
+                    self.element_simulation.directory, file))
+                try:
+                    current_seed = int(seed)
+                    if current_seed > biggest_seed:
+                        biggest_seed = current_seed
+                except ValueError:
+                    continue
+        if biggest_seed > 0:
+            return biggest_seed, old_files
+        return None, old_files
+
     def __start_simulation(self):
         """ Calls ElementSimulation's start method.
         """
+        # Ask the user if they want to write old simulation results over (if
+        # they exist), or continue
+        start_value = None
+        old_biggest_seed, erd_flies = self.find_old_biggest_seed()
+        use_erd_files = False
+        if old_biggest_seed:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Confirmation", "Do you want to continue this "
+                                      "simulation?\n\nIf you do, old simulation"
+                                      " results will be preserved.\nOtherwise "
+                                      "they will be deleted.",
+                                                   QtWidgets.QMessageBox.Yes |
+                                                   QtWidgets.QMessageBox.No |
+                                                   QtWidgets.QMessageBox.Cancel,
+                                                   QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.Cancel:
+                return  # If clicked Cancel don't start simulation
+            if reply == QtWidgets.QMessageBox.No:
+                # Delete old simulation results
+                for recoil in self.element_simulation.recoil_elements:
+                    delete_simulation_results(self.element_simulation, recoil)
+            else:
+                start_value = old_biggest_seed + 1
+                use_erd_files = True
+
         number_of_processes = self.processes_spinbox.value()
         self.state_label.setText("Running")
         self.run_button.setEnabled(False)
@@ -166,17 +222,22 @@ class SimulationControlsWidget(QtWidgets.QWidget):
             self.recoil_dist_widget.update_plot()
         self.element_simulation.y_min = 0.0001
 
-        self.element_simulation.start(number_of_processes)
+        if use_erd_files:
+            self.element_simulation.start(number_of_processes, start_value,
+                                          erd_flies)
+        else:
+            self.element_simulation.start(number_of_processes, start_value)
 
-    def show_number_of_observed_atoms(self, number):
+    def show_number_of_observed_atoms(self, number, add_presim):
         """
         Show the number of observed atoms in the coltrols.
 
         Args:
             number: Observed atom number.
+            add_presim: Whether to add presim indicator or not.
         """
         try:
-            if number == 0:
+            if number == 0 or add_presim:
                 text = str(number) + " (pre sim)"
             else:
                 text = str(number)

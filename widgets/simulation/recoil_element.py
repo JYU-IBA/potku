@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 2.7.2018
-Updated on 2.82018
+Updated on 28.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -25,12 +25,15 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-import modules.general_functions
+import os
+import platform
 
 from collections import Counter
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from  dialogs.energy_spectrum import EnergySpectrumWidget
+
+from modules.general_functions import to_superscript
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
@@ -43,7 +46,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
     Class that shows a recoil element that is connected to an ElementSimulation.
     """
     def __init__(self, parent, element, parent_tab, parent_element_widget,
-                 element_simulation, color):
+                 element_simulation, color, recoil_element):
         """
         Initialize the widget.
 
@@ -54,6 +57,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
             parent_element_widget: An ElementWidget.
             element_simulation: ElementSimulation object.
             color: Color for the circle.
+            recoil_element: RecoilElement object.
         """
         super().__init__()
 
@@ -61,6 +65,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
         self.parent_tab = parent_tab
         self.element_simulation = element_simulation
         self.parent_element_widget = parent_element_widget
+        self.recoil_element = recoil_element
 
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setContentsMargins(12, 0, 0, 0)
@@ -68,7 +73,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
         self.radio_button = QtWidgets.QRadioButton()
 
         if element.isotope:
-            isotope_superscript = modules.general_functions.to_superscript(
+            isotope_superscript = to_superscript(
                 str(element.isotope))
             button_text = isotope_superscript + " " + element.symbol
         else:
@@ -92,7 +97,11 @@ class RecoilElementWidget(QtWidgets.QWidget):
         remove_recoil_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                            QtWidgets.QSizePolicy.Fixed)
         remove_recoil_button.clicked.connect(self.remove_recoil)
-        remove_recoil_button.setToolTip("Add a new recoil to element")
+        remove_recoil_button.setToolTip("Remove recoil element")
+
+        if platform.system() == "Darwin":
+            draw_spectrum_button.setMaximumWidth(30)
+            remove_recoil_button.setMaximumWidth(30)
 
         horizontal_layout.addWidget(self.radio_button)
         horizontal_layout.addWidget(self.circle)
@@ -105,7 +114,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
         """
         Plot an energy spectrum.
         """
-        # self.element_simulation.calculate_espe()
+        previous = None
         dialog = EnergySpectrumParamsDialog(
             self.parent_tab, spectrum_type="simulation",
             element_simulation=self.element_simulation, recoil_widget=self)
@@ -120,12 +129,23 @@ class RecoilElementWidget(QtWidgets.QWidget):
                 keys = e_widget.energy_spectrum_data.keys()
                 if Counter(keys) == Counter(
                         energy_spectrum_widget.energy_spectrum_data.keys()):
+                    previous = e_widget
                     self.parent_tab.energy_spectrum_widgets.remove(e_widget)
                     self.parent_tab.del_widget(e_widget)
                     break
             self.parent_tab.energy_spectrum_widgets.append(
                 energy_spectrum_widget)
-            self.parent_tab.add_widget(energy_spectrum_widget)
+            icon = self.parent.element_manager.icon_manager.get_icon(
+                "energy_spectrum_icon_16.png")
+            self.parent_tab.add_widget(energy_spectrum_widget, icon=icon)
+
+            if previous and energy_spectrum_widget is not None:
+                energy_spectrum_widget.save_file_int = previous.save_file_int
+                energy_spectrum_widget.save_to_file(measurement=False,
+                                                    update=True)
+            elif not previous and energy_spectrum_widget is not None:
+                energy_spectrum_widget.save_to_file(measurement=False,
+                                                    update=False)
 
     def remove_recoil(self):
         """
@@ -147,3 +167,23 @@ class RecoilElementWidget(QtWidgets.QWidget):
                 QtWidgets.QMessageBox.Cancel:
             return  # If clicked Yes, then continue normally
         self.parent.remove_recoil_element(self)
+
+        # Delete energy spectra that use recoil
+        for energy_spectra in self.parent_tab.energy_spectrum_widgets:
+            for element_path in energy_spectra. \
+                    energy_spectrum_data.keys():
+                elem = self.recoil_element.prefix + "-" + \
+                       self.recoil_element.name
+                if elem in element_path:
+                    index = element_path.find(elem)
+                    if element_path[index - 1] == os.path.sep and \
+                            element_path[index + len(elem)] == '.':
+                        self.parent_tab.del_widget(energy_spectra)
+                        self.parent_tab.energy_spectrum_widgets.remove(
+                            energy_spectra)
+                        save_file_path = os.path.join(
+                            self.element_simulation.directory, energy_spectra
+                                .save_file)
+                        if os.path.exists(save_file_path):
+                            os.remove(save_file_path)
+                        break

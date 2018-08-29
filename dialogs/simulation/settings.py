@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 8.8.2018
+Updated on 22.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -39,6 +39,7 @@ from dialogs.element_selection import ElementSelectionDialog
 
 from modules.detector import Detector
 from modules.general_functions import delete_simulation_results
+from modules.general_functions import set_input_field_red
 from modules.run import Run
 
 from PyQt5 import QtCore
@@ -74,8 +75,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         screen_geometry = QtWidgets.QDesktopWidget.availableGeometry(
             QtWidgets.QApplication.desktop())
-        self.resize(self.geometry().width(), screen_geometry.size().height()
-                    * 0.8)
+        self.resize(self.geometry().width() * 1.1,
+                    screen_geometry.size().height() * 0.8)
         self.ui.defaultSettingsCheckBox.stateChanged.connect(
             lambda: self.__change_used_settings())
         self.ui.OKButton.clicked.connect(lambda:
@@ -89,7 +90,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
         self.measurement_settings_widget.ui.picture.setScaledContents(True)
-        pixmap = QtGui.QPixmap(os.path.join("images", "hardwaresetup.png"))
+        pixmap = QtGui.QPixmap(os.path.join("images",
+                                            "measurement_setup_angles.png"))
         self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
 
         self.measurement_settings_widget.ui.beamIonButton.clicked.connect(
@@ -143,6 +145,20 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.__enabled_element_information()
             masses.load_isotopes(dialog.element, combo_box)
 
+            # Check if no isotopes
+            if combo_box.count() == 0:
+                self.measurement_settings_widget.ui.isotopeInfoLabel \
+                    .setVisible(True)
+                self.measurement_settings_widget.fields_are_valid = False
+                set_input_field_red(combo_box)
+            else:
+                self.measurement_settings_widget.ui.isotopeInfoLabel \
+                    .setVisible(False)
+                self.measurement_settings_widget.check_text(
+                    self.measurement_settings_widget.ui.nameLineEdit,
+                    self.measurement_settings_widget)
+                combo_box.setStyleSheet("background-color: %s" % "None")
+
     def __change_used_settings(self):
         """Set specific settings enabled or disabled based on the "Use
         request settings" checkbox.
@@ -179,6 +195,17 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
          Update Simulation's Run, Detector and Target objects. If simulation
          specific parameters are in use, save them into a file.
         """
+        if self.measurement_settings_widget.ui.isotopeComboBox.currentIndex()\
+                == -1:
+            QtWidgets.QMessageBox.critical(self, "Warning",
+                                           "No isotope selected.\n\nPlease "
+                                           "select an isotope for the beam "
+                                           "element.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
+            self.__close = False
+            return
+
         if not self.simulation.measurement_setting_file_name:
             self.simulation.measurement_setting_file_name = \
                 self.simulation.name
@@ -239,6 +266,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                             self.tab.del_widget(es)
                                             self.tab.energy_spectrum_widgets.\
                                                 remove(es)
+                                            save_file_path = os.path.join(
+                                                self.tab.simulation.directory,
+                                                es.save_file)
+                                            if os.path.exists(
+                                                    save_file_path):
+                                                os.remove(
+                                                    save_file_path)
                                             break
 
                         # Reset controls
@@ -267,6 +301,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                             self.tab.del_widget(es)
                                             self.tab.energy_spectrum_widgets.\
                                                 remove(es)
+                                            save_file_path = os.path.join(
+                                                self.tab.simulation.directory,
+                                                es.save_file)
+                                            if os.path.exists(
+                                                    save_file_path):
+                                                os.remove(
+                                                    save_file_path)
                                             break
 
                         # Reset controls
@@ -316,6 +357,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                             self.tab.del_widget(es)
                                             self.tab.energy_spectrum_widgets. \
                                                 remove(es)
+                                            save_file_path = os.path.join(
+                                                self.tab.simulation.directory,
+                                                es.save_file)
+                                            if os.path.exists(
+                                                    save_file_path):
+                                                os.remove(
+                                                    save_file_path)
                                             break
 
                         # Reset controls
@@ -359,6 +407,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                             self.tab.del_widget(es)
                                             self.tab.energy_spectrum_widgets. \
                                                 remove(es)
+                                            save_file_path = os.path.join(
+                                                self.tab.simulation.directory,
+                                                es.save_file)
+                                            if os.path.exists(
+                                                    save_file_path):
+                                                os.remove(
+                                                    save_file_path)
                                             break
 
                         # Reset controls
@@ -394,11 +449,17 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             if self.use_default_settings and check_box.isChecked():
                 self.__close = True
                 return
+            only_fluence_changed = False
             if not self.use_default_settings and not check_box.isChecked():
                 # Check that values have been changed
                 if not self.values_changed():
-                    self.__close = True
-                    return
+                    if self.measurement_settings_widget.\
+                            fluenceDoubleSpinBox.value() != \
+                            self.simulation.run.fluence:
+                        only_fluence_changed = True
+                    if not only_fluence_changed:
+                        self.__close = True
+                        return
             if self.use_default_settings:
                 settings = "request"
                 tmp_sims = []
@@ -409,7 +470,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             else:
                 settings = "simulation"
                 tmp_sims = copy.copy(self.simulation.running_simulations)
-            if simulations_run and simulations_running:
+            if simulations_run and simulations_running and \
+                    not only_fluence_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulated and running simulations",
                     "There are simulations that use " + settings + " settings, "
@@ -447,6 +509,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                             self.tab.del_widget(es)
                                             self.tab.energy_spectrum_widgets. \
                                                 remove(es)
+                                            save_file_path = os.path.join(
+                                                self.tab.simulation.directory,
+                                                es.save_file)
+                                            if os.path.exists(
+                                                    save_file_path):
+                                                os.remove(
+                                                    save_file_path)
                                             break
 
                         # Reset controls
@@ -457,7 +526,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                         elem_sim.recoil_elements[0].widgets[0].parent. \
                             edit_lock_push_button.setText("Full edit unlocked")
                         elem_sim.simulations_done = False
-            elif simulations_running:
+            elif simulations_running and not only_fluence_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulations running",
                     "There are simulations running that use " + settings +
@@ -493,6 +562,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                             self.tab.del_widget(es)
                                             self.tab.energy_spectrum_widgets. \
                                                 remove(es)
+                                            save_file_path = os.path.join(
+                                                self.tab.simulation.directory,
+                                                es.save_file)
+                                            if os.path.exists(
+                                                    save_file_path):
+                                                os.remove(
+                                                    save_file_path)
                                             break
 
                         # Reset controls
@@ -502,7 +578,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                         elem_sim.recoil_elements[0].widgets[0].parent. \
                             edit_lock_push_button.setText("Full edit unlocked")
                         elem_sim.simulations_done = False
-            elif simulations_run:
+            elif simulations_run and not only_fluence_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulated simulations",
                     "There are simulations that use " + settings +
@@ -533,6 +609,13 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                             self.tab.del_widget(es)
                                             self.tab.energy_spectrum_widgets. \
                                                 remove(es)
+                                            save_file_path = os.path.join(
+                                                self.tab.simulation.directory,
+                                                es.save_file)
+                                            if os.path.exists(
+                                                    save_file_path):
+                                                os.remove(
+                                                    save_file_path)
                                             break
                         # Reset controls
                         if elem_sim.controls:

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 9.8.2018
+Updated on 27.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,6 +28,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
 __version__ = "2.0"
 
 import json
+import logging
 import math
 import os
 import platform
@@ -664,12 +665,13 @@ class ElementSimulation:
         with open(file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
 
-    def start(self, number_of_processes):
+    def start(self, number_of_processes, start_value, erd_files=None):
         """
         Start the simulation.
 
         Args:
             number_of_processes: How many processes are started.
+            start_value: Which is the first seed.
         """
         self.simulations_done = False
         if self.run is None:
@@ -689,6 +691,10 @@ class ElementSimulation:
 
         # Start as many processes as is given in number of processes
         seed_number = elem_sim.seed_number
+        if start_value:
+            seed_number = start_value
+        if erd_files:
+            self.__erd_files = self.__erd_files + erd_files
         QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
         for i in range(number_of_processes):
             settings = {
@@ -745,12 +751,19 @@ class ElementSimulation:
                 break
             time.sleep(1)
             lines_count = 0
+            add_presim = False
             for f in self.__erd_files:
                 if os.path.exists(f):
+                    lines = 0
                     with open(f, 'r') as file:
-                        lines_count = lines_count + len(file.readlines())
+                        lines = len(file.readlines())
+                    lines_count = lines_count + lines
+                    if f is self.__erd_files[-1]:
+                        if lines == 0:
+                            add_presim = True
             if self.controls:
-                self.controls.show_number_of_observed_atoms(lines_count)
+                self.controls.show_number_of_observed_atoms(lines_count,
+                                                            add_presim)
 
     def notify(self, sim):
         """
@@ -770,17 +783,40 @@ class ElementSimulation:
                 # Update finished processes count
                 self.controls.update_finished_processes(len(self.mcerd_objects))
         if not self.mcerd_objects:
+            processes = "N/a"
             if self.controls:
                 self.controls.show_stop()
+                processes = self.controls.processes_spinbox.value()
             if self.use_default_settings:
                 self.request.running_simulations.remove(self)
             else:
                 self.simulation.running_simulations.remove(self)
+
+            # Calculate erd lines for log
+            lines_count = 0
+            for f in self.__erd_files:
+                if os.path.exists(f):
+                    with open(f, 'r') as file:
+                        lines_count = lines_count + len(file.readlines())
+
+            simulation_name = self.simulation.name
+            element = self.recoil_elements[0].element
+            if element.isotope:
+                element_name = str(element.isotope) + element.symbol
+            else:
+                element_name = element.symbol
+            msg = "Simulation finished. " + "Element: " \
+                  + element_name + " Processes:" + str(processes) + \
+                  " Number of observed atoms: " + str(lines_count)
+            logging.getLogger(simulation_name).info(msg)
+
         self.simulations_done = True
 
     def stop(self):
         """ Stop the simulation."""
         ref_key = None
+        processes = len(self.mcerd_objects.keys())
+
         for sim in list(self.mcerd_objects.keys()):
             if ref_key is None:
                 ref_key = sim
@@ -797,6 +833,24 @@ class ElementSimulation:
         except ValueError:
             self.simulation.running_simulations.remove(self)
         self.simulations_done = True
+
+        # Calculate erd lines for log
+        lines_count = 0
+        for f in self.__erd_files:
+            if os.path.exists(f):
+                with open(f, 'r') as file:
+                    lines_count = lines_count + len(file.readlines())
+
+        simulation_name = self.simulation.name
+        element = self.recoil_elements[0].element
+        if element.isotope:
+            element_name = str(element.isotope) + element.symbol
+        else:
+            element_name = element.symbol
+        msg = "Simulation stopped. " + "Element: " \
+              + element_name + " Processes:" + str(processes) + \
+              " Number of observed atoms: " + str(lines_count)
+        logging.getLogger(simulation_name).info(msg)
 
     def calculate_espe(self, recoil_element):
         """

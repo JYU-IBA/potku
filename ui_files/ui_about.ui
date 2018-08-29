@@ -31,17 +31,19 @@
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <item>
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
+        <widget class="QLabel" name="label">
+         <property name="font">
+          <font>
+           <pointsize>14</pointsize>
+          </font>
          </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
+         <property name="text">
+          <string>Potku</string>
          </property>
-        </spacer>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QLabel" name="picture">
@@ -66,17 +68,19 @@
         </widget>
        </item>
        <item>
-        <spacer name="horizontalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
+        <widget class="QLabel" name="label_2">
+         <property name="font">
+          <font>
+           <pointsize>14</pointsize>
+          </font>
          </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
+         <property name="text">
+          <string>Version 2.0</string>
          </property>
-        </spacer>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>
@@ -101,7 +105,7 @@
         <property name="geometry">
          <rect>
           <x>0</x>
-          <y>-119</y>
+          <y>0</y>
           <width>461</width>
           <height>523</height>
          </rect>
@@ -130,14 +134,14 @@
                <item>
                 <widget class="QLabel" name="label_potkuteam">
                  <property name="text">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Potku Project Members&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;Jarkko Aalto&lt;br/&gt;Timo Konu&lt;br/&gt;Samuli Kärkkäinen&lt;br/&gt;Samuli Rahkonen&lt;br/&gt;Miika Raunio&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Potku Project Members (2013)&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;Jarkko Aalto&lt;br/&gt;Timo Konu&lt;br/&gt;Samuli Kärkkäinen&lt;br/&gt;Samuli Rahkonen&lt;br/&gt;Miika Raunio&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                 </widget>
                </item>
                <item>
                 <widget class="QLabel" name="label_monisiroteam">
                  <property name="text">
-                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Monisiro Project Members&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;Severi Jääskeläinen&lt;br/&gt;Samuel Kaiponen&lt;br/&gt;Heta Rekilä&lt;br/&gt;Sinikka Siironen&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                  <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p align=&quot;center&quot;&gt;&lt;span style=&quot; font-weight:600;&quot;&gt;Monisiro Project Members (2018)&lt;/span&gt;&lt;/p&gt;&lt;p align=&quot;center&quot;&gt;Severi Jääskeläinen&lt;br/&gt;Samuel Kaiponen&lt;br/&gt;Heta Rekilä&lt;br/&gt;Sinikka Siironen&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                  </property>
                 </widget>
                </item>

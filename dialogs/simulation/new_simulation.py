@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 12.6.2018
+Updated on 28.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -30,15 +30,17 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __version__ = "2.0"
 
 import os
-
-from PyQt5 import uic
-from PyQt5 import QtWidgets
+import platform
 
 from dialogs.new_sample import NewSampleDialog
+
 from modules.general_functions import check_text
-from modules.general_functions import set_input_field_white
 from modules.general_functions import set_input_field_red
+from modules.general_functions import set_input_field_white
 from modules.general_functions import validate_text_input
+
+from PyQt5 import QtWidgets
+from PyQt5 import uic
 
 
 class SimulationNewDialog(QtWidgets.QDialog):
@@ -77,6 +79,9 @@ class SimulationNewDialog(QtWidgets.QDialog):
 
         self.ui.simulationNameLineEdit.textEdited.connect(
             lambda: self.__validate())
+
+        if platform.system() == "Darwin":
+            self.ui.samplesComboBox.setMinimumWidth(157)
 
         self.exec_()
 

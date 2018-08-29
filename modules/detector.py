@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 7.8.2018
+Updated on 27.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -48,14 +48,15 @@ class Detector:
                 "angle_slope", "angle_offset", "path", "modification_time",\
                 "efficiencies", "efficiency_directory", "timeres", \
                 "detector_theta", "__measurement_settings_file_path", \
-                "efficiencies_to_remove"
+                "efficiencies_to_remove", "save_in_creation"
 
     def __init__(self, path, measurement_settings_file_path, name="Default",
                  description="", modification_time=None,
                  detector_type="TOF",
                  foils=None, tof_foils=None, virtual_size=(2.0, 5.0),
                  tof_slope=1e-11, tof_offset=1e-9, angle_slope=0,
-                 angle_offset=0, timeres=250.0, detector_theta=40):
+                 angle_offset=0, timeres=250.0, detector_theta=40,
+                 save_in_creation=True):
         """Initialize a detector.
 
         Args:
@@ -75,6 +76,7 @@ class Detector:
             angle_offset: Angle offset.
             timeres: Time resolution.
             detector_theta: Angle of the detector.
+            save_in_creation: Whether to save created detector into a file.
         """
         self.path = path
 
@@ -122,8 +124,9 @@ class Detector:
         self.efficiencies_to_remove = []
         self.efficiency_directory = None
 
-        self.to_file(os.path.join(self.path),
-                     self.__measurement_settings_file_path)
+        if save_in_creation:
+            self.to_file(os.path.join(self.path),
+                         self.__measurement_settings_file_path)
 
     def update_directories(self, directory):
         """Creates directories if they do not exist and updates paths.
@@ -221,12 +224,25 @@ class Detector:
         """
         try:
             os.remove(os.path.join(self.efficiency_directory, file_name))
+            # Remove file from used efficiencies if it exists
+            element = file_name.split('-')[0]
+            if os.sep in element:
+                element = os.path.split(element)[1]
+            if element.endswith(".eff"):
+                file_to_remove = element
+            else:
+                file_to_remove = os.path.join(self.efficiency_directory,
+                                              "Used_efficiencies", element +
+                                              ".eff")
+            if os.path.exists(file_to_remove):
+                os.remove(file_to_remove)
         except OSError:
             # File was not found in efficiency file folder.
             pass
 
     @classmethod
-    def from_file(cls, detector_file_path, measurement_file_path, request):
+    def from_file(cls, detector_file_path, measurement_file_path, request,
+                  save=True):
         """Initialize Detector from a JSON file.
 
         Args:
@@ -235,6 +251,7 @@ class Detector:
             measurement_file_path: A file path to measurement settings file
                                    which has detector angles.
             request: Request object which has default detector angles.
+            save: Whether to save created detector or not.
 
         Return:
             Detector object.
@@ -300,7 +317,8 @@ class Detector:
                    foils=foils, tof_foils=tof_foils, virtual_size=virtual_size,
                    tof_slope=tof_slope, tof_offset=tof_offset,
                    angle_slope=angle_slope, angle_offset=angle_offset,
-                   timeres=timeres, detector_theta=detector_theta)
+                   timeres=timeres, detector_theta=detector_theta,
+                   save_in_creation=save)
 
     def to_file(self, detector_file_path, measurement_file_path):
         """Save detector settings to a file.
@@ -369,6 +387,8 @@ class Detector:
         with open(detector_file_path, "w") as file:
             json.dump(obj, file, indent=4)
 
+        if measurement_file_path is None:
+            return
         # Read .measurement to obj to update only detector angles
         try:
             obj = json.load(open(measurement_file_path))

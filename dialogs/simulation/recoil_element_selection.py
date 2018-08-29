@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.4.2018
-Updated on 23.7.2018
+Updated on 29.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,10 +29,12 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __version__ = "2.0"
 
 import modules.masses as masses
-
 import os
+import platform
 
 from dialogs.element_selection import ElementSelectionDialog
+
+from modules.general_functions import set_input_field_red
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
@@ -62,16 +64,22 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         self.colormap = self.recoil_atom_distribution.colormap
 
         # Setup connections
-        self.ui.element_button.clicked.connect(self.__change_sample_element)
-        self.ui.isotope_radio.toggled.connect(self.__toggle_isotope_sample)
+        self.ui.element_button.clicked.connect(self.__change_element)
+        self.ui.isotope_radio.toggled.connect(self.__toggle_isotope)
 
         self.ui.OKButton.clicked.connect(self.__accept_settings)
         self.ui.cancelButton.clicked.connect(self.close)
         self.ui.colorPushButton.clicked.connect(self.__change_color)
 
-        # Whether we accept or cancel selection, then remove selection if
-        # cancel.
+        self.ui.isotopeInfoLabel.setVisible(False)
+
         self.isOk = False
+
+        if platform.system() == "Darwin":
+            self.ui.isotope_combobox.setFixedHeight(23)
+
+        if platform.system() == "Linux":
+            self.setMinimumWidth(350)
         self.exec_()
 
     def __set_color_button_color(self, element):
@@ -116,85 +124,58 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         else:
             self.ui.colorPushButton.setText("")
 
-    def __change_sample_element(self):
+    def __change_element(self):
         """Shows dialog to change selection element.
-        """
-        self.__change_element(self.ui.element_button,
-                              self.ui.isotope_combobox,
-                              self.ui.standard_mass_label,
-                              self.ui.standard_mass_radio,
-                              self.ui.isotope_radio)
-        self.__check_if_settings_ok()
-
-    def __change_element(self, button, isotope_combobox, standard_mass_label,
-                         standard_mass_radio, isotope_radio, sample=True):
-        """Shows dialog to change selection element.
-
-        Args:
-            button: QtWidgets.QPushButton (button to select element)
-            isotope_combobox: QtWidgets.QComboBox
-            standard_mass_radio: QtGui.QRadioButton
-            standard_mass_label: QtWidgets.QLabel
-            isotope_radio: QtGui.QRadioButton
-            sample: Boolean representing if element is sample (and not RBS
-                    element).
         """
         dialog = ElementSelectionDialog()
         # Only disable these once, not if you cancel after selecting once.
-        if button.text() == "Select":
-            isotope_radio.setEnabled(False)
-            standard_mass_radio.setEnabled(False)
-            standard_mass_label.setEnabled(False)
+        if self.ui.element_button.text() == "Select":
+            self.ui.isotope_radio.setEnabled(False)
+            self.ui.standard_mass_radio.setEnabled(False)
+            self.ui.standard_mass_label.setEnabled(False)
         # If element was selected, proceed to enable appropriate fields.
         if dialog.element:
-            button.setText(dialog.element)
-            self.__enable_element_fields(dialog.element, isotope_combobox,
-                                         isotope_radio, standard_mass_radio,
-                                         standard_mass_label, sample)
+            self.ui.element_button.setText(dialog.element)
+            self.__enable_element_fields(dialog.element)
             self.__set_color_button_color(dialog.element)
             self.tmp_element = dialog.element
 
-    def __enable_element_fields(self, element, isotope_combobox,
-                                isotope_radio, standard_mass_radio,
-                                standard_mass_label, sample=True,
-                                current_isotope=None):
+            if self.ui.isotope_combobox.count() == 0:
+                self.ui.isotopeInfoLabel.setVisible(True)
+                set_input_field_red(self.ui.isotope_combobox)
+                self.setMinimumHeight(243)
+            else:
+                self.ui.isotopeInfoLabel.setVisible(False)
+                self.ui.isotope_combobox.setStyleSheet(
+                    "background-color: %s" % "None")
+                self.setMinimumHeight(200)
+
+            self.__check_if_settings_ok()
+
+    def __enable_element_fields(self, element):
         """Enable element information fields.
 
         Args:
             element: String representing element.
-            isotope_combobox: QtWidgets.QComboBox
-            isotope_radio: QtGui.QRadioButton
-            standard_mass_radio: QtGui.QRadioButton
-            standard_mass_label: QtWidgets.QLabel
-            sample: Boolean representing if element is sample (and not RBS
-                    element).
         """
         if element:
-            isotope_radio.setEnabled(True)
-            standard_mass_radio.setEnabled(True)
-            standard_mass_label.setEnabled(True)
-            self.__load_isotopes(isotope_combobox,
-                                 standard_mass_label,
-                                 element,
-                                 current_isotope)
+            self.ui.isotope_radio.setEnabled(True)
+            self.ui.standard_mass_radio.setEnabled(True)
+            self.ui.standard_mass_label.setEnabled(True)
+            self.__load_isotopes(element)
 
-    def __load_isotopes(self, combobox, standard_mass_label, element,
-                        current_isotope=None):
+    def __load_isotopes(self, element, current_isotope=None):
         """Change isotope information regarding element
 
         Args:
-            combobox: QtWidgets.QComboBox where element's isotopes are loaded
-                      to.
-            standard_mass_label: QtWidgets.QLabel where element's standard mass
-                                 is shown.
             element: String representing element.
             current_isotope: String representing current isotope.
         """
         standard_mass = masses.get_standard_isotope(element)
-        standard_mass_label.setText(str(round(standard_mass, 3)))
-        masses.load_isotopes(element, combobox, current_isotope)
+        self.ui.standard_mass_label.setText(str(round(standard_mass, 3)))
+        masses.load_isotopes(element, self.ui.isotope_combobox, current_isotope)
 
-    def __toggle_isotope_sample(self):
+    def __toggle_isotope(self):
         """Toggle Sample isotope radio button.
         """
         self.ui.isotope_combobox.setEnabled(self.ui.isotope_radio.isChecked())
@@ -205,9 +186,9 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         element = self.ui.element_button.text()
         if element:
             self.ui.OKButton.setEnabled(True)
-        elif element != "Select" and element:
-            self.ui.OKButton.setEnabled(True)
         else:
+            self.ui.OKButton.setEnabled(False)
+        if self.ui.isotopeInfoLabel.isVisible():
             self.ui.OKButton.setEnabled(False)
 
     def __accept_settings(self):

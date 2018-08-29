@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 27.3.2013
-Updated on 7.6.2018
+Updated on 22.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -32,13 +32,15 @@ __version__ = "2.0"
 import logging
 import os
 import sys
-from PyQt5 import uic
+
+from modules.cut_file import get_scatter_element
+from modules.cut_file import is_rbs
+from modules.element_losses import ElementLosses
+
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
+from PyQt5 import uic
 
-from modules.cut_file import is_rbs
-from modules.cut_file import get_scatter_element
-from modules.element_losses import ElementLosses
 from widgets.matplotlib.measurement.element_losses \
     import MatplotlibElementLossesWidget
 
@@ -171,7 +173,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
     save_file = "widget_composition_changes.save"
 
     def __init__(self, parent, reference_cut_file, checked_cuts,
-                 partition_count, y_scale):
+                 partition_count, y_scale, use_progress_bar=True):
         """Inits widget.
         
         Args:
@@ -181,6 +183,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
             partition_count: Integer representing how many splits cut files 
                              are divided to.
             y_scale: Integer flag representing how Y axis is scaled.
+            use_progress_bar: Whetehr to add a progress bar or not.
         """
         try:
             super().__init__()
@@ -192,13 +195,16 @@ class ElementLossesWidget(QtWidgets.QWidget):
             self.partition_count = partition_count
             self.y_scale = y_scale
             if self.measurement.statusbar:
-                self.progress_bar = QtWidgets.QProgressBar()
-                self.measurement.statusbar.addWidget(self.progress_bar, 1)
-                self.progress_bar.show()
-                QtCore.QCoreApplication.processEvents(
-                    QtCore.QEventLoop.AllEvents)
-                # Mac requires event processing to show progress bar and its 
-                # process.
+                if use_progress_bar:
+                    self.progress_bar = QtWidgets.QProgressBar()
+                    self.measurement.statusbar.addWidget(self.progress_bar, 1)
+                    self.progress_bar.show()
+                    QtCore.QCoreApplication.processEvents(
+                        QtCore.QEventLoop.AllEvents)
+                    # Mac requires event processing to show progress bar and its
+                    # process.
+                else:
+                    self.progress_bar = None
             else:
                 self.progress_bar = None
 

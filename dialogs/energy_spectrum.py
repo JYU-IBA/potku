@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 10.8.2018
+Updated on 22.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -355,6 +355,17 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
         self.bin_width = self.ui.histogramTicksDoubleSpinBox.value()
 
+        simulation_name = self.element_simulation.simulation.name
+        msg = "[{0}] Created Energy Spectrum. {1} {2}".format(
+            simulation_name,
+            "Bin width: {0}".format(self.bin_width),
+            "Used files: {0}".format(", ".join(self.result_files))
+        )
+        logging.getLogger("request").info(msg)
+        logging.getLogger(simulation_name).info(
+            "Created Energy Spectrum. Bin width: {0} Used files: {1}".format(
+                self.bin_width, ", ".join(self.result_files)))
+
     def __accept_params(self):
         """Accept given parameters and cut files.
         """
@@ -511,7 +522,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     """
     save_file = "widget_energy_spectrum.save"
 
-    def __init__(self, parent, spectrum_type, use_cuts=None, bin_width=0.025):
+    def __init__(self, parent, spectrum_type, use_cuts=None, bin_width=0.025,
+                 save_file_int=0, use_progress_bar=True):
         """Inits widget.
         
         Args:
@@ -519,6 +531,9 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             use_cuts: A string list representing Cut files.
             bin_width: A float representing Energy Spectrum histogram's bin
             width.
+            save_file_int: n integer to have unique save file names for
+            simulation energy spectra combinations.
+            use_progress_bar: Whether to add a new progress bar or not.
         """
         try:
             super().__init__()
@@ -530,6 +545,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.use_cuts = use_cuts
             self.bin_width = bin_width
             self.energy_spectrum_data = {}
+            self.spectrum_type = spectrum_type
             rbs_list = {}
 
             self.ui = uic.loadUi(os.path.join("ui_files",
@@ -542,13 +558,17 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             if isinstance(self.parent.obj, Measurement):
                 self.measurement = self.parent.obj
                 if self.measurement.statusbar:
-                    self.progress_bar = QtWidgets.QProgressBar()
-                    self.measurement.statusbar.addWidget(self.progress_bar, 1)
-                    self.progress_bar.show()
-                    QtCore.QCoreApplication.processEvents(
-                        QtCore.QEventLoop.AllEvents)
-                    # Mac requires event processing to show progress bar and its
-                    # process.
+                    if use_progress_bar:
+                        self.progress_bar = QtWidgets.QProgressBar()
+                        self.measurement.statusbar.addWidget(
+                            self.progress_bar, 1)
+                        self.progress_bar.show()
+                        QtCore.QCoreApplication.processEvents(
+                            QtCore.QEventLoop.AllEvents)
+                        # Mac requires event processing to show progress bar
+                        # and its process.
+                    else:
+                        self.progress_bar = None
                 else:
                     self.progress_bar = None
 
@@ -573,6 +593,10 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                         rbs_list[key] = get_scatter_element(cut)
 
             else:
+                self.simulation = self.parent.obj
+                self.save_file_int = save_file_int
+                self.save_file = "widget_energy_spectrum_" + str(
+                    save_file_int) + ".save"
                 for file in use_cuts:
                     self.energy_spectrum_data[file] = read_espe_file(
                         file)
@@ -641,22 +665,45 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
         """
-        file = os.path.join(self.parent.obj.directory, self.save_file)
-        try:
-            if os.path.isfile(file):
-                os.unlink(file)
-        except:
-            pass
+        if self.spectrum_type == "simulation":
+            file = os.path.join(self.parent.obj.directory, self.save_file)
+            try:
+                if os.path.isfile(file):
+                    os.unlink(file)
+            except:
+                pass
         super().closeEvent(evnt)
 
-    def save_to_file(self):
+    def save_to_file(self, measurement=True, update=False):
         """Save object information to file.
+
+        Args:
+            measurement: Whether energy spectrum belong to measurement or
+            simulation.
         """
-        files = "\t".join([tmp.replace(self.measurement.directory + "\\",
-                                       "")
-                           for tmp in self.use_cuts])
-        file = os.path.join(self.measurement.directory_energy_spectra,
-                            self.save_file)
+        if measurement:
+            files = "\t".join([tmp.replace(self.measurement.directory + "\\",
+                                           "")
+                               for tmp in self.use_cuts])
+            file = os.path.join(self.measurement.directory_energy_spectra,
+                                self.save_file)
+        else:
+            files = "\t".join([tmp for tmp in self.use_cuts])
+
+            file_name_start = "widget_energy_spectrum_"
+            i = self.save_file_int
+            file_name_end = ".save"
+            file_name = file_name_start + str(i) + file_name_end
+            if self.save_file_int == 0 or not update:
+                i = 1
+                file_name = file_name_start + str(i) + file_name_end
+                while os.path.exists(os.path.join(self.simulation.directory,
+                                                  file_name)):
+                    file_name = file_name_start + str(i) + file_name_end
+                    i += 1
+                self.save_file_int = i
+            self.save_file = file_name
+            file = os.path.join(self.simulation.directory, file_name)
         fh = open(file, "wt")
         fh.write("{0}\n".format(files))
         fh.write("{0}".format(self.bin_width))

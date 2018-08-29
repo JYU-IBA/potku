@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 9.8.2018
+Updated on 23.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -465,7 +465,7 @@ class Selector:
                 fp.write(sel.save_string(self.is_transposed) + "\n")
             fp.close()
 
-    def load(self, filename, progress_bar=None, percentage=None):
+    def load(self, filename, progress_bar=None, add=None, base=None):
         """Load selections from a file.
         
         Removes all current selections and loads selections from given filename.
@@ -473,7 +473,8 @@ class Selector:
         Args:
             filename: String representing (full) path to selection file.
             progress_bar: A preogress bar used when opening a measurement.
-            percentage: How many percents will be added to progress bar.
+            add: How many percents will be added to progress bar.
+            base: Base value for progress bar.
         """
         self.remove_all()
         with open(filename) as fp:
@@ -495,7 +496,7 @@ class Selector:
         self.update_axes_limits()
         self.draw()  # Draw all selections
         self.auto_save()
-        self.update_selection_points(progress_bar, percentage)
+        self.update_selection_points(progress_bar, add, base)
         message = "Selection file {0} was read successfully!".format(filename)
         logging.getLogger(self.measurement_name).info(message)
 
@@ -533,12 +534,14 @@ class Selector:
             selection.point_inside(data[n])
         selection.events_counted = True
 
-    def update_selection_points(self, progress_bar=None, percentage=None):
+    def update_selection_points(self, progress_bar, percentage,
+                                base):
         """Update all selections event counts.
 
         Args:
             progress_bar: A progress bar when a measurement is opened.
             percentage: How many percents will be added to progress bar.
+            base: Base value for progress bar.
         """
         data = self.measurement.data
         dirtyinteger = 0
@@ -551,9 +554,9 @@ class Selector:
                 if selection.is_closed:
                     selection.point_inside(point)
             dirtyinteger += 1
-            if progress_bar and percentage:
+            if progress_bar:
                 progress_bar.setValue(
-                    40 + (dirtyinteger / len(data) * percentage))
+                    base + (dirtyinteger / len(data) * percentage))
                 QtCore.QCoreApplication.processEvents(
                     QtCore.QEventLoop.AllEvents)
         for selection in self.selections:

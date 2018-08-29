@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.7.2018
-Updated on 20.7.2018
+Updated on 29.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -24,6 +24,10 @@ along with this program (file named 'LICENCE').
 """
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
+
+import platform
+
+from dialogs.simulation.multiply_coordinate import MultiplyCoordinateDialog
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import Qt
@@ -55,6 +59,7 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
 
         # Point x coordinate spinbox
         self.x_coordinate_box = QtWidgets.QDoubleSpinBox(self)
+
         # Set decimal pointer to .
         self.x_coordinate_box.setLocale(self.parent.locale)
         self.x_coordinate_box.setToolTip("X coordinate of selected point")
@@ -68,19 +73,10 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
             self.parent.set_selected_point_x)
         self.x_coordinate_box.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.actionXMultiply = QtWidgets.QAction(self)
-        self.actionXMultiply.setText("Multiply with value in clipboard\n(" +
-                                     self.parent.ratio_str + ")")
+        self.actionXMultiply.setText("Multiply coordinate...")
         self.actionXMultiply.triggered.connect(
             lambda: self.__multiply_coordinate(self.x_coordinate_box))
         self.x_coordinate_box.addAction(self.actionXMultiply)
-
-        self.actionXUndo = QtWidgets.QAction(self)
-        self.actionXUndo.setText("Undo multipy")
-        self.actionXUndo.triggered.connect(
-            lambda: self.undo(self.x_coordinate_box))
-        self.actionXUndo.setEnabled(False)
-        self.x_coordinate_box.addAction(self.actionXUndo)
-
         self.x_coordinate_box.setEnabled(False)
 
         # X label
@@ -101,23 +97,19 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
             self.parent.set_selected_point_y)
         self.y_coordinate_box.setContextMenuPolicy(Qt.ActionsContextMenu)
         self.actionYMultiply = QtWidgets.QAction(self)
-        self.actionYMultiply.setText("Multiply with value in clipboard\n(" +
-                                     self.parent.ratio_str + ")")
+        self.actionYMultiply.setText("Multiply coordinate...")
         self.actionYMultiply.triggered.connect(
             lambda: self.__multiply_coordinate(self.y_coordinate_box))
         self.y_coordinate_box.addAction(self.actionYMultiply)
-
-        self.actionYUndo = QtWidgets.QAction(self)
-        self.actionYUndo.setText("Undo multiply")
-        self.actionYUndo.triggered.connect(
-            lambda: self.undo(self.y_coordinate_box))
-        self.actionYUndo.setEnabled(False)
-        self.y_coordinate_box.addAction(self.actionYUndo)
 
         self.y_coordinate_box.setEnabled(False)
 
         # Y label
         label_y = QtWidgets.QLabel("y:")
+
+        if platform.system() == "Darwin" or platform.system() == "Linux":
+            self.x_coordinate_box.setMinimumWidth(70)
+            self.y_coordinate_box.setMinimumWidth(70)
 
         horizontal_layout_x.addWidget(label_x)
         horizontal_layout_x.addWidget(self.x_coordinate_box)
@@ -130,38 +122,6 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
 
         self.setLayout(vertical_layout)
 
-    def undo(self, spinbox):
-        """
-        Undo change to spinbox value.
-        """
-        if spinbox == self.x_coordinate_box:
-            enable = False
-            for point in self.parent.selected_points:
-                if not point.previous_x:
-                    continue
-                old_value = point.previous_x.pop()
-                self.parent.set_selected_point_x(old_value, point)
-                if not point.previous_x:
-                    self.actionXUndo.setEnabled(False)
-                else:
-                    enable = True
-            if enable:
-                self.actionXUndo.setEnabled(True)
-        else:
-            enable = False
-            for point in self.parent.selected_points:
-                if not point.previous_y:
-                    continue
-                old_value = point.previous_y.pop()
-                self.parent.set_selected_point_y(old_value, point)
-                if not point.previous_y:
-                    self.actionYUndo.setEnabled(False)
-                else:
-                    enable = True
-            if enable:
-                self.actionYUndo.setEnabled(True)
-        # spinbox.setValue(old_value)
-
     def __multiply_coordinate(self, spinbox):
         """
         Multiply the spinbox's value with the value in clipboard.
@@ -169,8 +129,13 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
         Args:
             spinbox: Spinbox whose value is multiplied.
         """
-        try:
-            ratio = float(self.parent.ratio_str)
+        dialog = MultiplyCoordinateDialog(self.parent.ratio_str)
+        if dialog.used_multiplier:
+            multiplier = dialog.used_multiplier
+            # Make backlog entry
+            self.parent.current_recoil_element.save_current_points(
+                self.parent.full_edit_on)
+
             if spinbox == self.x_coordinate_box:
                 for point in reversed(self.parent.selected_points):
                     if point.get_y() == 0.0:
@@ -179,13 +144,12 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
                                         recoil_elements[0] != \
                                 self.parent.current_recoil_element:
                             continue
-                    point.previous_x.append(point.get_x())
                     coord = point.get_x()
-                    new_coord = round(ratio * coord, 3)
+                    new_coord = round(multiplier * coord, 3)
                     if new_coord > self.parent.target_thickness:
                         new_coord = self.parent.target_thickness
                     self.parent.set_selected_point_x(new_coord, point)
-                self.actionXUndo.setEnabled(True)
+
             else:
                 for point in reversed(self.parent.selected_points):
                     if point.get_y() == 0.0:
@@ -194,17 +158,6 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
                                         recoil_elements[0] != \
                                 self.parent.current_recoil_element:
                             continue
-                    point.previous_y.append(point.get_y())
                     coord = point.get_y()
-                    new_coord = round(ratio * coord, 3)
+                    new_coord = round(multiplier * coord, 3)
                     self.parent.set_selected_point_y(new_coord, point)
-                self.actionYUndo.setEnabled(True)
-            # spinbox.setValue(new_coord)
-        except ValueError:
-            QtWidgets.QMessageBox.critical(self.parent.parent, "Error",
-                                           "Value '" + self.parent.ratio_str +
-                                           "' is not suitable for "
-                                           "multiplying.\n\nPlease copy a "
-                                           "suitable value to clipboard.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)

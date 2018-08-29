@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2013
-Updated on 7.8.2018
+Updated on 22.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -43,18 +43,20 @@ class TofeHistogramWidget(QtWidgets.QWidget):
     """HistogramWidget used to draw ToF-E Histograms.
     """
 
-    def __init__(self, measurement, icon_manager):
+    def __init__(self, measurement, icon_manager, tab):
         """Inits TofeHistogramWidget widget.
 
         Args:
             measurement: A measurement class object.
             icon_manager: An iconmanager class object.
+            tab: A MeasurementTabWidget.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_histogram_widget.ui"),
                              self)
         self.measurement = measurement
+        self.tab = tab
         self.matplotlib = MatplotlibHistogramWidget(self, measurement,
                                                     icon_manager)
         self.ui.saveCutsButton.clicked.connect(self.matplotlib.save_cuts)
@@ -87,13 +89,11 @@ class TofeHistogramWidget(QtWidgets.QWidget):
             self.ui.saveCutsButton.setEnabled(True)
             # self.measurement.request.save_selection(self.measurement)
 
-    def __save_cuts(self, unused_measurement):
+    def __save_cuts(self):
         """Connect to saving cuts. Issue it to request for every other
         measurement.
         """
-        # self.measurement.request.save_cuts(self.measurement)
-        # TODO: Fix this to work when there are masters and slaves
-        pass
+        self.measurement.request.save_cuts(self.measurement)
 
     def __set_shortcuts(self):
         """Set shortcuts for the ToF-E histogram.

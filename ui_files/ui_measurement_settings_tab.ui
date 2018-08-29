@@ -41,9 +41,9 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-456</y>
-        <width>340</width>
-        <height>749</height>
+        <y>0</y>
+        <width>383</width>
+        <height>794</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -152,6 +152,15 @@
             <string>Beam settings</string>
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_3">
+            <item>
+             <widget class="QLabel" name="isotopeInfoLabel">
+              <property name="text">
+               <string>If you wish to use this element, please modify masses.dat file and
+change the natural abundance to 100 % on your preferred isotope and
+restart the application.</string>
+              </property>
+             </widget>
+            </item>
             <item>
              <layout class="QFormLayout" name="formLayout_2">
               <item row="0" column="0">

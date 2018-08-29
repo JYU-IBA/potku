@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 9.8.2018
+Updated on 23.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -127,20 +127,23 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             widget.show()
         self.__set_icons()
 
-    def add_histogram(self, progress_bar):
+    def add_histogram(self, progress_bar, start=None, add=None):
         """Adds ToF-E histogram into tab if it doesn't have one already.
 
         Args:
             progress_bar: A progress bar.
+            start: Start value of progress bar.
+            add: Value added to progress bar.
         """
         self.histogram = TofeHistogramWidget(self.obj,
-                                             self.icon_manager)
-        if progress_bar:
+                                             self.icon_manager, self)
+        if progress_bar and not start:
             progress_bar.setValue(40)
             QtCore.QCoreApplication.processEvents(
                 QtCore.QEventLoop.AllEvents)
 
-        self.obj.set_axes(self.histogram.matplotlib.axes, progress_bar)
+        self.obj.set_axes(self.histogram.matplotlib.axes, progress_bar,
+                          start, add)
 
         self.ui.makeSelectionsButton.clicked.connect(
             lambda: self.histogram.matplotlib.elementSelectionButton.setChecked(
@@ -148,7 +151,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         self.histogram.matplotlib.selectionsChanged.connect(
             self.__set_cut_button_enabled)
 
-        if progress_bar:
+        if progress_bar and not add:
             progress_bar.setValue(60)
             QtCore.QCoreApplication.processEvents(
                 QtCore.QEventLoop.AllEvents)
@@ -198,28 +201,37 @@ class MeasurementTabWidget(QtWidgets.QWidget):
                                                 log_widget)
         logger.addHandler(widgetlogger_default)
 
-    def check_previous_state_files(self, progress_bar=None, directory=None):
+    def check_previous_state_files(self, progress_bar=None):
         """Check if saved state for Elemental Losses, Energy Spectrum or Depth
         Profile exists. If yes, load them also.
 
         Args:
             progress_bar: A QtWidgets.QProgressBar where loading of previous
                           graph can be shown.
-            directory: directory path.
         """
-        if not directory:
-            directory = self.obj.directory
-        self.make_elemental_losses(directory, self.obj.name)
-        progress_bar.setValue(66)
+        sample_folder_name = "Sample_" + "%02d" % \
+                             self.obj.sample.serial_number + "-" + \
+                             self.obj.sample.name
+        directory_c = self.obj.directory_composition_changes
+        self.make_elemental_losses(directory_c, self.obj.name,
+                                   self.obj.serial_number,
+                                   sample_folder_name)
+        progress_bar.setValue(72)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-        self.make_energy_spectrum(directory, self.obj.name)
+        directory_e = self.obj.directory_energy_spectra
+        self.make_energy_spectrum(directory_e, self.obj.name,
+                                  self.obj.serial_number,
+                                  sample_folder_name)
         progress_bar.setValue(82)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-        self.make_depth_profile(directory, self.obj.name)
+        directory_d = self.obj.directory_depth_profiles
+        self.make_depth_profile(directory_d, self.obj.name,
+                                self.obj.serial_number,
+                                sample_folder_name)
         progress_bar.setValue(98)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
@@ -257,12 +269,15 @@ class MeasurementTabWidget(QtWidgets.QWidget):
 
         self.ui.frame.setVisible(self.panel_shown)
 
-    def make_depth_profile(self, directory, name):
+    def make_depth_profile(self, directory, name, serial_number_m,
+                           sample_folder_name):
         """Make depth profile from loaded lines from saved file.
         
         Args:
-            directory: A string representing directory.
+            directory: A string representing directory to depth files.
             name: A string representing measurement's name.
+            serial_number_m: Measurement's serial number.
+            sample_folder_name: Sample's serial number.
         """
         file = os.path.join(directory, DepthProfileWidget.save_file)
         lines = self.__load_file(file)
@@ -270,9 +285,19 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             return
         m_name = self.obj.name
         try:
-            output_dir = self.__confirm_filepath(lines[0].strip(), name, m_name)
+            old_folder_prefix = "Measurement_" + "%02d" % serial_number_m
+            new_folder_prefix = "Measurement_" + "%02d" % self.obj.serial_number
+            new_sample_name = "Sample_" + "%02d" % \
+                              self.obj.sample.serial_number + "-" + \
+                              self.obj.sample.name
+            output_dir = self.__confirm_filepath(lines[0].strip(), name,
+                                                 m_name, old_folder_prefix,
+                                                 new_folder_prefix,
+                                                 sample_folder_name,
+                                                 new_sample_name)
             use_cuts = self.__confirm_filepath(
-                lines[2].strip().split("\t"), name, m_name)
+                lines[2].strip().split("\t"), name, m_name, old_folder_prefix,
+                new_folder_prefix, sample_folder_name, new_sample_name)
             cut_names = [os.path.basename(cut) for cut in use_cuts]
             elements_string = lines[1].strip().split("\t")
             elements = [Element.from_string(element)
@@ -289,25 +314,23 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             DepthProfileDialog.line_zero = line_zero
             DepthProfileDialog.line_scale = line_scale
             DepthProfileDialog.systerr = systerr
-            self.depth_profile_widget = DepthProfileWidget(self,
-                                                           output_dir,
-                                                           use_cuts,
-                                                           elements,
-                                                           x_unit,
-                                                           line_zero,
-                                                           line_scale,
-                                                           systerr)
+            self.depth_profile_widget = DepthProfileWidget(
+                self, output_dir, use_cuts, elements, x_unit, line_zero,
+                line_scale, systerr)
             icon = self.icon_manager.get_icon("depth_profile_icon_2_16.png")
             self.add_widget(self.depth_profile_widget, icon=icon)
         except:  # We do not need duplicate error logs, log in widget instead
             print(sys.exc_info())  # TODO: Remove this.
 
-    def make_elemental_losses(self, directory, name):
+    def make_elemental_losses(self, directory, name, serial_number,
+                              old_sample_name):
         """Make elemental losses from loaded lines from saved file.
         
         Args:
             directory: A string representing directory.
             name: A string representing measurement's name.
+            serial_number: Measurement's serial number.
+            old_sample_name: Sample folder of the measurement.
         """
         file = os.path.join(directory, ElementLossesWidget.save_file)
         lines = self.__load_file(file)
@@ -315,10 +338,20 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             return
         m_name = self.obj.name
         try:
+            old_folder_prefix = "Measurement_" + "%02d" % serial_number
+            new_folder_prefix = "Measurement_" + "%02d" % self.obj.serial_number
+            new_sample_name = "Sample_" + "%02d" % \
+                              self.obj.sample.serial_number + "-" + \
+                              self.obj.sample.name
             reference_cut = self.__confirm_filepath(lines[0].strip(),
-                                                    name, m_name)
+                                                    name, m_name,
+                                                    old_folder_prefix,
+                                                    new_folder_prefix,
+                                                    old_sample_name,
+                                                    new_sample_name)
             checked_cuts = self.__confirm_filepath(
-                lines[1].strip().split("\t"), name, m_name)
+                lines[1].strip().split("\t"), name, m_name, old_folder_prefix,
+                new_folder_prefix, old_sample_name, new_sample_name)
             cut_names = [os.path.basename(cut) for cut in checked_cuts]
             split_count = int(lines[2])
             y_scale = int(lines[3])
@@ -327,22 +360,22 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             ElementLossesDialog.checked_cuts[m_name] = cut_names
             ElementLossesDialog.split_count = split_count
             ElementLossesDialog.y_scale = y_scale
-            self.elemental_losses_widget = ElementLossesWidget(self,
-                                                               reference_cut,
-                                                               checked_cuts,
-                                                               split_count,
-                                                               y_scale)
+            self.elemental_losses_widget = ElementLossesWidget(
+                self, reference_cut, checked_cuts, split_count, y_scale,
+                use_progress_bar=False)
             icon = self.icon_manager.get_icon("elemental_losses_icon_16.png")
             self.add_widget(self.elemental_losses_widget, icon=icon)
         except:  # We do not need duplicate error logs, log in widget instead
             print(sys.exc_info())  # TODO: Remove this.
 
-    def make_energy_spectrum(self, directory, name):
+    def make_energy_spectrum(self, directory, name, serial_number,
+                             old_sample_name):
         """Make energy spectrum from loaded lines from saved file.
         
         Args:
             directory: A string representing directory.
             name: A string representing measurement's name.
+            serial_number: Measurement's serial number.
         """
         file = os.path.join(directory, EnergySpectrumWidget.save_file)
         lines = self.__load_file(file)
@@ -350,16 +383,22 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             return
         m_name = self.obj.name
         try:
+            old_folder_prefix = "Measurement_" + "%02d" % serial_number
+            new_folder_prefix = "Measurement_" + "%02d" % self.obj.serial_number
+            new_sample_name = "Sample_" + "%02d" % \
+                              self.obj.sample.serial_number + "-" + \
+                              self.obj.sample.name
             use_cuts = self.__confirm_filepath(
-                lines[0].strip().split("\t"), name, m_name)
+                lines[0].strip().split("\t"), name, m_name, old_folder_prefix,
+                new_folder_prefix, old_sample_name, new_sample_name)
             cut_names = [os.path.basename(cut) for cut in use_cuts]
             width = float(lines[1].strip())
             EnergySpectrumParamsDialog.bin_width = width
             EnergySpectrumParamsDialog.checked_cuts[m_name] = cut_names
             self.energy_spectrum_widget = EnergySpectrumWidget(
-                self,
-                use_cuts,
-                width)
+                self, spectrum_type="measurement",
+                use_cuts=use_cuts,
+                bin_width=width, use_progress_bar=False)
             icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
             self.add_widget(self.energy_spectrum_widget, icon=icon)
         except:  # We do not need duplicate error logs, log in widget instead
@@ -418,10 +457,15 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         measurementtabwidget.
         """
         measurement_name = self.obj.name
-        master_name = self.obj.request.has_master()
+        master = self.obj.request.has_master()
+        if master != "":
+            master_name = master.name
+        else:
+            master_name = None
         self.ui.command_master.setEnabled(measurement_name == master_name)
 
-    def __confirm_filepath(self, filepath, name, m_name):
+    def __confirm_filepath(self, filepath, name, m_name, old_folder_prefix,
+                           new_folder_prefix, old_sample_name, new_sample_name):
         """Confirm whether filepath exist and changes it accordingly.
 
         Args:
@@ -429,11 +473,19 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             name: A string representing origin measurement's name.
             m_name: A string representing measurement's name where graph is
             created.
+            old_folder_prefix: Folder name of the original measurement.
+            new_folder_prefix: Folder prefix of the measurement who will have
+            the graph.
+            old_sample_name: Sample folder name of the original measurement.
+            new_sample_name: Sample folder name of the measurement who will
+            have the graph.
         """
         if type(filepath) == str:
             # Replace two for measurement and cut file's name. Not all, in case 
             # the request or directories above it have same name.
-            filepath = self.__rreplace(filepath, name, m_name, 2)
+            filepath = self.__rreplace(filepath, name, m_name,
+                                       old_folder_prefix, new_folder_prefix,
+                                       old_sample_name, new_sample_name)
             try:
                 with open(filepath):
                     pass
@@ -443,7 +495,9 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         elif type(filepath) == list:
             newfiles = []
             for file in filepath:
-                file = self.__rreplace(file, name, m_name, 2)
+                file = self.__rreplace(file, name, m_name, old_folder_prefix,
+                                       new_folder_prefix, old_sample_name,
+                                       new_sample_name)
                 try:
                     with open(file):
                         pass
@@ -463,7 +517,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             with open(file, "rt") as fp:
                 for line in fp:
                     lines.append(line)
-        except:
+        except IOError:
             pass
         return lines
 
@@ -472,9 +526,12 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         to all slave measurements in the request.
         """
         meas_name = self.obj.name
-        master_name = self.obj.request.has_master()
+        master = self.obj.request.has_master()
+        if master != "":
+            master_name = master.name
+        else:
+            master_name = None
         if meas_name == master_name:
-            # self.emit(QtCore.SIGNAL("issueMaster"))
             self.issueMaster.emit()
 
     def __read_log_file(self, file, state=1):
@@ -494,14 +551,37 @@ class MeasurementTabWidget(QtWidgets.QWidget):
                     else:
                         self.log.add_text(line.strip())
 
-    def __rreplace(self, s, old, new, occurrence):
+    def __rreplace(self, s, old, new, old_folder_prefix, new_folder_prefix,
+                   old_sample_name, new_sample_name):
         """Replace from last occurrence.
         
         http://stackoverflow.com/questions/2556108/how-to-replace-the-last-
         occurence-of-an-expression-in-a-string
+
+        Args:
+            s: String to modify.
+            old: Old name.
+            new: New name.
+            old_folder_prefix: Folder prefix of the old name.
+            new_folder_prefix: Folder prefix of the new name.
+            old_sample_name: Name of the old sample folder.
+            new_sample_name: Name of the new sample folder.
         """
-        li = s.rsplit(old, occurrence)
-        return new.join(li)
+        li = s.rsplit(old, 2)
+        if old_folder_prefix in li[0]:
+            new_f = li[0].replace(old_folder_prefix, new_folder_prefix)
+            li[0] = new_f
+        if old_sample_name in li[0]:
+            new_f = li[0].replace(old_sample_name, new_sample_name)
+            li[0] = new_f
+        # first = s.split(old_folder_prefix, 1)[0]
+        # f_done = first + new_folder_name
+        # second = s.rsplit(old, 1)[1]
+        # s_done = new + second
+        #
+        # result = f_done + s_done
+        result = new.join(li)
+        return result
 
     def __set_cut_button_enabled(self, selections):
         """Enables save cuts button if the given selections list's lenght is

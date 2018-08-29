@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 24.7.2018
+Updated on 13.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -707,3 +707,35 @@ def delete_simulation_results(element_simulation, recoil_element):
                     element_simulation.directory, file))
     for f in files_to_delete:
         os.remove(f)
+
+
+def calculate_new_point(previous_point, new_x, next_point,
+                        area_points):
+    """
+    Calculate a new point whose x coordinate is given, between previous
+    and next point.
+
+    Args:
+        previous_point: Previous point.
+        new_x: X coordinate for new point.
+        next_point: Next point.
+        area_points: List of points where a new point is added.
+    """
+    previous_x = previous_point.get_x()
+    previous_y = previous_point.get_y()
+
+    next_x = next_point.get_x()
+    next_y = next_point.get_y()
+
+    x_diff = round(next_x - previous_x, 4)
+    y_diff = round(next_y - previous_y, 4)
+
+    if x_diff == 0.0:
+        # If existing points are close enough
+        return
+
+    k = y_diff / x_diff
+    new_y = k * new_x - k * previous_x + previous_y
+
+    new_point = (new_x, new_y)
+    area_points.append(new_point)
