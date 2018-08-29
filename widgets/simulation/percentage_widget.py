@@ -171,6 +171,10 @@ class PercentageWidget(QtWidgets.QWidget):
 
         new_row = 0
         if self.ui.comboBox.currentText().startswith("Same"):
+            if not self.__common_percentages:
+                self.ui.absRelButton.setEnabled(False)
+            else:
+                self.ui.absRelButton.setEnabled(True)
             for recoil, percentage in self.__common_percentages.items():
                 dimension = (1, 4, 4, 4)
 
@@ -201,6 +205,10 @@ class PercentageWidget(QtWidgets.QWidget):
                 self.ui.gridLayout.addWidget(label, new_row, 3)
                 new_row += 1
         else:
+            if not self.__individual_percentages:
+                self.ui.absRelButton.setEnabled(False)
+            else:
+                self.ui.absRelButton.setEnabled(True)
             for recoil, percentage in self.__individual_percentages.items():
                 dimension = (1, 4, 4, 4)
 
