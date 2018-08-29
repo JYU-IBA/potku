@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.7.2018
-Updated on 28.8.2018
+Updated on 29.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -107,7 +107,7 @@ class PointCoordinatesWidget(QtWidgets.QWidget):
         # Y label
         label_y = QtWidgets.QLabel("y:")
 
-        if platform.system() == "Darwin":
+        if platform.system() == "Darwin" or platform.system() == "Linux":
             self.x_coordinate_box.setMinimumWidth(70)
             self.y_coordinate_box.setMinimumWidth(70)
 

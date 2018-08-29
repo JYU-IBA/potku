@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.8.2018
-Updated on 15.8.2018
+Updated on 29.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -26,6 +26,7 @@ __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
 import os
+import platform
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -171,7 +172,12 @@ class PercentageWidget(QtWidgets.QWidget):
         new_row = 0
         if self.ui.comboBox.currentText().startswith("Same"):
             for recoil, percentage in self.__common_percentages.items():
-                circle = Circle(recoil.color, (1, 4, 4, 4))
+                dimension = (1, 4, 4, 4)
+
+                if platform.system() == "Linux":
+                    dimension = None
+
+                circle = Circle(recoil.color, dimension)
                 if recoil.element.isotope:
                     text = "Element: " + "<sup>" + str(recoil.element.isotope)\
                            + "</sup>" + recoil.element.symbol + " "
@@ -196,7 +202,12 @@ class PercentageWidget(QtWidgets.QWidget):
                 new_row += 1
         else:
             for recoil, percentage in self.__individual_percentages.items():
-                circle = Circle(recoil.color, (1, 4, 4, 4))
+                dimension = (1, 4, 4, 4)
+
+                if platform.system() == "Linux":
+                    dimension = None
+
+                circle = Circle(recoil.color, dimension)
                 if recoil.element.isotope:
                     text = "Element: " + "<sup>" + str(recoil.element.isotope)\
                            + "</sup>" + recoil.element.symbol + " "

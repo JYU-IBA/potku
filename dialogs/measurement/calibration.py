@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.4.2013
-Updated on 28.8.2018
+Updated on 29.8.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -145,6 +145,12 @@ class CalibrationDialog(QtWidgets.QDialog):
             self.ui.tofChannelLineEdit.setFixedWidth(170)
             self.ui.offsetLineEdit.setFixedWidth(170)
             self.ui.slopeLineEdit.setFixedWidth(170)
+
+        if platform.system() == "Linux":
+            self.ui.tofSecondsLineEdit.setFixedWidth(190)
+            self.ui.tofChannelLineEdit.setFixedWidth(190)
+            self.ui.offsetLineEdit.setFixedWidth(190)
+            self.ui.slopeLineEdit.setFixedWidth(190)
         self.exec_()
 
     def remove_selected_points(self):

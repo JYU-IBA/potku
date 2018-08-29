@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 28.8.2018
+Updated on 29.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -113,6 +113,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
         if platform.system() == "Darwin":
             self.setMinimumWidth(450)
+
+        if platform.system() == "Linux":
+            self.setMinimumWidth(470)
 
         self.exec_()
 
@@ -543,7 +546,7 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.isotope_combobox.setFixedWidth(120)
         self.isotope_combobox.setEnabled(enabled)
 
-        if platform.system() == "Darwin":
+        if platform.system() == "Darwin" or platform.system() == "Linux":
             self.isotope_combobox.setFixedWidth(150)
 
         self.amount_spinbox = QtWidgets.QDoubleSpinBox()

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.4.2018
-Updated on 28.8.2018
+Updated on 29.8.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -77,6 +77,9 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
 
         if platform.system() == "Darwin":
             self.ui.isotope_combobox.setFixedHeight(23)
+
+        if platform.system() == "Linux":
+            self.setMinimumWidth(350)
         self.exec_()
 
     def __set_color_button_color(self, element):
