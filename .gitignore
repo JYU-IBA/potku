@@ -23,3 +23,5 @@
 /venv
 *.bak
 /external
+.gitignore
+Pipfile.lock
