@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 10.8.2018
+Updated on 30.10.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -235,14 +235,15 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 ratio = area_1 / area_2
 
         # Copy ratio to clipboard
-        self.clipboard.setText(str(round(ratio, 3)))
+        ratio_round = 9  # Round decimal number
+        self.clipboard.setText(str(round(ratio, ratio_round)))
 
         if self.anchored_box:
             self.anchored_box.set_visible(False)
             self.anchored_box = None
 
         text = "Difference: %s" % str(round(area, 2)) + \
-               "\nRatio: %s" % str(round(ratio, 3)) + "\nInterval: [%s, %s]" % \
+               "\nRatio: %s" % str(round(ratio, ratio_round)) + "\nInterval: [%s, %s]" % \
                (str(round(lower_limit, 2)), str(round(upper_limit, 2)))
         box1 = offsetbox.TextArea(text, textprops=dict(color="k", size=12))
 
