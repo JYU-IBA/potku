@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 27.8.2018
+Updated on 30.10.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -471,7 +471,8 @@ class ElementSimulation:
         main_recoil = None
         for file in os.listdir(simulation_folder):
             if file.startswith(prefix) and (file.endswith(".rec") or
-                                            file.endswith(".sct")):
+                                            file.endswith(".sct")) and not \
+                    file[file.index(prefix) + len(prefix)].isalpha():  # Check that e.g. C and Cu are handled separately
                 obj = json.load(open(os.path.join(simulation_folder, file)))
                 points = []
                 for dictionary_point in obj["profile"]:
