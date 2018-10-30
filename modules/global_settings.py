@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 29.4.2013
-Updated on 25.5.2018
+Updated on 30.10.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -41,7 +41,7 @@ class GlobalSettings:
         """Inits GlobalSettings class.
         """
         self.__config_directory = os.path.join(os.path.expanduser("~"), "potku")
-        self.__config_file = os.path.join(self.__config_directory, "potku.ini")
+        self.__config_file = os.path.join(self.__config_directory, "potku2.ini")  # Number according to release!
         self.__config = configparser.ConfigParser()
 
         self.__request_directory = os.path.join(self.__config_directory,
