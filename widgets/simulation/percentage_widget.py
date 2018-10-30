@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.8.2018
-Updated on 29.8.2018
+Updated on 30.10.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -139,7 +139,12 @@ class PercentageWidget(QtWidgets.QWidget):
             for recoil in self.recoil_elements:
                 area = round(areas[recoil] * \
                        recoil.reference_density, 4)
-                label = QtWidgets.QLabel(str(area) + str(recoil.multiplier)[1:])
+                if 'e' in str(recoil.multiplier):
+                    power = int(str(recoil.multiplier)[2:])
+                    new_power = power - 7
+                    label = QtWidgets.QLabel(str(area) + 'e' + str(new_power))
+                else:
+                    label = QtWidgets.QLabel(str(round(area * 10**-7, 4)))
                 self.ui.gridLayout.addWidget(label, new_row, 3)
                 new_row += 1
             self.__relative_values = False
