@@ -336,7 +336,7 @@
      <item>
       <widget class="QRadioButton" name="radioButtonAtPerCm2">
        <property name="text">
-        <string>1e15 at./cm²</string>
+        <string>1e15 at./cm³</string>
        </property>
        <property name="checked">
         <bool>true</bool>

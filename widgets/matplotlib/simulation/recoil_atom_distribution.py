@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 27.8.2018
+Updated on 30.10.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1025,7 +1025,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.parent_ui.referenceDensityLabel.setText(
             "Reference density: " + "{0:1.2f}".format(
                 self.current_recoil_element.reference_density) +
-            str(self.current_recoil_element.multiplier)[1:] + " at./cm\xb2"
+            str(self.current_recoil_element.multiplier)[1:] + " at./cm\xb3"
         )
         # Ypdate controls widget text
         if self.current_recoil_element is \
