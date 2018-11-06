@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 13.8.2018
+Updated on 6.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -548,9 +548,14 @@ def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
             "> {0}".format(output_file)
         )
     else:
-        command = "{0} {1}".format(
+        if platform.system() == "Darwin":
+            command = "{0} {1}".format(
             command,
-            "| awk {0} > {1}".format("\"{print " + columns + "}\"", output_file)
+            "| awk {0} > {1}".format("'{print " + columns + "}'", output_file))  # mac needs '' around awk print
+        else:
+            command = "{0} {1}".format(
+                command,
+                "| awk {0} > {1}".format("\"{print " + columns + "}\"", output_file)
         )
     # print(command)
     try:

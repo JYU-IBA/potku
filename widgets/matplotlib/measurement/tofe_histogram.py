@@ -1,7 +1,7 @@
 ﻿# coding=utf-8
 """
 Created on 18.4.2013
-Updated on 23.8.2018
+Updated on 6.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -111,12 +111,21 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         y_range = self.__global_settings.get_tofe_bin_range_y()
         self.axes_range = [x_range, y_range]
 
-        self.__x_data_min, self.__x_data_max = self.__fix_axes_range(
-            (min(self.__x_data), max(self.__x_data)),
-            self.compression_x)
-        self.__y_data_min, self.__y_data_max = self.__fix_axes_range(
-            (min(self.__y_data), max(self.__y_data)),
-            self.compression_y)
+        if self.__x_data:
+            self.__x_data_min, self.__x_data_max = self.__fix_axes_range(
+                (min(self.__x_data), max(self.__x_data)),
+                self.compression_x)
+        else:
+            self.__x_data_min = 0
+            self.__x_data_max = 0
+
+        if self.__y_data:
+            self.__y_data_min, self.__y_data_max = self.__fix_axes_range(
+                (min(self.__y_data), max(self.__y_data)),
+                self.compression_y)
+        else:
+            self.__y_data_min = 0
+            self.__y_data_max = 0
 
         self.name_y_axis = "Energy (Ch)"
         self.name_x_axis = "time of flight (Ch)"
