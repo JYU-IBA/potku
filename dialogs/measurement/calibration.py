@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.4.2013
-Updated on 29.8.2018
+Updated on 6.11.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -182,9 +182,13 @@ class CalibrationDialog(QtWidgets.QDialog):
             self.parent_settings_widget.scientific_tof_slope\
                 .scientificLineEdit.\
                 setText(self.ui.slopeLineEdit.text())
+            self.parent_settings_widget.scientific_tof_slope.value_str = \
+                self.ui.slopeLineEdit.text()
             self.parent_settings_widget.scientific_tof_offset\
                 .scientificLineEdit.\
                 setText(self.ui.offsetLineEdit.text())
+            self.parent_settings_widget.scientific_tof_offset.value_str = \
+                self.ui.offsetLineEdit.text()
             return True
         return False
 
