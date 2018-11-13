@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.3.2013
-Updated on 7.8.2018
+Updated on 13.11.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -54,7 +54,7 @@ class CutFile:
                          splits.
         """
         self.directory = directory
-        self.element = None
+        self.element = None  # If RBS, this holds beam ion
         self.element_scatter = None
         self.count = 0
         self.is_elem_loss = elem_loss
@@ -103,9 +103,10 @@ class CutFile:
         # tof_e_01048.Pm.0 << Element count: 0, element_information: Pm
         # tof_e_01048.1H.0.2 << Element count: 0, element_information: 1H
         element_information = file_name.split('.')[1]
-        self.element_number = file_name.split('.')[2] 
-        
+        self.element_number = file_name.split('.')[2]
+
         self.element = Element.from_string(element_information)
+
         # print("Load cut: {0} {1}".format(self.element, self.isotope))
         with open(file) as fp:
             dirtyinteger = 0
@@ -146,11 +147,7 @@ class CutFile:
             that we do not overwrite first 2H selection with other
             2H selection.
         """
-        if self.element_scatter is not "" and self.element_scatter.symbol is \
-           not "":
-            element = self.element_scatter
-        else:
-            element = self.element
+        element = self.element
         if element and self.directory and self.data:
             measurement_name_with_prefix = \
                 str(pathlib.Path(self.directory).parents[1])

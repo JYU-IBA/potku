@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 23.8.2018
+Updated on 13.11.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -587,7 +587,7 @@ class Selection:
             color: String representing color for the element
             points: String list representing points in selection.
                     "X1, X2, X3;Y1, Y2, Y3"
-            scatter: String representing scatter element. 
+            scatter: String representing scatter element.
             weight_factor: Weight factor for the element.
             transposed: Boolean representing if axes are transposed.
         """
@@ -603,10 +603,10 @@ class Selection:
             self.default_color = "red"
 
         self.type = element_type
-        self.element = Element(element, isotope)
+        self.element = Element(element, isotope)  # If RBS, this holds beam ion
         self.weight_factor = weight_factor
         if scatter and scatter != "":
-            self.element_scatter = Element(scatter, isotope)
+            self.element_scatter = Element.from_string(scatter)
         else:
             self.element_scatter = ""
 
@@ -830,12 +830,11 @@ class Selection:
                 symbol = self.element.symbol
             else:
                 symbol = ""
+            isotope = self.element.isotope
             if self.element_scatter != "":
-                isotope = self.element_scatter.isotope
-                scatter_symbol = self.element_scatter.symbol
+                element_scatter = self.element_scatter.__str__()
             else:
-                isotope = self.element.isotope
-                scatter_symbol = ""
+                element_scatter = ""
             if isotope is None:
                 isotope = ""
             save_string = "{0}    {1}    {2}    {3}    {4}    {5}    {6}".\
@@ -844,7 +843,7 @@ class Selection:
                     symbol,
                     isotope,
                     self.weight_factor,
-                    scatter_symbol,
+                    element_scatter,
                     self.default_color,
                     self.__save_points(is_transposed))
         return save_string

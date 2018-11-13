@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 22.8.2018
+Updated on 13.11.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -553,7 +553,11 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
 
             self.selection.element_scatter = Element(rbs_element,
                                                      rbs_isotope)
-            self.selection.element = Element("")
+            if self.measurement.run:
+                self.selection.element = self.measurement.run.beam.ion
+            else:
+                self.selection.element = \
+                    self.measurement.request.default_measurement.run.beam.ion
 
         self.selection.type = self.ui.sampleType.currentText()
         self.selection.weight_factor = self.ui.sampleWeightFactor.value()
