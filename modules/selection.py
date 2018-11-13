@@ -425,14 +425,19 @@ class Selector:
             if sel.type == "RBS":
                 element, isotope = sel.element_scatter.symbol, \
                                    sel.element_scatter.isotope
+                prefix = "RBS_"
+                if isotope is None:
+                    isotope = ""
+            else:
+                prefix = ""
             dirtyinteger = 0
             # Use dirtyinteger to differentiate multiple selections of same 
             # selection. This is roundabout method, but works as it should with
             # cut files.
             while True:
-                color_string = "{0}{1}{2}".format(isotope,
-                                                  element,
-                                                  dirtyinteger)
+                color_string = "{0}{1}{2}{3}".format(prefix, isotope,
+                                                     element,
+                                                     dirtyinteger)
                 if color_string not in color_dict.keys():
                     break
                 dirtyinteger += 1

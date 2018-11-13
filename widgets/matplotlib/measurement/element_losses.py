@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 30.5.2018
+Updated on 13.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -121,14 +121,14 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
                 continue
             # Check RBS selection
             rbs_string = ""
-            if len(cut_file) == 2:
+            if len(cut_file) == 3:
                 if key + ".cut" in self.__rbs_list.keys():
                     element_object = self.__rbs_list[key + ".cut"]
                     element = element_object.symbol
                     isotope = element_object.isotope
                     rbs_string = "*"
             else:
-                if key + cut_file[2] in self.__rbs_list.keys():
+                if key + cut_file[3] in self.__rbs_list.keys():
                     element_object = self.__rbs_list[key + cut_file[2]]
                     element = element_object.symbol
                     isotope = element_object.isotope
@@ -137,14 +137,18 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
             # Get color for selection
             if isotope is None:
                 isotope = ""
-            color_string = "{0}{1}{2}".format(isotope, element, cut_file[1])
+            if rbs_string == "*":
+                color_string = "{0}{1}{2}".format("RBS_" + isotope, element,
+                                                  cut_file[2])
+            else:
+                color_string = "{0}{1}{2}".format(isotope, element, cut_file[2])
             if color_string not in self.selection_colors.keys():
                 color = "red"
             else:
                 color = self.selection_colors[color_string]
 
             # Set label text
-            if len(cut_file) == 2:
+            if len(cut_file) == 3:
                 label = r"$^{" + str(isotope) + "}$" + element + rbs_string
             else:
                 label = r"$^{" + str(isotope) + "}$" + element + rbs_string \

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 17.4.2013
-Updated on 29.8.2018
+Updated on 13.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -250,12 +250,14 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             rbs_string = ""
             if file[0] in self.__rbs_list.values():
                 rbs_string = "*"
+                color_key = "{0}{1}{2}0".format("RBS_", isotope, element)
+            else:
+                color_key = "{0}{1}0".format(isotope, element)
+            # TODO: erd_depth for multiple selections of same element.
 
             axe1 = file[1]
             axe2 = file[2]
 
-            # TODO: erd_depth for multiple selections of same element.
-            color_key = "{0}{1}0".format(isotope, element)
             filler_length = 3 - len(isotope)
             filler_prefix = ""
             filler_suffix = ""
@@ -265,7 +267,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             for unused_i in range(0, filler_length):
                 filler_suffix += "\ "
             # label = r"$^{\mathtt{" + filler_prefix + str(isotope) + \
-            #        "}}\mathtt{" + element + rbs_string + filler_suffix + "}$" 
+            #        "}}\mathtt{" + element + rbs_string + filler_suffix + "}$"
             label = str(isotope) + element
 
             if len(axe1) > len(axe2):
@@ -327,8 +329,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 element_isotope = ""
 
             element_name = element.symbol
-            if element_str in self.__rbs_list.values():
-                element_name += "*"
+            for elem in self.__rbs_list.values():
+                if element_str == elem.symbol:
+                    element_name += "*"
             str_element = "{0:>3}{1:<3}".format(element_isotope, element_name)
             # str_element = labels[i]
             # percentages[element_str] can be 0 which results false
@@ -348,7 +351,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                     str_err = "± {0}%".format(int(moe[element_str]))
                 lbl_str = "{0} {1:<6} {2}".format(r"$^{" + element_isotope +
                                                   "}$" +
-                                                  element.symbol,
+                                                  element_name,
                                                   str_ratio, str_err)
             else:
                 lbl_str = '{0}'.format(str_element)
