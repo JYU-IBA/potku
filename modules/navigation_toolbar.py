@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 1.6.2018
+Updated on 20.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,8 +28,11 @@ Adds _views attribute to NavigationToolBar2QT
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
+
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as \
     NavigationToolbar
+
+from PyQt5 import QtWidgets
 
 
 class NavigationToolBar2QTView(NavigationToolbar):
@@ -47,3 +50,22 @@ class NavigationToolBar2QTView(NavigationToolbar):
         """
         super().__init__(canvas, main_frame)
         self._views = [[0], [0]]
+
+        """
+        NavigationToolbar.toolitems
+        
+        matplotlib original toolbar items:
+        0; Home, Reset original view, home, home
+        1: Back, Back to prevous view, bac, back
+        2: Forward, Forward to next view, forward, forward
+        3: None, None, None, None
+        4: Pan, Pan axes with left mouse, zoom with right, move, pan
+        5: Zoom: Zoom to rectangle, zoom_to_rect, zoom
+        6: Subplots, Configure subplots, subplots, configure_subplots
+        7: None, None, None, None
+        8: Save, Save the figure, filesave, save_figure
+        """
+        actions = self.findChildren(QtWidgets.QAction)
+        for a in actions:
+            if a.text() == "Subplots" or a.text() == "Customize":
+                self.removeAction(a)

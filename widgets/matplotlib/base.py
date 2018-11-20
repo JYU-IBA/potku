@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 6.6.2018
+Updated on 20.11.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -73,15 +73,6 @@ class MatplotlibWidget(QtWidgets.QWidget):
             layout.addWidget(self.mpl_toolbar)
             frame.setLayout(layout)
             self.main_frame.ui.stackedWidget.addWidget(frame)
-
-    def fork_toolbar_buttons(self):
-        """Remove figure options & subplot config that might not work properly.
-        """
-        try:
-            self.mpl_toolbar.removeAction(self.mpl_toolbar.children()[21]) 
-            self.mpl_toolbar.removeAction(self.mpl_toolbar.children()[17])
-        except:
-            pass  # Already removed
 
     def remove_axes_ticks(self):
         """Remove ticks from axes.

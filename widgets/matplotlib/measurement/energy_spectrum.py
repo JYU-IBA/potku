@@ -68,7 +68,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             legend: Boolean representing whether to draw legend or not.
         """
         super().__init__(parent)
-        super().fork_toolbar_buttons()
         self.parent = parent
         self.draw_legend = legend
         self.histed_files = copy.deepcopy(histed_files)

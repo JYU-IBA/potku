@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 6.6.2013
-Updated on 1.6.2018
+Updated on 20.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -46,7 +46,6 @@ class MatplotlibImportTimingWidget(MatplotlibWidget):
             timing: A tuple representing low & high timing limits.
         """
         super().__init__(parent)
-        super().fork_toolbar_buttons()
         self.canvas.manager.set_title("Import coincidence timing")
         self.icon_manager = icon_manager
         # TODO: Multiple timings ?

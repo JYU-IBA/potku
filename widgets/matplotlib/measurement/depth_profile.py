@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 17.4.2013
-Updated on 13.11.2018
+Updated on 20.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -73,7 +73,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             systematic_error: A double representing systematic error.
         """
         super().__init__(parent)
-        super().fork_toolbar_buttons()
+
         self.canvas.manager.set_title("Depth Profile")
         self.axes.fmt_xdata = lambda x: "{0:1.2f}".format(x)
         self.axes.fmt_ydata = lambda y: "{0:1.2f}".format(y)

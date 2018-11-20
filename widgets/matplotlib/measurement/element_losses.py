@@ -55,7 +55,6 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
         if rbs_list is None:
             rbs_list = []
         super().__init__(parent)
-        super().fork_toolbar_buttons()
         self.draw_legend = legend
         self.split = split
         self.y_scale = y_scale

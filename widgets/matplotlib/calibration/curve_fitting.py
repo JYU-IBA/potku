@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 18.4.2013
-Updated on 15.8.2018
+Updated on 20.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -57,7 +57,6 @@ class MatplotlibCalibrationCurveFittingWidget(MatplotlibWidget):
             dialog: parent's parent dialog.
         """
         super().__init__(parent)
-        super().fork_toolbar_buttons()
         self.canvas.manager.set_title("ToF-E Calibration - curve fitting")
         self.__fork_toolbar_buttons()
         self.dialog = dialog

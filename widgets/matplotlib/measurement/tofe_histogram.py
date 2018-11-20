@@ -404,7 +404,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__button_zoom.setChecked(False)
 
     def __fork_toolbar_buttons(self):
-        super().fork_toolbar_buttons()
         self.mpl_toolbar.mode_tool = 0
         self.__tool_label = self.mpl_toolbar.children()[24]
         self.__button_drag = self.mpl_toolbar.children()[12]

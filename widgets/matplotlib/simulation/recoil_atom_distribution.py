@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 30.10.2018
+Updated on 20.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1361,7 +1361,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Fork navigation tool bar button into custom ones.
         """
-        super().fork_toolbar_buttons()
         self.mpl_toolbar.mode_tool = 0
         self.__tool_label = self.mpl_toolbar.children()[24]
         self.__button_drag = self.mpl_toolbar.children()[12]
