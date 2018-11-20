@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 15.8.2018
+Updated on 20.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -140,12 +140,6 @@ class TOFCalibrationHistogram:
             return p.x0, p.a, p.k
         except TypeError:
             return None
-        p, unused_cov, unused_infodict, unused_mesg, unused_ier = \
-            optimize.leastsq(self.__residuals, p_guess, args=(x, y),
-                             full_output=True)
-        p = Param(*p)
-
-        return p.x0, p.a, p.k
 
     def find_leading_edge_borders(self):
         """Finds the beginning and the end of the leading edge.
@@ -279,16 +273,16 @@ class TOFCalibration:
              for point in self.tof_points if point.point_used]
         y = [point.time_of_flight_seconds
              for point in self.tof_points if point.point_used]
-        # name = []  # TODO: RBS element shown differently.
-        # for point in self.tof_points:
-        #    if not point.point_used:
-        #        continue
-        #    if point.cut.type == "ERD":
-        #        name.append(str(point.cut.element))
-        #    else:
-        #        name.append("{0}*".format(point.cut.element_scatter))
-        name = [str(point.cut.element)
-                for point in self.tof_points if point.point_used]
+        name = []
+        for point in self.tof_points:
+            if not point.point_used:
+                continue
+            if point.type == "ERD":
+                name.append(str(point.cut.element))
+            else:
+                name.append(str(point.cut.element_scatter) + "*")
+        # name = [str(point.cut.element)
+        #         for point in self.tof_points if point.point_used]
         return x, y, name
 
     def linear_function(self, x, params):
@@ -500,13 +494,17 @@ class TOFCalibrationPoint:
         Return:
             Returns name of the used CutFile.
         """
-        return str(self.cut.element)
+        if self.type == "ERD":
+            return str(self.cut.element)
+        else:
+            return str(self.cut.element_scatter) + "*"
 
     def __kinematic_factor(self, selection_type):
         """ Calculates the kinematic factor.
 
         ERD: (4 * M_I * M_R * cos(a)^2) / (M_I + M_R)^2
-        RBS: (sqrt(( M_R^2 - M_I^2 * sin(a)^2) + M_I * cos(a)) / (M_I + M_R))^2
+        RBS: ((sqrt(( M_R^2 - M_I^2 * sin(a)^2)) + M_I * cos(a)) / (M_I +
+        M_R))^2
 
         Args:
             selection_type: A string representing what type of selection
@@ -535,11 +533,11 @@ class TOFCalibrationPoint:
             M_R2 = M_R * M_R
             M_I2 = M_I * M_I
             mass_sum = M_I + M_R
-            square = (M_R2 - M_I2 * sine2) + M_I * cosin
+            square = M_R2 - M_I2 * sine2
             if square <= 0:
                 print("{0}".format(error_msg))
                 return None
-            k = sqrt(square) / mass_sum
+            k = (sqrt(square) + M_I * cosin) / mass_sum
             kinematic_factor = k * k
             return kinematic_factor
         else:

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.4.2013
-Updated on 6.11.2018
+Updated on 20.11.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -105,10 +105,10 @@ class CalibrationDialog(QtWidgets.QDialog):
         # Get old parameters from the parent dialog
         if parent_settings_widget:
             try:
-                f1 = float(self.parent_settings_widget.ui.slopeLineEdit.text())
-                f2 = float(self.parent_settings_widget.ui.offsetLineEdit.text())
+                f1 = float(self.parent_settings_widget.scientific_tof_offset.value_str)
+                f2 = float(self.parent_settings_widget.scientific_tof_slope.value_str)
                 old_params = f1, f2
-            except:
+            except ValueError as e:
                 m = "Can't get old calibration parameters from the settings " \
                     "dialog."
                 print(m)
