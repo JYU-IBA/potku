@@ -492,7 +492,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 self.axes.plot(x, y,
                                color=color,
                                label=label)
-        else:
+
+        else:  # Simulation energy spectrum
             if self.__ignore_elements:
                 self.files_to_draw = self.remove_ignored_elements()
             else:
@@ -503,16 +504,33 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 isotope = ""
                 symbol = ""
                 color = None
+                suffix = ""
                 if file_name.endswith(".hist"):
-                    measurement_name, isotope_and_symbol, rest = \
-                        file_name.split('.', 2)
-                    element = Element.from_string(isotope_and_symbol)
+                    measurement_name, isotope_and_symbol, erd_or_rbs, rest = \
+                        file_name.split('.', 3)
+                    if "ERD" in erd_or_rbs:
+                        element = Element.from_string(isotope_and_symbol)
+                    else:
+                        if "RBS_" in erd_or_rbs:
+                            i = erd_or_rbs.index("RBS_")
+                            scatter_element_str = erd_or_rbs[i + len("RBS_"):]
+                            element = Element.from_string(scatter_element_str)
+                        else:
+                            element = Element("")
+                        suffix = "*"
+
                     isotope = element.isotope
                     if isotope is None:
                         isotope = ""
                     symbol = element.symbol
 
-                    label = r"$^{" + str(isotope) + "}$" + symbol + " (exp)"
+                    rest_split = rest.split('.')
+                    if len(rest_split)  == 2:  # regular hist file
+                        label = r"$^{" + str(isotope) + "}$" + symbol + suffix \
+                            + " (exp)"
+                    else:  # split
+                        label = r"$^{" + str(isotope) + "}$" + symbol + suffix \
+                            + "$_{split: " + rest_split[1] + "}$"" (exp)"
                 elif file_name.endswith(".simu"):
                     for s in file_name:
                         if s != "-":

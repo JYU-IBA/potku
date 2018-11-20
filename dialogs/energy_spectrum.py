@@ -293,7 +293,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     used_measurements.append(measurement)
                     # Calculate energy spectra for cut
                     item_texts.append(item.text(0))
-                    if len(item.text(0).split('.')) < 4:
+                    if len(item.text(0).split('.')) < 5:
                         # Normal cut
                         cut_file = os.path.join(measurement.directory_cuts,
                                                 item.text(0)) + ".cut"

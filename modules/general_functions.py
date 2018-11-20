@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 6.11.2018
+Updated on 20.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -178,7 +178,9 @@ def hist(data, width=1.0, col=1):
         Returns formatted list to use in graphs.
     """
     col -= 1  # Same format as Arstila's code, actual column number (not index)
-    if col < 0 or col >= len(data):
+    if col < 0:
+        return []
+    if data[0] and col >= len(data[0]):
         return []
     y = tuple(float(pair[col]) for pair in data)
     y = sorted(y, reverse=False)
@@ -264,16 +266,20 @@ def calculate_spectrum(tof_listed_files, spectrum_width, measurement,
     """
     histed_files = {}
     keys = tof_listed_files.keys()
+    invalid_keys = []
     for key in keys:
         histed_files[key] = hist(tof_listed_files[key],
                                  spectrum_width, 3)
         if not histed_files[key]:
-            return {}
+            invalid_keys.append(key)
+            continue
         first_val = (histed_files[key][0][0] - spectrum_width, 0)
         last_val = (histed_files[key][-1][0] + spectrum_width, 0)
         histed_files[key].insert(0, first_val)
         histed_files[key].append(last_val)
     for key in keys:
+        if key in invalid_keys:
+            continue
         file = measurement.name
         histed = histed_files[key]
         filename = os.path.join(directory_es,
