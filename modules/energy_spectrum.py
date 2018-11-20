@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.4.2013
-Updated on 10.8.2018
+Updated on 20.11.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -91,11 +91,13 @@ class EnergySpectrum:
             for cut_file in self.__cut_files:
                 filename_split = os.path.basename(cut_file).split('.')
                 element = Element.from_string(filename_split[1])
-                if len(filename_split) == 4:  # Regular cut file
-                    key = "{0}.{1}".format(element, filename_split[2])
-                else:  # Elemental Losses cut file
+                if len(filename_split) == 5:  # Regular cut file
                     key = "{0}.{1}.{2}".format(element, filename_split[2],
                                                filename_split[3])
+                else:  # Elemental Losses cut file
+                    key = "{0}.{1}.{2}.{3}".format(element, filename_split[2],
+                                               filename_split[3],
+                                                   filename_split[4])
                 cut_dict[key] = tof_list(cut_file, self.__directory_es,
                                          save_output)
     

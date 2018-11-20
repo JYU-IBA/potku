@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 13.11.2018
+Updated on 20.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -436,7 +436,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
                 # Check RBS selection
                 rbs_string = ""
-                if len(cut_file) == 2:
+                if len(cut_file) == 3:
                     if key + ".cut" in self.__rbs_list.keys():
                         element_object = self.__rbs_list[key + ".cut"]
                         element = element_object.symbol
@@ -470,13 +470,14 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
                 while color_string in element_counts:
                     dirtyinteger += 1
+                    if rbs_string == "*":
+                        color_string = "{0}{1}{2}{3}".format("RBS_", isotope,
+                                                             element,
+                                                             dirtyinteger)
+                    else:
+                        color_string = "{0}{1}{2}".format(isotope, element,
+                                                          dirtyinteger)
 
-                if rbs_string == "*":
-                    color_string = "{0}{1}{2}{3}".format("RBS_", isotope,
-                                                      element, dirtyinteger)
-                else:
-                    color_string = "{0}{1}{2}".format(isotope, element,
-                                                      dirtyinteger)
                 element_counts[color_string] = 1
                 if color_string not in self.__selection_colors:
                     color = "red"

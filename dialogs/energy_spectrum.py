@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 22.8.2018
+Updated on 20.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -589,7 +589,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                     split = filename.split(".")
                     if is_rbs(cut):
                         # This should work for regular cut and split.
-                        key = "{0}.{1}.{2}".format(split[1], split[2], split[3])
+                        key = "{0}.{1}.{2}.{3}".format(split[1], split[2],
+                                                    split[3], split[4])
                         rbs_list[key] = get_scatter_element(cut)
 
             else:

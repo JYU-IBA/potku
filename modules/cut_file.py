@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.3.2013
-Updated on 13.11.2018
+Updated on 20.11.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -103,7 +103,7 @@ class CutFile:
         # tof_e_01048.Pm.0 << Element count: 0, element_information: Pm
         # tof_e_01048.1H.0.2 << Element count: 0, element_information: 1H
         element_information = file_name.split('.')[1]
-        self.element_number = file_name.split('.')[2]
+        self.element_number = file_name.split('.')[3]
 
         self.element = Element.from_string(element_information)
 
