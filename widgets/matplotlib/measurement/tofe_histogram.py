@@ -1,7 +1,7 @@
 ﻿# coding=utf-8
 """
 Created on 18.4.2013
-Updated on 6.11.2018
+Updated on 20.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -189,19 +189,22 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             old_count = bin_counts[0]
             bin_counts = (3500, bin_counts[1])
             # TODO: Better location for message?
-            print(
+            QtWidgets.QMessageBox.information(
+                self.parent, "Notice",
                 "[WARNING] {0}: X axis bin count ({2}) above 3500. {1}".format(
-                    self.measurement.measurement_name,
-                    "Limiting to prevent crash.",
-                    old_count))
+                    self.measurement.name, "Limiting to prevent crash.",
+                    old_count), QtWidgets.QMessageBox.Ok,
+                QtWidgets.QMessageBox.Ok)
         if bin_counts[1] > 3500:
             old_count = bin_counts[1]
             bin_counts = (bin_counts[0], 3500)
-            print(
+            QtWidgets.QMessageBox.information(
+                self.parent, "Notice",
                 "[WARNING] {0}: Y axis bin count ({2}) above 3500. {1}".format(
-                    self.measurement.measurement_name,
+                    self.measurement.name,
                     "Limiting to prevent crash.",
-                    old_count))
+                    old_count), QtWidgets.QMessageBox.Ok,
+                QtWidgets.QMessageBox.Ok)
 
         use_color_scheme = self.measurement.color_scheme
         color_scheme = MatplotlibHistogramWidget.color_scheme[use_color_scheme]
