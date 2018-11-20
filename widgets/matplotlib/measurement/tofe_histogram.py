@@ -185,6 +185,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                           y_length / self.compression_y)
 
         # If bin count too high -> it will crash the program
+        # If 10 000, tofe_65 example can have compression as 1, but REALLY slow
         if bin_counts[0] > 3500:
             old_count = bin_counts[0]
             bin_counts = (3500, bin_counts[1])
@@ -195,7 +196,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                     self.measurement.name, "Limiting to prevent crash.",
                     old_count), QtWidgets.QMessageBox.Ok,
                 QtWidgets.QMessageBox.Ok)
-        if bin_counts[1] > 3500:
+        if bin_counts[1] > 3500: # 3500:
             old_count = bin_counts[1]
             bin_counts = (bin_counts[0], 3500)
             QtWidgets.QMessageBox.information(
