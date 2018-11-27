@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 20.11.2018
+Updated on 27.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -602,11 +602,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             element_simulation.profile_to_file(
                 os.path.join(directory, element_simulation.name_prefix +
                              ".profile"))
-            progress_bar.setValue((round / length) * 100)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process
+            if progress_bar:
+                progress_bar.setValue((round / length) * 100)
+                QtCore.QCoreApplication.processEvents(
+                    QtCore.QEventLoop.AllEvents)
+                # Mac requires event processing to show progress bar and its
+                # process
             round = round + 1
 
     def unlock_or_lock_edit(self):

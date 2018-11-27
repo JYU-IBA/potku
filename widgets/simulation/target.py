@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.3.2018
-Updated on 28.8.2018
+Updated on 27.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,6 +29,8 @@ __version__ = "2.0"
 
 import os
 import platform
+import threading
+import time
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -122,6 +124,18 @@ class TargetWidget(QtWidgets.QWidget):
             QtCore.QCoreApplication.processEvents(
                 QtCore.QEventLoop.AllEvents)
 
+        self.stop_saving = False
+        self.thread = None
+        self.add_automatic_saving()
+
+    def add_automatic_saving(self):
+        """ Add this target widget to be saved (target and recoils) every 1
+        minute in a thread.
+        """
+        self.thread = threading.Thread(target=self.timed_save)
+        self.thread.daemon = True
+        self.thread.start()
+
     def switch_to_target(self):
         """
         Switch to target view.
@@ -147,22 +161,43 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.editLockPushButton.show()
         self.ui.targetInfoWidget.hide()
         self.recoil_distribution_widget.recoil_element_info_on_switch()
-        self.ui.instructionLabel.setText("You can add a new point to the "
-                                         "distribution on a line between "
-                                         "points using Ctrl+click ("
-                                         "macOs users ⌘+click).")
 
-    def __save_target_and_recoils(self):
+        text = "You can add a new point to the distribution on a line between "\
+               "points using "
+        if platform.system() == "Darwin":
+            text += "⌘+click."
+        else:
+            text += "Ctrl+click."
+        self.ui.instructionLabel.setText(text)
+
+    def timed_save(self):
+        """
+        Save target and recoils every 1 minute.
+        """
+        while True:
+            if self.stop_saving:
+                break
+            if self.target:
+                self.__save_target_and_recoils(True)
+            time.sleep(60)
+
+    def __save_target_and_recoils(self, thread=False):
         """
         Save target and element simulations.
+
+        Args:
+            thread: Whether saving happens in a thread or by pressing the
+            button.
         """
-        # Add progress bar
-        progress_bar = QtWidgets.QProgressBar()
-        self.simulation.statusbar.addWidget(progress_bar, 1)
-        progress_bar.show()
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        # Mac requires event processing to show progress bar and its
-        # process.
+        progress_bar = None
+        if not thread:
+            # Add progress bar
+            progress_bar = QtWidgets.QProgressBar()
+            self.simulation.statusbar.addWidget(progress_bar, 1)
+            progress_bar.show()
+            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+            # Mac requires event processing to show progress bar and its
+            # process.
 
         target_name = "temp"
         if self.target.name is not "":
@@ -171,17 +206,19 @@ class TargetWidget(QtWidgets.QWidget):
                                    ".target")
         self.target.to_file(target_path, None)
 
-        progress_bar.setValue(50)
-        QtCore.QCoreApplication.processEvents(
-            QtCore.QEventLoop.AllEvents)
-        # Mac requires event processing to show progress bar and its
-        # process
+        if not thread:
+            progress_bar.setValue(50)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
+            # Mac requires event processing to show progress bar and its
+            # process
 
         self.recoil_distribution_widget.save_mcsimu_rec_profile(
             self.simulation.directory, progress_bar)
 
-        self.simulation.statusbar.removeWidget(progress_bar)
-        progress_bar.hide()
+        if not thread:
+            self.simulation.statusbar.removeWidget(progress_bar)
+            progress_bar.hide()
 
     def set_shortcuts(self):
         """

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 20.8.2018
+Updated on 27.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -104,11 +104,10 @@ class SimulationTabWidget(QtWidgets.QWidget):
             widget.show()
 
     def add_simulation_target_and_recoil(self, progress_bar=None):
-        """ Adds depth profile for modifying the elements into tab if it
-        doesn't have one already.
-
+        """ Add target widget for modifying the target and recoils into tab.
         Args:
-            progress_bar: A progress bar used when opening a simulation.
+            progress_bar: A progress bar used when opening an existing
+            simulation.
         """
         self.simulation_target = TargetWidget(self, self.obj, self.obj.target,
                                               self.icon_manager, progress_bar)
