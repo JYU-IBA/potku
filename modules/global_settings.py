@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 29.4.2013
-Updated on 30.10.2018
+Updated on 27.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -222,8 +222,8 @@ class GlobalSettings:
         self.__config.set("tof-e_graph", "bin_range_x_min", "0")
         self.__config.set("tof-e_graph", "bin_range_y_max", "8000")
         self.__config.set("tof-e_graph", "bin_range_y_min", "0")
-        self.__config.set("tof-e_graph", "compression_x", "10")
-        self.__config.set("tof-e_graph", "compression_y", "10")
+        self.__config.set("tof-e_graph", "compression_x", "5")
+        self.__config.set("tof-e_graph", "compression_y", "5")
 
     def __load_config(self):
         """Load old settings and set values.

@@ -1,7 +1,7 @@
 ﻿# coding=utf-8
 """
 Created on 18.4.2013
-Updated on 20.11.2018
+Updated on 27.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -184,24 +184,25 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             bin_counts = (x_length / self.compression_x,
                           y_length / self.compression_y)
 
-        # If bin count too high -> it will crash the program
+        # If bin count too high -> it will crash the program, use 3500
         # If 10 000, tofe_65 example can have compression as 1, but REALLY slow
-        if bin_counts[0] > 3500:
+        # Usually, bin count around 8000
+        if bin_counts[0] > 8000:
             old_count = bin_counts[0]
-            bin_counts = (3500, bin_counts[1])
+            bin_counts = (8000, bin_counts[1])
             # TODO: Better location for message?
             QtWidgets.QMessageBox.information(
                 self.parent, "Notice",
-                "[WARNING] {0}: X axis bin count ({2}) above 3500. {1}".format(
+                "[WARNING] {0}: X axis bin count ({2}) above 8000. {1}".format(
                     self.measurement.name, "Limiting to prevent crash.",
                     old_count), QtWidgets.QMessageBox.Ok,
                 QtWidgets.QMessageBox.Ok)
-        if bin_counts[1] > 3500: # 3500:
+        if bin_counts[1] > 8000:
             old_count = bin_counts[1]
-            bin_counts = (bin_counts[0], 3500)
+            bin_counts = (bin_counts[0], 8000)
             QtWidgets.QMessageBox.information(
                 self.parent, "Notice",
-                "[WARNING] {0}: Y axis bin count ({2}) above 3500. {1}".format(
+                "[WARNING] {0}: Y axis bin count ({2}) above 8000. {1}".format(
                     self.measurement.name,
                     "Limiting to prevent crash.",
                     old_count), QtWidgets.QMessageBox.Ok,
