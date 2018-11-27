@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 27.3.2013
-Updated on 13.11.2018
+Updated on 27.11.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -138,12 +138,16 @@ class ElementLossesDialog(QtWidgets.QDialog):
         if checked_cuts:
             if self.parent.elemental_losses_widget:
                 self.parent.del_widget(self.parent.elemental_losses_widget)
+
+            ignore_ref_cut = None
+            if reference_cut in checked_cuts:
+                ignore_ref_cut = reference_cut
             self.parent.elemental_losses_widget = ElementLossesWidget(
                 self.parent,
                 reference_cut,
                 checked_cuts,
                 split_count,
-                y_scale)
+                y_scale, ignore_ref_cut)
             icon = self.parent.icon_manager \
                 .get_icon("elemental_losses_icon_16.png")
             self.parent.add_widget(self.parent.elemental_losses_widget,
@@ -173,7 +177,8 @@ class ElementLossesWidget(QtWidgets.QWidget):
     save_file = "widget_composition_changes.save"
 
     def __init__(self, parent, reference_cut_file, checked_cuts,
-                 partition_count, y_scale, use_progress_bar=True):
+                 partition_count, y_scale, use_progress_bar=True,
+                 ignore_ref_cut=None):
         """Inits widget.
         
         Args:
@@ -183,7 +188,9 @@ class ElementLossesWidget(QtWidgets.QWidget):
             partition_count: Integer representing how many splits cut files 
                              are divided to.
             y_scale: Integer flag representing how Y axis is scaled.
-            use_progress_bar: Whetehr to add a progress bar or not.
+            use_progress_bar: Whether to add a progress bar or not.
+            ignore_ref_cut: Path to reference cut file if it needs to be
+                            ignored.
         """
         try:
             super().__init__()
@@ -239,11 +246,9 @@ class ElementLossesWidget(QtWidgets.QWidget):
             # Connect buttons
             self.ui.splitSaveButton.clicked.connect(self.__save_splits)
 
-            self.matplotlib = MatplotlibElementLossesWidget(self,
-                                                            self.split_counts,
-                                                            legend=True,
-                                                            y_scale=y_scale,
-                                                            rbs_list=rbs_list)
+            self.matplotlib = MatplotlibElementLossesWidget(
+                self, self.split_counts, legend=True, y_scale=y_scale,
+                rbs_list=rbs_list, ignore_ref_cut=ignore_ref_cut)
         except:
             import traceback
             msg = "Could not create Elemental Losses graph. "

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 20.11.2018
+Updated on 27.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -41,7 +41,8 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
     """Energy spectrum widget
     """
 
-    def __init__(self, parent, split, legend=True, y_scale=0, rbs_list=None):
+    def __init__(self, parent, split, legend=True, y_scale=0, rbs_list=None,
+                 ignore_ref_cut=None):
         """Inits Energy Spectrum widget.
 
         Args:
@@ -51,6 +52,7 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
             y_scale: An integer flag representing Y axis scaling mode.
             rbs_list: A dictionary of RBS selection elements containing
                       scatter elements.
+            ignore_ref_cut: Path to reference cut if it will be ignored.
         """
         if rbs_list is None:
             rbs_list = []
@@ -64,6 +66,7 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
 
         self.__initiated_box = False
         self.__ignore_elements = []
+        # TODO: Add ignore_ref_cut to ignore elements
         self.__scale_mode = 0  # 0 default, 1 log, 2 scale (to 100)
         self.__icons = {0: 'elemloss_scale_default.png',
                         1: 'elemloss_scale_log.png',
