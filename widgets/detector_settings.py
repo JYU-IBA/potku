@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 28.8.2018
+Updated on 27.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -271,7 +271,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
                                                       "(*.detector)")
         if not file:
             return
-        if not self.values_changed():
+        if not self.some_values_changed():
             self.obj.to_file(file, None)
         else:
             # Make temp detector, modify it according to widget values,
@@ -332,17 +332,27 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         # Tof foils
         self.obj.tof_foils = self.tof_foils
 
-    def values_changed(self):
+    def some_values_changed(self):
         """
-        Check if detector settings values have been changed.
+        Check if any detector settings values have been changed.
 
         Return:
             True or False.
         """
-        if self.obj.name != self.nameLineEdit.text():
+        if self.values_changed():
             return True
-        if self.obj.description != self.descriptionLineEdit.toPlainText():
+        if self.other_values_changed():
             return True
+        return False
+
+    def values_changed(self):
+        """
+        Check if detector settings values that require rerunning of the
+        simulation have been changed.
+
+        Return:
+            True or False.
+        """
         if self.obj.type != self.typeComboBox.currentText():
             return True
         if self.obj.angle_offset != self.angleOffsetLineEdit.text():
@@ -365,6 +375,22 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         # Tof foils
         if self.obj.tof_foils != self.tof_foils:
             return True
+
+        return False
+
+    def other_values_changed(self):
+        """
+        Check if detector settings values that don't require rerunning
+        simulations have been changed.
+
+        Return:
+             True or False.
+        """
+        if self.obj.name != self.nameLineEdit.text():
+            return True
+        if self.obj.description != self.descriptionLineEdit.toPlainText():
+            return True
+
         # Efficiencies
         existing_efficiency_files = [os.path.join(
             self.obj.efficiency_directory, x) for x in
@@ -372,7 +398,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         modified_efficiencies = copy.deepcopy(existing_efficiency_files)
         for file in self.obj.efficiencies:
             file_name = os.path.split(file)[1]
-            new_path = os.path.join(self.obj.efficiency_directory, file_name)
+            new_path = os.path.join(self.obj.efficiency_directory,
+                                    file_name)
             if new_path not in modified_efficiencies:
                 modified_efficiencies.append(new_path)
 

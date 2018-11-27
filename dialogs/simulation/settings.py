@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.5.2018
-Updated on 22.8.2018
+Updated on 27.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -449,15 +449,17 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             if self.use_default_settings and check_box.isChecked():
                 self.__close = True
                 return
-            only_fluence_changed = False
+            only_unnotified_changed = False
             if not self.use_default_settings and not check_box.isChecked():
                 # Check that values have been changed
                 if not self.values_changed():
-                    if self.measurement_settings_widget.\
-                            fluenceDoubleSpinBox.value() != \
-                            self.simulation.run.fluence:
-                        only_fluence_changed = True
-                    if not only_fluence_changed:
+                    # Check if only those values that don't require rerunning
+                    #  the simulations have been changed
+                    if self.measurement_settings_widget.other_values_changed():
+                        only_unnotified_changed = True
+                    if self.detector_settings_widget.other_values_changed():
+                        only_unnotified_changed = True
+                    if not only_unnotified_changed:
                         self.__close = True
                         return
             if self.use_default_settings:
@@ -471,7 +473,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                 settings = "simulation"
                 tmp_sims = copy.copy(self.simulation.running_simulations)
             if simulations_run and simulations_running and \
-                    not only_fluence_changed:
+                    not only_unnotified_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulated and running simulations",
                     "There are simulations that use " + settings + " settings, "
@@ -526,7 +528,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                         elem_sim.recoil_elements[0].widgets[0].parent. \
                             edit_lock_push_button.setText("Full edit unlocked")
                         elem_sim.simulations_done = False
-            elif simulations_running and not only_fluence_changed:
+            elif simulations_running and not only_unnotified_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulations running",
                     "There are simulations running that use " + settings +
@@ -578,7 +580,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                         elem_sim.recoil_elements[0].widgets[0].parent. \
                             edit_lock_push_button.setText("Full edit unlocked")
                         elem_sim.simulations_done = False
-            elif simulations_run and not only_fluence_changed:
+            elif simulations_run and not only_unnotified_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulated simulations",
                     "There are simulations that use " + settings +

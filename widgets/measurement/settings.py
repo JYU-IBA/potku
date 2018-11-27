@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2018
-Updated on 29.8.2018
+Updated on 27.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -229,6 +229,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             self.obj.run.fluence = self.fluenceDoubleSpinBox.value()
             self.obj.run.current = self.currentDoubleSpinBox.value()
             self.obj.run.time = self.timeDoubleSpinBox.value()
+            self.obj.run.charge = self.runChargeDoubleSpinBox.value()
             self.obj.run.previous_fluence = self.tmp_run.previous_fluence
             self.obj.detector.detector_theta = self \
                 .detectorThetaDoubleSpinBox.value()
@@ -244,7 +245,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
 
     def values_changed(self):
         """
-        Check whether measurement settings values have changed.
+        Check whether measurement settings values that trigger possible
+        rerunning of simulations have changed.
 
         Return:
              True or False.
@@ -256,18 +258,10 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             if self.obj.run.beam.ion != Element(self.beamIonButton.text(),
                                                 isotope_data[0]):
                 return True
-            if self.obj.measurement_setting_file_name != \
-                    self.nameLineEdit.text():
-                return True
-            if self.obj.measurement_setting_file_description != self \
-                .descriptionPlainTextEdit.toPlainText():
-                return True
             if self.obj.run.beam.energy != self.energyDoubleSpinBox.value():
                 return True
             if self.obj.run.beam.energy_distribution != \
                 self.energyDistDoubleSpinBox.value():
-                return True
-            if self.obj.run.beam.charge != self.beamChargeSpinBox.value():
                 return True
             if self.obj.run.beam.spot_size != (
                 self.spotSizeXdoubleSpinBox.value(),
@@ -278,10 +272,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
                 return True
             if self.obj.run.beam.profile != self.profileComboBox.currentText():
                 return True
-            if self.obj.run.current != self.currentDoubleSpinBox.value():
-                return True
-            if self.obj.run.time != self.timeDoubleSpinBox.value():
-                return True
             if self.obj.detector.detector_theta != self \
                 .detectorThetaDoubleSpinBox.value():
                 return True
@@ -289,6 +279,32 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
                 .targetThetaDoubleSpinBox.value():
                 return True
             return False
+
+    def other_values_changed(self):
+        """
+        Check whether measurement values that don't require running a
+        simulation again have been changed.
+
+        Return:
+             True or False.
+        """
+        if self.obj.measurement_setting_file_name != \
+                self.nameLineEdit.text():
+            return True
+        if self.obj.measurement_setting_file_description != self \
+                .descriptionPlainTextEdit.toPlainText():
+            return True
+        if self.obj.run.beam.charge != self.beamChargeSpinBox.value():
+            return True
+        if self.obj.run.current != self.currentDoubleSpinBox.value():
+            return True
+        if self.obj.run.time != self.timeDoubleSpinBox.value():
+            return True
+        if self.obj.run.charge != self.runChargeDoubleSpinBox.value():
+            return True
+        if self.obj.run.fluence != self.fluenceDoubleSpinBox.value():
+            return True
+        return False
 
     def save_to_tmp_run(self):
         """

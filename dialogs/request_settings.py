@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 27.8.2018
+Updated on 27.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -165,8 +165,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
     def values_changed(self):
         """
-        Check if measurement, detector, simulation or profile settings have
-        changed.
+        Check if measurement, detector or simulation settings have
+        changed in regards to running simulations again.
 
         Return:
 
@@ -177,8 +177,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         if self.detector_settings_widget.values_changed():
             return True
         if self.simulation_settings_widget.values_changed():
-            return True
-        if self.profile_settings_widget.values_changed():
             return True
         return False
 
@@ -197,19 +195,27 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.__close = False
             return
         only_seed_changed = False
-        only_fluence_changed = False
+        only_unnotified_changed = False  # If only values that can be changed
+        # without running simulations again are changed
         # Check that values have been changed
         if not self.values_changed():
-            # If only seed number has been changed, allow the change
+            # Check if only those values have been changed that don't require
+            #  rerunning simulations
+            if self.measurement_settings_widget.other_values_changed():
+                only_unnotified_changed = True
             if self.simulation_settings_widget.ui.seedSpinBox.value() != \
                     self.request.default_element_simulation.seed_number:
                 only_seed_changed = True
-            if self.measurement_settings_widget.fluenceDoubleSpinBox.value() !=\
-                self.request.default_measurement.run.fluence:
-                only_fluence_changed = True
-            if not only_fluence_changed and not only_seed_changed:
+            if self.detector_settings_widget.other_values_changed():
+                only_unnotified_changed = True
+            # Profile settings
+            if self.profile_settings_widget.values_changed():
+                only_unnotified_changed = True
+
+            if not only_unnotified_changed and not only_seed_changed:
                 self.__close = True
                 return
+
         # Check the target and detector angles
         ok_pressed = self.measurement_settings_widget.check_angles()
         if ok_pressed:
@@ -227,7 +233,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             simulations_run = self.check_if_simulations_run()
             simulations_running = self.request.simulations_running()
             if simulations_run and simulations_running and \
-                    not only_seed_changed and not only_fluence_changed:
+                    not only_seed_changed and not only_unnotified_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulated and running simulations",
                     "There are simulations that use request settings, "
@@ -334,7 +340,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                             elem_sim.controls.reset_controls()
 
             elif simulations_running and not only_seed_changed and \
-                    not only_fluence_changed:
+                    not only_unnotified_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulations running",
                     "There are simulations running that use request "
@@ -397,7 +403,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                             elem_sim.controls.reset_controls()
 
             elif simulations_run and not only_seed_changed and \
-                    not only_fluence_changed:
+                    not only_unnotified_changed:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Simulated simulations",
                     "There are simulations that use request settings, "
