@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 3.5.2018
-Updated on 21.8.2018
+Updated on 27.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -40,7 +40,7 @@ class Run:
     Class that handles parameters concerning a run.
     """
 
-    def __init__(self, beam=None, fluence=1.00e+12, current=1.07,
+    def __init__(self, beam=None, fluence=1.00e+9, current=1.07,
                  charge=0.641, run_time=600):
         """
         Initializes the Run object.

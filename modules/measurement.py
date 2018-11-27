@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 29.8.2018
+Updated on 27.11.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -273,7 +273,7 @@ class Measurement:
                  description="", modification_time=None, run=None,
                  detector=None, target=None, profile_name="Default",
                  profile_description="", profile_modification_time=None,
-                 reference_density=3.5, number_of_depth_steps=100,
+                 reference_density=3.0, number_of_depth_steps=100,
                  depth_step_for_stopping=10, depth_step_for_output=10,
                  depth_for_concentration_from=800,
                  depth_for_concentration_to=1500, channel_width=0.025,
