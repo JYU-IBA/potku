@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 5.4.2013
-Updated on 22.8.2018
+Updated on 4.12.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -476,6 +476,15 @@ class DepthProfileWidget(QtWidgets.QWidget):
             dp = DepthFiles(self.use_cuts, output_files)
             # This has to be before create_depth_files()
             self.measurement.generate_tof_in()
+
+            # Delete previous depth files to avoid mixup when assigning the
+            # result files back to their cut files
+            removed_files = []
+            for file in os.listdir(self.output_dir):
+                if file.startswith("depth"):
+                    removed_files.append(os.path.join(self.output_dir, file))
+            for f in removed_files:
+                os.remove(f)
             dp.create_depth_files()
             
             # Check for RBS selections.
