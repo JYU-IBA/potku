@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 27.8.2018
+Updated on 4.12.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -225,11 +225,19 @@ class Detector:
         try:
             os.remove(os.path.join(self.efficiency_directory, file_name))
             # Remove file from used efficiencies if it exists
-            element = file_name.split('-')[0]
+            element_split = file_name.split('-')
+            if len(element_split) <= 2:
+                element = element_split[0]
+            else:
+                if os.sep in element_split[-1]:
+                    element = element_split[-1]
+                else:
+                    element = element_split[len(element_split) - 2]
             if os.sep in element:
                 element = os.path.split(element)[1]
             if element.endswith(".eff"):
-                file_to_remove = element
+                file_to_remove = os.path.join(self.efficiency_directory,
+                                              "Used_efficiencies", element)
             else:
                 file_to_remove = os.path.join(self.efficiency_directory,
                                               "Used_efficiencies", element +
