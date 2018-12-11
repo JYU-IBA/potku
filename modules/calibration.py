@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 20.11.2018
+Updated on 11.12.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -402,12 +402,13 @@ class TOFCalibrationPoint:
         # Recoiled atoms' parameters
         element = self.cut.element.symbol
         if cut.element.isotope:
-            mass = float(cut.element.isotope)
-            isotope = int(mass)
+            mass = masses.find_mass_of_isotope(self.cut.element)
+            isotope = cut.element.isotope
         else:
             # If the cut doesn't have a isotope, calculate standard atomic mass.
             mass = masses.get_standard_isotope(self.cut.element.symbol)
             isotope = masses.get_most_common_isotope(self.cut.element.symbol)[0]
+        self.recoiled_mass = convert_amu_to_kg(mass)
 
         if self.type == "RBS":
             element_scatter = self.cut.element_scatter
@@ -418,15 +419,13 @@ class TOFCalibrationPoint:
                     self.cut.element_scatter.symbol)
             self.scatter_element_mass = convert_amu_to_kg(mass_scatter)
 
-        beam_mass = float(run.beam.ion.isotope)
+        beam_mass = masses.find_mass_of_isotope(run.beam.ion)
         self.beam_mass = convert_amu_to_kg(beam_mass)
         self.beam_energy = convert_mev_to_joule(run.beam.energy)
         self.length = time_of_flight_length
         # Target angle, same with both recoiled and scattered atoms when
         # using same hardware.
         self.target_angle = detector.detector_theta * pi / 180
-        recoiled_mass = float(isotope)
-        self.recoiled_mass = convert_amu_to_kg(recoiled_mass)
         energy = self.__calculate_particle_energy(self.beam_energy)
 
         # Carbon stopping gives a list of different result values.
