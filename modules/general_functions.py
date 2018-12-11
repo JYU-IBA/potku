@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 20.11.2018
+Updated on 11.12.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -480,7 +480,13 @@ def carbon_stopping(element, isotope, energy, carbon_thickness):
         amu = 1.660548782e-27  # FIXME: This should be somewhere globally
         # Energy loss in eV calculated from energy loss (eV/10e15 at/cm^2)
         # and thickness (kg/cm^2)
-        e_loss = (float(output) / 1e15) * (carbon_thickness * 1e-9 / (12 * amu))
+        # e_loss = (float(output) / 1e15) * (carbon_thickness * 1e-9 / (12 *
+        # amu)) Original line
+        # TODO: make work for other layers than C
+        e_loss = float(output) * ( (( (2.2/12 * 6.0221409e+23)/1e7 ) *
+                                   carbon_thickness) /1e15 )
+        # e_loss = stopping * ( ( (density/( unit mass)*
+        # avogadros number / (cm->nm) ) *  carbon_thickness) /1e15 )
         e_loss *= 1.6021765e-19  # eV to Joule
         return e_loss
     else:
