@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 27.11.2018
+Updated on 11.12.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,12 +29,16 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-from PyQt5 import QtWidgets
+import modules.masses as masses
+import os
 
 from dialogs.graph_ignore_elements import GraphIgnoreElements
+
 from modules.element import Element
+
+from PyQt5 import QtWidgets
+
 from widgets.matplotlib.base import MatplotlibWidget
-import modules.masses as masses
 
 
 class MatplotlibElementLossesWidget(MatplotlibWidget):
@@ -42,7 +46,7 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
     """
 
     def __init__(self, parent, split, legend=True, y_scale=0, rbs_list=None,
-                 ignore_ref_cut=None):
+                 reference_cut_file=None):
         """Inits Energy Spectrum widget.
 
         Args:
@@ -52,7 +56,7 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
             y_scale: An integer flag representing Y axis scaling mode.
             rbs_list: A dictionary of RBS selection elements containing
                       scatter elements.
-            ignore_ref_cut: Path to reference cut if it will be ignored.
+            reference_cut_file: Path to reference cut if it will be ignored.
         """
         if rbs_list is None:
             rbs_list = []
@@ -63,6 +67,13 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
         self.__rbs_list = rbs_list
         self.__icon_manager = parent.icon_manager
         self.selection_colors = parent.measurement.selector.get_colors()
+
+        self.reference_cut_key = None
+        if reference_cut_file:
+            end_ref_cut = os.path.split(reference_cut_file)[-1]
+            without_mes_name = end_ref_cut.split(".", 1)
+            without_cut_suffix = without_mes_name[-1].rsplit(".", 1)
+            self.reference_cut_key = without_cut_suffix[0]
 
         self.__initiated_box = False
         self.__ignore_elements = []
@@ -120,6 +131,8 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
             element = element_object.symbol
             isotope = element_object.isotope
             if key in self.__ignore_elements:
+                continue
+            if self.reference_cut_key and key == self.reference_cut_key:
                 continue
             # Check RBS selection
             rbs_string = ""
