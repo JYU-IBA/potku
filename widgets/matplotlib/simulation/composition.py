@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 20.11.2018
+Updated on 17.12.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -329,8 +329,9 @@ class _CompositionWidget(MatplotlibWidget):
         self.__selected_layer = None
         # Update layer start depths
         self.update_start_depths()
+
         # Update canvas
-        self.__update_figure()
+        self.__update_figure(zoom_to_bottom=True)
 
         if self.simulation and not self.layers:
             self.parent.ui.recoilRadioButton.setEnabled(False)
@@ -343,13 +344,31 @@ class _CompositionWidget(MatplotlibWidget):
             tab = None
             if type(self.parent) is widgets.simulation.target.TargetWidget:
                 tab = self.parent.tab
+
+            # Old layer thickness
+            layer_thickness = 0
+            for layer in self.layers:
+                layer_thickness += layer.thickness
+
             dialog = LayerPropertiesDialog(tab,
                                            self.__selected_layer,
                                            modify=True,
                                            simulation=self.simulation)
             if dialog.ok_pressed:
                 self.update_start_depths()
-                self.__update_figure(add=self.foil_behaviour)
+
+                # New layer thickness
+                layer_thickness_new = 0
+                for layer in self.layers:
+                    layer_thickness_new += layer.thickness
+                zoom_to_bottom = False
+                if layer_thickness > layer_thickness_new:
+                    zoom_to_bottom = True
+
+                if self.foil_behaviour:
+                    zoom_to_bottom = True
+
+                self.__update_figure(zoom_to_bottom=zoom_to_bottom)
 
     def __update_selected_layer(self):
         """
@@ -489,7 +508,7 @@ class _CompositionWidget(MatplotlibWidget):
             dialog.layer.start_depth = depth
             self.layers.append(dialog.layer)
             self.__selected_layer = dialog.layer
-            self.__update_figure(add=True)
+            self.__update_figure(zoom_to_bottom=True)
             # position = self.layers.index(self.__selected_layer) + 1
             # self.layers.insert(position, dialog.layer)
             # self.update_start_depths()
@@ -502,24 +521,25 @@ class _CompositionWidget(MatplotlibWidget):
             self.layers.insert(position, dialog.layer)
             self.update_start_depths()
             self.__selected_layer = dialog.layer
-            self.__update_figure(add=True)
+            self.__update_figure(zoom_to_bottom=True)
         elif dialog.layer and position < 0 and self.__selected_layer:
             # Add other layer under selected
             position = self.layers.index(self.__selected_layer) + 1
             self.layers.insert(position, dialog.layer)
             self.update_start_depths()
             self.__selected_layer = dialog.layer
-            self.__update_figure(add=True)
+            self.__update_figure(zoom_to_bottom=True)
 
         if type(self.parent) is widgets.simulation.target.TargetWidget:
             self.parent.ui.recoilRadioButton.setEnabled(True)
 
-    def __update_figure(self, init=False, add=False):
+    def __update_figure(self, init=False, zoom_to_bottom=False):
         """Updates the figure to match the information of the layers.
 
         Args:
             init: If view is being initialized.
-            add: If view is updated because of adding a new layer.
+            zoom_to_bottom: If view is updated because of adding a new layer
+            or deleting one.
         """
         x_bounds = self.axes.get_xbound()
         self.axes.clear()
@@ -575,7 +595,7 @@ class _CompositionWidget(MatplotlibWidget):
         else:
             self.axes.set_xbound(x_bounds[0], x_bounds[1])
 
-        if add:
+        if zoom_to_bottom:
             # Set right bound to bottom of new layer
             view_bound = 0
             for layer in self.layers:
