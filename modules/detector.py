@@ -55,7 +55,7 @@ class Detector:
                  detector_type="TOF",
                  foils=None, tof_foils=None, virtual_size=(2.0, 5.0),
                  tof_slope=5.8e-11, tof_offset=-1.0e-9, angle_slope=0,
-                 angle_offset=0, timeres=250.0, detector_theta=40,
+                 angle_offset=0, timeres=250.0, detector_theta=41,
                  save_in_creation=True):
         """Initialize a detector.
 
