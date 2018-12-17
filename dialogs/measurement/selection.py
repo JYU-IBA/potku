@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 27.11.2018
+Updated on 17.12.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -282,6 +282,8 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         if self.color.isValid():
             if self.selection.element_scatter != "":
                 element = self.selection.element_scatter.symbol
+            elif self.ui.rbs_element_button.text() != "Select":
+                element = self.ui.rbs_element_button.text()
             else:
                 element = self.ui.sample_element_button.text()
             self.__change_color_button_color(element)
@@ -292,8 +294,6 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         Args:
             element: String representing element name.
         """
-        if not self.ui.colorButton.text():
-            return  # TODO: If color is manually chosen, do not reset?
         text_color = "black"
         luminance = 0.2126 * self.color.red() + 0.7152 * self.color.green()
         luminance += 0.0722 * self.color.blue()
