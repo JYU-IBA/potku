@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 29.4.2013
-Updated on 27.11.2018
+Updated on 17.12.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -56,7 +56,7 @@ class GlobalSettings:
                                  "Be": "red",
                                  "B": "red",
                                  "C": "#513c34",
-                                 "N": "red",
+                                 "N": "#00aa00",
                                  "O": "#0000ff",
                                  "F": "red",
                                  "Ne": "red",
@@ -66,7 +66,7 @@ class GlobalSettings:
                                  "Si": "#800080",
                                  "P": "red",
                                  "S": "red",
-                                 "Cl": "red",
+                                 "Cl": "#c200c2",
                                  "Ar": "red",
                                  "K": "red",
                                  "Ca": "red",
@@ -78,7 +78,7 @@ class GlobalSettings:
                                  "Fe": "red",
                                  "Co": "red",
                                  "Ni": "red",
-                                 "Cu": "red",
+                                 "Cu": "#ffaa00",
                                  "Zn": "red",
                                  "Ga": "red",
                                  "Ge": "red",
@@ -212,7 +212,7 @@ class GlobalSettings:
         self.__config.set("default", "preview_coincidence_count", "10000")
         self.__config.set("default", "es_output", "False")
         self.__config.set("depth_profile", "cross_section", "3")
-        self.__config.set("depth_profile", "num_iter", "3")
+        self.__config.set("depth_profile", "num_iter", "4")
         self.__config.set("tof-e_graph", "transpose", "False")
         self.__config.set("tof-e_graph", "invert_x", "False")
         self.__config.set("tof-e_graph", "invert_y", "False")
@@ -222,8 +222,8 @@ class GlobalSettings:
         self.__config.set("tof-e_graph", "bin_range_x_min", "0")
         self.__config.set("tof-e_graph", "bin_range_y_max", "8000")
         self.__config.set("tof-e_graph", "bin_range_y_min", "0")
-        self.__config.set("tof-e_graph", "compression_x", "5")
-        self.__config.set("tof-e_graph", "compression_y", "5")
+        self.__config.set("tof-e_graph", "compression_x", "6")
+        self.__config.set("tof-e_graph", "compression_y", "6")
 
     def __load_config(self):
         """Load old settings and set values.
