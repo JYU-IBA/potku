@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>482</width>
-    <height>636</height>
+    <height>638</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -83,7 +83,7 @@
         <x>0</x>
         <y>0</y>
         <width>462</width>
-        <height>585</height>
+        <height>587</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -342,7 +342,21 @@
                <item>
                 <layout class="QVBoxLayout" name="verticalLayout_5">
                  <item>
+                  <widget class="QLabel" name="label_11">
+                   <property name="text">
+                    <string>N.B. Timing foils need to be carbon in order to calculate measurement
+energy spectra and depth profiles correctly.</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
                   <widget class="QScrollArea" name="scrollArea">
+                   <property name="minimumSize">
+                    <size>
+                     <width>0</width>
+                     <height>139</height>
+                    </size>
+                   </property>
                    <property name="widgetResizable">
                     <bool>true</bool>
                    </property>
@@ -352,7 +366,7 @@
                       <x>0</x>
                       <y>0</y>
                       <width>412</width>
-                      <height>158</height>
+                      <height>138</height>
                      </rect>
                     </property>
                     <layout class="QHBoxLayout" name="horizontalLayout_4">
