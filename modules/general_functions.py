@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 11.12.2018
+Updated on 17.12.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -738,11 +738,17 @@ def calculate_new_point(previous_point, new_x, next_point,
         next_point: Next point.
         area_points: List of points where a new point is added.
     """
-    previous_x = previous_point.get_x()
-    previous_y = previous_point.get_y()
+    try:
+        previous_x = previous_point.get_x()
+        previous_y = previous_point.get_y()
 
-    next_x = next_point.get_x()
-    next_y = next_point.get_y()
+        next_x = next_point.get_x()
+        next_y = next_point.get_y()
+    except AttributeError:
+        previous_x = previous_point[0]
+        previous_y = previous_point[1]
+        next_x = next_point[0]
+        next_y = next_point[1]
 
     x_diff = round(next_x - previous_x, 4)
     y_diff = round(next_y - previous_y, 4)

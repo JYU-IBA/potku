@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 20.11.2018
+Updated on 17.12.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -40,7 +40,7 @@ from matplotlib import offsetbox
 from matplotlib.widgets import SpanSelector
 
 from modules.element import Element
-from modules.general_functions import find_nearest
+from modules.general_functions import calculate_new_point
 from modules.measurement import Measurement
 
 from PyQt5 import QtWidgets
@@ -142,69 +142,56 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         if not self.limits_visible:
             return
 
-        lower_limit = self.limits[0].get_xdata()[0]
-        upper_limit = self.limits[1].get_xdata()[0]
+        start = self.limits[0].get_xdata()[0]
+        end = self.limits[1].get_xdata()[0]
 
-        # Create a list with points inside the limits
-        limited_points = []
+        all_areas = []
         for line_points in self.lines_of_area:
-            lim_points = []
+            area_points = []
             points = list(line_points.values())[0]
-            for i in range(len(points)):
-                # Add first point that is either corresponding directly to lower
-                # limit or half of bin width bigger than the last point smaller
-                # than lower limit.
-                point = points[i]
-                x_point = float(point[0])
-                if lower_limit == x_point:
-                    lim_points.append((x_point, float(point[1])))
-                try:
-                    next_point = points[i + 1]
-                    if x_point < lower_limit < float(next_point[0]):
-                        start_y_point = round((float(point[1]) + float(
-                            next_point[1])) / 2, 2)
-                        start_x_point = round(x_point + 0.5 *
-                                              self.parent.bin_width, 2)
-                        start_point = start_x_point, start_y_point
-                        lim_points.append(start_point)
-                except IndexError:
-                    pass
-                if lower_limit < x_point < upper_limit:
-                    lim_points.append((x_point, float(point[1])))
-                # Add last point that is either corresponding directly to upper
-                # limit or half of bin width smaller than the first point bigger
-                # than upper limit.
-                if upper_limit == x_point:
-                    lim_points.append((x_point, float(point[1])))
-                previous_point = points[i - 1]
-                if float(previous_point[0]) < upper_limit < x_point:
-                    end_y_point = round((float(point[1]) +
-                                         float(previous_point[1])) / 2, 2)
-                    end_x_point = round(x_point - 0.5 *
-                                        self.parent.bin_width, 2)
-                    end_point = end_x_point, end_y_point
-                    lim_points.append(end_point)
-            limited_points.append(lim_points)
+            for i, point in enumerate(points):
+                x = point[0]
+                y = point[1]
+                if x < start:
+                    continue
+                if start <= x:
+                    if i > 0:
+                        previous_point = points[i - 1]
+                        if previous_point[0] < start < x:
+                            # Calculate new point to be added
+                            calculate_new_point(previous_point, start,
+                                                       point, area_points)
+                    if x <= end:
+                        area_points.append((x, y))
+                    else:
+                        if i > 0:
+                            previous_point = points[i - 1]
+                            if previous_point[0] < end < x:
+                                calculate_new_point(previous_point, end,
+                                                           point, area_points)
+                        break
+
+            all_areas.append(area_points)
 
         # https://stackoverflow.com/questions/25439243/find-the-area-between-
         # two-curves-plotted-in-matplotlib-fill-between-area
         # Create a polygon points list from limited points
         polygon_points = []
-        for value in limited_points[0]:
-            polygon_points.append([value[0], value[1]])
+        for value in all_areas[0]:
+            polygon_points.append((value[0], value[1]))
 
-        for value in limited_points[1][::-1]:
-            polygon_points.append([value[0], value[1]])
+        for value in all_areas[1][::-1]:
+            polygon_points.append((value[0], value[1]))
 
-        for value in limited_points[0][0:1]:
-            polygon_points.append([value[0], value[1]])
+        # Add the first point again to close the rectangle
+        polygon_points.append(polygon_points[0])
 
         polygon = Polygon(polygon_points)
         area = polygon.area
 
         # Calculate also the ratio of the two curve's areas
-        x_1, y_1 = zip(*limited_points[0])
-        x_2, y_2 = zip(*limited_points[1])
+        x_1, y_1 = zip(*all_areas[0])
+        x_2, y_2 = zip(*all_areas[1])
 
         area_1 = integrate.simps(y_1, x_1)
         area_2 = integrate.simps(y_2, x_2)
@@ -243,7 +230,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
         text = "Difference: %s" % str(round(area, 2)) + \
                "\nRatio: %s" % str(round(ratio, ratio_round)) + "\nInterval: [%s, %s]" % \
-               (str(round(lower_limit, 2)), str(round(upper_limit, 2)))
+               (str(round(start, 2)), str(round(end, 2)))
         box1 = offsetbox.TextArea(text, textprops=dict(color="k", size=12))
 
         text_2 = "\nRatio copied to clipboard."
@@ -284,76 +271,42 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                            QtWidgets.QMessageBox.Ok)
             return
 
-        i = 0
-        first = {}
-        second = {}
-        first_line = []
-        second_line = []
-        for key, val in self.files_to_draw.items():
-            if i == 0:
-                first_line = [float(x[0]) for x in val]
-                first[key] = [(float(x[0]), float(x[1])) for x in val]
-                i = i + 1
-            else:
-                second_line = [float(x[0]) for x in val]
-                second[key] = [(float(x[0]), float(x[1])) for x in val]
-
-        self.lines_of_area = []
-        self.lines_of_area.append(first)
-        self.lines_of_area.append(second)
-
         low_x = round(xmin, 3)
         high_x = round(xmax, 3)
-
-        # Find nearest point to low_x from hist_files
-        nearest_low_1 = find_nearest(low_x, first_line)
-        nearest_low_2 = find_nearest(low_x, second_line)
-
-        if nearest_low_1 > nearest_low_2:
-            nearest_lows = [nearest_low_2, nearest_low_1]
-        else:
-            nearest_lows = [nearest_low_1, nearest_low_2]
-
-        nearest_low = find_nearest(low_x, nearest_lows)
-
-        nearest_high_1 = find_nearest(high_x, first_line)
-        nearest_high_2 = find_nearest(high_x, second_line)
-
-        if nearest_high_1 > nearest_high_2:
-            nearest_highs = [nearest_high_2, nearest_high_1]
-        else:
-            nearest_highs = [nearest_high_1, nearest_high_2]
-
-        nearest_high = find_nearest(high_x, nearest_highs)
-
-        # Always have low and high be different lines
-        if nearest_high in first_line and nearest_low in first_line:
-            if nearest_low_2 > nearest_high_1:
-                nearest_high = nearest_low_2
-                nearest_low = nearest_high_1
-            else:
-                nearest_low = nearest_low_2
-        elif nearest_high in second_line and nearest_low in second_line:
-            if nearest_low_1 > nearest_high_2:
-                nearest_high = nearest_low_1
-                nearest_low = nearest_high_2
-            else:
-                nearest_low = nearest_low_1
-
-        # Don't draw nearest high and low on top of each other
-        if nearest_low == nearest_high:
-            nearest_low = nearest_low - self.parent.bin_width
-            if nearest_low not in first_line or nearest_low not in second_line:
-                nearest_low = nearest_low + self.parent.bin_width
-                nearest_high = nearest_high + self.parent.bin_width
 
         for lim in self.limits:
             lim.set_linestyle('None')
 
+        lowest = None
+        highest = None
+        self.lines_of_area = []
+
+        # Find the min and max of the files
+        for key, val in self.files_to_draw.items():
+            first = float(val[0][0])
+            last = float(val[-1][0])
+
+            float_values = [(float(x[0]), float(x[1])) for x in val]
+            self.lines_of_area.append({key : float_values})
+            if not lowest:
+                lowest = first
+            if not highest:
+                highest = last
+            if first < lowest:
+                lowest = first
+            if highest < last:
+                highest = last
+
+        # Check that limits are not beyond files' min and max points
+        if low_x < lowest:
+            low_x = lowest
+        if highest < high_x:
+            high_x = highest
+
         self.limits = []
         ylim = self.axes.get_ylim()
-        self.limits.append(self.axes.axvline(x=nearest_low, linestyle="--"))
-        self.limits.append(self.axes.axvline(x=nearest_high, linestyle="--",
+        self.limits.append(self.axes.axvline(x=low_x, linestyle="--"))
+        self.limits.append(self.axes.axvline(x=high_x, linestyle="--",
                                              color='red'))
         self.limits_visible = True
 
