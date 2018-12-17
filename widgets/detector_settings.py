@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 12.4.2018
-Updated on 27.11.2018
+Updated on 17.12.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -139,6 +139,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.scientific_tof_slope = ScientificSpinBox(number_part,
                                                       multiply_part,
                                                       -math.inf, math.inf)
+
         # Parse the value and multiplier
         offset_value_and_mult = str(self.obj.tof_offset)
         try:
@@ -151,6 +152,13 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.scientific_tof_offset = ScientificSpinBox(number_part,
                                                        multiply_part,
                                                        -math.inf, math.inf)
+
+        # Hide unnecessary up and down buttons
+        self.scientific_tof_slope.ui.upButton.hide()
+        self.scientific_tof_slope.ui.downButton.hide()
+        self.scientific_tof_offset.ui.upButton.hide()
+        self.scientific_tof_offset.ui.downButton.hide()
+
         self.ui.formLayout_2.insertRow(0, "ToF slope [s/channel]:",
                                        self.scientific_tof_slope)
         self.ui.formLayout_2.insertRow(1, "ToF offset[s]:",
