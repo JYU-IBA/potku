@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.4.2013
-Updated on 11.12.2018
+Updated on 17.12.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -395,9 +395,11 @@ class TOFCalibrationPoint:
 
         time_of_flight_length = time_of_flight_length / 1000
 
-        carbon_foil_thickness = 0
-        for layer in detector.foils[detector.tof_foils[0]].layers:
-            carbon_foil_thickness += layer.thickness
+        # Timing foil can only be carbon and have one layer!!!
+        carbon_foil_thickness_in_nm = 0
+        layer = detector.foils[detector.tof_foils[0]].layers[0]
+        carbon_foil_thickness_in_nm += layer.thickness
+        density_in_g_per_cm3 = layer.density
 
         # Recoiled atoms' parameters
         element = self.cut.element.symbol
@@ -432,7 +434,8 @@ class TOFCalibrationPoint:
         # The last value is the stopping energy.
         try:
             carbon_stopping_energy = carbon_stopping(element, isotope, energy,
-                                                     carbon_foil_thickness)
+                                                     carbon_foil_thickness_in_nm,
+                                                     density_in_g_per_cm3)
         except:
             error_msg = "Carbon stopping doesn't work. {0} {1}".format(
                 "Continuing without it.",

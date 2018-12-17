@@ -1191,9 +1191,15 @@ class Measurement:
         time_of_flight_length = time_of_flight_length / 1000
         str_toflen = "Toflen: {0}\n".format(time_of_flight_length)
 
-        carbon_foil_thickness = 0
-        for layer in detector.foils[detector.tof_foils[0]].layers:
-            carbon_foil_thickness += layer.thickness
+        # Timing foil can only be carbon and have one layer!!!
+        carbon_foil_thickness_in_nm = 0
+        layer = detector.foils[detector.tof_foils[0]].layers[0]
+        carbon_foil_thickness_in_nm += layer.thickness  # first layer only
+        density_in_g_per_cm3 = layer.density
+        carbon_foil_thickness = carbon_foil_thickness_in_nm * \
+                                density_in_g_per_cm3 * 6.0221409e+23 * \
+                                1.660548782e-27 * 100  # density in ug_per_cm2
+
         str_carbon = "Carbon foil thickness: {0}\n".format(
             carbon_foil_thickness)
 

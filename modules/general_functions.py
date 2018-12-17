@@ -440,14 +440,15 @@ def convert_amu_to_kg(mass_in_amus):
     return float(mass_in_amus) * amu
 
 
-def carbon_stopping(element, isotope, energy, carbon_thickness):
+def carbon_stopping(element, isotope, energy, carbon_thickness, carbon_density):
     """Calculate stopping of a particle in a carbon foil
 
     Args:
         element: Name of the element (e.g. "Si")
         isotope: Mass number of the element (e.g. 28)
         energy: Energy of the incident particle in MeVs (e.g. 2.0)
-        carbon_thickness: Thickness of the carbon foil in ug/cm^2. (e.g. 3.0)
+        carbon_thickness: Thickness of the carbon foil in nm. (e.g. 13.0)
+        carbon_density: Density of the carbon foil in g/cm3. (e.g. 2.27)
 
     Returns:
         Energy loss of particle in a carbon foil of some thickness in Joules
@@ -457,7 +458,6 @@ def carbon_stopping(element, isotope, energy, carbon_thickness):
     # parameters can be 0 but not None
     if element is not None and isotope is not None and energy is not None and \
             carbon_thickness is not None:
-        # inputdata = bytes("{0}-{1}".format(isotope, element), 'utf-8')
         if platform.system() == 'Windows':
             print("Running gsto_stop.exe on Windows.")
             args = [os.path.join(bin_dir, 'gsto_stop.exe'),
@@ -477,16 +477,18 @@ def carbon_stopping(element, isotope, energy, carbon_thickness):
         output = stdout.decode()
         print(unused_stderr.decode())
         print("Stopping: ", output, "eV/(1e15 at/cm^2)")
-        amu = 1.660548782e-27  # FIXME: This should be somewhere globally
+        # amu = 1.660548782e-27
         # Energy loss in eV calculated from energy loss (eV/10e15 at/cm^2)
         # and thickness (kg/cm^2)
         # e_loss = (float(output) / 1e15) * (carbon_thickness * 1e-9 / (12 *
         # amu)) Original line
-        # TODO: make work for other layers than C
-        e_loss = float(output) * ( (( (2.2/12 * 6.0221409e+23)/1e7 ) *
-                                   carbon_thickness) /1e15 )
+
+        # This only works for carbon, and with one layer in the carbon timing
+        #  foil!!!
+        e_loss = float(output) * ((((carbon_density / 12 * 6.0221409e+23) / 1e7)
+                                   * carbon_thickness) / 1e15)
         # e_loss = stopping * ( ( (density/( unit mass)*
-        # avogadros number / (cm->nm) ) *  carbon_thickness) /1e15 )
+        # avogadro's number / (cm->nm) ) *  carbon_thickness) /1e15 )
         e_loss *= 1.6021765e-19  # eV to Joule
         return e_loss
     else:
