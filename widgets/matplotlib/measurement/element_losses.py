@@ -177,6 +177,7 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
                         continue
                     else:
                         n = val
+                        break
                 modifier = 100 / n  # self.split[key][0]
                 data = [i * modifier for i in data]
             self.axes.plot(data,
