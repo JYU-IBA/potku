@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 23.8.2018
+Updated on 18.12.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -343,7 +343,10 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             new_sample_name = "Sample_" + "%02d" % \
                               self.obj.sample.serial_number + "-" + \
                               self.obj.sample.name
-            reference_cut = self.__confirm_filepath(lines[0].strip(),
+            file_path = lines[0].strip()
+            if self.obj.directory in file_path:
+                file_path = file_path.replace(file_path + os.sep, "")
+            reference_cut = self.__confirm_filepath(file_path,
                                                     name, m_name,
                                                     old_folder_prefix,
                                                     new_folder_prefix,

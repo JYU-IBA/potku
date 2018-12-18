@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 27.3.2013
-Updated on 11.12.2018
+Updated on 18.12.2018
 
 Potku is a graphical user interface for analyzation and 
 visualization of measurement data collected from a ToF-ERD 
@@ -76,6 +76,8 @@ class ElementLossesDialog(QtWidgets.QDialog):
         cuts, unused_elemloss = parent.obj.get_cut_files()
         dirtyinteger = 0
         for cut in cuts:
+            if ".potku" in cut:
+                cut = os.path.basename()
             self.cuts.append(cut)
             self.ui.referenceCut.addItem(cut)
             if cut == ElementLossesDialog.reference_cut[m_name]:

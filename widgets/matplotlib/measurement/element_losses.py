@@ -167,7 +167,7 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
                 label = r"$^{" + str(isotope) + "}$" + element + rbs_string
             else:
                 label = r"$^{" + str(isotope) + "}$" + element + rbs_string \
-                        + "$_{split: " + cut_file[2] + "}$"
+                        + "$_{split: " + cut_file[3] + "}$"
             # Modify data if scaled to 100.
             data = self.split[key]
             if self.__scale_mode == 2:
