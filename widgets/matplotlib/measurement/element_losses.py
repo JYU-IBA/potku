@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 21.3.2013
-Updated on 11.12.2018
+Updated on 18.12.2018
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -171,7 +171,13 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
             # Modify data if scaled to 100.
             data = self.split[key]
             if self.__scale_mode == 2:
-                modifier = 100 / self.split[key][0]
+                n = None
+                for val in data:
+                    if val == 0:
+                        continue
+                    else:
+                        n = val
+                modifier = 100 / n  # self.split[key][0]
                 data = [i * modifier for i in data]
             self.axes.plot(data,
                            color=color,
