@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 20.11.2018
+Updated on 8.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -44,6 +44,7 @@ from modules.general_functions import calculate_spectrum
 from modules.general_functions import read_espe_file
 from modules.general_functions import read_tof_list_file
 from modules.measurement import Measurement
+from modules.nsgaii import Nsgaii
 
 from PyQt5 import uic
 from PyQt5 import QtCore
@@ -234,6 +235,11 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     def __calculate_selected_spectra(self):
         """Calculate selected spectra.
         """
+        # Temporarily use this as a place to debug nsga-ii
+        # for elem_sim in self.parent.obj.element_simulations:
+        #     if elem_sim.recoil_elements[0].element.symbol == "O":
+        #         Nsgaii(1, elem_sim)
+
         self.close()
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()

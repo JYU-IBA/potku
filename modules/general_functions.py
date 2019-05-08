@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 17.12.2018
+Updated on 8.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -764,3 +764,38 @@ def calculate_new_point(previous_point, new_x, next_point,
 
     new_point = (new_x, new_y)
     area_points.append(new_point)
+
+
+def uniform_espe_lists(lists, channel_width):
+    """
+    Modify given energy spectra lists to have the same amount of items.
+
+    Return:
+        Modified lists.
+    """
+    first = lists[0]
+    second = [lists[1]]
+    # check if first x values don't match
+    # add zero values to the one missing the x values
+    if second[0][0] < first[0][0]:
+        x = first[0][0] - channel_width
+        while round(x, 4) >= second[0][0]:
+            first.insert(0, (round(x, 4), 0))
+            x -= channel_width
+    elif first[0][0] < second[0][0]:
+        x = second[0][0] - channel_width
+        while round(x, 4) >= first[0][0]:
+            second.insert(0, (round(x, 4), 0))
+            x -= channel_width
+
+    # do the same for the last values
+    if second[-1][0] < first[-1][0]:
+        x = second[-1][0] + channel_width
+        while round(x, 4) <= first[-1][0]:
+            second.append((round(x, 4), 0))
+            x += channel_width
+    elif first[-1][0] < second[-1][0]:
+        x = first[-1][0] + channel_width
+        while round(x, 4) <= second[-1][0]:
+            first.append((round(x, 4), 0))
+            x += channel_width
