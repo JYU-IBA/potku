@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 24.8.2018
+Updated on 9.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -353,9 +353,9 @@ class RecoilElement:
             # MCERD requires the recoil atom distribution to end with these
             # points
             file_rec.write(
-                str(round(self.get_points()[-1].get_x() + 10.02, 2)) +
+                str(round(self.get_points()[-1].get_x() + 0.01, 2)) +
                 " 0.0\n" +
-                str(round(self.get_points()[-1].get_x() + 10.03, 2)) +
+                str(round(self.get_points()[-1].get_x() + 0.02, 2)) +
                 " 0.0\n")
 
     def calculate_area_for_interval(self, start=None, end=None):

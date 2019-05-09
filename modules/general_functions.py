@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 8.5.2019
+Updated on 9.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -774,7 +774,7 @@ def uniform_espe_lists(lists, channel_width):
         Modified lists.
     """
     first = lists[0]
-    second = [lists[1]]
+    second = lists[1]
     # check if first x values don't match
     # add zero values to the one missing the x values
     if second[0][0] < first[0][0]:
@@ -799,3 +799,69 @@ def uniform_espe_lists(lists, channel_width):
         while round(x, 4) <= second[-1][0]:
             first.append((round(x, 4), 0))
             x += channel_width
+
+    return first, second
+
+
+def dominates(a, b):
+    """
+    Check if solution a dominates solution b. Minimization. This is related
+    to the NSGA-II optimization function (modules/nsgaii.py).
+
+    Args:
+        a: Solution (objective values) a.
+        b: Solution (objective values) b.
+
+    Return:
+        Whether a dominates b.
+    """
+    can_dominate = True
+    dom = False
+    for i in range(len(a)):
+        if a[i] == b[i] and can_dominate:
+            can_dominate = True
+        elif a[i] > b[i]:
+            can_dominate = False
+            dom = False
+        elif a[i] < b[i] and can_dominate:
+            can_dominate = True
+            dom = True
+    return dom
+
+
+def tournament_allow_doubles(t, p, fit):
+    """
+    Tournament selection that allows one individual to be in the mating pool
+    several times.
+
+    Args:
+        t: Number of solutions to be compared, size of tournament.
+        p: Number of solutions to be selected as parents in the mating pool.
+        fit: Fitness vectors.
+
+    Return:
+        Index of selected solutions.
+    """
+    n = len(fit)
+    pool = []
+    for i in range(p):
+        candidates = []
+        # Find k different candidates for tournament
+        j = 0
+        while j in range(t):
+            candidate = numpy.random.randint(n)
+            if candidate not in candidates:
+                candidates.append(candidate)
+                j += 1
+        min_front = min([fit[i, 0] for i in candidates])
+        min_candidates = [i for i in candidates if fit[i, 0] == min_front]
+        number_of_mins = len(min_candidates)
+        if number_of_mins > 1:  # If multiple candidates from the same front
+            # Find the candidate with smallest crowding distance
+            max_dist = max([fit[i, 1] for i in min_candidates])
+            max_cands = [i for i in min_candidates if fit[i, 1] == max_dist]
+            pool.append(max_cands[0])
+        else:
+            pool.append(min_candidates[0])
+
+    return numpy.array(pool)

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 8.5.2019
+Updated on 9.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -775,9 +775,7 @@ class ElementSimulation:
         else:
             # Check the change between current and previous energy spectra (if
             # the spectra have been calculated)
-            thread = threading.Thread(target=self.check_spectra_change)
-            thread.daemon = True
-            thread.start()
+            self.check_spectra_change()
 
     def calculate_erd_lines(self):
         """
@@ -851,7 +849,7 @@ class ElementSimulation:
                         if previous_avg:
                             avg_ratio = avg/previous_avg
                             # TODO: check more accurate value (percentage
-                            # now, but should it be only chnage is average?)
+                            # now, but should it be only change is average?)
                             if avg_ratio < 0.5:
                                 self.stop(optimize=True)
                                 break
