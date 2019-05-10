@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 7.5.2019
-Updated on 9.5.2019
+Updated on 10.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -30,6 +30,7 @@ import os
 import time
 
 from modules.general_functions import dominates
+from modules.general_functions import format_to_binary
 from modules.general_functions import read_espe_file
 from modules.general_functions import tournament_allow_doubles
 from modules.general_functions import uniform_espe_lists
@@ -106,6 +107,9 @@ class Nsgaii:
         hist_file = r"C:\Users\Heta\potku\requests\gradu_testi.potku" \
                          r"\Sample_01-s1\Measurement_01-m1\Energy_spectra\m1" \
                          r".16O.ERD.0.hist"
+        hist_file = r"C:\Users\drums\potku\requests\testi3112019.potku" \
+                         r"\Sample_01-sample1\Measurement_01-measurement1" \
+                    r"\Energy_spectra\measurement1.16O.ERD.0.hist"
 
         with open(hist_file, "r") as measu:
             results = measu.readlines()
@@ -327,6 +331,7 @@ class Nsgaii:
                 x_coords = np.insert(x_coords, 0, [0.0], axis=1)
                 rounded_x = np.zeros((self.pop_size - 1, 3))
                 # Add x0 index to constant variables
+                # TODO: handle other constant than first
                 self.__const_var_i.append(0)
 
                 # Create y coordinates
@@ -358,21 +363,23 @@ class Nsgaii:
                                           axis=1)
                     i += 2
                     j += 1
-                # Change upper and lower limits to have individual indices
-                #  for each solution (makes variation easier)
-                self.upper_limits = []
-                self.lower_limits = []
-                k = 0
-                while k in range(self.sol_size):
-                    self.upper_limits.append(x_upper)
-                    self.lower_limits.append(x_lower)
-                    k += 1
-                    if k == self.sol_size:
-                        break
-                    else:
-                        self.upper_limits.append(y_upper)
-                        self.lower_limits.append(y_lower)
-                        k += 1
+        else:
+            pass
+            # Change upper and lower limits to have individual indices
+            #  for each solution (makes variation easier for real values)
+            # self.upper_limits = []
+            # self.lower_limits = []
+            # k = 0
+            # while k in range(self.sol_size):
+            #     self.upper_limits.append(x_upper)
+            #     self.lower_limits.append(x_lower)
+            #     k += 1
+            #     if k == self.sol_size:
+            #         break
+            #     else:
+            #         self.upper_limits.append(y_upper)
+            #         self.lower_limits.append(y_lower)
+            #         k += 1
 
         self.__start = time.clock()
         pop = self.evaluate_solutions(init_sols)
@@ -610,133 +617,257 @@ class Nsgaii:
         """
         offspring = []
         pop_dec_n, t = np.shape(pop_sols)
-        p = 0
+        p = 0  # How many solutions have been added to offspring
+
+        if self.opt_recoil:
+            # Find needed size to hold one variable
+            size_of_x = (self.upper_limits[0] - self.lower_limits[0]) \
+                        * 100
+            size_bin_x = bin(size_of_x)
+            try:
+                b_index = size_bin_x.index("b")
+                len_of_x = len(size_bin_x[b_index + 1:])
+            except ValueError:
+                len_of_x = len(size_bin_x)
+
+            size_of_y = (self.upper_limits[1] - self.lower_limits[1]) \
+                        * 10000
+            size_bin_y = bin(size_of_y)
+            try:
+                b_index = size_bin_y.index("b")
+                len_of_y = len(size_bin_y[b_index + 1:])
+            except ValueError:
+                len_of_y = len(size_bin_y)
+
         while p in range(self.pop_size):
-            was_crossover = False
-            was_mutation = False
-            if np.random.uniform() <= self.cross_p:  # Do crossover.
-                # Find two random unique indices for two parents.
-                p_1 = np.random.randint(pop_dec_n)
+            # Find two random unique indices for two parents.
+            p_1 = np.random.randint(pop_dec_n)
+            p_2 = np.random.randint(pop_dec_n)
+            parent_1 = pop_sols[p_1]
+            parent_2 = pop_sols[p_2]
+            while (parent_1 == parent_2).all():
                 p_2 = np.random.randint(pop_dec_n)
-                parent_1 = pop_sols[p_1]
                 parent_2 = pop_sols[p_2]
-                while (parent_1 == parent_2).all():
-                    p_2 = np.random.randint(pop_dec_n)
-                    parent_2 = pop_sols[p_2]
 
-                child_1 = []
-                child_2 = []
-                for j in range(self.sol_size):
-                    # Check if index j is constant
-                    if j in self.__const_var_i:
-                        # Add constant to children
-                        c_1 = parent_1[j]
-                        c_2 = parent_2[j]
-                        child_1.append(c_1)
-                        child_2.append(c_2)
-                        continue
-                    # Simulated Binary Crossover - SBX
-                    u = np.random.uniform()
-                    if u <= 0.5:
-                        beta = (2*u) ** (1/(self.dis_c + 1))
-                    else:
-                        beta = (1/(2*(1 - u)))**(1/(self.dis_c + 1))
-                    c_1 = 0.5*((1 + beta)*parent_1[j] +
-                                   (1 - beta)*parent_2[j])
-                    c_2 = 0.5*((1 - beta)*parent_1[j] +
-                                   (1 + beta)*parent_2[j])
-
-                    if self.opt_recoil:
-                        same_x_1 = True
-                        same_x_2 = True
-                        if j % 2 == 0:  # If even index (x values)
-                            while same_x_1:
-                                c_1 = round(c_1, 2)
-                                if c_1 > self.upper_limits[j]:
-                                    c_1 = self.upper_limits[j]
-                                elif c_1 < self.lower_limits[j]:
-                                    c_1 = self.lower_limits[j]
-
-                                if c_1 not in child_1:
-                                    same_x = False
-                                else:
-                                    pass
-                            while same_x_2:
-                                c_2 = round(c_2, 2)
-                                if c_2 > self.upper_limits[j]:
-                                    c_2 = self.upper_limits[j]
-                                elif c_2 < self.lower_limits[j]:
-                                    c_2 = self.lower_limits[j]
-
+            # If no crossover, parents are used in mutation
+            child_1 = parent_1
+            child_2 = parent_2
+            if np.random.uniform() <= self.cross_p:  # Do crossover.
+                # Select between real coded of binary handling
+                if self.opt_recoil:
+                    # Do binary crossover
+                    # Transform child 1 and 2 into binary mode, to match the
+                    # possible values when taking decimal precision into account
+                    # Transform variables into binary
+                    binary_parent_1 = []
+                    binary_parent_2 = []
+                    for i in range(len(parent_1)):
+                        if i % 2 == 0:
+                            # Get rid of decimals
+                            var = parent_1[i] * 100
+                            format_x = format_to_binary(var, len_of_x)
+                            binary_parent_1.append(format_x)
                         else:
-                            c_1 = round(c_1, 4)
-                            c_2 = round(c_2, 4)
+                            # Get rid of decimals
+                            var = parent_1[i] * 10000
+                            format_y = format_to_binary(var, len_of_y)
+                            binary_parent_1.append(format_y)
+                    for i in range(len(parent_2)):
+                        if i % 2 == 0:
+                            # Get rid of decimals
+                            var = parent_2[i] * 100
+                            format_x = format_to_binary(var, len_of_x)
+                            binary_parent_2.append(format_x)
+                        else:
+                            # Get rid of decimals
+                            var = parent_2[i] * 10000
+                            format_y = format_to_binary(var, len_of_y)
+                            binary_parent_2.append(format_y)
 
-                            if c_1 > self.upper_limits[j]:
-                                c_1 = self.upper_limits[j]
-                            elif c_1 < self.lower_limits[j]:
-                                c_1 = self.lower_limits[j]
-                            if c_2 > self.upper_limits[j]:
-                                c_2 = self.upper_limits[j]
-                            elif c_2 < self.lower_limits[j]:
-                                c_2 = self.lower_limits[j]
+                    # Do crossover
+                    # Find random point to do the cut
+                    rand_i = np.random.randint(0, len(binary_parent_1))
+                    # Create heads and tails
+                    head_1 = binary_parent_1[:rand_i]
+                    tail_1 = binary_parent_1[rand_i:]
+                    head_2 = binary_parent_2[:rand_i]
+                    tail_2 = binary_parent_2[rand_i:]
+                    # Join to make new children
+                    binary_child_1 = head_1 + tail_2
+                    binary_child_2 = head_2 + tail_1
 
-                    # Add child variables to children.
-                    child_1.append(c_1)
-                    child_2.append(c_2)
+                    child_1 = binary_child_1
+                    child_2 = binary_child_2
 
-                was_crossover = True
-                offspring.append(np.array(child_1))
+                else:  # Fluence finding
+                    pass
+                    # # TODO: Fix this!
+                    # for j in range(self.sol_size):
+                    #     # Check if index j is constant
+                    #     if j in self.__const_var_i:
+                    #         # Add constant to children
+                    #         c_1 = parent_1[j]
+                    #         c_2 = parent_2[j]
+                    #         child_1.append(c_1)
+                    #         child_2.append(c_2)
+                    #         continue
+                    #     # Simulated Binary Crossover - SBX
+                    #     u = np.random.uniform()
+                    #     if u <= 0.5:
+                    #         beta = (2*u) ** (1/(self.dis_c + 1))
+                    #     else:
+                    #         beta = (1/(2*(1 - u)))**(1/(self.dis_c + 1))
+                    #     c_1 = 0.5*((1 + beta)*parent_1[j] +
+                    #                    (1 - beta)*parent_2[j])
+                    #     c_2 = 0.5*((1 - beta)*parent_1[j] +
+                    #                    (1 + beta)*parent_2[j])
+                    #
+                    #     if c_1 > self.upper_limits[j]:
+                    #         c_1 = self.upper_limits[j]
+                    #     elif c_1 < self.lower_limits[j]:
+                    #         c_1 = self.lower_limits[j]
+                    #     if c_2 > self.upper_limits[j]:
+                    #         c_2 = self.upper_limits[j]
+                    #     elif c_2 < self.lower_limits[j]:
+                    #         c_2 = self.lower_limits[j]
+                    #
+                    #     # Add child variables to children.
+                    #     child_1.append(c_1)
+                    #     child_2.append(c_2)
+
+                    # if self.opt_recoil:
+                    #     same_x_1 = True
+                    #     same_x_2 = True
+                    #     if j % 2 == 0:  # If even index (x values)
+                    #         while same_x_1:
+                    #             c_1 = round(c_1, 2)
+                    #             if c_1 > self.upper_limits[j]:
+                    #                 c_1 = self.upper_limits[j]
+                    #             elif c_1 < self.lower_limits[j]:
+                    #                 c_1 = self.lower_limits[j]
+                    #
+                    #             if c_1 not in child_1:
+                    #                 same_x = False
+                    #             else:
+                    #                 pass
+                    #         while same_x_2:
+                    #             c_2 = round(c_2, 2)
+                    #             if c_2 > self.upper_limits[j]:
+                    #                 c_2 = self.upper_limits[j]
+                    #             elif c_2 < self.lower_limits[j]:
+                    #                 c_2 = self.lower_limits[j]
+                    #
+                    #     else:
+                    #         c_1 = round(c_1, 4)
+                    #         c_2 = round(c_2, 4)
+                    #
+                    #         if c_1 > self.upper_limits[j]:
+                    #             c_1 = self.upper_limits[j]
+                    #         elif c_1 < self.lower_limits[j]:
+                    #             c_1 = self.lower_limits[j]
+                    #         if c_2 > self.upper_limits[j]:
+                    #             c_2 = self.upper_limits[j]
+                    #         elif c_2 < self.lower_limits[j]:
+                    #             c_2 = self.lower_limits[j]
+            offspring.append(child_1)
+            p += 1
+            if p >= self.pop_size:
+                break
+            else:
+                offspring.append(child_2)
                 p += 1
-                # Add only n amount children to get the right sized offspring
-                #  population.
-                if p >= self.pop_size:
-                    break
-                offspring.append(np.array(child_2))
-                p += 1
-            if np.random.uniform() <= self.mut_p:  # Do mutation.
-                p_i = np.random.randint(pop_dec_n)
-                parent = pop_sols[p_i]
-                child = []
-                for i in range(self.sol_size):
-                    # Check if index i is constant
-                    if i in self.__const_var_i:
-                        # Add constant to child
-                        c = parent[i]
-                        child.append(c)
-                        continue
-                    # Polynomial mutation.
-                    r = np.random.uniform()
-                    if r < 0.5:
-                        delta = (2*r)**(1/(self.dis_m + 1)) - 1
-                    else:
-                        delta = 1 - (2*(1 - r))**(1/(self.dis_m + 1))
-                    c = parent[i] + delta*(self.upper_limits[i] -
-                                           self.lower_limits[i])
 
-                    if self.opt_recoil:
-                        if i % 2 == 0:  # If even index (x values)
-                            c = round(c, 2)
-                        else:  # Odd index (y values)
-                            c = round(c, 4)
+            # rand = np.random.uniform()
+            # if rand <= self.mut_p:  # Do mutation
+            #     p_i = np.random.randint(0, pop_dec_n)
+            #     parent = pop_sols[p_i]
+            #     child = []
+            #     for i in range(self.sol_size):
+            #         if self.opt_recoil:
+            #             # Do mutation for binary children
+            #             pass
+            #         else:
+            #         # Check if index i is constant
+            #         if i in self.__const_var_i:
+            #             # Add constant to child
+            #             c = parent[i]
+            #             child.append(c)
+            #             continue
+            #         # Polynomial mutation.
+            #         r = np.random.uniform()
+            #         if r < 0.5:
+            #             delta = (2*r)**(1/(self.dis_m + 1)) - 1
+            #         else:
+            #             delta = 1 - (2*(1 - r))**(1/(self.dis_m + 1))
+            #         c = parent[i] + delta*(self.upper_limits[i] -
+            #                                self.lower_limits[i])
+            #
+            #         # if self.opt_recoil:
+            #         #     if i % 2 == 0:  # If even index (x values)
+            #         #         c = round(c, 2)
+            #         #     else:  # Odd index (y values)
+            #         #         c = round(c, 4)
+            #
+            #         if c > self.upper_limits[i]:
+            #             c = self.upper_limits[i]
+            #         elif c < self.lower_limits[i]:
+            #             c = self.lower_limits[i]
+            #
+            #         # Add child variable to mutated child.
+            #         child.append(c)
+            #
+            #     offspring.append(np.array(child))
+            #     p += 1
+            #
+            #     # Add only n amount children to get the right sized offspring
+            #     #  population.
 
-                    if c > self.upper_limits[i]:
-                        c = self.upper_limits[i]
-                    elif c < self.lower_limits[i]:
-                        c = self.lower_limits[i]
+        if self.opt_recoil:  # Do binary mutation
+            # Calculate length of one solution (number of bits)
+            sol_length = 0
+            for var in offspring[0]:
+                sol_length += len(var)
 
-                    # Add child variable to mutated child.
-                    child.append(c)
+            # Do mutation for offspring population
+            do_mutation = np.ones((self.pop_size, sol_length),
+                                  dtype=bool)
+            # Avoid mutating constants
+            bit_index = 0
+            for i in range(self.sol_size):
+                if i % 2 == 0:
+                    length = len_of_x
+                else:
+                    length = len_of_y
+                if i in self.__const_var_i:
+                    do_mutation[:,bit_index: bit_index + length + 1] = False
+                bit_index += length + 1
 
-                offspring.append(np.array(child))
-                was_mutation = True
-                p += 1
-            if not was_crossover and not was_mutation:
-                # If no crossover or mutation was done, still need to add a
-                # new child to offspring.
-                p_i = np.random.randint(pop_dec_n)
-                child = pop_sols[p_i]
-                offspring.append(np.array(child))
-                p += 1
+            # Indicate mutation for all variables that have a random number
+            # over mut_p / sol_length
+            do_mutation_prob = np.random.random_sample(
+                (self.pop_size,  sol_length)) < self.mut_p / sol_length
+            total_mutation_bool = np.logical_and(do_mutation, do_mutation_prob)
+
+            # Change offspring array that holds each binary string in an array
+            for i in range(self.sol_size):
+                for j in range(self.pop_size):
+                    r = offspring[i][j]
+                    int_list = [int(x) for x in list(r)]
+                    offspring[i][j] = np.array(int_list)
+            offspring = np.array(offspring)
+            # Use mutation mask
+            offspring[total_mutation_bool] = offspring[total_mutation_bool] ^ 1
+
+            # Change variables back to string
+            for k in range(self.sol_size):
+                for h in range(self.pop_size):
+                    str_bin = ''.join(offspring[k][h])
+                    # Turn variable back into decimal
+                    dec = int(str_bin, 2)
+                    offspring[k][h] = dec
+
+        else:  # Real coded mutation
+            # TODO implement
+            pass
 
         return np.array(offspring)

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 9.5.2019
+Updated on 10.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -865,3 +865,25 @@ def tournament_allow_doubles(t, p, fit):
             pool.append(min_candidates[0])
 
     return numpy.array(pool)
+
+
+def format_to_binary(var, length):
+    """
+    Format given integer into binary of a certain length.
+
+    Args:
+        var: Integer value to transform to binary.
+        length: Length of the desired binary.
+
+    Return:
+        Formatted binary.
+    """
+    # Transform to binary
+    var_bin = bin(var)
+    # Add zeros to match the needed length
+    try:
+        b_index = var_bin.index("b")
+        format_var = var_bin[b_index + 1:].zfill(length)
+    except ValueError:
+        format_var = var_bin.zfill(length)
+    return format_var
