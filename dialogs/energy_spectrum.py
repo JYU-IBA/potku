@@ -240,7 +240,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # for elem_sim in self.parent.obj.element_simulations:
         #     if elem_sim.recoil_elements[0].element.symbol == "O":
         #         # Run optimization in a thread
-        #         thread = threading.Thread(target=Nsgaii, args=(5, elem_sim))
+        #         thread = threading.Thread(target=Nsgaii, args=(50, elem_sim))
         #         thread.daemon = True
         #         thread.start()
 

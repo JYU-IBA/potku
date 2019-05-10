@@ -809,8 +809,8 @@ class ElementSimulation:
         previous_avg = None
         while True:
             if not self.mcerd_objects:
-                self.stop(optimize=True)
-            time.sleep(10)  # Sleep for 10 seconds
+                break
+            time.sleep(20)  # Sleep for 10 seconds
             # Check if erd file can be found (presimulation has been
             # finished)
             erd_file = os.path.join(
@@ -848,8 +848,6 @@ class ElementSimulation:
                         avg = sum_diff/amount
                         if previous_avg:
                             avg_ratio = avg/previous_avg
-                            # TODO: check more accurate value (percentage
-                            # now, but should it be only change is average?)
                             if avg_ratio < 0.5:
                                 self.stop(optimize=True)
                                 break

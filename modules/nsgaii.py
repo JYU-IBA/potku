@@ -100,6 +100,7 @@ class Nsgaii:
         self.mut_p = mut_p
         self.dis_m = dis_m
         self.__start = None
+        self.__const_var_i = []
 
         # TODO: dynamic hist file
         hist_file = r"C:\Users\Heta\potku\requests\gradu_testi.potku" \
@@ -267,13 +268,20 @@ class Nsgaii:
         """
         points = []
         if self.sol_size == 5:  # box that starts at the surface
+            # Find which x coordinate is smaller
+            if current_solution[2] < current_solution[4]:
+                x_2 = current_solution[2]
+                x_4 = current_solution[4]
+            else:
+                x_2 = current_solution[4]
+                x_4 = current_solution[2]
             point = (current_solution[0], current_solution[1])
-            point_2 = (current_solution[2], current_solution[1])
+            point_2 = (x_2, current_solution[1])
 
-            x_3 = round(current_solution[2] + 0.01, 2)
+            x_3 = round(x_2 + 0.01, 2)
             point_3 = (x_3, current_solution[3])
 
-            point_4 = (current_solution[4], current_solution[3])
+            point_4 = (x_4, current_solution[3])
 
             points.append(Point(point))
             points.append(Point(point_2))
@@ -318,6 +326,8 @@ class Nsgaii:
                 # Add x0
                 x_coords = np.insert(x_coords, 0, [0.0], axis=1)
                 rounded_x = np.zeros((self.pop_size - 1, 3))
+                # Add x0 index to constant variables
+                self.__const_var_i.append(0)
 
                 # Create y coordinates
                 y_coords = np.random.random_sample((2, self.pop_size - 1)) * (
@@ -378,8 +388,10 @@ class Nsgaii:
         # Add zero points to start and end to get correct mean values
         first_x = self.measured_espe[0][0]
         last_x = self.measured_espe[-1][0]
-        self.measured_espe.insert(0, (round(first_x - 0.025, 4), 0.0))
-        self.measured_espe.append((round(last_x + 0.025, 4), 0.0))
+        self.measured_espe.insert(
+            0, (round(first_x - self.element_simulation.channel_width, 4), 0.0))
+        self.measured_espe.append(
+            (round(last_x + self.element_simulation.channel_width, 4), 0.0))
 
         while i < len(self.measured_espe) - 1:  # Do nothing to the last point
             current_point = self.measured_espe[i]
@@ -574,12 +586,17 @@ class Nsgaii:
             if current[0] > last[0]:
                 last = current
                 l_i = i
-            elif current[1] > first[1]:
+            if current[1] > first[1]:
                 first = current
                 f_i = i
 
         first_sol  = pareto_optimal_sols[f_i]
-        last_solution = pareto_optimal_sols[l_i]
+        last_sol = pareto_optimal_sols[l_i]
+
+        # Save the two pareto solutions
+        self.element_simulation.optimization_recoils = []
+        self.element_simulation.optimization_recoils.append(first_sol)
+        self.element_simulation.optimization_recoils.append(last_sol)
 
     def variation(self, pop_sols):
         """
@@ -610,6 +627,14 @@ class Nsgaii:
                 child_1 = []
                 child_2 = []
                 for j in range(self.sol_size):
+                    # Check if index j is constant
+                    if j in self.__const_var_i:
+                        # Add constant to children
+                        c_1 = parent_1[j]
+                        c_2 = parent_2[j]
+                        child_1.append(c_1)
+                        child_2.append(c_2)
+                        continue
                     # Simulated Binary Crossover - SBX
                     u = np.random.uniform()
                     if u <= 0.5:
@@ -620,14 +645,41 @@ class Nsgaii:
                                    (1 - beta)*parent_2[j])
                     c_2 = 0.5*((1 - beta)*parent_1[j] +
                                    (1 + beta)*parent_2[j])
-                    if c_1 > self.upper_limits[j]:
-                        c_1 = self.upper_limits[j]
-                    elif c_1 < self.lower_limits[j]:
-                        c_1 = self.lower_limits[j]
-                    if c_2 > self.upper_limits[j]:
-                        c_2 = self.upper_limits[j]
-                    elif c_2 < self.lower_limits[j]:
-                        c_2 = self.lower_limits[j]
+
+                    if self.opt_recoil:
+                        same_x_1 = True
+                        same_x_2 = True
+                        if j % 2 == 0:  # If even index (x values)
+                            while same_x_1:
+                                c_1 = round(c_1, 2)
+                                if c_1 > self.upper_limits[j]:
+                                    c_1 = self.upper_limits[j]
+                                elif c_1 < self.lower_limits[j]:
+                                    c_1 = self.lower_limits[j]
+
+                                if c_1 not in child_1:
+                                    same_x = False
+                                else:
+                                    pass
+                            while same_x_2:
+                                c_2 = round(c_2, 2)
+                                if c_2 > self.upper_limits[j]:
+                                    c_2 = self.upper_limits[j]
+                                elif c_2 < self.lower_limits[j]:
+                                    c_2 = self.lower_limits[j]
+
+                        else:
+                            c_1 = round(c_1, 4)
+                            c_2 = round(c_2, 4)
+
+                            if c_1 > self.upper_limits[j]:
+                                c_1 = self.upper_limits[j]
+                            elif c_1 < self.lower_limits[j]:
+                                c_1 = self.lower_limits[j]
+                            if c_2 > self.upper_limits[j]:
+                                c_2 = self.upper_limits[j]
+                            elif c_2 < self.lower_limits[j]:
+                                c_2 = self.lower_limits[j]
 
                     # Add child variables to children.
                     child_1.append(c_1)
@@ -647,6 +699,12 @@ class Nsgaii:
                 parent = pop_sols[p_i]
                 child = []
                 for i in range(self.sol_size):
+                    # Check if index i is constant
+                    if i in self.__const_var_i:
+                        # Add constant to child
+                        c = parent[i]
+                        child.append(c)
+                        continue
                     # Polynomial mutation.
                     r = np.random.uniform()
                     if r < 0.5:
@@ -655,6 +713,13 @@ class Nsgaii:
                         delta = 1 - (2*(1 - r))**(1/(self.dis_m + 1))
                     c = parent[i] + delta*(self.upper_limits[i] -
                                            self.lower_limits[i])
+
+                    if self.opt_recoil:
+                        if i % 2 == 0:  # If even index (x values)
+                            c = round(c, 2)
+                        else:  # Odd index (y values)
+                            c = round(c, 4)
+
                     if c > self.upper_limits[i]:
                         c = self.upper_limits[i]
                     elif c < self.lower_limits[i]:
