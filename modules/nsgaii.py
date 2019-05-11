@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 7.5.2019
-Updated on 10.5.2019
+Updated on 11.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -102,6 +102,8 @@ class Nsgaii:
         self.dis_m = dis_m
         self.__start = None
         self.__const_var_i = []
+        self.bit_length_x = 0
+        self.bit_length_y = 0
 
         # TODO: dynamic hist file
         hist_file = r"C:\Users\Heta\potku\requests\gradu_testi.potku" \
@@ -121,6 +123,10 @@ class Nsgaii:
         # the x coordinates -> they have matching values for ease of distance
         # counting
         self.modify_measurement()
+
+        # Find bit variable lengths if necessary
+        if self.opt_recoil:
+            self.find_bit_variable_lengths()
 
         # Create initial population
         if starting_solutions:
@@ -170,10 +176,12 @@ class Nsgaii:
                     ind_front_next = front[rank[j + 1]]
                     ind_front_prev = front[rank[j - 1]]
                     # Normalize the objective function values
-                    current_distance = (pop_obj[(ind_front_next, i)] -
-                                        pop_obj[(ind_front_prev, i)]) / (
-                                                   f_max[i] - f_min[i]
-                                                   )
+                    dist = pop_obj[(ind_front_next, i)] - \
+                           pop_obj[(ind_front_prev, i)]
+                    if dist == 0:
+                        current_distance = 0
+                    else:
+                        current_distance = dist / (f_max[i] - f_min[i])
                     crowd_dis[ind_pop] = crowd_dis[ind_pop] + current_distance
         return crowd_dis
 
@@ -259,6 +267,27 @@ class Nsgaii:
         population = [sols, objective_values]
         return population
 
+    def find_bit_variable_lengths(self):
+        # Find needed size to hold x and y in binary
+        size_of_x = (self.upper_limits[0] - self.lower_limits[0]) * 100
+        size_bin_x = bin(size_of_x)
+        try:
+            b_index = size_bin_x.index("b")
+            len_of_x = len(size_bin_x[b_index + 1:])
+        except ValueError:
+            len_of_x = len(size_bin_x)
+
+        size_of_y = (self.upper_limits[1] - self.lower_limits[1]) * 10000
+        size_bin_y = bin(size_of_y)
+        try:
+            b_index = size_bin_y.index("b")
+            len_of_y = len(size_bin_y[b_index + 1:])
+        except ValueError:
+            len_of_y = len(size_bin_y)
+
+        self.bit_length_x = len_of_x
+        self.bit_length_y = len_of_y
+
     def form_recoil(self, current_solution):
         """
         Form recoil based on solution size.
@@ -324,42 +353,40 @@ class Nsgaii:
                     x_lower = self.lower_limits[0]
                     y_lower = self.lower_limits[1]
 
-                # Create x coordinates
-                x_coords = np.random.random_sample((self.pop_size - 1, 2)) * (
-                    x_upper - x_lower) + x_lower
+                # Create x coordinates (ints)
+                x_coords = np.random.randint(x_lower, (x_upper * 100) + 1,
+                                             size=(self.pop_size - 1, 2))
+                # Make x coords have the correct decimal precision
+                x_coords = np.around(x_coords/100, 2)
                 # Add x0
                 x_coords = np.insert(x_coords, 0, [0.0], axis=1)
-                rounded_x = np.zeros((self.pop_size - 1, 3))
                 # Add x0 index to constant variables
                 # TODO: handle other constant than first
                 self.__const_var_i.append(0)
 
                 # Create y coordinates
-                y_coords = np.random.random_sample((2, self.pop_size - 1)) * (
-                        y_upper - y_lower) + y_lower
-                rounded_y = np.zeros((2, self.pop_size - 1))
-                # Round coordinates accordingly
-                for i in range(self.pop_size - 1):
-                    rounded_x[i] = np.around(x_coords[i], decimals=2)
-                for i in range(2):
-                    rounded_y[i] = np.around(y_coords[i], decimals=4)
+                y_coords = np.random.randint(y_lower, (y_upper * 10000) + 1,
+                                             size=(2, self.pop_size - 1))
+                # Make x coords have the correct decimal precision
+                y_coords = np.around(y_coords / 10000, 4)
 
                 # Sort x elements in ascending order
-                rounded_x.sort(axis=1)
+                x_coords.sort(axis=1)
+
                 # Add as first solution coordinate values that make simulation
                 # concern the whole x coordinate range
                 first_x = np.array([0.0, round((x_upper - x_lower)/2, 2),
-                                       x_upper])
-                rounded_x_full = np.insert(rounded_x, 0, first_x, axis=0)
+                                   x_upper])
+                x_coords_full = np.insert(x_coords, 0, first_x, axis=0)
                 first_y = np.array([round((y_upper - y_lower)/2, 2), 0.0001])
-                rounded_y_full = np.insert(rounded_y, 0, first_y, axis=1)
+                y_coords_full = np.insert(y_coords, 0, first_y, axis=1)
 
                 i = 1
                 j = 0
-                init_sols = rounded_x_full
+                init_sols = x_coords_full
                 # init_sols will be x, y, x, y, x (4-point recoil)
                 while i < self.sol_size:
-                    init_sols = np.insert(init_sols, i, rounded_y_full[j],
+                    init_sols = np.insert(init_sols, i, y_coords_full[j],
                                           axis=1)
                     i += 2
                     j += 1
@@ -600,14 +627,18 @@ class Nsgaii:
         first_sol  = pareto_optimal_sols[f_i]
         last_sol = pareto_optimal_sols[l_i]
 
-        # Save the two pareto solutions
+        # Save the two pareto solutions as recoils
         self.element_simulation.optimization_recoils = []
-        self.element_simulation.optimization_recoils.append(first_sol)
-        self.element_simulation.optimization_recoils.append(last_sol)
+        first_recoil = self.form_recoil(first_sol)
+        self.element_simulation.optimization_recoils.append(first_recoil)
+        last_recoil = self.form_recoil(last_sol)
+        self.element_simulation.optimization_recoils.append(last_recoil)
 
     def variation(self, pop_sols):
         """
-        Generate offspring population using SBX and polynomial mutation.
+        Generate offspring population using SBX and polynomial mutation for
+       fluence, and simple binary crossover and binary
+        mutation for recoil element points.
 
         Args:
             pop_sols: Solutions that are used to create offspring population.
@@ -619,26 +650,7 @@ class Nsgaii:
         pop_dec_n, t = np.shape(pop_sols)
         p = 0  # How many solutions have been added to offspring
 
-        if self.opt_recoil:
-            # Find needed size to hold one variable
-            size_of_x = (self.upper_limits[0] - self.lower_limits[0]) \
-                        * 100
-            size_bin_x = bin(size_of_x)
-            try:
-                b_index = size_bin_x.index("b")
-                len_of_x = len(size_bin_x[b_index + 1:])
-            except ValueError:
-                len_of_x = len(size_bin_x)
-
-            size_of_y = (self.upper_limits[1] - self.lower_limits[1]) \
-                        * 10000
-            size_bin_y = bin(size_of_y)
-            try:
-                b_index = size_bin_y.index("b")
-                len_of_y = len(size_bin_y[b_index + 1:])
-            except ValueError:
-                len_of_y = len(size_bin_y)
-
+        # Crossover
         while p in range(self.pop_size):
             # Find two random unique indices for two parents.
             p_1 = np.random.randint(pop_dec_n)
@@ -649,42 +661,44 @@ class Nsgaii:
                 p_2 = np.random.randint(pop_dec_n)
                 parent_2 = pop_sols[p_2]
 
+            binary_parent_1 = []
+            binary_parent_2 = []
             # If no crossover, parents are used in mutation
-            child_1 = parent_1
-            child_2 = parent_2
+            if self.opt_recoil:
+                # Transform child 1 and 2 into binary mode, to match the
+                # possible values when taking decimal precision into account
+                # Transform variables into binary
+                for i in range(len(parent_1)):
+                    if i % 2 == 0:
+                        # Get rid of decimals
+                        var = int(parent_1[i] * 100)
+                        format_x = format_to_binary(var, self.bit_length_x)
+                        binary_parent_1.append(format_x)
+                    else:
+                        # Get rid of decimals
+                        var = int(parent_1[i] * 10000)
+                        format_y = format_to_binary(var, self.bit_length_y)
+                        binary_parent_1.append(format_y)
+                for i in range(len(parent_2)):
+                    if i % 2 == 0:
+                        # Get rid of decimals
+                        var = int(parent_2[i] * 100)
+                        format_x = format_to_binary(var, self.bit_length_x)
+                        binary_parent_2.append(format_x)
+                    else:
+                        # Get rid of decimals
+                        var = int(parent_2[i] * 10000)
+                        format_y = format_to_binary(var, self.bit_length_y)
+                        binary_parent_2.append(format_y)
+                child_1 = binary_parent_1
+                child_2 = binary_parent_2
+            else:
+                child_1 = parent_1
+                child_2 = parent_2
             if np.random.uniform() <= self.cross_p:  # Do crossover.
                 # Select between real coded of binary handling
                 if self.opt_recoil:
                     # Do binary crossover
-                    # Transform child 1 and 2 into binary mode, to match the
-                    # possible values when taking decimal precision into account
-                    # Transform variables into binary
-                    binary_parent_1 = []
-                    binary_parent_2 = []
-                    for i in range(len(parent_1)):
-                        if i % 2 == 0:
-                            # Get rid of decimals
-                            var = parent_1[i] * 100
-                            format_x = format_to_binary(var, len_of_x)
-                            binary_parent_1.append(format_x)
-                        else:
-                            # Get rid of decimals
-                            var = parent_1[i] * 10000
-                            format_y = format_to_binary(var, len_of_y)
-                            binary_parent_1.append(format_y)
-                    for i in range(len(parent_2)):
-                        if i % 2 == 0:
-                            # Get rid of decimals
-                            var = parent_2[i] * 100
-                            format_x = format_to_binary(var, len_of_x)
-                            binary_parent_2.append(format_x)
-                        else:
-                            # Get rid of decimals
-                            var = parent_2[i] * 10000
-                            format_y = format_to_binary(var, len_of_y)
-                            binary_parent_2.append(format_y)
-
-                    # Do crossover
                     # Find random point to do the cut
                     rand_i = np.random.randint(0, len(binary_parent_1))
                     # Create heads and tails
@@ -835,12 +849,12 @@ class Nsgaii:
             bit_index = 0
             for i in range(self.sol_size):
                 if i % 2 == 0:
-                    length = len_of_x
+                    length = self.bit_length_x
                 else:
-                    length = len_of_y
+                    length = self.bit_length_y
                 if i in self.__const_var_i:
-                    do_mutation[:,bit_index: bit_index + length + 1] = False
-                bit_index += length + 1
+                    do_mutation[:,bit_index: bit_index + length] = False
+                bit_index += length
 
             # Indicate mutation for all variables that have a random number
             # over mut_p / sol_length
@@ -849,22 +863,53 @@ class Nsgaii:
             total_mutation_bool = np.logical_and(do_mutation, do_mutation_prob)
 
             # Change offspring array that holds each binary string in an array
-            for i in range(self.sol_size):
-                for j in range(self.pop_size):
+            for i in range(self.pop_size):
+                for j in range(self.sol_size):
                     r = offspring[i][j]
                     int_list = [int(x) for x in list(r)]
                     offspring[i][j] = np.array(int_list)
+                # Flatten the row
+                offspring[i] = np.ndarray.flatten(np.array(offspring[i]))
+            # Transform offspring into numpy arrya
             offspring = np.array(offspring)
             # Use mutation mask
             offspring[total_mutation_bool] = offspring[total_mutation_bool] ^ 1
 
-            # Change variables back to string
-            for k in range(self.sol_size):
-                for h in range(self.pop_size):
-                    str_bin = ''.join(offspring[k][h])
-                    # Turn variable back into decimal
-                    dec = int(str_bin, 2)
-                    offspring[k][h] = dec
+            # Change variables back to decimal
+            dec_offspring = []
+            for k in range(self.pop_size):
+                sol = []
+                b_i = 0
+                for h in range(self.sol_size):
+                    if h % 2 == 0:
+                        # Make one variable list into string
+                        str_bin = ''.join(
+                            str(b) for b in offspring[k][b_i:b_i +
+                                                         self.bit_length_x])
+                        b_i += self.bit_length_x
+                        # Turn variable back into decimal
+                        dec = round(int(str_bin, 2)/100, 2)
+                        # Check of out of limits
+                        if dec < self.lower_limits[0]:
+                            dec = self.lower_limits[0]
+                        if dec > self.upper_limits[0]:
+                            dec = self.upper_limits[0]
+                    else:
+                        # Make one variable list into string
+                        str_bin = ''.join(
+                            str(b) for b in offspring[k][b_i:b_i +
+                                                         self.bit_length_y])
+                        b_i += self.bit_length_y
+                        # Turn variable back into decimal
+                        dec = round(int(str_bin, 2)/10000, 4)
+                        if dec < self.lower_limits[1]:
+                            dec = self.lower_limits[1]
+                        if dec > self.upper_limits[1]:
+                            dec = self.upper_limits[1]
+                    sol.append(dec)
+                dec_offspring.append(np.array(sol))
+
+            offspring = np.array(dec_offspring)
 
         else:  # Real coded mutation
             # TODO implement
