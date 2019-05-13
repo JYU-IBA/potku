@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 7.5.2019
-Updated on 11.5.2019
+Updated on 13.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -38,6 +38,8 @@ from modules.recoil_element import RecoilElement
 from modules.point import Point
 
 from shapely.geometry import Polygon
+
+from matplotlib import pyplot as plt
 
 
 class Nsgaii:
@@ -89,7 +91,7 @@ class Nsgaii:
             self.upper_limits = [120, 1]
         self.lower_limits = lower_limits
         if not self.lower_limits:
-            self.lower_limits = [0, 0]
+            self.lower_limits = [0.01, 0.0001]
         self.opt_recoil = optimize_recoil
         self.rec_type = recoil_type
         self.number_of_processes = number_of_processes
@@ -109,9 +111,9 @@ class Nsgaii:
         hist_file = r"C:\Users\Heta\potku\requests\gradu_testi.potku" \
                          r"\Sample_01-s1\Measurement_01-m1\Energy_spectra\m1" \
                          r".16O.ERD.0.hist"
-        hist_file = r"C:\Users\drums\potku\requests\testi3112019.potku" \
-                         r"\Sample_01-sample1\Measurement_01-measurement1" \
-                    r"\Energy_spectra\measurement1.16O.ERD.0.hist"
+        # hist_file = r"C:\Users\drums\potku\requests\testi3112019.potku" \
+        #                  r"\Sample_01-sample1\Measurement_01-measurement1" \
+        #             r"\Energy_spectra\measurement1.16O.ERD.0.hist"
 
         with open(hist_file, "r") as measu:
             results = measu.readlines()
@@ -233,7 +235,7 @@ class Nsgaii:
                 espe = list(np.float_(espe))
 
                 # Make spectra the same size
-                espe, self.measured_espe = uniform_espe_lists(
+                espe, measured_espe = uniform_espe_lists(
                     [espe, self.measured_espe],
                     self.element_simulation.channel_width)
 
@@ -242,7 +244,7 @@ class Nsgaii:
                 for value in espe:
                     polygon_points.append(value)
 
-                for value in self.measured_espe[::-1]:
+                for value in measured_espe[::-1]:
                     polygon_points.append(value)
 
                 # Add the first point again to close the rectangle
@@ -254,7 +256,7 @@ class Nsgaii:
                 # spectra
                 sum_diff = 0
                 i = 0
-                for point in self.measured_espe:
+                for point in measured_espe:
                     simu_point = espe[i]
                     diff = abs(point[1] - simu_point[1])
                     sum_diff += diff
@@ -270,7 +272,7 @@ class Nsgaii:
     def find_bit_variable_lengths(self):
         # Find needed size to hold x and y in binary
         size_of_x = (self.upper_limits[0] - self.lower_limits[0]) * 100
-        size_bin_x = bin(size_of_x)
+        size_bin_x = bin(int(size_of_x))
         try:
             b_index = size_bin_x.index("b")
             len_of_x = len(size_bin_x[b_index + 1:])
@@ -278,7 +280,7 @@ class Nsgaii:
             len_of_x = len(size_bin_x)
 
         size_of_y = (self.upper_limits[1] - self.lower_limits[1]) * 10000
-        size_bin_y = bin(size_of_y)
+        size_bin_y = bin(int(size_of_y))
         try:
             b_index = size_bin_y.index("b")
             len_of_y = len(size_bin_y[b_index + 1:])
@@ -354,21 +356,32 @@ class Nsgaii:
                     y_lower = self.lower_limits[1]
 
                 # Create x coordinates (ints)
-                x_coords = np.random.randint(x_lower, (x_upper * 100) + 1,
-                                             size=(self.pop_size - 1, 2))
+                x_coords = np.random.randint(int(x_lower * 100),
+                                             int(x_upper * 100) + 1,
+                                             size=(self.pop_size - 1))
                 # Make x coords have the correct decimal precision
                 x_coords = np.around(x_coords/100, 2)
                 # Add x0
-                x_coords = np.insert(x_coords, 0, [0.0], axis=1)
+                zeros = np.zeros(self.pop_size - 1)
+                x_coords = np.vstack((zeros, x_coords)).T
                 # Add x0 index to constant variables
-                # TODO: handle other constant than first
                 self.__const_var_i.append(0)
+                # Make last x match the upper limit, add to constants
+                x_lasts = np.full((self.pop_size - 1, 1), x_upper)
+                x_coords = np.append(x_coords, x_lasts, axis=1)
+                self.__const_var_i.append(4)
 
                 # Create y coordinates
-                y_coords = np.random.randint(y_lower, (y_upper * 10000) + 1,
-                                             size=(2, self.pop_size - 1))
-                # Make x coords have the correct decimal precision
+                y_coords = np.random.randint(int(y_lower * 10000),
+                                             int(y_upper * 10000) + 1,
+                                             size=(self.pop_size - 1))
+                # Make y coords have the correct decimal precision
                 y_coords = np.around(y_coords / 10000, 4)
+                # Make last y coords be lower limit
+                y_lasts = np.full(self.pop_size - 1, y_lower)
+                y_coords = np.array([y_coords, y_lasts])
+                # Add y1 to constants
+                self.__const_var_i.append(3)
 
                 # Sort x elements in ascending order
                 x_coords.sort(axis=1)
@@ -889,11 +902,12 @@ class Nsgaii:
                         b_i += self.bit_length_x
                         # Turn variable back into decimal
                         dec = round(int(str_bin, 2)/100, 2)
-                        # Check of out of limits
-                        if dec < self.lower_limits[0]:
-                            dec = self.lower_limits[0]
-                        if dec > self.upper_limits[0]:
-                            dec = self.upper_limits[0]
+                        if h not in self.__const_var_i:
+                            # Check of out of limits, not for constants
+                            if dec < self.lower_limits[0]:
+                                dec = self.lower_limits[0]
+                            if dec > self.upper_limits[0]:
+                                dec = self.upper_limits[0]
                     else:
                         # Make one variable list into string
                         str_bin = ''.join(
@@ -902,10 +916,12 @@ class Nsgaii:
                         b_i += self.bit_length_y
                         # Turn variable back into decimal
                         dec = round(int(str_bin, 2)/10000, 4)
-                        if dec < self.lower_limits[1]:
-                            dec = self.lower_limits[1]
-                        if dec > self.upper_limits[1]:
-                            dec = self.upper_limits[1]
+                        # Don't do anything to constants
+                        if h not in self.__const_var_i:
+                            if dec < self.lower_limits[1]:
+                                dec = self.lower_limits[1]
+                            if dec > self.upper_limits[1]:
+                                dec = self.upper_limits[1]
                     sol.append(dec)
                 dec_offspring.append(np.array(sol))
 
