@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 27.11.2018
+Updated on 13.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -33,6 +33,7 @@ import os
 from collections import Counter
 
 from dialogs.energy_spectrum import EnergySpectrumWidget
+from dialogs.simulation.optimization import OptimizationDialog
 from dialogs.simulation.settings import SimulationSettingsDialog
 
 from modules.ui_log_handlers import CustomLogHandler
@@ -75,6 +76,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
         self.ui.openSettingsButton.clicked.connect(lambda:
                                                    self.__open_settings())
+        self.ui.optimizeButton.clicked.connect(lambda:
+                                               self.__open_optimization_dialog())
 
     def add_widget(self, widget, minimized=None, has_close_button=True,
                    icon=None):
@@ -227,6 +230,9 @@ class SimulationTabWidget(QtWidgets.QWidget):
 
     def __open_settings(self):
         SimulationSettingsDialog(self, self.simulation, self.icon_manager)
+
+    def __open_optimization_dialog(self):
+        OptimizationDialog(self.simulation)
 
     def __read_log_file(self, file, state=1):
         """Read the log file into the log window.

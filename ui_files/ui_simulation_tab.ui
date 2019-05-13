@@ -108,8 +108,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>196</width>
-            <height>133</height>
+            <width>198</width>
+            <height>224</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -154,6 +154,16 @@
               </layout>
              </item>
              <item>
+              <widget class="QCommandLinkButton" name="optimizeButton">
+               <property name="text">
+                <string>Optimize Recoils</string>
+               </property>
+               <property name="description">
+                <string>Find the boundaries of a recoil's shape while matching it with a measurement.</string>
+               </property>
+              </widget>
+             </item>
+             <item>
               <spacer name="verticalSpacer">
                <property name="orientation">
                 <enum>Qt::Vertical</enum>
@@ -161,7 +171,7 @@
                <property name="sizeHint" stdset="0">
                 <size>
                  <width>20</width>
-                 <height>40</height>
+                 <height>30</height>
                 </size>
                </property>
               </spacer>
