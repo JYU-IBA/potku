@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 7.5.2019
-Updated on 13.5.2019
+Updated on 14.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -54,7 +54,9 @@ class Nsgaii:
     def __init__(self, gen, element_simulation=None, pop_size=100, sol_size=5,
                  upper_limits=None, lower_limits=None, optimize_recoil=True,
                  recoil_type="box", starting_solutions=None,
-                 number_of_processes=1, cross_p=0.9, mut_p=1, dis_c=20,
+                 number_of_processes=1, cross_p=0.9, mut_p=1,
+                 stop_percent=0.3, check_time=20, ch=0.0025,
+                 hist_file=None, dis_c=20,
                  dis_m=20):
         """
         Initialize the NSGA-II algorithm with needed parameters and start
@@ -77,6 +79,12 @@ class Nsgaii:
             calculation.
             cross_p: Crossover probability.
             mut_p: Mutation probability, should be something small.
+            stop_percent: When to stop running MCERD (based on the ratio in
+            average change between checkups).
+            check_time: Time interval for checking if MCERD should be stopped.
+            ch: Channel with for running get_espe.
+            hist_file: Hist file corresponding to measured energy spectrum
+            used in comparing the simulated energy spectra.
             dis_c: Distribution index for crossover. When this is big,
             a  new solution is close to its parents.
             dis_m: Distribution for mutation.
@@ -94,8 +102,18 @@ class Nsgaii:
             self.lower_limits = [0.01, 0.0001]
         self.opt_recoil = optimize_recoil
         self.rec_type = recoil_type
+
+        self.hist_file = hist_file
+        if not self.hist_file:
+            return
+
+        # MCERd specific parameters
         self.number_of_processes = number_of_processes
         self.mcerd_run = False
+        self.stop_percent = stop_percent
+        self.check_time = check_time
+
+        self.channel_width = ch
 
         # Crossover and mutation parameters
         self.cross_p = cross_p
@@ -108,14 +126,14 @@ class Nsgaii:
         self.bit_length_y = 0
 
         # TODO: dynamic hist file
-        hist_file = r"C:\Users\Heta\potku\requests\gradu_testi.potku" \
-                         r"\Sample_01-s1\Measurement_01-m1\Energy_spectra\m1" \
-                         r".16O.ERD.0.hist"
+        # hist_file = r"C:\Users\Heta\potku\requests\gradu_testi.potku" \
+        #                  r"\Sample_01-s1\Measurement_01-m1\Energy_spectra\m1" \
+        #                  r".16O.ERD.0.hist"
         # hist_file = r"C:\Users\drums\potku\requests\testi3112019.potku" \
         #                  r"\Sample_01-sample1\Measurement_01-measurement1" \
         #             r"\Energy_spectra\measurement1.16O.ERD.0.hist"
 
-        with open(hist_file, "r") as measu:
+        with open(self.hist_file, "r") as measu:
             results = measu.readlines()
         self.measured_espe = [
             (float(line.strip().split()[0]),
@@ -212,7 +230,9 @@ class Nsgaii:
             self.element_simulation.optimization_recoils.append(current_recoil)
             if not self.mcerd_run:
                 self.element_simulation.start(self.number_of_processes, 201,
-                                              optimize=True)
+                                              optimize=True,
+                                              stop_p=self.stop_percent,
+                                              check_t=self.check_time)
                 self.mcerd_run = True
 
             # Create other recoils
@@ -224,7 +244,7 @@ class Nsgaii:
         for recoil in self.element_simulation.optimization_recoils:
             # Run get_espe
             self.element_simulation.calculate_espe(recoil,
-                                optimize=True)
+                                optimize=True, ch=self.channel_width)
             # Read espe file
             espe_file = os.path.join(
                 self.element_simulation.directory, recoil.prefix + "-" +
@@ -606,6 +626,9 @@ class Nsgaii:
             # Update the amount of evaluation left
             evaluations -= self.pop_size
 
+            self.element_simulation.calculated_solutions = int(
+                self.evaluations - evaluations)
+
             # Temporary prints
             if evaluations % (10*self.evaluations/self.pop_size) == 0:
 
@@ -646,6 +669,10 @@ class Nsgaii:
         self.element_simulation.optimization_recoils.append(first_recoil)
         last_recoil = self.form_recoil(last_sol)
         self.element_simulation.optimization_recoils.append(last_recoil)
+
+        # Signal thread that checks whether optimization
+        # is done
+        self.element_simulation.optimization_done = True
 
     def variation(self, pop_sols):
         """

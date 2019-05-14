@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 9.5.2019
+Updated on 14.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -70,7 +70,7 @@ class ElementSimulation:
                 "use_default_settings", "sample", "controls", "simulation", \
                 "simulations_done", "__full_edit_on", "y_min", "main_recoil",\
                 "__erd_files", "optimization_recoils", "__previous_espe", \
-                "__opt_seed"
+                "__opt_seed", "optimization_done", "calculated_solutions"
 
     def __init__(self, directory, request, recoil_elements,
                  simulation=None, name_prefix="",
@@ -201,6 +201,8 @@ class ElementSimulation:
         # This is needed for optimization mcerd stopping
         self.__previous_espe = None
         self.__opt_seed = None
+        self.optimization_done = False
+        self.calculated_solutions = 0
 
     def unlock_edit(self):
         """
@@ -680,7 +682,7 @@ class ElementSimulation:
             json.dump(obj_profile, file, indent=4)
 
     def start(self, number_of_processes, start_value, erd_files=None,
-              optimize=False):
+              optimize=False, stop_p=False, check_t=False):
         """
         Start the simulation.
 
@@ -689,6 +691,8 @@ class ElementSimulation:
             start_value: Which is the first seed.
             erd_files: List of old erd files that need to be preserved.
             optimize: Whether mcerd run relates to optimization.
+            stop_p: Percent for stopping the MCERD run.
+            check_t: Time between checks to see whether to stop MCERD or not.
         """
         self.simulations_done = False
         if self.run is None:
@@ -775,7 +779,7 @@ class ElementSimulation:
         else:
             # Check the change between current and previous energy spectra (if
             # the spectra have been calculated)
-            self.check_spectra_change()
+            self.check_spectra_change(stop_p, check_t)
 
     def calculate_erd_lines(self):
         """
@@ -800,17 +804,21 @@ class ElementSimulation:
                 self.controls.show_number_of_observed_atoms(lines_count,
                                                             add_presim)
 
-    def check_spectra_change(self):
+    def check_spectra_change(self, stop_percent, check_time):
         """
         If there are previous and current energy spectra, check the change in
         distance between them. When this is smaller than the threshold,
         mcerd can be stopped.
+
+        Args:
+            stop_percent: Percent at which to stop.
+            check_time: Time between the percentage checks.
         """
         previous_avg = None
         while True:
             if not self.mcerd_objects:
                 break
-            time.sleep(20)  # Sleep for 10 seconds
+            time.sleep(check_time)  # Sleep for specified time
             # Check if erd file can be found (presimulation has been
             # finished)
             erd_file = os.path.join(
@@ -848,7 +856,7 @@ class ElementSimulation:
                         avg = sum_diff/amount
                         if previous_avg:
                             avg_ratio = avg/previous_avg
-                            if avg_ratio < 0.5:
+                            if avg_ratio < stop_percent:
                                 self.stop(optimize=True)
                                 break
                         previous_avg = avg
@@ -944,7 +952,7 @@ class ElementSimulation:
               " Number of observed atoms: " + str(lines_count)
         logging.getLogger(simulation_name).info(msg)
 
-    def calculate_espe(self, recoil_element, optimize=False):
+    def calculate_espe(self, recoil_element, optimize=False, ch=None):
         """
         Calculate the energy spectrum from the MCERD result file.
         """
@@ -965,6 +973,10 @@ class ElementSimulation:
             erd_file = os.path.join(
                 self.directory, self.optimization_recoils[0].prefix + "-" +
                 self.optimization_recoils[0].name + ".*.erd")
+        if ch:
+            channel_width = ch
+        else:
+            channel_width = self.channel_width
 
         if self.run is None:
             run = self.request.default_run
@@ -978,7 +990,7 @@ class ElementSimulation:
             "beam": run.beam,
             "detector": detector,
             "target": self.target,
-            "ch": self.channel_width,
+            "ch": channel_width,
             "reference_density": recoil_element.reference_density,
             "multiplier": recoil_element.multiplier,
             "fluence": run.fluence,

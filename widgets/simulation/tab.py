@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 13.5.2019
+Updated on 14.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -43,6 +43,7 @@ from PyQt5 import QtWidgets
 from PyQt5 import uic
 
 from widgets.log import LogWidget
+from widgets.simulation.optmized_recoils import OptimizedRecoilsWidget
 from widgets.simulation.target import TargetWidget
 
 
@@ -78,6 +79,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
                                                    self.__open_settings())
         self.ui.optimizeButton.clicked.connect(lambda:
                                                self.__open_optimization_dialog())
+
+        self.optimization_result_widget = None
 
     def add_widget(self, widget, minimized=None, has_close_button=True,
                    icon=None):
@@ -115,6 +118,14 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.simulation_target = TargetWidget(self, self.obj, self.obj.target,
                                               self.icon_manager, progress_bar)
         self.add_widget(self.simulation_target, has_close_button=False)
+
+    def add_optimization_results_widget(self, elem_sim):
+        """
+        Add a widget that holds progress and results of optimization.
+        """
+        self.optimization_result_widget = OptimizedRecoilsWidget(elem_sim)
+        self.add_widget(self.optimization_result_widget)
+        return self.optimization_result_widget
 
     def add_log(self):        
         """ Add the simulation log to simulation tab widget.
@@ -232,7 +243,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         SimulationSettingsDialog(self, self.simulation, self.icon_manager)
 
     def __open_optimization_dialog(self):
-        OptimizationDialog(self.simulation)
+        OptimizationDialog(self.simulation, self)
 
     def __read_log_file(self, file, state=1):
         """Read the log file into the log window.

@@ -108,8 +108,8 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>198</width>
-            <height>224</height>
+            <width>211</width>
+            <height>254</height>
            </rect>
           </property>
           <property name="sizePolicy">
@@ -156,10 +156,10 @@
              <item>
               <widget class="QCommandLinkButton" name="optimizeButton">
                <property name="text">
-                <string>Optimize Recoils</string>
+                <string>Optimize Recoils or Fluence</string>
                </property>
                <property name="description">
-                <string>Find the boundaries of a recoil's shape while matching it with a measurement.</string>
+                <string>Find the boundaries of a recoil's shape while matching it with a measurement or find the correct fluence based on substrate.</string>
                </property>
               </widget>
              </item>
