@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Created on 14.5.2019
+Created on 15.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -51,25 +51,31 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
 
         self.axes.format_coord = self.format_coord
 
-        # Setting up the recoil element scroll area
+        self.current_recoil = None
+
+        self.radios = QtWidgets.QButtonGroup(self)
+        self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
+            self.choose_recoil)
+
         widget = QtWidgets.QWidget()
         self.recoil_vertical_layout = QtWidgets.QVBoxLayout()
         self.recoil_vertical_layout.setContentsMargins(0, 0, 0, 0)
         widget.setLayout(self.recoil_vertical_layout)
 
-        scroll_vertical_layout = QtWidgets.QVBoxLayout()
-        self.parent.ui.recoilScrollAreaContents.setLayout(
-            scroll_vertical_layout)
+        self.parent.ui.recoilListLayout.addWidget(widget)
 
-        scroll_vertical_layout.addWidget(widget)
-        scroll_vertical_layout.addItem(
-            QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum,
-                                  QtWidgets.QSizePolicy.Expanding))
+        self.first_sol_btn = QtWidgets.QRadioButton("First solution")
+        self.first_sol_btn.setEnabled(False)
+        self.last_sol_btn = QtWidgets.QRadioButton("Last solution")
+        self.last_sol_btn.setEnabled(False)
+        self.radios.addButton(self.first_sol_btn)
+        self.radios.addButton(self.last_sol_btn)
+        self.recoil_vertical_layout.addWidget(self.first_sol_btn)
+        self.recoil_vertical_layout.addWidget(self.last_sol_btn)
 
-        self.current_recoil = None
-        self.radios = QtWidgets.QButtonGroup(self)
-        self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
-            self.choose_recoil)
+        spacer = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum,
+                                       QtWidgets.QSizePolicy.Expanding)
+        self.recoil_vertical_layout.addItem(spacer)
 
         # Markers representing points
         self.markers = None
@@ -93,6 +99,8 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.other_recoil = None
         self.other_recoil_line = None
 
+        self.__show_all_recoil = True
+
         self.canvas.mpl_connect('button_press_event', self.on_click)
 
         self.on_draw()
@@ -100,18 +108,22 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         if self.element_simulation.optimization_recoils:
             self.__update_figure()
 
-        for button in self.radios.buttons():
-            button.setChecked(True)
-            break
-
     def choose_recoil(self, button, checked):
-        radio_buttons = []
         for recoil_element in self.element_simulation.optimization_recoils:
-            b = recoil_element.widgets[0].radio_button
+            b = recoil_element.widgets[0]
             if b == button:
                 self.current_recoil = recoil_element
+            else:
+                self.other_recoil = recoil_element
+
+        self.clicked_point = None
+        if self.markers_selected:
+            self.markers_selected.set_visible(False)
+            self.coordinates_widget.x_coordinate_box.setEnabled(False)
+            self.coordinates_widget.y_coordinate_box.setEnabled(False)
 
         self.update_plot()
+        self.__update_figure()
 
     def __fork_toolbar_buttons(self):
         """
@@ -167,8 +179,8 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         if event.button == 1:  # Left click
             marker_contains, marker_info = self.markers.contains(event)
             if marker_contains:  # If clicked a point
-                self.coordinates_widget.x_coordinate_box.setVisible(True)
-                self.coordinates_widget.y_coordinate_box.setVisible(True)
+                self.coordinates_widget.x_coordinate_box.setEnabled(True)
+                self.coordinates_widget.y_coordinate_box.setEnabled(True)
                 i = marker_info['ind'][0]  # The clicked point's index
                 clicked_point = self.current_recoil.get_point_by_i(i)
                 self.clicked_point = clicked_point
@@ -184,39 +196,6 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.axes.set_ylabel(self.name_y_axis)
         self.axes.set_xlabel(self.name_x_axis)
 
-        if self.current_recoil:
-            color = str("red")
-            self.lines, = self.axes.plot(
-                self.current_element_simulation.get_xs(
-                    self.current_recoil_element),
-                self.current_element_simulation.get_ys(
-                    self.current_recoil_element),
-                color=color)
-
-            self.markers, = self.axes.plot(
-                self.current_element_simulation.get_xs(
-                    self.current_recoil_element),
-                self.current_element_simulation.get_ys(
-                    self.current_recoil_element),
-                color=color, marker="o",
-                markersize=10, linestyle="None")
-
-            self.markers_selected, = self.axes.plot(0, 0, marker="o",
-                                                    markersize=10,
-                                                    linestyle="None",
-                                                    color='yellow',
-                                                    visible=False)
-        else:
-            self.lines, = self.axes.plot(0, 0, color="blue", visible=False)
-            self.markers, = self.axes.plot(0, 0, color="blue", marker="o",
-                                           markersize=10, linestyle="None",
-                                           visible=False)
-            self.markers_selected, = self.axes.plot(0, 0, marker="o",
-                                                    markersize=10,
-                                                    linestyle="None",
-                                                    color='yellow',
-                                                    visible=False)
-
         self.axes.set_xlim(-1, 40)
         self.axes.set_ylim(-0.1, 2)
 
@@ -224,13 +203,36 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.remove_axes_ticks()
         self.canvas.draw()
 
-    def show_recoils(self, eval):
+    def show_recoils(self):
         """
         Show optimized recoils in widget.
         """
-        self.parent.ui.progressLabel.setText(str(eval) + " evaluations done. "
-                                                  "Finished.")
-        self.__update_figure()
+        self.current_recoil = self.element_simulation.optimization_recoils[0]
+        self.other_recoil = self.element_simulation.optimization_recoils[-1]
+        # Add radiobutton created in the beginning to match results
+        self.current_recoil.widgets.append(self.first_sol_btn)
+        self.other_recoil.widgets.append(self.last_sol_btn)
+
+        # Create necessary lines and markers
+        color = str(self.current_recoil.color.name())
+        self.lines, = self.axes.plot(self.current_recoil.get_xs(),
+                                     self.current_recoil.get_ys(),
+                                     color=color)
+
+        self.markers, = self.axes.plot(self.current_recoil.get_xs(),
+                                       self.current_recoil.get_ys(),
+                                       color=color, marker="o",
+                                       markersize=10, linestyle="None")
+
+        self.markers_selected, = self.axes.plot(0, 0, marker="o",
+                                                markersize=10,
+                                                linestyle="None",
+                                                color='yellow',
+                                                visible=False)
+
+        self.first_sol_btn.setEnabled(True)
+        self.last_sol_btn.setEnabled(True)
+        self.first_sol_btn.setChecked(True)
 
     def __toggle_tool_drag(self):
         """
@@ -272,24 +274,23 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         """
         Update figure.
         """
-        for recoil_element in self.element_simulation.optimization_recoils:
-            main_element_widget = RecoilWidget(recoil_element)
-            recoil_element.widgets.append(main_element_widget)
-        self.element_simulation.optimization_recoils[0].widgets[0].\
-            radio_button.setChecked(True)
+        if self.other_recoil_line:
+            self.other_recoil_line.set_visible(False)
 
         xs = self.other_recoil.get_xs()
         ys = self.other_recoil.get_ys()
-        self.axes.plot(xs, ys, color=str(self.other_recoil.color.name()),
+        line = self.axes.plot(xs, ys, color=str(
+            self.other_recoil.color.name()),
                        alpha=0.3, visible=True, zorder=1)
+        self.other_recoil_line = line[0]
 
         self.fig.canvas.draw_idle()
 
     def update_plot(self):
         self.markers.set_data(self.current_recoil.get_xs(),
-            self.current_recoil.get_ys())
+                              self.current_recoil.get_ys())
         self.lines.set_data(self.current_recoil.get_xs(),
-            self.current_recoil.get_ys())
+                            self.current_recoil.get_ys())
 
         self.markers.set_color("red")
         self.lines.set_color("red")
@@ -297,23 +298,22 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.markers.set_visible(True)
         self.lines.set_visible(True)
 
-class RecoilWidget(QtWidgets.QWidget):
-    def __init__(self, element):
-        super().__init__()
-        horizontal_layout = QtWidgets.QHBoxLayout()
-        horizontal_layout.setContentsMargins(0, 0, 0, 0)
+        if self.clicked_point:
+            self.markers_selected.set_visible(True)
+            selected_xs = self.clicked_point.get_x()
+            selected_ys = self.clicked_point.get_y()
+            self.markers_selected.set_data(selected_xs, selected_ys)
 
-        self.radio_button = QtWidgets.QRadioButton()
+            self.coordinates_widget.x_coordinate_box.setValue(
+                self.clicked_point.get_x())
+            self.coordinates_widget.y_coordinate_box.setValue(
+                self.clicked_point.get_y())
 
-        if element.isotope:
-            isotope_superscript = to_superscript(str(element.isotope))
-            button_text = isotope_superscript + " " + element.symbol
-        else:
-            button_text = element.symbol
+        last_point = self.current_recoil.get_point_by_i(len(
+            self.current_recoil.get_points()) - 1)
+        last_point_x = last_point.get_x()
+        x_min, x_max = self.axes.get_xlim()
+        if x_max < last_point_x:
+            self.axes.set_xlim(x_min, last_point_x + 0.04 * last_point_x)
 
-        self.radio_button.setText(button_text)
-
-        # Circle for showing the recoil color
-        self.circle = Circle("red")
-        horizontal_layout.addWidget(self.radio_button)
-        horizontal_layout.addWidget(self.circle)
+        self.fig.canvas.draw_idle()

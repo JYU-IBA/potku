@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 7.5.2019
-Updated on 14.5.2019
+Updated on 15.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -39,7 +39,7 @@ from modules.point import Point
 
 from shapely.geometry import Polygon
 
-from matplotlib import pyplot as plt
+from PyQt5 import QtGui
 
 
 class Nsgaii:
@@ -343,10 +343,11 @@ class Nsgaii:
             points.append(Point(point_3))
             points.append(Point(point_4))
 
+        color = color = QtGui.QColor("red")
         # Form a recoil object
         recoil = RecoilElement(
             self.element_simulation.recoil_elements[0].element, points,
-            "red", name="opt")
+            color=color, name="opt")
         return recoil
 
     def initialize_population(self):

@@ -119,11 +119,16 @@ class SimulationTabWidget(QtWidgets.QWidget):
                                               self.icon_manager, progress_bar)
         self.add_widget(self.simulation_target, has_close_button=False)
 
-    def add_optimization_results_widget(self, elem_sim):
+    def add_optimization_results_widget(self, elem_sim, measurement_elem):
         """
         Add a widget that holds progress and results of optimization.
+
+        Args:
+            elem_sim: Element simulation that is being optimized.
+            measurement_elem: Measured element used in optimization.
         """
-        self.optimization_result_widget = OptimizedRecoilsWidget(elem_sim)
+        self.optimization_result_widget = OptimizedRecoilsWidget(
+            elem_sim , measurement_elem)
         self.add_widget(self.optimization_result_widget)
         return self.optimization_result_widget
 

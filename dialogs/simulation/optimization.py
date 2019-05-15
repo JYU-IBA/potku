@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Created on 14.5.2019
+Created on 15.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -157,12 +157,12 @@ class OptimizationDialog(QtWidgets.QDialog):
         Check whether result widget needs updating.
         """
         while True:
-            time.sleep(20)  # Sleep for 20 seconds to save processing power
             calc_sols = self.element_simulation.calculated_solutions
             self.result_widget.update_progress(calc_sols)
             if self.element_simulation.optimization_done:
-                self.result_widget.show_recoils(calc_sols)
+                self.result_widget.show_results(calc_sols)
                 break
+            time.sleep(5)  # Sleep for 5 seconds to save processing power
 
     def start_optimization(self):
         """
@@ -230,7 +230,7 @@ class OptimizationDialog(QtWidgets.QDialog):
 
         # Create necessary results widget
         self.result_widget = self.parent_tab.add_optimization_results_widget(
-            self.element_simulation)
+            self.element_simulation, item_text)
 
         # Update result widget with progress or results
         thread_results = threading.Thread(
