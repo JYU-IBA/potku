@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 14.5.2019
+Updated on 15.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -127,6 +127,9 @@ class SimulationTabWidget(QtWidgets.QWidget):
             elem_sim: Element simulation that is being optimized.
             measurement_elem: Measured element used in optimization.
         """
+        # Delete previous results widget if it exists
+        if self.optimization_result_widget:
+            self.del_widget(self.optimization_result_widget)
         self.optimization_result_widget = OptimizedRecoilsWidget(
             elem_sim , measurement_elem)
         self.add_widget(self.optimization_result_widget)
@@ -173,6 +176,24 @@ class SimulationTabWidget(QtWidgets.QWidget):
                           graph can be shown.
         """
         self.make_energy_spectra()
+        # Show optimized results if there are any
+        used_measured_element = ""
+        for element_simulation in self.simulation.element_simulations:
+            if element_simulation.optimization_recoils:
+                # Find file that contains measurement element name used in
+                # optimization
+                for file in os.listdir(element_simulation.directory):
+                    if file.startswith(element_simulation.name_prefix) and \
+                            file.endswith(".measured"):
+                        with open(os.path.join(element_simulation.directory,
+                                               file)) as m_f:
+                            used_measured_element = m_f.readline()
+                        break
+                self.optimization_result_widget = OptimizedRecoilsWidget(
+                    element_simulation, used_measured_element)
+                self.add_widget(self.optimization_result_widget)
+                break
+
         progress_bar.setValue(82)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
@@ -221,7 +242,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         try:
             self.ui.mdiArea.removeSubWindow(widget.subwindow)
             widget.delete()
-        except:
+        except Exception as e:
             # If window was manually closed, do nothing.
             pass
     

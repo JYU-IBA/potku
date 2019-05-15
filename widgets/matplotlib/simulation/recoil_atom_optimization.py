@@ -1,6 +1,7 @@
 # coding=utf-8
 """
 Created on 15.5.2019
+Updated on 15.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -30,7 +31,6 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import QLocale
 
 from widgets.matplotlib.base import MatplotlibWidget
-from widgets.simulation.circle import Circle
 from widgets.simulation.point_coordinates import PointCoordinatesWidget
 
 
@@ -106,7 +106,7 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.on_draw()
 
         if self.element_simulation.optimization_recoils:
-            self.__update_figure()
+            self.show_recoils()
 
     def choose_recoil(self, button, checked):
         for recoil_element in self.element_simulation.optimization_recoils:

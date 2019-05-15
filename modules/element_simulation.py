@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 14.5.2019
+Updated on 15.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -478,6 +478,9 @@ class ElementSimulation:
         # Read .rec files from simulation folder
         recoil_elements = []
 
+        # # Read optimized (optfirst and optsecond) recoil files
+        optimized_recoils = []
+
         if simulation_type == "ERD":
             rec_type = "rec"
         else:
@@ -512,20 +515,27 @@ class ElementSimulation:
 
                 element.channel_width = channel_width
 
-                is_simulated = False
-                # Find if file has a matching erd file (=has been simulated)
-                for f in os.listdir(simulation_folder):
-                    if f.startswith(prefix + "-" + element.name) \
-                       and f.endswith(".erd"):
-                        recoil_elements.insert(0, element)
-                        main_recoil = element
-                        is_simulated = True
-                        break
-                if not is_simulated:
-                    if element is main_recoil:
-                        recoil_elements.insert(0, element)
-                    else:
-                        recoil_elements.append(element)
+                # Check whether element in regualr or part of optimized recoils
+                if prefix + "-optfirst.rec" == file:
+                    optimized_recoils.insert(0, element)
+                elif prefix + "-optsecond.rec" == file:
+                    optimized_recoils.append(element)
+
+                else:
+                    is_simulated = False
+                    # Find if file has a matching erd file (=has been simulated)
+                    for f in os.listdir(simulation_folder):
+                        if f.startswith(prefix + "-" + element.name) \
+                           and f.endswith(".erd"):
+                            recoil_elements.insert(0, element)
+                            main_recoil = element
+                            is_simulated = True
+                            break
+                    if not is_simulated:
+                        if element is main_recoil:
+                            recoil_elements.insert(0, element)
+                        else:
+                            recoil_elements.append(element)
 
         # Check if there are any files to tell that simulations have
         # been run previously
@@ -554,7 +564,9 @@ class ElementSimulation:
                    minimum_energy=minimum_energy,
                    use_default_settings=use_default_settings,
                    channel_width=channel_width,
-                   simulations_done=simulations_done, main_recoil=main_recoil)
+                   simulations_done=simulations_done,
+                   main_recoil=main_recoil,
+                   optimization_recoils=optimized_recoils)
 
     def mcsimu_to_file(self, file_path):
         """Save mcsimu settings to file.

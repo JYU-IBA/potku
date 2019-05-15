@@ -1,6 +1,7 @@
 # coding=utf-8
 """
 Created on 15.5.2019
+Updated on 15.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -117,6 +118,7 @@ class OptimizationDialog(QtWidgets.QDialog):
                 self.ui.measurementTreeWidget.currentItem()))
 
         self.result_widget = None
+        self.measured_element = ""
 
         self.exec_()
 
@@ -155,12 +157,24 @@ class OptimizationDialog(QtWidgets.QDialog):
     def check_progress_and_results(self):
         """
         Check whether result widget needs updating.
+
+        Args:
+            measured_element: Which element (cut file) was used in optimization.
         """
         while True:
             calc_sols = self.element_simulation.calculated_solutions
             self.result_widget.update_progress(calc_sols)
             if self.element_simulation.optimization_done:
                 self.result_widget.show_results(calc_sols)
+                # Save optimized recoils
+                for recoil in self.element_simulation.optimization_recoils:
+                    self.element_simulation.recoil_to_file(
+                        self.element_simulation.directory, recoil)
+                save_file_name = self.element_simulation.name_prefix + \
+                                 "-opt.measured"
+                with open(os.path.join(self.element_simulation.directory,
+                                       save_file_name), "w") as f:
+                    f.write(self.measured_element)
                 break
             time.sleep(5)  # Sleep for 5 seconds to save processing power
 
@@ -169,6 +183,15 @@ class OptimizationDialog(QtWidgets.QDialog):
         Find necessary cut file and make energy spectrum with it, and start
         optimization with given parameters.
         """
+        # Delete existing files from previous optimization
+        removed_files = []
+        for file in os.listdir(self.element_simulation.directory):
+            if "opt" in file:
+                removed_files.append(file)
+        for rf in removed_files:
+            path = os.path.join(self.element_simulation.directory, rf)
+            os.remove(path)
+
         self.close()
         root_for_cut_files = self.ui.measurementTreeWidget.invisibleRootItem()
 
@@ -200,8 +223,8 @@ class OptimizationDialog(QtWidgets.QDialog):
 
         # Hist all selected cut files
         es = EnergySpectrum(used_measurement, cut_file,
-                                self.ui.histogramTicksDoubleSpinBox.value(),
-                                None)
+                            self.ui.histogramTicksDoubleSpinBox.value(),
+                            None)
         es.calculate_spectrum()
         # Add result files
         hist_file = os.path.join(used_measurement.directory_energy_spectra,
@@ -232,6 +255,7 @@ class OptimizationDialog(QtWidgets.QDialog):
         self.result_widget = self.parent_tab.add_optimization_results_widget(
             self.element_simulation, item_text)
 
+        self.measured_element = item_text
         # Update result widget with progress or results
         thread_results = threading.Thread(
             target=self.check_progress_and_results)

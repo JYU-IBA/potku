@@ -310,13 +310,14 @@ class Nsgaii:
         self.bit_length_x = len_of_x
         self.bit_length_y = len_of_y
 
-    def form_recoil(self, current_solution):
+    def form_recoil(self, current_solution, name=""):
         """
         Form recoil based on solution size.
 
         Args:
             current_solution: Solution which holds the information needed t
             form the recoil.
+            name: Possible name for recoil element.
 
         Return:
              Recoil Element.
@@ -345,9 +346,13 @@ class Nsgaii:
 
         color = color = QtGui.QColor("red")
         # Form a recoil object
+        if not name:
+            name = "opt"
+        else:
+            name = name
         recoil = RecoilElement(
             self.element_simulation.recoil_elements[0].element, points,
-            color=color, name="opt")
+            color=color, name=name)
         return recoil
 
     def initialize_population(self):
@@ -666,10 +671,15 @@ class Nsgaii:
 
         # Save the two pareto solutions as recoils
         self.element_simulation.optimization_recoils = []
-        first_recoil = self.form_recoil(first_sol)
+        first_recoil = self.form_recoil(first_sol, "optfirst")
         self.element_simulation.optimization_recoils.append(first_recoil)
-        last_recoil = self.form_recoil(last_sol)
+        last_recoil = self.form_recoil(last_sol, "optsecond")
         self.element_simulation.optimization_recoils.append(last_recoil)
+
+        # Remove unnecessary opt.recoil file
+        for file in os.listdir(self.element_simulation.directory):
+            if file.endswith("opt.recoil"):
+                os.remove(os.path.join(self.element_simulation.directory, file))
 
         # Signal thread that checks whether optimization
         # is done
