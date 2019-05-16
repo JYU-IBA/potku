@@ -185,6 +185,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
                         with open(os.path.join(element_simulation.directory,
                                                file)) as m_f:
                             used_measured_element = m_f.readline()
+                        element_simulation.optimization_done = True
                         break
                 self.optimization_result_widget = OptimizedRecoilsWidget(
                     element_simulation, used_measured_element)

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 14.5.2019
+Updated on 16.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -147,15 +147,20 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     for f in os.listdir(self.parent.obj.directory):
                         rec_prefix = rec_name.split('-')[0]
                         if f.startswith(rec_prefix) and f.endswith(".erd"):
-                            item = QtWidgets.QTreeWidgetItem()
-                            item.setText(0, rec_name)
-                            if rec_to_check and rec_to_check.prefix + "-" + \
-                               rec_to_check.name == rec_name:
-                                item.setCheckState(0, QtCore.Qt.Checked)
+                            if "opt" in f and "opt" not in rec_name:
+                                continue
+                            elif "opt" in rec_name and "opt" not in f:
+                                continue
                             else:
-                                item.setCheckState(0, QtCore.Qt.Unchecked)
-                            self.ui.treeWidget.addTopLevelItem(item)
-                            break
+                                item = QtWidgets.QTreeWidgetItem()
+                                item.setText(0, rec_name)
+                                if rec_to_check and rec_to_check.prefix + "-" +\
+                                   rec_to_check.name == rec_name:
+                                    item.setCheckState(0, QtCore.Qt.Checked)
+                                else:
+                                    item.setCheckState(0, QtCore.Qt.Unchecked)
+                                self.ui.treeWidget.addTopLevelItem(item)
+                                break
 
             # Add calculated tof_list files to tof_list_tree_widget by
             # measurement under the same sample.
@@ -268,6 +273,17 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                         progress_bar.setValue((dirtyinteger / child_count) * 33)
                         QtCore.QCoreApplication.processEvents(
                             QtCore.QEventLoop.AllEvents)
+                    if elem_sim.optimization_done:
+                        for rec in elem_sim.optimization_recoils:
+                            rec_elem_prefix_and_name = rec.prefix + "-" \
+                                                       + rec.name
+                            if rec_elem_prefix_and_name == item.text(0):
+                                elem_sim.channel_width = self.ui. \
+                                    histogramTicksDoubleSpinBox.value()
+                                elem_sim.calculate_espe(rec, optimize=True)
+                                self.result_files.append(os.path.join(
+                                    self.parent.obj.directory,
+                                    rec_elem_prefix_and_name + ".simu"))
 
         if child_count == 0:
             progress_bar.setValue(33)

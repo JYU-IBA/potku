@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 7.5.2019
-Updated on 15.5.2019
+Updated on 16.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -155,6 +155,11 @@ class Nsgaii:
             self.population = self.evaluate_solutions(starting_solutions)
         else:
             self.population = self.initialize_population()
+
+        # If mcerd run was stopped by closing the widget -> optimization
+        # needs to stop
+        if self.element_simulation.optimization_stopped:
+            return
         self.start_optimization()
 
     def crowding_distance(self, front_no, pop_obj=None):
@@ -233,6 +238,8 @@ class Nsgaii:
                                               optimize=True,
                                               stop_p=self.stop_percent,
                                               check_t=self.check_time)
+                if self.element_simulation.optimization_stopped:
+                    return None
                 self.mcerd_run = True
 
             # Create other recoils
@@ -242,6 +249,8 @@ class Nsgaii:
 
         j = 0
         for recoil in self.element_simulation.optimization_recoils:
+            if self.element_simulation.optimization_stopped:
+                return None
             # Run get_espe
             self.element_simulation.calculate_espe(recoil,
                                 optimize=True, ch=self.channel_width)
@@ -617,6 +626,8 @@ class Nsgaii:
             offspring = self.variation(pool[0])
             # Evaluate offspring solutions to get offspring population
             offspring_pop = self.evaluate_solutions(offspring)
+            if self.element_simulation.optimization_stopped:
+                return
             # Join parent population and offspring population
             joined_sols = np.vstack((self.population[0], offspring_pop[0]))
             joined_objs = np.vstack((self.population[1], offspring_pop[1]))

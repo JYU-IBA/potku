@@ -1,6 +1,7 @@
 # coding=utf-8
 """
-Created on 16.5.2019
+Created on 14.5.2019
+Updated on 16.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -42,14 +43,18 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         Initialize the widget.
         """
         super().__init__()
-        # TODO: Make ui file something proper
+        self.element_simulation = element_simulation
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_optimization_results_widget.ui"),
                              self)
+        if self.element_simulation.run is None:
+            run = self.element_simulation.request.default_run
+        else:
+            run = self.element_simulation.run
         self.ui.setWindowTitle(
             "Optimization Results: " +
             element_simulation.recoil_elements[0].element.__str__() +
-            " - " + measured_element)
+            " - " + measured_element + " - fluence: " + str(run.fluence))
         self.recoil_atoms = RecoilAtomOptimizationWidget(self,
                                                          element_simulation)
 
@@ -61,6 +66,25 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         self.ui.close()
         self.ui = None
         self.close()
+
+    def closeEvent(self, evnt):
+        """Reimplemented method when closing widget. Remove existing
+        optimization files. Stop optimization if necessary.
+        """
+        if self.element_simulation.mcerd_objects:
+            self.element_simulation.stop(optimize=True)
+        self.element_simulation.optimization_stopped = True
+
+        # Delete existing files from previous optimization
+        removed_files = []
+        for file in os.listdir(self.element_simulation.directory):
+            if "opt" in file:
+                removed_files.append(file)
+        for rf in removed_files:
+            path = os.path.join(self.element_simulation.directory, rf)
+            os.remove(path)
+
+        super().closeEvent(evnt)
 
     def update_progress(self, evaluations):
         """

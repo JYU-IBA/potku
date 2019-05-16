@@ -119,6 +119,8 @@ class OptimizationDialog(QtWidgets.QDialog):
 
         self.result_widget = None
         self.measured_element = ""
+        self.optimization_thread = None
+        self.check_results_thread = None
 
         self.exec_()
 
@@ -161,7 +163,7 @@ class OptimizationDialog(QtWidgets.QDialog):
         Args:
             measured_element: Which element (cut file) was used in optimization.
         """
-        while True:
+        while not self.element_simulation.optimization_stopped:
             calc_sols = self.element_simulation.calculated_solutions
             self.result_widget.update_progress(calc_sols)
             if self.element_simulation.optimization_done:
@@ -184,15 +186,6 @@ class OptimizationDialog(QtWidgets.QDialog):
         Find necessary cut file and make energy spectrum with it, and start
         optimization with given parameters.
         """
-        # Delete existing files from previous optimization
-        removed_files = []
-        for file in os.listdir(self.element_simulation.directory):
-            if "opt" in file:
-                removed_files.append(file)
-        for rf in removed_files:
-            path = os.path.join(self.element_simulation.directory, rf)
-            os.remove(path)
-
         # Delete previous results widget if it exists
         if self.parent_tab.optimization_result_widget:
             self.parent_tab.del_widget(
@@ -201,6 +194,7 @@ class OptimizationDialog(QtWidgets.QDialog):
             self.element_simulation.optimization_recoils = []
             self.element_simulation.calculated_solutions = 0
             self.element_simulation.optimization_done = False
+            self.element_simulation.optimization_stopped = False
 
         self.close()
         root_for_cut_files = self.ui.measurementTreeWidget.invisibleRootItem()
@@ -261,16 +255,11 @@ class OptimizationDialog(QtWidgets.QDialog):
             recoil_type = "box"
             solution_size = 6
 
-        # Create necessary results widget
-        self.result_widget = self.parent_tab.add_optimization_results_widget(
-            self.element_simulation, item_text)
-
         self.measured_element = item_text
         # Update result widget with progress or results
         thread_results = threading.Thread(
             target=self.check_progress_and_results)
-        thread_results.daemon = True
-        thread_results.start()
+        self.check_results_thread = thread_results
 
         # Run optimization in a thread
         thread = threading.Thread(
@@ -280,5 +269,14 @@ class OptimizationDialog(QtWidgets.QDialog):
                                  True, recoil_type, None, no_of_processes,
                                  crossover_prob, mutation_prob, stop_percent,
                                  check_time, channel_width, hist_file))
-        thread.daemon = True
-        thread.start()
+        self.optimization_thread = thread
+
+        # Create necessary results widget
+        self.result_widget = self.parent_tab.add_optimization_results_widget(
+            self.element_simulation, item_text)
+
+        self.check_results_thread.daemon = True
+        self.check_results_thread.start()
+
+        self.optimization_thread.daemon = True
+        self.optimization_thread.start()
