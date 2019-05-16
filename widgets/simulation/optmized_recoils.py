@@ -74,6 +74,7 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         if self.element_simulation.mcerd_objects:
             self.element_simulation.stop(optimize=True)
         self.element_simulation.optimization_stopped = True
+        self.element_simulation.optimization_widget = None
 
         # Delete existing files from previous optimization
         removed_files = []

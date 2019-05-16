@@ -274,6 +274,7 @@ class OptimizationDialog(QtWidgets.QDialog):
         # Create necessary results widget
         self.result_widget = self.parent_tab.add_optimization_results_widget(
             self.element_simulation, item_text)
+        self.element_simulation.optimization_widget = self.result_widget
 
         self.check_results_thread.daemon = True
         self.check_results_thread.start()

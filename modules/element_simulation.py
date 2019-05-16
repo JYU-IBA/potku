@@ -71,7 +71,7 @@ class ElementSimulation:
                 "simulations_done", "__full_edit_on", "y_min", "main_recoil",\
                 "__erd_files", "optimization_recoils", "__previous_espe", \
                 "__opt_seed", "optimization_done", "calculated_solutions", \
-                "optimization_stopped"
+                "optimization_stopped", "optimization_widget"
 
     def __init__(self, directory, request, recoil_elements,
                  simulation=None, name_prefix="",
@@ -205,6 +205,7 @@ class ElementSimulation:
         self.optimization_done = False
         self.calculated_solutions = 0
         self.optimization_stopped = False
+        self.optimization_widget = None
 
     def unlock_edit(self):
         """

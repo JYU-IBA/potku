@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 27.11.2018
+Updated on 16.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1178,9 +1178,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                                "all possible recoils "
                                                "connected to it will be "
                                                "also deleted." + add
-                                               + "\n\nAre you sure "
-                                                 "you want to delete selected "
-                                                 "element simulation?",
+                                               + "This also applies to possible"
+                                               " optimization.\n\nAre you "
+                                               "sure you want to delete "
+                                               "selected element simulation?",
                                                QtWidgets.QMessageBox.Yes |
                                                QtWidgets.QMessageBox.No |
                                                QtWidgets.QMessageBox.Cancel,
@@ -1194,32 +1195,36 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         # Stop simulation if running
         if add:
-            self.current_element_simulation.stop()
-        # Remove possible other recoil elements
-        for recoil_elem in element_simulation.recoil_elements:
-            if recoil_elem is element_simulation.recoil_elements[0]:
-                continue
-            self.remove_recoil_element(recoil_elem.widgets[0],
-                                       element_simulation, recoil_elem)
-            # Delete energy spectra that use recoil
-            for energy_spectra in self.tab.energy_spectrum_widgets:
-                for element_path in energy_spectra. \
-                        energy_spectrum_data.keys():
-                    elem = recoil_elem.prefix + "-" + recoil_elem.name
-                    if elem in element_path:
-                        index = element_path.find(elem)
-                        if element_path[index - 1] == os.path.sep and \
-                                element_path[index + len(elem)] == '.':
-                            self.tab.del_widget(energy_spectra)
-                            self.tab.energy_spectrum_widgets.remove(
-                                energy_spectra)
-                            save_file_path = os.path.join(
-                                self.simulation.directory,
-                                energy_spectra
-                                    .save_file)
-                            if os.path.exists(save_file_path):
-                                os.remove(save_file_path)
-                            break
+            if self.current_element_simulation.optimization_recoils:
+                self.current_element_simulation.stop(optimize=True)
+                self.current_element_simulation.optimization_stopped = True
+            else:
+                self.current_element_simulation.stop()
+                # Remove possible other recoil elements
+                for recoil_elem in element_simulation.recoil_elements:
+                    if recoil_elem is element_simulation.recoil_elements[0]:
+                        continue
+                    self.remove_recoil_element(recoil_elem.widgets[0],
+                                               element_simulation, recoil_elem)
+                    # Delete energy spectra that use recoil
+                    for energy_spectra in self.tab.energy_spectrum_widgets:
+                        for element_path in energy_spectra. \
+                                energy_spectrum_data.keys():
+                            elem = recoil_elem.prefix + "-" + recoil_elem.name
+                            if elem in element_path:
+                                index = element_path.find(elem)
+                                if element_path[index - 1] == os.path.sep and \
+                                        element_path[index + len(elem)] == '.':
+                                    self.tab.del_widget(energy_spectra)
+                                    self.tab.energy_spectrum_widgets.remove(
+                                        energy_spectra)
+                                    save_file_path = os.path.join(
+                                        self.simulation.directory,
+                                        energy_spectra
+                                            .save_file)
+                                    if os.path.exists(save_file_path):
+                                        os.remove(save_file_path)
+                                    break
         self.current_recoil_element = None
         self.remove_element(element_simulation)
         # Remove recoil lines
@@ -1244,6 +1249,31 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             if os.path.exists(save_file_path):
                                 os.remove(save_file_path)
                             break
+
+        # Handle optimization results
+        if self.current_element_simulation.optimization_recoils:
+            self.tab.del_widget(
+                self.current_element_simulation.optimization_widget)
+            # Delete energy spectra that use optimized recoils
+            for opt_rec in self.current_element_simulation.optimization_recoils:
+                for energy_spectra in self.tab.energy_spectrum_widgets:
+                    for element_path in energy_spectra. \
+                            energy_spectrum_data.keys():
+                        elem = opt_rec.prefix + "-" + opt_rec.name
+                        if elem in element_path:
+                            index = element_path.find(elem)
+                            if element_path[index - 1] == os.path.sep and \
+                                    element_path[index + len(elem)] == '.':
+                                self.tab.del_widget(energy_spectra)
+                                self.tab.energy_spectrum_widgets.remove(
+                                    energy_spectra)
+                                save_file_path = os.path.join(
+                                    self.simulation.directory,
+                                    energy_spectra.save_file)
+                                if os.path.exists(save_file_path):
+                                    os.remove(save_file_path)
+                                break
+
         self.show_other_recoils()
         self.current_element_simulation = None
         self.parent_ui.elementInfoWidget.hide()

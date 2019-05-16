@@ -129,6 +129,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         """
         self.optimization_result_widget = OptimizedRecoilsWidget(
             elem_sim , measurement_elem)
+        elem_sim.optimization_widget = self.optimization_result_widget
         self.add_widget(self.optimization_result_widget)
         return self.optimization_result_widget
 
