@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.5.2019
-Updated on 15.5.2019
+Updated on 16.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -175,6 +175,7 @@ class OptimizationDialog(QtWidgets.QDialog):
                 with open(os.path.join(self.element_simulation.directory,
                                        save_file_name), "w") as f:
                     f.write(self.measured_element)
+                self.result_widget = None
                 break
             time.sleep(5)  # Sleep for 5 seconds to save processing power
 
@@ -191,6 +192,15 @@ class OptimizationDialog(QtWidgets.QDialog):
         for rf in removed_files:
             path = os.path.join(self.element_simulation.directory, rf)
             os.remove(path)
+
+        # Delete previous results widget if it exists
+        if self.parent_tab.optimization_result_widget:
+            self.parent_tab.del_widget(
+                self.parent_tab.optimization_result_widget)
+            self.parent_tab.optimization_result_widget = None
+            self.element_simulation.optimization_recoils = []
+            self.element_simulation.calculated_solutions = 0
+            self.element_simulation.optimization_done = False
 
         self.close()
         root_for_cut_files = self.ui.measurementTreeWidget.invisibleRootItem()
@@ -222,7 +232,7 @@ class OptimizationDialog(QtWidgets.QDialog):
             i += 1
 
         # Hist all selected cut files
-        es = EnergySpectrum(used_measurement, cut_file,
+        es = EnergySpectrum(used_measurement, [cut_file],
                             self.ui.histogramTicksDoubleSpinBox.value(),
                             None)
         es.calculate_spectrum()

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 15.5.2019
+Updated on 16.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -127,9 +127,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
             elem_sim: Element simulation that is being optimized.
             measurement_elem: Measured element used in optimization.
         """
-        # Delete previous results widget if it exists
-        if self.optimization_result_widget:
-            self.del_widget(self.optimization_result_widget)
         self.optimization_result_widget = OptimizedRecoilsWidget(
             elem_sim , measurement_elem)
         self.add_widget(self.optimization_result_widget)
@@ -242,7 +239,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         try:
             self.ui.mdiArea.removeSubWindow(widget.subwindow)
             widget.delete()
-        except Exception as e:
+        except:
             # If window was manually closed, do nothing.
             pass
     

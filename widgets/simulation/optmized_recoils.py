@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Created on 15.5.2019
+Created on 16.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -52,6 +52,15 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
             " - " + measured_element)
         self.recoil_atoms = RecoilAtomOptimizationWidget(self,
                                                          element_simulation)
+
+    def delete(self):
+        """Delete variables and do clean up.
+        """
+        self.recoil_atoms.delete()
+        self.recoil_atoms = None
+        self.ui.close()
+        self.ui = None
+        self.close()
 
     def update_progress(self, evaluations):
         """
