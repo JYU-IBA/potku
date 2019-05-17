@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 17.12.2018
+Updated on 17.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -191,7 +191,8 @@ class _CompositionWidget(MatplotlibWidget):
                 "and either have been simulated or are currently running."
                 "\nIf you save changes, the running simulations "
                 "will be stopped, and the result files of the simulated "
-                "and stopped simulations are deleted.\n\nDo you want to "
+                "and stopped simulations are deleted. This also applies "
+                "to possible optimization.\n\nDo you want to "
                 "save changes anyway?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
                 QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
@@ -203,22 +204,28 @@ class _CompositionWidget(MatplotlibWidget):
                 # Stop simulations
                 tmp_sims = copy.copy(self.simulation.running_simulations)
                 for elem_sim in tmp_sims:
-                    elem_sim.stop()
-                    elem_sim.controls.state_label.setText("Stopped")
-                    elem_sim.controls.run_button.setEnabled(True)
-                    elem_sim.controls.stop_button.setEnabled(False)
-                    # Delete files
-                    for recoil in elem_sim.recoil_elements:
-                        delete_simulation_results(elem_sim, recoil)
+                    if not elem_sim.optimization_running:
+                        elem_sim.stop()
+                        elem_sim.controls.state_label.setText("Stopped")
+                        elem_sim.controls.run_button.setEnabled(True)
+                        elem_sim.controls.stop_button.setEnabled(False)
+                        # Delete files
+                        for recoil in elem_sim.recoil_elements:
+                            delete_simulation_results(elem_sim, recoil)
 
-                    # Change full edit unlocked
-                    elem_sim.recoil_elements[0].widgets[0].parent. \
-                        edit_lock_push_button.setText("Full edit unlocked")
-                    elem_sim.simulations_done = False
+                        # Change full edit unlocked
+                        elem_sim.recoil_elements[0].widgets[0].parent. \
+                            edit_lock_push_button.setText("Full edit unlocked")
+                        elem_sim.simulations_done = False
 
-                    # Reset controls
-                    if elem_sim.controls:
-                        elem_sim.controls.reset_controls()
+                        # Reset controls
+                        if elem_sim.controls:
+                            elem_sim.controls.reset_controls()
+                    else:
+                        # Handle optimization
+                        elem_sim.stop(optimize=True)
+                        elem_sim.optimization_stopped = True
+                        elem_sim.optimization_running = False
 
                 for energy_spectra in self.parent.tab.energy_spectrum_widgets:
                     self.parent.tab.del_widget(energy_spectra)
@@ -246,7 +253,8 @@ class _CompositionWidget(MatplotlibWidget):
                 "There are simulations running that use the current "
                 "target.\nIf you save changes, the running "
                 "simulations will be stopped, and their result files "
-                "deleted.\n\nDo you want to save changes anyway?",
+                "deleted. This also applies to possible optimization.\n\nDo "
+                "you want to save changes anyway?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
                 QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
             if reply == QtWidgets.QMessageBox.No or reply == \
@@ -257,22 +265,28 @@ class _CompositionWidget(MatplotlibWidget):
                 # Stop simulations
                 tmp_sims = copy.copy(self.simulation.running_simulations)
                 for elem_sim in tmp_sims:
-                    elem_sim.stop()
-                    elem_sim.controls.state_label.setText("Stopped")
-                    elem_sim.controls.run_button.setEnabled(True)
-                    elem_sim.controls.stop_button.setEnabled(False)
-                    # Delete files
-                    for recoil in elem_sim.recoil_elements:
-                        delete_simulation_results(elem_sim, recoil)
+                    if not elem_sim.optimization_running:
+                        elem_sim.stop()
+                        elem_sim.controls.state_label.setText("Stopped")
+                        elem_sim.controls.run_button.setEnabled(True)
+                        elem_sim.controls.stop_button.setEnabled(False)
+                        # Delete files
+                        for recoil in elem_sim.recoil_elements:
+                            delete_simulation_results(elem_sim, recoil)
 
-                    # Change full edit unlocked
-                    elem_sim.recoil_elements[0].widgets[0].parent. \
-                        edit_lock_push_button.setText("Full edit unlocked")
-                    elem_sim.simulations_done = False
+                        # Change full edit unlocked
+                        elem_sim.recoil_elements[0].widgets[0].parent. \
+                            edit_lock_push_button.setText("Full edit unlocked")
+                        elem_sim.simulations_done = False
 
-                    # Reset controls
-                    if elem_sim.controls:
-                        elem_sim.controls.reset_controls()
+                        # Reset controls
+                        if elem_sim.controls:
+                            elem_sim.controls.reset_controls()
+                    else:
+                        # Handle optimization
+                        elem_sim.stop(optimize=True)
+                        elem_sim.optimization_stopped = True
+                        elem_sim.optimization_running = False
 
                 for energy_spectra in \
                         self.parent.tab.energy_spectrum_widgets:

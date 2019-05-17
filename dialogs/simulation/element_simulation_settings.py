@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.4.2018
-Updated on 20.8.2018
+Updated on 17.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -284,7 +284,8 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 "This simulation is running and uses " + settings +
                 " settings.\nIf you save changes, the running "
                 "simulation will be stopped, and its result files "
-                "deleted.\n\nDo you want to save changes anyway?",
+                "deleted. This also applies to possible optimization.\n\nDo "
+                "you want to save changes anyway?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
                 QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
             if reply == QtWidgets.QMessageBox.No or reply == \
@@ -292,43 +293,83 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 self.__close = False
                 return
             else:
-                # Stop simulation
-                self.element_simulation.stop()
-                self.element_simulation.controls.state_label.setText("Stopped")
-                self.element_simulation.controls.run_button.setEnabled(True)
-                self.element_simulation.controls.stop_button.setEnabled(False)
-                # Delete files
-                for recoil in self.element_simulation.recoil_elements:
+                if not self.element_simulation.optimization_running:
+                    # Stop simulation
+                    self.element_simulation.stop()
+                    self.element_simulation.controls.state_label.setText("Stopped")
+                    self.element_simulation.controls.run_button.setEnabled(True)
+                    self.element_simulation.controls.stop_button.setEnabled(False)
                     # Delete files
-                    delete_simulation_results(self.element_simulation, recoil)
+                    for recoil in self.element_simulation.recoil_elements:
+                        # Delete files
+                        delete_simulation_results(self.element_simulation, recoil)
 
-                    # Delete energy spectra that use recoil
-                    for energy_spectra in self.tab.energy_spectrum_widgets:
-                        for element_path in energy_spectra. \
-                                energy_spectrum_data.keys():
-                            elem = recoil.prefix + "-" + recoil.name
-                            if elem in element_path:
-                                index = element_path.find(elem)
-                                if element_path[index - 1] == os.path.sep and \
-                                        element_path[index + len(elem)] == '.':
-                                    self.tab.del_widget(energy_spectra)
-                                    self.tab.energy_spectrum_widgets.remove(
-                                        energy_spectra)
-                                    save_file_path = os.path.join(
-                                        self.tab.simulation.directory,
-                                        energy_spectra.save_file)
-                                    if os.path.exists(save_file_path):
-                                        os.remove(save_file_path)
-                                    break
+                        # Delete energy spectra that use recoil
+                        for energy_spectra in self.tab.energy_spectrum_widgets:
+                            for element_path in energy_spectra. \
+                                    energy_spectrum_data.keys():
+                                elem = recoil.prefix + "-" + recoil.name
+                                if elem in element_path:
+                                    index = element_path.find(elem)
+                                    if element_path[index - 1] == os.path.sep and \
+                                            element_path[index + len(elem)] == '.':
+                                        self.tab.del_widget(energy_spectra)
+                                        self.tab.energy_spectrum_widgets.remove(
+                                            energy_spectra)
+                                        save_file_path = os.path.join(
+                                            self.tab.simulation.directory,
+                                            energy_spectra.save_file)
+                                        if os.path.exists(save_file_path):
+                                            os.remove(save_file_path)
+                                        break
 
-                # Reset controls
-                if self.element_simulation.controls:
-                    self.element_simulation.controls.reset_controls()
-                # Change full edit unlocked
-                self.element_simulation.recoil_elements[0].widgets[0].\
-                    parent.edit_lock_push_button.setText(
-                    "Full edit unlocked")
-                self.element_simulation.simulations_done = False
+                    # Reset controls
+                    if self.element_simulation.controls:
+                        self.element_simulation.controls.reset_controls()
+                    # Change full edit unlocked
+                    self.element_simulation.recoil_elements[0].widgets[0].\
+                        parent.edit_lock_push_button.setText(
+                        "Full edit unlocked")
+                    self.element_simulation.simulations_done = False
+                else:
+                    # Handle optimization
+                    self.element_simulation.stop(optimize=True)
+                    self.element_simulation.optimization_stopped = True
+                    self.element_simulation.optimization_running = False
+
+                    # Handle optimization energy spectra
+                    if self.element_simulation.optimization_recoils:
+                        self.tab.del_widget(
+                            self.element_simulation.optimization_widget)
+                        # Delete energy spectra that use
+                        # optimized recoils
+                        for opt_rec in \
+                                self.element_simulation.optimization_recoils:
+                            for energy_spectra in \
+                                    self.tab.energy_spectrum_widgets:
+                                for element_path in energy_spectra. \
+                                        energy_spectrum_data.keys():
+                                    elem = opt_rec.prefix + "-" + opt_rec.name
+                                    if elem in element_path:
+                                        index = element_path.find(
+                                            elem)
+                                        if element_path[
+                                            index - 1] == os.path.sep and \
+                                                element_path[
+                                                    index + len(
+                                                        elem)] == '.':
+                                            self.tab.del_widget(
+                                                energy_spectra)
+                                            self.tab.energy_spectrum_widgets.remove(
+                                                energy_spectra)
+                                            save_file_path = os.path.join(
+                                                self.tab.simulation.directory,
+                                                energy_spectra.save_file)
+                                            if os.path.exists(
+                                                    save_file_path):
+                                                os.remove(
+                                                    save_file_path)
+                                            break
 
         if only_seed_changed:
             # If there are running simulation that use the same seed as the

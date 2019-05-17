@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 14.5.2019
-Updated on 16.5.2019
+Updated on 17.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -71,8 +71,10 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         """Reimplemented method when closing widget. Remove existing
         optimization files. Stop optimization if necessary.
         """
-        if self.element_simulation.mcerd_objects:
+        if self.element_simulation.mcerd_objects and \
+                self.element_simulation.optimization_running:
             self.element_simulation.stop(optimize=True)
+            self.element_simulation.optimization_running = False
         self.element_simulation.optimization_stopped = True
         self.element_simulation.optimization_widget = None
 

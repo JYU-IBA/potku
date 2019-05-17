@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.5.2019
-Updated on 16.5.2019
+Updated on 17.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -167,6 +167,7 @@ class OptimizationDialog(QtWidgets.QDialog):
             calc_sols = self.element_simulation.calculated_solutions
             self.result_widget.update_progress(calc_sols)
             if self.element_simulation.optimization_done:
+                self.element_simulation.optimization_running = False
                 self.result_widget.show_results(calc_sols)
                 # Save optimized recoils
                 for recoil in self.element_simulation.optimization_recoils:
@@ -195,6 +196,7 @@ class OptimizationDialog(QtWidgets.QDialog):
             self.element_simulation.calculated_solutions = 0
             self.element_simulation.optimization_done = False
             self.element_simulation.optimization_stopped = False
+            self.element_simulation.optimization_running = False
 
         self.close()
         root_for_cut_files = self.ui.measurementTreeWidget.invisibleRootItem()
@@ -281,3 +283,5 @@ class OptimizationDialog(QtWidgets.QDialog):
 
         self.optimization_thread.daemon = True
         self.optimization_thread.start()
+
+        self.element_simulation.optimization_running = True
