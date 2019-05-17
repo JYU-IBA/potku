@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 7.5.2019
-Updated on 16.5.2019
+Updated on 17.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -71,7 +71,7 @@ class Nsgaii:
             lower_limits: Lower limit(s) for a variable in a solution.
             optimize_recoil: Whether to optimize recoil or fluence.
             recoil_type: Type of recoil: either "box" (4 points or 5),
-            "two_peak" (high areas at both ends of recoil, low in the middle)
+            "two-peak" (high areas at both ends of recoil, low in the middle)
              or "free" (no limits to the shape of the recoil).
             starting_solutions: First solutions used in optimization. If
             none, initialize new solutions.
@@ -124,14 +124,6 @@ class Nsgaii:
         self.__const_var_i = []
         self.bit_length_x = 0
         self.bit_length_y = 0
-
-        # TODO: dynamic hist file
-        # hist_file = r"C:\Users\Heta\potku\requests\gradu_testi.potku" \
-        #                  r"\Sample_01-s1\Measurement_01-m1\Energy_spectra\m1" \
-        #                  r".16O.ERD.0.hist"
-        # hist_file = r"C:\Users\drums\potku\requests\testi3112019.potku" \
-        #                  r"\Sample_01-sample1\Measurement_01-measurement1" \
-        #             r"\Energy_spectra\measurement1.16O.ERD.0.hist"
 
         with open(self.hist_file, "r") as measu:
             results = measu.readlines()
@@ -230,7 +222,6 @@ class Nsgaii:
             # population will always cover the whole x axis range between
             # lower and upper values -> mcerd never needs to be run again
             current_recoil = self.form_recoil(sols[0])
-            # TODO: Handle other types of recoils
             # Run mcerd for first solution
             self.element_simulation.optimization_recoils.append(current_recoil)
             if not self.mcerd_run:
@@ -353,7 +344,34 @@ class Nsgaii:
             points.append(Point(point_3))
             points.append(Point(point_4))
 
-        color = color = QtGui.QColor("red")
+        elif self.sol_size == 7:  # 6-point recoil, doesn't start at the surface
+            # Order x:s in ascending way
+            xs = [current_solution[2], current_solution[4], current_solution[6]]
+            xs.sort()
+            point_1 = (current_solution[0], current_solution[1])
+            point_2 = (xs[0], current_solution[1])
+
+            x_3 = round(xs[0] + 0.01, 2)
+            point_3 = (x_3, current_solution[3])
+            point_4 = (xs[1], current_solution[3])
+
+            x_5 = round(xs[1] + 0.01, 2)
+            point_5 = (x_5, current_solution[5])
+            point_6 = (xs[2], current_solution[5])
+
+            points.append(Point(point_1))
+            points.append(Point(point_2))
+            points.append(Point(point_3))
+            points.append(Point(point_4))
+            points.append(Point(point_5))
+            points.append(Point(point_6))
+        elif self.sol_size == 9:  # 8-point two peak recoil, starts at the
+            # surface
+            pass
+        else:  # 11-point two peak recoil, doesn't start at the surface
+            pass
+
+        color = QtGui.QColor("red")
         # Form a recoil object
         if not name:
             name = "opt"
@@ -374,9 +392,6 @@ class Nsgaii:
         init_sols = None
         if self.opt_recoil:  # Optimize recoil element
             if self.rec_type == "box":
-                # Needed variables per solution: y0, x1, y1, x2 (x0 always 0)
-                # For x decimal 0.01, for y 0.0001
-                # TODO: Make this work for other than two y values
                 if len(self.upper_limits) < 2:
                     x_upper = 1.0
                     y_upper = 1.0
@@ -390,49 +405,104 @@ class Nsgaii:
                     x_lower = self.lower_limits[0]
                     y_lower = self.lower_limits[1]
 
-                # Create x coordinates (ints)
-                x_coords = np.random.randint(int(x_lower * 100),
-                                             int(x_upper * 100) + 1,
-                                             size=(self.pop_size - 1))
-                # Make x coords have the correct decimal precision
-                x_coords = np.around(x_coords/100, 2)
-                # Add x0
-                zeros = np.zeros(self.pop_size - 1)
-                x_coords = np.vstack((zeros, x_coords)).T
-                # Add x0 index to constant variables
-                self.__const_var_i.append(0)
-                # Make last x match the upper limit, add to constants
-                x_lasts = np.full((self.pop_size - 1, 1), x_upper)
-                x_coords = np.append(x_coords, x_lasts, axis=1)
-                self.__const_var_i.append(4)
+                if self.sol_size == 5:  # 4-point recoil
+                    # Needed variables per solution for 4-point recoil:
+                    # x0, y0, x1, y1, x2 (x0, y1 and x2 constants)
+                    # Create x coordinates (ints)
+                    x_coords = np.random.randint(int(x_lower * 100),
+                                                 int(x_upper * 100) + 1,
+                                                 size=(self.pop_size - 1))
+                    # Make x coords have the correct decimal precision
+                    x_coords = np.around(x_coords/100, 2)
+                    # Add x0
+                    zeros = np.zeros(self.pop_size - 1)
+                    x_coords = np.vstack((zeros, x_coords)).T
+                    # Add x0 index to constant variables
+                    self.__const_var_i.append(0)
+                    # Make last x match the upper limit, add to constants
+                    x_lasts = np.full((self.pop_size - 1, 1), x_upper)
+                    x_coords = np.append(x_coords, x_lasts, axis=1)
+                    self.__const_var_i.append(4)
 
-                # Create y coordinates
-                y_coords = np.random.randint(int(y_lower * 10000),
-                                             int(y_upper * 10000) + 1,
-                                             size=(self.pop_size - 1))
-                # Make y coords have the correct decimal precision
-                y_coords = np.around(y_coords / 10000, 4)
-                # Make last y coords be lower limit
-                y_lasts = np.full(self.pop_size - 1, y_lower)
-                y_coords = np.array([y_coords, y_lasts])
-                # Add y1 to constants
-                self.__const_var_i.append(3)
+                    # Create y coordinates
+                    y_coords = np.random.randint(int(y_lower * 10000),
+                                                 int(y_upper * 10000) + 1,
+                                                 size=(self.pop_size - 1))
+                    # Make y coords have the correct decimal precision
+                    y_coords = np.around(y_coords / 10000, 4)
+                    # Make last y coords be lower limit
+                    y_lasts = np.full(self.pop_size - 1, y_lower)
+                    y_coords = np.array([y_coords, y_lasts])
+                    # Add y1 to constants
+                    self.__const_var_i.append(3)
 
-                # Sort x elements in ascending order
-                x_coords.sort(axis=1)
+                    # Sort x elements in ascending order
+                    x_coords.sort(axis=1)
 
-                # Add as first solution coordinate values that make simulation
-                # concern the whole x coordinate range
-                first_x = np.array([0.0, round((x_upper - x_lower)/2, 2),
-                                   x_upper])
-                x_coords_full = np.insert(x_coords, 0, first_x, axis=0)
-                first_y = np.array([round((y_upper - y_lower)/2, 2), 0.0001])
-                y_coords_full = np.insert(y_coords, 0, first_y, axis=1)
+                    # Add as first solution coordinate values that make
+                    # simulation concern the whole x coordinate range
+                    first_x = np.array([0.0, round((x_upper - x_lower)/2, 2),
+                                       x_upper])
+                    x_coords_full = np.insert(x_coords, 0, first_x, axis=0)
+                    first_y = np.array([round((y_upper - y_lower)/2, 4),
+                                        0.0001])
+                    y_coords_full = np.insert(y_coords, 0, first_y, axis=1)
+
+                else:  # Handle 6-point recoil
+                    # Needed variables per solution for 6-point recoil:
+                    # x0, y0, x1, y1, x2, y2, x3 (x0, y0, y2 and x3 constants)
+                    # Create x coordinates (ints)
+                    x_coords = np.random.randint(int(x_lower * 100),
+                                                 int(x_upper * 100) + 1,
+                                                 size=(self.pop_size - 1, 2))
+                    # Make x coords have the correct decimal precision
+                    x_coords = np.around(x_coords / 100, 2)
+                    # Add x0
+                    zeros = np.zeros(self.pop_size - 1)
+                    x_coords = np.insert(x_coords, 0, zeros, axis=1)
+                    # Add x0 index to constant variables
+                    self.__const_var_i.append(0)
+
+                    # Make x3 match the upper limit, add to constants
+                    x_lasts = np.full((self.pop_size - 1, 1), x_upper)
+                    x_coords = np.append(x_coords, x_lasts, axis=1)
+                    self.__const_var_i.append(6)
+
+                    # Create y coordinates
+                    y_coords = np.random.randint(int(y_lower * 10000),
+                                                 int(y_upper * 10000) + 1,
+                                                 size=(self.pop_size - 1))
+                    # Make y coords have the correct decimal precision
+                    y_coords = np.around(y_coords / 10000, 4)
+                    # Make y0 coords be lower limit
+                    y_firsts = np.full(self.pop_size - 1, y_lower)
+                    # Make y2 coords be lower limit
+                    y_lasts = np.full(self.pop_size - 1, y_lower)
+                    y_coords = np.array([y_firsts, y_coords, y_lasts])
+                    # Add y0 and y2 to constants
+                    self.__const_var_i.append(1)
+                    self.__const_var_i.append(5)
+
+                    # Sort x elements in ascending order
+                    x_coords.sort(axis=1)
+
+                    # Add as first solution coordinate values that make
+                    # simulation concern the whole x coordinate range
+                    first_x = np.array([0.0,
+                                        round((x_upper - x_lower) / 3, 2),
+                                        round(2 * ((x_upper - x_lower) / 3), 2),
+                                        x_upper])
+                    x_coords_full = np.insert(x_coords, 0, first_x, axis=0)
+                    first_y = np.array([0.0001,
+                                        round((y_upper - y_lower) / 2, 4),
+                                        0.0001])
+                    y_coords_full = np.insert(y_coords, 0, first_y, axis=1)
 
                 i = 1
                 j = 0
                 init_sols = x_coords_full
                 # init_sols will be x, y, x, y, x (4-point recoil)
+                # x, y, x, y, x, y, x (6-point recoil)
                 while i < self.sol_size:
                     init_sols = np.insert(init_sols, i, y_coords_full[j],
                                           axis=1)
@@ -617,7 +687,6 @@ class Nsgaii:
             fit = np.vstack((front_no, crowd_dis)).T
             # Select group of parents (mating pool) by binary_tournament,
             # usually number of parents is half of population.
-            # TODO: mating pool size user-determined
             pool_size = round(self.pop_size / 2)
             pool_ind = tournament_allow_doubles(2, pool_size, fit)
             pop_sol, pop_obj = self.population[0], self.population[1]

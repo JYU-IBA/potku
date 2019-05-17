@@ -402,6 +402,21 @@
              <string>4-point box</string>
             </property>
            </item>
+           <item>
+            <property name="text">
+             <string>6-point box</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>8-point two-peak</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>10-point two-peak</string>
+            </property>
+           </item>
           </widget>
          </item>
         </layout>

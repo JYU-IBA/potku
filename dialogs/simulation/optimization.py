@@ -253,9 +253,15 @@ class OptimizationDialog(QtWidgets.QDialog):
         if self.ui.recoilTypeComboBox.currentText() == "4-point box":
             recoil_type = "box"
             solution_size = 5
-        else:
+        elif self.ui.recoilTypeComboBox.currentText() == "6-point box":
             recoil_type = "box"
-            solution_size = 6
+            solution_size = 7
+        elif self.ui.recoilTypeComboBox.currentText() == "8-point two-peak":
+            recoil_type = "two-peak"
+            solution_size = 9
+        else:
+            recoil_type = "two-peak"
+            solution_size = 11
 
         self.measured_element = item_text
         # Update result widget with progress or results
