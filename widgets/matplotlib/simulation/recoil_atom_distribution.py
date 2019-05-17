@@ -617,7 +617,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if self.edit_lock_push_button.text() == "Unlock full edit":
             stop_simulation = False
             # Check if current element simulation is running
-            if self.current_element_simulation.mcerd_objects:
+            if self.current_element_simulation.mcerd_objects and not\
+                    self.current_element_simulation.optimization_running:
                 add = "Are you sure you want to unlock full edit for this" \
                       " running element simulation?\nIt will be stopped and " \
                       "all its simulation results will be deleted.\n\nUnlock " \
