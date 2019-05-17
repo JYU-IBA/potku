@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.5.2019
-Updated on 15.5.2019
+Updated on 17.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -25,7 +25,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-from modules.general_functions import to_superscript
+import matplotlib
 
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QLocale
@@ -38,17 +38,24 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
     """
     Class for showing optimized recoil elements.
     """
+    color_scheme = {"Default color": "jet",
+                    "Greyscale": "Greys",
+                    "Greyscale (inverted)": "gray"}
     tool_modes = {0: "",
                   1: "pan/zoom",  # Matplotlib's drag
                   2: "zoom rect"  # Matplotlib's zoom
                   }
 
-    def __init__(self, parent, element_simulation):
+    def __init__(self, parent, element_simulation, target):
         super().__init__(parent)
         self.parent = parent
         self.element_simulation = element_simulation
+        self.target = target
         self.locale = QLocale.c()
 
+        self.trans = matplotlib.transforms.blended_transform_factory(
+            self.axes.transData, self.axes.transAxes)
+        self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
         self.axes.format_coord = self.format_coord
 
         self.current_recoil = None
@@ -198,6 +205,26 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
 
         self.axes.set_xlim(-1, 40)
         self.axes.set_ylim(-0.1, 2)
+
+        y = 0.95
+        next_layer_position = 0
+        target_thickness = 0
+        for idx, layer in enumerate(self.target.layers):
+            target_thickness += layer.thickness
+            self.axes.axvspan(
+                next_layer_position, next_layer_position + layer.thickness,
+                facecolor=self.layer_colors[idx % 2]
+            )
+
+            # Put annotation in the middle of the rectangular patch.
+            self.axes.text(layer.start_depth, y, layer.name,
+                           transform=self.trans, fontsize=10, ha="left")
+            y = y - 0.05
+            if y <= 0.1:
+                y = 0.95
+
+            # Move the position where the next layer starts.
+            next_layer_position += layer.thickness
 
         # Remove axis ticks and draw
         self.remove_axes_ticks()

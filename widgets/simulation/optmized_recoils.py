@@ -38,7 +38,7 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
     """
     Class to show the results of optimization. Also shows the progress.
     """
-    def __init__(self, element_simulation, measured_element):
+    def __init__(self, element_simulation, measured_element, target):
         """
         Initialize the widget.
         """
@@ -56,7 +56,8 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
             element_simulation.recoil_elements[0].element.__str__() +
             " - " + measured_element + " - fluence: " + str(run.fluence))
         self.recoil_atoms = RecoilAtomOptimizationWidget(self,
-                                                         element_simulation)
+                                                         element_simulation,
+                                                         target)
 
     def delete(self):
         """Delete variables and do clean up.
