@@ -365,11 +365,127 @@ class Nsgaii:
             points.append(Point(point_4))
             points.append(Point(point_5))
             points.append(Point(point_6))
+        # For these two, the y coordinate between peaks should eb lower than
+        # the peaks' y coordinates -> make adjustment like in x
         elif self.sol_size == 9:  # 8-point two peak recoil, starts at the
             # surface
-            pass
-        else:  # 11-point two peak recoil, doesn't start at the surface
-            pass
+            xs = [current_solution[2], current_solution[4], current_solution[
+                6], current_solution[8]]
+            xs.sort()
+            # Find second smallest y value, use it for y1 (smallest is last y)
+            second_smallest = current_solution[1]
+            i = 3
+            ss_i = 1
+            while i in range(len(current_solution)):
+                if i == 7:  # Last y doesn't count
+                    break
+                sol = current_solution[i]
+                if sol < second_smallest:
+                    ss_i = i
+                    second_smallest = sol
+                i += 2
+
+            if ss_i == 1:
+                point_1 = (current_solution[0], current_solution[3])
+                point_2 = (xs[0], current_solution[3])
+            else:
+                point_1 = (current_solution[0], current_solution[1])
+                point_2 = (xs[0], current_solution[1])
+
+            x_3 = round(xs[0] + 0.01, 2)
+            if ss_i == 3:
+                point_3 = (x_3, current_solution[3])
+                point_4 = (xs[1], current_solution[3])
+            else:
+                point_3 = (x_3, second_smallest)
+                point_4 = (xs[1], second_smallest)
+
+            x_5 = round(xs[1] + 0.01, 2)
+            if ss_i == 5:
+                point_5 = (x_5, current_solution[3])
+                point_6 = (xs[2], current_solution[3])
+            else:
+                point_5 = (x_5, current_solution[5])
+                point_6 = (xs[2], current_solution[5])
+
+            x_7 = round(xs[2] + 0.01, 2)
+            if ss_i == 7:
+                point_7 = (x_7, current_solution[3])
+                point_8 = (xs[3], current_solution[3])
+            else:
+                point_7 = (x_7, current_solution[7])
+                point_8 = (xs[3], current_solution[7])
+
+            points.append(Point(point_1))
+            points.append(Point(point_2))
+            points.append(Point(point_3))
+            points.append(Point(point_4))
+            points.append(Point(point_5))
+            points.append(Point(point_6))
+            points.append(Point(point_7))
+            points.append(Point(point_8))
+        else:  # 10-point two peak recoil, doesn't start at the surface
+            xs = [current_solution[2], current_solution[4], current_solution[
+                6], current_solution[8], current_solution[10]]
+            xs.sort()
+            # Find second smallest y value, use it for y1 (smallest is last y)
+            second_smallest = current_solution[3]
+            i = 5
+            ss_i = 3
+            while i in range(len(current_solution)):
+                if i == 9:  # Last y doesn't count
+                    break
+                sol = current_solution[i]
+                if sol < second_smallest:
+                    ss_i = i
+                    second_smallest = sol
+                i += 2
+
+            point_1 = (current_solution[0], current_solution[1])
+            point_2 = (xs[0], current_solution[1])
+
+            x_3 = round(xs[0] + 0.01, 2)
+            if ss_i == 3:
+                point_3 = (x_3, current_solution[5])
+                point_4 = (xs[1], current_solution[5])
+            else:
+                point_3 = (x_3, current_solution[3])
+                point_4 = (xs[1], current_solution[3])
+
+            x_5 = round(xs[1] + 0.01, 2)
+            if ss_i == 5:
+                point_5 = (x_5, current_solution[5])
+                point_6 = (xs[2], current_solution[5])
+            else:
+                point_5 = (x_5, second_smallest)
+                point_6 = (xs[2], second_smallest)
+
+            x_7 = round(xs[2] + 0.01, 2)
+            if ss_i == 7:
+                point_7 = (x_7, current_solution[5])
+                point_8 = (xs[3], current_solution[5])
+            else:
+                point_7 = (x_7, current_solution[7])
+                point_8 = (xs[3], current_solution[7])
+
+            x_9 = round(xs[3] + 0.01, 2)
+            if ss_i == 9:
+                point_9 = (x_9, current_solution[5])
+                point_10 = (xs[4], current_solution[5])
+            else:
+                point_9 = (x_9, current_solution[9])
+                point_10 = (xs[4], current_solution[9])
+
+            points.append(Point(point_1))
+            points.append(Point(point_2))
+            points.append(Point(point_3))
+            points.append(Point(point_4))
+            points.append(Point(point_5))
+            points.append(Point(point_6))
+            points.append(Point(point_7))
+            points.append(Point(point_8))
+            points.append(Point(point_9))
+            points.append(Point(point_10))
 
         color = QtGui.QColor("red")
         # Form a recoil object
@@ -391,20 +507,19 @@ class Nsgaii:
         """
         init_sols = None
         if self.opt_recoil:  # Optimize recoil element
+            if len(self.upper_limits) < 2:
+                x_upper = 1.0
+                y_upper = 1.0
+            else:
+                x_upper = self.upper_limits[0]
+                y_upper = self.upper_limits[1]
+            if len(self.lower_limits) < 2:
+                x_lower = 0.0
+                y_lower = 0.0
+            else:
+                x_lower = self.lower_limits[0]
+                y_lower = self.lower_limits[1]
             if self.rec_type == "box":
-                if len(self.upper_limits) < 2:
-                    x_upper = 1.0
-                    y_upper = 1.0
-                else:
-                    x_upper = self.upper_limits[0]
-                    y_upper = self.upper_limits[1]
-                if len(self.lower_limits) < 2:
-                    x_lower = 0.0
-                    y_lower = 0.0
-                else:
-                    x_lower = self.lower_limits[0]
-                    y_lower = self.lower_limits[1]
-
                 if self.sol_size == 5:  # 4-point recoil
                     # Needed variables per solution for 4-point recoil:
                     # x0, y0, x1, y1, x2 (x0, y1 and x2 constants)
@@ -498,16 +613,125 @@ class Nsgaii:
                                         0.0001])
                     y_coords_full = np.insert(y_coords, 0, first_y, axis=1)
 
-                i = 1
-                j = 0
-                init_sols = x_coords_full
-                # init_sols will be x, y, x, y, x (4-point recoil)
-                # x, y, x, y, x, y, x (6-point recoil)
-                while i < self.sol_size:
-                    init_sols = np.insert(init_sols, i, y_coords_full[j],
-                                          axis=1)
-                    i += 2
-                    j += 1
+            else:  # Two-peak recoil
+                if self.sol_size == 9:  # First peak at the surface
+                    # Needed variables per solution for 6-point recoil:
+                    # x0, y0, x1, y1, x2, y2, x3, y3, x4
+                    # (x0, y3 and x4 constants)
+                    # Create x coordinates (ints)
+                    x_coords = np.random.randint(int(x_lower * 100),
+                                                 int(x_upper * 100) + 1,
+                                                 size=(self.pop_size - 1, 3))
+
+                    # Make x coords have the correct decimal precision
+                    x_coords = np.around(x_coords / 100, 2)
+                    # Add x0
+                    zeros = np.zeros(self.pop_size - 1)
+                    x_coords = np.insert(x_coords, 0, zeros, axis=1)
+                    # Add x0 index to constant variables
+                    self.__const_var_i.append(0)
+
+                    # Make x4 match the upper limit, add to constants
+                    x_lasts = np.full((self.pop_size - 1, 1), x_upper)
+                    x_coords = np.append(x_coords, x_lasts, axis=1)
+                    self.__const_var_i.append(8)
+
+                    # Create y coordinates
+                    y_coords = np.random.randint(int(y_lower * 10000),
+                                                 int(y_upper * 10000) + 1,
+                                                 size=(3, self.pop_size - 1))
+                    # Make y coords have the correct decimal precision
+                    y_coords = np.around(y_coords / 10000, 4)
+                    # Make y3 coords be lower limit
+                    y_lasts = np.full(self.pop_size - 1, y_lower)
+                    y_coords = np.array([y_coords[0], y_coords[1],
+                                         y_coords[2], y_lasts])
+                    # Add y3 to constants
+                    self.__const_var_i.append(7)
+
+                    # Sort x elements in ascending order
+                    x_coords.sort(axis=1)
+
+                    # Add as first solution coordinate values that make
+                    # simulation concern the whole x coordinate range
+                    first_x = np.array([0.0,
+                                        round((x_upper - x_lower) / 4, 2),
+                                        round((x_upper - x_lower) / 2, 2),
+                                        round(3 * ((x_upper - x_lower) / 4), 2),
+                                        x_upper])
+                    x_coords_full = np.insert(x_coords, 0, first_x, axis=0)
+                    first_y = np.array([round((y_upper - y_lower) / 2, 4),
+                                        0.0001,
+                                       round((y_upper - y_lower) / 2, 4),
+                                        0.0001])
+                    y_coords_full = np.insert(y_coords, 0, first_y, axis=1)
+                else:  # First peak not at the surface
+                    # Needed variables per solution for 6-point recoil:
+                    # x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5
+                    # (x0, y0, y4 and x5 constants)
+                    # Create x coordinates (ints)
+                    x_coords = np.random.randint(int(x_lower * 100),
+                                                 int(x_upper * 100) + 1,
+                                                 size=(self.pop_size - 1, 4))
+
+                    # Make x coords have the correct decimal precision
+                    x_coords = np.around(x_coords / 100, 2)
+                    # Add x0
+                    zeros = np.zeros(self.pop_size - 1)
+                    x_coords = np.insert(x_coords, 0, zeros, axis=1)
+                    # Add x0 index to constant variables
+                    self.__const_var_i.append(0)
+
+                    # Make x5 match the upper limit, add to constants
+                    x_lasts = np.full((self.pop_size - 1, 1), x_upper)
+                    x_coords = np.append(x_coords, x_lasts, axis=1)
+                    self.__const_var_i.append(10)
+
+                    # Create y coordinates
+                    y_coords = np.random.randint(int(y_lower * 10000),
+                                                 int(y_upper * 10000) + 1,
+                                                 size=(3, self.pop_size - 1))
+                    # Make y coords have the correct decimal precision
+                    y_coords = np.around(y_coords / 10000, 4)
+                    # Make y0 coords be lower limit
+                    y_firsts = np.full(self.pop_size - 1, y_lower)
+                    # Make y4 coords be lower limit
+                    y_lasts = np.full(self.pop_size - 1, y_lower)
+                    y_coords = np.array([y_firsts, y_coords[0], y_coords[1],
+                                         y_coords[2], y_lasts])
+                    # Add y0 and y4 to constants
+                    self.__const_var_i.append(1)
+                    self.__const_var_i.append(9)
+
+                    # Sort x elements in ascending order
+                    x_coords.sort(axis=1)
+
+                    # Add as first solution coordinate values that make
+                    # simulation concern the whole x coordinate range
+                    first_x = np.array([0.0,
+                                        round((x_upper - x_lower) / 5, 2),
+                                        round(2 * (x_upper - x_lower) / 5, 2),
+                                        round(3 * ((x_upper - x_lower) / 5), 2),
+                                        round(4 * ((x_upper - x_lower) / 5), 2),
+                                        x_upper])
+                    x_coords_full = np.insert(x_coords, 0, first_x, axis=0)
+                    first_y = np.array([0.0001,
+                                        round((y_upper - y_lower) / 2, 4),
+                                        0.0001,
+                                        round((y_upper - y_lower) / 2, 4),
+                                        0.0001])
+                    y_coords_full = np.insert(y_coords, 0, first_y, axis=1)
+
+            i = 1
+            j = 0
+            init_sols = x_coords_full
+            # init_sols will be x, y, x, y, x (4-point recoil)
+            # x, y, x, y, x, y, x (6-point recoil)
+            while i < self.sol_size:
+                init_sols = np.insert(init_sols, i, y_coords_full[j],
+                                      axis=1)
+                i += 2
+                j += 1
         else:
             pass
             # Change upper and lower limits to have individual indices
