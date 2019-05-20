@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 10.5.2019
+Updated on 20.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -887,3 +887,22 @@ def format_to_binary(var, length):
     except ValueError:
         format_var = var_bin.zfill(length)
     return format_var
+
+
+def round_value_by_biggest(value):
+    """
+    Round given value by its biggest number. E.g. 12.4 -> 10, 368 -> 400.
+
+    Args:
+        value: Value to round.
+
+    Return:
+        Rounded value.
+    """
+    round_val = round(value)
+    round_string_val = str(round_val)
+    round_val_length = len(round_string_val)
+    first = round_val / (round_val_length - 1)
+    first_round = round(first)
+    sol_flnal = first_round * (round_val_length - 1)
+    return sol_flnal

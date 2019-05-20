@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.5.2019
-Updated on 17.5.2019
+Updated on 20.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -37,6 +37,11 @@ from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 from PyQt5 import QtWidgets
 
+from widgets.simulation.optimization_fluence_parameters import \
+    OptimizationFluenceParameterWidget
+from widgets.simulation.optimization_recoil_parameters import \
+    OptimizationRecoilParameterWidget
+
 
 class OptimizationDialog(QtWidgets.QDialog):
     def __init__(self, simulation, parent):
@@ -48,14 +53,11 @@ class OptimizationDialog(QtWidgets.QDialog):
             os.path.join("ui_files", "ui_optimization_params.ui"), self)
 
         locale = QLocale.c()
+        self.parameters_widget = OptimizationRecoilParameterWidget()
+        self.recoil_parameters = self.save_recoil_parameters()
+        self.fluence_parameters = []
+
         self.ui.histogramTicksDoubleSpinBox.setLocale(locale)
-        self.upperXDoubleSpinBox.setLocale(locale)
-        self.lowerXDoubleSpinBox.setLocale(locale)
-        self.upperYDoubleSpinBox.setLocale(locale)
-        self.lowerYDoubleSpinBox.setLocale(locale)
-        self.crossoverProbDoubleSpinBox.setLocale(locale)
-        self.mutationProbDoubleSpinBox.setLocale(locale)
-        self.percentDoubleSpinBox.setLocale(locale)
 
         self.element_simulation = None
         self.selected_cut_file = None
@@ -63,6 +65,15 @@ class OptimizationDialog(QtWidgets.QDialog):
 
         self.ui.pushButton_Cancel.clicked.connect(self.close)
         self.ui.pushButton_OK.clicked.connect(self.start_optimization)
+
+        self.radios = QtWidgets.QButtonGroup(self)
+        self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
+            self.choose_optimization_mode)
+        self.current_mode = "recoil"
+        self.ui.parametersLayout.addWidget(self.parameters_widget)
+
+        self.radios.addButton(self.ui.fluenceRadioButton)
+        self.radios.addButton(self.ui.recoilRadioButton)
 
         self.result_files = []
         for file in os.listdir(self.parent_tab.obj.directory):
@@ -182,6 +193,82 @@ class OptimizationDialog(QtWidgets.QDialog):
                 break
             time.sleep(5)  # Sleep for 5 seconds to save processing power
 
+    def choose_optimization_mode(self, button, checked):
+        """
+        Choose whether to optimize recoils or fluence. Show correct ui.
+        """
+        if checked:
+            if button.text() == "Recoil":
+                self.fluence_parameters = self.save_fluence_parameters()
+                self.current_mode = "recoil"
+                # Clear fluence stuff
+                self.ui.parametersLayout.removeWidget(self.parameters_widget)
+                # Add recoil stuff
+                self.parameters_widget.deleteLater()
+                self.parameters_widget = OptimizationRecoilParameterWidget(
+                    self.recoil_parameters)
+                self.ui.parametersLayout.addWidget(self.parameters_widget)
+            else:
+                self.recoil_parameters = self.save_recoil_parameters()
+                self.current_mode = "fluence"
+                # Clear recoil stuff
+                self.ui.parametersLayout.removeWidget(self.parameters_widget)
+                self.parameters_widget.deleteLater()
+                # Add fluence stuff
+                self.parameters_widget = OptimizationFluenceParameterWidget(
+                    self.fluence_parameters)
+                self.ui.parametersLayout.addWidget(self.parameters_widget)
+
+    def save_fluence_parameters(self):
+        """
+        Save optimization fluence parameters.
+
+        Return:
+            List of used paramaters.
+        """
+        population_size = self.parameters_widget.populationSpinBox.value()
+        generations = self.parameters_widget.generationSpinBox.value()
+        no_of_processes = self.parameters_widget.processesSpinBox.value()
+        stop_percent = self.parameters_widget.percentDoubleSpinBox.value()
+        check_time = self.parameters_widget.timeSpinBox.value()
+
+        crossover_prob = self.parameters_widget.crossoverProbDoubleSpinBox.value()
+        mutation_prob = self.parameters_widget.mutationProbDoubleSpinBox.value()
+        dist_index_crossover = self.parameters_widget.disCSpinBox.value()
+        dist_index_mutation = self.parameters_widget.disMSpinBox.value()
+
+        params = [population_size, generations, no_of_processes,
+                  stop_percent, check_time, crossover_prob, mutation_prob,
+                  dist_index_crossover, dist_index_mutation]
+        return params
+
+    def save_recoil_parameters(self):
+        """
+        Save optimization recoil parameters.
+
+        Return:
+            List of used parameters.
+        """
+        upper_x = self.parameters_widget.upperXDoubleSpinBox.value()
+        lower_x = self.parameters_widget.lowerXDoubleSpinBox.value()
+        upper_y = self.parameters_widget.upperYDoubleSpinBox.value()
+        lower_y = self.parameters_widget.lowerYDoubleSpinBox.value()
+        crossover_prob = self.parameters_widget.crossoverProbDoubleSpinBox.value()
+        mutation_prob = self.parameters_widget.mutationProbDoubleSpinBox.value()
+        stop_percent = self.parameters_widget.percentDoubleSpinBox.value()
+
+        population_size = self.parameters_widget.populationSpinBox.value()
+        generations = self.parameters_widget.generationSpinBox.value()
+        no_of_processes = self.parameters_widget.processesSpinBox.value()
+        check_time = self.parameters_widget.timeSpinBox.value()
+
+        recoil_type = self.parameters_widget.recoilTypeComboBox.currentText()
+
+        params = [upper_x, lower_x, upper_y, lower_y, population_size,
+                  generations, no_of_processes, crossover_prob,
+                  mutation_prob, stop_percent, check_time, recoil_type]
+        return params
+
     def start_optimization(self):
         """
         Find necessary cut file and make energy spectrum with it, and start
@@ -193,6 +280,7 @@ class OptimizationDialog(QtWidgets.QDialog):
                 self.parent_tab.optimization_result_widget)
             self.parent_tab.optimization_result_widget = None
             self.element_simulation.optimization_recoils = []
+            self.element_simulation.optimized_fluence = 0
             self.element_simulation.calculated_solutions = 0
             self.element_simulation.optimization_done = False
             self.element_simulation.optimization_stopped = False
@@ -237,31 +325,52 @@ class OptimizationDialog(QtWidgets.QDialog):
                                  item_text + ".hist")
 
         channel_width = self.ui.histogramTicksDoubleSpinBox.value()
-        upper_x = self.upperXDoubleSpinBox.value()
-        lower_x = self.lowerXDoubleSpinBox.value()
-        upper_y = self.upperYDoubleSpinBox.value()
-        lower_y = self.lowerYDoubleSpinBox.value()
-        crossover_prob = self.crossoverProbDoubleSpinBox.value()
-        mutation_prob = self.mutationProbDoubleSpinBox.value()
-        stop_percent = self.percentDoubleSpinBox.value()
+        crossover_prob = self.parameters_widget.crossoverProbDoubleSpinBox.value()
+        mutation_prob = self.parameters_widget.mutationProbDoubleSpinBox.value()
+        stop_percent = self.parameters_widget.percentDoubleSpinBox.value()
 
-        population_size = self.ui.populationSpinBox.value()
-        generations = self.ui.generationSpinBox.value()
-        no_of_processes = self.ui.processesSpinBox.value()
-        check_time = self.ui.timeSpinBox.value()
+        population_size = self.parameters_widget.populationSpinBox.value()
+        generations = self.parameters_widget.generationSpinBox.value()
+        no_of_processes = self.parameters_widget.processesSpinBox.value()
+        check_time = self.parameters_widget.timeSpinBox.value()
 
-        if self.ui.recoilTypeComboBox.currentText() == "4-point box":
-            recoil_type = "box"
-            solution_size = 5
-        elif self.ui.recoilTypeComboBox.currentText() == "6-point box":
-            recoil_type = "box"
-            solution_size = 7
-        elif self.ui.recoilTypeComboBox.currentText() == "8-point two-peak":
-            recoil_type = "two-peak"
-            solution_size = 9
+        if self.current_mode == "recoil":
+            upper_x = self.parameters_widget.upperXDoubleSpinBox.value()
+            lower_x = self.parameters_widget.lowerXDoubleSpinBox.value()
+            upper_y = self.parameters_widget.upperYDoubleSpinBox.value()
+            lower_y = self.parameters_widget.lowerYDoubleSpinBox.value()
+
+            upper_limit = [upper_x, upper_y]
+            lower_limit = [lower_x, lower_y]
+            optimize_recoil = True
+
+            if self.parameters_widget.recoilTypeComboBox.currentText() == \
+                    "4-point box":
+                recoil_type = "box"
+                solution_size = 5
+            elif self.parameters_widget.recoilTypeComboBox.currentText() == \
+                    "6-point box":
+                recoil_type = "box"
+                solution_size = 7
+            elif self.parameters_widget.recoilTypeComboBox.currentText() == \
+                    "8-point two-peak":
+                recoil_type = "two-peak"
+                solution_size = 9
+            else:
+                recoil_type = "two-peak"
+                solution_size = 11
+
+            dist_index_crossover = None
+            dist_index_mutation = None
+
         else:
-            recoil_type = "two-peak"
-            solution_size = 11
+            upper_limit = 1e19
+            lower_limit = 0
+            solution_size = 1
+            optimize_recoil = False
+            recoil_type = None
+            dist_index_crossover = self.parameters_widget.disCSpinBox.value()
+            dist_index_mutation = self.parameters_widget.disMSpinBox.value()
 
         self.measured_element = item_text
         # Update result widget with progress or results
@@ -273,13 +382,16 @@ class OptimizationDialog(QtWidgets.QDialog):
         thread = threading.Thread(
             target=Nsgaii, args=(generations, self.element_simulation,
                                  population_size, solution_size,
-                                 [upper_x, upper_y], [lower_x, lower_y],
-                                 True, recoil_type, None, no_of_processes,
-                                 crossover_prob, mutation_prob, stop_percent,
-                                 check_time, channel_width, hist_file))
+                                 upper_limit, lower_limit,
+                                 optimize_recoil, recoil_type, None,
+                                 no_of_processes, crossover_prob,
+                                 mutation_prob, stop_percent,
+                                 check_time, channel_width, hist_file,
+                                 dist_index_crossover, dist_index_mutation))
         self.optimization_thread = thread
 
         # Create necessary results widget
+        # TODO: add fluence showing in a different widget
         self.result_widget = self.parent_tab.add_optimization_results_widget(
             self.element_simulation, item_text)
         self.element_simulation.optimization_widget = self.result_widget

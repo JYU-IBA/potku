@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.3.2013
-Updated on 16.5.2019
+Updated on 20.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -280,7 +280,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                             if rec_elem_prefix_and_name == item.text(0):
                                 elem_sim.channel_width = self.ui. \
                                     histogramTicksDoubleSpinBox.value()
-                                elem_sim.calculate_espe(rec, optimize=True)
+                                elem_sim.calculate_espe(rec,
+                                                        optimize_recoil=True)
                                 self.result_files.append(os.path.join(
                                     self.parent.obj.directory,
                                     rec_elem_prefix_and_name + ".simu"))

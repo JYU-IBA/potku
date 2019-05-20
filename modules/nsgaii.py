@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 7.5.2019
-Updated on 17.5.2019
+Updated on 20.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -32,6 +32,7 @@ import time
 from modules.general_functions import dominates
 from modules.general_functions import format_to_binary
 from modules.general_functions import read_espe_file
+from modules.general_functions import round_value_by_biggest
 from modules.general_functions import tournament_allow_doubles
 from modules.general_functions import uniform_espe_lists
 from modules.recoil_element import RecoilElement
@@ -55,7 +56,7 @@ class Nsgaii:
                  upper_limits=None, lower_limits=None, optimize_recoil=True,
                  recoil_type="box", starting_solutions=None,
                  number_of_processes=1, cross_p=0.9, mut_p=1,
-                 stop_percent=0.3, check_time=20, ch=0.0025,
+                 stop_percent=0.3, check_time=20, ch=0.025,
                  hist_file=None, dis_c=20,
                  dis_m=20):
         """
@@ -98,7 +99,7 @@ class Nsgaii:
         if not self.upper_limits:
             self.upper_limits = [120, 1]
         self.lower_limits = lower_limits
-        if not self.lower_limits:
+        if self.lower_limits is None:
             self.lower_limits = [0.01, 0.0001]
         self.opt_recoil = optimize_recoil
         self.rec_type = recoil_type
@@ -228,7 +229,8 @@ class Nsgaii:
                 self.element_simulation.start(self.number_of_processes, 201,
                                               optimize=True,
                                               stop_p=self.stop_percent,
-                                              check_t=self.check_time)
+                                              check_t=self.check_time,
+                                              optimize_recoil=True)
                 if self.element_simulation.optimization_stopped:
                     return None
                 self.mcerd_run = True
@@ -238,53 +240,118 @@ class Nsgaii:
                 recoil = self.form_recoil(solution)
                 self.element_simulation.optimization_recoils.append(recoil)
 
-        j = 0
-        for recoil in self.element_simulation.optimization_recoils:
-            if self.element_simulation.optimization_stopped:
-                return None
-            # Run get_espe
-            self.element_simulation.calculate_espe(recoil,
-                                optimize=True, ch=self.channel_width)
-            # Read espe file
-            espe_file = os.path.join(
-                self.element_simulation.directory, recoil.prefix + "-" +
-                recoil.name + ".simu")
-            espe = read_espe_file(espe_file)
-            if espe:
-                # Change from string to float items
-                espe = list(np.float_(espe))
+            j = 0
+            for recoil in self.element_simulation.optimization_recoils:
+                if self.element_simulation.optimization_stopped:
+                    return None
+                # Run get_espe
+                self.element_simulation.calculate_espe(recoil,
+                                                       optimize_recoil=True,
+                                                       ch=self.channel_width)
+                # Read espe file
+                espe_file = os.path.join(
+                    self.element_simulation.directory, recoil.prefix + "-" +
+                    recoil.name + ".simu")
+                espe = read_espe_file(espe_file)
+                if espe:
+                    # Change from string to float items
+                    espe = list(np.float_(espe))
 
-                # Make spectra the same size
-                espe, measured_espe = uniform_espe_lists(
-                    [espe, self.measured_espe],
-                    self.element_simulation.channel_width)
+                    # Make spectra the same size
+                    espe, measured_espe = uniform_espe_lists(
+                        [espe, self.measured_espe],
+                        self.element_simulation.channel_width)
 
-                # Find the area between simulated and measured energy spectra
-                polygon_points = []
-                for value in espe:
-                    polygon_points.append(value)
+                    # Find the area between simulated and measured energy
+                    # spectra
+                    polygon_points = []
+                    for value in espe:
+                        polygon_points.append(value)
 
-                for value in measured_espe[::-1]:
-                    polygon_points.append(value)
+                    for value in measured_espe[::-1]:
+                        polygon_points.append(value)
 
-                # Add the first point again to close the rectangle
-                polygon_points.append(polygon_points[0])
+                    # Add the first point again to close the rectangle
+                    polygon_points.append(polygon_points[0])
 
-                polygon = Polygon(polygon_points)
-                area = polygon.area
-                # Find the summed distance between thw points of these two
-                # spectra
-                sum_diff = 0
-                i = 0
-                for point in measured_espe:
-                    simu_point = espe[i]
-                    diff = abs(point[1] - simu_point[1])
-                    sum_diff += diff
-                    i += 1
-                objective_values[j] = np.array([area, sum_diff])
-            else:  # If failed to create energy spectrum
-                objective_values[j] = np.array([np.inf, np.inf])
-            j += 1
+                    polygon = Polygon(polygon_points)
+                    area = polygon.area
+                    # Find the summed distance between thw points of these two
+                    # spectra
+                    sum_diff = 0
+                    i = 0
+                    for point in measured_espe:
+                        simu_point = espe[i]
+                        diff = abs(point[1] - simu_point[1])
+                        sum_diff += diff
+                        i += 1
+                    objective_values[j] = np.array([area, sum_diff])
+                else:  # If failed to create energy spectrum
+                    objective_values[j] = np.array([np.inf, np.inf])
+                j += 1
+        else:  # Evaluate fluence
+            if not self.mcerd_run:
+                self.element_simulation.start(self.number_of_processes, 201,
+                                              optimize=True,
+                                              stop_p=self.stop_percent,
+                                              check_t=self.check_time,
+                                              optimize_recoil=False)
+                if self.element_simulation.optimization_stopped:
+                    return None
+                self.mcerd_run = True
+
+            j = 0
+            recoil = self.element_simulation.recoil_elements[0]
+            for solution in sols:
+                if self.element_simulation.optimization_stopped:
+                    return None
+                # Round solution appropriately
+                sol_fluence = round_value_by_biggest(solution)
+                # Run get_espe
+                self.element_simulation.calculate_espe(recoil,
+                                                       optimize_recoil=False,
+                                                       ch=self.channel_width,
+                                                       fluence=sol_fluence)
+                # Read espe file
+                espe_file = os.path.join(
+                    self.element_simulation.directory, recoil.prefix + "-" +
+                    recoil.name + ".simu")
+                espe = read_espe_file(espe_file)
+                if espe:
+                    # Change from string to float items
+                    espe = list(np.float_(espe))
+
+                    # Make spectra the same size
+                    espe, measured_espe = uniform_espe_lists(
+                        [espe, self.measured_espe],
+                        self.element_simulation.channel_width)
+
+                    # Find the area between simulated and measured energy
+                    # spectra
+                    polygon_points = []
+                    for value in espe:
+                        polygon_points.append(value)
+
+                    for value in measured_espe[::-1]:
+                        polygon_points.append(value)
+
+                    # Add the first point again to close the rectangle
+                    polygon_points.append(polygon_points[0])
+
+                    polygon = Polygon(polygon_points)
+                    area = polygon.area
+                    # Find the summed distance between thw points of these two
+                    # spectra
+                    sum_diff = 0
+                    i = 0
+                    for point in measured_espe:
+                        simu_point = espe[i]
+                        diff = abs(point[1] - simu_point[1])
+                        sum_diff += diff
+                        i += 1
+                    objective_values[j] = np.array([area, sum_diff])
+                else:  # If failed to create energy spectrum
+                    objective_values[j] = np.array([np.inf, np.inf])
 
         population = [sols, objective_values]
         return population
@@ -732,23 +799,25 @@ class Nsgaii:
                                       axis=1)
                 i += 2
                 j += 1
-        else:
+        else:  # Initialize a population for fluence
             pass
             # Change upper and lower limits to have individual indices
             #  for each solution (makes variation easier for real values)
-            # self.upper_limits = []
-            # self.lower_limits = []
-            # k = 0
-            # while k in range(self.sol_size):
-            #     self.upper_limits.append(x_upper)
-            #     self.lower_limits.append(x_lower)
-            #     k += 1
-            #     if k == self.sol_size:
-            #         break
-            #     else:
-            #         self.upper_limits.append(y_upper)
-            #         self.lower_limits.append(y_lower)
-            #         k += 1
+            upper_limits = np.zeros((1, self.sol_size))
+            lower_limits = np.zeros((1, self.sol_size))
+            k = 0
+            while k in range(self.sol_size):
+                upper_limits[k] = self.upper_limits
+                lower_limits[k] = self.lower_limits
+                k += 1
+            self.lower_limits = lower_limits
+            self.upper_limits = upper_limits
+
+            # Create a random population
+            init_sols = np.random.random_sample(
+                (self.pop_size, self.sol_size)) * \
+                        (self.upper_limits - self.lower_limits) \
+                        + self.lower_limits
 
         self.__start = time.clock()
         pop = self.evaluate_solutions(init_sols)
@@ -955,30 +1024,40 @@ class Nsgaii:
         # Find first front
         pareto_optimal_sols = self.population[0][front_no == 1, :]
         pareto_optimal_objs = self.population[1][front_no == 1, :]
-        # Find front's first and last individual: these two are the solutions
-        # the user needs
-        first = pareto_optimal_objs[0]
-        last = pareto_optimal_objs[-1]
-        f_i = 0
-        l_i = len(pareto_optimal_objs) - 1
-        for i in range(1, len(pareto_optimal_objs)):
-            current = pareto_optimal_objs[i]
-            if current[0] > last[0]:
-                last = current
-                l_i = i
-            if current[1] > first[1]:
-                first = current
-                f_i = i
+        if self.opt_recoil:
+            # Find front's first and last individual: these two are the
+            # solutions the user needs
+            first = pareto_optimal_objs[0]
+            last = pareto_optimal_objs[-1]
+            f_i = 0
+            l_i = len(pareto_optimal_objs) - 1
+            for i in range(1, len(pareto_optimal_objs)):
+                current = pareto_optimal_objs[i]
+                if current[0] > last[0]:
+                    last = current
+                    l_i = i
+                if current[1] > first[1]:
+                    first = current
+                    f_i = i
 
-        first_sol  = pareto_optimal_sols[f_i]
-        last_sol = pareto_optimal_sols[l_i]
+            first_sol  = pareto_optimal_sols[f_i]
+            last_sol = pareto_optimal_sols[l_i]
 
-        # Save the two pareto solutions as recoils
-        self.element_simulation.optimization_recoils = []
-        first_recoil = self.form_recoil(first_sol, "optfirst")
-        self.element_simulation.optimization_recoils.append(first_recoil)
-        last_recoil = self.form_recoil(last_sol, "optsecond")
-        self.element_simulation.optimization_recoils.append(last_recoil)
+            # Save the two pareto solutions as recoils
+            self.element_simulation.optimization_recoils = []
+            first_recoil = self.form_recoil(first_sol, "optfirst")
+            self.element_simulation.optimization_recoils.append(first_recoil)
+            last_recoil = self.form_recoil(last_sol, "optsecond")
+            self.element_simulation.optimization_recoils.append(last_recoil)
+
+        else:
+            # Calculate average of found fluences
+            f_sum = 0
+            for sol in pareto_optimal_sols:
+                f_sum += sol
+            avg = f_sum / len(pareto_optimal_sols)
+            rounded_fluence = round_value_by_biggest(avg)
+            self.element_simulation.optimized_fluence = rounded_fluence
 
         # Remove unnecessary opt.recoil file
         for file in os.listdir(self.element_simulation.directory):
@@ -1069,75 +1148,32 @@ class Nsgaii:
                     child_2 = binary_child_2
 
                 else:  # Fluence finding
-                    pass
-                    # # TODO: Fix this!
-                    # for j in range(self.sol_size):
-                    #     # Check if index j is constant
-                    #     if j in self.__const_var_i:
-                    #         # Add constant to children
-                    #         c_1 = parent_1[j]
-                    #         c_2 = parent_2[j]
-                    #         child_1.append(c_1)
-                    #         child_2.append(c_2)
-                    #         continue
-                    #     # Simulated Binary Crossover - SBX
-                    #     u = np.random.uniform()
-                    #     if u <= 0.5:
-                    #         beta = (2*u) ** (1/(self.dis_c + 1))
-                    #     else:
-                    #         beta = (1/(2*(1 - u)))**(1/(self.dis_c + 1))
-                    #     c_1 = 0.5*((1 + beta)*parent_1[j] +
-                    #                    (1 - beta)*parent_2[j])
-                    #     c_2 = 0.5*((1 - beta)*parent_1[j] +
-                    #                    (1 + beta)*parent_2[j])
-                    #
-                    #     if c_1 > self.upper_limits[j]:
-                    #         c_1 = self.upper_limits[j]
-                    #     elif c_1 < self.lower_limits[j]:
-                    #         c_1 = self.lower_limits[j]
-                    #     if c_2 > self.upper_limits[j]:
-                    #         c_2 = self.upper_limits[j]
-                    #     elif c_2 < self.lower_limits[j]:
-                    #         c_2 = self.lower_limits[j]
-                    #
-                    #     # Add child variables to children.
-                    #     child_1.append(c_1)
-                    #     child_2.append(c_2)
+                    # TODO: Fix this!
+                    for j in range(self.sol_size):
+                        # Simulated Binary Crossover - SBX
+                        u = np.random.uniform()
+                        if u <= 0.5:
+                            beta = (2*u) ** (1/(self.dis_c + 1))
+                        else:
+                            beta = (1/(2*(1 - u)))**(1/(self.dis_c + 1))
+                        c_1 = 0.5*((1 + beta)*parent_1[j] +
+                                       (1 - beta)*parent_2[j])
+                        c_2 = 0.5*((1 - beta)*parent_1[j] +
+                                       (1 + beta)*parent_2[j])
 
-                    # if self.opt_recoil:
-                    #     same_x_1 = True
-                    #     same_x_2 = True
-                    #     if j % 2 == 0:  # If even index (x values)
-                    #         while same_x_1:
-                    #             c_1 = round(c_1, 2)
-                    #             if c_1 > self.upper_limits[j]:
-                    #                 c_1 = self.upper_limits[j]
-                    #             elif c_1 < self.lower_limits[j]:
-                    #                 c_1 = self.lower_limits[j]
-                    #
-                    #             if c_1 not in child_1:
-                    #                 same_x = False
-                    #             else:
-                    #                 pass
-                    #         while same_x_2:
-                    #             c_2 = round(c_2, 2)
-                    #             if c_2 > self.upper_limits[j]:
-                    #                 c_2 = self.upper_limits[j]
-                    #             elif c_2 < self.lower_limits[j]:
-                    #                 c_2 = self.lower_limits[j]
-                    #
-                    #     else:
-                    #         c_1 = round(c_1, 4)
-                    #         c_2 = round(c_2, 4)
-                    #
-                    #         if c_1 > self.upper_limits[j]:
-                    #             c_1 = self.upper_limits[j]
-                    #         elif c_1 < self.lower_limits[j]:
-                    #             c_1 = self.lower_limits[j]
-                    #         if c_2 > self.upper_limits[j]:
-                    #             c_2 = self.upper_limits[j]
-                    #         elif c_2 < self.lower_limits[j]:
-                    #             c_2 = self.lower_limits[j]
+                        if c_1 > self.upper_limits[j]:
+                            c_1 = self.upper_limits[j]
+                        elif c_1 < self.lower_limits[j]:
+                            c_1 = self.lower_limits[j]
+                        if c_2 > self.upper_limits[j]:
+                            c_2 = self.upper_limits[j]
+                        elif c_2 < self.lower_limits[j]:
+                            c_2 = self.lower_limits[j]
+
+                        # Add child variables to children.
+                        child_1.append(c_1)
+                        child_2.append(c_2)
+
             offspring.append(child_1)
             p += 1
             if p >= self.pop_size:
@@ -1145,51 +1181,6 @@ class Nsgaii:
             else:
                 offspring.append(child_2)
                 p += 1
-
-            # rand = np.random.uniform()
-            # if rand <= self.mut_p:  # Do mutation
-            #     p_i = np.random.randint(0, pop_dec_n)
-            #     parent = pop_sols[p_i]
-            #     child = []
-            #     for i in range(self.sol_size):
-            #         if self.opt_recoil:
-            #             # Do mutation for binary children
-            #             pass
-            #         else:
-            #         # Check if index i is constant
-            #         if i in self.__const_var_i:
-            #             # Add constant to child
-            #             c = parent[i]
-            #             child.append(c)
-            #             continue
-            #         # Polynomial mutation.
-            #         r = np.random.uniform()
-            #         if r < 0.5:
-            #             delta = (2*r)**(1/(self.dis_m + 1)) - 1
-            #         else:
-            #             delta = 1 - (2*(1 - r))**(1/(self.dis_m + 1))
-            #         c = parent[i] + delta*(self.upper_limits[i] -
-            #                                self.lower_limits[i])
-            #
-            #         # if self.opt_recoil:
-            #         #     if i % 2 == 0:  # If even index (x values)
-            #         #         c = round(c, 2)
-            #         #     else:  # Odd index (y values)
-            #         #         c = round(c, 4)
-            #
-            #         if c > self.upper_limits[i]:
-            #             c = self.upper_limits[i]
-            #         elif c < self.lower_limits[i]:
-            #             c = self.lower_limits[i]
-            #
-            #         # Add child variable to mutated child.
-            #         child.append(c)
-            #
-            #     offspring.append(np.array(child))
-            #     p += 1
-            #
-            #     # Add only n amount children to get the right sized offspring
-            #     #  population.
 
         if self.opt_recoil:  # Do binary mutation
             # Calculate length of one solution (number of bits)
@@ -1270,7 +1261,36 @@ class Nsgaii:
             offspring = np.array(dec_offspring)
 
         else:  # Real coded mutation
-            # TODO implement
-            pass
+            # Indicate mutation for all variables that have a random number
+            # over mut_p / self.sol_size
+            do_mutation_prob = np.random.random_sample(
+                (self.pop_size, self.sol_size)) < self.mut_p / self.sol_size
+
+            # Polynomial mutation.
+            # r = np.random.uniform()
+            # if r < 0.5:
+            #     delta = (2*r)**(1/(self.dis_m + 1)) - 1
+            # else:
+            #     delta = 1 - (2*(1 - r))**(1/(self.dis_m + 1))
+            # c = parent[i] + delta*(self.upper_limits[i] -
+            #                        self.lower_limits[i])
+
+            r = np.random.random_sample((self.pop_size, self.sol_size))
+            # Define which solution use which delta value
+            use_r_smaller = do_mutation_prob & (r < 0.5)
+
+            upper = np.tile(self.upper_limits[0], (self.pop_size, 1))
+            lower = np.tile(self.lower_limits[0], (self.pop_size, 1))
+
+            delta = np.power(2*r[use_r_smaller], (1 / (self.dis_m + 1))) - 1
+            offspring[use_r_smaller] += (upper[use_r_smaller] -
+                                         lower[use_r_smaller]) * delta
+
+            use_r_bigger = do_mutation_prob & (r >= 0.5)
+            delta = 1 - np.power(2*(1 - r[use_r_bigger]),
+                                 (1 / (self.dis_m + 1)))
+            offspring[use_r_bigger] += (upper[use_r_bigger] -
+                                        lower[use_r_bigger]) * delta
+            offspring = np.maximum(np.minimum(offspring, upper), lower)
 
         return np.array(offspring)

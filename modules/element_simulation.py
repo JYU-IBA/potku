@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 17.5.2019
+Updated on 20.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -72,7 +72,7 @@ class ElementSimulation:
                 "__erd_files", "optimization_recoils", "__previous_espe", \
                 "__opt_seed", "optimization_done", "calculated_solutions", \
                 "optimization_stopped", "optimization_widget", \
-                "optimization_running"
+                "optimization_running", "optimized_fluence"
 
     def __init__(self, directory, request, recoil_elements,
                  simulation=None, name_prefix="",
@@ -208,6 +208,8 @@ class ElementSimulation:
         self.optimization_stopped = False
         self.optimization_widget = None
         self.optimization_running = False
+        # Store fluence optimization results
+        self.optimized_fluence = 0
 
     def unlock_edit(self):
         """
@@ -699,7 +701,8 @@ class ElementSimulation:
             json.dump(obj_profile, file, indent=4)
 
     def start(self, number_of_processes, start_value, erd_files=None,
-              optimize=False, stop_p=False, check_t=False):
+              optimize=False, stop_p=False, check_t=False,
+              optimize_recoil=False):
         """
         Start the simulation.
 
@@ -710,6 +713,7 @@ class ElementSimulation:
             optimize: Whether mcerd run relates to optimization.
             stop_p: Percent for stopping the MCERD run.
             check_t: Time between checks to see whether to stop MCERD or not.
+            optimize_recoil: Whether optimization concerns recoil.
         """
         self.simulations_done = False
         if self.run is None:
@@ -735,11 +739,11 @@ class ElementSimulation:
             self.__erd_files = self.__erd_files + erd_files
         QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
 
-        if not optimize:
+        if not optimize_recoil:
             recoil = self.recoil_elements[0]
         else:
             recoil = self.optimization_recoils[0]
-            self.__opt_seed = seed_number
+        self.__opt_seed = seed_number
         for i in range(number_of_processes):
             settings = {
                 "simulation_type": elem_sim.simulation_type,
@@ -760,7 +764,7 @@ class ElementSimulation:
                 "sim_dir": self.directory
             }
             # Delete corresponding erd file
-            if not optimize:
+            if not optimize_recoil:
                 erd_file = os.path.join(
                     self.directory, self.recoil_elements[0].prefix + "-" +
                                     self.recoil_elements[0].name + "." +
@@ -796,7 +800,7 @@ class ElementSimulation:
         else:
             # Check the change between current and previous energy spectra (if
             # the spectra have been calculated)
-            self.check_spectra_change(stop_p, check_t)
+            self.check_spectra_change(stop_p, check_t, optimize_recoil)
 
     def calculate_erd_lines(self):
         """
@@ -821,7 +825,7 @@ class ElementSimulation:
                 self.controls.show_number_of_observed_atoms(lines_count,
                                                             add_presim)
 
-    def check_spectra_change(self, stop_percent, check_time):
+    def check_spectra_change(self, stop_percent, check_time, optimize_recoil):
         """
         If there are previous and current energy spectra, check the change in
         distance between them. When this is smaller than the threshold,
@@ -830,6 +834,7 @@ class ElementSimulation:
         Args:
             stop_percent: Percent at which to stop.
             check_time: Time between the percentage checks.
+            optimize_recoil: Whether recoil is being optimized.
         """
         previous_avg = None
         while True:
@@ -838,17 +843,20 @@ class ElementSimulation:
             time.sleep(check_time)  # Sleep for specified time
             # Check if erd file can be found (presimulation has been
             # finished)
+            if optimize_recoil:
+                recoils = self.optimization_recoils
+                opt = True
+            else:
+                recoils = self.recoil_elements
+                opt = False
             erd_file = os.path.join(
-                self.directory, self.optimization_recoils[0].prefix +
-                "-" + self.optimization_recoils[0].name + "." + str(
-                    self.__opt_seed) + ".erd")
+                self.directory, recoils[0].prefix + "-" + recoils[0].name +
+                "." + str(self.__opt_seed) + ".erd")
             if os.path.exists(erd_file):
                 # Calculate new energy spectrum
-                self.calculate_espe(self.optimization_recoils[0],
-                                optimize=True)
-                espe_file = os.path.join(
-                    self.directory, self.optimization_recoils[0].prefix + "-" +
-                                    self.optimization_recoils[0].name + ".simu")
+                self.calculate_espe(recoils[0], optimize_recoil=opt)
+                espe_file = os.path.join(self.directory, recoils[0].prefix +
+                                         "-" + recoils[0].name + ".simu")
                 espe = read_espe_file(espe_file)
                 if espe:
                     # Change items to float types
@@ -874,7 +882,7 @@ class ElementSimulation:
                         if previous_avg:
                             avg_ratio = avg/previous_avg
                             if avg_ratio < stop_percent:
-                                self.stop(optimize=True)
+                                self.stop(optimize_recoil=opt)
                                 break
                         previous_avg = avg
                     self.__previous_espe = espe
@@ -926,7 +934,7 @@ class ElementSimulation:
 
         self.simulations_done = True
 
-    def stop(self, optimize=False):
+    def stop(self, optimize_recoil=False):
         """ Stop the simulation."""
         ref_key = None
         processes = len(self.mcerd_objects.keys())
@@ -956,7 +964,7 @@ class ElementSimulation:
                     lines_count = lines_count + len(file.readlines())
 
         simulation_name = self.simulation.name
-        if not optimize:
+        if not optimize_recoil:
             element = self.recoil_elements[0].element
         else:
             element = self.optimization_recoils[0].element
@@ -969,9 +977,16 @@ class ElementSimulation:
               " Number of observed atoms: " + str(lines_count)
         logging.getLogger(simulation_name).info(msg)
 
-    def calculate_espe(self, recoil_element, optimize=False, ch=None):
+    def calculate_espe(self, recoil_element, optimize_recoil=False, ch=None,
+                       fluence=None):
         """
         Calculate the energy spectrum from the MCERD result file.
+
+        Args:
+            recoil_element: Recoil element.
+            optimize_recoil: Whether recoil is optimized.
+            ch: Channel width to use.
+            fluence: Fluence to use.
         """
         if self.simulation_type == "ERD":
             suffix = ".recoil"
@@ -982,7 +997,7 @@ class ElementSimulation:
                                    recoil_element.name + suffix)
         recoil_element.write_recoil_file(recoil_file)
 
-        if not optimize:
+        if not optimize_recoil:
             erd_file = os.path.join(self.directory,
                                     self.recoil_elements[0].prefix + "-" +
                                     self.recoil_elements[0].name + ".*.erd")
@@ -1003,6 +1018,11 @@ class ElementSimulation:
             detector = self.request.default_detector
         else:
             detector = self.detector
+
+        if fluence:
+            used_fluence = fluence
+        else:
+            used_fluence = run.fluence
         espe_settings = {
             "beam": run.beam,
             "detector": detector,
@@ -1010,7 +1030,7 @@ class ElementSimulation:
             "ch": channel_width,
             "reference_density": recoil_element.reference_density,
             "multiplier": recoil_element.multiplier,
-            "fluence": run.fluence,
+            "fluence": used_fluence,
             "timeres": detector.timeres,
             "solid": self.calculate_solid(),
             "erd_file": erd_file,
