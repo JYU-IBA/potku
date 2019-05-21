@@ -41,7 +41,7 @@
       <property name="geometry">
        <rect>
         <x>0</x>
-        <y>-192</y>
+        <y>-315</y>
         <width>383</width>
         <height>794</height>
        </rect>
@@ -462,7 +462,7 @@ restart the application.</string>
               <item row="3" column="1">
                <widget class="QDoubleSpinBox" name="fluenceDoubleSpinBox">
                 <property name="maximum">
-                 <double>1000000000000000019884624838656.000000000000000</double>
+                 <double>10000000000000000000.000000000000000</double>
                 </property>
                 <property name="value">
                  <double>1000000000000.000000000000000</double>

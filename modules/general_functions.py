@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 20.5.2019
+Updated on 21.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -231,7 +231,10 @@ def read_espe_file(espe_file):
     with open(espe_file, 'r') as file:
         for line in file:
             data_point = line.strip().split()
-            data.append(data_point)
+            if "#" in data_point[1]:
+                continue
+            else:
+                data.append(data_point)
     return data
 
 
@@ -889,7 +892,7 @@ def format_to_binary(var, length):
     return format_var
 
 
-def round_value_by_biggest(value):
+def round_value_by_four_biggest(value):
     """
     Round given value by its biggest number. E.g. 12.4 -> 10, 368 -> 400.
 
@@ -899,10 +902,13 @@ def round_value_by_biggest(value):
     Return:
         Rounded value.
     """
-    round_val = round(value)
-    round_string_val = str(round_val)
-    round_val_length = len(round_string_val)
-    first = round_val / (round_val_length - 1)
+    dec_val = Decimal(value)
+    dec_string_val = str(dec_val)
+    if "." not in dec_string_val:
+        round_val_length = len(dec_string_val)
+    else:
+        round_val_length = dec_string_val.index(".")
+    first = dec_val / Decimal(10 ** (round_val_length - 4))
     first_round = round(first)
-    sol_flnal = first_round * (round_val_length - 1)
+    sol_flnal = first_round * (10 ** (round_val_length - 4))
     return sol_flnal

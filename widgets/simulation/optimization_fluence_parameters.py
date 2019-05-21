@@ -1,6 +1,7 @@
 # coding=utf-8
 """
 Created on 20.5.2019
+Updated on 21.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -51,6 +52,7 @@ class OptimizationFluenceParameterWidget(QtWidgets.QWidget):
         self.ui.crossoverProbDoubleSpinBox.setLocale(locale)
         self.ui.mutationProbDoubleSpinBox.setLocale(locale)
         self.ui.percentDoubleSpinBox.setLocale(locale)
+        self.ui.fluenceDoubleSpinBox.setLocale(locale)
 
         if params:
             self.ui.populationSpinBox.setValue(params[0])
@@ -62,3 +64,4 @@ class OptimizationFluenceParameterWidget(QtWidgets.QWidget):
             self.ui.mutationProbDoubleSpinBox.setValue(params[6])
             self.ui.disCSpinBox.setValue(params[7])
             self.ui.disMSpinBox.setValue(params[8])
+            self.ui.fluenceDoubleSpinBox.setValue(params[9])

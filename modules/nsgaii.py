@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 7.5.2019
-Updated on 20.5.2019
+Updated on 21.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -32,7 +32,7 @@ import time
 from modules.general_functions import dominates
 from modules.general_functions import format_to_binary
 from modules.general_functions import read_espe_file
-from modules.general_functions import round_value_by_biggest
+from modules.general_functions import round_value_by_four_biggest
 from modules.general_functions import tournament_allow_doubles
 from modules.general_functions import uniform_espe_lists
 from modules.recoil_element import RecoilElement
@@ -306,16 +306,17 @@ class Nsgaii:
                 if self.element_simulation.optimization_stopped:
                     return None
                 # Round solution appropriately
-                sol_fluence = round_value_by_biggest(solution)
+                sol_fluence = round_value_by_four_biggest(solution[0])
                 # Run get_espe
                 self.element_simulation.calculate_espe(recoil,
                                                        optimize_recoil=False,
                                                        ch=self.channel_width,
-                                                       fluence=sol_fluence)
+                                                       fluence=sol_fluence,
+                                                       optimize_fluence=True)
                 # Read espe file
                 espe_file = os.path.join(
-                    self.element_simulation.directory, recoil.prefix + "-" +
-                    recoil.name + ".simu")
+                    self.element_simulation.directory, recoil.prefix +
+                    "-optfl.simu")
                 espe = read_espe_file(espe_file)
                 if espe:
                     # Change from string to float items
@@ -352,6 +353,7 @@ class Nsgaii:
                     objective_values[j] = np.array([area, sum_diff])
                 else:  # If failed to create energy spectrum
                     objective_values[j] = np.array([np.inf, np.inf])
+                j += 1
 
         population = [sols, objective_values]
         return population
@@ -1050,19 +1052,25 @@ class Nsgaii:
             last_recoil = self.form_recoil(last_sol, "optsecond")
             self.element_simulation.optimization_recoils.append(last_recoil)
 
+            # Remove unnecessary opt.recoil file
+            for file in os.listdir(self.element_simulation.directory):
+                if file.endswith("opt.recoil"):
+                    os.remove(
+                        os.path.join(self.element_simulation.directory, file))
+
         else:
             # Calculate average of found fluences
             f_sum = 0
             for sol in pareto_optimal_sols:
-                f_sum += sol
+                f_sum += sol[0]
             avg = f_sum / len(pareto_optimal_sols)
-            rounded_fluence = round_value_by_biggest(avg)
-            self.element_simulation.optimized_fluence = rounded_fluence
+            self.element_simulation.optimized_fluence = avg
 
-        # Remove unnecessary opt.recoil file
-        for file in os.listdir(self.element_simulation.directory):
-            if file.endswith("opt.recoil"):
-                os.remove(os.path.join(self.element_simulation.directory, file))
+            # Remove unnecessary optfl files
+            for file in os.listdir(self.element_simulation.directory):
+                if "optfl" in file:
+                    os.remove(os.path.join(self.element_simulation.directory,
+                                           file))
 
         # Signal thread that checks whether optimization
         # is done
@@ -1147,8 +1155,7 @@ class Nsgaii:
                     child_1 = binary_child_1
                     child_2 = binary_child_2
 
-                else:  # Fluence finding
-                    # TODO: Fix this!
+                else:  # Fluence finding crossover
                     for j in range(self.sol_size):
                         # Simulated Binary Crossover - SBX
                         u = np.random.uniform()
@@ -1170,9 +1177,8 @@ class Nsgaii:
                         elif c_2 < self.lower_limits[j]:
                             c_2 = self.lower_limits[j]
 
-                        # Add child variables to children.
-                        child_1.append(c_1)
-                        child_2.append(c_2)
+                        child_1 = c_1
+                        child_2 = c_2
 
             offspring.append(child_1)
             p += 1
@@ -1282,15 +1288,38 @@ class Nsgaii:
             upper = np.tile(self.upper_limits[0], (self.pop_size, 1))
             lower = np.tile(self.lower_limits[0], (self.pop_size, 1))
 
-            delta = np.power(2*r[use_r_smaller], (1 / (self.dis_m + 1))) - 1
-            offspring[use_r_smaller] += (upper[use_r_smaller] -
-                                         lower[use_r_smaller]) * delta
+            # Change offspring to numpy array
+            off = [np.array([item]) for item in offspring]
+            offspring = np.array(off)
 
+            # delta = np.power(2*r[use_r_smaller], (1 / (self.dis_m + 1))) - 1
+            #
+            #
+            # offspring[use_r_smaller] += (upper[use_r_smaller] -
+            #                              lower[use_r_smaller]) * delta
+            #
+            # use_r_bigger = do_mutation_prob & (r >= 0.5)
+            # delta = 1 - np.power(2*(1 - r[use_r_bigger]),
+            #                      (1 / (self.dis_m + 1)))
+            # offspring[use_r_bigger] += (upper[use_r_bigger] -
+            #                             lower[use_r_bigger]) * delta
+            norm = (offspring[use_r_smaller] - lower[use_r_smaller]) / (
+                        upper[use_r_smaller] - lower[use_r_smaller])
+            offspring[use_r_smaller] += (upper[use_r_smaller] - lower[use_r_smaller]) * \
+                                   (np.power(2. * r[use_r_smaller] + (
+                                               1. - 2. * r[use_r_smaller]) * np.power(
+                                       1. - norm, self.dis_m + 1.),
+                                             1. / (self.dis_m + 1)) - 1.)
             use_r_bigger = do_mutation_prob & (r >= 0.5)
-            delta = 1 - np.power(2*(1 - r[use_r_bigger]),
-                                 (1 / (self.dis_m + 1)))
-            offspring[use_r_bigger] += (upper[use_r_bigger] -
-                                        lower[use_r_bigger]) * delta
-            offspring = np.maximum(np.minimum(offspring, upper), lower)
+            norm = (upper[use_r_bigger] - offspring[use_r_bigger]) / (
+                        upper[use_r_bigger] - lower[use_r_bigger])
+            offspring[use_r_bigger] += (upper[use_r_bigger] - lower[use_r_bigger]) * \
+                                   (1. - np.power(
+                                       2. * (1. - r[use_r_bigger]) + 2. * (
+                                                   r[use_r_bigger] - 0.5) * np.power(
+                                           1. - norm, self.dis_m + 1.),
+                                       1. / (self.dis_m + 1.)))
+            offspring_limits = np.maximum(np.minimum(offspring, upper), lower)
+            offspring = offspring_limits
 
         return np.array(offspring)

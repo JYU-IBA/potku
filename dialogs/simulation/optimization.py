@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.5.2019
-Updated on 20.5.2019
+Updated on 21.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -180,15 +180,17 @@ class OptimizationDialog(QtWidgets.QDialog):
             if self.element_simulation.optimization_done:
                 self.element_simulation.optimization_running = False
                 self.result_widget.show_results(calc_sols)
-                # Save optimized recoils
-                for recoil in self.element_simulation.optimization_recoils:
-                    self.element_simulation.recoil_to_file(
-                        self.element_simulation.directory, recoil)
-                save_file_name = self.element_simulation.name_prefix + \
-                                 "-opt.measured"
-                with open(os.path.join(self.element_simulation.directory,
-                                       save_file_name), "w") as f:
-                    f.write(self.measured_element)
+
+                if self.element_simulation.optimized_fluence is None:
+                    # Save optimized recoils
+                    for recoil in self.element_simulation.optimization_recoils:
+                        self.element_simulation.recoil_to_file(
+                            self.element_simulation.directory, recoil)
+                    save_file_name = self.element_simulation.name_prefix + \
+                                     "-opt.measured"
+                    with open(os.path.join(self.element_simulation.directory,
+                                           save_file_name), "w") as f:
+                        f.write(self.measured_element)
                 self.result_widget = None
                 break
             time.sleep(5)  # Sleep for 5 seconds to save processing power
@@ -236,10 +238,11 @@ class OptimizationDialog(QtWidgets.QDialog):
         mutation_prob = self.parameters_widget.mutationProbDoubleSpinBox.value()
         dist_index_crossover = self.parameters_widget.disCSpinBox.value()
         dist_index_mutation = self.parameters_widget.disMSpinBox.value()
+        fluence_upper_limit = self.parameters_widget.fluenceDoubleSpinBox.value()
 
         params = [population_size, generations, no_of_processes,
                   stop_percent, check_time, crossover_prob, mutation_prob,
-                  dist_index_crossover, dist_index_mutation]
+                  dist_index_crossover, dist_index_mutation, fluence_upper_limit]
         return params
 
     def save_recoil_parameters(self):
@@ -280,7 +283,7 @@ class OptimizationDialog(QtWidgets.QDialog):
                 self.parent_tab.optimization_result_widget)
             self.parent_tab.optimization_result_widget = None
             self.element_simulation.optimization_recoils = []
-            self.element_simulation.optimized_fluence = 0
+            self.element_simulation.optimized_fluence = None
             self.element_simulation.calculated_solutions = 0
             self.element_simulation.optimization_done = False
             self.element_simulation.optimization_stopped = False
@@ -334,7 +337,8 @@ class OptimizationDialog(QtWidgets.QDialog):
         no_of_processes = self.parameters_widget.processesSpinBox.value()
         check_time = self.parameters_widget.timeSpinBox.value()
 
-        if self.current_mode == "recoil":
+        mode_recoil = self.current_mode == "recoil"
+        if mode_recoil:
             upper_x = self.parameters_widget.upperXDoubleSpinBox.value()
             lower_x = self.parameters_widget.lowerXDoubleSpinBox.value()
             upper_y = self.parameters_widget.upperYDoubleSpinBox.value()
@@ -364,8 +368,8 @@ class OptimizationDialog(QtWidgets.QDialog):
             dist_index_mutation = None
 
         else:
-            upper_limit = 1e19
-            lower_limit = 0
+            upper_limit = self.parameters_widget.fluenceDoubleSpinBox.value()
+            lower_limit = 0.0
             solution_size = 1
             optimize_recoil = False
             recoil_type = None
@@ -391,9 +395,8 @@ class OptimizationDialog(QtWidgets.QDialog):
         self.optimization_thread = thread
 
         # Create necessary results widget
-        # TODO: add fluence showing in a different widget
         self.result_widget = self.parent_tab.add_optimization_results_widget(
-            self.element_simulation, item_text)
+            self.element_simulation, item_text, mode_recoil)
         self.element_simulation.optimization_widget = self.result_widget
 
         self.check_results_thread.daemon = True

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 20.5.2019
+Updated on 21.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -209,7 +209,7 @@ class ElementSimulation:
         self.optimization_widget = None
         self.optimization_running = False
         # Store fluence optimization results
-        self.optimized_fluence = 0
+        self.optimized_fluence = None
 
     def unlock_edit(self):
         """
@@ -765,21 +765,24 @@ class ElementSimulation:
             }
             # Delete corresponding erd file
             if not optimize_recoil:
+                if not optimize:
+                    recoil_name = self.recoil_elements[0].name
+                else:
+                    recoil_name = "optfl"
                 erd_file = os.path.join(
                     self.directory, self.recoil_elements[0].prefix + "-" +
-                                    self.recoil_elements[0].name + "." +
-                                    str(seed_number) + ".erd")
+                    recoil_name + "." + str(seed_number) + ".erd")
             else:
                 erd_file = os.path.join(
                     self.directory, self.optimization_recoils[0].prefix + "-" +
-                                    self.optimization_recoils[0].name + "." +
-                                    str(seed_number) + ".erd")
+                    "opt" + "." + str(seed_number) + ".erd")
             if os.path.exists(erd_file):
                 os.remove(erd_file)
 
             self.__erd_files.append(erd_file)
 
-            self.mcerd_objects[seed_number] = MCERD(settings, self)
+            self.mcerd_objects[seed_number] = MCERD(settings, self,
+                                                    optimize_fluence=True)
             seed_number = seed_number + 1
             if i + 1 < number_of_processes:
                 time.sleep(5)  # This is done to avoid having a mixup in mcerd
@@ -846,17 +849,22 @@ class ElementSimulation:
             if optimize_recoil:
                 recoils = self.optimization_recoils
                 opt = True
+                optfl = False
+                recoil_name = self.optimization_recoils[0].name
             else:
                 recoils = self.recoil_elements
                 opt = False
+                optfl = True
+                recoil_name = "optfl"
             erd_file = os.path.join(
-                self.directory, recoils[0].prefix + "-" + recoils[0].name +
+                self.directory, recoils[0].prefix + "-" + recoil_name +
                 "." + str(self.__opt_seed) + ".erd")
             if os.path.exists(erd_file):
                 # Calculate new energy spectrum
-                self.calculate_espe(recoils[0], optimize_recoil=opt)
+                self.calculate_espe(recoils[0], optimize_recoil=opt,
+                                    optimize_fluence=optfl)
                 espe_file = os.path.join(self.directory, recoils[0].prefix +
-                                         "-" + recoils[0].name + ".simu")
+                                         "-" + recoil_name + ".simu")
                 espe = read_espe_file(espe_file)
                 if espe:
                     # Change items to float types
@@ -978,7 +986,7 @@ class ElementSimulation:
         logging.getLogger(simulation_name).info(msg)
 
     def calculate_espe(self, recoil_element, optimize_recoil=False, ch=None,
-                       fluence=None):
+                       fluence=None, optimize_fluence=False):
         """
         Calculate the energy spectrum from the MCERD result file.
 
@@ -992,19 +1000,29 @@ class ElementSimulation:
             suffix = ".recoil"
         else:
             suffix = ".scatter"
-        recoil_file = os.path.join(self.directory,
-                                   recoil_element.prefix + "-" +
-                                   recoil_element.name + suffix)
-        recoil_element.write_recoil_file(recoil_file)
 
         if not optimize_recoil:
-            erd_file = os.path.join(self.directory,
-                                    self.recoil_elements[0].prefix + "-" +
-                                    self.recoil_elements[0].name + ".*.erd")
+            recoil_elements = self.recoil_elements
+            if optimize_fluence:
+                erd_recoil_name = "optfl"
+                recoil_name = "optfl"
+            else:
+                erd_recoil_name = self.recoil_elements[0].name
+                recoil_name = recoil_element.name
         else:
-            erd_file = os.path.join(
-                self.directory, self.optimization_recoils[0].prefix + "-" +
-                "opt" + ".*.erd")
+            recoil_elements = self.optimization_recoils
+            erd_recoil_name = "opt"
+            recoil_name = "opt"
+
+        recoil_file = os.path.join(self.directory,
+                                   recoil_element.prefix + "-" +
+                                   recoil_name + suffix)
+        recoil_element.write_recoil_file(recoil_file)
+
+        erd_file = os.path.join(self.directory, recoil_elements[0].prefix +
+                                "-" + erd_recoil_name + ".*.erd")
+        spectrum_file = os.path.join(self.directory, recoil_element.prefix +
+                                     "-" + recoil_name + ".simu")
         if ch:
             channel_width = ch
         else:
@@ -1019,7 +1037,7 @@ class ElementSimulation:
         else:
             detector = self.detector
 
-        if fluence:
+        if fluence is not None:
             used_fluence = fluence
         else:
             used_fluence = run.fluence
@@ -1034,10 +1052,7 @@ class ElementSimulation:
             "timeres": detector.timeres,
             "solid": self.calculate_solid(),
             "erd_file": erd_file,
-            "spectrum_file": os.path.join(self.directory,
-                                          recoil_element.prefix + "-" +
-                                          recoil_element.name +
-                                          ".simu"),
+            "spectrum_file": spectrum_file,
             "recoil_file": recoil_file
         }
         self.get_espe = GetEspe(espe_settings)

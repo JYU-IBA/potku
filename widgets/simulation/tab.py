@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 17.5.2019
+Updated on 21.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -43,7 +43,8 @@ from PyQt5 import QtWidgets
 from PyQt5 import uic
 
 from widgets.log import LogWidget
-from widgets.simulation.optmized_recoils import OptimizedRecoilsWidget
+from widgets.simulation.optimized_fluence import OptimizedFluenceWidget
+from widgets.simulation.optimized_recoils import OptimizedRecoilsWidget
 from widgets.simulation.target import TargetWidget
 
 
@@ -119,16 +120,22 @@ class SimulationTabWidget(QtWidgets.QWidget):
                                               self.icon_manager, progress_bar)
         self.add_widget(self.simulation_target, has_close_button=False)
 
-    def add_optimization_results_widget(self, elem_sim, measurement_elem):
+    def add_optimization_results_widget(self, elem_sim, measurement_elem,
+                                        mode_recoil):
         """
         Add a widget that holds progress and results of optimization.
 
         Args:
             elem_sim: Element simulation that is being optimized.
             measurement_elem: Measured element used in optimization.
+            mode_recoil: Whether recoil result widget is shown or fluence
+            result widget.
         """
-        self.optimization_result_widget = OptimizedRecoilsWidget(
-            elem_sim , measurement_elem, self.obj.target)
+        if mode_recoil:
+            self.optimization_result_widget = OptimizedRecoilsWidget(
+                elem_sim, measurement_elem, self.obj.target)
+        else:
+            self.optimization_result_widget = OptimizedFluenceWidget(elem_sim)
         elem_sim.optimization_widget = self.optimization_result_widget
         self.add_widget(self.optimization_result_widget)
         return self.optimization_result_widget

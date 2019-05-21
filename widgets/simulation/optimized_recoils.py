@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 14.5.2019
-Updated on 17.5.2019
+Updated on 21.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -82,7 +82,7 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         # Delete existing files from previous optimization
         removed_files = []
         for file in os.listdir(self.element_simulation.directory):
-            if "opt" in file:
+            if "opt" in file and "optfl" not in file:
                 removed_files.append(file)
         for rf in removed_files:
             path = os.path.join(self.element_simulation.directory, rf)

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 8.8.2018
+Updated on 21.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -46,7 +46,7 @@ class MCERD:
     files it needs.
     """
 
-    def __init__(self, settings, parent):
+    def __init__(self, settings, parent, optimize_fluence=False):
         """Create an MCERD object. This automatically starts the simulation.
 
         Args:
@@ -56,8 +56,12 @@ class MCERD:
         self.__settings = settings
         self.parent = parent
 
+        if optimize_fluence:
+            recoil_name = "optfl"
+        else:
+            recoil_name = self.__settings["recoil_element"].name
         self.__rec_filename = self.__settings["recoil_element"].prefix \
-            + "-" + self.__settings["recoil_element"].name
+            + "-" + recoil_name
         self.__filename = self.parent.name_prefix + "-" + self.parent.name
 
         # OS specific directory where temporary MCERD files will be stored.
