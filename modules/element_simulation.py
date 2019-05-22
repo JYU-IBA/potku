@@ -780,6 +780,7 @@ class ElementSimulation:
                 else:
                     recoil_name = "optfl"
                     optimize_fluence = True
+                    self.optimized_fluence = 0
                 erd_file = os.path.join(
                     self.directory, self.recoil_elements[0].prefix + "-" +
                     recoil_name + "." + str(seed_number) + ".erd")

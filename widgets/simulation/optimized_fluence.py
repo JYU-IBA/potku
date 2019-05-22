@@ -71,7 +71,8 @@ class OptimizedFluenceWidget(QtWidgets.QWidget):
                 removed_files.append(file)
         for rf in removed_files:
             path = os.path.join(self.element_simulation.directory, rf)
-            os.remove(path)
+            if os.path.exists(path):
+                os.remove(path)
 
         super().closeEvent(evnt)
 

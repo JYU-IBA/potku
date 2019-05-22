@@ -296,7 +296,7 @@ class Nsgaii:
                     objective_values[j] = np.array([np.inf, np.inf])
                 j += 1
         else:  # Evaluate fluence
-            self.mcerd_run = True
+            # self.mcerd_run = True
             if not self.mcerd_run:
                 self.element_simulation.start(self.number_of_processes, 201,
                                               optimize=True,

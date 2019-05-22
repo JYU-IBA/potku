@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 19.3.2013
-Updated on 17.5.2019
+Updated on 22.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -232,6 +232,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
             simulations_run = self.check_if_simulations_run()
             simulations_running = self.request.simulations_running()
+            optimization_running = self.request.optimization_running()
+
             if simulations_run and simulations_running and \
                     not only_seed_changed and not only_unnotified_changed:
                 reply = QtWidgets.QMessageBox.question(
@@ -301,7 +303,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
                         else:
                             # Handle optimization
-                            elem_sim.stop(optimize=True)
+                            if elem_sim.optimization_recoils:
+                                elem_sim.stop(optimize_recoil=True)
+                            else:
+                                elem_sim.stop()
                             elem_sim.optimization_stopped = True
                             elem_sim.optimization_running = False
 
@@ -309,10 +314,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                             if tab_id != -1:
                                 tab = self.main_window.ui.tabs.widget(tab_id)
                                 if tab:
+                                    tab.del_widget(elem_sim.optimization_widget)
                                     # Handle optimization energy spectra
                                     if elem_sim.optimization_recoils:
-                                        tab.del_widget(
-                                            elem_sim.optimization_widget)
                                         # Delete energy spectra that use
                                         # optimized recoils
                                         for opt_rec in \
@@ -448,7 +452,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                 elem_sim.controls.reset_controls()
                         else:
                             # Handle optimization
-                            elem_sim.stop(optimize=True)
+                            if elem_sim.optimization_recoils:
+                                elem_sim.stop(optimize_recoil=True)
+                            else:
+                                elem_sim.stop()
                             elem_sim.optimization_stopped = True
                             elem_sim.optimization_running = False
 
@@ -456,10 +463,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                             if tab_id != -1:
                                 tab = self.main_window.ui.tabs.widget(tab_id)
                                 if tab:
+                                    tab.del_widget(elem_sim.optimization_widget)
                                     # Handle optimization energy spectra
                                     if elem_sim.optimization_recoils:
-                                        tab.del_widget(
-                                            elem_sim.optimization_widget)
                                         # Delete energy spectra that use
                                         # optimized recoils
                                         for opt_rec in \
@@ -496,7 +502,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     "There are simulations that use request settings, "
                     "and have been simulated.\nIf you save changes,"
                     " the result files of the simulated simulations are "
-                    "deleted.\n\nDo you want to save changes anyway?",
+                    "deleted. This also affects possible running "
+                    "optimization.\n\nDo you want to save changes anyway?",
                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
                     QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
                 if reply == QtWidgets.QMessageBox.No or reply == \
@@ -545,6 +552,103 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         # Reset controls
                         if elem_sim.controls:
                             elem_sim.controls.reset_controls()
+
+                    tmp_sims = copy.copy(optimization_running)
+                    for elem_sim in tmp_sims:
+                        elem_sim.optimization_stopped = True
+                        elem_sim.optimization_running = False
+
+                        tab_id = elem_sim.simulation.tab_id
+                        if tab_id != -1:
+                            tab = self.main_window.ui.tabs.widget(
+                                tab_id)
+                            if tab:
+                                tab.del_widget(
+                                    elem_sim.optimization_widget)
+                                # Handle optimization energy spectra
+                                if elem_sim.optimization_recoils:
+                                    # Delete energy spectra that use
+                                    # optimized recoils
+                                    for opt_rec in \
+                                            elem_sim.optimization_recoils:
+                                        for energy_spectra in tab.energy_spectrum_widgets:
+                                            for element_path in energy_spectra. \
+                                                    energy_spectrum_data.keys():
+                                                elem = opt_rec.prefix + "-" + opt_rec.name
+                                                if elem in element_path:
+                                                    index = element_path.find(
+                                                        elem)
+                                                    if element_path[
+                                                        index - 1] == os.path.sep and \
+                                                            element_path[
+                                                                index + len(
+                                                                    elem)] == '.':
+                                                        tab.del_widget(
+                                                            energy_spectra)
+                                                        tab.energy_spectrum_widgets.remove(
+                                                            energy_spectra)
+                                                        save_file_path = os.path.join(
+                                                            tab.simulation.directory,
+                                                            energy_spectra.save_file)
+                                                        if os.path.exists(
+                                                                save_file_path):
+                                                            os.remove(
+                                                                save_file_path)
+                                                        break
+            elif optimization_running:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Optimization running",
+                    "There are optimizations running that use request "
+                    "settings.\nIf you save changes, the running "
+                    "optimizations will be stopped, and their result files "
+                    "deleted.\n\nDo you want to save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    self.__close = False
+                    return
+                else:
+                    tmp_sims = copy.copy(optimization_running)
+                    for elem_sim in tmp_sims:
+                        elem_sim.optimization_stopped = True
+                        elem_sim.optimization_running = False
+
+                        tab_id = elem_sim.simulation.tab_id
+                        if tab_id != -1:
+                            tab = self.main_window.ui.tabs.widget(tab_id)
+                            if tab:
+                                tab.del_widget(elem_sim.optimization_widget)
+                                # Handle optimization energy spectra
+                                if elem_sim.optimization_recoils:
+                                    # Delete energy spectra that use
+                                    # optimized recoils
+                                    for opt_rec in \
+                                            elem_sim.optimization_recoils:
+                                        for energy_spectra in tab.energy_spectrum_widgets:
+                                            for element_path in energy_spectra. \
+                                                    energy_spectrum_data.keys():
+                                                elem = opt_rec.prefix + "-" + opt_rec.name
+                                                if elem in element_path:
+                                                    index = element_path.find(
+                                                        elem)
+                                                    if element_path[
+                                                        index - 1] == os.path.sep and \
+                                                            element_path[
+                                                                index + len(
+                                                                    elem)] == '.':
+                                                        tab.del_widget(
+                                                            energy_spectra)
+                                                        tab.energy_spectrum_widgets.remove(
+                                                            energy_spectra)
+                                                        save_file_path = os.path.join(
+                                                            tab.simulation.directory,
+                                                            energy_spectra.save_file)
+                                                        if os.path.exists(
+                                                                save_file_path):
+                                                            os.remove(
+                                                                save_file_path)
+                                                        break
 
             if only_seed_changed:
                 # If there are running simulation that use the same seed as the

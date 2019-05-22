@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 4.4.2018
-Updated on 17.5.2019
+Updated on 22.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -333,14 +333,17 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                     self.element_simulation.simulations_done = False
                 else:
                     # Handle optimization
-                    self.element_simulation.stop(optimize=True)
+                    if self.element_simulation.optimization_recoils:
+                        self.element_simulation.stop(optimize_recoil=True)
+                    else:
+                        self.element_simulation.stop()
                     self.element_simulation.optimization_stopped = True
                     self.element_simulation.optimization_running = False
 
+                    self.tab.del_widget(
+                        self.element_simulation.optimization_widget)
                     # Handle optimization energy spectra
                     if self.element_simulation.optimization_recoils:
-                        self.tab.del_widget(
-                            self.element_simulation.optimization_widget)
                         # Delete energy spectra that use
                         # optimized recoils
                         for opt_rec in \
@@ -370,6 +373,53 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                                                 os.remove(
                                                     save_file_path)
                                             break
+        elif self.element_simulation.optimization_running:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Optimization running",
+                "This simulation is running optimization and uses " + settings +
+                " settings.\nIf you save changes, the running "
+                "optimization will be stopped, and its result files "
+                "deleted.\n\nDo you want to save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                self.tab.del_widget(
+                    self.element_simulation.optimization_widget)
+                # Handle optimization energy spectra
+                if self.element_simulation.optimization_recoils:
+                    # Delete energy spectra that use
+                    # optimized recoils
+                    for opt_rec in \
+                            self.element_simulation.optimization_recoils:
+                        for energy_spectra in \
+                                self.tab.energy_spectrum_widgets:
+                            for element_path in energy_spectra. \
+                                    energy_spectrum_data.keys():
+                                elem = opt_rec.prefix + "-" + opt_rec.name
+                                if elem in element_path:
+                                    index = element_path.find(
+                                        elem)
+                                    if element_path[
+                                        index - 1] == os.path.sep and \
+                                            element_path[
+                                                index + len(
+                                                    elem)] == '.':
+                                        self.tab.del_widget(
+                                            energy_spectra)
+                                        self.tab.energy_spectrum_widgets.remove(
+                                            energy_spectra)
+                                        save_file_path = os.path.join(
+                                            self.tab.simulation.directory,
+                                            energy_spectra.save_file)
+                                        if os.path.exists(
+                                                save_file_path):
+                                            os.remove(
+                                                save_file_path)
+                                        break
 
         if only_seed_changed:
             # If there are running simulation that use the same seed as the

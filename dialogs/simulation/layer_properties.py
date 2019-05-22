@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 17.5.2019
+Updated on 22.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -296,6 +296,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
         simulations_run = self.check_if_simulations_run()
         simulations_running = self.simulations_running()
+        optimization_running = self.optimization_running()
 
         if simulations_run and simulations_running:
             reply = QtWidgets.QMessageBox.question(
@@ -334,7 +335,10 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                             elem_sim.controls.reset_controls()
                     else:
                         # Handle optimization
-                        elem_sim.stop(optimize=True)
+                        if elem_sim.optimization_recoils:
+                            elem_sim.stop(optimize_recoil=True)
+                        else:
+                            elem_sim.stop()
                         elem_sim.optimization_stopped = True
                         elem_sim.optimization_running = False
 
@@ -395,7 +399,10 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                             elem_sim.controls.reset_controls()
                     else:
                         # Handle optimization
-                        elem_sim.stop(optimize=True)
+                        if elem_sim.optimization_recoils:
+                            elem_sim.stop(optimize_recoil=True)
+                        else:
+                            elem_sim.stop()
                         elem_sim.optimization_stopped = True
                         elem_sim.optimization_running = False
 
@@ -415,7 +422,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 "There are simulations that use the current target, "
                 "and have been simulated.\nIf you save changes,"
                 " the result files of the simulated simulations are "
-                "deleted.\n\nDo you want to save changes anyway?",
+                "deleted. This also affects possible running "
+                "optimization.\n\nDo you want to save changes anyway?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
                 QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
             if reply == QtWidgets.QMessageBox.No or reply == \
@@ -434,6 +442,44 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
                     if elem_sim.controls:
                         elem_sim.controls.reset_controls()
+
+                for elem_sim in optimization_running:
+                    # Handle optimization
+                    if elem_sim.optimization_recoils:
+                        elem_sim.stop(optimize_recoil=True)
+                    else:
+                        elem_sim.stop()
+                    elem_sim.optimization_stopped = True
+                    elem_sim.optimization_running = False
+
+                if self.tab:
+                    for energy_spectra in self.tab.energy_spectrum_widgets:
+                        self.tab.del_widget(energy_spectra)
+                        save_file_path = os.path.join(
+                            self.tab.simulation.directory,
+                            energy_spectra.save_file)
+                        if os.path.exists(save_file_path):
+                            os.remove(save_file_path)
+                    self.tab.energy_spectrum_widgets = []
+        elif optimization_running:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Optimization running",
+                "There are optimizations running that use the current "
+                "target.\nIf you save changes, the running "
+                "optimizaations will be stopped, and their result files "
+                "deleted.\n\nDo you want to save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                # Stop simulations
+                tmp_sims = copy.copy(optimization_running)
+                for elem_sim in tmp_sims:
+                    elem_sim.optimization_stopped = True
+                    elem_sim.optimization_running = False
 
                 if self.tab:
                     for energy_spectra in self.tab.energy_spectrum_widgets:
@@ -495,6 +541,13 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             elif elem_sim in self.simulation.running_simulations:
                 return True
         return False
+
+    def optimization_running(self):
+        ret = []
+        for elem_sim in self.simulation.element_simulations:
+            if elem_sim.optimization_running:
+                ret.append(elem_sim)
+        return ret
 
     def __missing_information_message(self, empty_fields):
         """Show the user a message about missing information.
