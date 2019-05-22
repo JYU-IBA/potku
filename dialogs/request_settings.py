@@ -273,7 +273,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                             # Find element simulation's tab
                             tab_id = elem_sim.simulation.tab_id
                             if tab_id != -1:
-                                tab = self.main_window.ui.tabs.widget(tab_id)
+                                tab = self.find_related_tab(tab_id)
                                 if tab:
                                     for recoil in elem_sim.recoil_elements:
                                         # Delete energy spectra that use recoil
@@ -312,7 +312,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
                             tab_id = elem_sim.simulation.tab_id
                             if tab_id != -1:
-                                tab = self.main_window.ui.tabs.widget(tab_id)
+                                tab = self.find_related_tab(tab_id)
                                 if tab:
                                     tab.del_widget(elem_sim.optimization_widget)
                                     # Handle optimization energy spectra
@@ -359,7 +359,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         # Find element simulation's tab
                         tab_id = elem_sim.simulation.tab_id
                         if tab_id != -1:
-                            tab = self.main_window.ui.tabs.widget(tab_id)
+                            tab = self.find_related_tab(tab_id)
                             if tab:
                                 for recoil in elem_sim.recoil_elements:
                                     # Delete energy spectra that use recoil
@@ -394,7 +394,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     "There are simulations running that use request "
                     "settings.\nIf you save changes, the running "
                     "simulations will be stopped, and their result files "
-                    "deleted.\n\nDo you want to save changes anyway?",
+                    "deleted. This also affects possible running "
+                    "optimization.\n\nDo you want to save changes anyway?",
                     QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
                     QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
                 if reply == QtWidgets.QMessageBox.No or reply == \
@@ -423,7 +424,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                             # Find element simulation's tab
                             tab_id = elem_sim.simulation.tab_id
                             if tab_id != -1:
-                                tab = self.main_window.ui.tabs.widget(tab_id)
+                                tab = self.find_related_tab(tab_id)
                                 if tab:
                                     for recoil in elem_sim.recoil_elements:
                                         # Delete energy spectra that use recoil
@@ -461,7 +462,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
                             tab_id = elem_sim.simulation.tab_id
                             if tab_id != -1:
-                                tab = self.main_window.ui.tabs.widget(tab_id)
+                                tab = self.find_related_tab(tab_id)
                                 if tab:
                                     tab.del_widget(elem_sim.optimization_widget)
                                     # Handle optimization energy spectra
@@ -525,7 +526,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         # Find element simulation's tab
                         tab_id = elem_sim.simulation.tab_id
                         if tab_id != -1:
-                            tab = self.main_window.ui.tabs.widget(tab_id)
+                            tab = self.find_related_tab(tab_id)
                             if tab:
                                 for recoil in elem_sim.recoil_elements:
                                     # Delete energy spectra that use recoil
@@ -560,8 +561,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
                         tab_id = elem_sim.simulation.tab_id
                         if tab_id != -1:
-                            tab = self.main_window.ui.tabs.widget(
-                                tab_id)
+                            tab = self.find_related_tab(tab_id)
                             if tab:
                                 tab.del_widget(
                                     elem_sim.optimization_widget)
@@ -616,7 +616,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
                         tab_id = elem_sim.simulation.tab_id
                         if tab_id != -1:
-                            tab = self.main_window.ui.tabs.widget(tab_id)
+                            tab = self.find_related_tab(tab_id)
                             if tab:
                                 tab.del_widget(elem_sim.optimization_widget)
                                 # Handle optimization energy spectra
@@ -770,6 +770,19 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         else:
             self.__close = False
+
+    def find_related_tab(self, tab_id):
+        """
+        Find tab based on its id.
+
+        Args:
+             tab_id: Tab id. Doesn't correspond to places in tab.
+        """
+        for i in range(self.ui.tabs.count()):
+            tab_widget = self.main_window.ui.tabs.widget(i)
+            if tab_widget == self.main_window.tab_widgets[tab_id]:
+                return tab_widget
+        return None
 
     def check_if_simulations_run(self):
         """

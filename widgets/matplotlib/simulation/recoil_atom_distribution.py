@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 17.5.2019
+Updated on 22.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1198,9 +1198,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if add:
             if self.current_element_simulation.optimization_recoils and \
                     self.current_element_simulation.optimization_running:
-                self.current_element_simulation.stop(optimize=True)
+                self.current_element_simulation.stop(optimize_recoil=True)
                 self.current_element_simulation.optimization_stopped = True
                 self.current_element_simulation.optimization_running = False
+            # TODO: handle fluence optimization result sdeleting
             else:
                 self.current_element_simulation.stop()
                 # Remove possible other recoil elements
