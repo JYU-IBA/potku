@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 7.5.2019
-Updated on 21.5.2019
+Updated on 22.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -58,7 +58,7 @@ class Nsgaii:
                  number_of_processes=1, cross_p=0.9, mut_p=1,
                  stop_percent=0.3, check_time=20, ch=0.025,
                  hist_file=None, dis_c=20,
-                 dis_m=20):
+                 dis_m=20, check_max=900, check_min=0):
         """
         Initialize the NSGA-II algorithm with needed parameters and start
         running it.
@@ -89,6 +89,8 @@ class Nsgaii:
             dis_c: Distribution index for crossover. When this is big,
             a  new solution is close to its parents.
             dis_m: Distribution for mutation.
+            check_max: Maximum time for running a simulation.
+            check_min: Minimum time for running a simulation.
         """
         self.evaluations = gen * pop_size
         self.element_simulation = element_simulation  # Holds other needed
@@ -113,6 +115,8 @@ class Nsgaii:
         self.mcerd_run = False
         self.stop_percent = stop_percent
         self.check_time = check_time
+        self.check_max = check_max
+        self.check_min = check_min
 
         self.channel_width = ch
 
@@ -230,7 +234,9 @@ class Nsgaii:
                                               optimize=True,
                                               stop_p=self.stop_percent,
                                               check_t=self.check_time,
-                                              optimize_recoil=True)
+                                              optimize_recoil=True,
+                                              check_max=self.check_max,
+                                              check_min=self.check_min)
                 if self.element_simulation.optimization_stopped:
                     return None
                 self.mcerd_run = True
@@ -295,7 +301,9 @@ class Nsgaii:
                                               optimize=True,
                                               stop_p=self.stop_percent,
                                               check_t=self.check_time,
-                                              optimize_recoil=False)
+                                              optimize_recoil=False,
+                                              check_max=self.check_max,
+                                              check_min=self.check_min)
                 if self.element_simulation.optimization_stopped:
                     return None
                 self.mcerd_run = True

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.5.2019
-Updated on 21.5.2019
+Updated on 22.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -234,6 +234,9 @@ class OptimizationDialog(QtWidgets.QDialog):
         stop_percent = self.parameters_widget.percentDoubleSpinBox.value()
         check_time = self.parameters_widget.timeSpinBox.value()
 
+        check_max_t = self.parameters_widget.maxTimeEdit.time()
+        check_min_t = self.parameters_widget.minTimeEdit.time()
+
         crossover_prob = self.parameters_widget.crossoverProbDoubleSpinBox.value()
         mutation_prob = self.parameters_widget.mutationProbDoubleSpinBox.value()
         dist_index_crossover = self.parameters_widget.disCSpinBox.value()
@@ -242,7 +245,8 @@ class OptimizationDialog(QtWidgets.QDialog):
 
         params = [population_size, generations, no_of_processes,
                   stop_percent, check_time, crossover_prob, mutation_prob,
-                  dist_index_crossover, dist_index_mutation, fluence_upper_limit]
+                  dist_index_crossover, dist_index_mutation,
+                  fluence_upper_limit, check_max_t, check_min_t]
         return params
 
     def save_recoil_parameters(self):
@@ -265,11 +269,15 @@ class OptimizationDialog(QtWidgets.QDialog):
         no_of_processes = self.parameters_widget.processesSpinBox.value()
         check_time = self.parameters_widget.timeSpinBox.value()
 
+        check_max_t = self.parameters_widget.maxTimeEdit.time()
+        check_min_t = self.parameters_widget.minTimeEdit.time()
+
         recoil_type = self.parameters_widget.recoilTypeComboBox.currentText()
 
         params = [upper_x, lower_x, upper_y, lower_y, population_size,
                   generations, no_of_processes, crossover_prob,
-                  mutation_prob, stop_percent, check_time, recoil_type]
+                  mutation_prob, stop_percent, check_time, recoil_type,
+                  check_max_t, check_min_t]
         return params
 
     def start_optimization(self):
@@ -336,6 +344,13 @@ class OptimizationDialog(QtWidgets.QDialog):
         generations = self.parameters_widget.generationSpinBox.value()
         no_of_processes = self.parameters_widget.processesSpinBox.value()
         check_time = self.parameters_widget.timeSpinBox.value()
+        check_max_t = self.parameters_widget.maxTimeEdit.time()
+        check_min_t = self.parameters_widget.minTimeEdit.time()
+
+        check_max = check_max_t.hour() * 60 * 60 + check_max_t.minute() * 60 + \
+                    check_max_t.second()
+        check_min = check_min_t.hour() * 60 * 60 + check_min_t.minute() * 60 + \
+                    check_min_t.second()
 
         mode_recoil = self.current_mode == "recoil"
         if mode_recoil:
@@ -391,7 +406,8 @@ class OptimizationDialog(QtWidgets.QDialog):
                                  no_of_processes, crossover_prob,
                                  mutation_prob, stop_percent,
                                  check_time, channel_width, hist_file,
-                                 dist_index_crossover, dist_index_mutation))
+                                 dist_index_crossover, dist_index_mutation,
+                                 check_max, check_min))
         self.optimization_thread = thread
 
         # Create necessary results widget

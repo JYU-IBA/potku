@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 21.5.2019
+Updated on 22.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -702,7 +702,7 @@ class ElementSimulation:
 
     def start(self, number_of_processes, start_value, erd_files=None,
               optimize=False, stop_p=False, check_t=False,
-              optimize_recoil=False):
+              optimize_recoil=False, check_max=False, check_min=False):
         """
         Start the simulation.
 
@@ -714,6 +714,8 @@ class ElementSimulation:
             stop_p: Percent for stopping the MCERD run.
             check_t: Time between checks to see whether to stop MCERD or not.
             optimize_recoil: Whether optimization concerns recoil.
+            check_max: Maximum time to run simulation.
+            check_min: Minimum time to run simulation.
         """
         self.simulations_done = False
         if self.run is None:
@@ -764,11 +766,13 @@ class ElementSimulation:
                 "sim_dir": self.directory
             }
             # Delete corresponding erd file
+            optimize_fluence = False
             if not optimize_recoil:
                 if not optimize:
                     recoil_name = self.recoil_elements[0].name
                 else:
                     recoil_name = "optfl"
+                    optimize_fluence = True
                 erd_file = os.path.join(
                     self.directory, self.recoil_elements[0].prefix + "-" +
                     recoil_name + "." + str(seed_number) + ".erd")
@@ -782,7 +786,7 @@ class ElementSimulation:
             self.__erd_files.append(erd_file)
 
             self.mcerd_objects[seed_number] = MCERD(settings, self,
-                                                    optimize_fluence=True)
+                                                    optimize_fluence=optimize_fluence)
             seed_number = seed_number + 1
             if i + 1 < number_of_processes:
                 time.sleep(5)  # This is done to avoid having a mixup in mcerd
@@ -803,7 +807,8 @@ class ElementSimulation:
         else:
             # Check the change between current and previous energy spectra (if
             # the spectra have been calculated)
-            self.check_spectra_change(stop_p, check_t, optimize_recoil)
+            self.check_spectra_change(stop_p, check_t, optimize_recoil,
+                                      check_max, check_min)
 
     def calculate_erd_lines(self):
         """
@@ -828,7 +833,8 @@ class ElementSimulation:
                 self.controls.show_number_of_observed_atoms(lines_count,
                                                             add_presim)
 
-    def check_spectra_change(self, stop_percent, check_time, optimize_recoil):
+    def check_spectra_change(self, stop_percent, check_time, optimize_recoil,
+                             check_max, check_min):
         """
         If there are previous and current energy spectra, check the change in
         distance between them. When this is smaller than the threshold,
@@ -838,12 +844,21 @@ class ElementSimulation:
             stop_percent: Percent at which to stop.
             check_time: Time between the percentage checks.
             optimize_recoil: Whether recoil is being optimized.
+            check_max: Maximum time until simulation is stopped.
+            check_min: Minimum time to run simulation.
         """
         previous_avg = None
+        sleep_beginning = True
+        check_start = time.time()
         while True:
             if not self.mcerd_objects:
                 break
-            time.sleep(check_time)  # Sleep for specified time
+            if sleep_beginning:
+                time.sleep(check_min)  # Sleep for user-defined time to
+                # ensure bigger results than just few percents
+                sleep_beginning = False
+            else:
+                time.sleep(check_time)  # Sleep for specified time
             # Check if erd file can be found (presimulation has been
             # finished)
             if optimize_recoil:
@@ -856,6 +871,12 @@ class ElementSimulation:
                 opt = False
                 optfl = True
                 recoil_name = "optfl"
+
+            # Check if maximum time has been used for simulation
+            current_time = time.time()
+            if current_time - check_start >= check_max:  # Max time
+                self.stop(optimize_recoil=opt)
+
             erd_file = os.path.join(
                 self.directory, recoils[0].prefix + "-" + recoil_name +
                 "." + str(self.__opt_seed) + ".erd")

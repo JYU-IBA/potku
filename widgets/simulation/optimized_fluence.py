@@ -1,6 +1,6 @@
 # coding=utf-8
 """
-Created on 21.5.2019
+Created on 22.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -56,7 +56,7 @@ class OptimizedFluenceWidget(QtWidgets.QWidget):
         """
         if self.element_simulation.mcerd_objects and \
                 self.element_simulation.optimization_running:
-            self.element_simulation.stop(optimize=True)
+            self.element_simulation.stop()
             self.element_simulation.optimization_running = False
         self.element_simulation.optimization_stopped = True
         self.element_simulation.optimization_widget = None

@@ -1,6 +1,7 @@
 # coding=utf-8
 """
 Created on 20.5.2019
+Updated on 22.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -72,3 +73,5 @@ class OptimizationRecoilParameterWidget(QtWidgets.QWidget):
             self.ui.recoilTypeComboBox.setCurrentIndex(
                 self.recoilTypeComboBox.findText(
             params[11], Qt.MatchFixedString))
+            self.ui.maxTimeEdit.setTime(params[12])
+            self.ui.minTimeEdit.setTime(params[13])
