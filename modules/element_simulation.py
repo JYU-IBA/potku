@@ -85,7 +85,8 @@ class ElementSimulation:
                  seed_number=101, minimum_energy=1.0, channel_width=0.025,
                  use_default_settings=True, sample=None,
                  simulations_done=False, main_recoil=None,
-                 optimization_recoils=None, __opt_seed=None):
+                 optimization_recoils=None, __opt_seed=None,
+                 optimized_fluence=None):
         """ Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
@@ -116,6 +117,7 @@ class ElementSimulation:
             main_recoil: Main recoil element.
             optimization_recoils: List or recoils that are used for
             optimization.
+            optimized_fluence: Optimized fluence value.
         """
         self.directory = directory
         self.request = request
@@ -209,7 +211,7 @@ class ElementSimulation:
         self.optimization_widget = None
         self.optimization_running = False
         # Store fluence optimization results
-        self.optimized_fluence = None
+        self.optimized_fluence = optimized_fluence
 
     def unlock_edit(self):
         """
@@ -494,6 +496,7 @@ class ElementSimulation:
             rec_type = "sct"
 
         main_recoil = None
+        optimized_fluence = None
         for file in os.listdir(simulation_folder):
             if file.startswith(prefix) and (file.endswith(".rec") or
                                             file.endswith(".sct")) and not \
@@ -543,6 +546,9 @@ class ElementSimulation:
                             recoil_elements.insert(0, element)
                         else:
                             recoil_elements.append(element)
+            elif file.endswith("optfl.result"):  # Check if fluence is optimized
+                with open(os.path.join(simulation_folder, file), "r") as f:
+                    optimized_fluence = float(f.readline())
 
         # Check if there are any files to tell that simulations have
         # been run previously
@@ -573,7 +579,8 @@ class ElementSimulation:
                    channel_width=channel_width,
                    simulations_done=simulations_done,
                    main_recoil=main_recoil,
-                   optimization_recoils=optimized_recoils)
+                   optimization_recoils=optimized_recoils,
+                   optimized_fluence=optimized_fluence)
 
     def mcsimu_to_file(self, file_path):
         """Save mcsimu settings to file.

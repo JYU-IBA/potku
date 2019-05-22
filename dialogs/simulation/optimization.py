@@ -191,6 +191,13 @@ class OptimizationDialog(QtWidgets.QDialog):
                     with open(os.path.join(self.element_simulation.directory,
                                            save_file_name), "w") as f:
                         f.write(self.measured_element)
+                else:
+                    # save found fluence value
+                    file_name = self.element_simulation.name_prefix + \
+                                "-optfl.result"
+                    with open(os.path.join(self.element_simulation.directory,
+                                           file_name), "w") as f:
+                        f.write(str(self.element_simulation.optimized_fluence))
                 self.result_widget = None
                 break
             time.sleep(5)  # Sleep for 5 seconds to save processing power

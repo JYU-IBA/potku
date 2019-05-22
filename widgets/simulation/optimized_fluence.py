@@ -1,6 +1,7 @@
 # coding=utf-8
 """
-Created on 22.5.2019
+Created on 21.5.2019
+Updated on 22.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -42,6 +43,8 @@ class OptimizedFluenceWidget(QtWidgets.QWidget):
                                           "ui_optimized_fluence_widget.ui"),
                              self)
         self.element_simulation = element_simulation
+        if self.element_simulation.optimized_fluence:
+            self.show_fluence()
 
     def delete(self):
         """Delete variables and do clean up.
