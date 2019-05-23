@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 22.5.2019
+Updated on 23.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -297,6 +297,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         simulations_run = self.check_if_simulations_run()
         simulations_running = self.simulations_running()
         optimization_running = self.optimization_running()
+        optimization_run = self.check_if_optimization_run()
 
         if simulations_run and simulations_running:
             reply = QtWidgets.QMessageBox.question(
@@ -342,6 +343,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                         elem_sim.optimization_stopped = True
                         elem_sim.optimization_running = False
 
+                        if self.tab:
+                            self.tab.del_widget(elem_sim.optimization_widget)
+
                 if self.tab:
                     for energy_spectra in self.tab.energy_spectrum_widgets:
                         self.tab.del_widget(energy_spectra)
@@ -353,16 +357,19 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                     self.tab.energy_spectrum_widgets = []
 
                 for elem_sim in simulations_run:
-                    for recoil in elem_sim.recoil_elements:
-                        delete_simulation_results(elem_sim, recoil)
-                    # Reset controls
-                    if elem_sim.controls:
-                        elem_sim.controls.reset_controls()
+                    if not elem_sim.optimization_widget:
+                        for recoil in elem_sim.recoil_elements:
+                            delete_simulation_results(elem_sim, recoil)
+                        # Reset controls
+                        if elem_sim.controls:
+                            elem_sim.controls.reset_controls()
 
-                    # Change full edit unlocked
-                    elem_sim.recoil_elements[0].widgets[0].parent. \
-                        edit_lock_push_button.setText("Full edit unlocked")
-                    elem_sim.simulations_done = False
+                        # Change full edit unlocked
+                        elem_sim.recoil_elements[0].widgets[0].parent. \
+                            edit_lock_push_button.setText("Full edit unlocked")
+                        elem_sim.simulations_done = False
+                    else:
+                        self.tab.del_widget(elem_sim.optimization_widget)
 
         elif simulations_running:
             reply = QtWidgets.QMessageBox.question(
@@ -406,6 +413,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                         elem_sim.optimization_stopped = True
                         elem_sim.optimization_running = False
 
+                        if self.tab:
+                            self.tab.del_widget(elem_sim.optimization_widget)
+
                 if self.tab:
                     for energy_spectra in self.tab.energy_spectrum_widgets:
                         self.tab.del_widget(energy_spectra)
@@ -422,7 +432,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 "There are simulations that use the current target, "
                 "and have been simulated.\nIf you save changes,"
                 " the result files of the simulated simulations are "
-                "deleted. This also affects possible running "
+                "deleted. This also affects possible "
                 "optimization.\n\nDo you want to save changes anyway?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
                 QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
@@ -452,6 +462,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                     elem_sim.optimization_stopped = True
                     elem_sim.optimization_running = False
 
+                    if self.tab:
+                        self.tab.del_widget(elem_sim.optimization_widget)
+
                 if self.tab:
                     for energy_spectra in self.tab.energy_spectrum_widgets:
                         self.tab.del_widget(energy_spectra)
@@ -461,6 +474,11 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                         if os.path.exists(save_file_path):
                             os.remove(save_file_path)
                     self.tab.energy_spectrum_widgets = []
+
+                for elem_sim in optimization_run:
+                    if self.tab:
+                        self.tab.del_widget(elem_sim.optimization_widget)
+
         elif optimization_running:
             reply = QtWidgets.QMessageBox.question(
                 self, "Optimization running",
@@ -480,6 +498,40 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 for elem_sim in tmp_sims:
                     elem_sim.optimization_stopped = True
                     elem_sim.optimization_running = False
+                    if self.tab:
+                        self.tab.del_widget(elem_sim.optimization_widget)
+
+                if self.tab:
+                    for energy_spectra in self.tab.energy_spectrum_widgets:
+                        self.tab.del_widget(energy_spectra)
+                        save_file_path = os.path.join(
+                            self.tab.simulation.directory,
+                            energy_spectra.save_file)
+                        if os.path.exists(save_file_path):
+                            os.remove(save_file_path)
+                    self.tab.energy_spectrum_widgets = []
+
+                for elem_sim in optimization_run:
+                    if self.tab:
+                        self.tab.del_widget(elem_sim.optimization_widget)
+
+        elif optimization_run:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Optimization results",
+                "There are optimization results that use the current "
+                "target.\nIf you save changes, result files will be "
+                "deleted.\n\nDo you want to save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                tmp_sims = copy.copy(optimization_run)
+                for elem_sim in tmp_sims:
+                    if self.tab:
+                        self.tab.del_widget(elem_sim.optimization_widget)
 
                 if self.tab:
                     for energy_spectra in self.tab.energy_spectrum_widgets:
@@ -510,6 +562,22 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.placement_under = False
         self.ok_pressed = True
         self.__close = True
+
+    def check_if_optimization_run(self):
+        """
+        Check if simulation has optimization results.
+
+        Return:
+             List of optimized element simulations.
+        """
+        if not self.simulation:
+            return False
+        opt_run = []
+        for elem_sim in self.simulation.element_simulations:
+            if elem_sim.optimization_widgte and not \
+                    elem_sim.optimization_running:
+                opt_run.append(elem_sim)
+        return opt_run
 
     def check_if_simulations_run(self):
         """

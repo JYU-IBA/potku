@@ -87,7 +87,10 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         for rf in removed_files:
             path = os.path.join(self.element_simulation.directory, rf)
             if os.path.exists(path):
-                os.remove(path)
+                try:
+                    os.remove(path)
+                except PermissionError:
+                    pass
 
         super().closeEvent(evnt)
 

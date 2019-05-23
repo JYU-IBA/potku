@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 22.5.2019
+Updated on 23.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -130,6 +130,23 @@ class _CompositionWidget(MatplotlibWidget):
         for action in self.__layer_actions:
             action.setEnabled(True)
 
+    def check_if_optimization_run(self):
+        """
+        Check if simulation has optimization results.
+
+        Return:
+             List of optimized simulations.
+        """
+        if not self.simulation:
+            return False
+        opt_run = []
+        for elem_sim in self.simulation.element_simulations:
+            if elem_sim.optimization_widget and \
+               elem_sim.use_default_settings and not \
+                    elem_sim.optimization_running:
+                opt_run.append(elem_sim)
+        return opt_run
+
     def check_if_simulations_run(self):
         """
         Check if simulation have been run.
@@ -187,6 +204,7 @@ class _CompositionWidget(MatplotlibWidget):
         simulations_run = self.check_if_simulations_run()
         simulations_running = self.simulations_running()
         optimization_running = self.optimization_running()
+        optimization_run = self.check_if_optimization_run()
 
         if self.foil_behaviour:
             simulations_run = []
@@ -200,8 +218,8 @@ class _CompositionWidget(MatplotlibWidget):
                 "and either have been simulated or are currently running."
                 "\nIf you save changes, the running simulations "
                 "will be stopped, and the result files of the simulated "
-                "and stopped simulations are deleted. This also applies "
-                "to possible optimization.\n\nDo you want to "
+                "and stopped simulations are deleted. This also affects "
+                "possible optimization.\n\nDo you want to "
                 "save changes anyway?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
                 QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
@@ -238,6 +256,7 @@ class _CompositionWidget(MatplotlibWidget):
                             elem_sim.stop()
                         elem_sim.optimization_stopped = True
                         elem_sim.optimization_running = False
+                        self.parent.tab.del_widget(elem_sim.optimization_widget)
 
                 for energy_spectra in self.parent.tab.energy_spectrum_widgets:
                     self.parent.tab.del_widget(energy_spectra)
@@ -259,13 +278,16 @@ class _CompositionWidget(MatplotlibWidget):
                     if elem_sim.controls:
                         elem_sim.controls.reset_controls()
 
+                for elem_sim in optimization_run:
+                    self.parent.tab.del_widget(elem_sim.optimization_widget)
+
         elif simulations_running:
             reply = QtWidgets.QMessageBox.question(
                 self, "Simulations running",
                 "There are simulations running that use the current "
                 "target.\nIf you save changes, the running "
                 "simulations will be stopped, and their result files "
-                "deleted. This also applies to possible optimization.\n\nDo "
+                "deleted. This also affects possible optimization.\n\nDo "
                 "you want to save changes anyway?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
                 QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
@@ -302,6 +324,7 @@ class _CompositionWidget(MatplotlibWidget):
                             elem_sim.stop()
                         elem_sim.optimization_stopped = True
                         elem_sim.optimization_running = False
+                        self.parent.tab.del_widget(elem_sim.optimization_widget)
 
                 for energy_spectra in \
                         self.parent.tab.energy_spectrum_widgets:
@@ -312,6 +335,9 @@ class _CompositionWidget(MatplotlibWidget):
                     if os.path.exists(save_file_path):
                         os.remove(save_file_path)
                 self.parent.tab.energy_spectrum_widgets = []
+
+                for elem_sim in optimization_run:
+                    self.parent.tab.del_widget(elem_sim.optimization_widget)
 
         elif simulations_run:
             reply = QtWidgets.QMessageBox.question(
@@ -374,6 +400,39 @@ class _CompositionWidget(MatplotlibWidget):
                 return
             else:
                 tmp_sims = copy.copy(optimization_running)
+                for elem_sim in tmp_sims:
+                    # Handle optimization
+                    elem_sim.optimization_stopped = True
+                    elem_sim.optimization_running = False
+                    self.parent.tab.del_widget(elem_sim.optimization_widget)
+
+                for energy_spectra in \
+                        self.parent.tab.energy_spectrum_widgets:
+                    self.parent.tab.del_widget(energy_spectra)
+                    save_file_path = os.path.join(
+                        self.parent.tab.simulation.directory,
+                        energy_spectra.save_file)
+                    if os.path.exists(save_file_path):
+                        os.remove(save_file_path)
+                self.parent.tab.energy_spectrum_widgets = []
+
+                for elem_sim in optimization_run:
+                    self.parent.tab.del_widget(elem_sim.optimization_widget)
+
+        elif optimization_run:
+            reply = QtWidgets.QMessageBox.question(
+                self, "Optimization results",
+                "There are optimization results that use the current "
+                "target.\nIf you save changes, result files will be "
+                "deleted.\n\nDo you want to save changes anyway?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                self.__close = False
+                return
+            else:
+                tmp_sims = copy.copy(optimization_run)
                 for elem_sim in tmp_sims:
                     # Handle optimization
                     elem_sim.optimization_stopped = True
