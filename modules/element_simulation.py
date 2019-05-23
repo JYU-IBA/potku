@@ -72,7 +72,8 @@ class ElementSimulation:
                 "__erd_files", "optimization_recoils", "__previous_espe", \
                 "__opt_seed", "optimization_done", "calculated_solutions", \
                 "optimization_stopped", "optimization_widget", \
-                "optimization_running", "optimized_fluence"
+                "optimization_running", "optimized_fluence", \
+                "optimization_mcerd_running"
 
     def __init__(self, directory, request, recoil_elements,
                  simulation=None, name_prefix="",
@@ -210,6 +211,7 @@ class ElementSimulation:
         self.optimization_stopped = False
         self.optimization_widget = None
         self.optimization_running = False
+        self.optimization_mcerd_running = False
         # Store fluence optimization results
         self.optimized_fluence = optimized_fluence
 
@@ -793,6 +795,9 @@ class ElementSimulation:
 
             self.__erd_files.append(erd_file)
 
+            if optimize:
+                self.optimization_mcerd_running = True
+
             self.mcerd_objects[seed_number] = MCERD(settings, self,
                                                     optimize_fluence=optimize_fluence)
             seed_number = seed_number + 1
@@ -860,6 +865,7 @@ class ElementSimulation:
         check_start = time.time()
         while True:
             if not self.mcerd_objects:
+                self.optimization_mcerd_running = False
                 break
             if sleep_beginning:
                 time.sleep(check_min)  # Sleep for user-defined time to
@@ -992,6 +998,8 @@ class ElementSimulation:
         except ValueError:
             self.simulation.running_simulations.remove(self)
         self.simulations_done = True
+        if self.optimization_mcerd_running:
+            self.optimization_mcerd_running = False
 
         # Calculate erd lines for log
         lines_count = 0

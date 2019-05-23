@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 14.5.2019
-Updated on 22.5.2019
+Updated on 23.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -95,8 +95,10 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         """
         Show calculated solutions in the widget.
         """
-        self.ui.progressLabel.setText(
-            str(evaluations) + " evaluations done. Running.")
+        text = str(evaluations) + " evaluations done. Running."
+        if self.element_simulation.optimization_mcerd_running:
+            text += " Simulating."
+        self.ui.progressLabel.setText(text)
 
     def show_results(self, evaluations):
         """
