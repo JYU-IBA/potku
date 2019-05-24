@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 21.5.2019
+Updated on 24.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -722,7 +722,7 @@ def delete_simulation_results(element_simulation, recoil_element):
     """
     files_to_delete = []
     for file in os.listdir(element_simulation.directory):
-        if file.startswith(recoil_element.prefix):
+        if file.startswith(recoil_element.prefix) and not "opt" in file:
             if file.endswith(".recoil") or file.endswith("erd") or \
                     file.endswith(".simu") or file.endswith(".scatter"):
                 files_to_delete.append(os.path.join(

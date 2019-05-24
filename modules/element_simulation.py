@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 23.5.2019
+Updated on 24.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -548,7 +548,9 @@ class ElementSimulation:
                             recoil_elements.insert(0, element)
                         else:
                             recoil_elements.append(element)
-            elif file.endswith("optfl.result"):  # Check if fluence is optimized
+            elif file.startswith(prefix) and file.endswith("optfl.result") and \
+                not file[file.index(prefix) + len(prefix)].isalpha():
+                # Check if fluence is optimized
                 with open(os.path.join(simulation_folder, file), "r") as f:
                     optimized_fluence = float(f.readline())
 
@@ -559,6 +561,9 @@ class ElementSimulation:
             if f.startswith(name_prefix + "-" + recoil_elements[0].name) and \
                     f.endswith(
                     ".erd"):
+                simulations_done = True
+                break
+            elif f.startswith(name_prefix + "-opt") and f.endswith(".result"):
                 simulations_done = True
                 break
 
@@ -807,7 +812,7 @@ class ElementSimulation:
                 # (without this, Potku would crash)
         QtWidgets.QApplication.restoreOverrideCursor()
 
-        if self.use_default_settings:
+        if self.use_default_settings and not self.simulation.detector:
             self.request.running_simulations.append(self)
         else:
             self.simulation.running_simulations.append(self)
@@ -989,7 +994,7 @@ class ElementSimulation:
         try:
             # self.mcerd_objects[sim].copy_results(self.directory)
             self.mcerd_objects[ref_key].delete_unneeded_files()
-        except FileNotFoundError:
+        except (FileNotFoundError, KeyError):
             pass
         for sim in list(self.mcerd_objects.keys()):
             del (self.mcerd_objects[sim])
