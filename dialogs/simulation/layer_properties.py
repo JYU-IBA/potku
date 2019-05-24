@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 28.2.2018
-Updated on 23.5.2019
+Updated on 24.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -345,6 +345,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
                         if self.tab:
                             self.tab.del_widget(elem_sim.optimization_widget)
+                        elem_sim.simulations_done = False
 
                 if self.tab:
                     for energy_spectra in self.tab.energy_spectrum_widgets:
@@ -370,6 +371,20 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                         elem_sim.simulations_done = False
                     else:
                         self.tab.del_widget(elem_sim.optimization_widget)
+                        elem_sim.simulations_done = False
+
+                for elem_sim in optimization_running:
+                    elem_sim.optimization_stopped = True
+                    elem_sim.optimization_running = False
+
+                    if self.tab:
+                        self.tab.del_widget(elem_sim.optimization_widget)
+                    elem_sim.simulations_done = False
+
+                for elem_sim in optimization_run:
+                    if self.tab:
+                        self.tab.del_widget(elem_sim.optimization_widget)
+                    elem_sim.simulations_done = False
 
         elif simulations_running:
             reply = QtWidgets.QMessageBox.question(
@@ -415,6 +430,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
                         if self.tab:
                             self.tab.del_widget(elem_sim.optimization_widget)
+                        elem_sim.simulations_done = False
 
                 if self.tab:
                     for energy_spectra in self.tab.energy_spectrum_widgets:
@@ -454,16 +470,12 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                         elem_sim.controls.reset_controls()
 
                 for elem_sim in optimization_running:
-                    # Handle optimization
-                    if elem_sim.optimization_recoils:
-                        elem_sim.stop(optimize_recoil=True)
-                    else:
-                        elem_sim.stop()
                     elem_sim.optimization_stopped = True
                     elem_sim.optimization_running = False
 
                     if self.tab:
                         self.tab.del_widget(elem_sim.optimization_widget)
+                    elem_sim.simulations_done = False
 
                 if self.tab:
                     for energy_spectra in self.tab.energy_spectrum_widgets:
@@ -478,6 +490,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 for elem_sim in optimization_run:
                     if self.tab:
                         self.tab.del_widget(elem_sim.optimization_widget)
+                    elem_sim.simulations_done = False
 
         elif optimization_running:
             reply = QtWidgets.QMessageBox.question(
@@ -500,6 +513,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                     elem_sim.optimization_running = False
                     if self.tab:
                         self.tab.del_widget(elem_sim.optimization_widget)
+                    elem_sim.simulations_done = False
 
                 if self.tab:
                     for energy_spectra in self.tab.energy_spectrum_widgets:
@@ -514,6 +528,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 for elem_sim in optimization_run:
                     if self.tab:
                         self.tab.del_widget(elem_sim.optimization_widget)
+                    elem_sim.simulations_done = False
 
         elif optimization_run:
             reply = QtWidgets.QMessageBox.question(
@@ -532,6 +547,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 for elem_sim in tmp_sims:
                     if self.tab:
                         self.tab.del_widget(elem_sim.optimization_widget)
+                    elem_sim.simulations_done = False
 
                 if self.tab:
                     for energy_spectra in self.tab.energy_spectrum_widgets:
@@ -574,7 +590,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             return False
         opt_run = []
         for elem_sim in self.simulation.element_simulations:
-            if elem_sim.optimization_widgte and not \
+            if elem_sim.optimization_widget and not \
                     elem_sim.optimization_running:
                 opt_run.append(elem_sim)
         return opt_run
