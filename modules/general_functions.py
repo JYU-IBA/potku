@@ -228,13 +228,16 @@ def read_espe_file(espe_file):
         Returns energy spectrum data as a list.
         """
     data = []
-    with open(espe_file, 'r') as file:
-        for line in file:
-            data_point = line.strip().split()
-            if "#" in data_point[1]:
-                continue
-            else:
-                data.append(data_point)
+    try:
+        with open(espe_file, 'r') as file:
+            for line in file:
+                data_point = line.strip().split()
+                if "#" in data_point[1]:
+                    continue
+                else:
+                    data.append(data_point)
+    except FileNotFoundError:
+        return data
     return data
 
 

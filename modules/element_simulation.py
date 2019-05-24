@@ -871,6 +871,7 @@ class ElementSimulation:
         while True:
             if not self.mcerd_objects:
                 self.optimization_mcerd_running = False
+                self.simulations_done = True
                 break
             if sleep_beginning:
                 time.sleep(check_min)  # Sleep for user-defined time to
