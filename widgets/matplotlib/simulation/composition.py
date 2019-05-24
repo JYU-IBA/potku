@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 23.5.2019
+Updated on 24.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -158,8 +158,7 @@ class _CompositionWidget(MatplotlibWidget):
             return False
         simulations_run = []
         for elem_sim in self.simulation.element_simulations:
-            if elem_sim.simulations_done and \
-               elem_sim.use_default_settings:
+            if elem_sim.simulations_done:
                 simulations_run.append(elem_sim)
         return simulations_run
 
@@ -257,6 +256,7 @@ class _CompositionWidget(MatplotlibWidget):
                         elem_sim.optimization_stopped = True
                         elem_sim.optimization_running = False
                         self.parent.tab.del_widget(elem_sim.optimization_widget)
+                        elem_sim.simulations_done = False
 
                 for energy_spectra in self.parent.tab.energy_spectrum_widgets:
                     self.parent.tab.del_widget(energy_spectra)
@@ -280,6 +280,13 @@ class _CompositionWidget(MatplotlibWidget):
 
                 for elem_sim in optimization_run:
                     self.parent.tab.del_widget(elem_sim.optimization_widget)
+                    elem_sim.simulations_done = False
+
+                for elem_sim in optimization_running:
+                    elem_sim.optimization_stopped = True
+                    elem_sim.optimization_running = False
+                    self.parent.tab.del_widget(elem_sim.optimization_widget)
+                    elem_sim.simulations_done = False
 
         elif simulations_running:
             reply = QtWidgets.QMessageBox.question(
@@ -325,6 +332,7 @@ class _CompositionWidget(MatplotlibWidget):
                         elem_sim.optimization_stopped = True
                         elem_sim.optimization_running = False
                         self.parent.tab.del_widget(elem_sim.optimization_widget)
+                        elem_sim.simulations_done = False
 
                 for energy_spectra in \
                         self.parent.tab.energy_spectrum_widgets:
@@ -338,6 +346,7 @@ class _CompositionWidget(MatplotlibWidget):
 
                 for elem_sim in optimization_run:
                     self.parent.tab.del_widget(elem_sim.optimization_widget)
+                    elem_sim.simulations_done = False
 
         elif simulations_run:
             reply = QtWidgets.QMessageBox.question(
@@ -367,13 +376,12 @@ class _CompositionWidget(MatplotlibWidget):
                         elem_sim.controls.reset_controls()
 
                 for elem_sim in optimization_running:
-                    # Handle optimization
-                    if elem_sim.optimization_recoils:
-                        elem_sim.stop(optimize_recoil=True)
-                    else:
-                        elem_sim.stop()
                     elem_sim.optimization_stopped = True
                     elem_sim.optimization_running = False
+
+                    for elem_sim in optimization_run:
+                        self.parent.tab.del_widget(elem_sim.optimization_widget)
+                        elem_sim.simulations_done = False
 
                 for energy_spectra in \
                         self.parent.tab.energy_spectrum_widgets:
@@ -405,6 +413,7 @@ class _CompositionWidget(MatplotlibWidget):
                     elem_sim.optimization_stopped = True
                     elem_sim.optimization_running = False
                     self.parent.tab.del_widget(elem_sim.optimization_widget)
+                    elem_sim.simulations_done = False
 
                 for energy_spectra in \
                         self.parent.tab.energy_spectrum_widgets:
@@ -418,6 +427,7 @@ class _CompositionWidget(MatplotlibWidget):
 
                 for elem_sim in optimization_run:
                     self.parent.tab.del_widget(elem_sim.optimization_widget)
+                    elem_sim.simulations_done = False
 
         elif optimization_run:
             reply = QtWidgets.QMessageBox.question(
@@ -437,6 +447,8 @@ class _CompositionWidget(MatplotlibWidget):
                     # Handle optimization
                     elem_sim.optimization_stopped = True
                     elem_sim.optimization_running = False
+                    self.parent.tab.del_widget(elem_sim.optimization_widget)
+                    elem_sim.simulations_done = False
 
                 for energy_spectra in \
                         self.parent.tab.energy_spectrum_widgets:
@@ -449,20 +461,20 @@ class _CompositionWidget(MatplotlibWidget):
                 self.parent.tab.energy_spectrum_widgets = []
 
         # Delete from layers list
-        if self.__selected_layer in self.layers:
-            self.layers.remove(self.__selected_layer)
-        # Remove as selected and remove selector
-        self.__layer_selector.set_visible(False)
-        self.__layer_selector = None
-        self.__selected_layer = None
-        # Update layer start depths
-        self.update_start_depths()
-
-        # Update canvas
-        self.__update_figure(zoom_to_bottom=True)
-
-        if self.simulation and not self.layers:
-            self.parent.ui.recoilRadioButton.setEnabled(False)
+        # if self.__selected_layer in self.layers:
+        #     self.layers.remove(self.__selected_layer)
+        # # Remove as selected and remove selector
+        # self.__layer_selector.set_visible(False)
+        # self.__layer_selector = None
+        # self.__selected_layer = None
+        # # Update layer start depths
+        # self.update_start_depths()
+        #
+        # # Update canvas
+        # self.__update_figure(zoom_to_bottom=True)
+        #
+        # if self.simulation and not self.layers:
+        #     self.parent.ui.recoilRadioButton.setEnabled(False)
 
     def __modify_layer(self):
         """
