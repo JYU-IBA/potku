@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 7.5.2019
-Updated on 22.5.2019
+Updated on 27.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -1058,7 +1058,7 @@ class Nsgaii:
             self.element_simulation.optimization_recoils = []
             first_recoil = self.form_recoil(first_sol, "optfirst")
             self.element_simulation.optimization_recoils.append(first_recoil)
-            last_recoil = self.form_recoil(last_sol, "optsecond")
+            last_recoil = self.form_recoil(last_sol, "optlast")
             self.element_simulation.optimization_recoils.append(last_recoil)
 
             # Remove unnecessary opt.recoil file

@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 24.5.2019
+Updated on 27.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -489,7 +489,7 @@ class ElementSimulation:
         # Read .rec files from simulation folder
         recoil_elements = []
 
-        # # Read optimized (optfirst and optsecond) recoil files
+        # # Read optimized (optfirst and optlast) recoil files
         optimized_recoils = []
 
         if simulation_type == "ERD":
@@ -530,7 +530,7 @@ class ElementSimulation:
                 # Check whether element in regualr or part of optimized recoils
                 if prefix + "-optfirst.rec" == file:
                     optimized_recoils.insert(0, element)
-                elif prefix + "-optsecond.rec" == file:
+                elif prefix + "-optlast.rec" == file:
                     optimized_recoils.append(element)
 
                 else:
