@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 24.5.2019
+Updated on 27.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -141,8 +141,7 @@ class _CompositionWidget(MatplotlibWidget):
             return False
         opt_run = []
         for elem_sim in self.simulation.element_simulations:
-            if elem_sim.optimization_widget and \
-               elem_sim.use_default_settings and not \
+            if elem_sim.optimization_widget and not \
                     elem_sim.optimization_running:
                 opt_run.append(elem_sim)
         return opt_run
@@ -169,14 +168,15 @@ class _CompositionWidget(MatplotlibWidget):
         Return:
             True or False.
         """
+        ret = []
         if not self.simulation:
-            return False
+            return ret
         for elem_sim in self.simulation.element_simulations:
             if elem_sim in self.simulation.request.running_simulations:
-                return True
+                ret.append(elem_sim)
             elif elem_sim in self.simulation.running_simulations:
-                return True
-        return False
+                ret.append(elem_sim)
+        return ret
 
     def optimization_running(self):
         ret = []
@@ -228,7 +228,7 @@ class _CompositionWidget(MatplotlibWidget):
                 return
             else:
                 # Stop simulations
-                tmp_sims = copy.copy(self.simulation.running_simulations)
+                tmp_sims = simulations_running
                 for elem_sim in tmp_sims:
                     if not elem_sim.optimization_running:
                         elem_sim.stop()
@@ -304,31 +304,30 @@ class _CompositionWidget(MatplotlibWidget):
                 return
             else:
                 # Stop simulations
-                tmp_sims = copy.copy(self.simulation.running_simulations)
+                tmp_sims = simulations_running
                 for elem_sim in tmp_sims:
-                    if not elem_sim.optimization_running:
+                    if elem_sim.optimization_recoils:
+                        elem_sim.stop(optimize_recoil=True)
+                    else:
                         elem_sim.stop()
+                    if elem_sim.controls:
                         elem_sim.controls.state_label.setText("Stopped")
                         elem_sim.controls.run_button.setEnabled(True)
                         elem_sim.controls.stop_button.setEnabled(False)
-                        # Delete files
-                        for recoil in elem_sim.recoil_elements:
-                            delete_simulation_results(elem_sim, recoil)
+                    # Delete files
+                    for recoil in elem_sim.recoil_elements:
+                        delete_simulation_results(elem_sim, recoil)
 
-                        # Change full edit unlocked
-                        elem_sim.recoil_elements[0].widgets[0].parent. \
-                            edit_lock_push_button.setText("Full edit unlocked")
-                        elem_sim.simulations_done = False
+                    # Change full edit unlocked
+                    elem_sim.recoil_elements[0].widgets[0].parent. \
+                        edit_lock_push_button.setText("Full edit unlocked")
+                    elem_sim.simulations_done = False
 
-                        # Reset controls
-                        if elem_sim.controls:
-                            elem_sim.controls.reset_controls()
-                    else:
-                        # Handle optimization
-                        if elem_sim.optimization_recoils:
-                            elem_sim.stop(optimize_recoil=True)
-                        else:
-                            elem_sim.stop()
+                    # Reset controls
+                    if elem_sim.controls:
+                        elem_sim.controls.reset_controls()
+
+                    if elem_sim.optimization_running:
                         elem_sim.optimization_stopped = True
                         elem_sim.optimization_running = False
                         self.parent.tab.del_widget(elem_sim.optimization_widget)
@@ -354,7 +353,7 @@ class _CompositionWidget(MatplotlibWidget):
                 "There are simulations that use the current target, "
                 "and have been simulated.\nIf you save changes,"
                 " the result files of the simulated simulations are "
-                "deleted. This also affects possible running "
+                "deleted. This also affects possible "
                 "optimization.\n\nDo you want to save changes anyway?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
                 QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
@@ -379,9 +378,12 @@ class _CompositionWidget(MatplotlibWidget):
                     elem_sim.optimization_stopped = True
                     elem_sim.optimization_running = False
 
-                    for elem_sim in optimization_run:
-                        self.parent.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
+                    self.parent.tab.del_widget(elem_sim.optimization_widget)
+                    elem_sim.simulations_done = False
+
+                for elem_sim in optimization_run:
+                    self.parent.tab.del_widget(elem_sim.optimization_widget)
+                    elem_sim.simulations_done = False
 
                 for energy_spectra in \
                         self.parent.tab.energy_spectrum_widgets:
@@ -407,7 +409,7 @@ class _CompositionWidget(MatplotlibWidget):
                 self.__close = False
                 return
             else:
-                tmp_sims = copy.copy(optimization_running)
+                tmp_sims = optimization_running
                 for elem_sim in tmp_sims:
                     # Handle optimization
                     elem_sim.optimization_stopped = True
@@ -442,7 +444,7 @@ class _CompositionWidget(MatplotlibWidget):
                 self.__close = False
                 return
             else:
-                tmp_sims = copy.copy(optimization_run)
+                tmp_sims = optimization_run
                 for elem_sim in tmp_sims:
                     # Handle optimization
                     elem_sim.optimization_stopped = True
@@ -461,20 +463,20 @@ class _CompositionWidget(MatplotlibWidget):
                 self.parent.tab.energy_spectrum_widgets = []
 
         # Delete from layers list
-        # if self.__selected_layer in self.layers:
-        #     self.layers.remove(self.__selected_layer)
-        # # Remove as selected and remove selector
-        # self.__layer_selector.set_visible(False)
-        # self.__layer_selector = None
-        # self.__selected_layer = None
-        # # Update layer start depths
-        # self.update_start_depths()
-        #
-        # # Update canvas
-        # self.__update_figure(zoom_to_bottom=True)
-        #
-        # if self.simulation and not self.layers:
-        #     self.parent.ui.recoilRadioButton.setEnabled(False)
+        if self.__selected_layer in self.layers:
+            self.layers.remove(self.__selected_layer)
+        # Remove as selected and remove selector
+        self.__layer_selector.set_visible(False)
+        self.__layer_selector = None
+        self.__selected_layer = None
+        # Update layer start depths
+        self.update_start_depths()
+
+        # Update canvas
+        self.__update_figure(zoom_to_bottom=True)
+
+        if self.simulation and not self.layers:
+            self.parent.ui.recoilRadioButton.setEnabled(False)
 
     def __modify_layer(self):
         """
