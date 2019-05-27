@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 23.5.2019
+Updated on 27.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -624,7 +624,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                       "all its simulation results will be deleted.\n\nUnlock " \
                       "full edit anyway?"
                 stop_simulation = True
-            elif self.current_element_simulation.simulations_done:
+            elif self.current_element_simulation.simulations_done and not \
+                    self.current_element_simulation.optimization_done and not\
+                    self.current_element_simulation.optimization_running:
                 add = "Are you sure you want to unlock full edit for this " \
                       "element simulation?\nAll its simulation results will " \
                       "be deleted.\n\nUnlock full edit anyway?"
