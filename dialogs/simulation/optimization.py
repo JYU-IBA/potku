@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.5.2019
-Updated on 22.5.2019
+Updated on 27.5.2019
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -297,13 +297,34 @@ class OptimizationDialog(QtWidgets.QDialog):
             self.parent_tab.del_widget(
                 self.parent_tab.optimization_result_widget)
             self.parent_tab.optimization_result_widget = None
-            self.element_simulation.optimization_recoils = []
             self.element_simulation.optimized_fluence = None
             self.element_simulation.calculated_solutions = 0
             self.element_simulation.optimization_done = False
             self.element_simulation.optimization_stopped = False
             self.element_simulation.optimization_running = False
-
+            # Delete previous energy spectra if there are any
+            if self.element_simulation.optimization_recoils:
+                # Delete energy spectra that use optimized recoils
+                for opt_rec in self.element_simulation.optimization_recoils:
+                    for energy_spectra in \
+                            self.parent_tab.energy_spectrum_widgets:
+                        for element_path in \
+                                energy_spectra.energy_spectrum_data.keys():
+                            elem = opt_rec.prefix + "-" + opt_rec.name
+                            if elem in element_path:
+                                index = element_path.find(elem)
+                                if element_path[index - 1] == os.path.sep and \
+                                        element_path[index + len(elem)] == '.':
+                                    self.parent_tab.del_widget(energy_spectra)
+                                    self.parent_tab.energy_spectrum_widgets.\
+                                        remove(energy_spectra)
+                                    save_file_path = os.path.join(
+                                        self.parent_tab.simulation.directory,
+                                        energy_spectra.save_file)
+                                    if os.path.exists(save_file_path):
+                                        os.remove(save_file_path)
+                                    break
+            self.element_simulation.optimization_recoils = []
         self.close()
         root_for_cut_files = self.ui.measurementTreeWidget.invisibleRootItem()
 
