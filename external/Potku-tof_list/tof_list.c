@@ -240,9 +240,11 @@ int main(int argc, char *argv[])
       }
    }
    gsto_deallocate(table); /* Stopping data loaded in already, this is not used anymore */
-   for(i=0; i<argc-2; i++)
-      for(j=i+1; j<argc-1; j++)
-         if(!strcmp(symbol[i],symbol[j])) noweight = TRUE;
+   for(i=0; i<argc-2; i++) {
+      for(j=i+1; j<argc-1; j++){
+         //if(strcmp(symbol[i],symbol[j])) noweight = TRUE;  with this, efficiencies with isotopes works
+	  }
+   }
 
    char herp_c [100];
    char *herp_d;
@@ -261,17 +263,17 @@ int main(int argc, char *argv[])
          contains the user-specified weight factor which is memorized. */
       for(derp_n=0;derp_n<10;derp_n++){
 	     fgets(herp_c, 100, fp[i]);
-         if(derp_n == 1){
+         if(derp_n == 1){//line number2 in cut file = RBS or ERD
             sscanf(herp_c, "%s %s", &herpderp_1, &herp_type);
 			if (strcmp(herp_type, "RBS") == 0) tech = RBS;
          }
-         if(derp_n == 2){
+         if(derp_n == 2){ //line number3 in cut file = user weight factor
 			sscanf(herp_c, "%s %s %f", &herpderp_1, &herpderp_2, &user_weight);
          }
-		 if(derp_n == 5 && tech == 0){
+		 if(derp_n == 5 && tech == 0){ //line number6 in cut file = scatter element
             sscanf(herp_c, "%s %s %s", &herpderp_1, &herpderp_2, herp_d);
 			
-			// Parse isotope from string
+			// Parse isotope from string -separate mass from element (from line 6)
 			while(isdigit(*herp_d)) herp_isotope = herp_isotope*10 + *herp_d++ - '0';
 			
 			// Parse element
@@ -281,8 +283,8 @@ int main(int argc, char *argv[])
 			//printf("Scatter isotope: %i\n", herp_isotope);
 			//printf("Scatter isotope mass: %8.4f\n", get_mass(herp_scatter, &herp_isotope)/C_U);
 			// Get new mass and update values to scatter element.
-			M2[i] = get_mass(herp_scatter, &herp_isotope);
-			Z[i] = herp_isotope;
+			M2[i] = get_mass(herp_scatter, &herp_isotope);  // herp_isotope is changed, only one call to get_mass with same second parameter is possible
+			Z[i] = herp_isotope;  // here herp_isotope is proton number, not isotope number A
 			/*
 			emax[i] = input.beamE*4.0*ipow(cos(input.theta*C_DEG),2)*beamM*M[i]/ipow(beamM+M[i],2);
 #ifdef ZBL96
@@ -495,9 +497,12 @@ double get_mass(char *symbol, int *z)
          return(MM*C_U/1.0e6);
       }
    } else
+	  //printf("else osa");
+	  //printf("%i", *z);
       while(fscanf(fp,"%i %i %i %s %lf %lf\n",&N,&Z,&A,S,&M,&C) == 6)
          if(strcmp(symbol,S) == 0 && *z == A){
             fclose(fp);
+			//printf("%i", *z);
             *z = Z;
             return(M*C_U/1.0e6);
          }

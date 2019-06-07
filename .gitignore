@@ -1,0 +1,27 @@
+# Ignore all ...
+*
+# ... except directories ...
+!*/
+# ... and files with extensions.
+!*.*
+
+# Ignore exe- and pyc-files.
+*.exe
+*.pyc
+
+# Ignore scoef-binaries
+* scoef.*
+
+# Ignore these directories
+/external/data/
+/external/Examples/
+/sample_data
+/Sample-data
+/.idea
+/.settings
+/__pycache__
+/venv
+*.bak
+/external
+.gitignore
+Pipfile.lock

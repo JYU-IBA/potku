@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>387</width>
+    <width>458</width>
     <height>294</height>
    </rect>
   </property>
@@ -37,10 +37,10 @@
           <double>10.000000000000000</double>
          </property>
          <property name="singleStep">
-          <double>0.010000000000000</double>
+          <double>0.001000000000000</double>
          </property>
          <property name="value">
-          <double>0.100000000000000</double>
+          <double>0.025000000000000</double>
          </property>
         </widget>
        </item>
@@ -57,21 +57,32 @@
          </property>
         </spacer>
        </item>
+       <item>
+        <widget class="QPushButton" name="importPushButton">
+         <property name="text">
+          <string>Import external file...</string>
+         </property>
+        </widget>
+       </item>
       </layout>
      </item>
      <item>
-      <widget class="QTreeWidget" name="treeWidget">
-       <column>
-        <property name="text">
-         <string>Cut files in the measurement</string>
-        </property>
-       </column>
-      </widget>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <item row="0" column="0">
+        <widget class="QTreeWidget" name="treeWidget">
+         <column>
+          <property name="text">
+           <string>Cut files in the measurement</string>
+          </property>
+         </column>
+        </widget>
+       </item>
+      </layout>
      </item>
      <item>
       <widget class="QLabel" name="label_efficiency_files">
        <property name="text">
-        <string>Efficiency files label</string>
+        <string/>
        </property>
       </widget>
      </item>
@@ -93,7 +104,7 @@
        <item>
         <widget class="QLabel" name="label_status">
          <property name="text">
-          <string>              </string>
+          <string/>
          </property>
         </widget>
        </item>

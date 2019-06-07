@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>317</width>
-    <height>516</height>
+    <width>320</width>
+    <height>504</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,8 +18,8 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>288</width>
-    <height>500</height>
+    <width>320</width>
+    <height>0</height>
    </size>
   </property>
   <property name="maximumSize">
@@ -81,7 +81,7 @@
       <string>Scattered Element</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_4">
-      <item row="1" column="0" colspan="2">
+      <item row="2" column="0" colspan="2">
        <widget class="QRadioButton" name="rbs_standard_mass_radio">
         <property name="enabled">
          <bool>false</bool>
@@ -94,31 +94,40 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="2">
+      <item row="0" column="0" colspan="3">
+       <widget class="QLabel" name="rbsIsotopeInfoLabel">
+        <property name="text">
+         <string>If you wish to use this element, please modify masses.dat
+file and change the natural abundance to 100 % on your
+preferred isotope and restart the application.</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
        <widget class="QComboBox" name="rbs_isotope_combobox">
         <property name="enabled">
          <bool>false</bool>
         </property>
        </widget>
       </item>
-      <item row="0" column="0">
+      <item row="1" column="0">
        <widget class="QLabel" name="label_3">
         <property name="text">
          <string>Element:</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="2">
-       <widget class="QLabel" name="rbs_standard_mass_label">
+      <item row="3" column="0">
+       <widget class="QRadioButton" name="rbs_isotope_radio">
         <property name="enabled">
          <bool>false</bool>
         </property>
         <property name="text">
-         <string>0</string>
+         <string>Isotope:</string>
         </property>
        </widget>
       </item>
-      <item row="0" column="2">
+      <item row="1" column="2">
        <widget class="QPushButton" name="rbs_element_button">
         <property name="text">
          <string>Select</string>
@@ -128,13 +137,13 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
-       <widget class="QRadioButton" name="rbs_isotope_radio">
+      <item row="2" column="2">
+       <widget class="QLabel" name="rbs_standard_mass_label">
         <property name="enabled">
          <bool>false</bool>
         </property>
         <property name="text">
-         <string>Isotope:</string>
+         <string>0</string>
         </property>
        </widget>
       </item>
@@ -292,7 +301,34 @@
       <string>Selection Element</string>
      </property>
      <layout class="QGridLayout" name="gridLayout_3">
-      <item row="1" column="0" colspan="2">
+      <item row="3" column="0">
+       <widget class="QRadioButton" name="sample_isotope_radio">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>Isotope:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QPushButton" name="sample_element_button">
+        <property name="text">
+         <string>Select</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QLabel" name="sample_standard_mass_label">
+        <property name="enabled">
+         <bool>false</bool>
+        </property>
+        <property name="text">
+         <string>0</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0" colspan="2">
        <widget class="QRadioButton" name="sample_standard_mass_radio">
         <property name="enabled">
          <bool>false</bool>
@@ -305,44 +341,26 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="2">
+      <item row="3" column="2">
        <widget class="QComboBox" name="sample_isotope_combobox">
         <property name="enabled">
          <bool>false</bool>
         </property>
        </widget>
       </item>
-      <item row="0" column="0">
+      <item row="1" column="0">
        <widget class="QLabel" name="label_2">
         <property name="text">
          <string>Element:</string>
         </property>
        </widget>
       </item>
-      <item row="1" column="2">
-       <widget class="QLabel" name="sample_standard_mass_label">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
+      <item row="0" column="0" colspan="3">
+       <widget class="QLabel" name="sampleIsotopeInfoLabel">
         <property name="text">
-         <string>0</string>
-        </property>
-       </widget>
-      </item>
-      <item row="0" column="2">
-       <widget class="QPushButton" name="sample_element_button">
-        <property name="text">
-         <string>Select</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="0">
-       <widget class="QRadioButton" name="sample_isotope_radio">
-        <property name="enabled">
-         <bool>false</bool>
-        </property>
-        <property name="text">
-         <string>Isotope:</string>
+         <string>If you wish to use this element, please modify masses.dat
+file and change the natural abundance to 100 % on your
+preferred isotope and restart the application.</string>
         </property>
        </widget>
       </item>

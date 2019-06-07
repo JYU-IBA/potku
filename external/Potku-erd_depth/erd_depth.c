@@ -1006,7 +1006,7 @@ void read_events(General *general,Measurement *meas,Event *event,
                  Concentration *conc)
 {
    FILE *fp;
-   char buf[NLINE],type[TYPELEN];
+   char buf[NLINE],type[TYPELEN+1];
    double x,y,E,M,w,det_dist;
    int c,Z,A,n,i=0,cont=TRUE,j,k;
 

@@ -1,16 +1,16 @@
-Beam: 65Cu
-Energy: 10.2
-Detector angle: 41.3
-Target angle: 30.5
+Beam: 35Cl
+Energy: 8.515
+Detector angle: 41.2
+Target angle: 20.6
 Toflen: 0.623
-Carbon foil thickness: 3.0
-Target density: 4.0
-TOF calibration: 5.63834185924e-11 3.00102873072e-09
+Carbon foil thickness: 3.1
+Target density: 3.0
+TOF calibration: 5.70569323644e-11 1.66381574853e-09
 Angle calibration: 0.0 0.0
-Number of depth steps: 50
-Depth step for stopping: 10.0
-Depth step for output: 5.0
-Depths for concentration scaling: 50.0 150.0
+Number of depth steps: 100
+Depth step for stopping: 20.0
+Depth step for output: 20.0
+Depths for concentration scaling: 200.0 600.0
 Cross section: 3
 Number of iterations: 3
-Efficiency directory: U:\Ion_beam_analysis\Tof-E\vety-tehokkuudet
+Efficiency directory: /Users/monisiro/potku/efficiency_files
