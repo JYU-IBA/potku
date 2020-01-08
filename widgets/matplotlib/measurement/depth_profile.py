@@ -309,6 +309,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         handles, labels = self.axes.get_legend_handles_labels()
         # self.__ignore_from_ratio = ["Si"]
 
+        # TODO don't calculate these if lim selection is unchanged
+        # TODO don't calculate concentrations if self.__absolute_values is false
         concentrations = df.integrate_concentrations(self.read_files,
                                                      self.__ignore_from_ratio,
                                                      self.lim_a,
@@ -465,7 +467,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         Toggle lim mode.
         """
         self.__switch_lim_mode()
-        self.axes.clear()
+
+        # Commented out self.axes.clear() because it resets zoom if called
+        # here.
+        #self.axes.clear()
         self.on_draw()
 
     def __switch_lim_mode(self, mode=""):
@@ -488,6 +493,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
     def __toggle_lim_lines(self):
         """Toggles the usage of limit lines.
         """
+        #TODO lim lines should not be toggled off when zoom or pan is selected
         self.__toggle_drag_zoom()
         self.__switch_lim_mode('a')
         self.__show_limits = not self.__show_limits
@@ -498,7 +504,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         else:
             self.mpl_toolbar.mode = ""
         self.__enable_norm_over_range = False
-        self.axes.clear()
+
         self.on_draw()
 
     def __toggle_rel(self):
@@ -509,7 +515,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             self.icon_manager.set_icon(self.viewButton, "depth_profile_rel.svg")
         else:
             self.icon_manager.set_icon(self.viewButton, "depth_profile_abs.svg")
-        self.axes.clear()
+
         self.on_draw()
 
     def __toggle_drag_zoom(self):
@@ -521,6 +527,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             self.mpl_toolbar.pan()
         if self.__button_zoom.isChecked():
             self.mpl_toolbar.zoom()
+
+        #TODO this should not be done when changing from lim tool to zoom or pan
         self.__button_drag.setChecked(False)
         self.__button_zoom.setChecked(False)
 
