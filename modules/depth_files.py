@@ -203,6 +203,7 @@ def integrate_concentrations(depth_files, ignore_elements, lim_a, lim_b):
         List of lists filled with percentages.
     """
     # TODO TARKISTA, ETTÄ TOIMII!!!
+    # TODO implement/remove ignore_elements as it is not used
     concentration = {}
     if not depth_files:
         return concentration
@@ -217,7 +218,7 @@ def integrate_concentrations(depth_files, ignore_elements, lim_a, lim_b):
             if lim_a <= depth <= lim_b:
                 concentration[element[0]].append(
                     element[2][i] * bin_width / 100)
-            elif depth > lim_b:
+            elif depth > lim_b: #TODO why is the last one also added?
                 concentration[element[0]].append(
                     element[2][i] * bin_width / 100)
                 break
@@ -248,10 +249,11 @@ def integrate_lists(depth_files, ignore_elements, lim_a, lim_b,
     total_values_sum = 0
     skip_values_sum = 0
     for n in range(1, len(total_values[1])):
-        curr = total_values[1][n]
-        prev_val = total_values[2][n - 1]
-        curr_val = total_values[2][n]
-        if lim_a <= curr <= lim_b:
+        curr = total_values[1][n]           # current depth
+        prev_val = total_values[2][n - 1]   # value at prev depth
+        curr_val = total_values[2][n]       # value at current depth
+        if lim_a <= curr <= lim_b:          # calculate running avg and add
+            # it to total
             total_values_sum += (prev_val + curr_val) / 2
         elif curr > lim_b:
             total_values_sum += (prev_val + curr_val) / 2
@@ -275,13 +277,13 @@ def integrate_lists(depth_files, ignore_elements, lim_a, lim_b,
     for i in range(1, len(depth_files)):
         element = depth_files[i][0]
 
-        if element in ignore_elements:
+        if element in ignore_elements: #TODO ignore_elements should be a set
             percentages[element] = None
             margin_of_errors[element] = None
             continue
 
-        element_x = depth_files[i][1]
-        element_y = depth_files[i][2]
+        element_x = depth_files[i][1]  # Depth values
+        element_y = depth_files[i][2]  # Element concentrations at each depth
         element_e = depth_files[i][3]  # Events at profile depth
 
         element_conc = []
@@ -324,8 +326,10 @@ def get_depth_files(elements, dir_depth, cut_files):
         A list of depth files which matched the elements.
     """
     depth_files = ['depth.total']
-    orig_elements = [elem.__str__() for elem in elements]
-    strip_elements = [re.sub("\d+", "", e.__str__()) for e in elements]
+
+    # TODO these should probably be sets
+    orig_elements = [str(elem) for elem in elements]
+    strip_elements = [e.symbol for e in elements]
     for file in os.listdir(dir_depth):
         file_ending = file.split('.')[-1]
         if file_ending in orig_elements:

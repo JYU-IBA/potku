@@ -309,17 +309,18 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         handles, labels = self.axes.get_legend_handles_labels()
         # self.__ignore_from_ratio = ["Si"]
 
-        # TODO don't calculate these if lim selection is unchanged
-        # TODO don't calculate concentrations if self.__absolute_values is false
-        concentrations = df.integrate_concentrations(self.read_files,
-                                                     self.__ignore_from_ratio,
-                                                     self.lim_a,
-                                                     self.lim_b)
-        percentages, moe = df.integrate_lists(self.read_files,
-                                              self.__ignore_from_ratio,
-                                              self.lim_a,
-                                              self.lim_b,
-                                              self.__systerr)
+        # TODO don't recalculate these if lim selection is unchanged
+
+        # Calculate values to be displayed in the legend box
+        if self.__absolute_values:
+            concentrations = df.integrate_concentrations(
+                self.read_files, self.__ignore_from_ratio, self.lim_a,
+                self.lim_b)
+        else:
+            percentages, moe = df.integrate_lists(
+                self.read_files, self.__ignore_from_ratio, self.lim_a,
+                self.lim_b, self.__systerr)
+
         # Fix labels to proper format, with MoE
         labels_w_percentages = []
         for i in range(0, len(labels)):
@@ -338,7 +339,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             # str_element = labels[i]
             # percentages[element_str] can be 0 which results false
             # None when element is ignored from ratio calculation.
-            if percentages[element_str] is not None:
+            if not self.__absolute_values and percentages[element_str] is not \
+                    None:
                 rounding = self.__physic_rounding_decimals(moe[element_str])
                 # lbl_str = '%s %.3f%% ±%.3f%%' % (labels[i],
                 #                             percentages[element_str],
