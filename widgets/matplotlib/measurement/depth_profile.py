@@ -88,19 +88,23 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__systerr = systematic_error
         self.depth_files = df.get_depth_files(self.elements, self.depth_dir,
                                               self.__used_cuts)
+
+        #TODO store these in a DepthProfile object
         self.read_files = []
         self.rel_files = []
         self.hyb_files = []
+
         self.__ignore_from_graph = []
         self.__ignore_from_ratio = []
         self.selection_colors = parent.measurement.selector.get_colors()
         self.icon_manager = parent.icon_manager
-        self.lim_a = 0.0
-        self.lim_b = 0.0
+
+        self.limit = self.__Limit()
         self.lim_icons = {'a': 'depth_profile_lim_all.svg',
                           'b': 'depth_profile_lim_in.svg',
                           'c': 'depth_profile_lim_ex.svg'}
         self.lim_mode = 'a'
+
         self.canvas.mpl_connect('button_press_event', self.onclick)
         self.__files_read = False
         self.__limits_set = False
@@ -122,20 +126,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             event: A click event on the graph
         """
         if event.button == 1 and self.__show_limits:
-            if self.__use_limit.get() == 'a':
-                self.lim_a = event.xdata
-                self.__use_limit.switch()
-            elif self.__use_limit.get() == 'b':
-                self.lim_b = event.xdata
-                self.__use_limit.switch()
-            else:
-                self.lim_b = event.xdata
-                self.__use_limit.switch()
-            if self.lim_a and self.lim_a > self.lim_b:
-                self.__use_limit.switch()
-                tmp = self.lim_a
-                self.lim_a = self.lim_b
-                self.lim_b = tmp
+            self.limit.set(event.xdata)
             self.on_draw()
 
     def __sortt(self, key):
@@ -196,8 +187,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 self.rel_files = df.create_relational_depth_files(
                     self.read_files)
                 # if not self.lim_a:
-                self.lim_a = self.read_files[0][1][0]
-                self.lim_b = self.read_files[0][1][-1]
+                lim_a = self.read_files[0][1][0]
+                lim_b = self.read_files[0][1][-1]
+                self.limit = self.__Limit(a=lim_a, b=lim_b)
                 # self.__limits_set = not self.__limits_set
             except FileNotFoundError:
                 self.__files_read = True
@@ -208,25 +200,22 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         elif self.lim_mode == 'a':
             files_to_use = self.rel_files
         else:
-            tmp_a = list
-            tmp_b = list
             if self.lim_mode == 'b':
                 tmp_a = self.read_files
                 tmp_b = self.rel_files
             else:
                 tmp_a = self.rel_files
                 tmp_b = self.read_files
+            lim_a, lim_b = self.limit.get_limits()
             self.hyb_files = df.merge_files_in_range(tmp_a,
                                                      tmp_b,
-                                                     self.lim_a,
-                                                     self.lim_b)
+                                                     lim_a,
+                                                     lim_b)
             files_to_use = self.hyb_files
 
         # Plot the limits a and b
         if self.__show_limits:
-            self.axes.axvline(x=self.lim_a, linestyle="--")
-            if self.lim_b:  # TODO: Why is this sometimes null?
-                self.axes.axvline(x=self.lim_b, linestyle="--")
+            self.limit.draw(self.axes)
 
         self.axes.axhline(y=0, color="#000000")
         if self.__line_zero:
@@ -312,14 +301,14 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         # TODO don't recalculate these if lim selection is unchanged
 
         # Calculate values to be displayed in the legend box
+        lim_a, lim_b = self.limit.get_limits()
         if self.__absolute_values:
             concentrations = df.integrate_concentrations(
-                self.read_files, self.__ignore_from_ratio, self.lim_a,
-                self.lim_b)
+                self.read_files, self.__ignore_from_ratio, lim_a, lim_b)
         else:
             percentages, moe = df.integrate_lists(
-                self.read_files, self.__ignore_from_ratio, self.lim_a,
-                self.lim_b, self.__systerr)
+                self.read_files, self.__ignore_from_ratio, lim_a, lim_b,
+                self.__systerr)
 
         # Fix labels to proper format, with MoE
         labels_w_percentages = []
@@ -557,27 +546,57 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.on_draw()
 
     class __Limit:
-        """Simple object to control when setting the integration
-        limits in Depth Profile.
+        """Stores and sets values for limits used in integration calculations.
         """
 
-        def __init__(self):
+        def __init__(self, a=0.0, b=0.0):
             """Inits __limit
             """
-            self.limit = 'b'
 
-        def switch(self):
-            """ Switches limit between a and b.
+            # Internally, __Limit object does not care if a is bigger than b
+            # or vice versa so we just store them in a list without sorting
+            # them.
+            self.__limits = [a, b]
+            self.__next_limit = 1
+
+        def __switch(self):
+            """Switches the current limit between first and last.
             """
-            if self.limit == 'b':
-                self.limit = 'a'
-            else:
-                self.limit = 'b'
+            self.__next_limit = abs(1 - self.__next_limit)
 
-        def get(self):
-            """ Returns the current limit.
+        def set(self, value, switch=True):
+            """Sets the value for current limit.
 
-            Return:
-                The current limit a or b.
+            Args:
+                value: float value for the current limit
+                switch: sets if the current limit is switched after setting
+                the value
             """
-            return self.limit
+            self.__limits[self.__next_limit] = value
+            if switch:
+                self.__switch()
+
+        def draw(self, axes, highlight_last=True):
+            """Draws limit lines on the given axes.
+
+            Args:
+                highlight_last: highlights the last set limit with a different
+                color
+            """
+            #TODO better highlighting OR draggable 2d lines
+            for i in range(len(self.__limits)):
+                if highlight_last and self.__next_limit != i:
+                    axes.axvline(x=self.__limits[i], linestyle="-",
+                                 color="yellow")
+                    axes.axvline(x=self.__limits[i], linestyle="--")
+                else:
+                    axes.axvline(x=self.__limits[i], linestyle="--")
+
+        def get_limits(self):
+            """Returns limits.
+            """
+            # Here we check the order of limits and return smaller one first
+            # and bigger one last
+            if self.__limits[0] <= self.__limits[1]:
+                return self.__limits[0], self.__limits[1]
+            return self.__limits[1], self.__limits[0]
