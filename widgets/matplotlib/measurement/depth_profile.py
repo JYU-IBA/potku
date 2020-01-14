@@ -99,7 +99,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.selection_colors = parent.measurement.selector.get_colors()
         self.icon_manager = parent.icon_manager
 
-        self.limit = self.__Limit()
+        self.limit = LimitLines()
         self.lim_icons = {'a': 'depth_profile_lim_all.svg',
                           'b': 'depth_profile_lim_in.svg',
                           'c': 'depth_profile_lim_ex.svg'}
@@ -110,11 +110,11 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__limits_set = False
         self.__position_set = False
         self.__rel_graph = False
-        self.__show_limits = False
+        #self.__show_limits = False
         self.__log_scale = False
         self.__absolute_values = False
         self.__enable_norm_over_range = False
-        self.__use_limit = self.__Limit()
+        #self.__use_limit = self.__Limit()
         self.__rbs_list = rbs_list
         self.__fork_toolbar_buttons()
         self.on_draw()
@@ -125,7 +125,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         Args:
             event: A click event on the graph
         """
-        if event.button == 1 and self.__show_limits:
+        if event.button == 1 and self.limButton.isChecked():  # and self.__show_limits:
             self.limit.set(event.xdata)
             self.on_draw()
 
@@ -189,7 +189,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 # if not self.lim_a:
                 lim_a = self.read_files[0][1][0]
                 lim_b = self.read_files[0][1][-1]
-                self.limit = self.__Limit(a=lim_a, b=lim_b)
+                self.limit = LimitLines(a=lim_a, b=lim_b)
                 # self.__limits_set = not self.__limits_set
             except FileNotFoundError:
                 self.__files_read = True
@@ -214,8 +214,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             files_to_use = self.hyb_files
 
         # Plot the limits a and b
-        if self.__show_limits:
-            self.limit.draw(self.axes)
+        # if self.__show_limits:
+        # Currently limits are always drawn
+        self.limit.draw(self.axes)
 
         self.axes.axhline(y=0, color="#000000")
         if self.__line_zero:
@@ -395,7 +396,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
 
         self.modeButton = QtWidgets.QToolButton(self)
         self.modeButton.clicked.connect(self.__toggle_lim_mode)
-        self.modeButton.setEnabled(False)
+        #self.modeButton.setEnabled(False)
         self.modeButton.setToolTip(
             "Toggles between selecting the entire " +
             "histogram, area included in the limits and " +
@@ -442,9 +443,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         """
         Uncheck custom buttons.
         """
-        if self.__show_limits:
-            self.limButton.setChecked(False)
-            self.__toggle_lim_lines()
+        self.limButton.setChecked(False)
+        # if self.__show_limits:
+        #    self.limButton.setChecked(False)
+        #    self.__toggle_lim_lines()
 
     def __uncheck_built_in_buttons(self):
         """
@@ -486,17 +488,18 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         """
         #TODO lim lines should not be toggled off when zoom or pan is selected
         self.__toggle_drag_zoom()
-        self.__switch_lim_mode('a')
-        self.__show_limits = not self.__show_limits
-        self.modeButton.setEnabled(self.__show_limits)
-        if self.__show_limits:
-            self.__uncheck_built_in_buttons()
-            self.mpl_toolbar.mode = "Limit setting tool"
-        else:
-            self.mpl_toolbar.mode = ""
-        self.__enable_norm_over_range = False
+        self.mpl_toolbar.mode = "limit setting tool"
+        #self.__switch_lim_mode('a')
+        #self.__show_limits = not self.__show_limits
+        #self.modeButton.setEnabled(self.__show_limits)
+        #if self.__show_limits:
+        #    self.__uncheck_built_in_buttons()
+        #    self.mpl_toolbar.mode = "Limit setting tool"
+        #else:
+        #    self.mpl_toolbar.mode = ""
+        #self.__enable_norm_over_range = False
 
-        self.on_draw()
+        #self.on_draw()
 
     def __toggle_rel(self):
         """Toggles between the absolute and relative views.
@@ -513,13 +516,11 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         """
         Toggle drag zoom.
         """
-        # self.__tool_label.setText("")
         if self.__button_drag.isChecked():
             self.mpl_toolbar.pan()
         if self.__button_zoom.isChecked():
             self.mpl_toolbar.zoom()
 
-        #TODO this should not be done when changing from lim tool to zoom or pan
         self.__button_drag.setChecked(False)
         self.__button_zoom.setChecked(False)
 
@@ -545,58 +546,65 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__log_scale = self.__button_toggle_log.isChecked()
         self.on_draw()
 
-    class __Limit:
-        """Stores and sets values for limits used in integration calculations.
+
+class LimitLines:
+    """Stores values for limits used in depth calculations. Also used to draw
+    lines on canvas.
+    """
+
+    def __init__(self, a=0.0, b=0.0):
+        """Inits LimitLines object
+
+        Args:
+            a: position of the first limit line on x-axis
+            b: position of the second limit line on x-axis
         """
 
-        def __init__(self, a=0.0, b=0.0):
-            """Inits __limit
-            """
+        # Internally, LimitLine object does not care if a is bigger than b
+        # or vice versa so we just store them in a list without sorting
+        # them.
+        self.__limits = [a, b]
+        self.__next_limit = 1
 
-            # Internally, __Limit object does not care if a is bigger than b
-            # or vice versa so we just store them in a list without sorting
-            # them.
-            self.__limits = [a, b]
-            self.__next_limit = 1
+    def __switch(self):
+        """Switches the current limit between first and last.
+        """
+        self.__next_limit = abs(1 - self.__next_limit)
 
-        def __switch(self):
-            """Switches the current limit between first and last.
-            """
-            self.__next_limit = abs(1 - self.__next_limit)
+    def set(self, value, switch=True):
+        """Sets the value for current limit.
 
-        def set(self, value, switch=True):
-            """Sets the value for current limit.
+        Args:
+            value: float value for the current limit
+            switch: sets if the current limit is switched after setting
+            the value
+        """
+        self.__limits[self.__next_limit] = value
+        if switch:
+            self.__switch()
 
-            Args:
-                value: float value for the current limit
-                switch: sets if the current limit is switched after setting
-                the value
-            """
-            self.__limits[self.__next_limit] = value
-            if switch:
-                self.__switch()
+    def draw(self, axes, highlight_last=True):
+        """Draws limit lines on the given axes.
 
-        def draw(self, axes, highlight_last=True):
-            """Draws limit lines on the given axes.
+        Args:
+            axes: axes object that the lines will be drawn
+            highlight_last: highlights the last set limit with a different
+            color
+        """
+        #TODO better highlighting OR draggable 2d lines
+        for i in range(len(self.__limits)):
+            if highlight_last and self.__next_limit != i:
+                axes.axvline(x=self.__limits[i], linestyle="-",
+                             color="yellow")
+                axes.axvline(x=self.__limits[i], linestyle="--")
+            else:
+                axes.axvline(x=self.__limits[i], linestyle="--")
 
-            Args:
-                highlight_last: highlights the last set limit with a different
-                color
-            """
-            #TODO better highlighting OR draggable 2d lines
-            for i in range(len(self.__limits)):
-                if highlight_last and self.__next_limit != i:
-                    axes.axvline(x=self.__limits[i], linestyle="-",
-                                 color="yellow")
-                    axes.axvline(x=self.__limits[i], linestyle="--")
-                else:
-                    axes.axvline(x=self.__limits[i], linestyle="--")
-
-        def get_limits(self):
-            """Returns limits.
-            """
-            # Here we check the order of limits and return smaller one first
-            # and bigger one last
-            if self.__limits[0] <= self.__limits[1]:
-                return self.__limits[0], self.__limits[1]
-            return self.__limits[1], self.__limits[0]
+    def get_limits(self):
+        """Returns limits sorted by value (lowest first).
+        """
+        # Here we check the order of limits and return smaller one first
+        # and bigger one last
+        if self.__limits[0] <= self.__limits[1]:
+            return self.__limits[0], self.__limits[1]
+        return self.__limits[1], self.__limits[0]

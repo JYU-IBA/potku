@@ -101,24 +101,31 @@ def extract_from_depth_files(files, elements, x_column, y_column):
         of the file and two lists for graph plotting.
     """
     read_files = []
-    elements_str = []
-    for element in elements:
-        elements_str.append(str(element))
+    elements_str = set(str(element) for element in elements)
 
-    for file in files:
-        file_element = file.split('.')[-1]
-        if file_element not in elements_str:
-            for element in elements_str:
-                if re.match('^[0-9]+' + file_element, element):
-                    file_element = element
-        axe1 = []
+    # TODO rewrite this so that it returns a DepthProfile object
+    for file_path in files:
+        # Depth files are named as 'depth.[name of the element]'
+        file_element = file_path.split('.')[-1]
+        if file_element not in elements_str and file_element != "total":
+            # If file_element did not match any full element names in the
+            # list, try to match it to a symbol
+            # TODO if there are two isotopes of the same element, which one
+            # to pick?
+            matching_elem = next((elem for elem in elements if
+                                  file_element == elem.symbol), None)
+            if matching_elem:
+                file_element = str(matching_elem)
+        axe1 = []   # TODO comment which axe is which
         axe2 = []
-        axe3 = []
-        for line in open(file):
+        axe3 = []   # This is for storing absolute event counts per bin
+        for line in open(file_path):    # TODO maybe use csv reader here
+            #  etc)
             columns = re.split(' +', line.strip())
             axe1.append(float(columns[x_column]))
             try:
                 axe2.append(float(columns[y_column]) * 100)
+                # TODO maybe multiply by 100 later
             except ValueError:
                 axe2.append(0.0)
             if file_element != "total":
@@ -127,6 +134,7 @@ def extract_from_depth_files(files, elements, x_column, y_column):
                 except ValueError:
                     axe3.append(0.0)
         read_files.append([file_element, axe1, axe2, axe3])
+
     return read_files
 
 
@@ -218,7 +226,9 @@ def integrate_concentrations(depth_files, ignore_elements, lim_a, lim_b):
             if lim_a <= depth <= lim_b:
                 concentration[element[0]].append(
                     element[2][i] * bin_width / 100)
-            elif depth > lim_b: #TODO why is the last one also added?
+            elif depth > lim_b:
+                # TODO should the last one also be added if lim_b == previous
+                #  depth?
                 concentration[element[0]].append(
                     element[2][i] * bin_width / 100)
                 break
@@ -345,3 +355,42 @@ def get_depth_files(elements, dir_depth, cut_files):
                 strip_elements.remove(file_ending)
 
     return depth_files
+
+
+if __name__ == "__main__":
+    # for testing purposes
+    from element import Element
+    from timeit import default_timer as timer
+
+    elems = [
+        Element.from_string("12C"),
+        Element.from_string("12C"),
+        Element.from_string("16O"),
+        Element.from_string("19F"),
+        Element.from_string("1H"),
+        Element.from_string("2H"),
+        Element.from_string("Mn"),
+        Element.from_string("6Li"),
+        Element.from_string("7Li"),
+        Element.from_string("Mn"),
+        Element.from_string("Re"),
+        Element.from_string("Si")
+    ]
+    dir_path = os.path.abspath("..\\..\\requests\\gradu_testi.potku\\Sample_01"
+                               "-s1\\Measurement_01-m1\\Depth_profiles\\")
+
+    start = timer()
+    fpaths = [os.path.join(dir_path, f) for f in get_depth_files(
+        elems, dir_path, [])]
+    stop = timer()
+    print(stop - start, " seconds to get depth files")
+
+    x_col = 0
+    y_col = 3
+
+    start = timer()
+
+    extract_from_depth_files(fpaths, elems, x_col, y_col)
+
+    stop = timer()
+    print(stop - start, " seconds to read depth files")
