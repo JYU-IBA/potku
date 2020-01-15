@@ -40,7 +40,9 @@ import subprocess
 from enum import Enum
 
 from modules.general_functions import copy_cut_file_to_temp
+from modules.element import Element
 import modules.file_parsing as fp
+import modules.list_integration as li
 
 
 class DepthFiles(object):
@@ -95,16 +97,37 @@ class DepthProfileType(Enum):
 class DepthProfile:
     """Class used in depth profile analysis and graph plotting."""
     def __init__(self, depths, concentrations, absolute_counts, element=None):
+        """Inits a new DepthProfile object.
+
+        Args:
+            depths: collection of depth values
+            concentrations: collection of concentrations on each depth value
+            absolute_counts: collections of events on each depth value
+                element: element that the depth profile belongs to. If None,
+                the depth profile is considered an aggregation of different
+                element profiles
+        """
         # TODO check that list length match
         # TODO maybe store bin width also
         self.depths = depths
         self.concentrations = concentrations
         self.absolute_counts = absolute_counts
         self.element = element
-        self.type = DepthProfileType.element if self.element else DepthProfileType.total
+        self.type = DepthProfileType.element if self.element else \
+            DepthProfileType.total
 
     @classmethod
     def from_file(cls, file_path, element=None):
+        """Reads a depth profile from a file and returns it.
+
+        Args:
+            file_path: absolute path to a depth file
+            element: element that the depth profile belongs to. If None,
+                the depth profile is considered to be an aggregation of multiple
+                elements
+        Returns:
+            DepthProfile object
+        """
         if element:
             depths, cons, counts = fp.parse_file(
                 file_path,
@@ -122,10 +145,18 @@ class DepthProfile:
 
     @classmethod
     def from_files(cls, file_paths, elements):
+        """Reads an returns a list of DepthProfiles from depth files.
+
+        Args:
+            file_paths: absolute file paths to depth files
+            elements: collection of elements that files will be matched to
+        Returns:
+            List of DepthProfiles. Depth profile is created for each given
+            file path.
+        """
         # Depth files are named as 'depth.[name of the element]'
         # TODO add exception handling
         elem_strs = (f.split(".")[-1] for f in file_paths)
-        # TODO this could be better
         matches = dict(match_strs_to_elements(elem_strs, elements))
         profiles = []
 
@@ -137,12 +168,20 @@ class DepthProfile:
         return profiles
 
     def get_profile_name(self):
+        """Returns the name of the depth profile.
+
+        Returns:
+            string representation of the element or 'total' if element is
+                undefined.
+        """
         return str(self.element) if self.type == DepthProfileType.element \
             else "total"
 
     def integrate_concentrations(self, a, b):
-        # TODO
-        pass
+        return li.integrate(self.depths, self.concentrations, a, b,
+                            t="concentrations") * 0.01  # Divide by 100 to get
+                                                        # concentration per
+                                                        # cm^2
 
     def integrate_absolute_counts(self, a, b):
         # TODO
@@ -173,8 +212,19 @@ def extract_from_depth_files(file_paths, elements, x_column, y_column):
 
 
 def match_strs_to_elements(element_strs, elements):
+    """Matches strings to a collection of elements and yields a tuple that
+    contains the string and its matching element for each given string.
+
+    Args:
+        element_strs: iterable of strings to be matched
+        elements: iterable of elements that the strings will be matched to
+    Yields:
+        tuple that contains the element_str and matched element or None if
+        element_str could not be matched
+    """
     # TODO move this to general functions or somewhere else
     full = set(str(elem) for elem in elements)
+    # TODO maybe allow multiple isotopes of same element to match
     just_symbols = dict((element.symbol, element) for element in elements)
 
     for elem_str in element_strs:
@@ -243,43 +293,6 @@ def merge_files_in_range(file_a, file_b, lim_a, lim_b):
                 new_item[2].append(file_a[i][2][j])
         file_c.append(new_item)
     return file_c
-
-
-def integrate_concentrations(depth_files, ignore_elements, lim_a, lim_b):
-    """Calculates concentration for elements
-
-    Args:
-        depth_files: List of lists containing float values, the first list
-        is the one the rest are compared to.
-        ignore_elements: A list of elements that are not counted.
-        lim_a: The lower limit.
-        lim_b: The higher limit.
-
-    Return:
-        List of lists filled with percentages.
-    """
-    # TODO implement/remove ignore_elements as it is not used
-    concentration = {}
-    if not depth_files:
-        return concentration
-    # Extract the sum of data point within the [lim_a,lim_b]-range
-    bin_width = abs(depth_files[0][1][0] - depth_files[0][1][1])
-    for element in depth_files:
-        if element[0] == "total":
-            continue
-        concentration[element[0]] = []
-        for i in range(0, len(element[2])):
-            depth = element[1][i]
-            if lim_a <= depth < lim_b:
-                concentration[element[0]].append(
-                    element[2][i] * bin_width / 100)
-            # TODO this modified code works differently when
-            #  lim_b equals a bin depth. Check if this is ok.
-            elif depth >= lim_b:
-                concentration[element[0]].append(
-                    element[2][i] * bin_width / 100)
-                break
-    return concentration
 
 
 def integrate_lists(depth_files, ignore_elements, lim_a, lim_b,
@@ -406,7 +419,6 @@ def get_depth_files(elements, dir_depth, cut_files):
 
 if __name__ == "__main__":
     # for testing purposes
-    from element import Element
     from timeit import default_timer as timer
 
     elems = [

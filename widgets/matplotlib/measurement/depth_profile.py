@@ -37,13 +37,11 @@ import modules.masses as masses
 import os
 import re
 
+from modules.depth_files import DepthProfile
 from dialogs.measurement.depth_profile_ignore_elements \
     import DepthProfileIgnoreElements
-
 from modules.element import Element
-
 from PyQt5 import QtWidgets
-
 from widgets.matplotlib.base import MatplotlibWidget
 
 
@@ -90,6 +88,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                                               self.__used_cuts)
 
         #TODO store these in a DepthProfile object
+        self.profiles = []
         self.read_files = []
         self.rel_files = []
         self.hyb_files = []
@@ -179,6 +178,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 full_paths.append(full_path)
 
             try:
+                self.profiles = DepthProfile.from_files(full_paths,
+                                                        self.elements)
                 self.read_files = df.extract_from_depth_files(full_paths,
                                                               self.elements,
                                                               x_column,
@@ -191,7 +192,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 lim_b = self.read_files[0][1][-1]
                 self.limit = LimitLines(a=lim_a, b=lim_b)
                 # self.__limits_set = not self.__limits_set
-            except FileNotFoundError:
+            except FileNotFoundError as e:
+                print(e)
                 self.__files_read = True
 
         # Determine what files to use for plotting
@@ -304,8 +306,11 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         # Calculate values to be displayed in the legend box
         lim_a, lim_b = self.limit.get_limits()
         if self.__absolute_values:
-            concentrations = df.integrate_concentrations(
-                self.read_files, self.__ignore_from_ratio, lim_a, lim_b)
+            concentrations = {}
+            for dp in self.profiles:
+                if dp.get_profile_name() != "total":
+                    concentrations[dp.get_profile_name()] = \
+                        dp.integrate_concentrations(lim_a, lim_b)
         else:
             percentages, moe = df.integrate_lists(
                 self.read_files, self.__ignore_from_ratio, lim_a, lim_b,
@@ -354,7 +359,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             if self.__absolute_values:
                 lbl_str = "{0} {1:<7} at./1e15 at./cm²"\
                     .format(r"$^{" + element_isotope + "}$" + element.symbol,
-                            round(sum(concentrations[element_str]), 3))
+                            round(concentrations[element_str], 3))
             labels_w_percentages.append(lbl_str)
         leg = self.axes.legend(handles, labels_w_percentages,
                                loc=3, bbox_to_anchor=(1, 0),
@@ -444,9 +449,6 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         Uncheck custom buttons.
         """
         self.limButton.setChecked(False)
-        # if self.__show_limits:
-        #    self.limButton.setChecked(False)
-        #    self.__toggle_lim_lines()
 
     def __uncheck_built_in_buttons(self):
         """
@@ -486,20 +488,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
     def __toggle_lim_lines(self):
         """Toggles the usage of limit lines.
         """
-        #TODO lim lines should not be toggled off when zoom or pan is selected
         self.__toggle_drag_zoom()
         self.mpl_toolbar.mode = "limit setting tool"
-        #self.__switch_lim_mode('a')
-        #self.__show_limits = not self.__show_limits
-        #self.modeButton.setEnabled(self.__show_limits)
-        #if self.__show_limits:
-        #    self.__uncheck_built_in_buttons()
-        #    self.mpl_toolbar.mode = "Limit setting tool"
-        #else:
-        #    self.mpl_toolbar.mode = ""
-        #self.__enable_norm_over_range = False
-
-        #self.on_draw()
 
     def __toggle_rel(self):
         """Toggles between the absolute and relative views.
@@ -513,8 +503,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.on_draw()
 
     def __toggle_drag_zoom(self):
-        """
-        Toggle drag zoom.
+        """Toggles drag zoom.
         """
         if self.__button_drag.isChecked():
             self.mpl_toolbar.pan()
