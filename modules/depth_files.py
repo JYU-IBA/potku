@@ -37,8 +37,10 @@ import os
 import platform
 import re
 import subprocess
+from enum import Enum
 
 from modules.general_functions import copy_cut_file_to_temp
+import modules.file_parsing as fp
 
 
 class DepthFiles(object):
@@ -85,11 +87,73 @@ class DepthFiles(object):
             print('It appears we do no support your OS.')
 
 
-def extract_from_depth_files(files, elements, x_column, y_column):
+class DepthProfileType(Enum):
+    total = 1
+    element = 2
+
+
+class DepthProfile:
+    """Class used in depth profile analysis and graph plotting."""
+    def __init__(self, depths, concentrations, absolute_counts, element=None):
+        # TODO check that list length match
+        # TODO maybe store bin width also
+        self.depths = depths
+        self.concentrations = concentrations
+        self.absolute_counts = absolute_counts
+        self.element = element
+        self.type = DepthProfileType.element if self.element else DepthProfileType.total
+
+    @classmethod
+    def from_file(cls, file_path, element=None):
+        if element:
+            depths, cons, counts = fp.parse_file(
+                file_path,
+                [0, 3, -1],
+                [float, lambda x: float(x) * 100, int])
+            return DepthProfile(depths, cons, counts, element=element)
+
+        depths, cons = fp.parse_file(
+            file_path,
+            [0, 3],
+            [float, lambda x: float(x) * 100]
+        )
+        # TODO maybe add absolute counts for total DepthProfile too
+        return DepthProfile(depths, cons, [])
+
+    @classmethod
+    def from_files(cls, file_paths, elements):
+        # Depth files are named as 'depth.[name of the element]'
+        # TODO add exception handling
+        elem_strs = (f.split(".")[-1] for f in file_paths)
+        # TODO this could be better
+        matches = dict(match_strs_to_elements(elem_strs, elements))
+        profiles = []
+
+        for file_path in file_paths:
+            element_part = file_path.split('.')[-1]
+            profiles.append(
+                DepthProfile.from_file(file_path, element=matches[element_part]))
+
+        return profiles
+
+    def get_profile_name(self):
+        return str(self.element) if self.type == DepthProfileType.element \
+            else "total"
+
+    def integrate_concentrations(self, a, b):
+        # TODO
+        pass
+
+    def integrate_absolute_counts(self, a, b):
+        # TODO
+        pass
+
+
+def extract_from_depth_files(file_paths, elements, x_column, y_column):
     """Extracts two columns from each depth file.
 
     Args:
-        files: List of depth files
+        file_paths: List of depth files
         elements: List of used elements
         x_column: Integer of which column is to be extracted for
         graph's x-axis
@@ -100,42 +164,26 @@ def extract_from_depth_files(files, elements, x_column, y_column):
         List of lists. Each of these lists contains the element
         of the file and two lists for graph plotting.
     """
-    read_files = []
-    elements_str = set(str(element) for element in elements)
+    # TODO remove this function
+    profiles = DepthProfile.from_files(file_paths, elements)
+    return [
+        [p.get_profile_name(), p.depths, p.concentrations, p.absolute_counts]
+        for p in profiles
+    ]
 
-    # TODO rewrite this so that it returns a DepthProfile object
-    for file_path in files:
-        # Depth files are named as 'depth.[name of the element]'
-        file_element = file_path.split('.')[-1]
-        if file_element not in elements_str and file_element != "total":
-            # If file_element did not match any full element names in the
-            # list, try to match it to a symbol
-            # TODO if there are two isotopes of the same element, which one
-            # to pick?
-            matching_elem = next((elem for elem in elements if
-                                  file_element == elem.symbol), None)
-            if matching_elem:
-                file_element = str(matching_elem)
-        axe1 = []   # TODO comment which axe is which
-        axe2 = []
-        axe3 = []   # This is for storing absolute event counts per bin
-        for line in open(file_path):    # TODO maybe use csv reader here
-            #  etc)
-            columns = re.split(' +', line.strip())
-            axe1.append(float(columns[x_column]))
-            try:
-                axe2.append(float(columns[y_column]) * 100)
-                # TODO maybe multiply by 100 later
-            except ValueError:
-                axe2.append(0.0)
-            if file_element != "total":
-                try:
-                    axe3.append(int(columns[-1]))
-                except ValueError:
-                    axe3.append(0.0)
-        read_files.append([file_element, axe1, axe2, axe3])
 
-    return read_files
+def match_strs_to_elements(element_strs, elements):
+    # TODO move this to general functions or somewhere else
+    full = set(str(elem) for elem in elements)
+    just_symbols = dict((element.symbol, element) for element in elements)
+
+    for elem_str in element_strs:
+        if elem_str in full:
+            yield elem_str, Element.from_string(elem_str)
+        elif elem_str in just_symbols:
+            yield elem_str, just_symbols[elem_str]
+        else:
+            yield elem_str, None
 
 
 def create_relational_depth_files(read_files):
@@ -210,7 +258,6 @@ def integrate_concentrations(depth_files, ignore_elements, lim_a, lim_b):
     Return:
         List of lists filled with percentages.
     """
-    # TODO TARKISTA, ETTÄ TOIMII!!!
     # TODO implement/remove ignore_elements as it is not used
     concentration = {}
     if not depth_files:
@@ -223,12 +270,12 @@ def integrate_concentrations(depth_files, ignore_elements, lim_a, lim_b):
         concentration[element[0]] = []
         for i in range(0, len(element[2])):
             depth = element[1][i]
-            if lim_a <= depth <= lim_b:
+            if lim_a <= depth < lim_b:
                 concentration[element[0]].append(
                     element[2][i] * bin_width / 100)
-            elif depth > lim_b:
-                # TODO should the last one also be added if lim_b == previous
-                #  depth?
+            # TODO this modified code works differently when
+            #  lim_b equals a bin depth. Check if this is ok.
+            elif depth >= lim_b:
                 concentration[element[0]].append(
                     element[2][i] * bin_width / 100)
                 break
@@ -379,6 +426,7 @@ if __name__ == "__main__":
     dir_path = os.path.abspath("..\\..\\requests\\gradu_testi.potku\\Sample_01"
                                "-s1\\Measurement_01-m1\\Depth_profiles\\")
 
+    print(dir_path)
     start = timer()
     fpaths = [os.path.join(dir_path, f) for f in get_depth_files(
         elems, dir_path, [])]
@@ -390,7 +438,17 @@ if __name__ == "__main__":
 
     start = timer()
 
-    extract_from_depth_files(fpaths, elems, x_col, y_col)
+    df = extract_from_depth_files(fpaths, elems, x_col, y_col)
 
     stop = timer()
     print(stop - start, " seconds to read depth files")
+    print(df)
+
+    # replace the value of exp with expected values to test extraction
+    exp = []
+
+    for x, e in zip(df, exp):
+        if x != e:
+            print("here")
+
+    print(exp == df)
