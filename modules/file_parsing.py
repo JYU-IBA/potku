@@ -21,8 +21,8 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 
-DepthFiles.py creates the files necessary for generating depth files.
-Also handles several tasks necessary for operating with depth files.
+File parsing is used for parsing files that contain csv-formatted
+data.
 """
 __author__ = ""     # TODO
 __version__ = ""
@@ -36,15 +36,14 @@ def parse_file(file_path, col_idxs, converters, separator=None, skip_lines=0):
 
     Args:
         file_path: absolute path to a file
-        col_idxs: collection of column indexes that will be parsed
-        from the file
-        converters: collection of converter functions that are used
-        to convert column values
+        col_idxs: collection of column indexes that will be parsed from the
+                  file
+        converters: collection of converter functions that are used to convert
+                    column values
         separator: string that separates columns in file
-        skip_lines: number of lines to skip from the beginning of the
-        file
+        skip_lines: number of lines to skip from the beginning of the file
 
-    Returns:
+    Return:
         tuple of lists that contain the values parsed from given columns
     """
     # TODO possibly parse headers if they exist
@@ -63,12 +62,11 @@ def parse_strs(strs, col_idxs, converters, separator=None):
 
     Args:
         strs: iterable of strings to parse
-        col_idxs: collection of column indexes to parse from
-        strings
+        col_idxs: collection of column indexes to parse from strings
         converters: collection of converter functions
         separator: string that separates columns in data
 
-    Returns:
+    Return:
         tuple of lists that contains the values of each
         parsed column
     """
@@ -87,11 +85,10 @@ def parse_str(s, col_idxs, converters, separator=None):
     Args:
         s: string to be parsed
         col_idxs: collection of column indexes that will be parsed from string
-        converters: collection of converter functions to convert
-        column values
+        converters: collection of converter functions to convert column values
         separator: string that separates columns in the file
 
-    Returns:
+    Return:
         tuple of parsed columns
     """
     if len(col_idxs) != len(converters):
@@ -100,4 +97,4 @@ def parse_str(s, col_idxs, converters, separator=None):
 
     lst = s.split(separator)
 
-    return tuple(converters[i](lst[col_idxs[i]]) for i in range(len(col_idxs)))
+    return tuple(conv(lst[idx]) for idx, conv in zip(col_idxs, converters))

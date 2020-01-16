@@ -50,6 +50,8 @@ from PyQt5 import QtWidgets
 from subprocess import Popen
 
 
+# TODO organize this to smaller files
+
 def open_file_dialog(parent, default_folder, title, files):
     """Opens open file dialog
 
@@ -915,3 +917,71 @@ def round_value_by_four_biggest(value):
     first_round = round(first)
     sol_flnal = first_round * (10 ** (round_val_length - 4))
     return sol_flnal
+
+
+def match_strs_to_elements(strs, elements, match_by_symbol=True):
+    """Matches strings to a collection of elements and yields a tuple that
+    contains the string and its matching element for each given string.
+
+    Args:
+        strs: iterable of strings to be matched
+        elements: iterable of elements that the strings will be matched to
+        match_by_symbol: TODO
+
+    Yield:
+        tuple that contains the string and either element or None depending
+        on whether a match was found
+    """
+    full = dict((str(elem), elem) for elem in elements)
+    if match_by_symbol:
+        just_symbols = dict((element.symbol, element) for element in elements)
+        search_dicts = [
+            full, just_symbols
+        ]
+    else:
+        search_dicts = [full]
+
+    for s in strs:
+        yield find_match_in_dicts(s, search_dicts)
+
+
+def match_elements_to_strs(elements, strs, match_by_symbol=True):
+    """Matches elements to string
+
+    Args:
+        elements: collection of elements
+        strs: collection of strings
+        match_by_symbol: TODO
+
+    Yield:
+        tuple that contains the element and either a string or None
+        depending on whether a match was found or not.
+    """
+    str_set = set(strs)
+    for elem in elements:
+        if str(elem) in str_set:
+            yield elem, str(elem)
+        if match_by_symbol and elem.symbol in str_set:
+            yield elem, elem.symbol
+        yield elem, None
+
+
+def find_match_in_dicts(search_value, search_dicts):
+    """Tries to find a key in search_dicts that matches the
+    search_value. If match is found, returns the key-value pair
+    from the dict.
+
+    If multiple dictionaries contain the search_value, only the
+    first match is returned.
+
+    Args:
+        search_value: value to be searched
+        search_dicts: collection of dict
+    Return:
+        key-value pair as a tuple. Value is None if no match was
+        found.
+    """
+    for sd in search_dicts:
+        if search_value in sd:
+            return search_value, sd[search_value]
+    return search_value, None

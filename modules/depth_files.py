@@ -37,12 +37,14 @@ import os
 import platform
 import re
 import subprocess
-from enum import Enum
-
-from modules.general_functions import copy_cut_file_to_temp
-from modules.element import Element
 import modules.file_parsing as fp
 import modules.list_integration as li
+
+from enum import Enum
+from modules.general_functions import copy_cut_file_to_temp, \
+                                      match_strs_to_elements, \
+                                      match_elements_to_strs
+from modules.element import Element
 
 
 class DepthFiles(object):
@@ -96,25 +98,50 @@ class DepthProfileType(Enum):
 
 class DepthProfile:
     """Class used in depth profile analysis and graph plotting."""
-    def __init__(self, depths, concentrations, absolute_counts, element=None):
+    def __init__(self, depths, concentrations, absolute_counts=[], element=None):
         """Inits a new DepthProfile object.
 
         Args:
             depths: collection of depth values
             concentrations: collection of concentrations on each depth value
             absolute_counts: collections of events on each depth value
-                element: element that the depth profile belongs to. If None,
-                the depth profile is considered an aggregation of different
-                element profiles
+            element: element that the depth profile belongs to. If None,
+                     the depth profile is considered an aggregation of different
+                     element profiles
         """
-        # TODO check that list length match
-        # TODO maybe store bin width also
+        # TODO check that depths are in order and values are numerical
+        # TODO numpy arrays may be faster than regular lists for some operations
+        if element:
+            if not (len(depths) == len(concentrations) == len(absolute_counts)):
+                raise ValueError("All profile lists must have same size")
+        else:
+            # Total type DepthProfile does should not have absolute counts
+            # as they are not stored in depth.total files
+            if not (len(depths) == len(concentrations)):
+                raise ValueError("All profile lists must have same size")
+            if absolute_counts:
+                raise ValueError("Total type depth profile does not have absolute"
+                                 " counts")
+
         self.depths = depths
         self.concentrations = concentrations
         self.absolute_counts = absolute_counts
         self.element = element
         self.type = DepthProfileType.element if self.element else \
             DepthProfileType.total
+
+    def __iter__(self):
+        """Iterates over depths, concentrations and absolute counts
+
+        Yield:
+            tuple of each depth, concentration and absolute count
+        """
+        if self.type == DepthProfileType.total:
+            for d, c in zip(self.depths, self.concentrations):
+                # For total type profiles, absolute count is always 0
+                yield d, c, 0
+        for d, c, a in zip(self.depths, self.concentrations, self.absolute_counts):
+            yield d, c, a
 
     @classmethod
     def from_file(cls, file_path, element=None):
@@ -123,9 +150,9 @@ class DepthProfile:
         Args:
             file_path: absolute path to a depth file
             element: element that the depth profile belongs to. If None,
-                the depth profile is considered to be an aggregation of multiple
-                elements
-        Returns:
+                     the depth profile is considered to be an aggregation of
+                     multiple elements
+        Return:
             DepthProfile object
         """
         if element:
@@ -138,10 +165,8 @@ class DepthProfile:
         depths, cons = fp.parse_file(
             file_path,
             [0, 3],
-            [float, lambda x: float(x) * 100]
-        )
-        # TODO maybe add absolute counts for total DepthProfile too
-        return DepthProfile(depths, cons, [])
+            [float, lambda x: float(x) * 100])
+        return DepthProfile(depths, cons)
 
     @classmethod
     def from_files(cls, file_paths, elements):
@@ -150,7 +175,7 @@ class DepthProfile:
         Args:
             file_paths: absolute file paths to depth files
             elements: collection of elements that files will be matched to
-        Returns:
+        Return:
             List of DepthProfiles. Depth profile is created for each given
             file path.
         """
@@ -170,22 +195,57 @@ class DepthProfile:
     def get_profile_name(self):
         """Returns the name of the depth profile.
 
-        Returns:
+        Return:
             string representation of the element or 'total' if element is
-                undefined.
+            undefined.
         """
         return str(self.element) if self.type == DepthProfileType.element \
             else "total"
 
     def integrate_concentrations(self, a, b):
+        """Returns sum of concentrations between depths a and b.
+
+        Args:
+            a: depth value
+            b: depth value
+        Return:
+            concentration per cm^2 as a float
+        """
+        # Multiply by 0.01 to get concentration per cm^2
         return li.integrate(self.depths, self.concentrations, a, b,
-                            t="concentrations") * 0.01  # Divide by 100 to get
-                                                        # concentration per
-                                                        # cm^2
+                            t="concentrations") * 0.01
 
     def integrate_absolute_counts(self, a, b):
         # TODO
         pass
+
+    def get_relative_concentrations(self, other):
+        """Calculates the concentrations relative to another DepthProfile
+
+        Args:
+            other: other DepthProfile object
+
+        Return:
+            list of relative concentrations
+        """
+        # TODO error handling if other and self are not same size, or
+        #      or depths do not match
+        # TODO maybe not multiply by 100 here
+        return [
+            c1 / c2 * 100 if c2 != 0 else 0.0
+            for (_, c1, _), (_, c2, _) in zip(self, other)
+        ]
+
+    def get_previous_fmt(self):
+        """Returns the profile in the same data structure as was
+        previously used. This is a temporary solution to maintain
+        backwards compatibility during rewrite."""
+        return [
+            self.get_profile_name(),
+            self.depths,
+            self.concentrations,
+            self.absolute_counts
+        ]
 
 
 def extract_from_depth_files(file_paths, elements, x_column, y_column):
@@ -206,34 +266,9 @@ def extract_from_depth_files(file_paths, elements, x_column, y_column):
     # TODO remove this function
     profiles = DepthProfile.from_files(file_paths, elements)
     return [
-        [p.get_profile_name(), p.depths, p.concentrations, p.absolute_counts]
+        p.get_previous_fmt()
         for p in profiles
     ]
-
-
-def match_strs_to_elements(element_strs, elements):
-    """Matches strings to a collection of elements and yields a tuple that
-    contains the string and its matching element for each given string.
-
-    Args:
-        element_strs: iterable of strings to be matched
-        elements: iterable of elements that the strings will be matched to
-    Yields:
-        tuple that contains the element_str and matched element or None if
-        element_str could not be matched
-    """
-    # TODO move this to general functions or somewhere else
-    full = set(str(elem) for elem in elements)
-    # TODO maybe allow multiple isotopes of same element to match
-    just_symbols = dict((element.symbol, element) for element in elements)
-
-    for elem_str in element_strs:
-        if elem_str in full:
-            yield elem_str, Element.from_string(elem_str)
-        elif elem_str in just_symbols:
-            yield elem_str, just_symbols[elem_str]
-        else:
-            yield elem_str, None
 
 
 def create_relational_depth_files(read_files):
@@ -341,13 +376,54 @@ def integrate_lists(depth_files, ignore_elements, lim_a, lim_b,
                 elif curr > lim_b:
                     skip_values_sum += (prev_val + curr_val) / 2
                     break
+
     total_values_sum -= skip_values_sum
+
+    # From here begins the rewrite
+    new_total_sum = li.integrate(
+        total_values[1], total_values[2], lim_a=lim_a, lim_b=lim_b,
+        t="running_avgs")
+    new_total_skip_sum = 0
+    for elem in ignore_elements:
+        for f in depth_files:
+            if f[0] == elem:
+                continue
+            new_total_skip_sum += li.integrate(
+                f[1], f[2], lim_a=lim_a, lim_b=lim_b,
+                t="running_avgs")
+    new_total_sum -= new_total_skip_sum
+    new_percentages = {}
+    new_moe = {}
+    for df in depth_files:
+        elem_name = df[0]
+        if elem_name == "total":
+            continue
+        elif elem_name in ignore_elements:
+            new_percentages[elem_name] = None
+            new_moe[elem_name] = None
+        event_count = li.integrate(
+            df[1], df[3], lim_a=lim_a, lim_b=lim_b, t="sums")
+        if new_total_sum == 0:
+            new_percentages[elem_name] = 0
+        else:
+            new_percentages[elem_name] = li.integrate(
+                df[1], df[2], lim_a=lim_a, lim_b=lim_b,
+                t="running_avgs") / new_total_sum * 100
+        if event_count > 0:
+            stat_err = (1 / math.sqrt(event_count)) * new_percentages[
+                elem_name]
+        else:
+            stat_err = 0.0
+        syst_err = (systematic_error / 100) * new_percentages[elem_name]
+        new_moe[elem_name] = math.sqrt(stat_err * stat_err +
+                                       syst_err * syst_err)
+    # here ends the rewrite
 
     # Process all elements
     for i in range(1, len(depth_files)):
         element = depth_files[i][0]
 
-        if element in ignore_elements: #TODO ignore_elements should be a set
+        if element in ignore_elements:  # TODO ignore_elements should be a set
             percentages[element] = None
             margin_of_errors[element] = None
             continue
@@ -381,6 +457,9 @@ def integrate_lists(depth_files, ignore_elements, lim_a, lim_b,
         syst_err = (systematic_error / 100) * percentages[element]
         margin_of_errors[element] = math.sqrt(stat_err * stat_err +
                                               syst_err * syst_err)
+
+    print(percentages == new_percentages)
+    print(margin_of_errors == new_moe)
     return percentages, margin_of_errors
 
 
@@ -395,11 +474,19 @@ def get_depth_files(elements, dir_depth, cut_files):
     Returns:
         A list of depth files which matched the elements.
     """
-    depth_files = ['depth.total']
+    depth_files = ["depth.total"]
+
+    # TODO Rewritten function, check that it matches the original
+    new_depth_files = ["depth.total"]
+    file_paths = os.listdir(dir_depth)
+    elem_strs = [f.split('.')[-1] for f in file_paths]
+    for elem, elem_str in match_elements_to_strs(elements, elem_strs):
+        if elem_str:
+            new_depth_files.append(elem_str)
 
     # TODO these should probably be sets
     orig_elements = [str(elem) for elem in elements]
-    strip_elements = [e.symbol for e in elements]
+    strip_elements = [elem.symbol for elem in elements]
     for file in os.listdir(dir_depth):
         file_ending = file.split('.')[-1]
         if file_ending in orig_elements:
@@ -451,16 +538,16 @@ if __name__ == "__main__":
     start = timer()
 
     df = extract_from_depth_files(fpaths, elems, x_col, y_col)
+    xs = integrate_lists(df, [], 0, 1000, 0.05)
 
     stop = timer()
     print(stop - start, " seconds to read depth files")
-    print(df)
 
-    # replace the value of exp with expected values to test extraction
-    exp = []
+    profiles = {
+        p.get_profile_name(): p for p in
+        DepthProfile.from_files(fpaths, elems)
+    }
 
-    for x, e in zip(df, exp):
-        if x != e:
-            print("here")
-
-    print(exp == df)
+    rel = profiles["Mn"].get_relative_concentrations(profiles["total"])
+    print(rel)
+    print(create_relational_depth_files(df))

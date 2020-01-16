@@ -31,6 +31,9 @@ class TestFileParsing(unittest.TestCase):
                           lambda: fp.parse_str("foo", [1], [str]))
         self.assertRaises(ValueError,
                           lambda: fp.parse_str("foo", [0], []))
+        # If converter is not callable, TypeError is raised
+        self.assertRaises(
+            TypeError, lambda: fp.parse_str("foo", [0], ["bar"]))
 
         # Conversion test
         self.assertEqual(("bar",),
@@ -59,7 +62,6 @@ class TestFileParsing(unittest.TestCase):
         self.assertEqual(
             (1, "1", True), fp.parse_str("1", [0, 0, 0], [int, str, bool])
         )
-
 
 
 if __name__ == "__main__":
