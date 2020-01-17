@@ -431,10 +431,10 @@ def sanitize_depth_file_names(file_names):
         # Splitter function splits the function into
         # full name and element name, as long as the
         # name is in format 'depth.[element]'
-        if not file_name.startswith("depth"):
+        if not file_name.startswith("depth."):
             return None, None
         parts = file_name.split(".")
-        if len(parts) != 2:
+        if len(parts) != 2 or parts[1] == "":
             return None, None
         return file_name, parts[-1]
 

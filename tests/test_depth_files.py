@@ -174,12 +174,14 @@ class TestDepthFiles(unittest.TestCase):
         # Testing various invalid names
         file_names = [
             "depth.depth.total",
-            "depth."
-            "depth"
-            "depth.total.total"
-            " depth.total"
-            "\rdepth.total"
-            ".depth.total"
+            "depth.",
+            "depth",
+            "depth.total.total",
+            " depth.total",
+            "\rdepth.total",
+            ".depth.total",
+            "depthh.total",
+            "depth..total"
         ]
         expected = {}
         self.assertEqual(sanitize_depth_file_names(file_names), expected)
