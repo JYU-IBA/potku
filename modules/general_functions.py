@@ -942,28 +942,28 @@ def match_strs_to_elements(strs, elements, match_by_symbol=True):
         search_dicts = [full]
 
     for s in strs:
-        yield find_match_in_dicts(s, search_dicts)
+        yield s, find_match_in_dicts(s, search_dicts)
 
 
 def match_elements_to_strs(elements, strs, match_by_symbol=True):
-    """Matches elements to string
+    """Matches elements to string.
 
     Args:
         elements: collection of elements
         strs: collection of strings
-        match_by_symbol: TODO
+        match_by_symbol: bool. If False, function only tries to find
+                         matching isotope.
 
     Yield:
         tuple that contains the element and either a string or None
         depending on whether a match was found or not.
     """
-    str_set = set(strs)
+    str_dict = [{s: s for s in strs}]
     for elem in elements:
-        if str(elem) in str_set:
-            yield elem, str(elem)
-        if match_by_symbol and elem.symbol in str_set:
-            yield elem, elem.symbol
-        yield elem, None
+        res = find_match_in_dicts(str(elem), str_dict)
+        if not res and match_by_symbol:
+            res = find_match_in_dicts(elem.symbol, str_dict)
+        yield elem, res
 
 
 def find_match_in_dicts(search_value, search_dicts):
@@ -982,6 +982,8 @@ def find_match_in_dicts(search_value, search_dicts):
         found.
     """
     for sd in search_dicts:
+        if not isinstance(sd, dict):
+            raise TypeError("Expected dictionary")
         if search_value in sd:
-            return search_value, sd[search_value]
-    return search_value, None
+            return sd[search_value]
+    return None

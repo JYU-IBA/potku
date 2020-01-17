@@ -28,53 +28,40 @@ __version__ = ""    # TODO
 import math
 
 
-def integrate(x_axis, y_axis, lim_a=-math.inf, lim_b=math.inf, t="concentrations"):
-    """Integrates over a list.
+def integrate_bins(x_axis, y_axis, a=-math.inf, b=math.inf):
+    """Calculates the closed integral between a and b for series
+    of bins.
+
+    Assumes that x_axis is in order and that step size between
+    bins is constant.
 
     Args:
         x_axis: values on the x-axis
         y_axis: values on the y-axis
-        lim_a: first value of the integration interval
-        lim_b: last value of the integration interval
+        a: first x value of the integration interval
+        b: last x value of the integration interval
+
+    Return:
+        integral between a and b
     """
-    if t == "concentrations":
-        return __integrate_concentrations(x_axis, y_axis, lim_a, lim_b)
-    if t == "running_avgs":
-        return __integrate_running_avgs(x_axis, y_axis, lim_a, lim_b)
-    if t == "sums":
-        return __sum_elements(x_axis, y_axis, lim_a, lim_b)
-    raise NotImplemented("integration of type '{0}' not implemented".format(
-        type))
-
-
-def __integrate_concentrations(x_axis, y_axis, lim_a, lim_b):
-    if len(x_axis) != len(y_axis):
-        raise ValueError("x axis and y axis must have the same size.")
+    # TODO make sure that this is what we actually want to calculate
+    # TODO test that floating point accuracy is good enough (maybe use
+    #      Decimal)
+    # TODO maybe change separate x- and y-axes into single list of
+    #      (x, y) tuples
+    total_sum = sum_elements(x_axis, y_axis, a, b)
 
     # Need at least two x-values to calculate width
     if len(x_axis) <= 1:
         return 0.0
 
-    total_sum = 0.0
     # For now, just assume that step_size is constant
     step_size = abs(x_axis[1] - x_axis[0])
-
-    # TODO should iteration here start from first depth value or second?
-    # TODO make sure that this is what we actually want to calculate
-    # TODO test that floating point accuracy is good enough (maybe use
-    #      Decimal
-    # TODO maybe check that x_axis is in order
-    for x_i, y_i in zip(x_axis, y_axis):
-        if lim_a <= x_i < lim_b:
-            total_sum += y_i
-        elif x_i > lim_b > lim_a:
-            total_sum += y_i
-            break
 
     return total_sum * step_size
 
 
-def __integrate_running_avgs(x_axis, y_axis, lim_a, lim_b):
+def integrate_running_avgs(x_axis, y_axis, a=-math.inf, b=math.inf):
     if len(x_axis) != len(y_axis):
         raise ValueError("x axis and y axis must have the same size.")
 
@@ -85,32 +72,35 @@ def __integrate_running_avgs(x_axis, y_axis, lim_a, lim_b):
     prev_x = x_axis[0]
     prev_y = y_axis[0]
 
-    for x_i, y_i in zip(x_axis, y_axis):
-        if prev_x == x_i:
+    for x, y in zip(x_axis, y_axis):
+        if prev_x == x:
             continue
 
-        if lim_a <= x_i <= lim_b:
-            total_sum += (prev_y + y_i) / 2
-        elif x_i > lim_b:
-            total_sum += (prev_y + y_i) / 2
+        if a <= x <= b:
+            total_sum += (prev_y + y) / 2
+        elif x > b > a:
+            total_sum += (prev_y + y) / 2
             break
-        prev_x = x_i
-        prev_y = y_i
+        prev_x = x
+        prev_y = y
 
     return total_sum
 
 
-def __sum_elements(x_axis, y_axis, lim_a, lim_b):
+def sum_elements(x_axis, y_axis, a=-math.inf, b=math.inf):
     if len(x_axis) != len(y_axis):
         raise ValueError("x axis and y axis must have the same size.")
 
+    if a > b:
+        return 0.0
+
     total_sum = 0.0
 
-    for x_i, y_i in zip(x_axis, y_axis):
-        if lim_a <= x_i <= lim_b:
-            total_sum += y_i
-        elif x_i > lim_b:
-            total_sum += y_i
+    for x, y in zip(x_axis, y_axis):
+        if a <= x <= b:
+            total_sum += y
+        elif x > b > a:
+            total_sum += y
             break
 
     return total_sum
