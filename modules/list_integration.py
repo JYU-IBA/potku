@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2018 TODO
+Copyright (C) 2020 TODO
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -61,7 +61,8 @@ def integrate_bins(x_axis, y_axis, a=-math.inf, b=math.inf):
     return total_sum * step_size
 
 
-def integrate_running_avgs(x_axis, y_axis, a=-math.inf, b=math.inf):
+def sum_running_avgs(x_axis, y_axis, a=-math.inf, b=math.inf):
+    """TODO"""
     if len(x_axis) != len(y_axis):
         raise ValueError("x axis and y axis must have the same size.")
 
@@ -88,6 +89,7 @@ def integrate_running_avgs(x_axis, y_axis, a=-math.inf, b=math.inf):
 
 
 def sum_elements(x_axis, y_axis, a=-math.inf, b=math.inf):
+    """TODO"""
     if len(x_axis) != len(y_axis):
         raise ValueError("x axis and y axis must have the same size.")
 

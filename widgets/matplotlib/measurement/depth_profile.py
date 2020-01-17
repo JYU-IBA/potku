@@ -37,7 +37,7 @@ import modules.masses as masses
 import os
 import re
 
-from modules.depth_files import DepthProfile
+from modules.depth_files import DepthProfileHandler
 from dialogs.measurement.depth_profile_ignore_elements \
     import DepthProfileIgnoreElements
 from modules.element import Element
@@ -88,13 +88,17 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                                               self.__used_cuts)
 
         #TODO store these in a DepthProfile object
-        self.profiles = []
-        self.read_files = []
-        self.rel_files = []
-        self.hyb_files = []
+
+        self.profile_handler = DepthProfileHandler()
+        #self.read_files = []
+        #self.rel_files = []
+        #self.hyb_files = []
 
         self.__ignore_from_graph = []
         self.__ignore_from_ratio = []
+
+        # TODO get selection colors and icon manager as parameters, not from
+        #      parent
         self.selection_colors = parent.measurement.selector.get_colors()
         self.icon_manager = parent.icon_manager
 
@@ -178,19 +182,21 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                 full_paths.append(full_path)
 
             try:
-                self.profiles = DepthProfile.from_files(full_paths,
-                                                        self.elements)
-                self.read_files = df.extract_from_depth_files(full_paths,
-                                                              self.elements,
-                                                              x_column,
-                                                              y_column)
+                self.profile_handler.read_files(full_paths, self.elements)
+                lim_a, lim_b = self.profile_handler.get_depth_range()
                 self.__files_read = True
-                self.rel_files = df.create_relational_depth_files(
-                    self.read_files)
-                # if not self.lim_a:
-                lim_a = self.read_files[0][1][0]
-                lim_b = self.read_files[0][1][-1]
                 self.limit = LimitLines(a=lim_a, b=lim_b)
+                #self.profiles = DepthProfile.from_files(full_paths,
+                #                                        self.elements)
+                #self.read_files = df.extract_from_depth_files(full_paths,
+                #                                              self.elements,
+                #                                              x_column,
+                #                                              y_column)
+                #self.rel_files = df.create_relational_depth_files(
+                #    self.read_files)
+                # if not self.lim_a:
+                #lim_a = self.read_files[0][1][0]
+                #lim_b = self.read_files[0][1][-1]
                 # self.__limits_set = not self.__limits_set
             except FileNotFoundError as e:
                 print(e)

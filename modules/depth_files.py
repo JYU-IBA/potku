@@ -231,6 +231,14 @@ class DepthProfile:
         """
         return str(self.element) if self.element else "total"
 
+    def get_depth_range(self):
+        """Returns minimum and maximum depths of the DepthProfile
+
+        Return:
+            tuple of floats
+        """
+        return self.depths[0], self.depths[-1]
+
     def integrate_concentrations(self, depth_a, depth_b):
         """Returns sum of concentrations between depths a and b.
 
@@ -245,9 +253,9 @@ class DepthProfile:
         return li.integrate_bins(
             self.depths, self.concentrations, depth_a, depth_b) * 0.01
 
-    def integrate_running_avgs(self, depth_a, depth_b):
+    def sum_running_avgs(self, depth_a, depth_b):
         """TODO"""
-        return li.integrate_running_avgs(
+        return li.sum_running_avgs(
             self.depths, self.concentrations, depth_a, depth_b
         )
 
@@ -308,6 +316,24 @@ class DepthProfile:
         return DepthProfile(
             self.depths, conc, events=events, element=elem)
 
+    def calculate_margin_of_error(self, systematic_error, lim_a, lim_b,
+                                  sum_of_running_avgs=None):
+        """TODO"""
+        event_count = self.sum_events(lim_a, lim_b)
+
+        if not sum_of_running_avgs:
+            sra = self.sum_running_avgs(lim_a, lim_b)
+        else:
+            sra = sum_of_running_avgs
+
+        if event_count > 0:
+            stat_err = (1 / math.sqrt(event_count)) * sra
+        else:
+            stat_err = 0.0
+
+        syst_err = (systematic_error / 100) * sra
+        return math.sqrt(stat_err * stat_err + syst_err * syst_err)
+
     def get_previous_fmt(self):
         """Returns the profile in the same data structure as was
         previously used. This is a temporary solution to maintain
@@ -318,39 +344,6 @@ class DepthProfile:
             self.concentrations,
             self.events
         ]
-
-
-def create_relational_depth_files(read_files):
-    """Creates a version of the loaded depth files, which contain
-    the value of the y-axis in relation to the .total file's
-    y-axis, instead of their absolute values
-
-    Args:
-        read_files: The original files with absolute values.
-
-    Return:
-        A list filled with relational values in accordance to the
-        .total file.
-    """
-    rel_files = []
-    total_file_axe = []
-    for file in read_files:
-        file_element, axe1, axe2, unused_axe3 = file
-        if file_element == 'total':
-            total_file_axe = axe2
-            break
-    for file in read_files:
-        file_element, axe1, axe2, axe3 = file
-        rel_axe = []
-        for i in range(0, len(total_file_axe)):
-            division = total_file_axe[i]
-            if division != 0:
-                rel_val = (axe2[i] / total_file_axe[i]) * 100
-            else:
-                rel_val = 0
-            rel_axe.append(rel_val)
-        rel_files.append([file_element, axe1, rel_axe, axe3])
-    return rel_files
 
 
 def merge_files_in_range(file_a, file_b, lim_a, lim_b):
@@ -366,6 +359,7 @@ def merge_files_in_range(file_a, file_b, lim_a, lim_b):
     Return:
         A merged file.
     """
+    # TODO test new merge implementation before removing this
     file_c = []
     for i in range(len(file_a)):
         item = file_a[i]
@@ -380,174 +374,42 @@ def merge_files_in_range(file_a, file_b, lim_a, lim_b):
 
 
 def integrate_profiles(depth_profiles, lim_a, lim_b):
-    return sum(dp.integrate_running_avgs(lim_a, lim_b) for dp in depth_profiles)
+    return sum(dp.sum_running_avgs(lim_a, lim_b)
+               for dp in depth_profiles)
 
 
 def _integrate_lists(depth_profiles, ignored_profiles, total, lim_a, lim_b,
                      systematic_error):
-    total_sum = total.integrate_running_avgs(lim_a, lim_b)
+    """TODO"""
+    total_sum = total.sum_running_avgs(lim_a, lim_b)
     total_sum -= integrate_profiles(ignored_profiles, lim_a, lim_b)
     ignored = set(dp.get_profile_name() for dp in ignored_profiles)
 
     percentages = {}
-    margin_of_err = {}
+    moes = {}
     for dp in depth_profiles:
         if dp.get_profile_name() == "total":
             continue
         if dp.get_profile_name() in ignored:
             percentages[dp.get_profile_name()] = None
-            margin_of_err[dp.get_profile_name()] = None
+            moes[dp.get_profile_name()] = None
             continue
+
         if total_sum == 0:
             percentages[dp.get_profile_name()] = 0.0
         else:
             percentages[dp.get_profile_name()] = \
-                dp.integrate_running_avgs(lim_a, lim_b) \
+                dp.sum_running_avgs(lim_a, lim_b) \
                 / total_sum * 100
-        event_count = dp.sum_events(lim_a, lim_b)
-        if event_count > 0:
-            stat_err = (1 / math.sqrt(event_count)) * percentages[
-                dp.get_profile_name()]
-        else:
-            stat_err = 0.0
 
-        syst_err = (systematic_error / 100) * percentages[
-            dp.get_profile_name()]
-        margin_of_err[dp.get_profile_name()] = math.sqrt(
-            stat_err * stat_err + syst_err * syst_err)
-    return percentages, margin_of_err
+        # Calculate margin of errors for depth profile with given systematic
+        # error
+        dp_moe = dp.calculate_margin_of_error(
+            systematic_error, lim_a, lim_b,
+            sum_of_running_avgs=percentages[dp.get_profile_name()])
+        moes[dp.get_profile_name()] = dp_moe
 
-
-def integrate_lists(depth_files, ignore_elements, lim_a, lim_b,
-                    systematic_error):
-    """Calculates and returns the relative amounts of values within lists.
-
-    Args:
-        depth_files: List of lists containing float values, the first list
-        is the one the rest are compared to.
-        ignore_elements: A list of elements that are not counted.
-        lim_a: The lower limit.
-        lim_b: The higher limit.
-        systematic_error: A double representing systematic error.
-
-    Return:
-        List of lists filled with percentages.
-    """
-    # TODO remove this function
-    percentages = {}
-    margin_of_errors = {}
-    if not depth_files:
-        return {}, {}
-    # Extract the sum of data point within the [lim_a,lim_b]-range
-    total_values = depth_files[0]
-    total_values_sum = 0
-    skip_values_sum = 0
-    for n in range(1, len(total_values[1])):
-        curr = total_values[1][n]           # current depth
-        prev_val = total_values[2][n - 1]   # value at prev depth
-        curr_val = total_values[2][n]       # value at current depth
-        if lim_a <= curr <= lim_b:          # calculate running avg and add
-            # it to total
-            total_values_sum += (prev_val + curr_val) / 2
-        elif curr > lim_b:
-            total_values_sum += (prev_val + curr_val) / 2
-            break
-    for element in ignore_elements:
-        for i in range(1, len(depth_files)):
-            if depth_files[i][0] != element:
-                continue
-            for n in range(1, len(depth_files[i][1])):
-                curr = depth_files[i][1][n]
-                prev_val = depth_files[i][2][n - 1]
-                curr_val = depth_files[i][2][n]
-                if lim_a <= curr <= lim_b:
-                    skip_values_sum += (prev_val + curr_val) / 2
-                elif curr > lim_b:
-                    skip_values_sum += (prev_val + curr_val) / 2
-                    break
-
-    total_values_sum -= skip_values_sum
-
-    # From here begins the rewrite
-    new_total_sum = li.integrate_running_avgs(
-        total_values[1], total_values[2], lim_a, lim_b)
-    new_total_skip_sum = 0
-    for elem in ignore_elements:
-        for f in depth_files:
-            if f[0] == elem:
-                continue
-            new_total_skip_sum += li.integrate_running_avgs(
-                f[1], f[2], lim_a, lim_b)
-    new_total_sum -= new_total_skip_sum
-    new_percentages = {}
-    new_moe = {}
-    for df in depth_files:
-        elem_name = df[0]
-        if elem_name == "total":
-            continue
-        elif elem_name in ignore_elements:
-            new_percentages[elem_name] = None
-            new_moe[elem_name] = None
-            continue
-        event_count = li.sum_elements(
-            df[1], df[3], lim_a, lim_b)
-        if new_total_sum == 0:
-            new_percentages[elem_name] = 0
-        else:
-            new_percentages[elem_name] = li.integrate_running_avgs(
-                df[1], df[2], lim_a, lim_b) / new_total_sum * 100
-        if event_count > 0:
-            stat_err = (1 / math.sqrt(event_count)) * new_percentages[
-                elem_name]
-        else:
-            stat_err = 0.0
-        syst_err = (systematic_error / 100) * new_percentages[elem_name]
-        new_moe[elem_name] = math.sqrt(stat_err * stat_err +
-                                       syst_err * syst_err)
-    # here ends the rewrite
-
-    # Process all elements
-    for i in range(1, len(depth_files)):
-        element = depth_files[i][0]
-
-        if element in ignore_elements:  # TODO ignore_elements should be a set
-            percentages[element] = None
-            margin_of_errors[element] = None
-            continue
-
-        element_x = depth_files[i][1]  # Depth values
-        element_y = depth_files[i][2]  # Element concentrations at each depth
-        element_e = depth_files[i][3]  # Events at profile depth
-
-        element_conc = []
-        element_event = []
-        for j in range(1, len(element_x)):
-            curr = element_x[j]
-            prev_val = element_y[j - 1]
-            curr_val = element_y[j]
-            if lim_a <= curr <= lim_b:
-                element_conc.append((prev_val + curr_val) / 2)
-                element_event.append(element_e[j])
-            elif curr > lim_b:
-                element_conc.append((prev_val + curr_val) / 2)
-                element_event.append(element_e[j])
-                break
-        if total_values_sum == 0.0:
-            percentages[element] = 0.0
-        else:
-            percentages[element] = (sum(element_conc) / total_values_sum) * 100
-        if sum(element_event) > 0:
-            stat_err = (1 / math.sqrt(sum(element_event))) * percentages[
-                element]
-        else:
-            stat_err = 0
-        syst_err = (systematic_error / 100) * percentages[element]
-        margin_of_errors[element] = math.sqrt(stat_err * stat_err +
-                                              syst_err * syst_err)
-
-    print(percentages == new_percentages)
-    print(margin_of_errors == new_moe)
-    return percentages, margin_of_errors
+    return percentages, moes
 
 
 def sanitize_depth_file_names(file_names):
@@ -591,38 +453,25 @@ def get_depth_files(elements, dir_depth, cut_files):
 
     Args:
         elements: List of Element objects that should have a
-        corresponding depth file.
+                  corresponding depth file.
         dir_depth: Directory of the erd depth result files.
         cut_files: List of cut files that were used.
-    Returns:
+
+    Return:
         A list of depth files which matched the elements.
     """
-    depth_files = ["depth.total"]
+    # TODO implement or remove cut_files parameter
 
-    # TODO Rewritten function, check that it matches the original
+    # Check which file paths in the director are valid depth file paths
     file_paths = os.listdir(dir_depth)
     sanitized_files = sanitize_depth_file_names(file_paths)
-    new_depth_files = ["depth.total"]
-    for s, elem in match_strs_to_elements(sanitized_files.keys(), elements):
-        if elem:
-            new_depth_files.append(sanitized_files[s])
 
-    # TODO these should probably be sets
-    orig_elements = [str(elem) for elem in elements]
-    strip_elements = [elem.symbol for elem in elements]
-    for file in os.listdir(dir_depth):
-        file_ending = file.split('.')[-1]
-        if file_ending in orig_elements:
-            depth_files.append(file)
-            orig_elements.remove(file_ending)
-            stripped = re.sub("\d+", "", file_ending)
-            strip_elements.remove(stripped)
-        else:
-            if file_ending in strip_elements:
-                depth_files.append(file)
-                index = strip_elements.index(file_ending)
-                orig_elements.remove(orig_elements[index])
-                strip_elements.remove(file_ending)
+    # By default, add 'depth.total' to the list
+    depth_files = ["depth.total"]
+    for s, elem in match_strs_to_elements(sanitized_files.keys(), elements):
+        # Add all file names that matched an element in the element collection
+        if elem:
+            depth_files.append(sanitized_files[s])
 
     return depth_files
 
@@ -630,6 +479,8 @@ def get_depth_files(elements, dir_depth, cut_files):
 class DepthProfileHandler:
     def __init__(self):
         self.depth_profiles = {}
+        self.relative_profiles = {}
+        self.hybrid_profiles = {}
 
     def read_directory(self, directory_path, elements):
         file_paths = get_depth_files(elements, directory_path, [])
@@ -646,6 +497,18 @@ class DepthProfileHandler:
         return _integrate_lists(
             self.depth_profiles.values(), ignored_dict, depth_a, depth_b)
 
+    def get_depth_range(self):
+        """Returns the minimum and maximum depth values in the total depth
+        profile.
+
+        Return:
+            tuple of floats or (None, None) if handler does not have total
+            depth profile
+        """
+        if "total" in self.depth_profiles:
+            return self.depth_profiles["total"].get_depth_range()
+        return None, None
+
     def remove(self, profile_name):
         try:
             del(self.depth_profiles[profile_name])
@@ -656,8 +519,6 @@ class DepthProfileHandler:
 
 if __name__ == "__main__":
     # for testing purposes
-    from timeit import default_timer as timer
-
     elems = [
         Element.from_string("12C"),
         Element.from_string("12C"),
@@ -675,34 +536,21 @@ if __name__ == "__main__":
     dir_path = os.path.abspath("..\\..\\requests\\gradu_testi.potku\\Sample_01"
                                "-s1\\Measurement_01-m1\\Depth_profiles\\")
 
-    print(dir_path)
-    start = timer()
     fpaths = [os.path.join(dir_path, f) for f in get_depth_files(
         elems, dir_path, [])]
-    stop = timer()
-    print(stop - start, " seconds to get depth files")
-
-    x_col = 0
-    y_col = 3
-
-    start = timer()
 
     profiles = DepthProfile.from_files(fpaths, elems)
     old_profiles = [p.get_previous_fmt() for p in profiles]
-    old_integration, old_moe = integrate_lists(
-        old_profiles, [], 0, 1000, 0.5)
     new_integration, new_moe = _integrate_lists(
-        profiles, {}, next(p for p in profiles if p.get_profile_name() == "total"),
+        profiles, {},
+        next(p for p in profiles if p.get_profile_name() == "total"),
         0, 1000, 0.5)
 
-    stop = timer()
-    print(stop - start, " seconds to read depth files")
+    profiles = DepthProfile.from_files(fpaths, elems)
+    total = next(p for p in profiles if p.get_profile_name() == "total")
 
-    profiles = {
-        p.get_profile_name(): p for p in
-        DepthProfile.from_files(fpaths, elems)
+    new_rel = {
+        p.get_profile_name(): p.get_relative_concentrations(total). \
+                              get_previous_fmt()
+        for p in profiles
     }
-
-    rel = profiles["Mn"].get_relative_concentrations(profiles["total"])
-    print(rel)
-    print(create_relational_depth_files(old_profiles))
