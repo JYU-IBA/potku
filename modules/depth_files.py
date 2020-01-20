@@ -39,8 +39,8 @@ import math
 import os
 import platform
 import subprocess
-import modules.file_parsing as fp
-import modules.list_integration as li
+import modules.parsing as parsing
+import modules.math_functions as mf
 
 from modules.general_functions import copy_cut_file_to_temp, \
                                       match_strs_to_elements
@@ -222,14 +222,14 @@ class DepthProfile:
 
         if element is not None:
             # If element is defined, read event counts too
-            depths, conc, events = fp.parse_file(
+            depths, conc, events = parsing.parse_file(
                 file_path,
                 [x_column, 3, -1],
                 [float, lambda x: float(x) * 100, int])
             return cls(depths, conc, events, element=element)
 
         # Otherwise read just depths and concentrations
-        depths, conc = fp.parse_file(
+        depths, conc = parsing.parse_file(
             file_path,
             [x_column, 3],
             [float, lambda x: float(x) * 100])
@@ -263,7 +263,7 @@ class DepthProfile:
             concentration per cm^2 as a float.
         """
         # Multiply by 0.01 to get concentration per cm^2
-        return li.integrate_bins(
+        return mf.integrate_bins(
             self.depths, self.concentrations, a=depth_a, b=depth_b) * 0.01
 
     def sum_running_avgs(self, depth_a, depth_b):
@@ -277,7 +277,7 @@ class DepthProfile:
         Return:
             sum of running concentration averages as a float.
         """
-        return li.sum_running_avgs(
+        return mf.sum_running_avgs(
             self.depths, self.concentrations, a=depth_a, b=depth_b)
 
     def sum_events(self, depth_a, depth_b):
@@ -290,7 +290,7 @@ class DepthProfile:
         Return:
             sum of events as int.
         """
-        return int(li.sum_y_values(
+        return int(mf.sum_y_values(
             self.depths, self.events, a=depth_a, b=depth_b))
 
     def get_relative_concentrations(self, other):
