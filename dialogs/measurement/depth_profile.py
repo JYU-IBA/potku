@@ -38,7 +38,7 @@ import time
 from modules.beam import Beam
 from modules.cut_file import get_scatter_element
 from modules.cut_file import is_rbs
-from modules.depth_files import DepthFiles
+from modules.depth_files import DepthFileGenerator
 from modules.detector import Detector
 from modules.element import Element
 from modules.run import Run
@@ -473,15 +473,14 @@ class DepthProfileWidget(QtWidgets.QWidget):
             if not os.path.exists(self.output_dir):
                 os.makedirs(self.output_dir)
             output_files = os.path.join(self.output_dir, "depth")
-            dp = DepthFiles(self.use_cuts, output_files)
+            dp = DepthFileGenerator(self.use_cuts, output_files)
             # This has to be before create_depth_files()
             self.measurement.generate_tof_in()
-
             # Delete previous depth files to avoid mixup when assigning the
             # result files back to their cut files
             removed_files = []
             for file in os.listdir(self.output_dir):
-                if file.startswith("depth"):
+                if file.startswith("depth."):
                     removed_files.append(os.path.join(self.output_dir, file))
             for f in removed_files:
                 os.remove(f)

@@ -84,32 +84,33 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__line_zero = line_zero
         self.__line_scale = line_scale
         self.__systerr = systematic_error
-        self.depth_files = df.get_depth_files(self.elements, self.depth_dir,
-                                              self.__used_cuts)
-
-        #TODO store these in a DepthProfile object
 
         self.profile_handler = DepthProfileHandler()
-        #self.read_files = []
-        #self.rel_files = []
-        #self.hyb_files = []
+        self.profile_handler.read_directory(self.depth_dir,
+                                            self.elements,
+                                            depth_units=self.x_units)
+        lim_a, lim_b = self.profile_handler.get_depth_range()
+        if lim_a is not None and lim_b is not None:
+            self.limit = LimitLines(a=lim_a, b=lim_b)
+        else:
+            self.limit = LimitLines()
+        self.energy_plots = {}
 
-        self.__ignore_from_graph = []
-        self.__ignore_from_ratio = []
+        self.__ignore_from_graph = set()
+        self.__ignore_from_ratio = set()
 
         # TODO get selection colors and icon manager as parameters, not from
         #      parent
         self.selection_colors = parent.measurement.selector.get_colors()
         self.icon_manager = parent.icon_manager
 
-        self.limit = LimitLines()
         self.lim_icons = {'a': 'depth_profile_lim_all.svg',
                           'b': 'depth_profile_lim_in.svg',
                           'c': 'depth_profile_lim_ex.svg'}
         self.lim_mode = 'a'
 
         self.canvas.mpl_connect('button_press_event', self.onclick)
-        self.__files_read = False
+        #self.__files_read = False
         self.__limits_set = False
         self.__position_set = False
         self.__rel_graph = False
@@ -142,6 +143,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         Return:
             Isotope or -1 if not key is "total".
         """
+        # TODO move this to some utility function module
         if key == "total":
             return -1
         if type(key) is Element:
@@ -154,6 +156,24 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             isotope = masses.get_standard_isotope(element)
         return isotope
 
+    def get_profiles_to_use(self):
+        # Determine what files to use for plotting
+        if not self.__rel_graph:
+            profiles_to_use = self.profile_handler.get_absolute_profiles()
+        elif self.lim_mode == 'a':
+            profiles_to_use = self.profile_handler.get_relative_profiles()
+        else:
+            lim_a, lim_b = self.limit.get_limits()
+            if self.lim_mode == 'b':
+                profiles_to_use = self.profile_handler.merge_profiles(
+                    lim_a, lim_b, method="abs_rel_abs"
+                )
+            else:
+                profiles_to_use = self.profile_handler.merge_profiles(
+                    lim_a, lim_b, method="rel_abs_rel"
+                )
+        return profiles_to_use
+
     def on_draw(self):
         """Draws the depth profile graph
         """
@@ -164,62 +184,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         # Clear axes for a new draw.
         self.axes.clear()
 
-        # Select the units of the x-axis and what columns to read 
-        # from the depth files
-        y_column = 3
-        if self.x_units == 'nm':
-            x_column = 2
-        else:
-            x_column = 0
         self.axes.set_xlabel('Depth (%s)' % self.x_units)
         self.axes.set_ylabel('Concentration (at.%)')
-
-        # If files have not been read before, they are now
-        if not self.__files_read:
-            full_paths = []
-            for file in self.depth_files:
-                full_path = os.path.join(self.depth_dir, file)
-                full_paths.append(full_path)
-
-            try:
-                self.profile_handler.read_files(full_paths, self.elements)
-                lim_a, lim_b = self.profile_handler.get_depth_range()
-                self.__files_read = True
-                self.limit = LimitLines(a=lim_a, b=lim_b)
-                #self.profiles = DepthProfile.from_files(full_paths,
-                #                                        self.elements)
-                #self.read_files = df.extract_from_depth_files(full_paths,
-                #                                              self.elements,
-                #                                              x_column,
-                #                                              y_column)
-                #self.rel_files = df.create_relational_depth_files(
-                #    self.read_files)
-                # if not self.lim_a:
-                #lim_a = self.read_files[0][1][0]
-                #lim_b = self.read_files[0][1][-1]
-                # self.__limits_set = not self.__limits_set
-            except FileNotFoundError as e:
-                print(e)
-                self.__files_read = True
-
-        # Determine what files to use for plotting
-        if not self.__rel_graph:
-            files_to_use = self.read_files
-        elif self.lim_mode == 'a':
-            files_to_use = self.rel_files
-        else:
-            if self.lim_mode == 'b':
-                tmp_a = self.read_files
-                tmp_b = self.rel_files
-            else:
-                tmp_a = self.rel_files
-                tmp_b = self.read_files
-            lim_a, lim_b = self.limit.get_limits()
-            self.hyb_files = df.merge_files_in_range(tmp_a,
-                                                     tmp_b,
-                                                     lim_a,
-                                                     lim_b)
-            files_to_use = self.hyb_files
 
         # Plot the limits a and b
         # if self.__show_limits:
@@ -235,43 +201,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             self.axes.axvspan(self.__depth_scale[0], self.__depth_scale[1],
                               color='#C0C0C0', alpha=0.20, edgecolor=None)
 
-        # Plot the lines
-        files_to_use = sorted(files_to_use, key=lambda x: self.__sortt(x[0]))
-        self.elements = sorted(self.elements, key=lambda x: self.__sortt(x))
-        for file in files_to_use:
-            if file[0] == 'total' or file[0] in self.__ignore_from_graph:
-                continue
-            element = re.sub("\d+", "", file[0])
-            isotope = re.sub("\D", "", file[0])
-
-            # Check RBS selection
-            rbs_string = ""
-            if file[0] in self.__rbs_list.values():
-                rbs_string = "*"
-                color_key = "{0}{1}{2}0".format("RBS_", isotope, element)
-            else:
-                color_key = "{0}{1}0".format(isotope, element)
-            # TODO: erd_depth for multiple selections of same element.
-
-            axe1 = file[1]
-            axe2 = file[2]
-
-            filler_length = 3 - len(isotope)
-            filler_prefix = ""
-            filler_suffix = ""
-            for unused_i in range(0, filler_length):
-                filler_prefix += "\ "
-            filler_length = 4 - len(element) - len(rbs_string)
-            for unused_i in range(0, filler_length):
-                filler_suffix += "\ "
-            # label = r"$^{\mathtt{" + filler_prefix + str(isotope) + \
-            #        "}}\mathtt{" + element + rbs_string + filler_suffix + "}$"
-            label = str(isotope) + element
-
-            if len(axe1) > len(axe2):
-                axe2.append(0.0)
-            self.axes.plot(axe1, axe2, label=label,
-                           color=self.selection_colors[color_key])
+        self.__update_energy_plots(self.get_profiles_to_use(),
+                                   draw_first_time=True)
 
         if not self.__position_set:
             self.fig.tight_layout(pad=0.5)
@@ -296,6 +227,36 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.remove_axes_ticks()
         self.canvas.draw()
 
+    def __update_energy_plots(self, profiles_to_use, draw_first_time=False):
+        sorted_profile_names = sorted(profiles_to_use, key=lambda x: self.__sortt(x))
+
+        for profile_name in sorted_profile_names:
+            if profile_name == "total" or profile_name in self.__ignore_from_graph:
+                continue
+
+            element = profiles_to_use[profile_name].element
+
+            # Check RBS selection
+            if profile_name in self.__rbs_list.values():
+                color_key = "RBS_{0}0".format(str(element))
+            else:
+                color_key = "{0}0".format(str(element))
+            # TODO: erd_depth for multiple selections of same element.
+
+            axe1 = profiles_to_use[profile_name].depths
+            axe2 = profiles_to_use[profile_name].concentrations
+
+            label = str(element)        # TODO rbs string
+
+            if draw_first_time:
+                self.energy_plots[profile_name] = self.axes.plot(
+                    axe1, axe2, label=label, color=self.selection_colors[color_key])
+            else:
+                # TODO testing plot updating
+                self.energy_plots[profile_name].set_ydata(axe2)
+                self.canvas.draw()
+                self.canvas.flush_events()
+
     def __make_legend_box(self):
         """Make legend box for the graph.
         """
@@ -312,15 +273,10 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         # Calculate values to be displayed in the legend box
         lim_a, lim_b = self.limit.get_limits()
         if self.__absolute_values:
-            concentrations = {}
-            for dp in self.profiles:
-                if dp.get_profile_name() != "total":
-                    concentrations[dp.get_profile_name()] = \
-                        dp.integrate_concentrations(lim_a, lim_b)
+            concentrations = self.profile_handler.integrate_concentrations(lim_a, lim_b)
         else:
-            percentages, moe = df.integrate_lists(
-                self.read_files, self.__ignore_from_ratio, lim_a, lim_b,
-                self.__systerr)
+            percentages, moe = self.profile_handler.calculate_ratios(
+                self.__ignore_from_ratio, lim_a, lim_b, self.__systerr)
 
         # Fix labels to proper format, with MoE
         labels_w_percentages = []
@@ -343,10 +299,6 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             if not self.__absolute_values and percentages[element_str] is not \
                     None:
                 rounding = self.__physic_rounding_decimals(moe[element_str])
-                # lbl_str = '%s %.3f%% ±%.3f%%' % (labels[i],
-                #                             percentages[element_str],
-                #                             moe[element_str])
-                # Extra 5 from math text format for isotope index
                 if rounding:
                     str_ratio = "{0}%".format(round(percentages[element_str],
                                                     rounding))
@@ -367,6 +319,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                     .format(r"$^{" + element_isotope + "}$" + element.symbol,
                             round(concentrations[element_str], 3))
             labels_w_percentages.append(lbl_str)
+
         leg = self.axes.legend(handles, labels_w_percentages,
                                loc=3, bbox_to_anchor=(1, 0),
                                borderaxespad=0, prop={'size': 11,
@@ -377,6 +330,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
     def __physic_rounding_decimals(self, floater):
         """Find correct decimal count for rounding to 15-rule.
         """
+        # TODO move this to some utility function module
         i = 0
         temp = floater
         if temp < 0.001:
@@ -468,10 +422,6 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         Toggle lim mode.
         """
         self.__switch_lim_mode()
-
-        # Commented out self.axes.clear() because it resets zoom if called
-        # here.
-        #self.axes.clear()
         self.on_draw()
 
     def __switch_lim_mode(self, mode=""):
@@ -533,7 +483,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         """Toggle absolute values for the elements in the graph.
         """
         self.__absolute_values = self.__button_toggle_absolute.isChecked()
-        self.on_draw()
+        self.on_draw()  # TODO dont redraw everything, just update legend
 
     def __toggle_log_scale(self):
         """Toggle log scaling for Y axis in depth profile graph.
@@ -578,13 +528,13 @@ class LimitLines:
         if switch:
             self.__switch()
 
-    def draw(self, axes, highlight_last=True):
+    def draw(self, axes, highlight_last=False):
         """Draws limit lines on the given axes.
 
         Args:
             axes: axes object that the lines will be drawn
             highlight_last: highlights the last set limit with a different
-            color
+                            color
         """
         #TODO better highlighting OR draggable 2d lines
         for i in range(len(self.__limits)):

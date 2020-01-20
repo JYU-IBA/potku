@@ -71,12 +71,13 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
             ratio_element = root.child(i)
             if ratio_element.element != item.element:
                 continue
-            ratio_element.setHidden(not item.checkState(0))
+            ratio_element.setDisabled(not item.checkState(0))
             ratio_element.setCheckState(0, item.checkState(0))
 
     def __set_values(self):
         """Set elements to tree widget.
         """
+
         for element in self.__elements:
             element_str = str(element)
             # Add to graph list
@@ -87,17 +88,19 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
             else:
                 item.setCheckState(0, QtCore.Qt.Unchecked)
             self.tree_elements.addTopLevelItem(item)
+
             # Add to ratio list
             item2 = QtWidgets.QTreeWidgetItem([element_str])
             item2.element = element_str
             if item2.element not in self.ignore_from_ratio and \
                     item2.element not in self.ignore_from_graph:
                 item2.setCheckState(0, QtCore.Qt.Checked)
+            elif item2.element in self.ignore_from_graph:
+                item2.setCheckState(0, QtCore.Qt.Unchecked)
+                item2.setDisabled(True)
             else:
                 item2.setCheckState(0, QtCore.Qt.Unchecked)
             self.tree_ratio.addTopLevelItem(item2)
-            if element_str in self.ignore_from_graph:
-                item2.setHidden(True)
 
     def __ok_button(self):
         """Accept selected elements to be used in ratio calculation.
@@ -107,17 +110,17 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
         # Graph
         root = self.tree_elements.invisibleRootItem()
         child_count = root.childCount()
+
         for i in range(child_count):
             item = root.child(i)
             if not item.checkState(0):
-                self.ignore_from_graph.append(item.element)
-                self.ignore_from_ratio.append(item.element)  # Since no graph.
-        # Ratio
+                self.ignore_from_graph.add(item.element)
+
+        self.ignore_from_ratio.update(self.ignore_from_graph)
         root = self.tree_ratio.invisibleRootItem()
         child_count = root.childCount()
         for i in range(child_count):
             item = root.child(i)
-            if not item.checkState(0) and \
-                    item.element not in self.ignore_from_ratio:
-                self.ignore_from_ratio.append(item.element)
+            if not item.checkState(0):
+                self.ignore_from_ratio.add(item.element)
         self.close()
