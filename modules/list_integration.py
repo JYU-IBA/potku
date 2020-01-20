@@ -28,81 +28,125 @@ __version__ = ""    # TODO
 import math
 
 
-def integrate_bins(x_axis, y_axis, a=-math.inf, b=math.inf):
+def integrate_bins(x_axis, y_axis, a=-math.inf, b=math.inf,
+                   step_size=None):
     """Calculates the closed integral between a and b for series
     of bins.
 
-    Assumes that x_axis is in order and that step size between
-    bins is constant.
+    Assumes that x_axis is in ascending order and that step size
+    between bins is constant.
 
     Args:
-        x_axis: values on the x-axis
-        y_axis: values on the y-axis
-        a: first x value of the integration interval
-        b: last x value of the integration interval
+        x_axis: values on the x axis
+        y_axis: values on the y axis
+        a: minimum x value in the range
+        b: maximum x value in the range
+        step_size: step size between each bin
 
     Return:
         integral between a and b
     """
-    # TODO make sure that this is what we actually want to calculate
-    # TODO test that floating point accuracy is good enough (maybe use
-    #      Decimal)
-    # TODO maybe change separate x- and y-axes into single list of
-    #      (x, y) tuples
-    total_sum = sum_elements(x_axis, y_axis, a, b)
-
-    # Need at least two x-values to calculate width
-    if len(x_axis) <= 1:
-        return 0.0
-
-    # For now, just assume that step_size is constant
-    step_size = abs(x_axis[1] - x_axis[0])
-
-    return total_sum * step_size
-
-
-def sum_running_avgs(x_axis, y_axis, a=-math.inf, b=math.inf):
-    """TODO"""
-    if len(x_axis) != len(y_axis):
-        raise ValueError("x axis and y axis must have the same size.")
-
     if len(x_axis) == 0:
         return 0.0
 
-    total_sum = 0.0
-    prev_x = x_axis[0]
-    prev_y = y_axis[0]
+    if step_size is None:
+        if len(x_axis) <= 1:
+            raise ValueError("Need at least two x values to calculate "
+                             "step size")
+        # For now, just assume that step_size is constant and x axis
+        # is in ascending order
+        step_size = x_axis[1] - x_axis[0]
 
-    for x, y in zip(x_axis, y_axis):
-        if prev_x == x:
-            continue
+    # Return y values multiplied by step size
+    return sum_y_values(x_axis, y_axis, a, b) * step_size
 
-        if a <= x <= b:
-            total_sum += (prev_y + y) / 2
-        elif x > b > a:
-            total_sum += (prev_y + y) / 2
-            break
-        prev_x = x
+
+def sum_running_avgs(x_axis, y_axis, a=-math.inf, b=math.inf):
+    """Sums together 2-step running averages for y axis values over
+    the range [a, b] on the x axis.
+
+    Args:
+        x_axis: values on the x axis
+        y_axis: values on the y axis
+        a: minimum x value in the range
+        b: maximum x value in the range
+
+    Return:
+        sum of running averages on the y axis
+    """
+    return sum(y for (_, y) in calculate_running_avgs(x_axis, y_axis, a, b))
+
+
+def sum_y_values(x_axis, y_axis, a=-math.inf, b=math.inf):
+    """Sums the values on y axis over the range [a, b] on the x axis.
+
+    Args:
+        x_axis: values on the x axis
+        y_axis: values on the y axis
+        a: minimum x value in the range
+        b: maximum x value in the range
+
+    Return:
+        sum of y values within range
+    """
+    return sum(y for (_, y) in get_elements_in_range(x_axis, y_axis, a, b))
+
+
+def calculate_running_avgs(x_axis, y_axis, a=-math.inf, b=math.inf):
+    """Generates 2-step running averages of y axis value over the
+    range [a, b] on the x axis.
+
+    Args:
+        x_axis: values on the x axis
+        y_axis: values on the y axis
+        a: minimum x value in the range
+        b: maximum x value in the range
+
+    Yield:
+        (x, y) tuples where y is the running average of current
+        and previous y value
+    """
+    # TODO currently prev_y is always 0 for the first element in range,
+    #      even though data can contain y values before it. This may need
+    #      to be fixed
+    prev_y = 0
+    for x, y in get_elements_in_range(x_axis, y_axis, a, b):
+        yield x, (prev_y + y) / 2
         prev_y = y
 
-    return total_sum
 
+def get_elements_in_range(x_axis, y_axis, a=-math.inf, b=math.inf):
+    """Generates (x, y) tuples from the given x and y values where the
+    x value is in within the range defined by a and b.
 
-def sum_elements(x_axis, y_axis, a=-math.inf, b=math.inf):
-    """TODO"""
-    if len(x_axis) != len(y_axis):
-        raise ValueError("x axis and y axis must have the same size.")
+    It is assumed that x axis is sorted in ascending order.
 
+    Args:
+        x_axis: values on the x axis
+        y_axis: values on the y axis
+        a: minimum x value in the range
+        b: maximum x value in the range
+
+    Yield:
+        (x, y) tuple where x is within the range and y is the corresponding
+        value on the y axis
+    """
+    # TODO maybe add parameters such as inclusive/exclusive range
+    # TODO instead of separate x and y axis, values could be provided
+    #      as a single tuple
     if a > b:
-        return 0.0
-
-    total_sum = 0.0
+        # If a is bigger than b, there are no values to yield
+        return
 
     for x, y in zip(x_axis, y_axis):
         if a <= x <= b:
-            total_sum += y
-        elif x > b > a:
-            total_sum += y
-            break
-
-    return total_sum
+            # Yield (x, y) when x is between a and b
+            yield x, y
+        elif x > b:
+            # Also yield the first (x, y) where x is bigger
+            # than b. Then stop.
+            # TODO this follows the original logic that was used
+            #      in depth profile calculations. Check if this
+            #      needs to be revised
+            yield x, y
+            return

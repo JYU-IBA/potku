@@ -1,12 +1,34 @@
 # coding=utf-8
 """
-TODO
+Created on TODO
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2013-2020 TODO
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
+
+__author__ = "Juhani Sundell"
+__version__ = ""  # TODO
 
 import unittest
 
 from modules.depth_files import DepthProfile, \
-                                sanitize_depth_file_names
+                                validate_depth_file_names
 from modules.element import Element
 
 
@@ -42,9 +64,9 @@ class TestDepthProfile(unittest.TestCase):
         self.assertEqual("Si", dp.get_profile_name())
 
         self.assertRaises(ValueError,
-                          lambda: DepthProfile([], [], [1]))
+                          lambda: DepthProfile([], [], []))
         self.assertRaises(ValueError,
-                          lambda: DepthProfile([], [1], []))
+                          lambda: DepthProfile([], [1]))
         self.assertRaises(ValueError,
                           lambda: DepthProfile(
                               [1], [], [1], element=Element.from_string("Si")))
@@ -88,8 +110,7 @@ class TestDepthProfile(unittest.TestCase):
 
         # Testing total profile
         dp = DepthProfile([i for i in range(10)],
-                          [i for i in range(10, 20)],
-                          [])
+                          [i for i in range(10, 20)])
 
         x1 = (i for i in range(10))
         x2 = (i for i in range(10, 20))
@@ -97,6 +118,22 @@ class TestDepthProfile(unittest.TestCase):
             self.assertEqual((next(x1), next(x2), 0), val)
 
         self.assertEqual(10, len(list(dp)))
+
+        # profile can be iterated over multiple times
+        for i in range(3):
+            x1 = (i for i in range(10))
+            x2 = (i for i in range(10, 20))
+            for val in dp:
+                self.assertEqual((next(x1), next(x2), 0), val)
+
+        # iteration restarts after break
+        for val in dp:
+            self.assertEqual((0, 10, 0), val)
+            break
+
+        for val in dp:
+            self.assertEqual((0, 10, 0), val)
+            break
 
     def test_adding(self):
         dp1 = DepthProfile(
@@ -121,13 +158,62 @@ class TestDepthProfile(unittest.TestCase):
 
         # Arbitrary collection of lists cannot be added
         self.assertRaises(TypeError,
-                          dp3 + ([0, 1, 2], [10, 11, 12], [21, 22, 23]))
+                          lambda: dp3 + ([0, 1, 2], [10, 11, 12], [21, 22, 23]))
 
     def test_subtraction(self):
-        pass
+        dp1 = DepthProfile([0, 1], [2, 3], [1, 2], Element.from_string("Si"))
+        dp2 = DepthProfile([0, 1], [3, 4], [1, 2], Element.from_string("Si"))
+
+        dp3 = dp2 - dp1
+        self.assertEqual([1, 1], dp3.concentrations)
+        self.assertEqual([0, 1], dp3.depths)
+        self.assertIsNone(dp3.events)
+        self.assertIsNone(dp3.element)
+
+        dp3 -= dp3
+        self.assertEqual([0, 0], dp3.concentrations)
 
     def test_merging(self):
-        pass
+        dp1 = DepthProfile([0, 1, 2, 3, 4], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], element="Si")
+        dp2 = DepthProfile([0, 1, 2, 3, 4], [2, 2, 2, 2, 2], [2, 2, 2, 2, 2], element="Si")
+
+        dp3 = dp1.merge(dp2, 1, 3)
+
+        self.assertEqual(dp1.depths, dp3.depths)
+        self.assertEqual([1, 2, 2, 2, 1], dp3.concentrations)
+        self.assertEqual([1, 1, 1, 1, 1], dp3.events)
+        self.assertEqual("Si", dp3.get_profile_name())
+
+        dp1 = DepthProfile([0, 1, 2, 3, 4], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], element="Si")
+        dp2 = DepthProfile([0, 1, 2, 3, 4], [2, 2, 2, 2, 2], [2, 2, 2, 2, 2], element="Si")
+
+        dp3 = dp1.merge(dp2, 1, 3.5)
+        self.assertEqual([1, 2, 2, 2, 1], dp3.concentrations)
+
+        dp3 = dp1.merge(dp2, 0.5, 4)
+        self.assertEqual([1, 2, 2, 2, 2], dp3.concentrations)
+
+        dp3 = dp1.merge(dp2, -1, 6)
+        self.assertEqual([2, 2, 2, 2, 2], dp3.concentrations)
+
+        dp3 = dp2.merge(dp1, 4, 6)
+        self.assertEqual([2, 2, 2, 2, 1], dp3.concentrations)
+
+        dp3 = dp2.merge(dp1, 3, 2)
+        self.assertEqual([2, 2, 2, 2, 2], dp3.concentrations)
+
+    def test_uneven_depth_lenghts(self):
+        """Testing how DepthProfile operations work when they have uneven
+        number of elements."""
+        dp1 = DepthProfile([0, 1], [1, 1])
+        dp2 = DepthProfile([0, 1, 2], [2, 2, 2])
+
+        self.assertRaises(ValueError, lambda: dp1 + dp2)
+        self.assertRaises(ValueError, lambda: dp2 + dp1)
+        self.assertRaises(ValueError, lambda: dp1 - dp2)
+        self.assertRaises(ValueError, lambda: dp2 - dp1)
+        self.assertRaises(ValueError, lambda: dp1.merge(dp2, 0, 1))
+        self.assertRaises(ValueError, lambda: dp2.merge(dp1, 0, 1))
 
     def test_identities(self):
         # Currently inputs are not being cloned when new depth profile is
@@ -156,7 +242,7 @@ class TestDepthFiles(unittest.TestCase):
             "Mn": "depth.Mn",
             "10C": "depth.10C"
         }
-        self.assertEqual(sanitize_depth_file_names(file_names), expected)
+        self.assertEqual(validate_depth_file_names(file_names), expected)
 
         # Invalid and duplicated strings are not included in the result
         file_names = [
@@ -169,7 +255,7 @@ class TestDepthFiles(unittest.TestCase):
             "total": "depth.total",
             "10C": "depth.10C"
         }
-        self.assertEqual(sanitize_depth_file_names(file_names), expected)
+        self.assertEqual(validate_depth_file_names(file_names), expected)
 
         # Testing various invalid names
         file_names = [
@@ -184,7 +270,7 @@ class TestDepthFiles(unittest.TestCase):
             "depth..total"
         ]
         expected = {}
-        self.assertEqual(sanitize_depth_file_names(file_names), expected)
+        self.assertEqual(validate_depth_file_names(file_names), expected)
 
         # Function does not check if the file name is actually valid file name
         file_names = [
@@ -195,7 +281,7 @@ class TestDepthFiles(unittest.TestCase):
             "!": "depth.!",
             "|/foo\\bar": "depth.|/foo\\bar"
         }
-        self.assertEqual(sanitize_depth_file_names(file_names), expected)
+        self.assertEqual(validate_depth_file_names(file_names), expected)
 
 
 if __name__ == "__main__":
