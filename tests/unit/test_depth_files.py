@@ -91,6 +91,10 @@ class TestDepthProfile(unittest.TestCase):
         self.assertRaises(TypeError,
                           lambda: dp.get_relative_concentrations(dp))
 
+        # element parameter should be an Element type if specified
+        self.assertRaises(TypeError,
+                          lambda: DepthProfile([], [], element="foo"))
+
     def test_iteration(self):
         """Tests that a DepthProfile object can be iterated over."""
         # Testing element profile
@@ -150,7 +154,6 @@ class TestDepthProfile(unittest.TestCase):
 
         # DepthProfile can be incremented by another DepthProfile
         dp3 += dp3
-        self.assertIsInstance(dp3, DepthProfile)
         self.assertEqual(dp3.depths, [0, 1, 2])
         self.assertEqual(dp3.concentrations, [50, 54, 58])
         self.assertIsNone(dp3.events)
@@ -174,8 +177,14 @@ class TestDepthProfile(unittest.TestCase):
         self.assertEqual([0, 0], dp3.concentrations)
 
     def test_merging(self):
-        dp1 = DepthProfile([0, 1, 2, 3, 4], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], element="Si")
-        dp2 = DepthProfile([0, 1, 2, 3, 4], [2, 2, 2, 2, 2], [2, 2, 2, 2, 2], element="Si")
+        dp1 = DepthProfile([0, 1, 2, 3, 4],
+                           [1, 1, 1, 1, 1],
+                           [1, 1, 1, 1, 1],
+                           element=Element.from_string("Si"))
+        dp2 = DepthProfile([0, 1, 2, 3, 4],
+                           [2, 2, 2, 2, 2],
+                           [2, 2, 2, 2, 2],
+                           element=Element.from_string("Si"))
 
         dp3 = dp1.merge(dp2, 1, 3)
 
@@ -184,9 +193,17 @@ class TestDepthProfile(unittest.TestCase):
         self.assertEqual([1, 1, 1, 1, 1], dp3.events)
         self.assertEqual("Si", dp3.get_profile_name())
 
-        dp1 = DepthProfile([0, 1, 2, 3, 4], [1, 1, 1, 1, 1], [1, 1, 1, 1, 1], element="Si")
-        dp2 = DepthProfile([0, 1, 2, 3, 4], [2, 2, 2, 2, 2], [2, 2, 2, 2, 2], element="Si")
+        # Original depth profiles remain unchanged
+        self.assertEqual(dp1.depths, [0, 1, 2, 3, 4])
+        self.assertEqual(dp2.depths, [0, 1, 2, 3, 4])
+        self.assertEqual(dp1.concentrations, [1, 1, 1, 1, 1])
+        self.assertEqual(dp2.concentrations, [2, 2, 2, 2, 2])
+        self.assertEqual(dp1.events, [1, 1, 1, 1, 1])
+        self.assertEqual(dp2.events, [2, 2, 2, 2, 2])
+        self.assertEqual(dp1.element, Element.from_string("Si"))
+        self.assertEqual(dp2.element, Element.from_string("Si"))
 
+        # Testing merging at different depths
         dp3 = dp1.merge(dp2, 1, 3.5)
         self.assertEqual([1, 2, 2, 2, 1], dp3.concentrations)
 
@@ -227,6 +244,28 @@ class TestDepthProfile(unittest.TestCase):
         dp3 = dp1 + dp2
         self.assertIs(dp3.depths, dp1.depths)
         self.assertIsNot(dp3.concentrations, dp1.concentrations)
+
+    def test_len(self):
+        self.assertEqual(0, len(DepthProfile([], [])))
+        self.assertEqual(1, len(DepthProfile([1], [1])))
+        self.assertEqual(10, len(DepthProfile([1] * 10, [1] * 10)))
+
+    def test_range(self):
+        # get_depth_range should return the first and last depth
+        # value in the DepthProfile or None, None if no depths
+        # are stored
+        dp = DepthProfile([], [])
+        self.assertEqual((None, None), dp.get_depth_range())
+
+        dp = DepthProfile([1], [1])
+        self.assertEqual((1, 1), dp.get_depth_range())
+
+        dp = DepthProfile([1, 2, 3], [1, 0, -1])
+        self.assertEqual((1, 3), dp.get_depth_range())
+
+        # Range does not check if first and last are in order
+        dp = DepthProfile([1, 2, -1], [1, 1, 1])
+        self.assertEqual((1, -1), dp.get_depth_range())
 
 
 class TestDepthFiles(unittest.TestCase):

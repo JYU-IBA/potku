@@ -68,8 +68,8 @@ class DepthFileGenerator(object):
         self.command_win = 'cd ' + self.bin_dir + ' && tof_list.exe ' \
                            + file_paths_str + ' | erd_depth.exe ' \
                            + output_path + ' tof.in'
-        self.command_linux = 'cd ' + self.bin_dir + ' && ./tof_list_linux ' \
-                             + file_paths_str + ' | ./erd_depth_linux ' \
+        self.command_linux = 'cd ' + self.bin_dir + ' && ./tof_list ' \
+                             + file_paths_str + ' | ./erd_depth ' \
                              + output_path + ' tof.in'
         self.command_mac = 'cd ' + self.bin_dir + ' && ./tof_list_mac ' \
                            + file_paths_str + ' | ./erd_depth_mac ' \
@@ -120,6 +120,9 @@ class DepthProfile:
         # TODO binary operations (__add__, merge, etc) could raise exception
         #      when depths of the two DepthProfiles do not line up
         if element is not None:
+            if not isinstance(element, Element):
+                raise TypeError("element should either be an Element or None")
+
             if events is None:
                 raise ValueError("Element DepthProfile must have event counts")
 
@@ -248,8 +251,11 @@ class DepthProfile:
         """Returns minimum and maximum depths of the DepthProfile
 
         Return:
-            minimum and maximum depths as a tuple of floats.
+            minimum and maximum depths as a tuple of floats or
+            (None, None) if no depth values are stored.
         """
+        if len(self.depths) == 0:
+            return None, None
         return self.depths[0], self.depths[-1]
 
     def integrate_concentrations(self, depth_a, depth_b):
@@ -321,8 +327,8 @@ class DepthProfile:
         from this DepthProfile, concentrations inside the range are taken
         from other DepthProfile.
 
-        New total type DepthProfile is created and the merged DepthProfiles
-        remain same.
+        New DepthProfile is created and the merged DepthProfiles remain
+        unchanged.
 
         Args:
             other: another DepthProfile to merge with
@@ -358,7 +364,7 @@ class DepthProfile:
         systematic error.
 
         Args:
-            systematic_error: TODO
+            systematic_error: systematic error used in calculation
             depth_a: lowest depth value to include in calculation
             depth_b: highest depth value to include in calculation
             sum_of_running_avgs: if not given, DepthProfile calculates the
@@ -604,7 +610,7 @@ class DepthProfileHandler:
                      calculation
             depth_b: highest depth value that is included in the ratio
                      calculation
-            systematic_error: TODO
+            systematic_error: systematic error used in calculation
 
         Return:
             tuple of two dictionaries, first of which contains the

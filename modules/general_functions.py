@@ -375,7 +375,7 @@ def tof_list(cut_file, directory, save_output=False):
         for line in lines:
             if not line:  # Can still result in empty lines at the end, skip.
                 continue
-            line_split = re.split("\s+", line.strip())
+            line_split = re.split("\s+", line.strip())  # TODO implement this with parsing
             tupled = (float(line_split[0]),
                       float(line_split[1]),
                       float(line_split[2]),

@@ -44,17 +44,35 @@ def get_sample_data_dir():
     return os.path.abspath(path_to_sample_data)
 
 
+def get_md5_for_files(file_paths):
+    """Calculates MD5 hash for the combined content of all given
+    files."""
+    for file_path in file_paths:
+        hasher = hashlib.md5()
+        with open(file_path, "rb") as file:
+            buf = file.read()
+            hasher.update(buf)
+
+    return hasher.hexdigest()
+
+
 def check_md5_for_files(file_paths, checksum):
     """Checks that the combined contents of all files match the
-    given checksum."""
-    try:
-        for file_path in file_paths:
-            hasher = hashlib.md5()
-            with open(file_path, "rb") as file:
-                buf = file.read()
-                hasher.update(buf)
+    given checksum.
 
-        if hasher.digest() == checksum:
+    Args:
+        file_paths: absolute paths to file
+        checksum: hexadecimal string representation of the expected
+            checksum
+
+    Return:
+        tuple where first element is a boolean value that tells if
+        the given files match the checksum, and second element is a
+        message that tells further details about the check.
+    """
+    try:
+        actual_checksum = get_md5_for_files(file_paths)
+        if actual_checksum == checksum:
             return True, "files match the given checksum"
 
         return False, "files do not match the given checksum"

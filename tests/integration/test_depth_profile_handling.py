@@ -27,6 +27,8 @@ __version__ = ""  # TODO
 
 import unittest
 import os
+import platform
+import math
 
 from modules.depth_files import DepthProfileHandler
 from modules.element import Element
@@ -51,13 +53,24 @@ _FILE_NAMES = [
     "depth.total"
 ]
 
-# Expected checksum for all files
-# Checksum is valid as of 19.1.2020
-# If depths files are modified or removed, these tests will be skipped
-_CHECKSUM = b'\xa7OH\x9d`G]N\xf3ic\xa0\x93\xf1\t\xd1'
+_DEFAULT_MSG = "reading files in TestDepthProfileHandling"
 
 # Combined absolute file paths
 _file_paths = [os.path.join(_DIR_PATH, fname) for fname in _FILE_NAMES]
+
+__os = platform.system()
+
+# Expected checksum for all depth files
+# Checksums are valid as of 20.1.2020
+# If depths files are modified or removed, some of the tests will be skipped
+if __os == "Windows":
+    _CHECKSUM = ""  # TODO
+elif __os == "Linux":
+    _CHECKSUM = "4aafa2ba9142642c5f9393bf298c6280"
+elif __os == "Darwin":
+    _CHECKSUM = ""  # TODO
+else:
+    _CHECKSUM = None
 
 
 class TestDepthProfileHandling(unittest.TestCase):
@@ -78,41 +91,67 @@ class TestDepthProfileHandling(unittest.TestCase):
             Element.from_string("Mn"),
             Element.from_string("Si")
         ]
+        cls.handler = DepthProfileHandler()
 
-    @verify_files(_file_paths, _CHECKSUM,
-                  msg="testing file reading with DepthProfileHandler")
+    @verify_files(_file_paths, _CHECKSUM, msg=_DEFAULT_MSG)
     def test_file_reading(self):
         """Tests that the files can be read and all given elements are
         stored in the profile handler"""
-        handler = DepthProfileHandler()
-        handler.read_directory(_DIR_PATH, self.all_elements)
-        self.check_handler_profiles(handler, self.all_elements)
+        self.handler.read_directory(_DIR_PATH, self.all_elements)
+        self.check_handler_profiles(self.handler, self.all_elements)
 
         # Read just some of the elements. This should remove existing
         # profiles from the handler
-        handler.read_directory(_DIR_PATH, self.some_elements)
-        self.check_handler_profiles(handler, self.some_elements)
+        self.handler.read_directory(_DIR_PATH, self.some_elements)
+        self.check_handler_profiles(self.handler, self.some_elements)
 
     def check_handler_profiles(self, handler, elements):
         """Checks that handler contains all the expected element
         profiles"""
         # Check that the handler contains absolute profiles
-        # of all elements
+        # of all elements and a profile called total
+        elem_set = set(str(elem) for elem in elements)
         abs_profiles = handler.get_absolute_profiles()
-        for elem in elements:
-            self.assertIn(str(elem), abs_profiles)
+        self.assertEqual(
+            set(abs_profiles.keys()).difference(elem_set),
+            set(["total"]))
 
-        self.assertIn("total", abs_profiles)
-        self.assertEqual(len(abs_profiles), len(elements) + 1)
-
-        # Relative profiles also contain all elements
+        # Relative profiles also contain all elements, but no total
+        # profile
         rel_profiles = handler.get_relative_profiles()
-        for elem in elements:
-            self.assertIn(str(elem), rel_profiles)
+        self.assertEqual(set(rel_profiles.keys()),
+                         elem_set)
 
-        # But it does not contain total profile
-        self.assertNotIn("total", rel_profiles)
-        self.assertEqual(len(rel_profiles), len(elements))
+    def test_calculate_ratios(self):
+        all_elem_names = set(str(elem) for elem in self.all_elements)
+        some_elem_names = set(str(elem) for elem in self.all_elements)
+        self.handler.read_directory(_DIR_PATH, self.all_elements)
+
+        # All elements are ignored, so all values returned by the calculation
+        # are None
+        percentages, moes = self.handler.calculate_ratios(
+            all_elem_names, -math.inf, math.inf, 3)
+
+        self.assertEqual(all_elem_names, set(percentages.keys()))
+        self.assertEqual(all_elem_names, set(moes.keys()))
+        for pval, mval in zip(percentages.values(), moes.values()):
+            self.assertIsNone(pval)
+            self.assertIsNone(mval)
+
+        # Only some elements are ignored
+        percentages, moes = self.handler.calculate_ratios(
+            some_elem_names, -math.inf, math.inf, 3)
+        self.assertEqual(all_elem_names, set(percentages.keys()))
+        self.assertEqual(all_elem_names, set(moes.keys()))
+        for p, m in zip(percentages, moes):
+            if p in some_elem_names:
+                self.assertIsNone(percentages[p])
+            else:
+                self.assertTrue(0 <= percentages[p] <= 100)
+            if m in some_elem_names:
+                self.assertIsNone(moes[m])
+            else:
+                self.assertTrue(0 <= moes[m])
 
 
 if __name__ == "__main__":
