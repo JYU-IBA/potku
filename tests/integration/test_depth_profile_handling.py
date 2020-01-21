@@ -122,6 +122,7 @@ class TestDepthProfileHandling(unittest.TestCase):
         self.assertEqual(set(rel_profiles.keys()),
                          elem_set)
 
+    @verify_files(_file_paths, _CHECKSUM, msg=_DEFAULT_MSG)
     def test_calculate_ratios(self):
         all_elem_names = set(str(elem) for elem in self.all_elements)
         some_elem_names = set(str(elem) for elem in self.all_elements)
