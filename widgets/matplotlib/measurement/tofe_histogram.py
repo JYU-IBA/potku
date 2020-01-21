@@ -171,8 +171,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         # Check values for graph
         axes_range = None
         bin_counts = (
-            (self.__x_data_max - self.__x_data_min) / self.compression_x,
-            (self.__y_data_max - self.__y_data_min) / self.compression_y)
+            (self.__x_data_max - self.__x_data_min) // self.compression_x,
+            (self.__y_data_max - self.__y_data_min) // self.compression_y)
         if self.axes_range_mode == 1:
             axes_range = list(self.axes_range)
             axes_range[0] = self.__fix_axes_range(axes_range[0],
@@ -181,8 +181,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                                                   self.compression_y)
             x_length = axes_range[0][1] - axes_range[0][0]
             y_length = axes_range[1][1] - axes_range[1][0]
-            bin_counts = (x_length / self.compression_x,
-                          y_length / self.compression_y)
+            bin_counts = (x_length // self.compression_x,
+                          y_length // self.compression_y)
 
         # If bin count too high -> it will crash the program, use 3500
         # If 10 000, tofe_65 example can have compression as 1, but REALLY slow
