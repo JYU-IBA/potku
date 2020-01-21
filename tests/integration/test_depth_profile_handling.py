@@ -64,7 +64,7 @@ __os = platform.system()
 # Checksums are valid as of 20.1.2020
 # If depths files are modified or removed, some of the tests will be skipped
 if __os == "Windows":
-    _CHECKSUM = ""  # TODO
+    _CHECKSUM = "a74f489d60475d4ef36963a093f109d1"
 elif __os == "Linux":
     _CHECKSUM = "4aafa2ba9142642c5f9393bf298c6280"
 elif __os == "Darwin":
