@@ -147,9 +147,9 @@ class DepthProfile:
 
         Yield:
             tuple that contains a depth value, and DepthProfile's
-            concentration and event counts at that depth.
+            concentration and event count at that depth.
         """
-        if not self.element:
+        if self.element is None:
             for d, c in zip(self.depths, self.concentrations):
                 # For total type profiles, event count is always 0
                 yield d, c, 0
@@ -211,8 +211,8 @@ class DepthProfile:
         Args:
             file_path: absolute path to a depth file
             element: element that the depth profile belongs to. If None,
-                     the depth profile is considered to be an aggregation of
-                     multiple elements
+                     the depth profile is considered to be an aggregation
+                     of multiple elements
             depth_units: unit in which depths are measured
 
         Return:
@@ -242,8 +242,8 @@ class DepthProfile:
         """Returns the name of the depth profile.
 
         Return:
-            string representation of the element or 'total' if element is
-            undefined.
+            string representation of the element or 'total' if element
+            is undefined.
         """
         return str(self.element) if self.element else "total"
 
@@ -308,12 +308,12 @@ class DepthProfile:
         Return:
             list of relative concentrations
         """
-        if len(self) != len(other):
-            raise ValueError("DepthProfile lengths must match when calculating "
-                             "relative concentrations")
+        if not isinstance(other, DepthProfile):
+            return NotImplemented
 
         if len(self) != len(other):
-            raise ValueError("DepthProfile lengths must match when merging")
+            raise ValueError("DepthProfile lengths must match when "
+                             "calculating relative concentrations")
 
         conc = [c1 / c2 * 100 if c2 != 0 else 0.0
                 for (_, c1, _), (_, c2, _) in zip(self, other)]
@@ -367,8 +367,8 @@ class DepthProfile:
             systematic_error: systematic error used in calculation
             depth_a: lowest depth value to include in calculation
             depth_b: highest depth value to include in calculation
-            sum_of_running_avgs: if not given, DepthProfile calculates the
-                                 average itself
+            sum_of_running_avgs: if not given, DepthProfile calculates
+                                 the average itself
 
         Return:
             margin of error as float
@@ -561,9 +561,10 @@ class DepthProfileHandler:
         return self.__relative_profiles
 
     def merge_profiles(self, depth_a, depth_b, method="abs_rel_abs"):
-        """Combines absolute and relative DepthProfiles so that concentrations
-        outside the range between depth_a and depth_b are taken from one profile
-        and concentrations inside the range are taken from another profile.
+        """Combines absolute and relative DepthProfiles so that
+        concentrations outside the range between depth_a and depth_b
+        are taken from one profile and concentrations inside the range
+        are taken from another profile.
 
         Whether absolute values are outside and relative values are inside
         the range or vice versa depends on the given method.
@@ -628,7 +629,8 @@ class DepthProfileHandler:
         # TODO seems unnecessary to calculate the ignored values
         ignored_profiles = {
             p: self.__absolute_profiles[p]
-            for p in self.__absolute_profiles if p in ignored
+            for p in self.__absolute_profiles
+            if p in ignored and p != "total"
         }
         total_sum -= sum(p.sum_running_avgs(depth_a, depth_b)
                          for p in ignored_profiles.values())
@@ -676,5 +678,5 @@ class DepthProfileHandler:
         return {
             p: self.__absolute_profiles[p].integrate_concentrations(
                 depth_a, depth_b)
-            for p in self.__absolute_profiles
+            for p in self.__absolute_profiles if p != "total"
         }
