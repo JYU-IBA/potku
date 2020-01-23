@@ -67,13 +67,10 @@ __os = platform.system()
 # If depths files are modified or removed, some of the tests will be skipped
 if __os == "Windows":
     _CHECKSUM = "a74f489d60475d4ef36963a093f109d1"
-elif __os == "Linux":
+elif __os == "Linux" or __os == "Darwin":
     _CHECKSUM = "4aafa2ba9142642c5f9393bf298c6280"
-elif __os == "Darwin":
-    _CHECKSUM = ""  # TODO
 else:
     _CHECKSUM = None
-
 
 class TestDepthProfileHandling(unittest.TestCase):
     @classmethod
