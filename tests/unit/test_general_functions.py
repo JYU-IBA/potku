@@ -1,12 +1,55 @@
 # coding=utf-8
 """
-TODO
+Created on TODO
+Updated on 23.1.2020
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2020 TODO
+
+This program is free software; you can redistribute it and/or
+modify it under the terms of the GNU General Public License
+as published by the Free Software Foundation; either version 2
+of the License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program (file named 'LICENCE').
 """
 
+__author__ = "Juhani Sundell"
+__version__ = ""  # TODO
+
 import unittest
+import os
+import platform
 
 from modules import general_functions as gf
 from modules.element import Element
+from tests.utils import get_sample_data_dir, verify_files
+
+_DIR_PATH = os.path.join(get_sample_data_dir(),
+                         "Ecaart-11-mini",
+                         "Tof-E_65-mini",
+                         "cuts")
+_FILE_PATHS = [
+    os.path.join(_DIR_PATH, "Tof-E_65-mini.1H.0.cut"),
+    os.path.join(_DIR_PATH, "Tof-E_65-mini.1H.1.cut")
+]
+
+__os = platform.system()
+if __os == "Windows":
+    _CHECKSUM = "cc2089d41ad55f206b941fe83d079add"
+elif __os == "Linux" or __os == "Darwin":
+    _CHECKSUM = None    # TODO
+else:
+    _CHECKSUM = None
 
 
 class TestMatchingFunctions(unittest.TestCase):
@@ -86,6 +129,29 @@ class TestMatchingFunctions(unittest.TestCase):
             TypeError, lambda: gf.find_match_in_dicts(1, [set(1, 2)]))
         self.assertRaises(
             TypeError, lambda: gf.find_match_in_dicts([], [{[]: []}]))
+
+
+class TestGeneralFunctions(unittest.TestCase):
+
+    @verify_files(_FILE_PATHS, _CHECKSUM,
+                  msg="testing counting lines in a file")
+    def test_file_line_counting(self):
+        """Tests for counting lines in a file"""
+        self.assertEqual(23, gf.count_lines_in_file(_FILE_PATHS[0]))
+        self.assertEqual(20, gf.count_lines_in_file(_FILE_PATHS[1]))
+
+        self.assertRaises(
+            FileNotFoundError,
+            lambda: gf.count_lines_in_file("this file does not exist"))
+        self.assertRaises(
+            FileNotFoundError,
+            lambda: gf.count_lines_in_file("this file does not exist",
+                                           handle_file_not_found=False))
+        self.assertEqual(
+            0,
+            gf.count_lines_in_file("this file does not exist",
+                                   handle_file_not_found=True))
+        # TODO test opening file in another process and then trying to read it
 
 
 if __name__ == "__main__":

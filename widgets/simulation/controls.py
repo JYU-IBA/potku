@@ -73,6 +73,11 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         state_widget = QtWidgets.QWidget()
         state_widget.setLayout(state_layout)
 
+        # TODO get atom count from element simulation and display it
+        #      atom_count is still 0, because .erd files are not yet counted
+        atom_count = self.element_simulation.get_atom_count()
+        print("TESTING ATOM COUNT", atom_count, atom_count == 0)
+
         controls_layout = QtWidgets.QHBoxLayout()
         controls_layout.setContentsMargins(0, 6, 0, 0)
         self.run_button = QtWidgets.QPushButton()
@@ -156,10 +161,11 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         """
         biggest_seed = 0
         old_files = []
+
+        start_part = self.element_simulation.recoil_elements[0].prefix + \
+            "-" + self.element_simulation.recoil_elements[0].name + "."
+        end = ".erd"
         for file in os.listdir(self.element_simulation.directory):
-            start_part = self.element_simulation.recoil_elements[0].prefix + \
-                "-" + self.element_simulation.recoil_elements[0].name + "."
-            end = ".erd"
             if file.startswith(start_part) and file.endswith(end):
                 seed = file.rsplit('.', 2)[1]
                 old_files.append(os.path.join(
@@ -170,7 +176,7 @@ class SimulationControlsWidget(QtWidgets.QWidget):
                         biggest_seed = current_seed
                 except ValueError:
                     continue
-        if biggest_seed > 0:
+        if biggest_seed > 0:    # TODO seed cannot be 0?
             return biggest_seed, old_files
         return None, old_files
 
@@ -182,7 +188,7 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         start_value = None
         old_biggest_seed, erd_flies = self.find_old_biggest_seed()
         use_erd_files = False
-        if old_biggest_seed:
+        if old_biggest_seed:    # TODO what if seed is 0? should check for None?
             reply = QtWidgets.QMessageBox.question(
                 self, "Confirmation", "Do you want to continue this "
                                       "simulation?\n\nIf you do, old simulation"

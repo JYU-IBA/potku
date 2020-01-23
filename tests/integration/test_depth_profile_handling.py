@@ -72,6 +72,7 @@ elif __os == "Linux" or __os == "Darwin":
 else:
     _CHECKSUM = None
 
+
 class TestDepthProfileHandling(unittest.TestCase):
     @classmethod
     def setUpClass(cls):

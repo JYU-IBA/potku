@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 24.5.2019
+Updated on 23.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -28,7 +28,7 @@ along with this program (file named 'LICENCE').
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli " \
              "Rahkonen \n Miika Raunio \n" \
              "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen"
+             "\n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import bisect
@@ -50,7 +50,7 @@ from PyQt5 import QtWidgets
 from subprocess import Popen
 
 
-# TODO organize this to smaller files
+# TODO organize this to smaller modules
 
 def open_file_dialog(parent, default_folder, title, files):
     """Opens open file dialog
@@ -987,3 +987,26 @@ def find_match_in_dicts(search_value, search_dicts):
         if search_value in sd:
             return sd[search_value]
     return None
+
+
+def count_lines_in_file(file_path, handle_file_not_found=False):
+    """Returns the number of lines in given file.
+
+    Args:
+        file_path: absolute path to a file
+        handle_file_not_found: if True, returns 0 for nonexistant files,
+                               otherwise raises FileNotFoundException
+
+    Return:
+        number of lines in a file
+    """
+    if handle_file_not_found and not os.path.isfile(file_path):
+        return 0
+
+    counter = 0
+    # https://stackoverflow.com/questions/845058/how-to-get-line-count-of-a \
+    # -large-file-cheaply-in-python
+    with open(file_path) as f:
+        for counter, _ in enumerate(f):
+            pass
+    return counter + 1

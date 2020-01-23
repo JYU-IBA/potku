@@ -83,7 +83,13 @@ class DepthFileGenerator(object):
         used_os = platform.system()
 
         if used_os == 'Windows':
-            subprocess.call(self.command_win, shell=True)
+            try:
+                # TODO this is not working properly in Pycharm 2019
+                #      on Windows. Process returns code 3221225477
+                res = subprocess.check_call(self.command_win, shell=True)
+                print("\n\n", res)
+            except Exception as e:
+                print("\n\n", e)
         elif used_os == 'Linux':
             subprocess.call(self.command_linux, shell=True)
         elif used_os == 'Darwin':

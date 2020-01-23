@@ -41,6 +41,7 @@ from modules.foil import CircularFoil
 from modules.general_functions import read_espe_file
 from modules.general_functions import rename_file
 from modules.general_functions import uniform_espe_lists
+from modules.general_functions import count_lines_in_file
 from modules.get_espe import GetEspe
 from modules.mcerd import MCERD
 
@@ -759,7 +760,7 @@ class ElementSimulation:
             recoil = self.recoil_elements[0]
         else:
             recoil = self.optimization_recoils[0]
-        self.__opt_seed = seed_number
+        self.__opt_seed = seed_number   # TODO divide ions with process count
         for i in range(number_of_processes):
             settings = {
                 "simulation_type": elem_sim.simulation_type,
@@ -803,13 +804,15 @@ class ElementSimulation:
             if optimize:
                 self.optimization_mcerd_running = True
 
-            self.mcerd_objects[seed_number] = MCERD(settings, self,
-                                                    optimize_fluence=optimize_fluence)
+            self.mcerd_objects[seed_number] = MCERD(
+                settings, self, optimize_fluence=optimize_fluence)
             seed_number = seed_number + 1
             if i + 1 < number_of_processes:
                 time.sleep(5)  # This is done to avoid having a mixup in mcerd
                 # command file content when there are more than one process
                 # (without this, Potku would crash)
+                # TODO can observer pattern be implemented here?
+                # TODO read file in python?
         QtWidgets.QApplication.restoreOverrideCursor()
 
         if self.use_default_settings and not self.simulation.detector:
@@ -838,18 +841,33 @@ class ElementSimulation:
             time.sleep(1)
             lines_count = 0
             add_presim = False
-            for f in self.__erd_files:
-                if os.path.exists(f):
-                    lines = 0
-                    with open(f, 'r') as file:
-                        lines = len(file.readlines())
-                    lines_count = lines_count + lines
-                    if f is self.__erd_files[-1]:
-                        if lines == 0:
-                            add_presim = True
+            #for f in self.__erd_files:
+            #    if os.path.exists(f):
+            #        lines = count_lines_in_file(f)
+            #
+            #        lines_count = lines_count + lines
+            #
+            #        if f is self.__erd_files[-1]:
+            #            if lines == 0:
+            #                add_presim = True
+
+            # TODO this is a refactored version of the lines commented out
+            #      above. Remove them once more testing has been done
+            lines_count = self.get_atom_count()
+
+            # If we are in presim mode, line count will be zero
+            add_presim = lines_count == 0
             if self.controls:
                 self.controls.show_number_of_observed_atoms(lines_count,
                                                             add_presim)
+
+    def get_atom_count(self):
+        """Returns the number of atoms that have been simulated.
+        """
+        # TODO possibly rename this function
+        # file_path = self.get_erd_file_name(element)
+        return sum(count_lines_in_file(erd_file, handle_file_not_found=True)
+                   for erd_file in self.__erd_files)
 
     def check_spectra_change(self, stop_percent, check_time, optimize_recoil,
                              check_max, check_min):
@@ -964,11 +982,7 @@ class ElementSimulation:
                 self.simulation.running_simulations.remove(self)
 
             # Calculate erd lines for log
-            lines_count = 0
-            for f in self.__erd_files:
-                if os.path.exists(f):
-                    with open(f, 'r') as file:
-                        lines_count = lines_count + len(file.readlines())
+            lines_count = self.get_atom_count()
 
             simulation_name = self.simulation.name
             element = self.recoil_elements[0].element
@@ -985,6 +999,7 @@ class ElementSimulation:
 
     def stop(self, optimize_recoil=False):
         """ Stop the simulation."""
+        # TODO check if this and notify can be refactored
         ref_key = None
         processes = len(self.mcerd_objects.keys())
 
@@ -1008,11 +1023,7 @@ class ElementSimulation:
             self.optimization_mcerd_running = False
 
         # Calculate erd lines for log
-        lines_count = 0
-        for f in self.__erd_files:
-            if os.path.exists(f):
-                with open(f, 'r') as file:
-                    lines_count = lines_count + len(file.readlines())
+        lines_count = self.get_atom_count()
 
         simulation_name = self.simulation.name
         if not optimize_recoil:
