@@ -39,6 +39,8 @@ import math
 import os
 import platform
 import subprocess
+from functools import lru_cache
+
 import modules.parsing as parsing
 import modules.math_functions as mf
 
@@ -493,7 +495,8 @@ class DepthProfileHandler:
                       depth files
             depth_units: unit in which depths are measured
         """
-        # Clear currently stored profiles
+        # Clear currently stored profiles and cache for merging
+        self.merge_profiles.cache_clear()
         self.__absolute_profiles.clear()
         self.__relative_profiles.clear()
 
@@ -560,6 +563,13 @@ class DepthProfileHandler:
 
         return self.__relative_profiles
 
+    # It is likely that this function gets called many times with same args so
+    # results are cached
+    # TODO consider caching in other similar functions
+    # TODO profile memory usage with caching
+    # TODO caching may not be a good idea if callers are going to modify the
+    #      results
+    @lru_cache(maxsize=32)
     def merge_profiles(self, depth_a, depth_b, method="abs_rel_abs"):
         """Combines absolute and relative DepthProfiles so that
         concentrations outside the range between depth_a and depth_b

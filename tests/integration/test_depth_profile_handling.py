@@ -1,12 +1,13 @@
 # coding=utf-8
 """
 Created on 19.1.2020
+Updated on 23.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2013-2020 TODO
+Copyright (C) 2020 TODO
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -33,6 +34,7 @@ import math
 from modules.depth_files import DepthProfileHandler
 from modules.element import Element
 from tests.utils import verify_files, get_sample_data_dir
+from timeit import default_timer as timer
 
 # These tests require reading files from the sample data directory
 # Path to the depth file directory
@@ -153,6 +155,96 @@ class TestDepthProfileHandling(unittest.TestCase):
                 self.assertIsNone(moes[m])
             else:
                 self.assertTrue(0 <= moes[m])
+
+    def test_get_depth_range(self):
+        """Tests depth ranges with different depth units"""
+        # First read files while using TODO depth units
+        self.handler.read_directory(_DIR_PATH,
+                                    self.some_elements,
+                                    depth_units="")
+        fst_range = self.handler.get_depth_range()
+
+        # Then read files using nanometers
+        self.handler.read_directory(_DIR_PATH,
+                                    self.some_elements,
+                                    depth_units="nm")
+        snd_range = self.handler.get_depth_range()
+
+        # First and second ranges are different and both are not
+        # None
+        self.assertNotEqual(fst_range, snd_range)
+        self.assertNotEqual((None, None), fst_range)
+        self.assertNotEqual((None, None), snd_range)
+
+        # However, if one were to delete the 'total' profile
+        del self.handler._DepthProfileHandler__absolute_profiles["total"]
+        self.assertTrue((None, None),
+                        self.handler.get_depth_range())
+
+    @verify_files(_file_paths, _CHECKSUM, msg=_DEFAULT_MSG)
+    def test_caching_with_merge(self):
+        """Tests caching functionality in DepthProfile merging"""
+
+        # Maximum cache size currently set for merge function is 32
+        max_cache = 32
+        n = 100
+
+        inf = self.handler.merge_profiles.cache_info()
+        self.assertEqual(inf.currsize, 0)
+        self.assertEqual(inf.maxsize, max_cache)
+
+        self.handler.read_directory(_DIR_PATH,
+                                    self.all_elements,
+                                    depth_units="nm")
+        a, b = self.handler.get_depth_range()
+
+        # First merge is called with same parameters for n times
+        start = timer()
+        for _ in range(n):
+            self.handler.merge_profiles(a + 100, b - 100, method="abs_rel_abs")
+            self.handler.merge_profiles(a + 100, b - 100, method="rel_abs_rel")
+        stop = timer()
+
+        # As only two different sets of parameters were used, current cache
+        # size is 2
+        self.assertEqual(2, self.handler.merge_profiles.cache_info().currsize)
+
+        with_caching = stop - start
+
+        # Then it is called with different parameters so caching will not help
+        start = timer()
+        for i in range(n):
+            self.handler.merge_profiles(a + 100 + i, b - 100 - i,
+                                        method="abs_rel_abs")
+            self.handler.merge_profiles(a + 100 + i, b - 100 - i,
+                                        method="rel_abs_rel")
+        stop = timer()
+
+        # Assert that maximum size has been reached
+        self.assertEqual(max_cache,
+                         self.handler.merge_profiles.cache_info().currsize)
+
+        without_caching = stop - start
+
+        # Cached runs should be at least 10 times faster, depending on n
+        # print(with_caching, without_caching)
+        self.assertTrue(with_caching < without_caching * 0.1)
+
+        # Assert that cache gets cleared when directory is read
+        m1 = self.handler.merge_profiles(a + 100, b - 100, method="abs_rel_abs")
+        self.handler.read_directory(_DIR_PATH, elements=self.some_elements)
+
+        self.assertEqual(0, self.handler.merge_profiles.cache_info().currsize)
+        m2 = self.handler.merge_profiles(a + 100, b - 100, method="abs_rel_abs")
+
+        self.assertNotEqual(m1.keys(), m2.keys())
+        self.assertEqual(1, self.handler.merge_profiles.cache_info().currsize)
+
+        # Caching means that same object is returned
+        # This needs to be taken into consideration if caller needs to modify
+        # the results
+        m3 = self.handler.merge_profiles(a + 100, b - 100, method="abs_rel_abs")
+        self.assertIs(m2, m3)
 
 
 if __name__ == "__main__":
