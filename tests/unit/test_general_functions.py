@@ -43,10 +43,10 @@ _FILE_PATHS = [
     os.path.join(_DIR_PATH, "Tof-E_65-mini.1H.1.cut")
 ]
 
-__os = platform.system()
-if __os == "Windows":
+_os = platform.system()
+if _os == "Windows":
     _CHECKSUM = "cc2089d41ad55f206b941fe83d079add"
-elif __os == "Linux" or __os == "Darwin":
+elif _os == "Linux" or _os == "Darwin":
     _CHECKSUM = "6bbf2f7faf8a708046d8d038c4ea8e97"
 else:
     _CHECKSUM = None
@@ -152,9 +152,14 @@ class TestGeneralFunctions(unittest.TestCase):
             gf.count_lines_in_file("this file does not exist",
                                    check_file_exists=True))
 
-        self.assertRaises(
-            IsADirectoryError,
-            lambda: gf.count_lines_in_file(get_sample_data_dir()))
+        if _os == "Windows":
+            self.assertRaises(
+                PermissionError,
+                lambda: gf.count_lines_in_file(get_sample_data_dir()))
+        else:
+            self.assertRaises(
+                IsADirectoryError,
+                lambda: gf.count_lines_in_file(get_sample_data_dir()))
 
         # Uncomment this to test with an empty file, assuming that __init__.py
         # stays empty. Note that this can only be run from a directory that
