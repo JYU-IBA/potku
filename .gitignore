@@ -22,7 +22,7 @@
 /__pycache__
 /venv
 *.bak
-/external
+/external/*
 .gitignore
 Pipfile.lock
 

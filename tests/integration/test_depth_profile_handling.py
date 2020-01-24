@@ -238,11 +238,42 @@ class TestDepthProfileHandling(unittest.TestCase):
         self.assertNotEqual(m1.keys(), m2.keys())
         self.assertEqual(1, self.handler.merge_profiles.cache_info().currsize)
 
+    @verify_files(_file_paths, _CHECKSUM, msg=_DEFAULT_MSG)
+    def test_merge_identities(self):
+        """This tests that objects returned by the merge are same when
+        retrieved from cache"""
         # Caching means that same object is returned
         # This needs to be taken into consideration if caller needs to modify
         # the results
-        m3 = self.handler.merge_profiles(a + 100, b - 100, method="abs_rel_abs")
-        self.assertIs(m2, m3)
+        self.handler.read_directory(_DIR_PATH,
+                                    self.some_elements,
+                                    depth_units="nm")
+        a, b = self.handler.get_depth_range()
+        a += 100
+        b += 100
+        m1 = self.handler.merge_profiles(a, b, method="abs_rel_abs")
+        m2 = self.handler.merge_profiles(a, b, method="abs_rel_abs")
+        self.assertIs(m1, m2)
+        m3 = self.handler.merge_profiles(a, b, method="rel_abs_rel")
+        m4 = self.handler.merge_profiles(a, b, method="rel_abs_rel")
+        self.assertIs(m3, m4)
+        self.assertIsNot(m1, m3)
+
+        # Deleting a key from m3 also deletes it from m4
+        self.assertIn("H", m3)
+        self.assertIn("H", m4)
+        del m3["H"]
+        self.assertNotIn("H", m3)
+        self.assertNotIn("H", m4)
+
+        # When a new ProfileHandler is created, new cache is also established
+        new_dp = DepthProfileHandler()
+        new_dp.read_directory(_DIR_PATH,
+                              self.some_elements,
+                              depth_units="nm")
+
+        m5 = new_dp.merge_profiles(a, b, method="abs_rel_abs")
+        self.assertIsNot(m1, m5)
 
 
 if __name__ == "__main__":

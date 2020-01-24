@@ -6,7 +6,7 @@ Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2013-2018 TODO
+Copyright (C) 2020 TODO
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -24,8 +24,13 @@ along with this program (file named 'LICENCE').
 File parsing is used for parsing files that contain csv-formatted
 data.
 """
-__author__ = ""     # TODO
-__version__ = ""
+__author__ = "Juhani Sundell"
+__version__ = ""    # TODO
+
+# TODO make a Parser class to handle parsing.
+# TODO allow parsing strings into either a tuple of lists (like currently) or a
+#      list of tuples
+# TODO maybe use csv module and do not implement everything yourself...
 
 
 def parse_file(file_path, col_idxs, converters, separator=None, skip_lines=0):
