@@ -717,7 +717,8 @@ class ElementSimulation:
 
     def start(self, number_of_processes, start_value, erd_files=None,
               optimize=False, stop_p=False, check_t=False,
-              optimize_recoil=False, check_max=False, check_min=False):
+              optimize_recoil=False, check_max=False, check_min=False,
+              shared_ions=False):
         """
         Start the simulation.
 
@@ -731,6 +732,8 @@ class ElementSimulation:
             optimize_recoil: Whether optimization concerns recoil.
             check_max: Maximum time to run simulation.
             check_min: Minimum time to run simulation.
+            shared_ions: boolean that determines if the ion counts are
+                divided by the number of processes  TODO maybe a better name
         """
         self.simulations_done = False
         if self.run is None:
@@ -761,12 +764,25 @@ class ElementSimulation:
         else:
             recoil = self.optimization_recoils[0]
         self.__opt_seed = seed_number   # TODO divide ions with process count
+
+        if shared_ions:
+            # TODO which ion counts need to be divided?
+            # TODO does the count have to be integer?
+            number_of_ions = elem_sim.number_of_ions // number_of_processes
+            number_of_preions = elem_sim.number_of_ions // number_of_processes
+            number_of_scaling_ions = \
+                elem_sim.number_of_scaling_ions // number_of_processes
+        else:
+            number_of_ions = elem_sim.number_of_ions
+            number_of_preions = elem_sim.number_of_ions
+            number_of_scaling_ions = elem_sim.number_of_scaling_ions
+
         for i in range(number_of_processes):
             settings = {
                 "simulation_type": elem_sim.simulation_type,
-                "number_of_ions": elem_sim.number_of_ions,
-                "number_of_ions_in_presimu": elem_sim.number_of_preions,
-                "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
+                "number_of_ions": number_of_ions,
+                "number_of_ions_in_presimu": number_of_preions,
+                "number_of_scaling_ions": number_of_scaling_ions,
                 "number_of_recoils": elem_sim.number_of_recoils,
                 "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
                 "minimum_main_scattering_angle": elem_sim.
@@ -839,8 +855,9 @@ class ElementSimulation:
             if not self.mcerd_objects:
                 break
             time.sleep(1)
-            lines_count = 0
-            add_presim = False
+
+            #lines_count = 0
+            #add_presim = False
             #for f in self.__erd_files:
             #    if os.path.exists(f):
             #        lines = count_lines_in_file(f)
@@ -853,21 +870,37 @@ class ElementSimulation:
 
             # TODO this is a refactored version of the lines commented out
             #      above. Remove them once more testing has been done
-            lines_count = self.get_atom_count()
+            lines_count, add_presim = self.get_atom_count()
 
-            # If we are in presim mode, line count will be zero
-            add_presim = lines_count == 0
             if self.controls:
+                # TODO this needs to be a call back
                 self.controls.show_number_of_observed_atoms(lines_count,
                                                             add_presim)
 
     def get_atom_count(self):
-        """Returns the number of atoms that have been simulated.
+        """Returns the number of atoms that have been simulated so far and a
+        boolean that indicates whether the simulation is in pre-sim mode.
         """
         # TODO possibly rename this function
-        # file_path = self.get_erd_file_name(element)
-        return sum(count_lines_in_file(erd_file, handle_file_not_found=True)
-                   for erd_file in self.__erd_files)
+        # If the list of erd files is empty, return 0 and False
+        # TODO maybe presim should be True? Though this does follow the
+        #      original implementation
+        if not self.__erd_files:
+            return 0, False
+
+        # Each simulated atom is stored as a single line on an .erd file.
+        # To determine their amount, count the number of lines
+
+        first = sum(count_lines_in_file(erd_file, check_file_exists=True)
+                    for erd_file in self.__erd_files[:-1])
+
+        # Last file is counted separately as it determines whether we are in
+        # pre sim or not
+        last = count_lines_in_file(self.__erd_files[-1],
+                                   check_file_exists=True)
+
+        # Return total count and if the last one is 0
+        return first + last, last == 0
 
     def check_spectra_change(self, stop_percent, check_time, optimize_recoil,
                              check_max, check_min):
@@ -982,7 +1015,7 @@ class ElementSimulation:
                 self.simulation.running_simulations.remove(self)
 
             # Calculate erd lines for log
-            lines_count = self.get_atom_count()
+            lines_count, _ = self.get_atom_count()
 
             simulation_name = self.simulation.name
             element = self.recoil_elements[0].element
@@ -1023,7 +1056,7 @@ class ElementSimulation:
             self.optimization_mcerd_running = False
 
         # Calculate erd lines for log
-        lines_count = self.get_atom_count()
+        lines_count, _ = self.get_atom_count()
 
         simulation_name = self.simulation.name
         if not optimize_recoil:

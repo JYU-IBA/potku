@@ -60,10 +60,10 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         main_layout = QtWidgets.QHBoxLayout()
         recoil_element = self.element_simulation.recoil_elements[
             0]
-        self.controls_group_box = QtWidgets.QGroupBox(recoil_element.prefix + "-"
-                                                 + recoil_element.name)
+        self.controls_group_box = QtWidgets.QGroupBox(
+            recoil_element.prefix + "-" + recoil_element.name)
         self.controls_group_box.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
-                                         QtWidgets.QSizePolicy.Preferred)
+                                              QtWidgets.QSizePolicy.Preferred)
 
         state_layout = QtWidgets.QHBoxLayout()
         state_layout.setContentsMargins(0, 6, 0, 0)
@@ -75,7 +75,7 @@ class SimulationControlsWidget(QtWidgets.QWidget):
 
         # TODO get atom count from element simulation and display it
         #      atom_count is still 0, because .erd files are not yet counted
-        atom_count = self.element_simulation.get_atom_count()
+        atom_count, pre_sim_status = self.element_simulation.get_atom_count()
         print("TESTING ATOM COUNT", atom_count, atom_count == 0)
 
         controls_layout = QtWidgets.QHBoxLayout()
@@ -83,14 +83,14 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.run_button = QtWidgets.QPushButton()
         self.run_button.setIcon(QIcon("ui_icons/reinhardt/player_play.svg"))
         self.run_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                 QtWidgets.QSizePolicy.Fixed)
+                                      QtWidgets.QSizePolicy.Fixed)
         self.run_button.setToolTip("Start simulation")
         self.run_button.clicked.connect(self.__start_simulation)
 
         self.stop_button = QtWidgets.QPushButton()
         self.stop_button.setIcon(QIcon("ui_icons/reinhardt/player_stop.svg"))
         self.stop_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
-                                  QtWidgets.QSizePolicy.Fixed)
+                                       QtWidgets.QSizePolicy.Fixed)
         self.stop_button.setToolTip("Stop simulation")
         self.stop_button.clicked.connect(self.stop_simulation)
         self.stop_button.setEnabled(False)
@@ -186,7 +186,7 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         # Ask the user if they want to write old simulation results over (if
         # they exist), or continue
         start_value = None
-        old_biggest_seed, erd_flies = self.find_old_biggest_seed()
+        old_biggest_seed, erd_files = self.find_old_biggest_seed()
         use_erd_files = False
         if old_biggest_seed:    # TODO what if seed is 0? should check for None?
             reply = QtWidgets.QMessageBox.question(
@@ -229,10 +229,15 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.element_simulation.y_min = 0.0001
 
         if use_erd_files:
-            self.element_simulation.start(number_of_processes, start_value,
-                                          erd_flies)
+            # TODO indicate to user that ion sharing is in use
+            self.element_simulation.start(number_of_processes,
+                                          start_value,
+                                          erd_files,
+                                          shared_ions=True)
         else:
-            self.element_simulation.start(number_of_processes, start_value)
+            self.element_simulation.start(number_of_processes,
+                                          start_value,
+                                          shared_ions=True)
 
     def show_number_of_observed_atoms(self, number, add_presim):
         """

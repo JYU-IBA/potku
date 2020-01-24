@@ -254,7 +254,7 @@ def read_tof_list_file(tof_list_file):
         List of the lines in the file as tuples.
     """
     data = []
-    if os.path.exists((tof_list_file)):
+    if os.path.exists(tof_list_file):     # TODO use parsing here
         with open(tof_list_file, 'r') as file:
             for line in file:
                 parts = line.split()
@@ -373,9 +373,11 @@ def tof_list(cut_file, directory, save_output=False):
 
         lines = stdout.decode().strip().replace("\r", "").split("\n")
         for line in lines:
+            print(line)     # TODO this is for tmp testing
             if not line:  # Can still result in empty lines at the end, skip.
                 continue
-            line_split = re.split("\s+", line.strip())  # TODO implement this with parsing
+            line_split = re.split("\s+", line.strip())  # TODO implement this
+                                                        #      with parsing
             tupled = (float(line_split[0]),
                       float(line_split[1]),
                       float(line_split[2]),
@@ -388,7 +390,7 @@ def tof_list(cut_file, directory, save_output=False):
         if save_output:
             if not directory:
                 directory = os.path.join(os.path.realpath(os.path.curdir),
-                                      "energy_spectrum_output")
+                                         "energy_spectrum_output")
             if not os.path.exists(directory):
                 os.makedirs(directory)
             unused_dir, file = os.path.split(cut_file)
@@ -823,13 +825,14 @@ def dominates(a, b):
     Return:
         Whether a dominates b.
     """
+    # TODO move this and tournament selection to an optimization module
     can_dominate = True
     dom = False
     for i in range(len(a)):
         if a[i] == b[i] and can_dominate:
             can_dominate = True
         elif a[i] > b[i]:
-            can_dominate = False
+            can_dominate = False    # TODO should we not just return False here?
             dom = False
         elif a[i] < b[i] and can_dominate:
             can_dominate = True
@@ -926,7 +929,9 @@ def match_strs_to_elements(strs, elements, match_by_symbol=True):
     Args:
         strs: iterable of strings to be matched
         elements: iterable of elements that the strings will be matched to
-        match_by_symbol: TODO
+        match_by_symbol: if this is True and string is not prefixed with an
+                         isotope value, string can be matched to an element that
+                         does have an isotope
 
     Yield:
         tuple that contains the string and either element or None depending
@@ -989,24 +994,30 @@ def find_match_in_dicts(search_value, search_dicts):
     return None
 
 
-def count_lines_in_file(file_path, handle_file_not_found=False):
+def count_lines_in_file(file_path, check_file_exists=False):
     """Returns the number of lines in given file.
 
     Args:
         file_path: absolute path to a file
-        handle_file_not_found: if True, returns 0 for nonexistant files,
-                               otherwise raises FileNotFoundException
+        check_file_exists: if True, function checks if the file exists before
+                           counting lines. Returns 0 if the file does not exist.
 
     Return:
         number of lines in a file
     """
-    if handle_file_not_found and not os.path.isfile(file_path):
+    if check_file_exists and not os.path.isfile(file_path):
         return 0
 
-    counter = 0
+    # Start counting from -1 so we can return 0 if there are no lines in the
+    # file
+    counter = -1
+
     # https://stackoverflow.com/questions/845058/how-to-get-line-count-of-a \
     # -large-file-cheaply-in-python
     with open(file_path) as f:
+        # Set value of counter to the index of each line
         for counter, _ in enumerate(f):
             pass
+
+    # Add +1 to get the total number of lines
     return counter + 1

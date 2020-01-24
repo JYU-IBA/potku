@@ -47,7 +47,7 @@ __os = platform.system()
 if __os == "Windows":
     _CHECKSUM = "cc2089d41ad55f206b941fe83d079add"
 elif __os == "Linux" or __os == "Darwin":
-    _CHECKSUM = None    # TODO
+    _CHECKSUM = "6bbf2f7faf8a708046d8d038c4ea8e97"
 else:
     _CHECKSUM = None
 
@@ -146,12 +146,23 @@ class TestGeneralFunctions(unittest.TestCase):
         self.assertRaises(
             FileNotFoundError,
             lambda: gf.count_lines_in_file("this file does not exist",
-                                           handle_file_not_found=False))
+                                           check_file_exists=False))
         self.assertEqual(
             0,
             gf.count_lines_in_file("this file does not exist",
-                                   handle_file_not_found=True))
-        # TODO test opening file in another process and then trying to read it
+                                   check_file_exists=True))
+
+        self.assertRaises(
+            IsADirectoryError,
+            lambda: gf.count_lines_in_file(get_sample_data_dir()))
+
+        # Uncomment this to test with an empty file, assuming that __init__.py
+        # stays empty. Note that this can only be run from a directory that
+        # contains an __init__.py
+        # self.assertEqual(0, gf.count_lines_in_file("__init__.py"))
+
+        # TODO test opening file in another process and then trying to count it
+        # TODO proper test with an empty file
 
 
 if __name__ == "__main__":
