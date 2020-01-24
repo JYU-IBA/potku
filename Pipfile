@@ -9,12 +9,12 @@ scipy = "*"
 matplotlib = "*"
 "PyQt5" = "==5.9.2"
 wheel = "*"
-Shapely = "*" # Windows needs a download file {path = "C:/Users/Heta/Downloads/Shapely-1.6.4.post1-cp36-cp36m-win32.whl"}
+Shapely = "*" # Windows version has to be installed from a wheel. Download one from https://www.lfd.uci.edu/~gohlke/pythonlibs/#shapely
 
 [dev-packages]
-PyInstaller = "*"
-"pypiwin32" = "*"
-"pywin32" = "*"
+PyInstaller = ">=3.6"
+"pypiwin32" = {sys_platform = "== 'win32'"}
+"pywin32" = {sys_platform = "== 'win32'"}
 
 [requires]
 python_version = "3.6"

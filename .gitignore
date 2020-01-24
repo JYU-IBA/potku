@@ -25,3 +25,5 @@
 /external
 .gitignore
 Pipfile.lock
+
+!/external/Makefile
