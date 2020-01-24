@@ -600,7 +600,8 @@ class ElementSimulation:
             name = self.name_prefix + "-" + self.name
         else:
             name = self.name
-        if not self.use_default_settings:
+        if not self.use_default_settings:   # TODO ion counts may need to
+                                            #      divided here too
             obj = {
                 "name": name,
                 "description": self.description,
@@ -615,7 +616,8 @@ class ElementSimulation:
                 "number_of_recoils": self.number_of_recoils,
                 "number_of_scaling_ions": self.number_of_scaling_ions,
                 "minimum_scattering_angle": self.minimum_scattering_angle,
-                "minimum_main_scattering_angle": self.minimum_main_scattering_angle,
+                "minimum_main_scattering_angle":
+                    self.minimum_main_scattering_angle,
                 "minimum_energy": self.minimum_energy,
                 "use_default_settings": str(self.use_default_settings),
                 "main_recoil": self.main_recoil.name
@@ -636,7 +638,8 @@ class ElementSimulation:
                 "number_of_recoils": elem_sim.number_of_recoils,
                 "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
                 "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
-                "minimum_main_scattering_angle": elem_sim.minimum_main_scattering_angle,
+                "minimum_main_scattering_angle":
+                    elem_sim.minimum_main_scattering_angle,
                 "minimum_energy": elem_sim.minimum_energy,
                 "use_default_settings": str(self.use_default_settings),
                 "main_recoil": self.main_recoil.name
@@ -733,7 +736,7 @@ class ElementSimulation:
             check_max: Maximum time to run simulation.
             check_min: Minimum time to run simulation.
             shared_ions: boolean that determines if the ion counts are
-                divided by the number of processes  TODO maybe a better name
+                divided by the number of processes
         """
         self.simulations_done = False
         if self.run is None:
@@ -766,27 +769,24 @@ class ElementSimulation:
         self.__opt_seed = seed_number   # TODO divide ions with process count
 
         if shared_ions:
-            # TODO which ion counts need to be divided?
-            # TODO does the count have to be integer?
+            # TODO should preions be divided too?
             number_of_ions = elem_sim.number_of_ions // number_of_processes
-            number_of_preions = elem_sim.number_of_ions // number_of_processes
-            number_of_scaling_ions = \
-                elem_sim.number_of_scaling_ions // number_of_processes
+            number_of_preions = \
+                elem_sim.number_of_preions // number_of_processes
         else:
             number_of_ions = elem_sim.number_of_ions
-            number_of_preions = elem_sim.number_of_ions
-            number_of_scaling_ions = elem_sim.number_of_scaling_ions
+            number_of_preions = elem_sim.number_of_preions
 
         for i in range(number_of_processes):
             settings = {
                 "simulation_type": elem_sim.simulation_type,
                 "number_of_ions": number_of_ions,
                 "number_of_ions_in_presimu": number_of_preions,
-                "number_of_scaling_ions": number_of_scaling_ions,
+                "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
                 "number_of_recoils": elem_sim.number_of_recoils,
                 "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
-                "minimum_main_scattering_angle": elem_sim.
-                minimum_main_scattering_angle,
+                "minimum_main_scattering_angle":
+                    elem_sim.minimum_main_scattering_angle,
                 "minimum_energy_of_ions": elem_sim.minimum_energy,
                 "simulation_mode": elem_sim.simulation_mode,
                 "seed_number": seed_number,
@@ -1001,7 +1001,7 @@ class ElementSimulation:
         if key_to_delete:
             self.mcerd_objects[key_to_delete].delete_unneeded_files()
             del (self.mcerd_objects[key_to_delete])
-            if self.controls:
+            if self.controls:   # TODO progress reporting with (count, finished)
                 # Update finished processes count
                 self.controls.update_finished_processes(len(self.mcerd_objects))
         if not self.mcerd_objects:

@@ -84,6 +84,7 @@ class MCERD:
                                         ".erd")
         self.__create_mcerd_files()
 
+        # TODO check how seed is set in MCERD
         # The command that is used to start the MCERD process.
         mcerd_command = os.path.join(
             "external", "Potku-bin", "mcerd" +

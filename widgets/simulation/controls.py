@@ -74,6 +74,9 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         state_widget.setLayout(state_layout)
 
         # TODO get atom count from element simulation and display it
+        # TODO should stopping be allowed in presim?
+        # TODO update status label properly when simulation begins
+        # TODO show starting seed in the UI?
         #      atom_count is still 0, because .erd files are not yet counted
         atom_count, pre_sim_status = self.element_simulation.get_atom_count()
         print("TESTING ATOM COUNT", atom_count, atom_count == 0)

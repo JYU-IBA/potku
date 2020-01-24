@@ -31,7 +31,7 @@ __version__ = ""    # TODO
 import abc
 
 
-class ProgressReporter(abc.ABC):
+class ABCReporter(abc.ABC):
     """Base abstract class from which all progress reporters should derive."""
     def __init__(self, progress_callback):
         """Inits a ProgressReporter.
@@ -52,8 +52,9 @@ class ProgressReporter(abc.ABC):
         pass
 
 
-class GUIProgressReporter(ProgressReporter):
-    """Class that is used to report progress in a GUI program."""
+class ProgressReporter(ABCReporter):
+    """A vanilla ProgressReporter that merely invokes the progress callback
+    and does not care about thread safety."""
 
     def report(self, value):
         """Reports the value of progress by invoking the progress callback.
@@ -61,13 +62,13 @@ class GUIProgressReporter(ProgressReporter):
         Args:
             value: progress value to report
         """
-        # TODO this should be called in the original (GUI) thread that created
-        #      the ProgressReporter
         self.progress_callback(value)
+
+# TODO thread safe reporter for GUI purposes
 
 
 if __name__ == "__main__":
     # For testing purposes
-    pro = GUIProgressReporter(lambda x: print(x**2))
+    pro = ProgressReporter(lambda x: print(x ** 2))
     pro.report(10)
     pro.report(20)
