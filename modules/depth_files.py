@@ -73,8 +73,8 @@ class DepthFileGenerator(object):
         self.command_linux = 'cd ' + self.bin_dir + ' && ./tof_list ' \
                              + file_paths_str + ' | ./erd_depth ' \
                              + output_path + ' tof.in'
-        self.command_mac = 'cd ' + self.bin_dir + ' && ./tof_list_mac ' \
-                           + file_paths_str + ' | ./erd_depth_mac ' \
+        self.command_mac = 'cd ' + self.bin_dir + ' && ./tof_list ' \
+                           + file_paths_str + ' | ./erd_depth ' \
                            + output_path + ' tof.in'
 
     def create_depth_files(self):
