@@ -373,7 +373,6 @@ def tof_list(cut_file, directory, save_output=False):
 
         lines = stdout.decode().strip().replace("\r", "").split("\n")
         for line in lines:
-            print(line)     # TODO this is for tmp testing
             if not line:  # Can still result in empty lines at the end, skip.
                 continue
             line_split = re.split("\s+", line.strip())  # TODO implement this
@@ -826,18 +825,13 @@ def dominates(a, b):
         Whether a dominates b.
     """
     # TODO move this and tournament selection to an optimization module
-    can_dominate = True
-    dom = False
-    for i in range(len(a)):
-        if a[i] == b[i] and can_dominate:
-            can_dominate = True
-        elif a[i] > b[i]:
-            can_dominate = False    # TODO should we not just return False here?
-            dom = False
-        elif a[i] < b[i] and can_dominate:
-            can_dominate = True
-            dom = True
-    return dom
+    is_better = False
+    for ai, bi in zip(a, b):
+        if ai > bi:
+            return False
+        if ai < bi:
+            is_better = True
+    return is_better
 
 
 def tournament_allow_doubles(t, p, fit):
