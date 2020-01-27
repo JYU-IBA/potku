@@ -499,8 +499,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         for element_simulation in self.simulation.element_simulations:
             self.add_element(element_simulation.recoil_elements[0].element,
                              element_simulation)
-        self.simulation.element_simulations[0].recoil_elements[0].widgets[
-            0].radio_button.setChecked(True)
+
+        self.simulation.element_simulations[0].recoil_elements[0]. \
+            widgets[0].radio_button.setChecked(True)
         self.show_other_recoils()
 
     def __create_percent_widget(self):
@@ -1034,6 +1035,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Ypdate controls widget text
         if self.current_recoil_element is \
                 self.current_element_simulation.main_recoil:
+            # TODO remove reference to controls from elem_sim
             self.current_element_simulation.controls.controls_group_box \
                 .setTitle(self.current_recoil_element.prefix + "-"
                           +
@@ -1325,6 +1327,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.set_xlabel(self.name_x_axis)
 
         if self.current_element_simulation:
+            # TODO recoil element should have its color as a hex code
             color = str(self.current_recoil_element.color.name())
             self.lines, = self.axes.plot(
                 self.current_element_simulation.get_xs(

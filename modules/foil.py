@@ -27,8 +27,21 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
+import abc
+import math
 
-class Foil:
+# Unit conversion values for solid angle
+#   sr: steradian
+#   msr: millisteradian
+#   usr: microsteradian ('u' is a stand-in for the lower case 'Mu')
+_UNITS = {
+    "sr": 1,
+    "msr": 1000,
+    "usr": 1000000
+}
+
+
+class Foil(abc.ABC):
     """Class for detector foil.
     """
 
@@ -44,10 +57,17 @@ class Foil:
             transmission: Value that takes into account possible grids that
                           may make penetration smaller.
         """
+        if layers is None:
+            layers = []
+
         self.name = name
         self.distance = distance
         self.layers = layers
         self.transmission = transmission
+
+    @abc.abstractmethod
+    def get_solid_angle(self, units="msr"):
+        pass
 
 
 class CircularFoil(Foil):
@@ -68,10 +88,20 @@ class CircularFoil(Foil):
                           may make penetration smaller.
         """
 
-        if layers is None:
-            layers = []
         Foil.__init__(self, name, distance, layers, transmission)
         self.diameter = diameter
+
+    def get_radius(self):
+        """Returns the radius of the circular detector foil.
+        """
+        return self.diameter / 2
+
+    def get_solid_angle(self, units="msr"):
+        """TODO"""
+        if units not in _UNITS:
+            raise ValueError("Unexpected unit for solid angle")
+        return math.pi * self.get_radius()**2 / self.distance**2 \
+            * _UNITS[units]
 
 
 class RectangularFoil(Foil):
@@ -81,8 +111,7 @@ class RectangularFoil(Foil):
     __slots__ = "size"
 
     def __init__(self, name="", size_x=0.0, size_y=0.0, distance=0.0,
-                 layers=None,
-                 transmission=1.0):
+                 layers=None, transmission=1.0):
         """ Initialize a rectangular detector foil.
 
         Args:
@@ -95,7 +124,12 @@ class RectangularFoil(Foil):
                           may make penetration smaller.
         """
 
-        if layers is None:
-            layers = []
         Foil.__init__(self, name, distance, layers, transmission)
         self.size = (size_x, size_y)
+
+    def get_solid_angle(self, units="msr"):
+        """TODO"""
+        if units not in _UNITS:
+            raise ValueError("Unexpected unit for solid angle")
+        return self.size[0] * self.size[1] / self.distance**2 \
+            * _UNITS[units]

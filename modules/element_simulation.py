@@ -46,14 +46,35 @@ from modules.get_espe import GetEspe
 from modules.mcerd import MCERD
 
 from PyQt5 import QtGui
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import Qt
+#from PyQt5 import QtWidgets
+#from PyQt5.QtCore import Qt
 
+from modules.observing import Observable
 from widgets.matplotlib.simulation.recoil_atom_distribution import Point
 from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
 
+from enum import Enum
 
-class ElementSimulation:
+
+class SimulationState(Enum):
+    """This enum is used to represent the state of simulation"""
+    # Zero ERD files, MCERD not running
+    NotStarted = 1
+
+    # Preparation period when processes are being started
+    Starting = 2
+
+    # ERD files exist, MCERD running, but last one has no lines
+    PreSim = 3
+
+    # Full simulation is running
+    Running = 4
+
+    # ERD files exist, MCERD not running
+    Finished = 5
+
+
+class ElementSimulation(Observable):
     """
     Class for handling the element specific simulation. Can have multiple
     MCERD objects, but only one GetEspe object.
@@ -121,6 +142,9 @@ class ElementSimulation:
             optimization.
             optimized_fluence: Optimized fluence value.
         """
+        # Call Observable's initialization to set up observer list
+        super().__init__()
+
         self.directory = directory
         self.request = request
         self.name_prefix = name_prefix
@@ -131,7 +155,7 @@ class ElementSimulation:
             modification_time = time.time()
         self.modification_time = modification_time
 
-        self.sample = sample
+        self.sample = sample    # TODO check if this is being used elsewhere
 
         self.recoil_elements = recoil_elements
 
@@ -332,6 +356,9 @@ class ElementSimulation:
         """
         recoil_element.remove_point(point)
 
+    def get_current_status(self):
+        pass
+
     def update_recoil_element(self, recoil_element, new_values):
         """Updates RecoilElement object with new values.
 
@@ -414,13 +441,19 @@ class ElementSimulation:
         Return:
             Smallest solid angle. (unit millisteradian)
         """
+        # TODO maybe make this a function of the detector? Check who is calling this
+        # TODO would this be same? Handle zero div in foil.get_solid_angle
+        # min(foil.get_solid_angle(unit="") for foil in self.detector.foils)
+
         foil = self.detector.foils[0]
+
         try:
             if type(foil) is CircularFoil:
                 radius = foil.diameter / 2
                 smallest = math.pi * radius ** 2 / foil.distance ** 2
             else:
                 smallest = foil.size[0] * foil.size[1] / foil.distance ** 2
+            a = foil.get_solid_angle()  # TODO check that this works
             i = 1
             while i in range(len(self.detector.foils)):
                 foil = self.detector.foils[i]
@@ -430,13 +463,14 @@ class ElementSimulation:
                 else:
                     solid_angle = foil.size[0] * foil.size[
                         1] / foil.distance ** 2
-                    pass
+                    pass    # TODO ???
                 if smallest > solid_angle:
                     smallest = solid_angle
                 i += 1
             return smallest * 1000  # usually the unit is millisteradian,
             # hence the multiplication by 1000
         except ZeroDivisionError:
+            # TODO why return 0 if only one of the distances is 0
             return 0
 
     @classmethod
@@ -511,7 +545,9 @@ class ElementSimulation:
                     points.append(Point((float(x), float(y))))
                 # Read color
                 # color = obj["color"]
-                color = QtGui.QColor(obj["color"])
+                color = QtGui.QColor(obj["color"])      # TODO remove gui stuff
+                                                        # color is stored as hex
+                                                        # code ('#0000ff')
                 element = RecoilElement(Element.from_string(obj["element"]),
                                         points, color=color, rec_type=rec_type)
                 element.name = obj["name"]
@@ -590,6 +626,9 @@ class ElementSimulation:
                    optimization_recoils=optimized_recoils,
                    optimized_fluence=optimized_fluence)
 
+    def get_erd_files(self):
+        pass
+
     def mcsimu_to_file(self, file_path):
         """Save mcsimu settings to file.
 
@@ -600,8 +639,7 @@ class ElementSimulation:
             name = self.name_prefix + "-" + self.name
         else:
             name = self.name
-        if not self.use_default_settings:   # TODO ion counts may need to
-                                            #      divided here too
+        if not self.use_default_settings:
             obj = {
                 "name": name,
                 "description": self.description,
@@ -718,6 +756,11 @@ class ElementSimulation:
         with open(file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
 
+    def get_element_simulation(self):
+        if self.use_default_settings:
+            return self.request.default_element_simulation
+        return self
+
     def start(self, number_of_processes, start_value, erd_files=None,
               optimize=False, stop_p=False, check_t=False,
               optimize_recoil=False, check_max=False, check_min=False,
@@ -743,10 +786,11 @@ class ElementSimulation:
             run = self.request.default_run
         else:
             run = self.run
-        if self.use_default_settings:
-            elem_sim = self.request.default_element_simulation
-        else:
-            elem_sim = self
+        #if self.use_default_settings:
+        #    elem_sim = self.request.default_element_simulation
+        #else:
+        #    elem_sim = self
+        elem_sim = self.get_element_simulation()
         if self.detector is None:
             detector = self.request.default_detector
         else:
@@ -760,16 +804,20 @@ class ElementSimulation:
             seed_number = start_value
         if erd_files:
             self.__erd_files = self.__erd_files + erd_files
-        QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
+        #QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)    # TODO remove
+        #                                                           # GUI stuff
+        self.publish({
+            "atom_count": 0,     # TODO
+            "status": SimulationState.Starting
+        })
 
         if not optimize_recoil:
             recoil = self.recoil_elements[0]
         else:
             recoil = self.optimization_recoils[0]
-        self.__opt_seed = seed_number   # TODO divide ions with process count
+        self.__opt_seed = seed_number
 
         if shared_ions:
-            # TODO should preions be divided too?
             number_of_ions = elem_sim.number_of_ions // number_of_processes
             number_of_preions = \
                 elem_sim.number_of_preions // number_of_processes
@@ -805,7 +853,7 @@ class ElementSimulation:
                     recoil_name = "optfl"
                     optimize_fluence = True
                     self.optimized_fluence = 0
-                erd_file = os.path.join(
+                erd_file = os.path.join(    # TODO method get_erd_file_name?
                     self.directory, self.recoil_elements[0].prefix + "-" +
                     recoil_name + "." + str(seed_number) + ".erd")
             else:
@@ -827,16 +875,24 @@ class ElementSimulation:
                 time.sleep(5)  # This is done to avoid having a mixup in mcerd
                 # command file content when there are more than one process
                 # (without this, Potku would crash)
-                # TODO can observer pattern be implemented here?
-                # TODO read file in python?
-        QtWidgets.QApplication.restoreOverrideCursor()
+                # TODO create command file for each process so they can
+                #  be started at the same time?
+
+        # QtWidgets.QApplication.restoreOverrideCursor()
+        # TODO make mcerd_objects Observable to get better status reporting
+        self.publish({
+            "atom_count": 0,     # TODO
+            "status": SimulationState.PreSim   # TODO how to determine PresSIm
+                                                # when multiple processes have
+                                                # been started?
+        })
 
         if self.use_default_settings and not self.simulation.detector:
             self.request.running_simulations.append(self)
         else:
             self.simulation.running_simulations.append(self)
 
-        if not optimize:
+        if not optimize:    # TODO maybe start this before starting processes
             # Start calculating the erd files' lines
             thread = threading.Thread(target=self.calculate_erd_lines)
             thread.daemon = True
@@ -851,31 +907,23 @@ class ElementSimulation:
         """
         Calculate the lines in the erd files.
         """
+        # TODO rename this function to e.g. check_status
         while True:
             if not self.mcerd_objects:
                 break
             time.sleep(1)
 
-            #lines_count = 0
-            #add_presim = False
-            #for f in self.__erd_files:
-            #    if os.path.exists(f):
-            #        lines = count_lines_in_file(f)
-            #
-            #        lines_count = lines_count + lines
-            #
-            #        if f is self.__erd_files[-1]:
-            #            if lines == 0:
-            #                add_presim = True
+            lines_count, in_presim = self.get_atom_count()
 
-            # TODO this is a refactored version of the lines commented out
-            #      above. Remove them once more testing has been done
-            lines_count, add_presim = self.get_atom_count()
-
-            if self.controls:
-                # TODO this needs to be a call back
-                self.controls.show_number_of_observed_atoms(lines_count,
-                                                            add_presim)
+            self.publish({
+                "atom_count": lines_count,
+                "status": SimulationState.PreSim if in_presim
+                else SimulationState.Running
+            })
+            #if self.controls:
+            #    # TODO this needs to be a call back
+            #    self.controls.show_number_of_observed_atoms(lines_count,
+            #                                                in_presim)
 
     def get_atom_count(self):
         """Returns the number of atoms that have been simulated so far and a
@@ -883,19 +931,21 @@ class ElementSimulation:
         """
         # TODO possibly rename this function
         # If the list of erd files is empty, return 0 and False
-        # TODO maybe presim should be True? Though this does follow the
-        #      original implementation
         if not self.__erd_files:
             return 0, False
 
         # Each simulated atom is stored as a single line on an .erd file.
         # To determine their amount, count the number of lines
-
+        # TODO is this calculating lines for already finished files also?
+        #      if so, cache the results for sims that are done and only count
+        #      files for active processes
         first = sum(count_lines_in_file(erd_file, check_file_exists=True)
                     for erd_file in self.__erd_files[:-1])
 
         # Last file is counted separately as it determines whether we are in
         # pre sim or not
+        # TODO this only checks if the last process is in presim. Check all
+        #      files that are active and report each process status indivually
         last = count_lines_in_file(self.__erd_files[-1],
                                    check_file_exists=True)
 
@@ -1035,7 +1085,7 @@ class ElementSimulation:
         # TODO check if this and notify can be refactored
         ref_key = None
         processes = len(self.mcerd_objects.keys())
-
+        # TODO check what ref_key does
         for sim in list(self.mcerd_objects.keys()):
             if ref_key is None:
                 ref_key = sim
@@ -1067,6 +1117,13 @@ class ElementSimulation:
             element_name = str(element.isotope) + element.symbol
         else:
             element_name = element.symbol
+
+        self.publish({
+            "atom_count": lines_count,
+            "status": SimulationState.Finished if lines_count > 0 else
+            SimulationState.NotStarted
+        })
+
         msg = "Simulation stopped. " + "Element: " \
               + element_name + " Processes:" + str(processes) + \
               " Number of observed atoms: " + str(lines_count)
@@ -1143,3 +1200,29 @@ class ElementSimulation:
             "recoil_file": recoil_file
         }
         self.get_espe = GetEspe(espe_settings)
+
+
+def get_erd_file_path(directory, elem_prefix, rec_name):
+    """Returns the file path that corresponds to given
+    directory, recoil element prefix and recoil name.
+
+    Args:
+        directory: absolute path to a directory
+        elem_prefix: prefix of the recoil element
+        rec_name: name of the recoil
+
+    Return:
+        absolute path to an ERD file
+    """
+    # TODO check for path traversal
+    return os.path.join(
+        directory,  # TODO check the asterisk
+        "{}-{}.*.erd".format(directory, elem_prefix, rec_name))
+
+
+def get_recoil_file_path():
+    pass
+
+
+def get_():
+    pass

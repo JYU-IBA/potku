@@ -85,7 +85,7 @@ class RecoilElement:
         self.__individual_area_points = []
 
         # Color of the recoil
-        self.color = color
+        self.color = color  # TODO color as hex code
 
         self.update_zero_values()
 
@@ -270,7 +270,7 @@ class RecoilElement:
 
     def _sort_points(self):
         """Sorts the points in ascending order by their x coordinate."""
-        self._points.sort()
+        self._points.sort()  # TODO what is the use of self._xs/self._ys?
         self._xs = [point.get_x() for point in self._points]
         self._ys = [point.get_y() for point in self._points]
 
@@ -298,7 +298,7 @@ class RecoilElement:
     def add_point(self, point):
         """Adds a point and maintains sort order."""
         self._points.append(point)
-        self._sort_points()
+        self._sort_points()     # TODO use bisect.insort
 
     def remove_point(self, point):
         """Removes the given point."""

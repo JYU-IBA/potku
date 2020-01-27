@@ -35,7 +35,7 @@ from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as \
 from PyQt5 import QtWidgets
 
 
-class NavigationToolBar2QTView(NavigationToolbar):
+class NavigationToolBar2QTView(NavigationToolbar):  # TODO move this to ui files
     """
     Class for adding an attibute to the navigation toolbar class.
     """

@@ -31,12 +31,13 @@ __version__ = "2.0"
 import os
 
 from modules.general_functions import delete_simulation_results
+from modules.observing import Observer
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
 
 
-class SimulationControlsWidget(QtWidgets.QWidget):
+class SimulationControlsWidget(QtWidgets.QWidget, Observer):
     """Class for creating simulation controls widget for the element simulation.
 
     Args:
@@ -54,7 +55,10 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         super().__init__()
 
         self.element_simulation = element_simulation
+
+        # TODO decouple controls from element_simulation
         self.element_simulation.controls = self
+        self.element_simulation.subscribe(self)
         self.recoil_dist_widget = recoil_dist_widget
 
         main_layout = QtWidgets.QHBoxLayout()
@@ -78,8 +82,10 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         # TODO update status label properly when simulation begins
         # TODO show starting seed in the UI?
         #      atom_count is still 0, because .erd files are not yet counted
+        # TODO set minimum count for ions
+        # TODO bind object values to PyQT elements
         atom_count, pre_sim_status = self.element_simulation.get_atom_count()
-        print("TESTING ATOM COUNT", atom_count, atom_count == 0)
+        print("TESTING ATOM COUNT", atom_count, pre_sim_status)
 
         controls_layout = QtWidgets.QHBoxLayout()
         controls_layout.setContentsMargins(0, 6, 0, 0)
@@ -111,9 +117,12 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.processes_spinbox.setToolTip(
             "Number of processes used in simulation")
         self.processes_spinbox.setFixedWidth(50)
+        # TODO update ion count when process value is changed
+        self.processes_spinbox.valueChanged.connect(self.update_ion_count)
         processes_layout.addRow(processes_label, self.processes_spinbox)
         processes_widget = QtWidgets.QWidget()
         processes_widget.setLayout(processes_layout)
+        self.update_ion_count(self.processes_spinbox.value())
 
         # Show finished processes
         self.finished_processes_widget = QtWidgets.QWidget()
@@ -162,7 +171,7 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         Return:
              Biggest seed for simulation.
         """
-        biggest_seed = 0
+        biggest_seed = 0    # TODO make this a function of elem_sim
         old_files = []
 
         start_part = self.element_simulation.recoil_elements[0].prefix + \
@@ -272,6 +281,19 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.finished_processes_label.setText(
             str(finished) + "/" + str(all_proc))
 
+    def update_ion_count(self, process_count):
+        # TODO update gui
+        # TODO ion counts could be wrong if default settings are used
+        #      or not used
+        # TODO cannot update ion counts immediately after settings
+        #      have been changed
+        elem_sim = self.element_simulation.get_element_simulation()
+        preions = elem_sim.number_of_preions // process_count
+        ions = elem_sim.number_of_ions // process_count
+        print("Number of ions per process:",
+              preions,
+              ions)
+
     def stop_simulation(self):
         """ Calls ElementSimulation's stop method.
         """
@@ -297,3 +319,13 @@ class SimulationControlsWidget(QtWidgets.QWidget):
         self.run_button.setEnabled(True)
         self.stop_button.setEnabled(False)
         self.processes_spinbox.setEnabled(True)
+
+    def receive(self, msg):
+        """Callback function that receives messages from an
+        ElementSimulation
+
+        Args:
+            msg: status update sent by ElementSimulation
+        """
+        # TODO update GUI based on the status
+        print(msg)

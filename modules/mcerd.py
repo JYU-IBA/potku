@@ -84,7 +84,6 @@ class MCERD:
                                         ".erd")
         self.__create_mcerd_files()
 
-        # TODO check how seed is set in MCERD
         # The command that is used to start the MCERD process.
         mcerd_command = os.path.join(
             "external", "Potku-bin", "mcerd" +
@@ -134,6 +133,7 @@ class MCERD:
         are placed to the directory of the temporary files of the operating
         system.
         """
+        # TODO individual functions for creating each file type
         self.__command_file = os.path.join(self.tmp, self.__rec_filename)
         self.__target_file = os.path.join(self.tmp, self.__filename +
                                           ".erd_target")
@@ -255,6 +255,7 @@ class MCERD:
                 file_det.write("----------" + "\n")
 
             # Write the last foil separately to avoid writing "------" after it
+            # TODO use string.join()
             last_foil = detector.foils[len(detector.foils) - 1]
             if type(last_foil) == CircularFoil:
                 file_det.write("Foil type: circular" + "\n")
