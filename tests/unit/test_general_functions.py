@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on TODO
-Updated on 23.1.2020
+Updated on 26.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -29,6 +29,7 @@ __version__ = ""  # TODO
 import unittest
 import os
 import platform
+import tempfile
 
 from modules import general_functions as gf
 from modules.element import Element
@@ -152,6 +153,7 @@ class TestGeneralFunctions(unittest.TestCase):
             gf.count_lines_in_file("this file does not exist",
                                    check_file_exists=True))
 
+        # Test what happens, when file path points to a folder
         if _os == "Windows":
             self.assertRaises(
                 PermissionError,
@@ -161,13 +163,38 @@ class TestGeneralFunctions(unittest.TestCase):
                 IsADirectoryError,
                 lambda: gf.count_lines_in_file(get_sample_data_dir()))
 
-        # Uncomment this to test with an empty file, assuming that __init__.py
-        # stays empty. Note that this can only be run from a directory that
-        # contains an __init__.py
-        # self.assertEqual(0, gf.count_lines_in_file("__init__.py"))
+        # Test with an empty file
+        # Create a temporary directory to store a temporary file
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # Create an empty file by opening and closing it immediately
+            tmp_file = os.path.join(tmp_dir, "testfile")
+            open(tmp_file, "a").close()
+
+            # Assert that line count is 0
+            self.assertEqual(0, gf.count_lines_in_file(tmp_file))
+
+            # Write a newline
+            with open(tmp_file, "w") as file:
+                file.write("\n")
+
+            self.assertEqual(1, gf.count_lines_in_file(tmp_file))
+
+            # Interestingly, Win style line endings count as double?
+            # TODO run the test on Mac and Linux
+            with open(tmp_file, "w") as file:
+                file.write("\r\n\r\n")
+
+            self.assertEqual(4, gf.count_lines_in_file(tmp_file))
+
+        # Final checks that the temporary file and directory were removed
+        self.assertFalse(os.path.exists(tmp_file),
+                         msg="Temporary file {0} was not removed after "
+                             "the test".format(tmp_file))
+        self.assertFalse(os.path.exists(tmp_dir),
+                         msg="Temporary directory {0} was not removed "
+                             "after the test".format(tmp_dir))
 
         # TODO test opening file in another process and then trying to count it
-        # TODO proper test with an empty file
 
 
 if __name__ == "__main__":

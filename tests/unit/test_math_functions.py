@@ -1,12 +1,13 @@
 # coding=utf-8
 """
 Created on TODO
+Updated on 27.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2013-2020 TODO
+Copyright (C) 2020 TODO
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -180,8 +181,6 @@ class TestListIntegration(unittest.TestCase):
         x_axis = [0, 1, 2]
         y_axis = [10, 11, 12]
 
-        # TODO first element should perhaps not be included in the output
-        #      of the function
         self.assertEqual([(0, 5), (1, 10.5), (2, 11.5)],
                          list(mf.calculate_running_avgs(x_axis, y_axis)))
 
@@ -208,33 +207,53 @@ class TestListIntegration(unittest.TestCase):
 
         # If a > b, nothing is returned
         self.assertEqual([],
-                         list(mf.get_elements_in_range(x_axis, y_axis, a=2, b=1)))
+                         list(mf.get_elements_in_range(x_axis,
+                                                       y_axis,
+                                                       a=2,
+                                                       b=1)))
 
         # First element after b is also returned,
         # TODO this behaviour is quite weird and should be checked if this is
         #      actually what is needed
         self.assertEqual([(1, 11), (2, 12)],
-                         list(mf.get_elements_in_range(x_axis, y_axis, a=1, b=1)))
+                         list(mf.get_elements_in_range(x_axis,
+                                                       y_axis,
+                                                       a=1,
+                                                       b=1)))
 
         self.assertEqual([(0, 10)],
-                         list(mf.get_elements_in_range(x_axis, y_axis, b=-100)))
+                         list(mf.get_elements_in_range(x_axis,
+                                                       y_axis,
+                                                       b=-100)))
 
         # whereas first before a is not
         self.assertEqual([(2, 12)],
-                         list(mf.get_elements_in_range(x_axis, y_axis, a=1.5, b=1.5)))
+                         list(mf.get_elements_in_range(x_axis,
+                                                       y_axis,
+                                                       a=1.5,
+                                                       b=1.5)))
 
         self.assertEqual([],
-                         list(mf.get_elements_in_range(x_axis, y_axis, a=100)))
+                         list(mf.get_elements_in_range(x_axis,
+                                                       y_axis,
+                                                       a=100)))
 
         self.assertEqual([(1, 11), (2, 12), (3, 13)],
-                         list(mf.get_elements_in_range(x_axis, y_axis, a=1, b=2)))
+                         list(mf.get_elements_in_range(x_axis,
+                                                       y_axis,
+                                                       a=1,
+                                                       b=2)))
 
         # Limits can be set for only a or b
         self.assertEqual([(0, 10), (1, 11), (2, 12), (3, 13)],
-                         list(mf.get_elements_in_range(x_axis, y_axis, b=2)))
+                         list(mf.get_elements_in_range(x_axis,
+                                                       y_axis,
+                                                       b=2)))
 
         self.assertEqual([(3, 13), (4, 14), (5, 15)],
-                         list(mf.get_elements_in_range(x_axis, y_axis, a=3)))
+                         list(mf.get_elements_in_range(x_axis,
+                                                       y_axis,
+                                                       a=3)))
 
         # Function works for any x values that can be compared
         x_axis_str = ["a", "b", "c"]
