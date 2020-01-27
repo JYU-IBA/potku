@@ -441,36 +441,13 @@ class ElementSimulation(Observable):
         Return:
             Smallest solid angle. (unit millisteradian)
         """
-        # TODO maybe make this a function of the detector? Check who is calling this
-        # TODO would this be same? Handle zero div in foil.get_solid_angle
-        # min(foil.get_solid_angle(unit="") for foil in self.detector.foils)
-
-        foil = self.detector.foils[0]
-
+        # TODO this seems to be called often when optimizing. If the foil
+        #      collection is not changing, result could be cached
+        # TODO this could also be a function of the detector
         try:
-            if type(foil) is CircularFoil:
-                radius = foil.diameter / 2
-                smallest = math.pi * radius ** 2 / foil.distance ** 2
-            else:
-                smallest = foil.size[0] * foil.size[1] / foil.distance ** 2
-            a = foil.get_solid_angle()  # TODO check that this works
-            i = 1
-            while i in range(len(self.detector.foils)):
-                foil = self.detector.foils[i]
-                if type(foil) is CircularFoil:
-                    radius = foil.diameter / 2
-                    solid_angle = math.pi * radius ** 2 / foil.distance ** 2
-                else:
-                    solid_angle = foil.size[0] * foil.size[
-                        1] / foil.distance ** 2
-                    pass    # TODO ???
-                if smallest > solid_angle:
-                    smallest = solid_angle
-                i += 1
-            return smallest * 1000  # usually the unit is millisteradian,
-            # hence the multiplication by 1000
+            return min(foil.get_solid_angle(units="msr")
+                       for foil in self.detector.foils)
         except ZeroDivisionError:
-            # TODO why return 0 if only one of the distances is 0
             return 0
 
     @classmethod
