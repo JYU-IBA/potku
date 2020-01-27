@@ -109,16 +109,11 @@ class TestOptimization(unittest.TestCase):
         """Helper function that checks if the solutions in the nondominated
         set dominate all solutions in the dominated set."""
         for nd, d in itertools.product(nondominated, dominated):
-            with self.subTest(
-                    "{0} should dominate {1} but it did not".format(nd, d)):
-                self.assertTrue(gf.dominates(nd, d))
+            self.assertTrue(gf.dominates(nd, d))
 
     def assert_not_dominates(self, set1, set2):
         """Helper function that checks if the solutions in the first
         set do not dominate all solutions in the second set."""
         for sol1, sol2 in itertools.product(set1, set2):
-            with self.subTest(
-                    "{0} should not dominate {1} but it did".format(sol1,
-                                                                    sol2)):
-                self.assertFalse(gf.dominates(sol1, sol2))
+            self.assertFalse(gf.dominates(sol1, sol2))
 
