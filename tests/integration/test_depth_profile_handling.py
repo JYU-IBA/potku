@@ -180,6 +180,26 @@ class TestDepthProfileHandling(unittest.TestCase):
                         self.handler.get_depth_range())
 
     @verify_files(_file_paths, _CHECKSUM, msg=_DEFAULT_MSG)
+    def test_statistics(self):
+        """Tests the values for some of the statistics. If the
+        calculations methods change, expected values in this test
+        must also be changed."""
+        self.handler.read_directory(_DIR_PATH, self.some_elements)
+
+        self.assertEqual((-27.632, 310.992),
+                         self.handler.get_depth_range())
+
+        self.assertAlmostEqual(
+            25.97,
+            sum(self.handler.integrate_concentrations(0, 100).values()),
+            places=2
+        )
+
+        p, m = self.handler.calculate_ratios(set(), 0, 100, 0.1)
+        self.assertAlmostEqual(34.94, sum(p.values()), places=2)
+        self.assertAlmostEqual(0.57, sum(m.values()), places=2)
+
+    @verify_files(_file_paths, _CHECKSUM, msg=_DEFAULT_MSG)
     def test_caching_with_merge(self):
         """Tests caching functionality in DepthProfile merging"""
 
@@ -226,7 +246,11 @@ class TestDepthProfileHandling(unittest.TestCase):
 
         # Cached runs should be at least 10 times faster, depending on n
         # print(with_caching, without_caching)
-        self.assertTrue(with_caching < without_caching * 0.1)
+        self.assertTrue(with_caching < without_caching * 0.1,
+                        msg="Caching was slower than expected. This is not a "
+                            "failure per se, but something that should happen "
+                            "only on rare occasions. Rerun the test to see if "
+                            "the problem persist.")
 
         # Assert that cache gets cleared when directory is read
         m1 = self.handler.merge_profiles(a + 100, b - 100, method="abs_rel_abs")
@@ -248,9 +272,12 @@ class TestDepthProfileHandling(unittest.TestCase):
         self.handler.read_directory(_DIR_PATH,
                                     self.some_elements,
                                     depth_units="nm")
+
+        # Set initial ranges that fall within handlers depth range
         a, b = self.handler.get_depth_range()
         a += 100
-        b += 100
+        b -= 100
+
         m1 = self.handler.merge_profiles(a, b, method="abs_rel_abs")
         m2 = self.handler.merge_profiles(a, b, method="abs_rel_abs")
         self.assertIs(m1, m2)

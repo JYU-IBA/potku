@@ -39,14 +39,13 @@ import math
 import os
 import platform
 import subprocess
-from functools import lru_cache
-
-import modules.parsing as parsing
 import modules.math_functions as mf
 
-from modules.general_functions import copy_cut_file_to_temp, \
-                                      match_strs_to_elements
+from functools import lru_cache
+from modules.general_functions import copy_cut_file_to_temp
+from modules.general_functions import match_strs_to_elements
 from modules.element import Element
+from modules.parsing import CSVParser
 
 
 class DepthFileGenerator(object):
@@ -114,15 +113,12 @@ class DepthProfile:
         Args:
             depths: collection of depth values
             concentrations: collection of concentrations at each depth value
-            events: collections of event counts at each depth value
+            events: collection of event counts at each depth value
             element: Element that the depth profile belongs to. If None,
                      the depth profile is considered an aggregation of different
                      profiles
         """
-        # TODO use tuples or numpy arrays instead of lists
         # TODO check that depths are in order and values are numerical
-        # TODO maybe clone input collections
-        # TODO profile could have different types (relational, merged etc.)
         # TODO maybe use Decimal for better floating point precision
         # TODO store RBS value
         # TODO binary operations (__add__, merge, etc) could raise exception
@@ -145,8 +141,11 @@ class DepthProfile:
                 raise ValueError("DepthProfile must have same number of depths "
                                  "and concentrations")
 
-        self.depths = depths
-        self.concentrations = concentrations
+        self.depths = tuple(depths)
+        self.concentrations = tuple(concentrations)
+
+        if events is not None:
+            events = tuple(events)
         self.events = events
         self.element = element
 
@@ -181,8 +180,8 @@ class DepthProfile:
         if len(self) != len(other):
             raise ValueError("DepthProfile lengths must match when adding")
 
-        conc = [c1 + c2 for (_, c1, _), (_, c2, _)
-                in zip(self, other)]
+        conc = tuple(c1 + c2 for (_, c1, _), (_, c2, _)
+                     in zip(self, other))
 
         return DepthProfile(self.depths, conc)
 
@@ -202,8 +201,8 @@ class DepthProfile:
         if len(self) != len(other):
             raise ValueError("DepthProfile lengths must match when subtracting")
 
-        conc = [c1 - c2 for (_, c1, _), (_, c2, _)
-                in zip(self, other)]
+        conc = tuple(c1 - c2 for (_, c1, _), (_, c2, _)
+                     in zip(self, other))
 
         return DepthProfile(self.depths, conc)
 
@@ -233,17 +232,18 @@ class DepthProfile:
 
         if element is not None:
             # If element is defined, read event counts too
-            depths, conc, events = parsing.parse_file(
-                file_path,
-                [x_column, 3, -1],
-                [float, lambda x: float(x) * 100, int])
+            parser = CSVParser((x_column, float),
+                               (3, lambda x: float(x) * 100),
+                               (-1, int))
+            depths, conc, events = tuple(parser.parse_file(file_path,
+                                                           method="col"))
             return cls(depths, conc, events, element=element)
 
         # Otherwise read just depths and concentrations
-        depths, conc = parsing.parse_file(
-            file_path,
-            [x_column, 3],
-            [float, lambda x: float(x) * 100])
+        parser = CSVParser((x_column, float),
+                           (3, lambda x: float(x) * 100))
+        depths, conc = tuple(parser.parse_file(file_path,
+                                               method="col"))
         return cls(depths, conc)
 
     def get_profile_name(self):
@@ -266,12 +266,12 @@ class DepthProfile:
             return None, None
         return self.depths[0], self.depths[-1]
 
-    def integrate_concentrations(self, depth_a, depth_b):
+    def integrate_concentrations(self, depth_a=-math.inf, depth_b=math.inf):
         """Returns sum of concentrations between depths a and b.
 
         Args:
-            depth_a: depth value
-            depth_b: depth value
+            depth_a: lower limit of the integration range depth value
+            depth_b: upper limit of the integration range depth value
 
         Return:
             concentration per cm^2 as a float.
@@ -280,7 +280,7 @@ class DepthProfile:
         return mf.integrate_bins(
             self.depths, self.concentrations, a=depth_a, b=depth_b) * 0.01
 
-    def sum_running_avgs(self, depth_a, depth_b):
+    def sum_running_avgs(self, depth_a=-math.inf, depth_b=math.inf):
         """Returns the sum of running concentration averages between
         depths a and b.
 
@@ -294,7 +294,7 @@ class DepthProfile:
         return mf.sum_running_avgs(
             self.depths, self.concentrations, a=depth_a, b=depth_b)
 
-    def sum_events(self, depth_a, depth_b):
+    def sum_events(self, depth_a=-math.inf, depth_b=math.inf):
         """Returns the sum of events between depths a and b.
 
         Args:
@@ -323,13 +323,13 @@ class DepthProfile:
             raise ValueError("DepthProfile lengths must match when "
                              "calculating relative concentrations")
 
-        conc = [c1 / c2 * 100 if c2 != 0 else 0.0
-                for (_, c1, _), (_, c2, _) in zip(self, other)]
+        conc = tuple(c1 / c2 * 100 if c2 != 0 else 0.0
+                     for (_, c1, _), (_, c2, _) in zip(self, other))
 
         return DepthProfile(
             self.depths, conc, events=self.events, element=self.element)
 
-    def merge(self, other, depth_a, depth_b):
+    def merge(self, other, depth_a=-math.inf, depth_b=math.inf):
         """Merges DepthProfile with another instance of DepthProfile.
         Concentrations outside the range between depths a and b are taken
         from this DepthProfile, concentrations inside the range are taken
@@ -352,9 +352,9 @@ class DepthProfile:
         if len(self) != len(other):
             raise ValueError("DepthProfile lengths must match when merging")
 
-        conc = [c2 if depth_a <= d <= depth_b else c1
-                for (d, c1, _), (_, c2, _)
-                in zip(self, other)]
+        conc = tuple(c2 if depth_a <= d <= depth_b else c1
+                     for (d, c1, _), (_, c2, _)
+                     in zip(self, other))
 
         if self.element and self.element == other.element:
             events = self.events
@@ -363,11 +363,10 @@ class DepthProfile:
             events = None
             elem = None
 
-        return DepthProfile(
-            self.depths, conc, events=events, element=elem)
+        return DepthProfile(self.depths, conc, events=events, element=elem)
 
-    def calculate_margin_of_error(self, systematic_error, depth_a, depth_b,
-                                  sum_of_running_avgs=None):
+    def calculate_margin_of_error(self, systematic_error, depth_a=-math.inf,
+                                  depth_b=math.inf, sum_of_running_avgs=None):
         """Calculates the margin of error for given range of values and
         systematic error.
 
@@ -523,9 +522,9 @@ class DepthProfileHandler:
 
                 self.__absolute_profiles[profile.get_profile_name()] = profile
 
-            except:
+            except Exception as e:
                 # TODO log the exception
-                pass
+                print(e)
 
     def get_depth_range(self):
         """Returns the minimum and maximum depth values in the total depth
@@ -576,7 +575,8 @@ class DepthProfileHandler:
     # TODO caching may not be a good idea if callers are going to modify the
     #      results
     @lru_cache(maxsize=32)
-    def merge_profiles(self, depth_a, depth_b, method="abs_rel_abs"):
+    def merge_profiles(self, depth_a=-math.inf, depth_b=math.inf,
+                       method="abs_rel_abs"):
         """Combines absolute and relative DepthProfiles so that
         concentrations outside the range between depth_a and depth_b
         are taken from one profile and concentrations inside the range
@@ -616,7 +616,8 @@ class DepthProfileHandler:
 
         raise ValueError("Unknown merge method")
 
-    def calculate_ratios(self, ignored, depth_a, depth_b, systematic_error):
+    def calculate_ratios(self, ignored, depth_a=-math.inf, depth_b=math.inf,
+                         systematic_error=3.0):
         """Calculates the ratios and margins of error for DepthProfiles
         currently stored in the DepthProfileHandler.
 
