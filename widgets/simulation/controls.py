@@ -30,6 +30,9 @@ __version__ = "2.0"
 
 import os
 
+# TODO there is some circular dependency that prevents importing SimulationState
+#      FIX THIS!
+# from modules.element_simulation import SimulationState
 from modules.general_functions import delete_simulation_results
 from modules.observing import Observer
 
@@ -84,8 +87,8 @@ class SimulationControlsWidget(QtWidgets.QWidget, Observer):
         #      atom_count is still 0, because .erd files are not yet counted
         # TODO set minimum count for ions
         # TODO bind object values to PyQT elements
-        atom_count, pre_sim_status = self.element_simulation.get_atom_count()
-        print("TESTING ATOM COUNT", atom_count, pre_sim_status)
+        status = self.element_simulation.get_current_status()
+        print(status)
 
         controls_layout = QtWidgets.QHBoxLayout()
         controls_layout.setContentsMargins(0, 6, 0, 0)
@@ -118,11 +121,11 @@ class SimulationControlsWidget(QtWidgets.QWidget, Observer):
             "Number of processes used in simulation")
         self.processes_spinbox.setFixedWidth(50)
         # TODO update ion count when process value is changed
-        self.processes_spinbox.valueChanged.connect(self.update_ion_count)
+        self.processes_spinbox.valueChanged.connect(self.show_ions_per_process)
         processes_layout.addRow(processes_label, self.processes_spinbox)
         processes_widget = QtWidgets.QWidget()
         processes_widget.setLayout(processes_layout)
-        self.update_ion_count(self.processes_spinbox.value())
+        self.show_ions_per_process(self.processes_spinbox.value())
 
         # Show finished processes
         self.finished_processes_widget = QtWidgets.QWidget()
@@ -240,6 +243,10 @@ class SimulationControlsWidget(QtWidgets.QWidget, Observer):
             self.recoil_dist_widget.update_plot()
         self.element_simulation.y_min = 0.0001
 
+        # TODO wait cursor
+        # TODO await start
+        # TODO change cursor back
+
         if use_erd_files:
             # TODO indicate to user that ion sharing is in use
             self.element_simulation.start(number_of_processes,
@@ -251,26 +258,29 @@ class SimulationControlsWidget(QtWidgets.QWidget, Observer):
                                           start_value,
                                           shared_ions=True)
 
-    def show_number_of_observed_atoms(self, number, add_presim):
-        """
-        Show the number of observed atoms in the coltrols.
+    def show_status(self, status):
+        """Updates the status of simulation in the GUI
 
         Args:
-            number: Observed atom number.
-            add_presim: Whether to add presim indicator or not.
+            status: status of the ElementSimulation object
+        """
+        self.show_atom_count(status["atom_count"])
+        self.show_finished_processes(status["running"])
+        self.show_state(status["state"])
+
+    def show_atom_count(self, atom_count):
+        """Updates the atom count in the GUI
+
+        Args:
+            atom_count: number of atoms counted
         """
         try:
-            if number == 0 or add_presim:
-                text = str(number) + " (pre sim)"
-            else:
-                text = str(number)
-            self.observed_atom_count_label.setText(text)
+            self.observed_atom_count_label.setText(str(atom_count))
         except RuntimeError:
             pass
 
-    def update_finished_processes(self, running_processes):
-        """
-        Update the amount of finished processes.
+    def show_finished_processes(self, running_processes):
+        """Update the number of finished processes.
 
         Args:
             running_processes: Number of running processes.
@@ -278,25 +288,44 @@ class SimulationControlsWidget(QtWidgets.QWidget, Observer):
         all_proc = self.processes_spinbox.value()
         finished = all_proc - running_processes
 
-        self.finished_processes_label.setText(
-            str(finished) + "/" + str(all_proc))
+        self.finished_processes_label.setText("{0}/{1}".format(finished,
+                                                               all_proc))
 
-    def update_ion_count(self, process_count):
-        # TODO update gui
-        # TODO ion counts could be wrong if default settings are used
-        #      or not used
-        # TODO cannot update ion counts immediately after settings
-        #      have been changed
+    def show_state(self, state):
+        """Update simulation state in the GUI
+
+        Args:
+            state: SimulationState enum
+        """
+        self.state_label.setText(str(state).split(".")[-1])
+
+        # TODO there is some circular dependecy which prevents this module from
+        #      importing the SimulationState Enum from element_simulation.py
+        #      This should be fixed.
+        # In the meantime, use a hacky solution and convert the enum to string
+        if str(state) == "SimulationState.Finished":
+            self.run_button.setEnabled(True)
+            self.stop_button.setEnabled(False)
+            self.processes_spinbox.setEnabled(True)
+
+    def show_ions_per_process(self, process_count):
+        # TODO this method is supposed to show how the ion counts are divided
+        #      per process. ATM cannot update ion counts immeadiately after
+        #      settings change, so this function is only printing the values
+        #      to console
+        # TODO either bind the value of ions to some variable or only show
+        #      this when the simulation starts
         elem_sim = self.element_simulation.get_element_simulation()
         preions = elem_sim.number_of_preions // process_count
         ions = elem_sim.number_of_ions // process_count
-        print("Number of ions per process:",
+        print("Number of ions per process (pre/full):",
               preions,
               ions)
 
     def stop_simulation(self):
         """ Calls ElementSimulation's stop method.
         """
+        # TODO this is crashing currently
         try:
             self.element_simulation.stop()
         except FileNotFoundError:
@@ -311,21 +340,11 @@ class SimulationControlsWidget(QtWidgets.QWidget, Observer):
         self.show_stop()
         self.state_label.setText("Stopped")
 
-    def show_stop(self):
-        """
-        Set controls to show that simulation has ended.
-        """
-        self.state_label.setText("Finished")
-        self.run_button.setEnabled(True)
-        self.stop_button.setEnabled(False)
-        self.processes_spinbox.setEnabled(True)
-
-    def receive(self, msg):
-        """Callback function that receives messages from an
+    def receive(self, status):
+        """Callback function that receives status from an
         ElementSimulation
 
         Args:
-            msg: status update sent by ElementSimulation
+            status: status update sent by ElementSimulation
         """
-        # TODO update GUI based on the status
-        print(msg)
+        self.show_status(status)

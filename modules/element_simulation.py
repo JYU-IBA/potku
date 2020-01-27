@@ -29,7 +29,6 @@ __version__ = "2.0"
 
 import json
 import logging
-import math
 import numpy as np
 import os
 import platform
@@ -37,7 +36,6 @@ import threading
 import time
 
 from modules.element import Element
-from modules.foil import CircularFoil
 from modules.general_functions import read_espe_file
 from modules.general_functions import rename_file
 from modules.general_functions import uniform_espe_lists
@@ -46,8 +44,6 @@ from modules.get_espe import GetEspe
 from modules.mcerd import MCERD
 
 from PyQt5 import QtGui
-#from PyQt5 import QtWidgets
-#from PyQt5.QtCore import Qt
 
 from modules.observing import Observable
 from widgets.matplotlib.simulation.recoil_atom_distribution import Point
@@ -61,17 +57,14 @@ class SimulationState(Enum):
     # Zero ERD files, MCERD not running
     NotStarted = 1
 
-    # Preparation period when processes are being started
-    Starting = 2
-
-    # ERD files exist, MCERD running, but last one has no lines
-    PreSim = 3
+    # ERD files exist, MCERD running, no atoms counted yet
+    PreSim = 2
 
     # Full simulation is running
-    Running = 4
+    Running = 3
 
     # ERD files exist, MCERD not running
-    Finished = 5
+    Finished = 4
 
 
 class ElementSimulation(Observable):
@@ -156,7 +149,7 @@ class ElementSimulation(Observable):
         self.modification_time = modification_time
 
         self.sample = sample    # TODO check if this is being used elsewhere
-
+                                #      and remove if possible
         self.recoil_elements = recoil_elements
 
         if len(self.recoil_elements) == 1:
@@ -205,7 +198,7 @@ class ElementSimulation(Observable):
         self.__mcerd_command = os.path.join(
             "external", "Potku-bin", "mcerd" +
             (".exe" if platform.system() == "Windows" else ""))
-        self.__process = None
+        self.__process = None   # TODO what is this?
         # This has all the mcerd objects so get_espe knows all the element
         # simulations that belong together (with different seed numbers)
         self.mcerd_objects = {}
@@ -355,9 +348,6 @@ class ElementSimulation(Observable):
             point: Point to be removed.
         """
         recoil_element.remove_point(point)
-
-    def get_current_status(self):
-        pass
 
     def update_recoil_element(self, recoil_element, new_values):
         """Updates RecoilElement object with new values.
@@ -603,9 +593,6 @@ class ElementSimulation(Observable):
                    optimization_recoils=optimized_recoils,
                    optimized_fluence=optimized_fluence)
 
-    def get_erd_files(self):
-        pass
-
     def mcsimu_to_file(self, file_path):
         """Save mcsimu settings to file.
 
@@ -733,11 +720,6 @@ class ElementSimulation(Observable):
         with open(file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
 
-    def get_element_simulation(self):
-        if self.use_default_settings:
-            return self.request.default_element_simulation
-        return self
-
     def start(self, number_of_processes, start_value, erd_files=None,
               optimize=False, stop_p=False, check_t=False,
               optimize_recoil=False, check_max=False, check_min=False,
@@ -763,16 +745,13 @@ class ElementSimulation(Observable):
             run = self.request.default_run
         else:
             run = self.run
-        #if self.use_default_settings:
-        #    elem_sim = self.request.default_element_simulation
-        #else:
-        #    elem_sim = self
-        elem_sim = self.get_element_simulation()
+
         if self.detector is None:
             detector = self.request.default_detector
         else:
             detector = self.detector
 
+        elem_sim = self.get_element_simulation()
         self.__erd_files = []
 
         # Start as many processes as is given in number of processes
@@ -782,11 +761,6 @@ class ElementSimulation(Observable):
         if erd_files:
             self.__erd_files = self.__erd_files + erd_files
         #QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)    # TODO remove
-        #                                                           # GUI stuff
-        self.publish({
-            "atom_count": 0,     # TODO
-            "status": SimulationState.Starting
-        })
 
         if not optimize_recoil:
             recoil = self.recoil_elements[0]
@@ -801,6 +775,12 @@ class ElementSimulation(Observable):
         else:
             number_of_ions = elem_sim.number_of_ions
             number_of_preions = elem_sim.number_of_preions
+
+        if not optimize:
+            # Start updating observers on current progress
+            thread = threading.Thread(target=self.check_status)
+            thread.daemon = True
+            thread.start()
 
         for i in range(number_of_processes):
             settings = {
@@ -855,79 +835,108 @@ class ElementSimulation(Observable):
                 # TODO create command file for each process so they can
                 #  be started at the same time?
 
-        # QtWidgets.QApplication.restoreOverrideCursor()
-        # TODO make mcerd_objects Observable to get better status reporting
-        self.publish({
-            "atom_count": 0,     # TODO
-            "status": SimulationState.PreSim   # TODO how to determine PresSIm
-                                                # when multiple processes have
-                                                # been started?
-        })
+        # QtWidgets.QApplication.restoreOverrideCursor()    # TODO remove
 
         if self.use_default_settings and not self.simulation.detector:
             self.request.running_simulations.append(self)
         else:
             self.simulation.running_simulations.append(self)
 
-        if not optimize:    # TODO maybe start this before starting processes
-            # Start calculating the erd files' lines
-            thread = threading.Thread(target=self.calculate_erd_lines)
-            thread.daemon = True
-            thread.start()
-        else:
+        if optimize:
             # Check the change between current and previous energy spectra (if
             # the spectra have been calculated)
             self.check_spectra_change(stop_p, check_t, optimize_recoil,
                                       check_max, check_min)
 
-    def calculate_erd_lines(self):
+    def get_element_simulation(self):
+        """Returns current element simulation to be used. Depending on the
+        settings, it is either a default simulation or self.
         """
-        Calculate the lines in the erd files.
+        if self.use_default_settings:
+            return self.request.default_element_simulation
+        return self
+
+    def get_current_status(self):
+        """Returns the number of atoms counted, number of running processes and
+        the state of simulation.
+
+        Return:
+            dict in the form of
+                {
+                    'atom_count': integer,
+                    'running': integer,
+                    'state': enum
+                }
         """
-        # TODO rename this function to e.g. check_status
-        while True:
-            if not self.mcerd_objects:
-                break
-            time.sleep(1)
+        process_count = self.count_active_processes()
 
-            lines_count, in_presim = self.get_atom_count()
-
-            self.publish({
-                "atom_count": lines_count,
-                "status": SimulationState.PreSim if in_presim
-                else SimulationState.Running
-            })
-            #if self.controls:
-            #    # TODO this needs to be a call back
-            #    self.controls.show_number_of_observed_atoms(lines_count,
-            #                                                in_presim)
-
-    def get_atom_count(self):
-        """Returns the number of atoms that have been simulated so far and a
-        boolean that indicates whether the simulation is in pre-sim mode.
-        """
-        # TODO possibly rename this function
-        # If the list of erd files is empty, return 0 and False
         if not self.__erd_files:
-            return 0, False
+            # No ERD files exist so simulation has not started
+            return {
+                "atom_count": 0,
+                "running": process_count,   # TODO maybe check that this
+                                            #      is also 0
+                "state": SimulationState.NotStarted
+            }
+        atom_counts = tuple(self.get_atom_counts())
+        total_count = sum(count for _, count in atom_counts)
 
-        # Each simulated atom is stored as a single line on an .erd file.
-        # To determine their amount, count the number of lines
-        # TODO is this calculating lines for already finished files also?
-        #      if so, cache the results for sims that are done and only count
-        #      files for active processes
-        first = sum(count_lines_in_file(erd_file, check_file_exists=True)
-                    for erd_file in self.__erd_files[:-1])
+        if process_count:
+            # Some processes are running, we are either in presim or running
+            # state
+            if not atom_counts[-1][-1]:
+                # If the last ERD file contains no atoms, we are in Presim
+                # TODO should get atom counts for all processes rather than
+                #      just the last
+                return {
+                    "atom_count": total_count,
+                    "running": process_count,
+                    "state": SimulationState.PreSim
+                }
 
-        # Last file is counted separately as it determines whether we are in
-        # pre sim or not
-        # TODO this only checks if the last process is in presim. Check all
-        #      files that are active and report each process status indivually
-        last = count_lines_in_file(self.__erd_files[-1],
-                                   check_file_exists=True)
+            # We are in full sim mode
+            return {
+                "atom_count": total_count,
+                "running": process_count,
+                "state": SimulationState.Running
+            }
 
-        # Return total count and if the last one is 0
-        return first + last, last == 0
+        # ERD files exist but no active simulation is in process
+        return {
+            "atom_count": total_count,
+            "running": process_count,
+            "state": SimulationState.Finished
+        }
+
+    def check_status(self):
+        """Periodically checks the status of simulation and reports the status
+        to observers.
+        """
+        while True:
+            # TODO sleeping is a bit of a hacky solution to prevent the status
+            #      from being Finished at the beginning of the sim
+            time.sleep(1)
+            status = self.get_current_status()
+            self.publish(status)
+            if status["state"] == SimulationState.Finished:
+                break
+
+    def count_active_processes(self):
+        """Returns the number of active processes.
+        """
+        return len(self.mcerd_objects)
+
+    def get_atom_counts(self, clear_cache=False):
+        """Calculates the number of atoms in each ERD file.
+
+        Yield:
+            tuple where first element is an ERD file path and second
+            value is the number of atoms in that file
+        """
+        # TODO implement caching for count_lines
+        for erd_file in self.__erd_files:
+            yield erd_file, count_lines_in_file(erd_file,
+                                                check_file_exists=True)
 
     def check_spectra_change(self, stop_percent, check_time, optimize_recoil,
                              check_max, check_min):
@@ -1030,11 +1039,13 @@ class ElementSimulation(Observable):
             del (self.mcerd_objects[key_to_delete])
             if self.controls:   # TODO progress reporting with (count, finished)
                 # Update finished processes count
-                self.controls.update_finished_processes(len(self.mcerd_objects))
+                #self.controls.update_finished_processes(len(
+                # self.mcerd_objects))
+                pass    # TODO cleanup
         if not self.mcerd_objects:
             processes = "N/a"
             if self.controls:
-                self.controls.show_stop()
+                #self.controls.show_stop() # TODO remove GUI stuff
                 processes = self.controls.processes_spinbox.value()
             if self.use_default_settings:
                 self.request.running_simulations.remove(self)
@@ -1042,7 +1053,7 @@ class ElementSimulation(Observable):
                 self.simulation.running_simulations.remove(self)
 
             # Calculate erd lines for log
-            lines_count, _ = self.get_atom_count()
+            lines_count = sum(count for _, count in self.get_atom_counts())
 
             simulation_name = self.simulation.name
             element = self.recoil_elements[0].element
@@ -1083,7 +1094,7 @@ class ElementSimulation(Observable):
             self.optimization_mcerd_running = False
 
         # Calculate erd lines for log
-        lines_count, _ = self.get_atom_count()
+        lines_count = sum(count for _, count in self.get_atom_counts())
 
         simulation_name = self.simulation.name
         if not optimize_recoil:
@@ -1094,12 +1105,6 @@ class ElementSimulation(Observable):
             element_name = str(element.isotope) + element.symbol
         else:
             element_name = element.symbol
-
-        self.publish({
-            "atom_count": lines_count,
-            "status": SimulationState.Finished if lines_count > 0 else
-            SimulationState.NotStarted
-        })
 
         msg = "Simulation stopped. " + "Element: " \
               + element_name + " Processes:" + str(processes) + \
