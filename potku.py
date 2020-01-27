@@ -1483,7 +1483,10 @@ class Potku(QtWidgets.QMainWindow):
     def __open_manual(self):
         """Open user manual.
         """
-        manual_filename = os.path.join("manual", "Potku-manual.pdf")
+        # TODO changed the file path to point to the manual, I guess this needs
+        #      to be updated in the .spec file too?
+        manual_filename = os.path.join("documentation", "manual",
+                                       "Potku-manual.pdf")
         used_os = platform.system()
         try:
             if used_os == "Windows":
