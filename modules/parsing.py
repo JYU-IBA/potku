@@ -208,8 +208,8 @@ class ToFListParser(CSVParser):
 
 
 class _Converter:
-    """Helper class for CSVParsing. Applies a conversion function to
-    list item at certain and returns the result.
+    """Helper class for CSVParsing. Applies a conversion function to an
+    element in a list and returns the result.
     """
     __slots__ = "idx", "func"
 
@@ -217,9 +217,9 @@ class _Converter:
         """Initializes a new _Converter.
 
         Args:
-            idx: index of the value in a list (must be an integer)
+            idx: index of the element in a list (must be an integer)
             func: conversion function that will be applied to the
-                  value (must be callable)
+                  element (must be callable)
         """
         if not isinstance(idx, int):
             raise TypeError("List index must be an integer")
@@ -230,7 +230,7 @@ class _Converter:
         self.func = func
 
     def __call__(self, lst):
-        """Applies the conversion function to a list item.
+        """Applies the conversion function to a list element.
 
         Args:
             lst: a collection of values

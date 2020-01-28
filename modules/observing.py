@@ -157,7 +157,10 @@ class Observable(abc.ABC):
 
         # Iterate over the references, publishing the message to
         # existing observers and removing those that do not exist.
-        self.refs = [ref for ref in self.refs if __publish(ref)]
+        # Filtered results are assigned to a slice of the existing list
+        # to avoid potential problems with multiple references to the
+        # refs list.
+        self.refs[:] = [ref for ref in self.refs if __publish(ref)]
 
 
 class Observer(abc.ABC):

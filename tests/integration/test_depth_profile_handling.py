@@ -154,6 +154,7 @@ class TestDepthProfileHandling(unittest.TestCase):
             else:
                 self.assertTrue(0 <= moes[m])
 
+    @verify_files(_file_paths, _CHECKSUM, msg=_DEFAULT_MSG)
     def test_get_depth_range(self):
         """Tests depth ranges with different depth units"""
         # First read files while using TODO depth units
@@ -176,8 +177,8 @@ class TestDepthProfileHandling(unittest.TestCase):
 
         # However, if one were to delete the 'total' profile
         del self.handler._DepthProfileHandler__absolute_profiles["total"]
-        self.assertTrue((None, None),
-                        self.handler.get_depth_range())
+        self.assertEqual((None, None),
+                         self.handler.get_depth_range())
 
     @verify_files(_file_paths, _CHECKSUM, msg=_DEFAULT_MSG)
     def test_statistics(self):
