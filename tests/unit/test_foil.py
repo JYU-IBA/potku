@@ -33,34 +33,69 @@ from modules.foil import RectangularFoil
 class TestFoil(unittest.TestCase):
     def test_circular_solid_angle(self):
         """Tests solid angle calculation for circular foil"""
-        circular = CircularFoil()
-        self.assertRaises(ZeroDivisionError,
-                          lambda: circular.get_solid_angle())
-
-        # TODO more realistic numbers
-        circular.diameter = 2
+        default_foil = CircularFoil()
+        zero_distance = CircularFoil(diameter=1.0, distance=0.0)
+        zero_diameter = CircularFoil(diameter=0.0, distance=1.0)
+        unit_foil = CircularFoil(diameter=1.0, distance=1.0)
 
         self.assertRaises(ZeroDivisionError,
-                          lambda: circular.get_solid_angle())
+                          lambda: default_foil.get_solid_angle())
+        self.assertRaises(ZeroDivisionError,
+                          lambda: zero_distance.get_solid_angle())
 
-        circular.distance = 3
+        self.assertEqual(0, zero_diameter.get_solid_angle())
 
-        self.assertAlmostEqual(349,
-                               circular.get_solid_angle(),
-                               delta=0.1)
+        self.assertAlmostEqual(785.4,
+                               unit_foil.get_solid_angle(),
+                               places=2)
 
-        self.assertEqual(circular.get_solid_angle(),
-                         circular.get_solid_angle(units="msr"))
-        self.assertEqual(0.001 * circular.get_solid_angle(),
-                         circular.get_solid_angle(units="sr"))
+        # Testing unit conversions:
+        self.check_solid_angle_unit_conversion(unit_foil, 785.4, 785398.16,
+                                               0.79, places=2)
 
-        self.assertEqual(1000 * circular.get_solid_angle(),
-                         circular.get_solid_angle(units="usr"))
-        circular.diameter = 0
-        self.assertEqual(0, circular.get_solid_angle())
-
+        # Radians are not a valid unit
         self.assertRaises(ValueError,
-                          lambda: circular.get_solid_angle("rad"))
+                          lambda: unit_foil.get_solid_angle("rad"))
+
+    def test_rec_foil_solid_angle(self):
+        default_foil = RectangularFoil()
+        zero_distance = RectangularFoil(size_x=1.0, size_y=1.0, distance=0.0)
+        zero_x = RectangularFoil(size_x=0.0, size_y=1.0, distance=1.0)
+        zero_y = RectangularFoil(size_x=1.0, size_y=0.0, distance=1.0)
+        unit_foil = RectangularFoil(size_x=1.0, size_y=1.0, distance=1.0)
+
+        self.assertRaises(ZeroDivisionError,
+                          lambda: default_foil.get_solid_angle())
+
+        self.assertRaises(ZeroDivisionError,
+                          lambda: zero_distance.get_solid_angle())
+
+        self.assertEqual(0, zero_x.get_solid_angle())
+        self.assertEqual(0, zero_y.get_solid_angle())
+        self.assertEqual(1000, unit_foil.get_solid_angle())
+
+        self.check_solid_angle_unit_conversion(unit_foil,
+                                               1000,
+                                               1000000,
+                                               1,
+                                               places=2)
+
+    def check_solid_angle_unit_conversion(self, foil, *expected, places=2):
+        """Tests unit conversion by comparing the results of get_solid_angle
+        function to each expected value.
+        """
+        msr, usr, sr = expected
+        self.assertAlmostEqual(msr,
+                               foil.get_solid_angle(units="msr"),
+                               places=places)
+
+        self.assertAlmostEqual(usr,
+                               foil.get_solid_angle(units="usr"),
+                               places=places)
+
+        self.assertAlmostEqual(sr,
+                               foil.get_solid_angle(units="sr"),
+                               places=places)
 
 
 if __name__ == "__main__":

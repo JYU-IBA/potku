@@ -680,7 +680,7 @@ class DepthProfileHandler:
 
         return percentages, moes
 
-    def integrate_concentrations(self, depth_a, depth_b):
+    def integrate_concentrations(self, depth_a=-math.inf, depth_b=math.inf):
         """Calculates an integral of the total amount of concentrations
         between the given depth range.
 
