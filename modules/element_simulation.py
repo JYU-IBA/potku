@@ -198,7 +198,8 @@ class ElementSimulation(Observable):
         self.__mcerd_command = os.path.join(
             "external", "Potku-bin", "mcerd" +
             (".exe" if platform.system() == "Windows" else ""))
-        self.__process = None   # TODO what is this?
+        #self.__process = None   # TODO what is this for? Also remove it from
+                                 # slots
         # This has all the mcerd objects so get_espe knows all the element
         # simulations that belong together (with different seed numbers)
         self.mcerd_objects = {}

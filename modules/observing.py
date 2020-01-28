@@ -160,12 +160,11 @@ class Observable(abc.ABC):
         self.refs = [ref for ref in self.refs if __publish(ref)]
 
 
-class Observer: # TODO check the conflict between this and
-                #      SimulationControls, which prevents this
-                #      from being an ABC
+class Observer(abc.ABC):
     """Observer class receives messages from an Observable.
     """
-    #@abc.abstractmethod
+
+    @abc.abstractmethod
     def receive(self, msg):
         """Observable invokes this method so the Observer
         can receive the message.

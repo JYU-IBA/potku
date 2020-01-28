@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 1.3.2018
-Updated on 27.8.2018
+Updated on 28.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -25,10 +25,11 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import os
+import abc
 
 # TODO there is some circular dependency that prevents importing SimulationState
 #      FIX THIS!
@@ -40,11 +41,22 @@ from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
 
 
-class SimulationControlsWidget(QtWidgets.QWidget, Observer):
-    """Class for creating simulation controls widget for the element simulation.
+class QtObserverMeta(type(QtWidgets.QWidget), type(Observer)):
+    """A common metaclass for Observers and QWidgets.
 
-    Args:
-        element_simulation: ElementSimulation object.
+     QWidget has the metaclass 'sip.wrappertype' while Observer has
+     'ABCMeta', which causes a conflict in multi-inheritance.
+
+    QtObserverMeta provides a common metaclass for both types so a GUI element
+    can inherit both QWidget and Observer classes.
+    """
+    # TODO create a GUI utils module and move this there
+    pass
+
+
+class SimulationControlsWidget(Observer, QtWidgets.QWidget,
+                               metaclass=QtObserverMeta):
+    """Class for creating simulation controls widget for the element simulation.
     """
 
     def __init__(self, element_simulation, recoil_dist_widget):
@@ -74,6 +86,8 @@ class SimulationControlsWidget(QtWidgets.QWidget, Observer):
 
         state_layout = QtWidgets.QHBoxLayout()
         state_layout.setContentsMargins(0, 6, 0, 0)
+
+        # TODO update these by querying from the elem sim
         state_layout.addWidget(QtWidgets.QLabel("State: "))
         self.state_label = QtWidgets.QLabel("Not started")
         state_layout.addWidget(self.state_label)
@@ -81,15 +95,14 @@ class SimulationControlsWidget(QtWidgets.QWidget, Observer):
         state_widget.setLayout(state_layout)
 
         # TODO get atom count from element simulation and display it
-        # TODO should stopping be allowed in presim?
         # TODO update status label properly when simulation begins
         # TODO show starting seed in the UI?
-        #      atom_count is still 0, because .erd files are not yet counted
         # TODO set minimum count for ions
         # TODO bind object values to PyQT elements
         status = self.element_simulation.get_current_status()
         print(status)
 
+        # Button that starts the simulation
         controls_layout = QtWidgets.QHBoxLayout()
         controls_layout.setContentsMargins(0, 6, 0, 0)
         self.run_button = QtWidgets.QPushButton()
@@ -99,6 +112,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, Observer):
         self.run_button.setToolTip("Start simulation")
         self.run_button.clicked.connect(self.__start_simulation)
 
+        # Button that stops the simulation
         self.stop_button = QtWidgets.QPushButton()
         self.stop_button.setIcon(QIcon("ui_icons/reinhardt/player_stop.svg"))
         self.stop_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
@@ -112,6 +126,8 @@ class SimulationControlsWidget(QtWidgets.QWidget, Observer):
         controls_widget = QtWidgets.QWidget()
         controls_widget.setLayout(controls_layout)
 
+        # Spinbox to choose how many simulations processes are started
+        # concurrently
         processes_layout = QtWidgets.QFormLayout()
         processes_layout.setContentsMargins(0, 6, 0, 0)
         processes_label = QtWidgets.QLabel("Processes: ")
@@ -120,7 +136,6 @@ class SimulationControlsWidget(QtWidgets.QWidget, Observer):
         self.processes_spinbox.setToolTip(
             "Number of processes used in simulation")
         self.processes_spinbox.setFixedWidth(50)
-        # TODO update ion count when process value is changed
         self.processes_spinbox.valueChanged.connect(self.show_ions_per_process)
         processes_layout.addRow(processes_label, self.processes_spinbox)
         processes_widget = QtWidgets.QWidget()
@@ -174,12 +189,16 @@ class SimulationControlsWidget(QtWidgets.QWidget, Observer):
         Return:
              Biggest seed for simulation.
         """
-        biggest_seed = 0    # TODO make this a function of elem_sim
+        # TODO make this a function of elem_sim
+        # TODO this should be two functions (find_files &
+        #      find_biggest_seed)
         old_files = []
+        biggest_seed = 0
 
         start_part = self.element_simulation.recoil_elements[0].prefix + \
             "-" + self.element_simulation.recoil_elements[0].name + "."
         end = ".erd"
+
         for file in os.listdir(self.element_simulation.directory):
             if file.startswith(start_part) and file.endswith(end):
                 seed = file.rsplit('.', 2)[1]
@@ -243,9 +262,9 @@ class SimulationControlsWidget(QtWidgets.QWidget, Observer):
             self.recoil_dist_widget.update_plot()
         self.element_simulation.y_min = 0.0001
 
-        # TODO wait cursor
+        # TODO show wait cursor
         # TODO await start
-        # TODO change cursor back
+        # TODO change cursor back to normal
 
         if use_erd_files:
             # TODO indicate to user that ion sharing is in use
