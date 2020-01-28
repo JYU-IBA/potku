@@ -44,9 +44,8 @@ import sys
 import tempfile
 
 from decimal import Decimal
-
 from PyQt5 import QtWidgets
-
+from modules.parsing import ToFListParser
 from subprocess import Popen
 
 
@@ -253,17 +252,11 @@ def read_tof_list_file(tof_list_file):
     Return:
         List of the lines in the file as tuples.
     """
-    data = []
-    if os.path.exists(tof_list_file):     # TODO use parsing here
-        with open(tof_list_file, 'r') as file:
-            for line in file:
-                parts = line.split()
-                part = float(Decimal(parts[0])), float(Decimal(parts[1])), \
-                    float(Decimal(parts[2])), int(parts[3]), \
-                    float(Decimal(parts[4])), parts[5], \
-                    float(Decimal(parts[6])), int(parts[7])
-                data.append(part)
-    return data
+    if os.path.exists(tof_list_file):
+        # TODO test this on actual tof_file
+        tof_parser = ToFListParser()
+        return tof_parser.parse_file(tof_list_file, method="row")
+    return []
 
 
 def calculate_spectrum(tof_listed_files, spectrum_width, measurement,
@@ -342,11 +335,12 @@ def tof_list(cut_file, directory, save_output=False):
     """
     bin_dir = os.path.join(os.path.realpath(os.path.curdir), "external",
                            "Potku-bin")
-    tof_list_array = []
+
     if not cut_file:
         return []
 
     new_cut_file = copy_cut_file_to_temp(cut_file)
+    tof_parser = ToFListParser()
 
     try:
         if platform.system() == 'Windows':
@@ -369,23 +363,11 @@ def tof_list(cut_file, directory, save_output=False):
                                  stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE,
                                  stderr=subprocess.PIPE)
-            stdout, unused_stderr = p.communicate()
+            stdout, _ = p.communicate()
 
-        lines = stdout.decode().strip().replace("\r", "").split("\n")
-        for line in lines:
-            if not line:  # Can still result in empty lines at the end, skip.
-                continue
-            line_split = re.split("\s+", line.strip())  # TODO implement this
-                                                        #      with parsing
-            tupled = (float(line_split[0]),
-                      float(line_split[1]),
-                      float(line_split[2]),
-                      int(line_split[3]),
-                      float(line_split[4]),
-                      line_split[5],
-                      float(line_split[6]),
-                      int(line_split[7]))
-            tof_list_array.append(tupled)
+        tof_output = list(tof_parser.parse_strs(
+            stdout.decode().splitlines(), method="row", skip_empty=True))
+
         if save_output:
             if not directory:
                 directory = os.path.join(os.path.realpath(os.path.curdir),
@@ -395,7 +377,7 @@ def tof_list(cut_file, directory, save_output=False):
             unused_dir, file = os.path.split(cut_file)
             directory_es_file = os.path.join(
                 directory, "{0}.tof_list".format(os.path.splitext(file)[0]))
-            numpy_array = numpy.array(tof_list_array,
+            numpy_array = numpy.array(tof_output,
                                       dtype=[('float1', float),
                                              ('float2', float),
                                              ('float3', float),
@@ -407,6 +389,7 @@ def tof_list(cut_file, directory, save_output=False):
             numpy.savetxt(directory_es_file, numpy_array,
                           delimiter=" ",
                           fmt="%5.1f %5.1f %10.5f %3d %8.4f %s %6.3f %d")
+
     except:
         import traceback
         msg = "Error in tof_list: "
@@ -418,7 +401,7 @@ def tof_list(cut_file, directory, save_output=False):
         print(msg)
     finally:
         remove_file(new_cut_file)
-        return tof_list_array
+        return tof_output
 
 
 def convert_mev_to_joule(energy_in_MeV):

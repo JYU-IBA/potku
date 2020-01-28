@@ -150,6 +150,7 @@ class TestParsing(unittest.TestCase):
                          parser.parse_str("lst[1]='bar' foo"))
 
     def test_file_parsing(self):
+        """Tests parsing a tmp file"""
         parser = CSVParser((0, int), (1, int))
         with tempfile.TemporaryDirectory() as tmp_dir:
             file_path = os.path.join(tmp_dir, "csvtest")
@@ -190,6 +191,30 @@ class TestParsing(unittest.TestCase):
 
         self.assertFalse(os.path.exists(tmp_dir),
                          msg="Temporary directory was not removed.")
+
+    def test_skip_empty(self):
+        """Tests skipping empty strings."""
+        parser = CSVParser((0, int), (1, int), (2, int))
+        strs = ["1 2 3", "", "4 5 6"]
+
+        self.assertEqual(((1, 4), (2, 5), (3, 6)),
+                         tuple(parser.parse_strs(strs,
+                                                 skip_empty=True,
+                                                 method="col")))
+
+        self.assertEqual(((1, 2, 3), (4, 5, 6)),
+                         tuple(parser.parse_strs(strs,
+                                                 skip_empty=True,
+                                                 method="row")))
+
+        # If the string contains only whitespace chars, it is not considered
+        # empty
+        strs = ["1 2 3", " ", "4 5 6"]
+
+        self.assertRaises(IndexError,
+                          lambda: tuple(parser.parse_strs(strs,
+                                                          skip_empty=True,
+                                                          method="col")))
 
 
 if __name__ == "__main__":
