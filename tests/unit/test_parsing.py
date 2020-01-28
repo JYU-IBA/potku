@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.1.2020
-Updated on 27.1.2020
+Updated on 28.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -126,13 +126,15 @@ class TestParsing(unittest.TestCase):
         self.assertRaises(TypeError,
                           lambda: CSVParser((1, 2)))
 
-        # If index is outside the column range or value cannot be converted
-        # with given function, exception is raised
+        # If index is outside the column range, value cannot be converted,
+        # or ignore mode is unknown, exception is raised
         parser = CSVParser((1, int))
         self.assertRaises(IndexError,
                           lambda: parser.parse_str("foo"))
         self.assertRaises(ValueError,
                           lambda: parser.parse_str("foo bar"))
+        self.assertRaises(ValueError,
+                          lambda: parser.parse_strs([], ignore=""))
 
         # TypeError is raised when argument list is too long or too
         # short
@@ -192,29 +194,49 @@ class TestParsing(unittest.TestCase):
         self.assertFalse(os.path.exists(tmp_dir),
                          msg="Temporary directory was not removed.")
 
-    def test_skip_empty(self):
+    def test_ignore_mode(self):
         """Tests skipping empty strings."""
         parser = CSVParser((0, int), (1, int), (2, int))
-        strs = ["1 2 3", "", "4 5 6"]
+        strs_empty = ["1 2 3", "", "4 5 6"]
 
         self.assertEqual(((1, 4), (2, 5), (3, 6)),
-                         tuple(parser.parse_strs(strs,
-                                                 skip_empty=True,
+                         tuple(parser.parse_strs(strs_empty,
+                                                 ignore="e",
                                                  method="col")))
 
         self.assertEqual(((1, 2, 3), (4, 5, 6)),
-                         tuple(parser.parse_strs(strs,
-                                                 skip_empty=True,
+                         tuple(parser.parse_strs(strs_empty,
+                                                 ignore="e",
                                                  method="row")))
 
-        # If the string contains only whitespace chars, it is not considered
-        # empty
-        strs = ["1 2 3", " ", "4 5 6"]
-
+        # If the string contains whitespace, ignore mode 'e' will not work
+        strs_whitespace = ["1 2 3", " ", "4 5 6"]
         self.assertRaises(IndexError,
-                          lambda: tuple(parser.parse_strs(strs,
-                                                          skip_empty=True,
-                                                          method="col")))
+                          lambda: tuple(parser.parse_strs(strs_whitespace,
+                                                          ignore="e",
+                                                          method="row")))
+
+        # Parsing the same strings with ignore mode set to 'w' will work
+        self.assertEqual(((1, 2, 3), (4, 5, 6)),
+                         tuple(parser.parse_strs(strs_whitespace,
+                                                 ignore="w",
+                                                 method="row")))
+
+        # Using non-default separator will cause the two parsing modes to
+        # produce different outputs from the same data
+        parser = CSVParser((0, str), (1, str), (2, str))
+        strs_tabs = ["1\t2\t3", "\t\t", "", "4\t5\t6"]
+        self.assertEqual((("1", "2", "3"), ("", "", ""), ("4", "5", "6")),
+                         tuple(parser.parse_strs(strs_tabs,
+                                                 ignore="e",
+                                                 method="row",
+                                                 separator="\t")))
+
+        self.assertEqual((("1", "2", "3"), ("4", "5", "6")),
+                         tuple(parser.parse_strs(strs_tabs,
+                                                 ignore="w",
+                                                 method="row",
+                                                 separator="\t")))
 
 
 if __name__ == "__main__":

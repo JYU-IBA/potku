@@ -366,7 +366,7 @@ def tof_list(cut_file, directory, save_output=False):
             stdout, _ = p.communicate()
 
         tof_output = list(tof_parser.parse_strs(
-            stdout.decode().splitlines(), method="row", skip_empty=True))
+            stdout.decode().splitlines(), method="row", ignore="w"))
 
         if save_output:
             if not directory:

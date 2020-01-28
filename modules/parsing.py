@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.1.2020
-Updated on 27.1.2020
+Updated on 28.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -46,7 +46,7 @@ class CSVParser:
     print(*parser.parse_strs(["4 False", "5 False", "6 False"], method="row"))
     # prints '(4, True) (5, True) (6, True)'
     """
-    __slots__ = "converters"
+    __slots__ = "__converters", "__filter_functions"
 
     def __init__(self, *args):
         """Initializes a CSVParser.
@@ -57,21 +57,34 @@ class CSVParser:
                   element is a callable that is used to convert values
                   at that column index
         """
-        self.converters = tuple(_Converter(*arg)
-                                for arg in args)
+        # Converters are used to convert values within strings
+        self.__converters = tuple(_Converter(*arg)
+                                  for arg in args)
+
+        # These are functions given to a filter function, when parsing multiple
+        # strings:
+        # if ignore mode is None, use a function that always returns True.
+        # if the mode is 'e', return the string itself to check if it is empty
+        # if the mode is 'w', strip leading and trailing whitespace to check
+        # if the remaining string is empty.
+        self.__filter_functions = {
+            None: lambda _: True,
+            "e": lambda x: x,
+            "w": lambda x: x.strip()
+        }
 
     def parse_file(self, file_path, separator=None, skip=0,
-                   skip_empty=False, method="col"):
-        """Parses a text file.
+                   ignore=None, method="col"):
+        """Parses lines from text file.
 
         Args:
             file_path: path to a file
             separator: string that separates values in the file. Default is
                        None, which splits each line by whitespace
             skip: number of lines to skip at the beginning of the file
-            skip_empty: if True, empty strings are skipped. String
-                        containing only whitespace chars does not count as
-                        empty.
+            ignore: ignore mode. Determines which lines are ignored if any.
+                    Valid values are None for none, 'e' for empty lines and 'w'
+                    for lines containing only whitespace characters.
             method: either 'col' to generate a collection of columns, or
                     'row' to generate a collection of rows
 
@@ -84,10 +97,10 @@ class CSVParser:
             yield from self.parse_strs(file,
                                        separator=separator,
                                        skip=skip,
-                                       skip_empty=skip_empty,
+                                       ignore=ignore,
                                        method=method)
 
-    def parse_strs(self, strs, separator=None, skip=0, skip_empty=False,
+    def parse_strs(self, strs, separator=None, skip=0, ignore=None,
                    method="col"):
         """Takes a collections of strings and returns a generator that
         parses the strings.
@@ -96,9 +109,9 @@ class CSVParser:
             strs: collection of strings
             separator: string that separates values in data
             skip: number of strings to skip from the beginning
-            skip_empty: if True, empty strings are skipped. String
-                        containing only whitespace chars does not count as
-                        empty.
+            ignore: ignore mode. Determines which strings are ignored if any.
+                    Valid values are None for none, 'e' for empty strings and 'w'
+                    for strings containing only whitespace characters.
             method: either 'col' to generate a collection of columns, or
                     'row' to generate a collection of rows
 
@@ -118,44 +131,41 @@ class CSVParser:
         # Depending on the method, pick the right function to return
         if method == "col":
             return self.__parse_as_columns(it, separator=separator,
-                                           skip_empty=skip_empty)
+                                           ignore=ignore)
         elif method == "row":
             return self.__parse_as_rows(it, separator=separator,
-                                        skip_empty=skip_empty)
+                                        ignore=ignore)
         else:
-            raise ValueError("Unknown parse method '{0}'".format(str(method)))
+            raise ValueError("Unknown parse method '{0}' given to "
+                             "CSVParser".format(method))
 
-    def __parse_as_rows(self, strs, separator=None, skip_empty=False):
+    def __parse_as_rows(self, strs, separator=None, ignore=None):
         """Generates a parsed tuple for each string in the
         given collection.
 
         Args:
             strs: iterable of strings
             separator: string that separates values in data
-            skip_empty: if True, empty strings are skipped. String
-                        containing only whitespace chars does not count as
-                        empty.
+            ignore: ignore mode. None for none, 'e' for empty strings and 'w'
+                    for whitespace characters.
 
         Yield:
             tuple of parsed values in each string
         """
-        for s in strs:
-            if skip_empty and not s:
-                # TODO may want to add an option to ignore strings that only
-                #      consist of whitespace
-                continue
+        if ignore not in self.__filter_functions:
+            raise ValueError("Unknown ignore mode '{0}' given to "
+                             "CSVParser".format(ignore))
+
+        for s in filter(self.__filter_functions[ignore], strs):
             yield self.parse_str(s, separator=separator)
 
-    def __parse_as_columns(self, strs, separator=None, skip_empty=False):
+    def __parse_as_columns(self, strs, **kwargs):
         """Generates an iterator where each item is a tuple
         of values in one column.
 
         Args:
             strs: iterable of strings
-            separator: string that separates values in data
-            skip_empty: if True, empty strings are skipped. String
-                        containing only whitespace chars does not count as
-                        empty.
+            kwargs: keyword arguments to be passed down to __parse_rows
 
         Return:
             generator that zips column values together
@@ -163,8 +173,7 @@ class CSVParser:
         # Unpack rows generated by __parse_as_rows and zip the them into
         # columns. From https://stackoverflow.com/questions/7558908/unpacking-
         # a-list-tuple-of-pairs-into-two-lists-tuples
-        return zip(*self.__parse_as_rows(strs, separator=separator,
-                                         skip_empty=skip_empty))
+        return zip(*self.__parse_as_rows(strs, **kwargs))
 
     def parse_str(self, s, separator=None):
         """Splits a string into pieces and converts values from
@@ -179,7 +188,7 @@ class CSVParser:
         """
 
         lst = s.split(separator)
-        return tuple(convert(lst) for convert in self.converters)
+        return tuple(convert(lst) for convert in self.__converters)
 
 
 class ToFListParser(CSVParser):
