@@ -42,7 +42,11 @@ class Circle(QtWidgets.QWidget):
             size:
         """
         super().__init__()
-        self.color = color
+        if isinstance(color, str):
+            self.color = QtGui.QColor(color)
+        else:
+            self.color = color
+
         if size is None:
             self.size = (1, 8, 8, 8)
         else:

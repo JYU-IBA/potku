@@ -85,18 +85,20 @@ class MCERD:
         self.__create_mcerd_files()
 
         # The command that is used to start the MCERD process.
-        mcerd_command = os.path.join(
-            "external", "Potku-bin", "mcerd" +
-            (".exe " if platform.system() == "Windows"
-             else "_mac " if platform.system() == "Darwin"
-             else " ") + os.path.join(self.tmp, self.__rec_filename))
+        mcerd_path = os.path.join("external", "Potku-bin", "mcerd",
+                                  ".exe" if platform.system() == "Windows"
+                                  else "")
+        rec_file_path = os.path.join(self.tmp, self.__rec_filename)
+        mcerd_command = "{0} {1}".format(mcerd_path, rec_file_path)
 
         # Start the MCERD process.
         # MCERD needs to be fixed so we can get rid of this ulimit.
         ulimit = "" if platform.system() == "Windows" else "ulimit -s 64000; "
         exec_command = "" if platform.system() == "Windows" else "exec "
+
         self.__process = subprocess.Popen(ulimit + exec_command + mcerd_command,
                                           shell=True)
+
         # Use thread for checking if process has terminated
         thread = threading.Thread(target=self.check_if_mcerd_running)
         thread.daemon = True

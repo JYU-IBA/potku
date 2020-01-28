@@ -29,7 +29,6 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __version__ = "2.0"
 
 import os
-import abc
 
 # TODO there is some circular dependency that prevents importing SimulationState
 #      FIX THIS!
@@ -39,6 +38,7 @@ from modules.observing import Observer
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import Qt
 
 
 class QtObserverMeta(type(QtWidgets.QWidget), type(Observer)):
@@ -71,6 +71,9 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
 
         self.element_simulation = element_simulation
 
+        # TODO show starting seed in the UI?
+        # TODO set minimum count for ions
+        # TODO bind object values to PyQT elements
         # TODO decouple controls from element_simulation
         self.element_simulation.controls = self
         self.element_simulation.subscribe(self)
@@ -87,20 +90,11 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         state_layout = QtWidgets.QHBoxLayout()
         state_layout.setContentsMargins(0, 6, 0, 0)
 
-        # TODO update these by querying from the elem sim
         state_layout.addWidget(QtWidgets.QLabel("State: "))
         self.state_label = QtWidgets.QLabel("Not started")
         state_layout.addWidget(self.state_label)
         state_widget = QtWidgets.QWidget()
         state_widget.setLayout(state_layout)
-
-        # TODO get atom count from element simulation and display it
-        # TODO update status label properly when simulation begins
-        # TODO show starting seed in the UI?
-        # TODO set minimum count for ions
-        # TODO bind object values to PyQT elements
-        status = self.element_simulation.get_current_status()
-        print(status)
 
         # Button that starts the simulation
         controls_layout = QtWidgets.QHBoxLayout()
@@ -173,6 +167,10 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
 
         self.setLayout(main_layout)
 
+        # Update element sims status in the GUI
+        status = self.element_simulation.get_current_status()
+        self.show_status(status)
+
     def reset_controls(self):
         """
         Reset controls to default.
@@ -182,47 +180,14 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         self.processes_spinbox.setEnabled(True)
         self.state_label.setText("Not started")
 
-    def find_old_biggest_seed(self):
-        """
-        From possible old erd files, find biggest seed number.
-
-        Return:
-             Biggest seed for simulation.
-        """
-        # TODO make this a function of elem_sim
-        # TODO this should be two functions (find_files &
-        #      find_biggest_seed)
-        old_files = []
-        biggest_seed = 0
-
-        start_part = self.element_simulation.recoil_elements[0].prefix + \
-            "-" + self.element_simulation.recoil_elements[0].name + "."
-        end = ".erd"
-
-        for file in os.listdir(self.element_simulation.directory):
-            if file.startswith(start_part) and file.endswith(end):
-                seed = file.rsplit('.', 2)[1]
-                old_files.append(os.path.join(
-                    self.element_simulation.directory, file))
-                try:
-                    current_seed = int(seed)
-                    if current_seed > biggest_seed:
-                        biggest_seed = current_seed
-                except ValueError:
-                    continue
-        if biggest_seed > 0:    # TODO seed cannot be 0?
-            return biggest_seed, old_files
-        return None, old_files
-
     def __start_simulation(self):
         """ Calls ElementSimulation's start method.
         """
         # Ask the user if they want to write old simulation results over (if
         # they exist), or continue
-        start_value = None
-        old_biggest_seed, erd_files = self.find_old_biggest_seed()
-        use_erd_files = False
-        if old_biggest_seed:    # TODO what if seed is 0? should check for None?
+        status = self.element_simulation.get_current_status()
+        start_value = 101   # TODO fix this
+        if str(status["state"]) == "SimulationState.Finished":
             reply = QtWidgets.QMessageBox.question(
                 self, "Confirmation", "Do you want to continue this "
                                       "simulation?\n\nIf you do, old simulation"
@@ -238,15 +203,11 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
                 # Delete old simulation results
                 for recoil in self.element_simulation.recoil_elements:
                     delete_simulation_results(self.element_simulation, recoil)
-            else:
-                start_value = old_biggest_seed + 1
-                use_erd_files = True
+                start_value = 101   # TODO fix this
 
         number_of_processes = self.processes_spinbox.value()
-        self.state_label.setText("Running")
         self.run_button.setEnabled(False)
         self.stop_button.setEnabled(True)
-        self.observed_atom_count_label.setText("0 (pre sim)")
 
         self.finished_processes_label.setText("0/" + str(number_of_processes))
         self.finished_processes_widget.show()
@@ -262,20 +223,14 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
             self.recoil_dist_widget.update_plot()
         self.element_simulation.y_min = 0.0001
 
-        # TODO show wait cursor
-        # TODO await start
-        # TODO change cursor back to normal
+        QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
 
-        if use_erd_files:
-            # TODO indicate to user that ion sharing is in use
-            self.element_simulation.start(number_of_processes,
-                                          start_value,
-                                          erd_files,
-                                          shared_ions=True)
-        else:
-            self.element_simulation.start(number_of_processes,
-                                          start_value,
-                                          shared_ions=True)
+        # TODO indicate to user that ion sharing is in use
+        self.element_simulation.start(number_of_processes,
+                                      start_value,
+                                      shared_ions=True)
+
+        QtWidgets.QApplication.restoreOverrideCursor()
 
     def show_status(self, status):
         """Updates the status of simulation in the GUI
@@ -344,7 +299,6 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
     def stop_simulation(self):
         """ Calls ElementSimulation's stop method.
         """
-        # TODO this is crashing currently
         try:
             self.element_simulation.stop()
         except FileNotFoundError:
@@ -356,8 +310,6 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
             error_box.setText("Energy spectrum data could not be generated.")
             error_box.setWindowTitle("Error")
             error_box.exec()
-        self.show_stop()
-        self.state_label.setText("Stopped")
 
     def receive(self, status):
         """Callback function that receives status from an

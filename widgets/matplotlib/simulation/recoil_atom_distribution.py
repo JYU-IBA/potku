@@ -806,8 +806,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 if recoil in self.other_recoils:
                     xs = recoil.get_xs()
                     ys = recoil.get_ys()
-                    rec_line = self.axes.plot(xs, ys, color=str(recoil.color.name()), alpha=0.3,
-                                              visible=True, zorder=1)
+                    rec_line = self.axes.plot(xs, ys, color=recoil.color,
+                                              alpha=0.3, visible=True, zorder=1)
                     self.other_recoils_lines.append(rec_line[0])
         self.fig.canvas.draw_idle()
 
@@ -1803,8 +1803,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.current_element_simulation.get_ys(
                 self.current_recoil_element))
 
-        self.markers.set_color(str(self.current_recoil_element.color.name()))
-        self.lines.set_color(str(self.current_recoil_element.color.name()))
+        self.markers.set_color(self.current_recoil_element.color)
+        self.lines.set_color(self.current_recoil_element.color)
 
         self.markers.set_visible(True)
         self.lines.set_visible(True)
