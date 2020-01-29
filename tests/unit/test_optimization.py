@@ -28,7 +28,7 @@ __version__ = ""  # TODO
 import unittest
 import itertools
 
-from modules import general_functions as gf
+import modules.optimization as optim
 
 
 class TestOptimization(unittest.TestCase):
@@ -97,23 +97,23 @@ class TestOptimization(unittest.TestCase):
     def test_misc_inputs(self):
         """Tests how the dominates function works when the solutions
         do not have the same number of objective values."""
-        self.assertFalse(gf.dominates([], []))
-        self.assertFalse(gf.dominates([-1], []))
-        self.assertFalse(gf.dominates([], [1]))
-        self.assertTrue(gf.dominates([0, 1], [1]))
-        self.assertFalse(gf.dominates([0], [0, 1]))
-        self.assertFalse(gf.dominates([1], [0, 1]))
-        self.assertRaises(TypeError, lambda: gf.dominates("s", [0]))
+        self.assertFalse(optim.dominates([], []))
+        self.assertFalse(optim.dominates([-1], []))
+        self.assertFalse(optim.dominates([], [1]))
+        self.assertTrue(optim.dominates([0, 1], [1]))
+        self.assertFalse(optim.dominates([0], [0, 1]))
+        self.assertFalse(optim.dominates([1], [0, 1]))
+        self.assertRaises(TypeError, lambda: optim.dominates("s", [0]))
 
     def assert_dominates(self, nondominated, dominated):
         """Helper function that checks if the solutions in the nondominated
         set dominate all solutions in the dominated set."""
         for nd, d in itertools.product(nondominated, dominated):
-            self.assertTrue(gf.dominates(nd, d))
+            self.assertTrue(optim.dominates(nd, d))
 
     def assert_not_dominates(self, set1, set2):
         """Helper function that checks if the solutions in the first
         set do not dominate all solutions in the second set."""
         for sol1, sol2 in itertools.product(set1, set2):
-            self.assertFalse(gf.dominates(sol1, sol2))
+            self.assertFalse(optim.dominates(sol1, sol2))
 

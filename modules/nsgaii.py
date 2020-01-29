@@ -29,11 +29,11 @@ import numpy as np
 import os
 import time
 
-from modules.general_functions import dominates
+from modules.optimization import dominates
 from modules.general_functions import format_to_binary
 from modules.general_functions import read_espe_file
 from modules.general_functions import round_value_by_four_biggest
-from modules.general_functions import tournament_allow_doubles
+from modules.optimization import tournament_allow_doubles
 from modules.general_functions import uniform_espe_lists
 from modules.recoil_element import RecoilElement
 from modules.point import Point

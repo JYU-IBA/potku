@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 23.1.2020
+Updated on 29.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -793,66 +793,6 @@ def uniform_espe_lists(lists, channel_width):
             x += channel_width
 
     return first, second
-
-
-def dominates(a, b):
-    """
-    Check if solution a dominates solution b. Minimization. This is related
-    to the NSGA-II optimization function (modules/nsgaii.py).
-
-    Args:
-        a: Solution (objective values) a.
-        b: Solution (objective values) b.
-
-    Return:
-        Whether a dominates b.
-    """
-    # TODO move this and tournament selection to an optimization module
-    is_better = False
-    for ai, bi in zip(a, b):
-        if ai > bi:
-            return False
-        if ai < bi:
-            is_better = True
-    return is_better
-
-
-def tournament_allow_doubles(t, p, fit):
-    """
-    Tournament selection that allows one individual to be in the mating pool
-    several times.
-
-    Args:
-        t: Number of solutions to be compared, size of tournament.
-        p: Number of solutions to be selected as parents in the mating pool.
-        fit: Fitness vectors.
-
-    Return:
-        Index of selected solutions.
-    """
-    n = len(fit)
-    pool = []
-    for i in range(p):
-        candidates = []
-        # Find k different candidates for tournament
-        j = 0
-        while j in range(t):
-            candidate = numpy.random.randint(n)
-            if candidate not in candidates:
-                candidates.append(candidate)
-                j += 1
-        min_front = min([fit[i, 0] for i in candidates])
-        min_candidates = [i for i in candidates if fit[i, 0] == min_front]
-        number_of_mins = len(min_candidates)
-        if number_of_mins > 1:  # If multiple candidates from the same front
-            # Find the candidate with smallest crowding distance
-            max_dist = max([fit[i, 1] for i in min_candidates])
-            max_cands = [i for i in min_candidates if fit[i, 1] == max_dist]
-            pool.append(max_cands[0])
-        else:
-            pool.append(min_candidates[0])
-
-    return numpy.array(pool)
 
 
 def format_to_binary(var, length):
