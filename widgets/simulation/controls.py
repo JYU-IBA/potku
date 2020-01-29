@@ -149,6 +149,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
 
         r_p_layout.addRow(l_1, self.finished_processes_label)
         r_p_layout.addRow(l_2, self.observed_atom_count_label)
+        self.observed_atom_count_label = QtWidgets.QLabel("0")
 
         self.finished_processes_widget.setLayout(r_p_layout)
 
@@ -186,8 +187,9 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         # Ask the user if they want to write old simulation results over (if
         # they exist), or continue
         status = self.element_simulation.get_current_status()
-        start_value = 101   # TODO fix this
-        if str(status["state"]) == "SimulationState.Finished":
+
+        # TODO import the enum and use it directly
+        if str(status["state"]) == "Finished":
             reply = QtWidgets.QMessageBox.question(
                 self, "Confirmation", "Do you want to continue this "
                                       "simulation?\n\nIf you do, old simulation"
@@ -199,11 +201,36 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
                                                    QtWidgets.QMessageBox.Cancel)
             if reply == QtWidgets.QMessageBox.Cancel:
                 return  # If clicked Cancel don't start simulation
-            if reply == QtWidgets.QMessageBox.No:
+            elif reply == QtWidgets.QMessageBox.No:
                 # Delete old simulation results
                 for recoil in self.element_simulation.recoil_elements:
                     delete_simulation_results(self.element_simulation, recoil)
-                start_value = 101   # TODO fix this
+
+                # TODO this is an unnecessary convoluted way of getting the
+                #      seed and ERD files. For now, this is done to maintain
+                #      compatibility with the way optimization calls element
+                #      simulation's start method. This should be refactored
+                #      and done completely in the ElementSimulation class.
+
+                # This is the seed value set in the request settings
+                start_value = self.element_simulation.seed_number
+                erd_files = None
+            else:
+                # These are the old files. Seed is set to 'last seed' + 1
+                erd_files = self.element_simulation.get_erd_files()
+                start_value = self.element_simulation. \
+                    get_last_seed(erd_files) + 1
+        elif str(status["state"]) == "Not run":
+                start_value = self.element_simulation.seed_number
+                erd_files = None
+        else:
+            # TODO we should handle these kinds of situation more gracefully
+            #      but for now just raise an explicit error so that the
+            #      programmer notices that something went wrong
+            raise ValueError("Simulation state should either be {0} or {1} "
+                             "before running a simulation. Current state was "
+                             "{2}".format("RUNNING", "NOTRUN",
+                                          str(status["state"])))
 
         number_of_processes = self.processes_spinbox.value()
         self.run_button.setEnabled(False)
@@ -226,8 +253,10 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
 
         # TODO indicate to user that ion sharing is in use
+
         self.element_simulation.start(number_of_processes,
                                       start_value,
+                                      erd_files=erd_files,
                                       shared_ions=True)
 
         QtWidgets.QApplication.restoreOverrideCursor()
@@ -318,4 +347,6 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         Args:
             status: status update sent by ElementSimulation
         """
+        # Uncomment next line to see status updates in the console
+        # print(status)
         self.show_status(status)

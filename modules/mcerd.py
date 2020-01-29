@@ -85,9 +85,9 @@ class MCERD:
         self.__create_mcerd_files()
 
         # The command that is used to start the MCERD process.
-        mcerd_path = os.path.join("external", "Potku-bin", "mcerd",
+        mcerd_path = os.path.join("external", "Potku-bin", "mcerd{0}".format(
                                   ".exe" if platform.system() == "Windows"
-                                  else "")
+                                  else ""))
         rec_file_path = os.path.join(self.tmp, self.__rec_filename)
         mcerd_command = "{0} {1}".format(mcerd_path, rec_file_path)
 

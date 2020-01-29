@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 27.5.2019
+Updated on 29.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -24,7 +24,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import json
@@ -51,21 +51,35 @@ from enum import Enum
 
 
 class SimulationState(Enum):
-    """This enum is used to represent the state of simulation"""
+    """This enum is used to represent the state of simulation.
+    """
     # Simulations have not been run yet
-    NotRun = 1
+    NOTRUN = 1
 
     # Simulation process are starting
-    Starting = 2
+    STARTING = 2
 
-    # ERD files exist, MCERD running, no atoms counted yet
-    PreSim = 3
+    # ERD files exist, MCERD running, but last ERD file is empty
+    PRESIM = 3
 
-    # Full simulation is running
-    Running = 4
+    # MCERD is running, last ERD file is not empty
+    RUNNING = 4
 
     # ERD files exist, MCERD not running
-    Finished = 5
+    FINISHED = 5
+
+    def __str__(self):
+        """Returns a string representation of the SimulationState.
+        """
+        if self == SimulationState.NOTRUN:
+            return "Not run"
+        if self == SimulationState.STARTING:
+            return "Starting"
+        if self == SimulationState.PRESIM:
+            return "Pre-sim"
+        if self == SimulationState.RUNNING:
+            return "Running"
+        return "Finished"
 
 
 class ElementSimulation(Observable):
@@ -262,6 +276,7 @@ class ElementSimulation(Observable):
         """
         return self.__full_edit_on
 
+    # TODO remove these functions
     def get_points(self, recoil_element):
         """
         Get recoile elemnt points.
@@ -726,7 +741,7 @@ class ElementSimulation(Observable):
 
         with open(file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
-
+    # TODO check if optimization uses erd_files param
     def start(self, number_of_processes, start_value, erd_files=None,
               optimize=False, stop_p=False, check_t=False,
               optimize_recoil=False, check_max=False, check_min=False,
@@ -760,12 +775,22 @@ class ElementSimulation(Observable):
 
         elem_sim = self.get_element_simulation()
 
-        # TODO need to sort out starting seed number
-        seed_number = elem_sim.seed_number
+        # These are the old ERD files that belong to the simulation. They are
+        # stored as a dict where keys are file paths to ERD files and values are
+        # seed numbers. If erd_files is None, we are starting a new simulation
+        if erd_files is not None:
+            self.__erd_files = erd_files
+        else:
+            self.__erd_files = {}
+
+        # Set seed to either the value provided as parameter or use the one
+        # stored in current element simulation.
+        # TODO should this also accept 0? It does not now. Is there an
+        #      acceptable range of values that should be checked for?
         if start_value:
             seed_number = start_value
         else:
-            seed_number = self.get_last_seed(self.__erd_files) + 1
+            seed_number = elem_sim.seed_number
 
         if not optimize_recoil:
             recoil = self.recoil_elements[0]
@@ -782,6 +807,8 @@ class ElementSimulation(Observable):
             number_of_preions = elem_sim.number_of_preions
 
         self.last_process_count = number_of_processes
+
+        # Notify observers that we are about to go
         self.publish(self.get_current_status(starting=True))
 
         # Start as many processes as is given in number of processes
@@ -830,6 +857,7 @@ class ElementSimulation(Observable):
 
             self.mcerd_objects[seed_number] = MCERD(
                 settings, self, optimize_fluence=optimize_fluence)
+
             seed_number = seed_number + 1
             if i + 1 < number_of_processes:
                 time.sleep(5)  # This is done to avoid having a mixup in mcerd
@@ -875,6 +903,7 @@ class ElementSimulation(Observable):
         Return:
             dict in the form of
                 {
+                    'name': 'name_prefix'-'name'
                     'atom_count': integer,
                     'running': integer,
                     'state': enum
@@ -885,10 +914,10 @@ class ElementSimulation(Observable):
         total_count = sum(count for _, count in atom_counts)
 
         if starting:
-            state = SimulationState.Starting
+            state = SimulationState.STARTING
         elif not self.__erd_files:
             # No ERD files exist so simulation has not started
-            state = SimulationState.NotRun
+            state = SimulationState.NOTRUN
         elif process_count:
             # Some processes are running, we are either in presim or running
             # state
@@ -896,16 +925,17 @@ class ElementSimulation(Observable):
                 # If the last ERD file contains no atoms, we are in Presim
                 # TODO should get atom counts for all processes rather than
                 #      just the last
-                state = SimulationState.PreSim
+                state = SimulationState.PRESIM
             else:
                 # We are in full sim mode
-                state = SimulationState.Running
+                state = SimulationState.RUNNING
         else:
             # ERD files exist but no active simulation is in process
-            state = SimulationState.Finished
+            state = SimulationState.FINISHED
 
         # Return status as a dict
         return {
+            "name": "{0}-{1}".format(self.name_prefix, self.name),
             "atom_count": total_count,
             "running":  process_count,
             "state": state
@@ -956,7 +986,7 @@ class ElementSimulation(Observable):
             time.sleep(1)
             status = self.get_current_status()
             self.publish(status)
-            if status["state"] == SimulationState.Finished:
+            if status["state"] == SimulationState.FINISHED:
                 break
 
     def count_active_processes(self):
@@ -1078,8 +1108,8 @@ class ElementSimulation(Observable):
 
         if not self.mcerd_objects:
             processes = "N/a"
-            if self.controls:
-                processes = self.controls.processes_spinbox.value() # TODO
+            if self.controls:   # TODO try to get rid of controls references
+                processes = self.last_process_count
             if self.use_default_settings:
                 self.request.running_simulations.remove(self)
             else:
@@ -1091,8 +1121,8 @@ class ElementSimulation(Observable):
             simulation_name = self.simulation.name
             element = self.recoil_elements[0].element
 
-            msg = "Simulation finished. Element {0}, processes: {}, observed " \
-                  "atoms: {}".format(str(element), processes, atom_count)
+            msg = "Simulation finished. Element {0}, processes: {1}, observed" \
+                  " atoms: {2}".format(str(element), processes, atom_count)
             logging.getLogger(simulation_name).info(msg)
 
         self.simulations_done = True
