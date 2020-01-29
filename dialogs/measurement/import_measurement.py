@@ -35,9 +35,9 @@ import re
 from collections import OrderedDict
 
 from dialogs.measurement.import_timing_graph import ImportTimingGraphDialog
+from dialogs.file_dialogs import open_files_dialog
 
 from modules.general_functions import coinc
-from modules.general_functions import open_files_dialog
 from modules.general_functions import validate_text_input
 
 from PyQt5 import uic

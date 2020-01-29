@@ -44,87 +44,12 @@ import sys
 import tempfile
 
 from decimal import Decimal
-from PyQt5 import QtWidgets
 from modules.parsing import ToFListParser
 from subprocess import Popen
 
 
 # TODO organize this to smaller modules
 
-def open_file_dialog(parent, default_folder, title, files):
-    """Opens open file dialog
-
-    Opens dialog to select file to be opened and returns full file path to
-    selected file if one is selected. If no file is selected returns None.
-
-    Args:
-        parent: Parent object which opens the open file dialog.
-        default_folder: String representing which folder is shown when dialog
-            opens.
-        title: String representing open file dialog title.
-        files: String representing what type of file can be opened.
-
-    Returns:
-        A full path to the selected filename if a file is selected. For
-        example:
-
-        "C:/Transfer/FinlandiaData/esimerkkidata.zip"
-    """
-    filename = QtWidgets.QFileDialog.getOpenFileName(parent, title,
-                                                     default_folder,
-                                                     parent.tr(files))
-    return filename[0]
-
-
-def open_files_dialog(parent, default_folder, title, files):
-    """Opens open file dialog for multiple files
-
-    Opens dialog to select files to be opened and returns full file path to
-    selected file if one or more is selected.
-    If no file is selected returns None.
-
-    Args:
-        parent: Parent object which opens the open file dialog.
-        default_folder: String representing which folder is shown when dialog
-            opens.
-        title: String representing open file dialog title.
-        files: String representing what type of file can be opened.
-
-    Returns:
-        A full path to the selected filename if a file is selected. For
-        example:
-
-        "C:/Transfer/FinlandiaData/esimerkkidata.zip"
-    """
-    filenames = QtWidgets.QFileDialog.getOpenFileNames(parent, title,
-                                                       default_folder,
-                                                       parent.tr(files))
-    return filenames[0]
-
-
-def save_file_dialog(parent, default_folder, title, files):
-    """Opens save file dialog
-
-    Opens dialog to select savefile name and returns full file path to
-    selected file if one is selected. If no file is selected returns None.
-
-    Args:
-        parent: Parent object which opens the open file dialog.
-        default_folder: String representing which folder is shown when dialog
-            opens.
-        title: String representing open file dialog title.
-        files: String representing what type of file can be opened.
-
-    Returns:
-        A full path to the selected filename if a file is selected. For
-        example:
-
-        "C:/Transfer/FinlandiaData/esimerkkidata.zip"
-    """
-    filename = QtWidgets.QFileDialog.getSaveFileName(parent, title,
-                                                     default_folder,
-                                                     parent.tr(files))[0]
-    return filename
 
 
 def rename_file(old_path, new_name):
@@ -635,26 +560,6 @@ def set_input_field_white(input_field):
     input_field.setStyleSheet("background-color: %s" % "#ffffff")
 
 
-def find_y_on_line(point1, point2, x):
-    """
-    Find the y(x) based on a line that goes through point1 and 2.
-
-    Args:
-         point1: Point object.
-         point2: Point object.
-         x: Value whose corresponding y is wanted.
-
-    Return:
-        Y for x.
-    """
-    y_part = point2.get_y() - point1.get_y()
-    x_part = point2.get_x() - point1.get_x()
-    k = y_part / x_part
-
-    y = k * x - (k * point1.get_x()) + point1.get_y()
-    return y
-
-
 def validate_text_input(text, regex):
     """
     Validate the text using given regular expression. If not valid, remove
@@ -676,6 +581,26 @@ def validate_text_input(text, regex):
         return valid_text
     else:
         return text
+
+
+def find_y_on_line(point1, point2, x):
+    """
+    Find the y(x) based on a line that goes through point1 and 2.
+
+    Args:
+         point1: Point object.
+         point2: Point object.
+         x: Value whose corresponding y is wanted.
+
+    Return:
+        Y for x.
+    """
+    y_part = point2.get_y() - point1.get_y()
+    x_part = point2.get_x() - point1.get_x()
+    k = y_part / x_part
+
+    y = k * x - (k * point1.get_x()) + point1.get_y()
+    return y
 
 
 def find_nearest(x, lst):

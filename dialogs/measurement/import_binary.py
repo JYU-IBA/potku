@@ -32,7 +32,7 @@ import numpy
 import os
 import struct
 
-from modules.general_functions import open_files_dialog
+from dialogs.file_dialogs import open_files_dialog
 from modules.general_functions import validate_text_input
 
 from PyQt5 import QtCore

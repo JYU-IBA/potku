@@ -37,11 +37,10 @@ from dialogs.graph_settings import TofeGraphSettingsWidget
 from dialogs.measurement.depth_profile import DepthProfileWidget
 from dialogs.measurement.element_losses import ElementLossesWidget
 from dialogs.measurement.selection import SelectionSettingsDialog
+from dialogs.file_dialogs import open_file_dialog
 
 from matplotlib import cm
 from matplotlib.colors import LogNorm
-
-from modules.general_functions import open_file_dialog
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets

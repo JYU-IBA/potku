@@ -36,13 +36,11 @@ import os
 import shutil
 import sys
 
+from dialogs.file_dialogs import open_file_dialog
 from modules.cut_file import is_rbs, get_scatter_element
 from modules.element import Element
 from modules.energy_spectrum import EnergySpectrum
-from modules.general_functions import open_file_dialog
-from modules.general_functions import calculate_spectrum
 from modules.general_functions import read_espe_file
-from modules.general_functions import read_tof_list_file
 from modules.measurement import Measurement
 
 from PyQt5 import uic

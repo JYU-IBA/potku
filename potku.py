@@ -48,8 +48,8 @@ from dialogs.measurement.load_measurement import LoadMeasurementDialog
 from dialogs.new_request import RequestNewDialog
 from dialogs.request_settings import RequestSettingsDialog
 from dialogs.simulation.new_simulation import SimulationNewDialog
+from dialogs.file_dialogs import open_file_dialog
 
-from modules.general_functions import open_file_dialog
 from modules.general_functions import remove_file
 from modules.general_functions import rename_file
 from modules.general_functions import validate_text_input

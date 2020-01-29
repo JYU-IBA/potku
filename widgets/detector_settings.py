@@ -35,12 +35,12 @@ import time
 
 from dialogs.measurement.calibration import CalibrationDialog
 from dialogs.simulation.foil import FoilDialog
+from dialogs.file_dialogs import open_file_dialog
+from dialogs.file_dialogs import save_file_dialog
 
 from modules.detector import Detector
 from modules.foil import CircularFoil
 from modules.general_functions import check_text
-from modules.general_functions import open_file_dialog
-from modules.general_functions import save_file_dialog
 from modules.general_functions import set_input_field_red
 from modules.general_functions import validate_text_input
 

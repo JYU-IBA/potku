@@ -34,7 +34,7 @@ from PyQt5 import uic
 from PyQt5 import QtWidgets
 
 from dialogs.new_sample import NewSampleDialog
-from modules.general_functions import open_file_dialog
+from dialogs.file_dialogs import open_file_dialog
 from modules.general_functions import check_text
 from modules.general_functions import set_input_field_red
 from modules.general_functions import set_input_field_white
