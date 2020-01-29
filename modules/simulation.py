@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 26.2.2018
-Updated on 16.8.2018
+Updated on 29.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -41,6 +41,7 @@ from modules.element_simulation import ElementSimulation
 from modules.general_functions import rename_file
 from modules.run import Run
 from modules.target import Target
+from modules.ui_log_handlers import Logger
 
 
 class Simulations:
@@ -231,7 +232,7 @@ class Simulations:
         self.simulations = remove_key(self.simulations, tab_id)
 
 
-class Simulation:
+class Simulation(Logger):
     """
     A Simulation class that handles information about one Simulation.
     """
@@ -264,7 +265,10 @@ class Simulation:
             measurement_setting_file_description: Measurement settings file
             description.
             sample: Sample object under which Simulation belongs.
-            """
+        """
+        # Run the base class initializer to establish logging
+        Logger.__init__(self, name, "Simulation")
+
         self.tab_id = tab_id
         self.path = path
         self.request = request
@@ -309,7 +313,7 @@ class Simulation:
         Create folder structure for simulation.
         """
         self.__make_directories(self.directory)
-        self.set_loggers()
+        self.set_loggers(self.directory, self.request.directory)
 
     def __make_directories(self, directory):
         """
@@ -370,50 +374,6 @@ class Simulation:
         self.element_simulations.append(element_simulation)
         return element_simulation
 
-    def set_loggers(self):
-        """Sets the loggers for this specified simulation.
-
-        The logs will be displayed in the simulations folder.
-        After this, the simulation logger can be called from anywhere of the
-        program, using logging.getLogger([simulation_name]).
-        """
-
-        # Initializes the logger for this simulation.
-        logger = logging.getLogger(self.name)
-        logger.setLevel(logging.DEBUG)
-
-        # Adds two loghandlers. The other one will be used to log info (and up)
-        # messages to a default.log file. The other one will log errors and
-        # criticals to the errors.log file.
-        self.defaultlog = logging.FileHandler(os.path.join(self.directory,
-                                                           'default.log'))
-        self.defaultlog.setLevel(logging.INFO)
-        self.errorlog = logging.FileHandler(os.path.join(self.directory,
-                                                         'errors.log'))
-        self.errorlog.setLevel(logging.ERROR)
-
-        # Set the formatter which will be used to log messages. Here you can
-        # edit the format so it will be deprived to all log messages.
-        defaultformat = logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S')
-
-        requestlog = logging.FileHandler(os.path.join(self.request.directory,
-                                                      'request.log'))
-        requestlogformat = logging.Formatter(
-            '%(asctime)s - %(levelname)s - [Simulation : '
-            '%(name)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-
-        # Set the formatters to the logs.
-        requestlog.setFormatter(requestlogformat)
-        self.defaultlog.setFormatter(defaultformat)
-        self.errorlog.setFormatter(defaultformat)
-
-        # Add handlers to this simulation's logger.
-        logger.addHandler(self.defaultlog)
-        logger.addHandler(self.errorlog)
-        logger.addHandler(requestlog)
-
     @classmethod
     def from_file(cls, request, file_path):
         """Initialize Simulation from a JSON file.
@@ -432,16 +392,6 @@ class Simulation:
 
         return cls(request=request, path=file_path, name=name,
                    description=description, modification_time=modification_time)
-
-    def remove_and_close_log(self, log_filehandler):
-        """Closes the log file and removes it from the logger.
-
-        Args:
-            log_filehandler: Log's filehandler.
-        """
-        logging.getLogger(self.name).removeHandler(log_filehandler)
-        log_filehandler.flush()
-        log_filehandler.close()
 
     def to_file(self, file_path):
         """Save simulation settings to a file.

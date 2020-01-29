@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 15.3.2013
-Updated on 17.12.2018
+Updated on 29.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -46,6 +46,7 @@ from modules.general_functions import rename_file
 from modules.run import Run
 from modules.selection import Selector
 from modules.target import Target
+from modules.ui_log_handlers import Logger
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -256,7 +257,7 @@ class Measurements:
         self.measurements = remove_key(self.measurements, tab_id)
 
 
-class Measurement:
+class Measurement(Logger):
     """Measurement class to handle one measurement data.
     """
 
@@ -288,6 +289,9 @@ class Measurement:
             request: Request class object.
             path: Full path to measurement's .info file.
         """
+        # Run the base class initializer to establish logging
+        Logger.__init__(self, name, "Measurement")
+
         self.tab_id = tab_id
 
         self.request = request  # To which request be belong to
@@ -350,9 +354,6 @@ class Measurement:
 
         self.selector = None
 
-        self.errorlog = None
-        self.defaultlog = None
-
         self.use_default_profile_settings = use_default_profile_settings
 
     def get_detector_or_default(self):
@@ -389,7 +390,7 @@ class Measurement:
             if file.startswith("Cuts"):
                 self.directory_cuts = os.path.join(self.directory_data, "Cuts")
 
-        self.set_loggers()
+        self.set_loggers(self.directory, self.request.directory)
 
         element_colors = self.request.global_settings.get_element_colors()
         self.selector = Selector(self, element_colors)
@@ -638,7 +639,7 @@ class Measurement:
         self.__make_directories(self.directory_depth_profiles)
         self.__make_directories(self.directory_energy_spectra)
 
-        self.set_loggers()
+        self.set_loggers(self.directory, self.request.directory)
 
         element_colors = self.request.global_settings.get_element_colors()
         self.selector = Selector(self, element_colors)
@@ -685,6 +686,8 @@ class Measurement:
                 file_to_open = os.path.join(self.directory,
                                             self.directory_data,
                                             measurement_name + extension)
+                # TODO this could maybe be done with CSVParser, but variable
+                #      column counts are going to be a problem
                 with open(file_to_open, "r") as fp:
                     for line in fp:
                         n += 1  # Event number
@@ -738,60 +741,6 @@ class Measurement:
                 # Get everything except old measurement name from cut file
                 new_name = self.name + "." + file.split('.', 1)[1]
                 rename_file(old_path, new_name)
-
-    def set_loggers(self):
-        """Sets the loggers for this specified measurement.
-
-        The logs will be displayed in the measurements folder.
-        After this, the measurement logger can be called from anywhere of the
-        program, using logging.getLogger([measurement_name]).
-        """
-
-        # Initializes the logger for this measurement.
-        logger = logging.getLogger(self.name)
-        logger.setLevel(logging.DEBUG)
-
-        # Adds two loghandlers. The other one will be used to log info (and up)
-        # messages to a default.log file. The other one will log errors and
-        # criticals to the errors.log file.
-        self.defaultlog = logging.FileHandler(os.path.join(self.directory,
-                                                           'default.log'))
-        self.defaultlog.setLevel(logging.INFO)
-        self.errorlog = logging.FileHandler(os.path.join(self.directory,
-                                                         'errors.log'))
-        self.errorlog.setLevel(logging.ERROR)
-
-        # Set the formatter which will be used to log messages. Here you can
-        # edit the format so it will be deprived to all log messages.
-        defaultformat = logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S')
-
-        requestlog = logging.FileHandler(os.path.join(self.request.directory,
-                                                      'request.log'))
-        requestlogformat = logging.Formatter(
-            '%(asctime)s - %(levelname)s - [Measurement : '
-            '%(name)s] - %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
-
-        # Set the formatters to the logs.
-        requestlog.setFormatter(requestlogformat)
-        self.defaultlog.setFormatter(defaultformat)
-        self.errorlog.setFormatter(defaultformat)
-
-        # Add handlers to this measurement's logger.
-        logger.addHandler(self.defaultlog)
-        logger.addHandler(self.errorlog)
-        logger.addHandler(requestlog)
-
-    def remove_and_close_log(self, log_filehandler):
-        """Closes the log file and removes it from the logger.
-        
-        Args:
-            log_filehandler: Log's filehandler.
-        """
-        logging.getLogger(self.name).removeHandler(log_filehandler)
-        log_filehandler.flush()
-        log_filehandler.close()
 
     def set_axes(self, axes, progress_bar, start, add):
         """ Set axes information to selector within measurement.
@@ -961,7 +910,7 @@ class Measurement:
             self.__make_directories(self.directory_cuts)
 
         new_created = False
-        if not progress_bar:
+        if not progress_bar:    # TODO use ProgressReporting here
             progress_bar = QtWidgets.QProgressBar()
             self.statusbar.addWidget(progress_bar, 1)
             progress_bar.show()
@@ -996,7 +945,7 @@ class Measurement:
             if not self.selector.axes_limits.is_inside(point):
                 continue
 
-            dirtyinteger = 0  # Lazyway
+            dirtyinteger = 0  # Lazyway     # TODO use enumerate
             for selection in self.selector.selections:
                 if selection.point_inside(point):
                     points_in_selection[dirtyinteger].append(point)
