@@ -1,4 +1,4 @@
-#Potku
+# Potku
 
 Potku is an analysis software for time-of-flight elastic recoil detection 
 analysis (ToF-ERDA) and simulation. The software is being developed for Windows, 
@@ -9,7 +9,7 @@ interface as well as the source code for external C programs that perform
 most of the number crunching. Source code for simulation programs is not 
 included.
 
-###Getting started with development
+### Getting started with development
 
 First step is to install Python 3.6 along with pip package installer. Make 
 sure they are added to your PATH. Then install Pipenv:
@@ -41,13 +41,13 @@ command line:
 python run_potku.py
 ````
 
-###Compiling the C code
+### Compiling the C code
 
 Compilation requires ``make`` and ``gcc``. All programs can be compiled by 
 running ``make`` in the ``/external`` directory. This installs the binaries and 
 other files into their correct locations.
 
-###Tests
+### Tests
 
 Tests are located in the ``tests`` package. They are divided into unit tests 
 (tests that cover one or two functions at a time) and integration tests 
@@ -60,6 +60,6 @@ activated, they can be run from the root directory of the project with:
 python -m unittest discover
 ````
 
-###Licence
+### Licence
 
 Potku is licensed under GPL-2.0. See 'LICENCE' for details.
