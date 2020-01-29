@@ -357,7 +357,7 @@ def tof_list(cut_file, directory, save_output=False):
                 command = "{0} {1}".format("./tof_list", new_cut_file)
 
             else:
-                command = "{0} {1}".format("./tof_list_mac", new_cut_file)
+                command = "{0} {1}".format("./tof_list", new_cut_file)
             p = subprocess.Popen(command.split(' ', 1),
                                  cwd=bin_dir,
                                  stdin=subprocess.PIPE,

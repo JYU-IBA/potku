@@ -626,7 +626,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 self,
                 self.energy_spectrum_data,
                 rbs_list, spectrum_type)
-        except:
+        except Exception as e:
+            print(e)
             import traceback
             msg = "Could not create Energy Spectrum graph. "
             err_file = sys.exc_info()[2].tb_frame.f_code.co_filename

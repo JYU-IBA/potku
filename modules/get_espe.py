@@ -109,16 +109,25 @@ class GetEspe:
         self.run_get_espe()
 
     def run_get_espe(self):
+        """Run get_espe binary with given parameters.
         """
-        Run get_espe binary with given parameters.
-        """
-        command = ("type " if platform.system() == "Windows" else "cat ") \
-                  + self.__erd_file + " | " \
-                  + os.path.join("external", "Potku-bin", "get_espe"
-                                 + (".exe " if platform.system() == "Windows"
-                                    else "_linux "
-                                    if platform.system() == "Linux"
-                                    else "_mac ")) \
-                  + self.__params + " > " + self.__output_file
-
+        command = self.get_command()
         subprocess.call(command, shell=True)
+
+    def get_command(self):
+        """Returns the command to run get_espe executable"""
+        if platform.system() == "Windows":
+            first_cmd = "type"
+            executable = ".exe"
+        else:
+            first_cmd = "cat"
+            executable = ""
+
+        espe_path = os.path.join("external", "Potku-bin", "get_espe{0}".format(
+            executable))
+
+        return "{0} {1} | {2} {3} > {4}".format(first_cmd,
+                                                self.__erd_file,
+                                                espe_path,
+                                                self.__params,
+                                                self.__output_file)

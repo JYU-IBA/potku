@@ -501,7 +501,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                         used_recoil_file_name = used_recoil.prefix + "-" + \
                                                 used_recoil.name + ".simu"
                         if used_recoil_file_name == file_name:
-                            color = str(used_recoil.color.name())
+                            color = used_recoil.color
 
                 else:
                     label = file_name
