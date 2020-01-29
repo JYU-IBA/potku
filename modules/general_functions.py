@@ -572,6 +572,8 @@ def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
 
 
 def md5_for_file(f, block_size=2 ** 20):
+    """Calculates MD5 checksum for a file.
+    """
     md5 = hashlib.md5()
     while True:
         data = f.read(block_size)
@@ -582,6 +584,7 @@ def md5_for_file(f, block_size=2 ** 20):
 
 
 def to_superscript(string):
+    """TODO"""
     sups = {"0": "\u2070",
             "1": "\xb9",
             "2": "\xb2",
@@ -837,78 +840,6 @@ def round_value_by_four_biggest(value):
     first_round = round(first)
     sol_flnal = first_round * (10 ** (round_val_length - 4))
     return sol_flnal
-
-
-def match_strs_to_elements(strs, elements, match_by_symbol=True):
-    """Matches strings to a collection of elements and yields a tuple that
-    contains the string and its matching element for each given string.
-
-    Args:
-        strs: iterable of strings to be matched
-        elements: iterable of elements that the strings will be matched to
-        match_by_symbol: if this is True and string is not prefixed with an
-                         isotope value, string can be matched to an element that
-                         does have an isotope
-
-    Yield:
-        tuple that contains the string and either element or None depending
-        on whether a match was found
-    """
-    full = dict((str(elem), elem) for elem in elements)
-    if match_by_symbol:
-        just_symbols = dict((element.symbol, element) for element in elements)
-        search_dicts = [
-            full, just_symbols
-        ]
-    else:
-        search_dicts = [full]
-
-    for s in strs:
-        yield s, find_match_in_dicts(s, search_dicts)
-
-
-def match_elements_to_strs(elements, strs, match_by_symbol=True):
-    """Matches elements to string.
-
-    Args:
-        elements: collection of elements
-        strs: collection of strings
-        match_by_symbol: bool. If False, function only tries to find
-                         matching isotope.
-
-    Yield:
-        tuple that contains the element and either a string or None
-        depending on whether a match was found or not.
-    """
-    str_dict = [{s: s for s in strs}]
-    for elem in elements:
-        res = find_match_in_dicts(str(elem), str_dict)
-        if not res and match_by_symbol:
-            res = find_match_in_dicts(elem.symbol, str_dict)
-        yield elem, res
-
-
-def find_match_in_dicts(search_value, search_dicts):
-    """Tries to find a key in search_dicts that matches the
-    search_value. If match is found, returns the key-value pair
-    from the dict.
-
-    If multiple dictionaries contain the search_value, only the
-    first match is returned.
-
-    Args:
-        search_value: value to be searched
-        search_dicts: collection of dict
-    Return:
-        key-value pair as a tuple. Value is None if no match was
-        found.
-    """
-    for sd in search_dicts:
-        if not isinstance(sd, dict):
-            raise TypeError("Expected dictionary")
-        if search_value in sd:
-            return sd[search_value]
-    return None
 
 
 def count_lines_in_file(file_path, check_file_exists=False):

@@ -40,10 +40,10 @@ import os
 import platform
 import subprocess
 import modules.math_functions as mf
+import modules.comparison as comp
 
 from functools import lru_cache
 from modules.general_functions import copy_cut_file_to_temp
-from modules.general_functions import match_strs_to_elements
 from modules.element import Element
 from modules.parsing import CSVParser
 
@@ -454,7 +454,8 @@ def get_depth_files(elements, dir_depth, cut_files):
 
     # By default, add 'depth.total' to the list
     depth_files = [os.path.join(dir_depth, "depth.total")]
-    for s, elem in match_strs_to_elements(validated_filenames.keys(), elements):
+    for s, elem in comp.match_strs_to_elements(validated_filenames.keys(),
+                                               elements):
         # Add all file names that matched an element in the element collection
         if elem:
             depth_files.append(
@@ -509,7 +510,7 @@ class DepthProfileHandler:
         elem_strs = (f.split(".")[-1] for f in file_paths)
 
         # Match each 'depth' file to an element
-        matches = dict(match_strs_to_elements(elem_strs, elements))
+        matches = dict(comp.match_strs_to_elements(elem_strs, elements))
 
         for file_path in file_paths:
             # Read files and generate DepthProfiles
