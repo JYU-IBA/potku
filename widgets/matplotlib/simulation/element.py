@@ -144,6 +144,7 @@ class ElementWidget(QtWidgets.QWidget):
         else:
             rec_type = "sct"
 
+        # TODO color should be hex so it can be jsoned
         recoil_element = RecoilElement(element, points, color, name,
                                        rec_type=rec_type)
         self.running_int_recoil = self.running_int_recoil + 1

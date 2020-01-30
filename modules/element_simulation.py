@@ -1260,14 +1260,7 @@ def get_erd_file_path(directory, elem_prefix, rec_name):
         absolute path to an ERD file
     """
     # TODO check for path traversal
-    return os.path.join(
-        directory,  # TODO check the asterisk
-        "{}-{}.*.erd".format(directory, elem_prefix, rec_name))
-
-
-def get_recoil_file_path():
-    pass
-
-
-def get_():
-    pass
+    # TODO implement all possible naming options that an ERD file can have
+    #      before using this function
+    return os.path.join(directory,
+                        f"{elem_prefix}-{rec_name}.*.erd")
