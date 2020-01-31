@@ -66,7 +66,7 @@ class SimulationState(Enum):
     RUNNING = 4
 
     # ERD files exist, MCERD not running
-    FINISHED = 5
+    DONE = 5
 
     def __str__(self):
         """Returns a string representation of the SimulationState.
@@ -79,7 +79,7 @@ class SimulationState(Enum):
             return "Pre-sim"
         if self == SimulationState.RUNNING:
             return "Running"
-        return "Finished"
+        return "Done"
 
 
 class ElementSimulation(Observable):
@@ -921,13 +921,22 @@ class ElementSimulation(Observable):
                 # If the last ERD file contains no atoms, we are in Presim
                 # TODO should get atom counts for all processes rather than
                 #      just the last
+
+                # TODO the order of atoms counts is the same as os.listdir
+                #      returns so it is not guaranteed to be in alphabetical
+                #      order. Furthermore, even if the files are in
+                #      alphabetical order, this does not work if seeds have
+                #      different number of digits as 'Li-Default.10.erd' would
+                #      come before 'Li-Default.6.erd. Potential solution: store
+                #      active processes in self.mcerd_objects by the ERD file
+                #      name rather than seed.
                 state = SimulationState.PRESIM
             else:
                 # We are in full sim mode
                 state = SimulationState.RUNNING
         else:
             # ERD files exist but no active simulation is in process
-            state = SimulationState.FINISHED
+            state = SimulationState.DONE
 
         # Return status as a dict
         return {
@@ -982,7 +991,7 @@ class ElementSimulation(Observable):
             time.sleep(1)
             status = self.get_current_status()
             self.publish(status)
-            if status["state"] == SimulationState.FINISHED:
+            if status["state"] == SimulationState.DONE:
                 break
 
     def count_active_processes(self):

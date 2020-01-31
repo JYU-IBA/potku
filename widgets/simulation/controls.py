@@ -146,11 +146,8 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         # Observed atom count
         l_2 = QtWidgets.QLabel("Observed atoms: ")
         self.observed_atom_count_label = QtWidgets.QLabel("0")
-
         r_p_layout.addRow(l_1, self.finished_processes_label)
         r_p_layout.addRow(l_2, self.observed_atom_count_label)
-        self.observed_atom_count_label = QtWidgets.QLabel("0")
-
         self.finished_processes_widget.setLayout(r_p_layout)
 
         state_and_controls_layout = QtWidgets.QVBoxLayout()
@@ -160,8 +157,6 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         state_and_controls_layout.addWidget(state_widget)
         state_and_controls_layout.addWidget(controls_widget)
 
-        self.finished_processes_widget.hide()
-
         self.controls_group_box.setLayout(state_and_controls_layout)
 
         main_layout.addWidget(self.controls_group_box)
@@ -169,13 +164,22 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         self.setLayout(main_layout)
 
         # Update element sims status in the GUI
+        # TODO state label shows 'Done' if there is an empty ERD file/s with
+        #      name corresponding to the element simulation. This is slightly
+        #      confusing to the user even if it is not an error per se
         status = self.element_simulation.get_current_status()
         self.show_status(status)
+
+        # Set the process label to a default value as it  makes no sense to
+        # show finished processes as '1/1' when the control is first loaded
+        self.finished_processes_label.setText(
+            f"0/{self.processes_spinbox.value()}")
 
     def reset_controls(self):
         """
         Reset controls to default.
         """
+        # TODO update this function to show correct values
         self.finished_processes_widget.hide()
         self.observed_atom_count_label.setText("0")
         self.processes_spinbox.setEnabled(True)
@@ -189,7 +193,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         status = self.element_simulation.get_current_status()
 
         # TODO import the enum and use it directly
-        if str(status["state"]) == "Finished":
+        if str(status["state"]) == "Done":
             reply = QtWidgets.QMessageBox.question(
                 self, "Confirmation", "Do you want to continue this "
                                       "simulation?\n\nIf you do, old simulation"
@@ -229,15 +233,15 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
             #      programmer notices that something went wrong
             raise ValueError("Simulation state should either be {0} or {1} "
                              "before running a simulation. Current state was "
-                             "{2}".format("RUNNING", "NOTRUN",
+                             "{2}".format("DONE", "NOTRUN",
                                           str(status["state"])))
 
         number_of_processes = self.processes_spinbox.value()
+
+        # TODO these do not update until after start has been run
         self.run_button.setEnabled(False)
         self.stop_button.setEnabled(True)
-
-        self.finished_processes_label.setText("0/" + str(number_of_processes))
-        self.finished_processes_widget.show()
+        self.finished_processes_label.setText(f"0/{number_of_processes}")
         self.processes_spinbox.setEnabled(False)
 
         # Lock full edit
@@ -277,10 +281,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         Args:
             atom_count: number of atoms counted
         """
-        try:
-            self.observed_atom_count_label.setText(str(atom_count))
-        except RuntimeError:
-            pass
+        self.observed_atom_count_label.setText(str(atom_count))
 
     def show_finished_processes(self, running_processes):
         """Update the number of finished processes.
@@ -291,8 +292,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         all_proc = self.processes_spinbox.value()
         finished = all_proc - running_processes
 
-        self.finished_processes_label.setText("{0}/{1}".format(finished,
-                                                               all_proc))
+        self.finished_processes_label.setText(f"{finished}/{all_proc}")
 
     def show_state(self, state):
         """Update simulation state in the GUI
@@ -306,7 +306,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         #      importing the SimulationState Enum from element_simulation.py
         #      This should be fixed.
         # In the meantime, use a hacky solution and convert the enum to string
-        if str(state) == "SimulationState.Finished":
+        if str(state) == "Done":
             self.run_button.setEnabled(True)
             self.stop_button.setEnabled(False)
             self.processes_spinbox.setEnabled(True)
