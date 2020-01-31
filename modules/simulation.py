@@ -345,12 +345,7 @@ class Simulation(Logger):
         Args:
             recoil_element: RecoilElement that is simulated.
         """
-        element = recoil_element.element
-        if element.isotope:
-            element_str = "{0}{1}".format(element.isotope, element.symbol)
-        else:
-            element_str = element.symbol
-
+        element_str = recoil_element.element.get_prefix()
         name = self.request.default_element_simulation.name
 
         if recoil_element.type == "rec":

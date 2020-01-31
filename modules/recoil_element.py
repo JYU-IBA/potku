@@ -46,17 +46,23 @@ class RecoilElement:
         Args:
             element: An Element class object.
             points: A list of Point class objects.
+            color: string representation of a color
             name: Name of the RecoilElement object anf file.
             rec_type: Type recoil element (rec or sct).
         """
         self.element = element
         self.name = name
-        self.prefix = (Element.__str__(element)).split(" ")[0]
+        self.prefix = element.get_prefix()
         self.description = "These are default recoil settings."
         self.type = rec_type
         # This is multiplied by 1e22
         self.reference_density = 4.98
         self.multiplier = 1e22
+
+        # TODO do something like this: https://code.activestate.com/recipes/
+        #      577197-sortedcollection/ or use
+        #      http://www.grantjenks.com/docs/sortedcontainers/ to store
+        #      points in order
         self._points = sorted(points)
         self.points_backlog = []
         # This is out of bounds if no undo is done, telss the index of the
@@ -85,7 +91,7 @@ class RecoilElement:
         self.__individual_area_points = []
 
         # Color of the recoil
-        self.color = color  # TODO color as hex code
+        self.color = color
 
         self.update_zero_values()
 
@@ -369,6 +375,7 @@ class RecoilElement:
         Return:
             Area between intervals and recoil points and x axis.
         """
+        # TODO maybe break this function down to couple of smaller functions
         if not start and not end:
             if not self.area_limits:
                 start = self._points[0].get_x()
@@ -393,7 +400,7 @@ class RecoilElement:
                     if previous_point.get_x() < start < x:
                         # Calculate new point to be added
                         calculate_new_point(previous_point, start,
-                                                   point, area_points)
+                                            point, area_points)
                 if x <= end:
                     area_points.append((x, y))
                 else:
@@ -401,7 +408,7 @@ class RecoilElement:
                         previous_point = self._points[i - 1]
                         if previous_point.get_x() < end < x:
                             calculate_new_point(previous_point, end,
-                                                       point, area_points)
+                                                point, area_points)
                     break
 
         # If common points are empty, no recoil inside area

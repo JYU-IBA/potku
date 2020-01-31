@@ -565,6 +565,7 @@ class Nsgaii:
             points.append(Point(point_9))
             points.append(Point(point_10))
 
+        # TODO this should not be passed down as QColor
         color = QtGui.QColor("red")
         # Form a recoil object
         if not name:

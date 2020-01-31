@@ -92,11 +92,13 @@ class RecoilInfoDialog(QtWidgets.QDialog):
 
         self.__ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
 
-        if recoil_element.element.isotope:
-            title = "Recoil element: " + str(recoil_element.element.isotope) +\
-                    recoil_element.element.symbol
-        else:
-            title = "Recoil element: " + recoil_element.element.symbol
+        title = f"Recoil element: " \
+                f"{recoil_element.element.get_prefix()}"
+        #if recoil_element.element.isotope:     # TODO remove these
+        #    title = "Recoil element: " + str(recoil_element.element.isotope) +\
+        #            recoil_element.element.symbol
+        #else:
+        #    title = "Recoil element: " + recoil_element.element.symbol
 
         self.__ui.infoGroupBox.setTitle(title)
 

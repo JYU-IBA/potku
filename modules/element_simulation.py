@@ -687,11 +687,7 @@ class ElementSimulation(Observable):
         recoil_file = os.path.join(simulation_folder,
                                    recoil_element.prefix + "-" +
                                    recoil_element.name + suffix)
-        if recoil_element.element.isotope:
-            element_str = "{0}{1}".format(recoil_element.element.isotope,
-                                          recoil_element.element.symbol)
-        else:
-            element_str = recoil_element.element.symbol
+        element_str = recoil_element.element.get_prefix()
 
         obj = {
             "name": recoil_element.name,
@@ -741,7 +737,7 @@ class ElementSimulation(Observable):
 
         with open(file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
-    # TODO check if optimization uses erd_files param
+
     def start(self, number_of_processes, start_value, erd_files=None,
               optimize=False, stop_p=False, check_t=False,
               optimize_recoil=False, check_max=False, check_min=False,
@@ -1151,7 +1147,6 @@ class ElementSimulation(Observable):
             self.request.running_simulations.remove(self)
         except ValueError:
             self.simulation.running_simulations.remove(self)
-        self.simulations_done = True
         if self.optimization_mcerd_running:
             self.optimization_mcerd_running = False
 
@@ -1163,14 +1158,14 @@ class ElementSimulation(Observable):
             element = self.recoil_elements[0].element
         else:
             element = self.optimization_recoils[0].element
-        if element.isotope:
-            element_name = str(element.isotope) + element.symbol
-        else:
-            element_name = element.symbol
-        # TODO set simulations done?
-        msg = "Simulation stopped. " + "Element: " \
-              + element_name + " Processes:" + str(process_count) + \
-              " Number of observed atoms: " + str(atom_count)
+
+        element_name = element.get_prefix()
+
+        self.simulations_done = True
+
+        msg = f"Simulation stopped. Element: {element_name}, processes: " \
+              f"{process_count}, Number of observed atoms: {atom_count}"
+
         logging.getLogger(simulation_name).info(msg)
         self.publish(self.get_current_status())
 

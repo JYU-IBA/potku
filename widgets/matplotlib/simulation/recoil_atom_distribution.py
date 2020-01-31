@@ -1063,8 +1063,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             #         dialog.element)))
             # else:
             isotope = dialog.isotope
+
+            # Pass the color down as hex code
             element_simulation = self.add_element(Element(
-                dialog.element, isotope), color=dialog.color)
+                dialog.element, isotope), color=dialog.color.name())
 
             element_simulation.recoil_elements[0].widgets[0].radio_button \
                 .setChecked(True)
@@ -1316,8 +1318,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             already_exists = True
                             break
                 if not already_exists:
-                    elem_str = layer_element.symbol
-                    color = QtGui.QColor(self.colormap[elem_str])
+                    color = self.colormap[layer_element.symbol]
                     self.add_element(layer_element, color=color)
 
     def on_draw(self):

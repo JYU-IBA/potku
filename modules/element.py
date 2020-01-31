@@ -86,7 +86,7 @@ class Element:
         if self.isotope and self.amount:
             return "{0}{1} {2}".format(int(round(self.isotope)), self.symbol,
                                        self.amount)
-        if self.isotope:
+        if self.isotope:    # TODO unnecessary int?
             return "{0}{1}".format(int(round(self.isotope)), self.symbol)
         if self.amount:
             return "{0} {1}".format(self.symbol, self.amount)
@@ -100,8 +100,12 @@ class Element:
         """
         return str(self) == str(other)
 
+    def get_prefix(self):
+        """Returns a string representation of an element without amount.
 
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod()
+        Return:
+            '[isotope][symbol]' if isotope is specified, otherwise '[symbol]'
+        """
+        if self.isotope is None:
+            return self.symbol
+        return f"{round(self.isotope)}{self.symbol}"

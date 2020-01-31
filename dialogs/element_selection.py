@@ -45,6 +45,8 @@ class ElementSelectionDialog(QtWidgets.QDialog):
     def __init__(self):
         """Inits the ElementSelection class
         """
+        # TODO this could show the elements with same color scheme as defined in
+        #      global settings
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_element_selection.ui"),
