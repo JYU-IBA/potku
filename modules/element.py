@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 10.4.2013
-Updated on 1.6.2018
+Updated on 31.1.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -26,7 +26,8 @@ along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
-             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n " \
+             "Juhani Sundell"
 __version__ = "2.0"
 
 import re
