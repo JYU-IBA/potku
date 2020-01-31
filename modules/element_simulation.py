@@ -805,7 +805,7 @@ class ElementSimulation(Observable):
         self.last_process_count = number_of_processes
 
         # Notify observers that we are about to go
-        self.publish(self.get_current_status(starting=True))
+        self.on_next(self.get_current_status(starting=True))
 
         # Start as many processes as is given in number of processes
         for i in range(number_of_processes):
@@ -990,7 +990,7 @@ class ElementSimulation(Observable):
         while True:
             time.sleep(1)
             status = self.get_current_status()
-            self.publish(status)
+            self.on_next(status)
             if status["state"] == SimulationState.DONE:
                 break
 
@@ -1131,7 +1131,7 @@ class ElementSimulation(Observable):
             logging.getLogger(simulation_name).info(msg)
 
         self.simulations_done = True
-        self.publish(self.get_current_status())
+        self.on_next(self.get_current_status())
 
     def stop(self, optimize_recoil=False):
         """ Stop the simulation."""
@@ -1176,7 +1176,7 @@ class ElementSimulation(Observable):
               f"{process_count}, Number of observed atoms: {atom_count}"
 
         logging.getLogger(simulation_name).info(msg)
-        self.publish(self.get_current_status())
+        self.on_next(self.get_current_status())
 
     def calculate_espe(self, recoil_element, optimize_recoil=False, ch=None,
                        fluence=None, optimize_fluence=False):

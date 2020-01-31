@@ -48,9 +48,7 @@ from modules.parsing import ToFListParser
 from subprocess import Popen
 
 
-# TODO organize this to smaller modules
-
-
+# TODO this could still be organized into smaller modules
 
 def rename_file(old_path, new_name):
     """Renames file or directory and returns new path.

@@ -84,7 +84,7 @@ class Observable(abc.ABC):
     Only a weak reference to an Observer is stored. If the Observer
     is deleted, the Observable will no longer keep it alive.
     """
-    __slots__ = "refs"
+    __slots__ = "__refs"
 
     def __init__(self):
         """Initializes a new observable.
@@ -92,7 +92,7 @@ class Observable(abc.ABC):
         # Refs are stored in a list. If there is ever a need to have
         # a large number of observers on a single observable, consider
         # implementing a way to hash them all into a set.
-        self.refs = []
+        self.__refs = []
 
     def subscribe(self, observer):
         """Subscribes an observer to the observable.
@@ -107,13 +107,11 @@ class Observable(abc.ABC):
                       Observer class
         """
         if isinstance(observer, Observer):
-            # TODO what if no weakref cannot be created
             ref = weakref.ref(observer)
-            self.refs.append(ref)
-            # TODO this could also return some means
-            #      to unsubscribe
+            self.__refs.append(ref)
         else:
-            raise TypeError
+            raise TypeError("Observable expects the subscriber to be an "
+                            "instance of Observer class.")
 
     def unsubscribe(self, observer):
         """Unsubscribes the observer from the Observable.
@@ -126,19 +124,45 @@ class Observable(abc.ABC):
         """
         ref = weakref.ref(observer)
         try:
-            self.refs.remove(ref)
+            self.__refs.remove(ref)
         except ValueError:
             # Observer was not in the list of observers,
             # nothing to do.
             pass
 
-    def publish(self, msg):
+    def on_error(self, err):
+        """Publishes an error message to Observers.
+
+        Args:
+            err: error message
+        """
+        self.__publish(lambda obs: obs.on_error(err))
+
+    def on_complete(self, msg):
+        """Notifies the Observers that the Observable has completed its
+        process.
+
+        Args:
+            msg: message to Observers
+        """
+        self.__publish(lambda obs: obs.on_complete(msg))
+
+    def on_next(self, msg):
+        """Publishes a status update to Observers.
+
+        Args:
+            msg: message to Observers
+        """
+        self.__publish(lambda obs: obs.on_next(msg))
+
+    def __publish(self, func):
         """Publishes a message to all observers.
 
         Args:
-            msg: message to publish
+            func: function that invokes the observer's callback
+                  function
         """
-        def __publish(weak_ref):
+        def __inner_pub(weak_ref):
             """This inner method will publish the message to an
             observer if the observer is not None (i.e. it still
             exists).
@@ -151,7 +175,7 @@ class Observable(abc.ABC):
             """
             observer = weak_ref()
             if observer is not None:
-                observer.receive(msg)
+                func(observer)
                 return True
             return False
 
@@ -160,7 +184,14 @@ class Observable(abc.ABC):
         # Filtered results are assigned to a slice of the existing list
         # to avoid potential problems with multiple references to the
         # refs list.
-        self.refs[:] = [ref for ref in self.refs if __publish(ref)]
+        self.__refs[:] = [ref for ref in self.__refs if __inner_pub(ref)]
+
+    def get_observer_count(self):
+        """Returns the number of observers currently subscribed to the
+        Observable.
+        """
+        # Only return the number of observers that still exist
+        return sum(1 for ref in self.__refs if ref())
 
 
 class Observer(abc.ABC):
@@ -168,46 +199,31 @@ class Observer(abc.ABC):
     """
 
     @abc.abstractmethod
-    def receive(self, msg):
+    def on_error(self, err):
+        """Observable invokes this method to inform that it has
+        encountered some exception and is not able to continue
+        operating.
+
+        Args:
+            err: error message from the Observable
+        """
+
+    @abc.abstractmethod
+    def on_next(self, msg):
         """Observable invokes this method so the Observer
-        can receive the message.
+        can receive a status update.
 
         Args:
             msg: message from the Observable
         """
         pass
 
+    @abc.abstractmethod
+    def on_complete(self, msg):
+        """Observable invokes this method to inform that it has
+        completed its operation.
 
-if __name__ == "__main__":
-    # For testing purposes
-    # TODO formulate this to a proper unittest
-    import gc
-
-    class Pub(Observable):
+        Args:
+            msg: message from the Observable
+        """
         pass
-
-    class Sub(Observer):
-        def __init__(self, idx=0):
-            self.idx = idx
-
-        def receive(self, msg):
-            print(self.idx, "Received:", msg)
-
-    pub = Pub()
-    sub = Sub()
-
-    pub.subscribe(sub)
-    pub.publish("hello")
-
-    pub.unsubscribe(sub)
-    pub.publish("hello again")
-
-    pub.unsubscribe(sub)
-    pub.subscribe(sub)
-    pub.subscribe(sub)
-
-    pub.publish("howdy y'all")
-    del sub
-    gc.collect()
-
-    pub.publish("are you still there")

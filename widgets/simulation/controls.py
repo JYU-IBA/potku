@@ -340,7 +340,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
             error_box.setWindowTitle("Error")
             error_box.exec()
 
-    def receive(self, status):
+    def on_next(self, status):
         """Callback function that receives status from an
         ElementSimulation
 
@@ -350,3 +350,22 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         # Uncomment next line to see status updates in the console
         # print(status)
         self.show_status(status)
+
+    def on_error(self, err):
+        """Function that the ElementSimulation object invokes when it
+        encounters an error.
+
+        Currently ElementSimulation object does not invoke this function
+        so NotImplementedError is raised.
+        """
+        raise NotImplementedError
+
+    def on_complete(self, msg):
+        """Function that the ElementSimulation object invokes when it
+        completes a process.
+
+        Currently ElementSimulation object does not invoke this function
+        so NotImplementedError is raised.
+        """
+        raise NotImplementedError
+
