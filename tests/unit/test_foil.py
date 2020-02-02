@@ -97,6 +97,19 @@ class TestFoil(unittest.TestCase):
                                foil.get_solid_angle(units="sr"),
                                places=places)
 
+    def test_slots(self):
+        """Tests that __slots__ work properly for Foils"""
+        rec = RectangularFoil()
+        cir = CircularFoil()
+
+        def assignment_attempt(obj):
+            obj.x = 10
+
+        self.assertRaises(AttributeError, lambda: assignment_attempt(rec))
+        self.assertRaises(AttributeError, lambda: assignment_attempt(cir))
+        self.assertRaises(AttributeError, lambda: rec.__dict__)
+        self.assertRaises(AttributeError, lambda: cir.__dict__)
+
 
 if __name__ == "__main__":
     unittest.main()

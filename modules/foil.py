@@ -24,10 +24,9 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
-import abc
 import math
 
 # Unit conversion values for solid angle
@@ -41,7 +40,7 @@ _UNITS = {
 }
 
 
-class Foil(abc.ABC):
+class Foil:
     """Class for detector foil.
     """
 
@@ -65,9 +64,8 @@ class Foil(abc.ABC):
         self.layers = layers
         self.transmission = transmission
 
-    @abc.abstractmethod
     def get_solid_angle(self, units="msr"):
-        pass
+        raise NotImplementedError
 
 
 class CircularFoil(Foil):

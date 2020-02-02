@@ -26,7 +26,6 @@ __author__ = "Juhani Sundell"
 __version__ = ""  # TODO
 
 import unittest
-import gc
 
 from modules.observing import Observable
 from modules.observing import Observer
@@ -56,7 +55,6 @@ class Sub(Observer):
 
 
 # TODO add tests for multithreaded system
-# TODO test with an object that cannot be weakly referenced
 
 class TestObserving(unittest.TestCase):
     def test_subscription(self):
@@ -111,15 +109,37 @@ class TestObserving(unittest.TestCase):
         self.assertEqual(["bar"], sub.compl)
         self.assertEqual(["kissa istuu"], sub.errs)
 
-        # Subscriber can receive messages from multiple observables
+        # If the sub unsubscribes, messages do not get through
+        pub.unsubscribe(sub)
+        pub.on_next("bar")
+        self.assertEqual(["foo"], sub.nexts)
+
+    def test_multisubscriptions(self):
+        pub1 = Pub()
         pub2 = Pub()
-        pub2.subscribe(sub)
 
-        pub.on_next("hello")
-        pub2.on_next("hello again")
+        sub1 = Sub()
+        sub2 = Sub()
 
-        self.assertEqual(["foo", "hello", "hello again"],
-                         sub.nexts)
+        # Subscriber can receive messages from multiple observables and
+        # publisher can send messages to multiple subscribers
+        pub1.subscribe(sub1)
+        pub1.subscribe(sub2)
+        pub2.subscribe(sub1)
+        pub2.subscribe(sub2)
+
+        pub1.on_next("hello")
+        pub2.on_next("bonjour")
+
+        self.assertEqual(["hello", "bonjour"], sub1.nexts)
+        self.assertEqual(sub1.nexts, sub2.nexts)
+
+        # Subscribing twice to the same publisher means messages are received
+        # twice
+        pub1.subscribe(sub1)
+        pub1.on_complete("done")
+        self.assertEqual(["done", "done"], sub1.compl)
+        self.assertEqual(["done"], sub2.compl)
 
     def test_weakrefs(self):
         """Observers are weakly referenced so they should be removed when
@@ -130,15 +150,53 @@ class TestObserving(unittest.TestCase):
         pub.subscribe(sub)
         self.assertEqual(1, pub.get_observer_count())
 
+        # Store a reference to sub's nexts list so and delete sub so we can
+        # check that the list stays empty
+        nexts = sub.nexts
         del sub
-        gc.collect()
+
+        # Observer count is 0 and nothing happens when the publisher tries to
+        # publish
+        self.assertEqual(0, pub.get_observer_count())
+        pub.on_next("are you still there?")
+        self.assertEqual([], nexts)
+
+        # Also if the Sub is only initialized in the context of the subscribe
+        # function, observer count stays at 0
+        pub.subscribe(Sub())
+        self.assertEqual(0, pub.get_observer_count())
+
+    def test_unreferenceable(self):
+        """It must be possible to make a weak reference to the Observer"""
+        class Unreffable(Observer):
+            # this has no __weakref__ attribute in its slots
+            __slots__ = ()
+
+        pub = Pub()
+        unr = Unreffable()
+        self.assertRaises(TypeError, lambda: pub.subscribe(unr))
+        self.assertRaises(TypeError, lambda: pub.unsubscribe(unr))
 
         self.assertEqual(0, pub.get_observer_count())
 
-        # Nothing happens when the publisher tries to publish something
-        pub.on_next("hello")
-        pub.on_error("are you there still there")
-        pub.on_complete("are you there yet")
+        # An object that has '__weakref__' in its slots can be an observer
+        class Reffable(Observer):
+            __slots__ = "__weakref__",
+
+        ref = Reffable()
+        pub.subscribe(ref)
+        self.assertEqual(1, pub.get_observer_count())
+
+    def test_default_observer(self):
+        """If no implementation for Observers functions are made,
+        NotImplementedErrors are raised.
+        """
+        class Obs(Observer):
+            pass
+
+        self.assertRaises(NotImplementedError, lambda: Obs().on_complete(""))
+        self.assertRaises(NotImplementedError, lambda: Obs().on_error(""))
+        self.assertRaises(NotImplementedError, lambda: Obs().on_next(""))
 
 
 if __name__ == "__main__":
