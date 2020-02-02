@@ -37,13 +37,15 @@ __FILE_PATH = "external/Potku-data/masses.dat"
 
 __isotopes = {}
 
-for line in csv.reader(open(__FILE_PATH), delimiter=" ", skipinitialspace=True):
-    if line:  # skips empty lines
-        if line[3] not in __isotopes:
-            __isotopes[line[3]] = []
-        __isotopes[line[3]].append((int(line[2]), float(line[5]),
-                                    float(line[4])))
-        # line[2] isotope number, line[5] natural abundance, line[4] exact mass
+with open(__FILE_PATH) as file:
+    for line in csv.reader(file, delimiter=" ", skipinitialspace=True):
+        if line:  # skips empty lines
+            if line[3] not in __isotopes:
+                __isotopes[line[3]] = []
+            __isotopes[line[3]].append((int(line[2]), float(line[5]),
+                                        float(line[4])))
+            # line[2] isotope number, line[5] natural abundance, line[4]
+            # exact mass
 
 
 def __get_isotopes(element):
