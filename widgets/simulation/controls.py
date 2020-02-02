@@ -28,34 +28,15 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
-import os
-
-# TODO there is some circular dependency that prevents importing SimulationState
-#      FIX THIS!
-# from modules.element_simulation import SimulationState
+from modules.element_simulation import SimulationState
 from modules.general_functions import delete_simulation_results
 from modules.observing import Observer
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import Qt
 
 
-class QtObserverMeta(type(QtWidgets.QWidget), type(Observer)):
-    """A common metaclass for Observers and QWidgets.
-
-     QWidget has the metaclass 'sip.wrappertype' while Observer has
-     'ABCMeta', which causes a conflict in multi-inheritance.
-
-    QtObserverMeta provides a common metaclass for both types so a GUI element
-    can inherit both QWidget and Observer classes.
-    """
-    # TODO create a GUI utils module and move this there
-    pass
-
-
-class SimulationControlsWidget(Observer, QtWidgets.QWidget,
-                               metaclass=QtObserverMeta):
+class SimulationControlsWidget(Observer, QtWidgets.QWidget):
     """Class for creating simulation controls widget for the element simulation.
     """
 
@@ -180,10 +161,11 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         Reset controls to default.
         """
         # TODO update this function to show correct values
-        self.finished_processes_widget.hide()
-        self.observed_atom_count_label.setText("0")
+        #self.finished_processes_widget.hide()
+        #self.observed_atom_count_label.setText("0")
         self.processes_spinbox.setEnabled(True)
-        self.state_label.setText("Not started")
+        #self.state_label.setText("Not started")
+        self.show_status(self.element_simulation.get_current_status())
 
     def __start_simulation(self):
         """ Calls ElementSimulation's start method.
@@ -193,7 +175,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         status = self.element_simulation.get_current_status()
 
         # TODO import the enum and use it directly
-        if str(status["state"]) == "Done":
+        if status["state"] == SimulationState.DONE:
             reply = QtWidgets.QMessageBox.question(
                 self, "Confirmation", "Do you want to continue this "
                                       "simulation?\n\nIf you do, old simulation"
@@ -224,7 +206,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
                 erd_files = self.element_simulation.get_erd_files()
                 start_value = self.element_simulation. \
                     get_last_seed(erd_files) + 1
-        elif str(status["state"]) == "Not run":
+        elif status["state"] == SimulationState.NOTRUN:
                 start_value = self.element_simulation.seed_number
                 erd_files = None
         else:
@@ -254,16 +236,12 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
             self.recoil_dist_widget.update_plot()
         self.element_simulation.y_min = 0.0001
 
-        QtWidgets.QApplication.setOverrideCursor(Qt.WaitCursor)
-
         # TODO indicate to user that ion sharing is in use
 
         self.element_simulation.start(number_of_processes,
                                       start_value,
                                       erd_files=erd_files,
                                       shared_ions=True)
-
-        QtWidgets.QApplication.restoreOverrideCursor()
 
     def show_status(self, status):
         """Updates the status of simulation in the GUI
@@ -301,15 +279,6 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
             state: SimulationState enum
         """
         self.state_label.setText(str(state).split(".")[-1])
-
-        # TODO there is some circular dependecy which prevents this module from
-        #      importing the SimulationState Enum from element_simulation.py
-        #      This should be fixed.
-        # In the meantime, use a hacky solution and convert the enum to string
-        if str(state) == "Done":
-            self.run_button.setEnabled(True)
-            self.stop_button.setEnabled(False)
-            self.processes_spinbox.setEnabled(True)
 
     def show_ions_per_process(self, process_count):
         # TODO this method is supposed to show how the ion counts are divided
@@ -360,12 +329,15 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget,
         """
         raise NotImplementedError
 
-    def on_complete(self, msg):
-        """Function that the ElementSimulation object invokes when it
-        completes a process.
+    def on_complete(self, status):
+        """This method is called when the ElementSimulation has run all of
+        its simulation processes.
 
-        Currently ElementSimulation object does not invoke this function
-        so NotImplementedError is raised.
+        GUI is updated to show the status and button states are switched
+        accordingly.
         """
-        raise NotImplementedError
+        self.show_status(status)
+        self.run_button.setEnabled(True)
+        self.stop_button.setEnabled(False)
+        self.processes_spinbox.setEnabled(True)
 

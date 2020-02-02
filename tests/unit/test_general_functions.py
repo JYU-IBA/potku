@@ -120,6 +120,7 @@ class TestMatchingFunctions(unittest.TestCase):
         self.assertEqual(comp.find_match_in_dicts(7, dicts), 8)
         self.assertIsNone(comp.find_match_in_dicts(9, dicts))
 
+    def test_empty_and_bad_values(self):
         # Testing with empty lists and dicts
         self.assertIsNone(comp.find_match_in_dicts(1, []))
         self.assertIsNone(comp.find_match_in_dicts(None, [{}]))
@@ -138,10 +139,13 @@ class TestGeneralFunctions(unittest.TestCase):
     @verify_files(_FILE_PATHS, _CHECKSUM,
                   msg="testing counting lines in a file")
     def test_file_line_counting(self):
-        """Tests for counting lines in a file"""
+        """Tests for counting lines in two files that are in the sample_data
+        directory.
+        """
         self.assertEqual(23, gf.count_lines_in_file(_FILE_PATHS[0]))
         self.assertEqual(20, gf.count_lines_in_file(_FILE_PATHS[1]))
 
+    def test_nonexisting_files(self):
         self.assertRaises(
             FileNotFoundError,
             lambda: gf.count_lines_in_file("this file does not exist"))
@@ -164,6 +168,7 @@ class TestGeneralFunctions(unittest.TestCase):
                 IsADirectoryError,
                 lambda: gf.count_lines_in_file(get_sample_data_dir()))
 
+    def test_tmp_files(self):
         # Test with an empty file
         # Create a temporary directory to store a temporary file
         with tempfile.TemporaryDirectory() as tmp_dir:

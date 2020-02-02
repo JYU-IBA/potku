@@ -44,6 +44,36 @@ def get_sample_data_dir():
     return os.path.abspath(path_to_sample_data)
 
 
+def change_wd_to_root(func):
+    """Helper wrapper function that changes the working directory to the root
+    directory of Potku for the duration of the wrapped function. After the
+    function has run, working directory is changed back so other tests are
+    not affected.
+
+    Use this function if the code you are testing is referencing some relative
+    path, like '/external/Potku-data/masses.dat'. The tested code will then
+    need to be imported inside that function.
+    """
+    # Get old working directory and path to this file. Then traverse to
+    # parent directory (i.e. the root)
+    old_wd = os.getcwd()
+    path_to_this_file = os.path.dirname(__file__)
+    path_to_root = os.path.join(path_to_this_file,
+                                os.pardir)
+
+    def wrapper(*args, **kwargs):
+        # Change the dir, run the func and change back in the finally
+        # block
+        os.chdir(path_to_root)
+        try:
+            func(*args, **kwargs)
+        finally:
+            os.chdir(old_wd)
+
+    # Return the wrapper function
+    return wrapper
+
+
 def get_md5_for_files(file_paths):
     """Calculates MD5 hash for the combined content of all given
     files."""

@@ -42,10 +42,9 @@ from modules.general_functions import uniform_espe_lists
 from modules.general_functions import count_lines_in_file
 from modules.get_espe import GetEspe
 from modules.mcerd import MCERD
-
 from modules.observing import Observable
-from widgets.matplotlib.simulation.recoil_atom_distribution import Point
-from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
+from modules.point import Point
+from modules.recoil_element import RecoilElement
 
 from enum import Enum
 
@@ -957,6 +956,7 @@ class ElementSimulation(Observable):
             last seed value used in simulation processes
         """
         # Last seed is just the maximum seed number
+        # TODO do this in the ERDFileHandler class
         return max(erd_files.values(), default=0)
 
     def get_erd_files(self):
@@ -965,6 +965,7 @@ class ElementSimulation(Observable):
         Return:
              dict where keys are file names and values are seeds
         """
+        # TODO do this in the ERDFileHandler class
         erd_files = {}
 
         start_part = "{0}-{1}.".format(self.recoil_elements[0].prefix,
@@ -999,14 +1000,14 @@ class ElementSimulation(Observable):
         """
         return len(self.mcerd_objects)
 
-    def get_atom_counts(self, clear_cache=False):
+    def get_atom_counts(self):
         """Calculates the number of atoms in each ERD file.
 
         Yield:
             tuple where first element is an ERD file path and second
             value is the number of atoms in that file
         """
-        # TODO implement caching for count_lines
+        # TODO do this in the ERDFileHandler class
         for erd_file in self.__erd_files:
             yield erd_file, count_lines_in_file(erd_file,
                                                 check_file_exists=True)
@@ -1131,7 +1132,7 @@ class ElementSimulation(Observable):
             logging.getLogger(simulation_name).info(msg)
 
         self.simulations_done = True
-        self.on_next(self.get_current_status())
+        self.on_complete(self.get_current_status())
 
     def stop(self, optimize_recoil=False):
         """ Stop the simulation."""
@@ -1176,7 +1177,7 @@ class ElementSimulation(Observable):
               f"{process_count}, Number of observed atoms: {atom_count}"
 
         logging.getLogger(simulation_name).info(msg)
-        self.on_next(self.get_current_status())
+        self.on_complete(self.get_current_status())
 
     def calculate_espe(self, recoil_element, optimize_recoil=False, ch=None,
                        fluence=None, optimize_fluence=False):
@@ -1249,6 +1250,88 @@ class ElementSimulation(Observable):
             "recoil_file": recoil_file
         }
         self.get_espe = GetEspe(espe_settings)
+
+
+def __get_atom_count(self, file):
+    return count_lines_in_file(file, check_file_exists=True)
+
+# TODO move import to top of the file
+import functools
+
+@functools.lru_cache(32)
+def __get_atom_count_cached(self, file):
+        return __get_atom_count(file)
+
+
+def get_seed(erd_file):
+    try:
+        return int(erd_file.rsplit('.', 2)[1])
+    except ValueError:
+        return None
+
+
+def get_valid_erd_file_names(directory, recoil_element):
+    start_part = "{0}-{1}.".format(recoil_element.prefix,
+                                   recoil_element.name)
+    end = ".erd"
+
+    for file in os.listdir(directory):
+        if file.startswith(start_part) and file.endswith(end):
+            try:
+                file_path = os.path.join(directory,
+                                         file)
+                seed = get_seed(file_path)
+                yield file_path, recoil_element, seed
+            except ValueError:
+                # Seed was not an int, file won't be used
+                pass
+
+
+class ERDFileHandler:
+    """Helper class to handle ERD files that belong to the ElementSimulation
+
+    Handles counting atoms and getting seeds.
+    """
+    def __init__(self, *args):
+        self.__active_files = {}
+        self.__old_files = {
+            str(f): {
+                "rec_elem": r,
+                "seed": int(s)
+            }
+            for f, r, s in args
+        }
+
+    @classmethod
+    def from_directory(cls, directory, recoil_element):
+        return cls(get_valid_erd_file_names(directory, recoil_element))
+
+    def add_active_file(self, file):
+        if file in self.__active_files:
+            raise ValueError("Already in active files")
+        if file in self.__old_files:
+            raise ValueError("Already in old files")
+
+        seed = get_seed(file)
+        if seed is None:
+            raise ValueError("ERD file did not contain a valid seed.")
+
+        self.__active_files[file] = seed
+
+    def get_max_seed(self):
+        return max(seed for _, seed, _ in self)
+
+    def get_active_atom_counts(self):
+        return sum(self.__get_atom_count(file)
+                   for file in self.__active_files)
+
+    def get_old_atom_counts(self):
+        return sum(self.__get_atom_count_cached(file)
+                   for file in self.__old_files)
+
+    def update(self):
+        self.__old_files.update(self.__active_files)
+        self.__active_files.clear()
 
 
 def get_erd_file_path(directory, elem_prefix, rec_name):
