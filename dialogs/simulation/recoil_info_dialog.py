@@ -94,11 +94,6 @@ class RecoilInfoDialog(QtWidgets.QDialog):
 
         title = f"Recoil element: " \
                 f"{recoil_element.element.get_prefix()}"
-        #if recoil_element.element.isotope:     # TODO remove these
-        #    title = "Recoil element: " + str(recoil_element.element.isotope) +\
-        #            recoil_element.element.symbol
-        #else:
-        #    title = "Recoil element: " + recoil_element.element.symbol
 
         self.__ui.infoGroupBox.setTitle(title)
 

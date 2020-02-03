@@ -162,6 +162,12 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         Reset controls to default.
         """
         self.processes_spinbox.setEnabled(True)
+
+        # TODO when controls are reset, element_simulation's collection of
+        #      ERD file paths is not cleared which means that the status will
+        #      show 'DONE' even if the actual files have been removed. This
+        #      would be trivial to fix by hard coding the status in here, but
+        #      we might want to look for a nicer solution first.
         self.show_status(self.element_simulation.get_current_status())
 
     def __start_simulation(self):

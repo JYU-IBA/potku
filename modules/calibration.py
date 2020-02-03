@@ -404,6 +404,8 @@ class TOFCalibrationPoint:
         # Recoiled atoms' parameters
         element = self.cut.element.symbol
         if cut.element.isotope:
+            # TODO find_mass_of_isotope could handle checking if the element has
+            #      an isotope
             mass = masses.find_mass_of_isotope(self.cut.element)
             isotope = cut.element.isotope
         else:
@@ -415,6 +417,8 @@ class TOFCalibrationPoint:
         if self.type == "RBS":
             element_scatter = self.cut.element_scatter
             if element_scatter.isotope:
+                # TODO find_mass_of_isotope could handle checking if the element
+                #      has an isotope
                 mass_scatter = masses.find_mass_of_isotope(element_scatter)
             else:
                 mass_scatter = masses.get_standard_isotope(

@@ -61,7 +61,7 @@ class _CompositionWidget(MatplotlibWidget):
         super().__init__(parent)
 
         # Remove Y-axis ticks and label
-        self.axes.yaxis.set_tick_params("both", left="off", labelleft="off")
+        self.axes.yaxis.set_tick_params("both", left=False, labelleft=False)
         self.axes.format_coord = self.format_coord
         self.name_x_axis = "Depth [nm]"
         self.foil_behaviour = foil_behaviour

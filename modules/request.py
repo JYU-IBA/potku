@@ -359,7 +359,14 @@ class Request:
                 samples.append(os.path.join(self.directory, item))
                 # It is presumed that the sample numbers are of format
                 # '01', '02',...,'10', '11',...
-                match_object = re.search("\d", item)
+
+                # Python 3.6 gives DeprecationWarning for using just "\d" as
+                # regex pattern. To avoid potential future issues, the pattern
+                # is declared as a raw  string (see https://stackoverflow.com/
+                # questions/50504500/deprecationwarning-invalid-escape-sequence
+                # -what-to-use-instead-of-d
+                match_object = re.search(r"\d", item)
+
                 if match_object:
                     number_str = item[match_object.start()]
                     if number_str == "0":

@@ -156,12 +156,7 @@ class MCERD:
             file.write("Type of simulation: " +
                        self.__settings["simulation_type"] + "\n")
 
-            if not beam.ion.isotope:
-                beam_isotope = ""
-            else:
-                beam_isotope = beam.ion.isotope
-            file.write(
-                "Beam ion: " + str(beam_isotope) + beam.ion.symbol + "\n")
+            file.write(f"Beam ion: {beam.ion.get_prefix()}\n")
 
             file.write("Beam energy: " + str(beam.energy) + " MeV\n")
 
@@ -170,12 +165,8 @@ class MCERD:
             file.write("Detector description file: " + self.__detector_file +
                        "\n")
 
-            if not recoil_element.element.isotope:
-                isotope = ""
-            else:
-                isotope = recoil_element.element.isotope
-            file.write("Recoiling atom: " + str(isotope)
-                       + recoil_element.element.symbol + "\n")
+            file.write(
+                f"Recoiling atom: {recoil_element.element.get_prefix()}\n")
 
             file.write("Recoiling material distribution: " + self.recoil_file
                        + "\n")
@@ -277,6 +268,8 @@ class MCERD:
             for layer in target.layers:
                 for element in layer.elements:
                     if element.isotope:
+                        # TODO find_mass_of_isotope could handle checking if the
+                        #      element has an isotope
                         mass = masses.find_mass_of_isotope(element)
                     else:
                         mass = masses.get_standard_isotope(element.symbol)
