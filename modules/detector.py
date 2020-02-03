@@ -399,7 +399,8 @@ class Detector:
             return
         # Read .measurement to obj to update only detector angles
         try:
-            obj = json.load(open(measurement_file_path))
+            with open(measurement_file_path) as mesu:
+                obj = json.load(mesu)
             try:
                 # Change existing detector theta
                 obj["geometry"]["detector_theta"] = self.detector_theta

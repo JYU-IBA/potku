@@ -295,7 +295,7 @@ class Request:
             self.default_element_simulation = ElementSimulation(
                 self.default_folder, self,
                 [RecoilElement(Element.from_string("4He 3.0"), [],
-                               QtGui.QColor("#0000ff"))],
+                               "#0000ff")],
                 self.default_simulation,
                 description="These are default simulation parameters.",
                 use_default_settings=False)

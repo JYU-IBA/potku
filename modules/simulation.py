@@ -240,8 +240,8 @@ class Simulation(Logger):
                 "description", "modification_time", "run", "detector", \
                 "target", "element_simulations", "name_prefix", \
                 "serial_number", "directory", "measurement_setting_file_name", \
-                "measurement_setting_file_description", "defaultlog", \
-                "errorlog", "sample", "running_simulations", "statusbar"
+                "measurement_setting_file_description", \
+                "sample", "running_simulations", "statusbar"
 
     def __init__(self, path, request, name="Default",
                  description="",

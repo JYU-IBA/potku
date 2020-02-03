@@ -88,7 +88,8 @@ class Run:
         }
 
         if os.path.exists(measurement_file_path):
-            obj = json.load(open(measurement_file_path))
+            with open(measurement_file_path) as mesu:
+                obj = json.load(mesu)
             obj["general"]["modification_time"] = time.strftime("%c %z %Z",
                                                                 time.localtime(
                                                                  time.time()))

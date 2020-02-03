@@ -102,6 +102,7 @@ class CustomLogHandler(logging.Handler):
 class Logger:
     """Common base class for Measurements and Simulations to enable logging.
     """
+    # TODO add a function to disable logging
     __slots__ = "logger_name", "category", "datefmt", "defaultlog", "errorlog"
 
     def __init__(self, logger_name, category, datefmt="%Y-%m-%d %H:%M:%S"):

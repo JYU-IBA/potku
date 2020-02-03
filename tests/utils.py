@@ -30,6 +30,7 @@ __version__ = ""  # TODO
 import os
 import hashlib
 import unittest
+import logging
 
 
 def get_sample_data_dir():
@@ -119,3 +120,13 @@ def verify_files(file_paths, checksum, msg=None):
     if msg is not None:
         return unittest.skip("{0}: {1}.".format(msg, reason))
     return unittest.skip(reason)
+
+
+def disable_logging():
+    """Disables loggers and removes their file handles"""
+    loggers = [logging.getLogger(name) for name in
+               logging.root.manager.loggerDict]
+    for logger in loggers:
+        logger.disabled = True
+        for handler in logger.handlers:
+            handler.close()

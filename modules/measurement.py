@@ -528,7 +528,8 @@ class Measurement(Logger):
             measurement_file_path: Path to .measurement file.
         """
         if os.path.exists(measurement_file_path):
-            obj_measurement = json.load(open(measurement_file_path))
+            with open(measurement_file_path) as mesu:
+                obj_measurement = json.load(mesu)
         else:
             obj_measurement = {}
 
@@ -1186,6 +1187,8 @@ class Measurement(Logger):
             os.makedirs(eff_directory_final)
         # Copy efficiencies with proper name
         # File name in format 1H.eff or 1H-example.eff
+
+        # TODO check why incorrect efficiencies are assigned
         for eff in os.listdir(eff_directory):
             if not eff.endswith(".eff"):
                 continue

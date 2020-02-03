@@ -314,6 +314,7 @@ class RecoilElement:
         """Returns the point whose x coordinate is closest to but
         less than the given point's.
         """
+        # TODO function that return both neighbours
         ind = self._points.index(point)
         if ind == 0:
             return None

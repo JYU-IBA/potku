@@ -238,9 +238,9 @@ class MCERD:
 
             file_det.write("==========" + "\n")
 
-            # Write foils from first to second to last
+            # Write foils from first to second last
             for foil in detector.foils[:-1]:
-
+                # TODO add __str__ for foil
                 if type(foil) == CircularFoil:
                     file_det.write("Foil type: circular" + "\n")
                     file_det.write(
