@@ -34,6 +34,7 @@ from modules.observing import Observer
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
+from PyQt5 import QtCore
 
 
 class SimulationControlsWidget(Observer, QtWidgets.QWidget):
@@ -160,11 +161,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         """
         Reset controls to default.
         """
-        # TODO update this function to show correct values
-        #self.finished_processes_widget.hide()
-        #self.observed_atom_count_label.setText("0")
         self.processes_spinbox.setEnabled(True)
-        #self.state_label.setText("Not started")
         self.show_status(self.element_simulation.get_current_status())
 
     def __start_simulation(self):
@@ -174,7 +171,6 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         # they exist), or continue
         status = self.element_simulation.get_current_status()
 
-        # TODO import the enum and use it directly
         if status["state"] == SimulationState.DONE:
             reply = QtWidgets.QMessageBox.question(
                 self, "Confirmation", "Do you want to continue this "
@@ -218,14 +214,6 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
                              "{2}".format("DONE", "NOTRUN",
                                           str(status["state"])))
 
-        number_of_processes = self.processes_spinbox.value()
-
-        # TODO these do not update until after start has been run
-        self.run_button.setEnabled(False)
-        self.stop_button.setEnabled(True)
-        self.finished_processes_label.setText(f"0/{number_of_processes}")
-        self.processes_spinbox.setEnabled(False)
-
         # Lock full edit
         self.element_simulation.lock_edit()
         if self.recoil_dist_widget.current_element_simulation is \
@@ -237,6 +225,8 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         self.element_simulation.y_min = 0.0001
 
         # TODO indicate to user that ion sharing is in use
+
+        number_of_processes = self.processes_spinbox.value()
 
         self.element_simulation.start(number_of_processes,
                                       start_value,
@@ -250,7 +240,9 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
             status: status of the ElementSimulation object
         """
         self.show_atom_count(status["atom_count"])
-        self.show_finished_processes(status["running"])
+        self.show_finished_processes(
+            status["running"],
+            starting=status["state"] == SimulationState.STARTING)
         self.show_state(status["state"])
 
     def show_atom_count(self, atom_count):
@@ -261,14 +253,23 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         """
         self.observed_atom_count_label.setText(str(atom_count))
 
-    def show_finished_processes(self, running_processes):
+    def show_finished_processes(self, running_processes, starting=False):
         """Update the number of finished processes.
 
         Args:
             running_processes: Number of running processes.
+            starting: boolean that determines if the processes are just
+                      starting
         """
         all_proc = self.processes_spinbox.value()
-        finished = all_proc - running_processes
+        if starting:
+            # This is a small fix to show correct number of finished
+            # processes at the start when process count is still 0
+            finished = 0
+        else:
+            # Otherwise we can just use the actual number of processes
+            # to determine the number of finished processes
+            finished = all_proc - running_processes
 
         self.finished_processes_label.setText(f"{finished}/{all_proc}")
 
@@ -319,6 +320,12 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         # Uncomment next line to see status updates in the console
         # print(status)
         self.show_status(status)
+        if status["state"] == SimulationState.STARTING:
+            self.run_button.setEnabled(False)
+            self.stop_button.setEnabled(True)
+            self.processes_spinbox.setEnabled(False)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
 
     def on_error(self, err):
         """Function that the ElementSimulation object invokes when it
