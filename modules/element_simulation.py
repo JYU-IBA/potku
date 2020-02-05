@@ -1112,27 +1112,25 @@ class ElementSimulation(Observable):
             self.mcerd_objects[key_to_delete].delete_unneeded_files()
             del self.mcerd_objects[key_to_delete]
 
-        if not self.mcerd_objects:
-            processes = "N/a"
-            if self.controls:   # TODO try to get rid of controls references
-                processes = self.last_process_count
+        status = self.get_current_status()
+
+        if status["state"] == SimulationState.DONE:
             if self.use_default_settings:
                 self.request.running_simulations.remove(self)
             else:
                 self.simulation.running_simulations.remove(self)
 
-            # Calculate erd lines for log
-            atom_count = sum(count for _, count in self.get_atom_counts())
-
             simulation_name = self.simulation.name
             element = self.recoil_elements[0].element
 
             msg = "Simulation finished. Element {0}, processes: {1}, observed" \
-                  " atoms: {2}".format(str(element), processes, atom_count)
+                  " atoms: {2}".format(str(element),
+                                       self.last_process_count,
+                                       status["atom_count"])
             logging.getLogger(simulation_name).info(msg)
 
-        self.simulations_done = True
-        self.on_complete(self.get_current_status())
+            self.simulations_done = True
+            self.on_complete(self.get_current_status())
 
     def stop(self, optimize_recoil=False):
         """ Stop the simulation."""

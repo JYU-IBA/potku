@@ -1223,9 +1223,8 @@ class Measurement(Logger):
         digest = md5.digest()
         digest_file = None
         if os.path.isfile(tof_in_file):
-            f = open(tof_in_file, 'r')
-            digest_file = md5_for_file(f)
-            f.close()
+            with open(tof_in_file, 'r') as f:
+                digest_file = md5_for_file(f)
 
         # If different back up old tof.in and generate a new one.
         if digest_file != digest:
