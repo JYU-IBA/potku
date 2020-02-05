@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 29.1.2020
+Updated on 5.2.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -34,6 +34,8 @@ import os
 import platform
 import threading
 import time
+import functools
+import itertools
 
 from modules.element import Element
 from modules.general_functions import read_espe_file
@@ -1250,39 +1252,52 @@ class ElementSimulation(Observable):
         self.get_espe = GetEspe(espe_settings)
 
 
-def __get_atom_count(self, file):
-    return count_lines_in_file(file, check_file_exists=True)
-
-# TODO move import to top of the file
-import functools
-
-@functools.lru_cache(32)
-def __get_atom_count_cached(self, file):
-        return __get_atom_count(file)
-
-
 def get_seed(erd_file):
+    """Returns seed value from given .erd file path.
+
+    Does not check if the 'erd_file' parameter is a valid
+    file name or path.
+
+    Args:
+        erd_file: name or path to an .erd file.
+
+    Returns:
+        seed as an integer or None if seed value could not be
+        parsed.
+    """
     try:
         return int(erd_file.rsplit('.', 2)[1])
-    except ValueError:
+    except (ValueError, IndexError):
+        # int could not be parsed or the splitted string did not contain
+        # two parts
         return None
 
 
-def get_valid_erd_file_names(directory, recoil_element):
-    start_part = "{0}-{1}.".format(recoil_element.prefix,
-                                   recoil_element.name)
-    end = ".erd"
+def validate_erd_file_names(erd_files, recoil_element):
+    """Checks if the iterable of .erd files contains valid file names
+    for the given recoil element.
 
-    for file in os.listdir(directory):
-        if file.startswith(start_part) and file.endswith(end):
-            try:
-                file_path = os.path.join(directory,
-                                         file)
-                seed = get_seed(file_path)
-                yield file_path, recoil_element, seed
-            except ValueError:
-                # Seed was not an int, file won't be used
-                pass
+    Invalid erd files are filtered out of the output.
+
+    Args:
+        erd_files: iterable of .erd file names or paths
+        recoil_element: recoil element to which files are matched
+
+    Yield:
+        tuple containing a valid erd file name or path and its seed value
+    """
+    start_part = "{0}-{1}".format(recoil_element.prefix,
+                                  recoil_element.name)
+    end_part = "erd"
+
+    for erd_file_path in erd_files:
+        erd_file = os.path.basename(erd_file_path)
+        seed = get_seed(erd_file)
+        if seed is None:
+            continue
+
+        if erd_file == f"{start_part}.{seed}.{end_part}":
+            yield erd_file_path, seed
 
 
 class ERDFileHandler:
@@ -1290,44 +1305,107 @@ class ERDFileHandler:
 
     Handles counting atoms and getting seeds.
     """
-    def __init__(self, *args):
+    def __init__(self, old_erd_files, recoil_element):
+        """Initializes a new ERDFileHandler that tracks old and new .erd files
+        belonging to the given recoil element
+
+        Args:
+            old_erd_files: list of absolute paths to existing .erd files
+            recoil_element: recoil element for which the .erd files belong to.
+        """
+        self.recoil_element = recoil_element
         self.__active_files = {}
+
         self.__old_files = {
-            str(f): {
-                "rec_elem": r,
-                "seed": int(s)
-            }
-            for f, r, s in args
+            file: seed
+            for file, seed in validate_erd_file_names(old_erd_files,
+                                                      self.recoil_element)
         }
 
     @classmethod
     def from_directory(cls, directory, recoil_element):
-        return cls(get_valid_erd_file_names(directory, recoil_element))
+        """Initializes a new ERDFileHandler by reading ERD files
+        from a directory.
 
-    def add_active_file(self, file):
-        if file in self.__active_files:
-            raise ValueError("Already in active files")
-        if file in self.__old_files:
-            raise ValueError("Already in old files")
+        Args:
+            directory: path to a directory
+            recoil_element: recoil element for which the ERD files belong
+                            to
 
-        seed = get_seed(file)
-        if seed is None:
-            raise ValueError("ERD file did not contain a valid seed.")
+        Return:
+            new ERDFileHandler.
+        """
+        full_paths = (os.path.join(directory, file)
+                      for file in os.listdir(directory))
+        return cls(full_paths, recoil_element)
 
-        self.__active_files[file] = seed
+    def __iter__(self):
+        """Iterates over all of the ERD files, both active and old ones.
+        """
+        for file, seed in itertools.chain(self.__active_files.items(),
+                                          self.__old_files.items()):
+            yield file, seed
+
+    def add_active_file(self, erd_file):
+        """Adds an active ERD file to the handler.
+
+        File must not already exist in active or old files, otherwise
+        ValueError is raised.
+
+        Args:
+            erd_file: file name of an .erd file
+        """
+        if erd_file in self.__active_files:
+            raise ValueError("Given .erd file is an already active file")
+        if erd_file in self.__old_files:
+            raise ValueError("Given .erd file is an already simulated file")
+
+        # Check that the file is valid
+        tpl = next(validate_erd_file_names([erd_file], self.recoil_element),
+                   None)
+
+        if tpl is not None:
+            self.__active_files[tpl[0]] = tpl[1]
+        else:
+            raise ValueError("Given file was not a valid .erd file")
 
     def get_max_seed(self):
-        return max(seed for _, seed, _ in self)
+        """Returns the largest seed in current .erd file collection.
+        """
+        return max(seed for _, seed in self)
 
     def get_active_atom_counts(self):
+        """Returns the number of atoms in currently active .erd files.
+        """
         return sum(self.__get_atom_count(file)
                    for file in self.__active_files)
 
     def get_old_atom_counts(self):
+        """Returns the number of atoms in already simulated .erd files.
+        """
         return sum(self.__get_atom_count_cached(file)
                    for file in self.__old_files)
 
+    def __get_atom_count(self, erd_file):
+        """Returns the number of counted atoms in given ERD file.
+        """
+        return count_lines_in_file(erd_file, check_file_exists=True)
+
+    @functools.lru_cache(32)
+    def __get_atom_count_cached(self, erd_file):
+        """Cached version of the atom counter. If the atoms in the
+        ERD file have already been counted, a cached result is returned.
+
+        Cache is never cleared during the run time of the program so only
+        use this when you are sure that the atom count in a file does not
+        change anymore.
+        """
+        return self.__get_atom_count(erd_file)
+
     def update(self):
+        """Moves all files from active file collection to already simulated
+        files.
+        """
         self.__old_files.update(self.__active_files)
         self.__active_files.clear()
 
