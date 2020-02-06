@@ -26,10 +26,10 @@ libgsto.a: libgsto.o gsto_masses.o win_compat.o
 	ranlib libgsto.a
 
 srim_gen_stop: srim_gen_stop.o
-	$(CC) $(LDFLAGS) $^ -lgsto -o $@
+	$(CC) $(LDFLAGS) $^ -lgsto -o $@ $(LIB)
 
 gsto_stop: gsto_stop.o
-	$(CC) $(LDFLAGS) $^ -lgsto -o $@
+	$(CC) $(LDFLAGS) $^ -lgsto -o $@ $(LIB)
 
 clean:
 	rm -f *.a *.o $(AUX)
