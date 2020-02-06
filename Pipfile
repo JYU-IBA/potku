@@ -8,11 +8,10 @@ numpy = "*"
 scipy = "*"
 matplotlib = "*"
 "PyQt5" = "==5.9.2"
+Shapely = "*"
 wheel = "*"
-Shapely = "*" # Windows version has to be installed from a wheel. Download one from https://www.lfd.uci.edu/~gohlke/pythonlibs/#shapely
 
 [dev-packages]
-PyInstaller = ">=3.6"
 "pypiwin32" = {sys_platform = "== 'win32'"}
 "pywin32" = {sys_platform = "== 'win32'"}
 

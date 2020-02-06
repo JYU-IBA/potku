@@ -205,6 +205,8 @@ class Detector:
         Args:
             file_name: Name of the efficiency file.
         """
+        # TODO maybe the widget could keep a list of files to remove instead of
+        #      the detector? Detector should just delete given files
         file_path = ""
         folder_and_file = os.path.join("Efficiency_files", file_name)
         for f in self.efficiencies:

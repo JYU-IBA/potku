@@ -31,6 +31,7 @@ import tempfile
 import os
 
 from modules.parsing import CSVParser
+from modules.parsing import ToFListParser
 
 
 class TestParsing(unittest.TestCase):
@@ -237,6 +238,14 @@ class TestParsing(unittest.TestCase):
                                                  ignore="w",
                                                  method="row",
                                                  separator="\t")))
+
+    def test_slots(self):
+        """Tests that __slots__ work in CSVParser"""
+        def assign(parser):
+            parser.x = 42
+
+        self.assertRaises(AttributeError, lambda: assign(CSVParser()))
+        self.assertRaises(AttributeError, lambda: assign(ToFListParser()))
 
 
 if __name__ == "__main__":

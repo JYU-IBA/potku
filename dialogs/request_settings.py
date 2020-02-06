@@ -975,6 +975,14 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 # Detector settings
                 self.detector_settings_widget.update_settings()
 
+                # TODO keep a list of .eff files to add and remove in the
+                #      dialog instead of the detector
+                # TODO there is a small bug here. If an .eff file is removed
+                #      and then added again without closing the dialog,
+                #      the file still gets removed
+                # TODO this code is duplicated in the measurement settings
+                #      dialog (and same bug is there too). Duplicated
+                #      code should be refactored
                 for file in self.request.default_detector.efficiencies:
                         self.request.default_detector.add_efficiency_file(file)
 
@@ -983,6 +991,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 for file in \
                         self.request.default_detector.efficiencies_to_remove:
                     self.request.default_detector.remove_efficiency_file(file)
+
+                # Clear the list so same files do not get deleted over and over
+                # again
+                self.request.default_detector.efficiencies_to_remove.clear()
 
                 self.request.default_detector.efficiencies_to_remove = []
 

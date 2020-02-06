@@ -193,6 +193,8 @@ class CSVParser:
 
 class ToFListParser(CSVParser):
     """Default parser for reading data in the format produced by tof_list"""
+    __slots__ = ()
+
     def __init__(self):
         """Initializes a ToFListParses.
         """
