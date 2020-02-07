@@ -1330,21 +1330,19 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.set_xlabel(self.name_x_axis)
 
         if self.current_element_simulation:
-            # TODO recoil element should have its color as a hex code
-            color = str(self.current_recoil_element.color.name())
             self.lines, = self.axes.plot(
                 self.current_element_simulation.get_xs(
                     self.current_recoil_element),
                 self.current_element_simulation.get_ys(
                     self.current_recoil_element),
-                color=color)
+                color=self.current_recoil_element.color)
 
             self.markers, = self.axes.plot(
                 self.current_element_simulation.get_xs(
                     self.current_recoil_element),
                 self.current_element_simulation.get_ys(
                     self.current_recoil_element),
-                color=color, marker="o",
+                color=self.current_recoil_element.color, marker="o",
                 markersize=10, linestyle="None")
 
             self.markers_selected, = self.axes.plot(0, 0, marker="o",

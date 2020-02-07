@@ -62,8 +62,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         self.recoil_dist_widget = recoil_dist_widget
 
         main_layout = QtWidgets.QHBoxLayout()
-        recoil_element = self.element_simulation.recoil_elements[
-            0]
+        recoil_element = self.element_simulation.recoil_elements[0]
         self.controls_group_box = QtWidgets.QGroupBox(
             recoil_element.prefix + "-" + recoil_element.name)
         self.controls_group_box.setSizePolicy(QtWidgets.QSizePolicy.Preferred,

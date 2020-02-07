@@ -247,15 +247,15 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.other_recoil.widgets.append(self.last_sol_btn)
 
         # Create necessary lines and markers
-        color = str(self.current_recoil.color.name())
         self.lines, = self.axes.plot(self.current_recoil.get_xs(),
                                      self.current_recoil.get_ys(),
-                                     color=color)
+                                     color=self.current_recoil.color)
 
         self.markers, = self.axes.plot(self.current_recoil.get_xs(),
                                        self.current_recoil.get_ys(),
-                                       color=color, marker="o",
-                                       markersize=10, linestyle="None")
+                                       color=self.current_recoil.color,
+                                       marker="o", markersize=10,
+                                       linestyle="None")
 
         self.markers_selected, = self.axes.plot(0, 0, marker="o",
                                                 markersize=10,
@@ -312,9 +312,8 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
 
         xs = self.other_recoil.get_xs()
         ys = self.other_recoil.get_ys()
-        line = self.axes.plot(xs, ys, color=str(
-            self.other_recoil.color.name()),
-                       alpha=0.3, visible=True, zorder=1)
+        line = self.axes.plot(xs, ys, color=self.other_recoil.color,
+                              alpha=0.3, visible=True, zorder=1)
         self.other_recoil_line = line[0]
 
         self.fig.canvas.draw_idle()

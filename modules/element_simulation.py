@@ -531,7 +531,9 @@ class ElementSimulation(Observable):
                                             file.endswith(".sct")) and not \
                     file[file.index(prefix) + len(prefix)].isalpha():
                 # Check that e.g. C and Cu are handled separately
-                obj = json.load(open(os.path.join(simulation_folder, file)))
+                with open(os.path.join(simulation_folder, file)) as rec_file:
+                    obj = json.load(rec_file)
+
                 points = []
                 for dictionary_point in obj["profile"]:
                     x, y = dictionary_point["Point"].split(" ")
@@ -834,20 +836,21 @@ class ElementSimulation(Observable):
             }
             # Delete corresponding erd file
             optimize_fluence = False
-            if not optimize_recoil:
+            if not optimize_recoil:     # TODO optim_mode {None, "rec", "flu"}
                 if not optimize:
-                    recoil_name = self.recoil_elements[0].name
+                    new_erd_file = get_erd_file_name(recoil, seed_number)
                 else:
-                    recoil_name = "optfl"
                     optimize_fluence = True
                     self.optimized_fluence = 0
-                new_erd_file = os.path.join(    # TODO method get_erd_file_name?
-                    self.directory, self.recoil_elements[0].prefix + "-" +
-                    recoil_name + "." + str(seed_number) + ".erd")
+                    new_erd_file = get_erd_file_name(recoil, seed_number,
+                                                      optim_mode="fluence")
+
             else:
-                new_erd_file = os.path.join(
-                    self.directory, self.optimization_recoils[0].prefix + "-" +
-                    "opt" + "." + str(seed_number) + ".erd")
+                new_erd_file = get_erd_file_name(recoil, seed_number,
+                                                 optim_mode="recoil")
+
+            new_erd_file = os.path.join(self.directory, new_erd_file)
+
             if os.path.exists(new_erd_file):
                 os.remove(new_erd_file)
 
@@ -1423,20 +1426,30 @@ class ERDFileHandler:
         self.__active_files.clear()
 
 
-def get_erd_file_path(directory, elem_prefix, rec_name):
-    """Returns the file path that corresponds to given
-    directory, recoil element prefix and recoil name.
+def get_erd_file_name(recoil_element, seed, optim_mode=None,
+                      get_espe_param=False):
+    """Returns the name of a file that corresponds to given
+    recoil element, seed, optimization mode and get_espe_param.
 
     Args:
-        directory: absolute path to a directory
-        elem_prefix: prefix of the recoil element
-        rec_name: name of the recoil
+        recoil_element: recoil element
+        seed: seed of the simulation
+        optim_mode: either None, 'recoil' or 'fluence'
+        get_espe_param: boolean that determines if the file is going
+                        to be used as a parameter for get_espe
 
     Return:
-        absolute path to an ERD file
+        .erd file name
     """
-    # TODO check for path traversal
-    # TODO implement all possible naming options that an ERD file can have
-    #      before using this function
-    return os.path.join(directory,
-                        f"{elem_prefix}-{rec_name}.*.erd")
+    # TODO check for path traversal (maybe with a decorator)
+    espe_str = ".*" if get_espe_param else ""
+
+    if optim_mode is None:
+        return f"{recoil_element.prefix}-{recoil_element.name}." \
+               f"{seed}{espe_str}.erd"
+    if optim_mode == "fluence":
+        return f"{recoil_element.prefix}-optfl.{seed}{espe_str}.erd"
+    if optim_mode == "recoil":
+        return f"{recoil_element.prefix}-opt.{seed}{espe_str}.erd"
+
+    raise ValueError(f"Unknown optimization mode '{optim_mode}'")

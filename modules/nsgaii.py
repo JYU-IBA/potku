@@ -565,16 +565,16 @@ class Nsgaii:
             points.append(Point(point_9))
             points.append(Point(point_10))
 
-        # TODO this should not be passed down as QColor
-        color = QtGui.QColor("red")
         # Form a recoil object
         if not name:
             name = "opt"
         else:
             name = name
+
         recoil = RecoilElement(
             self.element_simulation.recoil_elements[0].element, points,
-            color=color, name=name)
+            color="red", name=name)
+
         return recoil
 
     def initialize_population(self):

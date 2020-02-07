@@ -134,7 +134,6 @@ class TestErdFiles(unittest.TestCase):
         handler.add_active_file(self.valid_erd_files[1])
         self.assertEqual(102, handler.get_max_seed())
 
-
     @change_wd_to_root
     def test_erdfilehandler_add(self):
         from modules.element_simulation import ERDFileHandler
@@ -169,7 +168,7 @@ class TestErdFiles(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             # Create files in the tmp dir
             for file in self.valid_erd_files:
-                self.write_line(os.path.join(tmp_dir, file))
+                write_line(os.path.join(tmp_dir, file))
 
             # Initialise a handler from the tmp_dir and add an active file
             handler = ERDFileHandler.from_directory(tmp_dir, self.elem_4he)
@@ -178,7 +177,7 @@ class TestErdFiles(unittest.TestCase):
 
             # Append a line to each file
             for erd_file, _, _ in handler:
-                self.write_line(erd_file)
+                write_line(erd_file)
 
             self.assertEqual(1, handler.get_active_atom_counts())
             self.assertEqual(4, handler.get_old_atom_counts())
@@ -186,7 +185,7 @@ class TestErdFiles(unittest.TestCase):
             # As the results of old files are cached, only counts in active
             # files are incremented
             for erd_file, _, _ in handler:
-                self.write_line(erd_file)
+                write_line(erd_file)
 
             self.assertEqual(2, handler.get_active_atom_counts())
             self.assertEqual(4, handler.get_old_atom_counts())
@@ -198,7 +197,7 @@ class TestErdFiles(unittest.TestCase):
 
             # Now the atom count will no longer update in the added file
             for erd_file, _, _ in handler:
-                self.write_line(erd_file)
+                write_line(erd_file)
 
             self.assertEqual(0, handler.get_active_atom_counts())
             self.assertEqual(6, handler.get_old_atom_counts())
@@ -206,11 +205,43 @@ class TestErdFiles(unittest.TestCase):
         # Assert that tmp dir got deleted
         self.assertFalse(os.path.exists(tmp_dir))
 
-    def write_line(self, file):
-        with open(file, "a") as file:
-            # ERDFileHandler is only counting lines,
-            # it does not care if the file contains
-            # nonsensical data.
-            file.write("foo\n")
+    @change_wd_to_root
+    def test_get_erd_file_path(self):
+        from modules.element_simulation import get_erd_file_name
+        from modules.recoil_element import RecoilElement
+
+        rec_elem = RecoilElement(Element.from_string("He"), [], "red")
+
+        self.assertEqual("He-Default.101.erd",
+                         get_erd_file_name(rec_elem, 101))
+        self.assertEqual("He-Default.102.*.erd",
+                         get_erd_file_name(rec_elem, 102, get_espe_param=True))
+
+        self.assertEqual("He-opt.101.erd",
+                         get_erd_file_name(rec_elem, 101, optim_mode="recoil"))
+        self.assertEqual("He-opt.102.*.erd",
+                         get_erd_file_name(rec_elem, 102, optim_mode="recoil",
+                                           get_espe_param=True))
+
+        self.assertEqual("He-optfl.101.erd",
+                         get_erd_file_name(rec_elem, 101, optim_mode="fluence"))
+        self.assertEqual("He-optfl.102.*.erd",
+                         get_erd_file_name(rec_elem, 102,
+                                           optim_mode="fluence",
+                                           get_espe_param=True))
+
+        self.assertRaises(ValueError,
+                          lambda: get_erd_file_name(rec_elem, 101,
+                                                    optim_mode="foo"))
+
+
+def write_line(file):
+    with open(file, "a") as file:
+        # ERDFileHandler is only counting lines,
+        # it does not care if the file contains
+        # nonsensical data.
+        file.write("foo\n")
+
+
 
 
