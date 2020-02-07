@@ -81,7 +81,8 @@ def remove_file(file_path):
     if not file_path:
         return
     try:
-        shutil.rmtree(file_path)
+        #shutil.rmtree(file_path)
+        os.remove(file_path)
     except Exception as e:
         # Removal failed
         print(e)
@@ -103,6 +104,8 @@ def hist(data, width=1.0, col=1):
     """
     col -= 1  # Same format as Arstila's code, actual column number (not index)
     if col < 0:
+        return []
+    if not data:
         return []
     if data[0] and col >= len(data[0]):
         return []
@@ -184,23 +187,34 @@ def read_tof_list_file(tof_list_file):
 
 def calculate_spectrum(tof_listed_files, spectrum_width, measurement,
                        directory_es):
-    """Calculate energy spectrum data from cut files.
+    """Calculate energy spectrum data from .tof_list files and writes the
+    results to .hist files.
 
-    Returns list of cut files
+    Args:
+        tof_listed_files: contents of .tof_list files belonging to the
+                          measurement as a dict.
+        spectrum_width: TODO
+        measurement: measurement which the .tof_list files belong to
+        directory_es: directory
+
+    Returns:
+        contents of .hist files as a dict
     """
     histed_files = {}
     keys = tof_listed_files.keys()
-    invalid_keys = []
+    invalid_keys = set()
+
     for key in keys:
         histed_files[key] = hist(tof_listed_files[key],
                                  spectrum_width, 3)
         if not histed_files[key]:
-            invalid_keys.append(key)
+            invalid_keys.add(key)
             continue
         first_val = (histed_files[key][0][0] - spectrum_width, 0)
         last_val = (histed_files[key][-1][0] + spectrum_width, 0)
         histed_files[key].insert(0, first_val)
         histed_files[key].append(last_val)
+
     for key in keys:
         if key in invalid_keys:
             continue
@@ -214,6 +228,7 @@ def calculate_spectrum(tof_listed_files, spectrum_width, measurement,
                                          ('int', int)])
         numpy.savetxt(filename, numpy_array, delimiter=" ",
                       fmt="%5.5f %6d")
+
     return histed_files
 
 
