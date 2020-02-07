@@ -96,7 +96,7 @@ class ElementSimulation(Observable):
                 "minimum_energy", "simulation_mode", "seed_number", \
                 "recoil_elements", "recoil_atoms", "mcerd_objects", \
                 "get_espe", "channel_width", "target", "detector", \
-                "__mcerd_command", "settings", "espe_settings", \
+                "settings", "espe_settings", \
                 "description", "run", "spectra", "name", \
                 "use_default_settings", "sample", "controls", "simulation", \
                 "simulations_done", "__full_edit_on", "y_min", "main_recoil",\
@@ -211,10 +211,6 @@ class ElementSimulation(Observable):
                                           prefix +
                                           ".profile"))
 
-        self.__mcerd_command = os.path.join(
-            "external", "Potku-bin", "mcerd" +
-            (".exe" if platform.system() == "Windows" else ""))
-
         # This has all the mcerd objects so get_espe knows all the element
         # simulations that belong together (with different seed numbers)
         self.mcerd_objects = {}
@@ -224,7 +220,12 @@ class ElementSimulation(Observable):
         # Whether any simulations have been run or not
         self.simulations_done = simulations_done
 
+        # TODO get rid of this reference to GUI element. Currently there are
+        #      some other objects that modify controls via this reference so
+        #      that needs to be sorted out before removing this. (Also this
+        #      should be removed from __slots__)
         self.controls = None
+
         if self.simulations_done:
             self.__full_edit_on = False
             self.y_min = 0.0001
@@ -622,10 +623,12 @@ class ElementSimulation(Observable):
         Args:
             file_path: File in which the mcsimu settings will be saved.
         """
+        # TODO add function get_full_name that returns name
         if self.name_prefix != "":
             name = self.name_prefix + "-" + self.name
         else:
             name = self.name
+
         if not self.use_default_settings:
             obj = {
                 "name": name,
@@ -681,6 +684,7 @@ class ElementSimulation(Observable):
             ".sct" files are stored.
             recoil_element: RecoilElement object to write to file to.
         """
+        # TODO function that returns the name of the rec_file
         if recoil_element.type == "rec":
             suffix = ".rec"
         else:
@@ -688,7 +692,6 @@ class ElementSimulation(Observable):
         recoil_file = os.path.join(simulation_folder,
                                    recoil_element.prefix + "-" +
                                    recoil_element.name + suffix)
-        element_str = recoil_element.element.get_prefix()
 
         obj = {
             "name": recoil_element.name,
@@ -697,7 +700,7 @@ class ElementSimulation(Observable):
                 time.time())),
             "modification_time_unix": time.time(),
             "simulation_type": recoil_element.type,
-            "element": element_str,
+            "element":  recoil_element.element.get_prefix(),
             "reference_density": recoil_element.reference_density,
             "multiplier": recoil_element.multiplier,
             "profile": [],
@@ -705,6 +708,7 @@ class ElementSimulation(Observable):
         }
 
         for point in recoil_element.get_points():
+            # TODO __str__ function for Point
             point_obj = {
                 "Point": str(round(point.get_x(), 2)) + " " + str(round(
                     point.get_y(), 4))
@@ -1118,6 +1122,9 @@ class ElementSimulation(Observable):
 
         if status["state"] == SimulationState.DONE:
             if self.use_default_settings:
+                # TODO there is a bug in here. use_default_settings is True
+                #      even when the simulation is running its own settings.
+                #      Next line will result in an exception.
                 self.request.running_simulations.remove(self)
             else:
                 self.simulation.running_simulations.remove(self)
@@ -1341,10 +1348,15 @@ class ERDFileHandler:
 
     def __iter__(self):
         """Iterates over all of the ERD files, both active and old ones.
+
+        Yield:
+            tuple consisting of absolute file path, seed value and boolean
+            that tells if the ERD file is used in a running simulation or
+            not.
         """
         for file, seed in itertools.chain(self.__active_files.items(),
                                           self.__old_files.items()):
-            yield file, seed
+            yield file, seed, file in self.__active_files
 
     def add_active_file(self, erd_file):
         """Adds an active ERD file to the handler.
@@ -1370,9 +1382,10 @@ class ERDFileHandler:
             raise ValueError("Given file was not a valid .erd file")
 
     def get_max_seed(self):
-        """Returns the largest seed in current .erd file collection.
+        """Returns the largest seed in current .erd file collection or None
+        if no .erd files are stored in the handler.
         """
-        return max(seed for _, seed in self)
+        return max((seed for _, seed, _ in self), default=None)
 
     def get_active_atom_counts(self):
         """Returns the number of atoms in currently active .erd files.

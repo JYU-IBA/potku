@@ -116,10 +116,24 @@ class TestErdFiles(unittest.TestCase):
         from modules.element_simulation import ERDFileHandler
         handler = ERDFileHandler(self.valid_erd_files, self.elem_4he)
 
-        self.assertEqual(self.expected_values, [f for f in handler])
-        self.assertEqual(102, handler.get_max_seed())
+        exp = [(f, s, False) for f, s in self.expected_values]
+        self.assertEqual(exp, [f for f in handler])
         self.assertEqual(0, handler.get_active_atom_counts())
         self.assertEqual(0, handler.get_old_atom_counts())
+
+    @change_wd_to_root
+    def test_max_seed(self):
+        from modules.element_simulation import ERDFileHandler
+        handler = ERDFileHandler([], self.elem_4he)
+
+        self.assertEqual(None, handler.get_max_seed())
+
+        handler.add_active_file(self.valid_erd_files[0])
+        self.assertEqual(101, handler.get_max_seed())
+
+        handler.add_active_file(self.valid_erd_files[1])
+        self.assertEqual(102, handler.get_max_seed())
+
 
     @change_wd_to_root
     def test_erdfilehandler_add(self):
@@ -141,15 +155,11 @@ class TestErdFiles(unittest.TestCase):
         self.assertRaises(ValueError, lambda: handler.add_active_file(new_file))
 
         # new file appears as the first element when iterating
-        # over the handler
-        exp = [(new_file, 103)] + self.expected_values
+        # over the handler and its status is active
+        exp = [(new_file, 103, True)] + [(f, s, False)
+                                         for f, s, in self.expected_values]
 
         self.assertEqual(exp, [f for f in handler])
-
-        # max seed is now 103, atom counts remain 0
-        self.assertEqual(103, handler.get_max_seed())
-        self.assertEqual(0, handler.get_active_atom_counts())
-        self.assertEqual(0, handler.get_old_atom_counts())
 
     @change_wd_to_root
     def test_atom_counts(self):
@@ -167,7 +177,7 @@ class TestErdFiles(unittest.TestCase):
                                                  "4He-Default.103.erd"))
 
             # Append a line to each file
-            for erd_file, _ in handler:
+            for erd_file, _, _ in handler:
                 self.write_line(erd_file)
 
             self.assertEqual(1, handler.get_active_atom_counts())
@@ -175,7 +185,7 @@ class TestErdFiles(unittest.TestCase):
 
             # As the results of old files are cached, only counts in active
             # files are incremented
-            for erd_file, _ in handler:
+            for erd_file, _, _ in handler:
                 self.write_line(erd_file)
 
             self.assertEqual(2, handler.get_active_atom_counts())
@@ -187,7 +197,7 @@ class TestErdFiles(unittest.TestCase):
             self.assertEqual(6, handler.get_old_atom_counts())
 
             # Now the atom count will no longer update in the added file
-            for erd_file, _ in handler:
+            for erd_file, _, _ in handler:
                 self.write_line(erd_file)
 
             self.assertEqual(0, handler.get_active_atom_counts())
