@@ -27,3 +27,6 @@
 Pipfile.lock
 
 !/external/Makefile
+
+# Temporary QT Creator files
+*.ui.autosave

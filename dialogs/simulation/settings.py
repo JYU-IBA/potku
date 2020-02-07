@@ -1378,6 +1378,15 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                  self.simulation.detector.name +
                                  ".detector")
 
+                # TODO keep a list of .eff files to add and remove in the
+                #      dialog instead of the detector
+                # TODO there is a small bug here. If an .eff file is removed
+                #      and then added again without closing the dialog,
+                #      the file still gets removed
+                # TODO this code has been triplicated in measurement settings
+                #      and request settings (and same bug is there too).
+                #      Maybe qcreate a common ui element for handling efficiency
+                #      files
                 for file in self.simulation.detector.efficiencies:
                     self.simulation.detector.add_efficiency_file(file)
 
@@ -1385,6 +1394,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                         self.simulation.detector.efficiencies_to_remove:
                     self.simulation.detector.remove_efficiency_file(
                         file)
+
+                self.simulation.detector.efficiencies_to_remove.clear()
 
                 # Save measurement settings parameters.
                 new_measurement_settings_file_path = os.path.join(
