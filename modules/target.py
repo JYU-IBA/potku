@@ -92,7 +92,8 @@ class Target:
             Returns a Target object with parameters read from files.
         """
 
-        obj = json.load(open(target_file_path))
+        with open(target_file_path) as tgt_file:
+            obj = json.load(tgt_file)
 
         # Below we do conversion from dictionary to Target object
         name = obj["name"]
@@ -116,7 +117,8 @@ class Target:
                                 layer["start_depth"]))
 
         try:
-            obj = json.load(open(measurement_file_path))
+            with open(measurement_file_path) as mesu:
+                obj = json.load(mesu)
             target_theta = obj["geometry"]["target_theta"]
         # If keys do not exist or measurement_file_path is empty or file
         # doesn't exist:
@@ -146,7 +148,7 @@ class Target:
                 time.time())),
             "modification_time_unix": time.time(),
             "target_type": self.target_type,
-            "scattering_element": self.scattering_element.__str__(),
+            "scattering_element": str(self.scattering_element),
             "image_size": self.image_size,
             "image_file": self.image_file,
             "layers": []
@@ -155,7 +157,7 @@ class Target:
         for layer in self.layers:
             layer_obj = {
                 "name": layer.name,
-                "elements": [element.__str__() for element in layer.elements],
+                "elements": [str(element) for element in layer.elements],
                 "thickness": layer.thickness,
                 "density": layer.density,
                 "start_depth": layer.start_depth

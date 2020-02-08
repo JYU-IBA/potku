@@ -37,6 +37,7 @@ import threading
 import time
 
 from pathlib import Path
+from modules.layer import Layer
 
 
 class MCERD:
@@ -44,6 +45,10 @@ class MCERD:
     An MCERD class that handles calling the mcerd binary and creating the
     files it needs.
     """
+    __slots__ = "__settings", "parent", "__rec_filename", "__filename", \
+                "recoil_file", "sim_dir", "result_file", "__target_file", \
+                "__command_file", "__detector_file", "__foils_file", \
+                "__presimulation_file", "__process"
 
     def __init__(self, settings, parent, optimize_fluence=False):
         """Create an MCERD object.
@@ -68,50 +73,43 @@ class MCERD:
         self.__rec_filename = f"{rec_elem.prefix}-{recoil_name}"
         self.__filename = f"{self.parent.name_prefix}-{self.parent.name}"
 
-        # TODO rename self.tmp to sim_dir
-        self.tmp = self.__settings["sim_dir"]
-        simulation_type = self.__settings["simulation_type"]
+        self.sim_dir = Path(self.__settings["sim_dir"])
 
-        if simulation_type == "ERD":
-            suffix = ".recoil"
+        if self.__settings["simulation_type"] == "ERD":
+            suffix = "recoil"
         else:
-            suffix = ".scatter"
+            suffix = "scatter"
+
+        res_file = f"{self.__rec_filename}.{self.__settings['seed_number']}.erd"
 
         # The recoil file and erd file are later passed to get_espe.
-        # TODO difference between suffixed rec_file and nonsuffixed?
-        # TODO use pathlib
-        self.recoil_file = os.path.join(self.tmp, self.__rec_filename +
-                                        suffix)
-        self.result_file = os.path.join(self.tmp, self.__rec_filename + "." +
-                                        str(self.__settings["seed_number"]) +
-                                        ".erd")
+        self.recoil_file = self.sim_dir / f"{self.__rec_filename}.{suffix}"
+        self.result_file = self.sim_dir / res_file
 
-        self.__command_file = os.path.join(self.tmp, self.__rec_filename)
-        self.__target_file = os.path.join(self.tmp, self.__filename +
-                                          ".erd_target")
-        self.__detector_file = os.path.join(self.tmp, self.__filename +
-                                            ".erd_detector")
-        self.__foils_file = os.path.join(self.tmp, self.__filename + ".foils")
-        self.__presimulation_file = os.path.join(self.tmp, self.__filename +
-                                                 ".pre")
+        self.__command_file = self.sim_dir / self.__rec_filename
+        self.__target_file = self.sim_dir / f"{self.__filename}.erd_target"
+        self.__detector_file = self.sim_dir / f"{self.__filename}.erd_detector"
+        self.__foils_file = self.sim_dir / f"{self.__filename}.foils"
+        self.__presimulation_file = self.sim_dir / f"{self.__filename}.pre"
 
         self.__process = None
 
     def get_command(self):
         """Returns the command that is used to start the MCERD process.
         """
-        mcerd_path = os.path.join("external", "Potku-bin", "mcerd{0}".format(
-                                  ".exe" if platform.system() == "Windows"
-                                  else ""))
-        rec_file_path = os.path.join(self.tmp, self.__rec_filename)
+        if platform.system() == "Windows":
+            bin_suffix = ".exe"
+            ulimit = ""
+            exec_cmd = ""
+        else:
+            bin_suffix = ""
+            ulimit = "ulimit -s 64000; "
+            exec_cmd = "exec "
 
-        mcerd_command = "{0} {1}".format(mcerd_path, rec_file_path)
+        mcerd_path = Path(f"external/Potku-bin/mcerd{bin_suffix}")
+        rec_file_path = self.sim_dir / self.__rec_filename
 
-        # MCERD needs to be fixed so we can get rid of this ulimit.
-        ulimit = "" if platform.system() == "Windows" else "ulimit -s 64000; "
-        exec_command = "" if platform.system() == "Windows" else "exec "
-
-        return f"{ulimit}{exec_command}{mcerd_command}"
+        return f"{ulimit}{exec_cmd}{mcerd_path} {rec_file_path}"
 
     def run(self):
         """Starts the MCERD process. Also starts a thread that
@@ -155,96 +153,25 @@ class MCERD:
             print("It appears we do not support your OS.")
 
     def __create_mcerd_files(self):
+        """Creates the temporary files needed for running MCERD.
         """
-        Creates the temporary files needed for running MCERD. These files
-        are placed to the directory of the temporary files of the operating
-        system.
-        """
-        # TODO individual functions for creating each file type
-
-        target = self.__settings["target"]
-        detector = self.__settings["detector"]
-        recoil_element = self.__settings["recoil_element"]
-
         # Create the main MCERD command file
         with open(self.__command_file, "w") as file:
             file.write(self.get_command_file_contents())
 
         # Create the MCERD detector file
-        with open(self.__detector_file, "w") as file_det:
-            file_det.write(self.get_detector_file_contents())
+        with open(self.__detector_file, "w") as file:
+            file.write(self.get_detector_file_contents())
 
         # Create the MCERD target file
-        with open(self.__target_file, "w") as file_target:
-            for layer in target.layers:
-                for element in layer.elements:
-                    if element.isotope:
-                        # TODO find_mass_of_isotope could handle checking if the
-                        #      element has an isotope
-                        mass = masses.find_mass_of_isotope(element)
-                    else:
-                        mass = masses.get_standard_isotope(element.symbol)
-                    file_target.write("%0.2f %s" % (mass,
-                                                    element.symbol) + "\n")
-
-            # First layer is used for target surface calculation.
-            file_target.write("\n"
-                              "0.01 nm \n"
-                              "ZBL \n"
-                              "ZBL \n"
-                              "0.000001 g/cm3 \n"
-                              "0 1.0 \n")
-
-            # An indexed list of all elements is written first.
-            # Then layers and their elements referencing the index.
-            count = 0
-            for layer in target.layers:
-                file_target.write("\n")
-                file_target.write(str(layer.thickness) + " nm" + "\n")
-                file_target.write("ZBL" + "\n")
-                file_target.write("ZBL" + "\n")
-                file_target.write(str(layer.density) + " g/cm3" + "\n")
-                for element in layer.elements:
-                    if element.amount > 1:
-                        amount = element.amount / 100
-                    else:
-                        amount = element.amount
-                    file_target.write(str(count) +
-                                      (" %0.3f" % amount) + "\n")
-                    count += 1
+        with open(self.__target_file, "w") as file:
+            file.write(self.get_target_file_contents())
 
         # Create the MCERD foils file
-        with open(self.__foils_file, "w") as file_foils:
-            for foil in detector.foils:
-                for layer in foil.layers:
-                    # Write only one layer since mcerd soesn't know how to
-                    # handle multiple layers in a foil
-                    for element in layer.elements:
-                        mass = masses.find_mass_of_isotope(element)
-                        file_foils.write("%0.2f %s" % (mass,
-                                                       element.symbol) + "\n")
-                    break
+        with open(self.__foils_file, "w") as file:
+            file.write(self.get_foils_file_contents())
 
-            # An indexed list of all elements is written first.
-            # Then layers and their elements referencing the index.
-            count = 0
-            for foil in detector.foils:
-                for layer in foil.layers:
-                    file_foils.write("\n")
-                    file_foils.write(str(layer.thickness) + " nm" + "\n")
-                    file_foils.write("ZBL" + "\n")
-                    file_foils.write("ZBL" + "\n")
-                    file_foils.write(str(layer.density) + " g/cm3" + "\n")
-                    for element in layer.elements:
-                        if element.amount > 1:
-                            amount = element.amount / 100
-                        else:
-                            amount = element.amount
-                        file_foils.write(str(count) +
-                                         (" %0.3f" % amount) + "\n")
-                        count += 1
-                    break
-
+        recoil_element = self.__settings["recoil_element"]
         recoil_element.write_recoil_file(self.recoil_file)
 
     def get_command_file_contents(self):
@@ -299,10 +226,56 @@ class MCERD:
         ])
 
     def get_target_file_contents(self):
-        pass
+        """Returns the contents of the target file as a string.
+        """
+        target = self.__settings["target"]
+        cont = []
+        for layer in target.layers:
+            for element in layer.elements:
+                cont.append(element.get_mcerd_params())
+
+        # First layer is used for target surface calculation.
+        cont += Layer.get_default_mcerd_params()
+
+        # An indexed list of all elements is written first.
+        # Then layers and their elements referencing the index.
+        count = 0
+        for layer in target.layers:
+            cont += layer.get_mcerd_params()
+            for element in layer.elements:
+                cont.append(f"{count} "
+                            f"{element.get_mcerd_params(return_amount=True)}")
+                count += 1
+
+        return "\n".join(cont)
 
     def get_foils_file_contents(self):
-        pass
+        """Returns the contents of the foils file.
+        """
+        detector = self.__settings["detector"]
+        cont = []
+        for foil in detector.foils:
+            for layer in foil.layers:
+                # Write only one layer since mcerd soesn't know how to
+                # handle multiple layers in a foil
+                for element in layer.elements:
+                    cont.append(element.get_mcerd_params())
+                break
+
+        # An indexed list of all elements is written first.
+        # Then layers and their elements referencing the index.
+        count = 0
+        for foil in detector.foils:
+            for layer in foil.layers:
+                cont += layer.get_mcerd_params()
+                for element in layer.elements:
+                    cont.append(
+                        f"{count} "
+                        f"{element.get_mcerd_params(return_amount=True)}")
+                    count += 1
+                break
+
+        return "\n".join(cont)
 
     def copy_results(self, destination):
         """Copies MCERD result file (.erd) and recoil file into given
@@ -341,16 +314,16 @@ class MCERD:
         except OSError:
             pass  # Could not delete all the files
 
-        for file in os.listdir(self.tmp):
+        for file in os.listdir(self.sim_dir):
             if file.startswith(self.__rec_filename):
                 if file.endswith(".out") or file.endswith(".dat") or \
                    file.endswith(".range"):
                     try:
-                        os.remove(os.path.join(self.tmp, file))
+                        os.remove(self.sim_dir / file)
                     except OSError:
                         continue  # Could not delete the file
             if file.startswith(self.__rec_filename) and file.endswith(".pre"):
                 try:
-                    os.remove(os.path.join(self.tmp, file))
+                    os.remove(self.sim_dir / file)
                 except OSError:
                     pass

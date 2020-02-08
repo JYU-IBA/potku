@@ -29,10 +29,11 @@ __version__ = ""  # TODO
 import unittest
 import tempfile
 import os
+import modules.element_simulation as es
 
-from tests.utils import change_wd_to_root
 from modules.recoil_element import RecoilElement
 from modules.element import Element
+from modules.element_simulation import ERDFileHandler
 
 
 class TestErdFiles(unittest.TestCase):
@@ -64,9 +65,7 @@ class TestErdFiles(unittest.TestCase):
             for s, f in enumerate(cls.valid_erd_files)
         ]
 
-    @change_wd_to_root
     def test_get_seed(self):
-        import modules.element_simulation as es
         # get_seed looks for an integer in the second part of the string
         # split by dots
         self.assertEqual(102, es.get_seed("O.102.erd"))
@@ -90,10 +89,7 @@ class TestErdFiles(unittest.TestCase):
         # So does having no splits at all
         self.assertIsNone(es.get_seed("100"))
 
-    @change_wd_to_root
     def test_get_valid_erd_files(self):
-        import modules.element_simulation as es
-
         self.assertEqual([], list(es.validate_erd_file_names(
             self.invalid_erd_files, self.elem_4he)))
 
@@ -111,9 +107,7 @@ class TestErdFiles(unittest.TestCase):
 
         self.assertEqual(self.expected_values, res)
 
-    @change_wd_to_root
     def test_erdfilehandler_init(self):
-        from modules.element_simulation import ERDFileHandler
         handler = ERDFileHandler(self.valid_erd_files, self.elem_4he)
 
         exp = [(f, s, False) for f, s in self.expected_values]
@@ -121,9 +115,7 @@ class TestErdFiles(unittest.TestCase):
         self.assertEqual(0, handler.get_active_atom_counts())
         self.assertEqual(0, handler.get_old_atom_counts())
 
-    @change_wd_to_root
     def test_max_seed(self):
-        from modules.element_simulation import ERDFileHandler
         handler = ERDFileHandler([], self.elem_4he)
 
         self.assertEqual(None, handler.get_max_seed())
@@ -134,9 +126,7 @@ class TestErdFiles(unittest.TestCase):
         handler.add_active_file(self.valid_erd_files[1])
         self.assertEqual(102, handler.get_max_seed())
 
-    @change_wd_to_root
     def test_erdfilehandler_add(self):
-        from modules.element_simulation import ERDFileHandler
         handler = ERDFileHandler(self.valid_erd_files, self.elem_4he)
 
         # already existing files, or files belonging to another
@@ -160,11 +150,8 @@ class TestErdFiles(unittest.TestCase):
 
         self.assertEqual(exp, [f for f in handler])
 
-    @change_wd_to_root
     def test_atom_counts(self):
         """Tests atom counting by writing lines to temporary files"""
-        from modules.element_simulation import ERDFileHandler
-
         with tempfile.TemporaryDirectory() as tmp_dir:
             # Create files in the tmp dir
             for file in self.valid_erd_files:
@@ -205,7 +192,6 @@ class TestErdFiles(unittest.TestCase):
         # Assert that tmp dir got deleted
         self.assertFalse(os.path.exists(tmp_dir))
 
-    @change_wd_to_root
     def test_get_erd_file_path(self):
         from modules.element_simulation import get_erd_file_name
         from modules.recoil_element import RecoilElement

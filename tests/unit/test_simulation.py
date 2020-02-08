@@ -29,22 +29,16 @@ import unittest
 import tempfile
 import os
 
-from tests.utils import change_wd_to_root
 from tests.utils import disable_logging
+from modules.request import Request
+from modules.simulation import Simulation
 
 
 class TestSimulation(unittest.TestCase):
-    @change_wd_to_root
     def test_slots(self):
         """Tests that __slots__ work correctly for Simulation."""
-        from modules.request import Request
-        from modules.simulation import Simulation
 
         with tempfile.TemporaryDirectory() as temp_dir:
-
-            # TODO Request and Simulation should be refactored to make them
-            #      easier to test (running this test alone takes almost 10
-            #      times longer than running all the other tests...)
             req = Request(temp_dir, "name", "stat", "glo", "tabs")
             sim = Simulation(os.path.join(temp_dir, "test.simu"), req)
 

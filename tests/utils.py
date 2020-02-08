@@ -34,6 +34,8 @@ import unittest
 import logging
 import platform
 
+from string import Template
+
 
 def get_sample_data_dir():
     """Returns the absolute path to the sample data directory"""
@@ -48,6 +50,7 @@ def get_sample_data_dir():
 
 
 def get_resource_dir():
+    """Returns the resource directory's absolute path as a string."""
     return os.path.join(os.path.dirname(__file__), "resource")
 
 
@@ -57,9 +60,10 @@ def change_wd_to_root(func):
     function has run, working directory is changed back so other tests are
     not affected.
 
-    Use this function if the code you are testing is referencing some relative
-    path, like 'external/Potku-data/masses.dat'. The tested code will then
-    need to be imported inside that function.
+    This decorator was originally used to test code that read a file
+    using a relative path. Now the file path has been made absolute, so this
+    function is no longer needed for its original purpose. However, there may
+    be other uses for this.
     """
     # Get old working directory and path to this file. Then traverse to
     # parent directory (i.e. the root)
@@ -139,29 +143,39 @@ def disable_logging():
 
 
 class PlatformSwitcher:
-    platforms = {
-        "Windows": ("Windows", "\\"),
-        "Linux": ("Linux", "/"),
-        "Darwin": ("Darwin", "/")
-    }
+    """Context manager that switches the value returned by platform.system().
+
+    Usage:
+    with PlatformSwitcher('name of the os'):
+        # os specific code here
+    """
+    platforms = set(("Windows", "Linux", "Darwin"))
 
     def __init__(self, system):
-        # TODO os.sep does not affect file paths
-        try:
-            self.system, self.sep = PlatformSwitcher.platforms[system]
-        except KeyError:
+        # TODO storing os.sep seems to be useless as it does not affect file
+        #      paths
+        if system not in self.platforms:
             raise ValueError(f"PlatformSwitcher was given an unsupported os "
                              f"{system}")
-
+        self.system = system
         self.old_platsys = platform.system
-        self.old_os_sep = os.sep
 
     def __enter__(self):
+        """Upon entering the context manager platform.system is overridden
+        to return a value determined."""
         platform.system = lambda: self.system
-        os.sep = self.sep
 
     def __exit__(self, exc_type, exc_val, exc_tb):
+        """When exiting, platform.system is restored."""
         platform.system = self.old_platsys
-        os.sep = self.old_os_sep
 
+
+def get_template_file_contents(template_file, **kwargs):
+    """Reads a template file and substitutes in the values provided as
+    keyword arguments.
+    """
+    with open(template_file) as file:
+        temp = Template(file.read())
+
+    return temp.substitute(kwargs)
 

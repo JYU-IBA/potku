@@ -32,6 +32,8 @@ __version__ = "2.0"
 
 import re
 
+import modules.masses as masses
+
 
 class Element:
     """
@@ -110,3 +112,32 @@ class Element:
         if self.isotope is None:
             return self.symbol
         return f"{round(self.isotope)}{self.symbol}"
+
+    def get_mass(self):
+        if self.isotope:
+            return masses.find_mass_of_isotope(self)
+        else:
+            return masses.get_standard_isotope(self.symbol)
+
+    def get_mcerd_params(self, return_amount=False):
+        """Returns the element's mass or amount as a parameter for MCERD.
+
+        Args:
+            return_amount: whether amount is returned or mass and symbol.
+
+        Return:
+            string.
+        """
+        if return_amount:
+            if self.amount is None:
+                raise ValueError(
+                    "Cannot return amount as mcerd parameter as the "
+                    "element has no amount.")
+
+            if self.amount > 1:
+                amount = self.amount / 100
+            else:
+                amount = self.amount
+            return f"%0.3f" % amount
+
+        return "%0.2f %s" % (self.get_mass(), self.symbol)
