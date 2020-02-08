@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 21.5.2019
+Updated on 8.2.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -25,7 +25,7 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
-             "Sinikka Siironen"
+             "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import modules.masses as masses
@@ -33,11 +33,10 @@ import os
 import platform
 import shutil
 import subprocess
-import tempfile
 import threading
 import time
 
-from modules.foil import CircularFoil
+from pathlib import Path
 
 
 class MCERD:
@@ -47,56 +46,82 @@ class MCERD:
     """
 
     def __init__(self, settings, parent, optimize_fluence=False):
-        """Create an MCERD object. This automatically starts the simulation.
+        """Create an MCERD object.
 
         Args:
             settings: All settings that MCERD needs in one dictionary.
             parent: ElementSimulation object.
         """
         self.__settings = settings
+
+        # TODO rather than having a direct reference to parent, MCERD could
+        #      be an Observable
         self.parent = parent
+
+        rec_elem = self.__settings["recoil_element"]
 
         if optimize_fluence:
             recoil_name = "optfl"
         else:
-            recoil_name = self.__settings["recoil_element"].name
-        self.__rec_filename = self.__settings["recoil_element"].prefix \
-            + "-" + recoil_name
-        self.__filename = self.parent.name_prefix + "-" + self.parent.name
+            recoil_name = rec_elem.name
 
-        # OS specific directory where temporary MCERD files will be stored.
-        # In case of Linux and Mac this will be /tmp and in Windows this will
-        # be the C:\Users\<username>\AppData\Local\Temp.
-        self.tmp = tempfile.gettempdir()
+        self.__rec_filename = f"{rec_elem.prefix}-{recoil_name}"
+        self.__filename = f"{self.parent.name_prefix}-{self.parent.name}"
+
+        # TODO rename self.tmp to sim_dir
         self.tmp = self.__settings["sim_dir"]
-
         simulation_type = self.__settings["simulation_type"]
+
         if simulation_type == "ERD":
             suffix = ".recoil"
         else:
             suffix = ".scatter"
 
         # The recoil file and erd file are later passed to get_espe.
+        # TODO difference between suffixed rec_file and nonsuffixed?
+        # TODO use pathlib
         self.recoil_file = os.path.join(self.tmp, self.__rec_filename +
                                         suffix)
         self.result_file = os.path.join(self.tmp, self.__rec_filename + "." +
                                         str(self.__settings["seed_number"]) +
                                         ".erd")
-        self.__create_mcerd_files()
 
-        # The command that is used to start the MCERD process.
+        self.__command_file = os.path.join(self.tmp, self.__rec_filename)
+        self.__target_file = os.path.join(self.tmp, self.__filename +
+                                          ".erd_target")
+        self.__detector_file = os.path.join(self.tmp, self.__filename +
+                                            ".erd_detector")
+        self.__foils_file = os.path.join(self.tmp, self.__filename + ".foils")
+        self.__presimulation_file = os.path.join(self.tmp, self.__filename +
+                                                 ".pre")
+
+        self.__process = None
+
+    def get_command(self):
+        """Returns the command that is used to start the MCERD process.
+        """
         mcerd_path = os.path.join("external", "Potku-bin", "mcerd{0}".format(
                                   ".exe" if platform.system() == "Windows"
                                   else ""))
         rec_file_path = os.path.join(self.tmp, self.__rec_filename)
+
         mcerd_command = "{0} {1}".format(mcerd_path, rec_file_path)
 
-        # Start the MCERD process.
         # MCERD needs to be fixed so we can get rid of this ulimit.
         ulimit = "" if platform.system() == "Windows" else "ulimit -s 64000; "
         exec_command = "" if platform.system() == "Windows" else "exec "
 
-        self.__process = subprocess.Popen(ulimit + exec_command + mcerd_command,
+        return f"{ulimit}{exec_command}{mcerd_command}"
+
+    def run(self):
+        """Starts the MCERD process. Also starts a thread that
+        periodically checks if the MCERD has finished.
+        """
+        # Create files necessary to run MCERD
+        self.__create_mcerd_files()
+
+        cmd = self.get_command()
+        self.__process = subprocess.Popen(cmd,
                                           shell=True)
 
         # Use thread for checking if process has terminated
@@ -136,132 +161,18 @@ class MCERD:
         system.
         """
         # TODO individual functions for creating each file type
-        self.__command_file = os.path.join(self.tmp, self.__rec_filename)
-        self.__target_file = os.path.join(self.tmp, self.__filename +
-                                          ".erd_target")
-        self.__detector_file = os.path.join(self.tmp, self.__filename +
-                                            ".erd_detector")
-        self.__foils_file = os.path.join(self.tmp, self.__filename + ".foils")
-        self.__presimulation_file = os.path.join(
-            self.tmp, self.__filename + ".pre")
 
-        beam = self.__settings["beam"]
         target = self.__settings["target"]
         detector = self.__settings["detector"]
-        recoil_element = (self.__settings["recoil_element"])
+        recoil_element = self.__settings["recoil_element"]
 
         # Create the main MCERD command file
         with open(self.__command_file, "w") as file:
-
-            file.write("Type of simulation: " +
-                       self.__settings["simulation_type"] + "\n")
-
-            file.write(f"Beam ion: {beam.ion.get_prefix()}\n")
-
-            file.write("Beam energy: " + str(beam.energy) + " MeV\n")
-
-            file.write("Target description file: " + self.__target_file + "\n")
-
-            file.write("Detector description file: " + self.__detector_file +
-                       "\n")
-
-            file.write(
-                f"Recoiling atom: {recoil_element.element.get_prefix()}\n")
-
-            file.write("Recoiling material distribution: " + self.recoil_file
-                       + "\n")
-
-            file.write("Target angle: " + str(target.target_theta) + " deg\n")
-
-            file.write(
-                "Beam spot size: " + ("%0.1f %0.1f mm" % beam.spot_size) + "\n")
-
-            file.write("Minimum angle of scattering: " +
-                       str(self.__settings["minimum_scattering_angle"])
-                       + "deg\n")
-
-            file.write("Minimum main scattering angle: " +
-                       str(self.__settings["minimum_main_scattering_angle"]) +
-                       " deg\n")
-
-            file.write("Minimum energy of ions: " +
-                       str(self.__settings["minimum_energy_of_ions"])
-                       + " MeV \n")
-
-            file.write("Average number of recoils per primary ion: " +
-                       str(self.__settings["number_of_recoils"]) + "\n")
-
-            file.write("Recoil angle width (wide or narrow): " +
-                       self.__settings["simulation_mode"] + "\n")
-
-            file.write("Presimulation * result file: " +
-                       self.__presimulation_file + "\n")
-
-            file.write("Number of real ions per each scaling ion: " +
-                       str(self.__settings["number_of_scaling_ions"]) + "\n")
-
-            file.write("Number of ions: " +
-                       str(self.__settings["number_of_ions"]) + "\n")
-
-            file.write("Number of ions in the presimulation: " +
-                       str(self.__settings["number_of_ions_in_presimu"]) + "\n")
-
-            file.write("Seed number of the random number generator: " +
-                       str(self.__settings["seed_number"]) + "\n")
+            file.write(self.get_command_file_contents())
 
         # Create the MCERD detector file
         with open(self.__detector_file, "w") as file_det:
-
-            file_det.write("Detector type: " + detector.type + "\n")
-
-            file_det.write(
-                "Detector angle: " + str(detector.detector_theta) + "\n")
-
-            file_det.write("Virtual detector size: " +
-                           ("%0.1f %0.1f" % detector.virtual_size) + "\n")
-
-            file_det.write("Timing detector numbers: " +
-                           str(detector.tof_foils[0]) + " " +
-                           str(detector.tof_foils[1]) + "\n")
-
-            file_det.write("Description file for the detector foils: " +
-                           self.__foils_file + "\n")
-
-            file_det.write("==========" + "\n")
-
-            # Write foils from first to second last
-            for foil in detector.foils[:-1]:
-                # TODO add __str__ for foil
-                if type(foil) == CircularFoil:
-                    file_det.write("Foil type: circular" + "\n")
-                    file_det.write(
-                        "Foil diameter: " + str(foil.diameter) + "\n")
-                    file_det.write(
-                        "Foil distance: " + str(foil.distance) + "\n")
-                else:
-                    file_det.write("Foil type: rectangular" + "\n")
-                    file_det.write("Foil size: " +
-                                   ("%0.1f %0.1f" % foil.size) + "\n")
-                    file_det.write(
-                        "Foil distance: " + str(foil.distance) + "\n")
-
-                file_det.write("----------" + "\n")
-
-            # Write the last foil separately to avoid writing "------" after it
-            # TODO use string.join()
-            last_foil = detector.foils[len(detector.foils) - 1]
-            if type(last_foil) == CircularFoil:
-                file_det.write("Foil type: circular" + "\n")
-                file_det.write("Foil diameter: " + str(
-                    last_foil.diameter) + "\n")
-                file_det.write("Foil distance: " + str(
-                    last_foil.distance) + "\n")
-            else:
-                file_det.write("Foil type: rectangular" + "\n")
-                file_det.write("Foil size: " +
-                               ("%0.1f %0.1f" % last_foil.size) + "\n")
-                file_det.write("Foil distance: " + str(last_foil.distance)
-                               + "\n")
+            file_det.write(self.get_detector_file_contents())
 
         # Create the MCERD target file
         with open(self.__target_file, "w") as file_target:
@@ -335,6 +246,63 @@ class MCERD:
                     break
 
         recoil_element.write_recoil_file(self.recoil_file)
+
+    def get_command_file_contents(self):
+        """Returns the contents of MCERD's command file as a string.
+        """
+        # TODO this could also be done with a template file
+        beam = self.__settings["beam"]
+        target = self.__settings["target"]
+        recoil_element = self.__settings["recoil_element"]
+        min_scat_angle = self.__settings['minimum_scattering_angle']
+        min_main_scat_angle = self.__settings['minimum_main_scattering_angle']
+        min_ene_ions = self.__settings['minimum_energy_of_ions']
+        rec_count = self.__settings['number_of_recoils']
+        sim_mode = self.__settings['simulation_mode']
+        scale_ion_count = self.__settings['number_of_scaling_ions']
+        ions_in_presim = self.__settings['number_of_ions_in_presimu']
+        seed = self.__settings['seed_number']
+
+        return "\n".join([
+            f"Type of simulation: {self.__settings['simulation_type']}",
+            *beam.get_mcerd_params(),
+            f"Target description file: {self.__target_file}",
+            f"Detector description file: {self.__detector_file}",
+            f"Recoiling atom: {recoil_element.element.get_prefix()}",
+            f"Recoiling material distribution: {self.recoil_file}",
+            f"Target angle: {target.target_theta} deg",
+            "Beam spot size: " + ("%0.1f %0.1f mm" % beam.spot_size) + "",
+            f"Minimum angle of scattering: {min_scat_angle} deg",
+            f"Minimum main scattering angle: {min_main_scat_angle} deg",
+            f"Minimum energy of ions: {min_ene_ions} MeV",
+            f"Average number of recoils per primary ion: {rec_count}",
+            f"Recoil angle width (wide or narrow): {sim_mode}",
+            f"Presimulation * result file: {self.__presimulation_file}",
+            f"Number of real ions per each scaling ion: {scale_ion_count}",
+            f"Number of ions: {self.__settings['number_of_ions']}",
+            f"Number of ions in the presimulation: {ions_in_presim}",
+            f"Seed number of the random number generator: {seed}",
+        ])
+
+    def get_detector_file_contents(self):
+        """Returns the contents of the detector file as a string.
+        """
+        detector = self.__settings["detector"]
+        foils = "\n----------\n".join("\n".join(foil.get_mcerd_params())
+                                      for foil in detector.foils)
+
+        return "\n".join([
+            *detector.get_mcerd_params(),
+            f"Description file for the detector foils: {self.__foils_file}",
+            "==========",
+            foils
+        ])
+
+    def get_target_file_contents(self):
+        pass
+
+    def get_foils_file_contents(self):
+        pass
 
     def copy_results(self, destination):
         """Copies MCERD result file (.erd) and recoil file into given

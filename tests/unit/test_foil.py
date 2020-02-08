@@ -110,6 +110,21 @@ class TestFoil(unittest.TestCase):
         self.assertRaises(AttributeError, lambda: rec.__dict__)
         self.assertRaises(AttributeError, lambda: cir.__dict__)
 
+    def test_get_mcerd_params(self):
+        unit_rec = RectangularFoil(size_x=1.0, size_y=1.0, distance=1.0)
+        self.assertEqual([
+            "Foil type: rectangular",
+            "Foil size: 1.0 1.0",
+            "Foil distance: 1.0"
+        ], unit_rec.get_mcerd_params())
+
+        unit_rec = CircularFoil(diameter=1.0, distance=1.0)
+        self.assertEqual([
+            "Foil type: circular",
+            "Foil diameter: 1.0",
+            "Foil distance: 1.0"
+        ], unit_rec.get_mcerd_params())
+
 
 if __name__ == "__main__":
     unittest.main()

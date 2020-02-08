@@ -88,6 +88,8 @@ class Detector:
         self.modification_time = modification_time
         self.type = detector_type
         self.foils = foils
+
+        # TODO should an empty collection of foils be allowed?
         if not self.foils:
             # Create default foils
             self.foils = [CircularFoil("Foil1", 7.0, 256.0,
@@ -415,3 +417,13 @@ class Detector:
 
         with open(measurement_file_path, "w") as file:
             json.dump(obj, file, indent=4)
+
+    def get_mcerd_params(self):
+        """Returns a list of strings that are passed as parameters for MCERD.
+        """
+        return [
+            f"Detector type: {self.type}",
+            f"Detector angle: {self.detector_theta}",
+            f"Virtual detector size: {'%0.1f %0.1f' % self.virtual_size}",
+            f"Timing detector numbers: {self.tof_foils[0]} {self.tof_foils[1]}"
+        ]

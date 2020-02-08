@@ -1,12 +1,13 @@
 # coding=utf-8
 """
 Created on 19.1.2020
+Updated on 8.2.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
 telescope. For physics calculations Potku uses external
 analyzation components.
-Copyright (C) 2013-2020 TODO
+Copyright (C) 2020 TODO
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -31,6 +32,7 @@ import os
 import hashlib
 import unittest
 import logging
+import platform
 
 
 def get_sample_data_dir():
@@ -45,6 +47,10 @@ def get_sample_data_dir():
     return os.path.abspath(path_to_sample_data)
 
 
+def get_resource_dir():
+    return os.path.join(os.path.dirname(__file__), "resource")
+
+
 def change_wd_to_root(func):
     """Helper wrapper function that changes the working directory to the root
     directory of Potku for the duration of the wrapped function. After the
@@ -52,7 +58,7 @@ def change_wd_to_root(func):
     not affected.
 
     Use this function if the code you are testing is referencing some relative
-    path, like '/external/Potku-data/masses.dat'. The tested code will then
+    path, like 'external/Potku-data/masses.dat'. The tested code will then
     need to be imported inside that function.
     """
     # Get old working directory and path to this file. Then traverse to
@@ -130,3 +136,32 @@ def disable_logging():
         logger.disabled = True
         for handler in logger.handlers:
             handler.close()
+
+
+class PlatformSwitcher:
+    platforms = {
+        "Windows": ("Windows", "\\"),
+        "Linux": ("Linux", "/"),
+        "Darwin": ("Darwin", "/")
+    }
+
+    def __init__(self, system):
+        # TODO os.sep does not affect file paths
+        try:
+            self.system, self.sep = PlatformSwitcher.platforms[system]
+        except KeyError:
+            raise ValueError(f"PlatformSwitcher was given an unsupported os "
+                             f"{system}")
+
+        self.old_platsys = platform.system
+        self.old_os_sep = os.sep
+
+    def __enter__(self):
+        platform.system = lambda: self.system
+        os.sep = self.sep
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        platform.system = self.old_platsys
+        os.sep = self.old_os_sep
+
+

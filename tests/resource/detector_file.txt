@@ -1,0 +1,21 @@
+Detector type: TOF
+Detector angle: 41
+Virtual detector size: 2.0 5.0
+Timing detector numbers: 1 2
+Description file for the detector foils: $foils_file
+==========
+Foil type: circular
+Foil diameter: 7.0
+Foil distance: 256.0
+----------
+Foil type: circular
+Foil diameter: 10.0
+Foil distance: 356.0
+----------
+Foil type: circular
+Foil diameter: 18.0
+Foil distance: 979.0
+----------
+Foil type: rectangular
+Foil size: 14.0 14.0
+Foil distance: 1042.0

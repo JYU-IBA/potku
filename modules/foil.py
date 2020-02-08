@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 23.3.2018
-Updated on 2.5.2018
+Updated on 8.2.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -65,6 +65,12 @@ class Foil:
         self.transmission = transmission
 
     def get_solid_angle(self, units="msr"):
+        """TODO"""
+        raise NotImplementedError
+
+    def get_mcerd_params(self):
+        """Returns a list of strings that are passed as parameters for MCERD.
+        """
         raise NotImplementedError
 
 
@@ -101,6 +107,15 @@ class CircularFoil(Foil):
         return math.pi * self.get_radius()**2 / self.distance**2 \
             * _UNITS[units]
 
+    def get_mcerd_params(self):
+        """Returns a list of strings that are passed as parameters for MCERD.
+        """
+        return [
+            "Foil type: circular",
+            f"Foil diameter: {self.diameter}",
+            f"Foil distance: {self.distance}"
+        ]
+
 
 class RectangularFoil(Foil):
     """ Class for rectangular detector foil.
@@ -131,3 +146,12 @@ class RectangularFoil(Foil):
             raise ValueError("Unexpected unit for solid angle")
         return self.size[0] * self.size[1] / self.distance**2 \
             * _UNITS[units]
+
+    def get_mcerd_params(self):
+        """Returns a list of strings that are passed as parameters for MCERD.
+        """
+        return [
+            "Foil type: rectangular",
+            f"Foil size: {'%0.1f %0.1f' % self.size}",
+            f"Foil distance: {self.distance}"
+        ]

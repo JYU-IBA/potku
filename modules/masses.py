@@ -32,8 +32,14 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import csv
+import os
 
-__FILE_PATH = "external/Potku-data/masses.dat"
+__path_to_this_dir = os.path.dirname(__file__)
+__FILE_PATH = os.path.join(__path_to_this_dir,
+                           os.pardir,
+                           "external",
+                           "Potku-data",
+                           "masses.dat")
 
 __isotopes = {}
 

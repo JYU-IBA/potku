@@ -1,7 +1,7 @@
 # coding=utf-8
 """
 Created on 25.4.2018
-Updated on 5.2.2020
+Updated on 8.2.2020
 
 Potku is a graphical user interface for analyzation and
 visualization of measurement data collected from a ToF-ERD
@@ -118,7 +118,7 @@ class ElementSimulation(Observable):
                  use_default_settings=True, sample=None,
                  simulations_done=False, main_recoil=None,
                  optimization_recoils=None, __opt_seed=None,
-                 optimized_fluence=None):
+                 optimized_fluence=None, save_on_creation=True):
         """ Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
@@ -150,6 +150,8 @@ class ElementSimulation(Observable):
             optimization_recoils: List or recoils that are used for
             optimization.
             optimized_fluence: Optimized fluence value.
+            save_on_creation: Determines if the element simulation is saved to
+                              a file when initialized
         """
         # Call Observable's initialization to set up observer list
         super().__init__()
@@ -203,8 +205,11 @@ class ElementSimulation(Observable):
                 name = "Default"
             else:
                 prefix = self.name_prefix
-        self.mcsimu_to_file(os.path.join(self.directory,
-                                         name + ".mcsimu"))
+
+        if save_on_creation:
+            self.mcsimu_to_file(os.path.join(self.directory,
+                                             name + ".mcsimu"))
+
         for recoil_element in self.recoil_elements:
             self.recoil_to_file(self.directory, recoil_element)
         self.profile_to_file(os.path.join(self.directory,
@@ -481,14 +486,11 @@ class ElementSimulation(Observable):
             profile_file_path: A file path to JSON file containing the
             channel width.
         """
+        with open(mcsimu_file_path) as mcsimu_file:
+            obj = json.load(mcsimu_file)
 
-        obj = json.load(open(mcsimu_file_path))
+        use_default_settings = obj["use_default_settings"] == "True"
 
-        use_default_settings_str = obj["use_default_settings"]
-        if use_default_settings_str == "True":
-            use_default_settings = True
-        else:
-            use_default_settings = False
         try:
             name_prefix, name = obj["name"].split("-")
         except ValueError:
@@ -510,7 +512,9 @@ class ElementSimulation(Observable):
         main_recoil_name = obj["main_recoil"]
 
         # Read channel width from .profile file.
-        obj = json.load(open(profile_file_path))
+        with open(profile_file_path) as prof_file:
+            obj = json.load(prof_file)
+
         channel_width = obj["energy_spectra"]["channel_width"]
 
         # Read .rec files from simulation folder
@@ -728,7 +732,9 @@ class ElementSimulation(Observable):
         """
         # Read .profile to obj to update only channel width
         if os.path.exists(file_path):
-            obj_profile = json.load(open(file_path))
+            with open(file_path) as file:
+                obj_profile = json.load(file)
+
             obj_profile["modification_time"] = time.strftime("%c %z %Z",
                                                              time.localtime(
                                                                  time.time()))
@@ -859,8 +865,12 @@ class ElementSimulation(Observable):
             if optimize:
                 self.optimization_mcerd_running = True
 
-            self.mcerd_objects[seed_number] = MCERD(
-                settings, self, optimize_fluence=optimize_fluence)
+            mcerd = MCERD(settings,
+                          self,
+                          optimize_fluence=optimize_fluence)
+            mcerd.run()
+            self.mcerd_objects[seed_number] = mcerd
+
 
             seed_number = seed_number + 1
             if i + 1 < number_of_processes:

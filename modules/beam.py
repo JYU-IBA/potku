@@ -61,3 +61,11 @@ class Beam:
         self.spot_size = spot_size
         self.divergence = divergence
         self.profile = profile
+
+    def get_mcerd_params(self):
+        """Returns a list of strings that are passed as parameters for MCERD.
+        """
+        return [
+            f"Beam ion: {self.ion.get_prefix()}",
+            f"Beam energy: {self.energy} MeV"
+        ]
