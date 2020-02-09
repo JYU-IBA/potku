@@ -34,6 +34,7 @@ import os
 import shutil
 import time
 
+import dialogs.dialog_functions as df
 from dialogs.element_selection import ElementSelectionDialog
 
 from modules.detector import Detector
@@ -170,14 +171,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         """
         Check whether there are any invalid field in the tabs.
         """
-        for i in range(self.ui.tabs.count()):
-            tab_widget = self.ui.tabs.widget(i)
-            valid = tab_widget.fields_are_valid
-            if not valid:
-                self.ui.tabs.blockSignals(True)
-                self.tabs.setCurrentWidget(tab_widget)
-                self.ui.tabs.blockSignals(False)
-                break
+        df.check_for_red(self)
 
     def __enabled_element_information(self):
         """ Change the UI accordingly when an element is selected.
@@ -313,25 +307,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                     self.measurement_settings_widget.update_settings()
                     self.detector_settings_widget.update_settings()
 
-                    # TODO keep a list of .eff files to add and remove in the
-                    #      dialog instead of the detector
-                    # TODO there is a small bug here. If an .eff file is removed
-                    #      and then added again without closing the dialog,
-                    #      the file still gets removed
-                    # TODO this code is duplicated in the request_settings
-                    #      dialog (and same bug is there too). Duplicated
-                    #      code should be refactored
-                    for file in self.measurement.detector.efficiencies:
-                        self.measurement.detector.add_efficiency_file(file)
-
-                    for file in \
-                            self.measurement.detector.efficiencies_to_remove:
-                        self.measurement.detector.remove_efficiency_file(
-                            file)
-
-                    # Clear the removed file list so same files do not get
-                    # deleted every time
-                    self.measurement.detector.efficiencies_to_remove.clear()
+                    df.update_efficiency_files(self.measurement.detector)
 
                     self.profile_settings_widget.update_settings()
                     self.measurement.detector.path = \

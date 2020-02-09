@@ -36,6 +36,7 @@ import modules.masses as masses
 import os
 
 from dialogs.element_selection import ElementSelectionDialog
+import dialogs.dialog_functions as df
 
 from modules.general_functions import delete_simulation_results
 from modules.general_functions import set_input_field_red
@@ -131,14 +132,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         """
         Check whether there are any invalid field in the tabs.
         """
-        for i in range(self.ui.tabs.count()):
-            tab_widget = self.ui.tabs.widget(i)
-            valid = tab_widget.fields_are_valid
-            if not valid:
-                self.ui.tabs.blockSignals(True)
-                self.tabs.setCurrentWidget(tab_widget)
-                self.ui.tabs.blockSignals(False)
-                break
+        df.check_for_red(self)
         # Save run and beam parameters to tmp_run
         self.measurement_settings_widget.save_to_tmp_run()
 
@@ -975,28 +969,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 # Detector settings
                 self.detector_settings_widget.update_settings()
 
-                # TODO keep a list of .eff files to add and remove in the
-                #      dialog instead of the detector
-                # TODO there is a small bug here. If an .eff file is removed
-                #      and then added again without closing the dialog,
-                #      the file still gets removed
-                # TODO this code is duplicated in the measurement settings
-                #      dialog (and same bug is there too). Duplicated
-                #      code should be refactored
-                for file in self.request.default_detector.efficiencies:
-                        self.request.default_detector.add_efficiency_file(file)
-
-                self.request.default_detector.efficiencies = []
-
-                for file in \
-                        self.request.default_detector.efficiencies_to_remove:
-                    self.request.default_detector.remove_efficiency_file(file)
-
-                # Clear the list so same files do not get deleted over and over
-                # again
-                self.request.default_detector.efficiencies_to_remove.clear()
-
-                self.request.default_detector.efficiencies_to_remove = []
+                df.update_efficiency_files(self.request.default_detector)
 
                 # Simulation settings
                 self.simulation_settings_widget.update_settings()

@@ -31,6 +31,7 @@ __version__ = "2.0"
 
 import os
 
+from pathlib import Path
 from modules.cut_file import CutFile
 from modules.element import Element
 
@@ -139,14 +140,22 @@ class ElementLosses:
                 # and its process.
             cut = CutFile()
             cut.load_file(file)
-            filename_split = file.split('.')
-            element = filename_split[2] + "." + filename_split[3]
-            if len(filename_split) == 6:  # Regular cut file
-                key = "{0}.{1}".format(element, filename_split[4])
+
+            if isinstance(file, Path):
+                filename = file.name
+            else:
+                filename = os.path.basename(file)
+
+            filename_split = filename.split('.')
+            element = filename_split[1] + "." + filename_split[2]
+            if len(filename_split) == 5:  # Regular cut file
+                key = "{0}.{1}".format(element, filename_split[3])
             else:  # Elemental Losses cut file
+                # TODO what is elem loss cut file?
+                # FIXME this is crashing with the sample data from jyu website
                 key = "{0}.{1}.{2}".format(element,
-                                           filename_split[4],
-                                           filename_split[5])
+                                           filename_split[3],
+                                           filename_split[4])
             self.cut_splits.add_splits(key, cut,
                                        cut.split(self.reference_cut,
                                                  self.partition_count,

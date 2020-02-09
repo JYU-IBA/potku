@@ -160,6 +160,7 @@ class ElementLossesDialog(QtWidgets.QDialog):
             logging.getLogger(measurement_name).info(msg)
 
             log_info = "Elemental Losses split counts:\n"
+
             split_counts = self.parent.elemental_losses_widget.split_counts
             splitinfo = "\n".join(["{0}: {1}".format(key,
                                                      ", ".join(str(v) for v in

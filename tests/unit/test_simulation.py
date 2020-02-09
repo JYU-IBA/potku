@@ -28,6 +28,7 @@ __version__ = ""    # TODO
 import unittest
 import tempfile
 import os
+import tests.mock_objects as mo
 
 from tests.utils import disable_logging
 from modules.request import Request
@@ -39,7 +40,7 @@ class TestSimulation(unittest.TestCase):
         """Tests that __slots__ work correctly for Simulation."""
 
         with tempfile.TemporaryDirectory() as temp_dir:
-            req = Request(temp_dir, "name", "stat", "glo", "tabs")
+            req = mo.get_request()
             sim = Simulation(os.path.join(temp_dir, "test.simu"), req)
 
             # Logging needs to be disabled, otherwise loggers retain file

@@ -30,3 +30,5 @@ Pipfile.lock
 
 # Temporary QT Creator files
 *.ui.autosave
+
+/.DS_Store

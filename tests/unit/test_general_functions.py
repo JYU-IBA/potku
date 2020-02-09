@@ -180,17 +180,15 @@ class TestGeneralFunctions(unittest.TestCase):
             self.assertEqual(0, gf.count_lines_in_file(tmp_file))
 
             # Write a newline
-            with open(tmp_file, "w") as file:
-                file.write("\n")
+            with open(tmp_file, "a") as file:
+                file.write("foo")
 
             self.assertEqual(1, gf.count_lines_in_file(tmp_file))
 
-            # Interestingly, Win style line endings count as double?
-            # TODO run the test on Mac and Linux
-            with open(tmp_file, "w") as file:
-                file.write("\r\n\r\n")
+            with open(tmp_file, "a") as file:
+                file.write("\nbar")
 
-            self.assertEqual(4, gf.count_lines_in_file(tmp_file))
+            self.assertEqual(2, gf.count_lines_in_file(tmp_file))
 
         # Final checks that the temporary file and directory were removed
         self.assertFalse(os.path.exists(tmp_file),

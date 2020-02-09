@@ -89,5 +89,7 @@ def get_request():
             self.default_detector = get_detector()
             self.default_element_simulation = get_element_simulation(
                 request=self)
+            self.statusbar = None
+            self.directory = tempfile.gettempdir()
 
     return MockRequest()

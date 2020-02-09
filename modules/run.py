@@ -113,7 +113,8 @@ class Run:
         Return:
             Returns the created Run object.
         """
-        obj = json.load(open(measurement_file_path))
+        with open(measurement_file_path) as mesu:
+            obj = json.load(mesu)
         run = obj["run"]
         beam = obj["beam"]
 

@@ -35,6 +35,7 @@ import shutil
 import time
 import copy
 
+import dialogs.dialog_functions as df
 from dialogs.element_selection import ElementSelectionDialog
 
 from modules.detector import Detector
@@ -173,14 +174,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         """
         Check whether there are any invalid field in the tabs.
         """
-        for i in range(self.ui.tabs.count()):
-            tab_widget = self.ui.tabs.widget(i)
-            valid = tab_widget.fields_are_valid
-            if not valid:
-                self.ui.tabs.blockSignals(True)
-                self.tabs.setCurrentWidget(tab_widget)
-                self.ui.tabs.blockSignals(False)
-                break
+        df.check_for_red(self)
 
     def __enabled_element_information(self):
         """
@@ -1378,24 +1372,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                  self.simulation.detector.name +
                                  ".detector")
 
-                # TODO keep a list of .eff files to add and remove in the
-                #      dialog instead of the detector
-                # TODO there is a small bug here. If an .eff file is removed
-                #      and then added again without closing the dialog,
-                #      the file still gets removed
-                # TODO this code has been triplicated in measurement settings
-                #      and request settings (and same bug is there too).
-                #      Maybe qcreate a common ui element for handling efficiency
-                #      files
-                for file in self.simulation.detector.efficiencies:
-                    self.simulation.detector.add_efficiency_file(file)
-
-                for file in \
-                        self.simulation.detector.efficiencies_to_remove:
-                    self.simulation.detector.remove_efficiency_file(
-                        file)
-
-                self.simulation.detector.efficiencies_to_remove.clear()
+                df.update_efficiency_files(self.simulation.detector)
 
                 # Save measurement settings parameters.
                 new_measurement_settings_file_path = os.path.join(

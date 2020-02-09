@@ -33,6 +33,8 @@ import logging
 import os
 import sys
 
+from pathlib import Path
+
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.energy_spectrum import EnergySpectrumWidget
 from dialogs.measurement.depth_profile import DepthProfileDialog
@@ -279,7 +281,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             serial_number_m: Measurement's serial number.
             sample_folder_name: Sample's serial number.
         """
-        file = os.path.join(directory, DepthProfileWidget.save_file)
+        file = Path(directory, DepthProfileWidget.save_file)
         lines = self.__load_file(file)
         if not lines:
             return
@@ -332,7 +334,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             serial_number: Measurement's serial number.
             old_sample_name: Sample folder of the measurement.
         """
-        file = os.path.join(directory, ElementLossesWidget.save_file)
+        file = Path(directory, ElementLossesWidget.save_file)
         lines = self.__load_file(file)
         if not lines:
             return
@@ -380,7 +382,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             name: A string representing measurement's name.
             serial_number: Measurement's serial number.
         """
-        file = os.path.join(directory, EnergySpectrumWidget.save_file)
+        file = Path(directory, EnergySpectrumWidget.save_file)
         lines = self.__load_file(file)
         if not lines:
             return
@@ -501,13 +503,12 @@ class MeasurementTabWidget(QtWidgets.QWidget):
                 file = self.__rreplace(file, name, m_name, old_folder_prefix,
                                        new_folder_prefix, old_sample_name,
                                        new_sample_name)
-                try:
-                    with open(file):
-                        pass
+                if file.is_file():
                     newfiles.append(file)
-                except:
-                    newfiles.append(os.path.join(self.obj.directory, file))
+                else:
+                    newfiles.append(Path(self.obj.directory, file))
             return newfiles
+        raise TypeError("Expected either a string or a list")
 
     def __load_file(self, file):
         """Load file
@@ -520,8 +521,10 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             with open(file, "rt") as fp:
                 for line in fp:
                     lines.append(line)
-        except IOError:
-            pass
+        except (IOError, UnicodeDecodeError) as e:
+            # TODO when opening a widget_safe_file that was saved on another
+            #      platform, UnicodeDecodeError is raised. Log this.
+            print(e)
         return lines
 
     def __master_issue_commands(self):
@@ -584,7 +587,11 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         #
         # result = f_done + s_done
         result = new.join(li)
-        return result
+        if "\\" in result and not "/" in result:
+            # This is a patch to make it possible to open .cut files made
+            # on another os.
+            result = result.replace("\\", "/")
+        return Path(result)
 
     def __set_cut_button_enabled(self, selections):
         """Enables save cuts button if the given selections list's lenght is
