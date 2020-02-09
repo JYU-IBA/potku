@@ -561,20 +561,21 @@ class DepthProfileWidget(QtWidgets.QWidget):
     def save_to_file(self):
         """Save object information to file.
         """
-        output_dir = self.output_dir.replace(
-                         self.parent.obj.directory + "\\", "")
+        output_dir = os.path.relpath(self.output_dir,
+                                     self.parent.obj.directory)
+
         file = os.path.join(self.parent.obj.directory_depth_profiles,
                             self.save_file)
-        fh = open(file, "wt")
-        fh.write("{0}\n".format(output_dir))
-        fh.write("{0}\n".format("\t".join([str(element)
-                                           for element in self.elements])))
-        fh.write("{0}\n".format("\t".join([cut for cut in self.use_cuts])))
-        fh.write("{0}\n".format(self.x_units))
-        fh.write("{0}\n".format(self.__line_zero))
-        fh.write("{0}\n".format(self.__line_scale))
-        fh.write("{0}".format(self.__systerr))
-        fh.close()
+
+        with open(file, "wt") as fh:
+            fh.write("{0}\n".format(output_dir))
+            fh.write("{0}\n".format("\t".join([str(element)
+                                               for element in self.elements])))
+            fh.write("{0}\n".format("\t".join([cut for cut in self.use_cuts])))
+            fh.write("{0}\n".format(self.x_units))
+            fh.write("{0}\n".format(self.__line_zero))
+            fh.write("{0}\n".format(self.__line_scale))
+            fh.write("{0}".format(self.__systerr))
 
     def update_use_cuts(self):
         """

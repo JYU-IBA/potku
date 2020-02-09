@@ -33,6 +33,8 @@ import logging
 import os
 import sys
 
+from pathlib import Path
+
 from modules.cut_file import get_scatter_element
 from modules.cut_file import is_rbs
 from modules.element_losses import ElementLosses
@@ -355,16 +357,17 @@ class ElementLossesWidget(QtWidgets.QWidget):
     def save_to_file(self):
         """Save object information to file.
         """
-        reference = self.reference_cut_file.replace(
-            self.parent.obj.directory + "\\", "")
-        files = "\t".join([tmp.replace(self.parent.obj.directory + "\\",
-                                       "")
+        reference = os.path.relpath(self.reference_cut_file,
+                                    self.parent.obj.directory)
+
+        files = "\t".join([os.path.relpath(tmp, self.parent.obj.directory)
                            for tmp in self.checked_cuts])
+
         file = os.path.join(self.parent.obj.directory_composition_changes,
                             self.save_file)
-        fh = open(file, "wt")
-        fh.write("{0}\n".format(reference))
-        fh.write("{0}\n".format(files))
-        fh.write("{0}\n".format(self.partition_count))
-        fh.write("{0}".format(self.y_scale))
-        fh.close()
+
+        with open(file, "wt") as fh:
+            fh.write("{0}\n".format(reference))
+            fh.write("{0}\n".format(files))
+            fh.write("{0}\n".format(self.partition_count))
+            fh.write("{0}".format(self.y_scale))

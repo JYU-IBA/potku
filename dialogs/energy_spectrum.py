@@ -701,8 +701,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             simulation.
         """
         if measurement:
-            files = "\t".join([tmp.replace(self.measurement.directory + "\\",
-                                           "")
+            files = "\t".join([os.path.relpath(tmp,
+                                               self.measurement.directory)
                                for tmp in self.use_cuts])
             file = os.path.join(self.measurement.directory_energy_spectra,
                                 self.save_file)
@@ -723,7 +723,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 self.save_file_int = i
             self.save_file = file_name
             file = os.path.join(self.simulation.directory, file_name)
-        fh = open(file, "wt")
-        fh.write("{0}\n".format(files))
-        fh.write("{0}".format(self.bin_width))
-        fh.close()
+
+        with open(file, "wt") as fh:
+            fh.write("{0}\n".format(files))
+            fh.write("{0}".format(self.bin_width))

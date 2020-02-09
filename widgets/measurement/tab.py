@@ -471,10 +471,11 @@ class MeasurementTabWidget(QtWidgets.QWidget):
 
     def __confirm_filepath(self, filepath, name, m_name, old_folder_prefix,
                            new_folder_prefix, old_sample_name, new_sample_name):
-        """Confirm whether filepath exist and changes it accordingly.
+        """Confirm whether file path exist and changes it accordingly.
 
         Args:
-            filepath: A string representing a filepath.
+            filepath: A string or a collection of strings representing
+                      filepaths.
             name: A string representing origin measurement's name.
             m_name: A string representing measurement's name where graph is
             created.
@@ -484,31 +485,37 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             old_sample_name: Sample folder name of the original measurement.
             new_sample_name: Sample folder name of the measurement who will
             have the graph.
+
+        Return:
+            either a Path object or a list of Path objects depending on the
+            input type.
         """
         if type(filepath) == str:
             # Replace two for measurement and cut file's name. Not all, in case 
             # the request or directories above it have same name.
-            filepath = self.__rreplace(filepath, name, m_name,
-                                       old_folder_prefix, new_folder_prefix,
-                                       old_sample_name, new_sample_name)
-            try:
-                with open(filepath):
-                    pass
-                return filepath
-            except:
-                return os.path.join(self.obj.directory, filepath)
+            file = self.__rreplace(filepath, name, m_name,
+                                   old_folder_prefix, new_folder_prefix,
+                                   old_sample_name, new_sample_name)
+            return self.__validate_file_path(file)
         elif type(filepath) == list:
             newfiles = []
             for file in filepath:
                 file = self.__rreplace(file, name, m_name, old_folder_prefix,
                                        new_folder_prefix, old_sample_name,
                                        new_sample_name)
-                if file.is_file():
-                    newfiles.append(file)
-                else:
-                    newfiles.append(Path(self.obj.directory, file))
+                newfiles.append(self.__validate_file_path(file))
             return newfiles
         raise TypeError("Expected either a string or a list")
+
+    def __validate_file_path(self, file_path):
+        """Helper function that checks if the given file_path points to file.
+        If it does, returns the file path as it was given, otherwise treats
+        the file_path as a relative path and returns an absolute path within
+        object's directory.
+        """
+        if file_path.is_file():
+            return file_path
+        return Path(self.obj.directory, file_path)
 
     def __load_file(self, file):
         """Load file
@@ -590,6 +597,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         if "\\" in result and not "/" in result:
             # This is a patch to make it possible to open .cut files made
             # on another os.
+            # TODO it would be better to use Path when writing these paths
+            #      to file in the first place
             result = result.replace("\\", "/")
         return Path(result)
 

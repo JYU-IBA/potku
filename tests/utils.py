@@ -162,7 +162,7 @@ class PlatformSwitcher:
 
     def __enter__(self):
         """Upon entering the context manager platform.system is overridden
-        to return a value determined."""
+        to return a value given in initialization."""
         platform.system = lambda: self.system
 
     def __exit__(self, exc_type, exc_val, exc_tb):
