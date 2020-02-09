@@ -584,6 +584,8 @@ class DepthProfileWidget(QtWidgets.QWidget):
         for file in os.listdir(self.parent.obj.directory_cuts):
             for i in range(len(self.use_cuts)):
                 cut = self.use_cuts[i]
+                # TODO check if cuts are stored as absolute paths. This does
+                #      not work if there are extra '.' chars on the path
                 cut_split = cut.split('.')  # There is one dot more (.potku)
                 file_split = file.split('.')
                 if cut_split[2] == file_split[1] and cut_split[3] == \
@@ -598,6 +600,8 @@ class DepthProfileWidget(QtWidgets.QWidget):
             for file in os.listdir(changes_dir):
                 for i in range(len(self.use_cuts)):
                     cut = self.use_cuts[i]
+                    # TODO check if cuts are stored as absolute paths. This does
+                    #      not work if there are extra '.' chars on the path
                     cut_split = cut.split('.')  # There is one dot more (.potku)
                     file_split = file.split('.')
                     if cut_split[2] == file_split[1] and cut_split[3] == \
