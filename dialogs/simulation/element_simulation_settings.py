@@ -30,6 +30,8 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 import os
 import time
 
+import dialogs.dialog_functions as df
+
 from modules.general_functions import check_text
 from modules.general_functions import delete_simulation_results
 from modules.general_functions import set_input_field_red
@@ -304,33 +306,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                     if self.element_simulation.optimization_recoils:
                         # Delete energy spectra that use
                         # optimized recoils
-                        for opt_rec in \
-                                self.element_simulation.optimization_recoils:
-                            for energy_spectra in \
-                                    self.tab.energy_spectrum_widgets:
-                                for element_path in energy_spectra. \
-                                        energy_spectrum_data.keys():
-                                    elem = opt_rec.prefix + "-" + opt_rec.name
-                                    if elem in element_path:
-                                        index = element_path.find(
-                                            elem)
-                                        if element_path[
-                                            index - 1] == os.path.sep and \
-                                                element_path[
-                                                    index + len(
-                                                        elem)] == '.':
-                                            self.tab.del_widget(
-                                                energy_spectra)
-                                            self.tab.energy_spectrum_widgets.remove(
-                                                energy_spectra)
-                                            save_file_path = os.path.join(
-                                                self.tab.simulation.directory,
-                                                energy_spectra.save_file)
-                                            if os.path.exists(
-                                                    save_file_path):
-                                                os.remove(
-                                                    save_file_path)
-                                            break
+                        df.delete_energy_spectra(self, self.element_simulation)
 
                 if self.element_simulation.optimization_done:
                     self.tab.del_widget(
@@ -340,33 +316,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                     if self.element_simulation.optimization_recoils:
                         # Delete energy spectra that use
                         # optimized recoils
-                        for opt_rec in \
-                                self.element_simulation.optimization_recoils:
-                            for energy_spectra in \
-                                    self.tab.energy_spectrum_widgets:
-                                for element_path in energy_spectra. \
-                                        energy_spectrum_data.keys():
-                                    elem = opt_rec.prefix + "-" + opt_rec.name
-                                    if elem in element_path:
-                                        index = element_path.find(
-                                            elem)
-                                        if element_path[
-                                            index - 1] == os.path.sep and \
-                                                element_path[
-                                                    index + len(
-                                                        elem)] == '.':
-                                            self.tab.del_widget(
-                                                energy_spectra)
-                                            self.tab.energy_spectrum_widgets.remove(
-                                                energy_spectra)
-                                            save_file_path = os.path.join(
-                                                self.tab.simulation.directory,
-                                                energy_spectra.save_file)
-                                            if os.path.exists(
-                                                    save_file_path):
-                                                os.remove(
-                                                    save_file_path)
-                                            break
+                        df.delete_energy_spectra(self, self.element_simulation)
 
         elif simulation_run and not only_seed_changed:
             reply = QtWidgets.QMessageBox.question(
@@ -425,33 +375,8 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                     if self.element_simulation.optimization_recoils:
                         # Delete energy spectra that use
                         # optimized recoils
-                        for opt_rec in \
-                                self.element_simulation.optimization_recoils:
-                            for energy_spectra in \
-                                    self.tab.energy_spectrum_widgets:
-                                for element_path in energy_spectra. \
-                                        energy_spectrum_data.keys():
-                                    elem = opt_rec.prefix + "-" + opt_rec.name
-                                    if elem in element_path:
-                                        index = element_path.find(
-                                            elem)
-                                        if element_path[
-                                            index - 1] == os.path.sep and \
-                                                element_path[
-                                                    index + len(
-                                                        elem)] == '.':
-                                            self.tab.del_widget(
-                                                energy_spectra)
-                                            self.tab.energy_spectrum_widgets.remove(
-                                                energy_spectra)
-                                            save_file_path = os.path.join(
-                                                self.tab.simulation.directory,
-                                                energy_spectra.save_file)
-                                            if os.path.exists(
-                                                    save_file_path):
-                                                os.remove(
-                                                    save_file_path)
-                                            break
+                        df.delete_energy_spectra(self, self.element_simulation)
+
                 self.element_simulation.simulations_done = False
 
         elif self.element_simulation.optimization_running and not \
@@ -476,33 +401,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 if self.element_simulation.optimization_recoils:
                     # Delete energy spectra that use
                     # optimized recoils
-                    for opt_rec in \
-                            self.element_simulation.optimization_recoils:
-                        for energy_spectra in \
-                                self.tab.energy_spectrum_widgets:
-                            for element_path in energy_spectra. \
-                                    energy_spectrum_data.keys():
-                                elem = opt_rec.prefix + "-" + opt_rec.name
-                                if elem in element_path:
-                                    index = element_path.find(
-                                        elem)
-                                    if element_path[
-                                        index - 1] == os.path.sep and \
-                                            element_path[
-                                                index + len(
-                                                    elem)] == '.':
-                                        self.tab.del_widget(
-                                            energy_spectra)
-                                        self.tab.energy_spectrum_widgets.remove(
-                                            energy_spectra)
-                                        save_file_path = os.path.join(
-                                            self.tab.simulation.directory,
-                                            energy_spectra.save_file)
-                                        if os.path.exists(
-                                                save_file_path):
-                                            os.remove(
-                                                save_file_path)
-                                        break
+                    df.delete_energy_spectra(self, self.element_simulation)
 
         elif self.element_simulation.optimization_widget and not \
                 self.element_simulation.optimization_running and not \
@@ -526,33 +425,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 if self.element_simulation.optimization_recoils:
                     # Delete energy spectra that use
                     # optimized recoils
-                    for opt_rec in \
-                            self.element_simulation.optimization_recoils:
-                        for energy_spectra in \
-                                self.tab.energy_spectrum_widgets:
-                            for element_path in energy_spectra. \
-                                    energy_spectrum_data.keys():
-                                elem = opt_rec.prefix + "-" + opt_rec.name
-                                if elem in element_path:
-                                    index = element_path.find(
-                                        elem)
-                                    if element_path[
-                                        index - 1] == os.path.sep and \
-                                            element_path[
-                                                index + len(
-                                                    elem)] == '.':
-                                        self.tab.del_widget(
-                                            energy_spectra)
-                                        self.tab.energy_spectrum_widgets.remove(
-                                            energy_spectra)
-                                        save_file_path = os.path.join(
-                                            self.tab.simulation.directory,
-                                            energy_spectra.save_file)
-                                        if os.path.exists(
-                                                save_file_path):
-                                            os.remove(
-                                                save_file_path)
-                                        break
+                    df.delete_energy_spectra(self, self.element_simulation)
 
         if only_seed_changed:
             # If there are running simulation that use the same seed as the
