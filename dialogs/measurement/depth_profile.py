@@ -35,6 +35,8 @@ import os
 import sys
 import time
 
+import dialogs.dialog_functions as df
+
 from modules.beam import Beam
 from modules.cut_file import get_scatter_element
 from modules.cut_file import is_rbs
@@ -581,32 +583,10 @@ class DepthProfileWidget(QtWidgets.QWidget):
         """
         Update used cuts list with new Measurement cuts.
         """
-        for file in os.listdir(self.parent.obj.directory_cuts):
-            for i in range(len(self.use_cuts)):
-                cut = self.use_cuts[i]
-                # TODO check if cuts are stored as absolute paths. This does
-                #      not work if there are extra '.' chars on the path
-                cut_split = cut.split('.')  # There is one dot more (.potku)
-                file_split = file.split('.')
-                if cut_split[2] == file_split[1] and cut_split[3] == \
-                        file_split[2] and cut_split[4] == file_split[3]:
-                    cut_file = os.path.join(self.parent.obj.directory_cuts,
-                                            file)
-                    self.use_cuts[i] = cut_file
-
         changes_dir = os.path.join(
             self.parent.obj.directory_composition_changes, "Changes")
-        if os.path.exists(changes_dir):
-            for file in os.listdir(changes_dir):
-                for i in range(len(self.use_cuts)):
-                    cut = self.use_cuts[i]
-                    # TODO check if cuts are stored as absolute paths. This does
-                    #      not work if there are extra '.' chars on the path
-                    cut_split = cut.split('.')  # There is one dot more (.potku)
-                    file_split = file.split('.')
-                    if cut_split[2] == file_split[1] and cut_split[3] == \
-                            file_split[2] and cut_split[4] == file_split[3]:
-                        cut_file = os.path.join(changes_dir, file)
-                        self.use_cuts[i] = cut_file
+        df.update_cuts(self.use_cuts,
+                       self.parent.obj.directory_cuts,
+                       changes_dir)
 
         self.output_dir = self.parent.obj.directory_depth_profiles

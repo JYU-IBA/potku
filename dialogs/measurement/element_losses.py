@@ -33,7 +33,7 @@ import logging
 import os
 import sys
 
-from pathlib import Path
+import dialogs.dialog_functions as df
 
 from modules.cut_file import get_scatter_element
 from modules.cut_file import is_rbs
@@ -309,29 +309,12 @@ class ElementLossesWidget(QtWidgets.QWidget):
         """
         Update checked cuts and reference cut with Measurement cuts.
         """
-        for file in os.listdir(self.parent.obj.directory_cuts):
-            for i in range(len(self.checked_cuts)):
-                cut = self.checked_cuts[i]
-                cut_split = cut.split('.')  # There is one dot more (.potku)
-                file_split = file.split('.')
-                if cut_split[2] == file_split[1] and cut_split[3] == \
-                        file_split[2] and cut_split[4] == file_split[3]:
-                    cut_file = os.path.join(self.parent.obj.directory_cuts,
-                                            file)
-                    self.checked_cuts[i] = cut_file
-
         changes_dir = os.path.join(
             self.parent.obj.directory_composition_changes, "Changes")
-        if os.path.exists(changes_dir):
-            for file in os.listdir(changes_dir):
-                for i in range(len(self.checked_cuts)):
-                    cut = self.checked_cuts[i]
-                    cut_split = cut.split('.')  # There is one dot more (.potku)
-                    file_split = file.split('.')
-                    if cut_split[2] == file_split[1] and cut_split[3] == \
-                            file_split[2] and cut_split[4] == file_split[3]:
-                        cut_file = os.path.join(changes_dir, file)
-                        self.checked_cuts[i] = cut_file
+
+        df.update_cuts(self.checked_cuts,
+                       self.parent.obj.directory_cuts,
+                       changes_dir)
 
         self.losses.checked_cuts = self.checked_cuts
 

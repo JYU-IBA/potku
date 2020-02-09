@@ -274,7 +274,6 @@ class Potku(QtWidgets.QMainWindow):
 
             clicked_item.obj.update_directory_references(new_dir)
 
-            clicked_item.obj.set_loggers()
             if type(clicked_item.obj) is Measurement:
                 try:
                     clicked_item.obj.rename_info_file(new_name)
@@ -546,7 +545,10 @@ class Potku(QtWidgets.QMainWindow):
                                                "Problem with deleting files.",
                                                QtWidgets.QMessageBox.Ok,
                                                QtWidgets.QMessageBox.Ok)
-                measurement.set_loggers()
+                # TODO check that this is the intented way of setting the
+                #  loggers in case something went wrong.
+                measurement.set_loggers(measurement.directory,
+                                        measurement.request.directory)
                 return
 
             self.request.samples.measurements.remove_by_tab_id(tab.tab_id)

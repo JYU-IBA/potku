@@ -417,6 +417,8 @@ class Measurement(Logger):
 
         self.selector.update_references(self)
 
+        self.set_loggers(self.directory, self.request.directory)
+
     @classmethod
     def from_file(cls, measurement_info_path, measurement_file_path,
                   profile_file_path,

@@ -421,3 +421,5 @@ class Simulation(Logger):
 
         for elem_sim in self.element_simulations:
             elem_sim.directory = new_dir
+
+        self.set_loggers(self.directory, self.request.directory)
