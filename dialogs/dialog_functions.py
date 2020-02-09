@@ -28,21 +28,24 @@ __version__ = ""    # TODO
 
 import os
 
+import modules.masses as masses
+
+from modules.element import Element
+
 
 def update_efficiency_files(detector):
     """Updates the efficiency files in the given detector by adding and
     removing files.
     """
-    added_files = set()
+    # TODO if a file is removed and new file with same name is added, this
+    #      also removes the new file
     for file in detector.efficiencies:
         detector.add_efficiency_file(file)
-        added_files.add(file)
 
     detector.efficiencies.clear()
 
     for file in detector.efficiencies_to_remove:
-        if file not in added_files:
-            detector.remove_efficiency_file(file)
+        detector.remove_efficiency_file(file)
 
     # Clear the list so same files do not get deleted over and over
     # again
@@ -93,3 +96,38 @@ def _update_cuts(cut_files, directory):
                     file_split[2] and cut_split[4] == file_split[3]:
                 cut_file = os.path.join(directory, file)
                 cut_files[i] = cut_file
+
+
+def get_updated_efficiency_files(qdialog, efficiency_files):
+    """Returns a list of used efficiency files that can be used to update
+    a GUI element
+
+    Args:
+        qdialog:
+        efficiency_files:
+    """
+    eff_files_used = []
+    root = qdialog.ui.treeWidget.invisibleRootItem()
+    child_count = root.childCount()
+    for eff in efficiency_files:
+        str_element, _ = eff.split(".")
+        element = Element.from_string(str_element)
+        for i in range(child_count):
+            item = root.child(i)
+            # TODO: Perhaps make this update every time a cut file is
+            # selected so user knows exactly what files are used instead
+            # of what files match all the cut files.
+
+            # TODO: Does not check elemental losses for efficiency files.
+            if not hasattr(item, "file_name"):
+                continue
+            cut_element = Element.from_string(item.file_name.split(".")[1])
+            mass = cut_element.isotope
+            if not mass:
+                mass = round(
+                    masses.get_standard_isotope(cut_element.symbol), 0)
+            if cut_element.symbol == element.symbol and \
+                    mass == element.isotope:
+                eff_files_used.append(eff)
+
+    return eff_files_used

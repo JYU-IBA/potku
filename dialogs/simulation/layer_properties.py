@@ -321,6 +321,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 for elem_sim in tmp_sims:
                     if not elem_sim.optimization_running:
                         elem_sim.stop()
+                        # TODO we should not access the controls directly
+                        #      via elem_sim. Controls can be updated using
+                        #      observable pattern.
                         elem_sim.controls.state_label.setText("Stopped")
                         elem_sim.controls.run_button.setEnabled(True)
                         elem_sim.controls.stop_button.setEnabled(False)
@@ -333,6 +336,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                         elem_sim.simulations_done = False
                         # Reset controls
                         if elem_sim.controls:
+                            # TODO do not access controls via elem_sim. Use
+                            #      observation.
                             elem_sim.controls.reset_controls()
                     else:
                         # Handle optimization
@@ -363,6 +368,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                             delete_simulation_results(elem_sim, recoil)
                         # Reset controls
                         if elem_sim.controls:
+                            # TODO do not access controls via elem_sim. Use
+                            #      observation.
                             elem_sim.controls.reset_controls()
 
                         # Change full edit unlocked
@@ -406,6 +413,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 for elem_sim in tmp_sims:
                     if not elem_sim.optimization_running:
                         elem_sim.stop()
+                        # TODO we should not access the controls directly
+                        #      via elem_sim. Controls can be updated using
+                        #      observable pattern.
                         elem_sim.controls.state_label.setText("Stopped")
                         elem_sim.controls.run_button.setEnabled(True)
                         elem_sim.controls.stop_button.setEnabled(False)
@@ -418,6 +428,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                         elem_sim.simulations_done = False
 
                         if elem_sim.controls:
+                            # TODO do not access controls via elem_sim. Use
+                            #      observation.
                             elem_sim.controls.reset_controls()
                     else:
                         # Handle optimization
@@ -467,6 +479,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                     elem_sim.simulations_done = False
 
                     if elem_sim.controls:
+                        # TODO do not access controls via elem_sim. Use
+                        #      observation.
                         elem_sim.controls.reset_controls()
 
                 for elem_sim in optimization_running:

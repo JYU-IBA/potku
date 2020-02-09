@@ -253,6 +253,8 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 else:
                     self.element_simulation.stop()
                 if self.element_simulation.controls:
+                    # TODO do not access controls via elem_sim. Use
+                    #      observation.
                     self.element_simulation.controls.state_label.setText("Stopped")
                     self.element_simulation.controls.run_button.setEnabled(True)
                     self.element_simulation.controls.stop_button.setEnabled(False)
@@ -282,6 +284,8 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
 
                 # Reset controls
                 if self.element_simulation.controls:
+                    # TODO do not access controls via elem_sim. Use
+                    #      observation.
                     self.element_simulation.controls.reset_controls()
                 # Change full edit unlocked
                 self.element_simulation.recoil_elements[0].widgets[0].\
@@ -403,6 +407,8 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                                     break
                 # Reset controls
                 if self.element_simulation.controls:
+                    # TODO do not access controls via elem_sim. Use
+                    #      observation.
                     self.element_simulation.controls.reset_controls()
                 # Change full edit unlocked
                 self.element_simulation.recoil_elements[0].widgets[0].\

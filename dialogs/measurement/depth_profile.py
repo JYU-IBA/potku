@@ -359,29 +359,9 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 .get_efficiency_files()
         else:
             eff_files = self.parent.obj.detector.get_efficiency_files()
-        eff_files_used = []
-        root = self.ui.treeWidget.invisibleRootItem()
-        child_count = root.childCount()
-        for eff in eff_files:
-            str_element = eff.split(".")[0]
-            element = Element.from_string(str_element)
-            for i in range(child_count): 
-                item = root.child(i)
-                # TODO: Perhaps make this update every time a cut file is
-                # selected so user knows exactly what files are used instead
-                # of what files match all the cut files.
 
-                # TODO: Does not check elemental losses for efficiency files.
-                if not hasattr(item, "file_name"):
-                    continue
-                cut_element = Element.from_string(item.file_name.split(".")[1])
-                mass = cut_element.isotope
-                if not mass:
-                    mass = round(
-                        masses.get_standard_isotope(cut_element.symbol), 0)
-                if cut_element.symbol == element.symbol and \
-                        mass == element.isotope:
-                    eff_files_used.append(eff)
+        eff_files_used = df.get_updated_efficiency_files(self, eff_files)
+
         if eff_files_used:
             self.ui.label_efficiency_files.setText(
                "Efficiency files used: \t\n{0}".format("\t\n".join(

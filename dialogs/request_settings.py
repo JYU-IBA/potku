@@ -252,6 +252,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     for elem_sim in tmp_sims:
                         if not elem_sim.optimization_running:
                             elem_sim.stop()
+                            # TODO we should not access the controls directly
+                            #      via elem_sim. Controls can be updated using
+                            #      observable pattern.
                             elem_sim.controls.state_label.setText("Stopped")
                             elem_sim.controls.run_button.setEnabled(True)
                             elem_sim.controls.stop_button.setEnabled(False)
@@ -294,6 +297,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                         break
                             # Reset controls
                             if elem_sim.controls:
+                                # TODO do not access controls via elem_sim. Use
+                                #      observation.
                                 elem_sim.controls.reset_controls()
 
                         else:
@@ -422,6 +427,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                     break
                         # Reset controls
                         if elem_sim.controls:
+                            # TODO do not access controls via elem_sim. Use
+                            #      observation.
                             elem_sim.controls.reset_controls()
 
                     for elem_sim in optimization_run:
@@ -486,6 +493,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     for elem_sim in tmp_sims:
                         if not elem_sim.optimization_running:
                             elem_sim.stop()
+                            # TODO we should not access the controls directly
+                            #      via elem_sim. Controls can be updated using
+                            #      observable pattern.
                             elem_sim.controls.state_label.setText("Stopped")
                             elem_sim.controls.run_button.setEnabled(True)
                             elem_sim.controls.stop_button.setEnabled(False)
@@ -528,6 +538,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                         break
                             # Reset controls
                             if elem_sim.controls:
+                                # TODO do not access controls via elem_sim. Use
+                                #      observation.
                                 elem_sim.controls.reset_controls()
                         else:
                             # Handle optimization
@@ -631,6 +643,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                     break
                         # Reset controls
                         if elem_sim.controls:
+                            # TODO do not access controls via elem_sim. Use
+                            #      observation.
                             elem_sim.controls.reset_controls()
 
                     tmp_sims = copy.copy(optimization_running)

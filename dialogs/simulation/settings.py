@@ -244,6 +244,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     for elem_sim in tmp_sims:
                         if not elem_sim.optimization_running:
                             elem_sim.stop()
+                            # TODO we should not access the controls directly
+                            #      via elem_sim. Controls can be updated using
+                            #      observable pattern.
                             elem_sim.controls.state_label.setText("Stopped")
                             elem_sim.controls.run_button.setEnabled(True)
                             elem_sim.controls.stop_button.setEnabled(False)
@@ -262,7 +265,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                                     element_path[index + len(
                                                         elem)] == '.':
                                                 self.tab.del_widget(es)
-                                                self.tab.energy_spectrum_widgets.\
+                                                self.tab.energy_spectrum_widgets. \
                                                     remove(es)
                                                 save_file_path = os.path.join(
                                                     self.tab.simulation.directory,
@@ -275,7 +278,10 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
                             # Reset controls
                             if elem_sim.controls:
+                                # TODO do not access controls via elem_sim. Use
+                                #      observation.
                                 elem_sim.controls.reset_controls()
+
                         else:
                             # Handle optimization
                             if elem_sim.optimization_recoils:
@@ -318,7 +324,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                                     break
 
                         # Change full edit unlocked
-                        elem_sim.recoil_elements[0].widgets[0].parent.\
+                        elem_sim.recoil_elements[0].widgets[0].parent. \
                             edit_lock_push_button.setText("Full edit unlocked")
                         elem_sim.simulations_done = False
 
@@ -387,6 +393,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
                         # Reset controls
                         if elem_sim.controls:
+                            # TODO do not access controls via elem_sim. Use
+                            #      observation.
                             elem_sim.controls.reset_controls()
 
                         # Change full edit unlocked
@@ -449,6 +457,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     for elem_sim in tmp_sims:
                         if not elem_sim.optimization_running:
                             elem_sim.stop()
+                            # TODO we should not access the controls directly
+                            #      via elem_sim. Controls can be updated using
+                            #      observable pattern.
                             elem_sim.controls.state_label.setText("Stopped")
                             elem_sim.controls.run_button.setEnabled(True)
                             elem_sim.controls.stop_button.setEnabled(False)
@@ -480,6 +491,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
                             # Reset controls
                             if elem_sim.controls:
+                                # TODO do not access controls via elem_sim. Use
+                                #      observation.
                                 elem_sim.controls.reset_controls()
 
                         else:
@@ -491,7 +504,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                             elem_sim.optimization_stopped = True
                             elem_sim.optimization_running = False
 
-                            self.tab.del_widget( elem_sim.optimization_widget)
+                            self.tab.del_widget(elem_sim.optimization_widget)
                             # Handle optimization energy spectra
                             if elem_sim.optimization_recoils:
                                 # Delete energy spectra that use
@@ -572,6 +585,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
                         # Reset controls
                         if elem_sim.controls:
+                            # TODO do not access controls via elem_sim. Use
+                            #      observation.
                             elem_sim.controls.reset_controls()
                         # Change full edit unlocked
                         elem_sim.recoil_elements[0].widgets[0].parent. \
@@ -826,6 +841,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     for elem_sim in tmp_sims:
                         if not elem_sim.optimization_running:
                             elem_sim.stop()
+                            # TODO we should not access the controls directly
+                            #      via elem_sim. Controls can be updated using
+                            #      observable pattern.
                             elem_sim.controls.state_label.setText("Stopped")
                             elem_sim.controls.run_button.setEnabled(True)
                             elem_sim.controls.stop_button.setEnabled(False)
@@ -856,6 +874,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
                             # Reset controls
                             if elem_sim.controls:
+                                # TODO do not access controls via elem_sim. Use
+                                #      observation.
                                 elem_sim.controls.reset_controls()
                         else:
                             # Handle optimization
@@ -1019,6 +1039,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     for elem_sim in tmp_sims:
                         if not elem_sim.optimization_running:
                             elem_sim.stop()
+                            # TODO we should not access the controls directly
+                            #      via elem_sim. Controls can be updated using
+                            #      observable pattern.
                             elem_sim.controls.state_label.setText("Stopped")
                             elem_sim.controls.run_button.setEnabled(True)
                             elem_sim.controls.stop_button.setEnabled(False)
@@ -1049,6 +1072,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
                             # Reset controls
                             if elem_sim.controls:
+                                # TODO do not access controls via elem_sim. Use
+                                #      observation.
                                 elem_sim.controls.reset_controls()
 
                         else:
@@ -1139,6 +1164,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                             break
                         # Reset controls
                         if elem_sim.controls:
+                            # TODO do not access controls via elem_sim. Use
+                            #      observation.
                             elem_sim.controls.reset_controls()
 
                         # Change full edit unlocked
