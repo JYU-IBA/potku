@@ -32,14 +32,11 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import copy
-import modules.masses as masses
 import os
 
-from dialogs.element_selection import ElementSelectionDialog
 import dialogs.dialog_functions as df
 
 from modules.general_functions import delete_simulation_results
-from modules.general_functions import set_input_field_red
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
@@ -728,104 +725,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                                             os.remove(
                                                                 save_file_path)
                                                         break
-
-            # elif optimization_running and optimization_run and \
-            #         not only_unnotified_changed and not only_seed_changed:
-            #     reply = QtWidgets.QMessageBox.question(
-            #         self, "Optimized results and running optimizations",
-            #         "There are optimizations that use request settings, "
-            #         "and either have results or are currently running."
-            #         "\nIf you save changes, the running optimizations "
-            #         "will be stopped, and the result files will be deleted. "
-            #         "\n\nDo you want to save changes anyway?",
-            #         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-            #         QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            #     if reply == QtWidgets.QMessageBox.No or reply == \
-            #             QtWidgets.QMessageBox.Cancel:
-            #         self.__close = False
-            #         return
-            #     else:
-            #         tmp_sims = copy.copy(optimization_running)
-            #         for elem_sim in tmp_sims:
-            #             elem_sim.optimization_stopped = True
-            #             elem_sim.optimization_running = False
-            #
-            #             tab_id = elem_sim.simulation.tab_id
-            #             if tab_id != -1:
-            #                 tab = self.find_related_tab(tab_id)
-            #                 if tab:
-            #                     tab.del_widget(elem_sim.optimization_widget)
-            #                     # Handle optimization energy spectra
-            #                     if elem_sim.optimization_recoils:
-            #                         # Delete energy spectra that use
-            #                         # optimized recoils
-            #                         for opt_rec in \
-            #                                 elem_sim.optimization_recoils:
-            #                             for energy_spectra in tab.energy_spectrum_widgets:
-            #                                 for element_path in energy_spectra. \
-            #                                         energy_spectrum_data.keys():
-            #                                     elem = opt_rec.prefix + "-" + opt_rec.name
-            #                                     if elem in element_path:
-            #                                         index = element_path.find(
-            #                                             elem)
-            #                                         if element_path[
-            #                                             index - 1] == os.path.sep and \
-            #                                                 element_path[
-            #                                                     index + len(
-            #                                                         elem)] == '.':
-            #                                             tab.del_widget(
-            #                                                 energy_spectra)
-            #                                             tab.energy_spectrum_widgets.remove(
-            #                                                 energy_spectra)
-            #                                             save_file_path = os.path.join(
-            #                                                 tab.simulation.directory,
-            #                                                 energy_spectra.save_file)
-            #                                             if os.path.exists(
-            #                                                     save_file_path):
-            #                                                 os.remove(
-            #                                                     save_file_path)
-            #                                             break
-            #         # Handle optimized results
-            #         tmp_sims = copy.copy(optimization_run)
-            #         for elem_sim in tmp_sims:
-            #             elem_sim.optimization_stopped = True
-            #             elem_sim.optimization_running = False
-            #
-            #             tab_id = elem_sim.simulation.tab_id
-            #             if tab_id != -1:
-            #                 tab = self.find_related_tab(tab_id)
-            #                 if tab:
-            #                     tab.del_widget(elem_sim.optimization_widget)
-            #                     # Handle optimization energy spectra
-            #                     if elem_sim.optimization_recoils:
-            #                         # Delete energy spectra that use
-            #                         # optimized recoils
-            #                         for opt_rec in \
-            #                                 elem_sim.optimization_recoils:
-            #                             for energy_spectra in tab.energy_spectrum_widgets:
-            #                                 for element_path in energy_spectra. \
-            #                                         energy_spectrum_data.keys():
-            #                                     elem = opt_rec.prefix + "-" + opt_rec.name
-            #                                     if elem in element_path:
-            #                                         index = element_path.find(
-            #                                             elem)
-            #                                         if element_path[
-            #                                             index - 1] == os.path.sep and \
-            #                                                 element_path[
-            #                                                     index + len(
-            #                                                         elem)] == '.':
-            #                                             tab.del_widget(
-            #                                                 energy_spectra)
-            #                                             tab.energy_spectrum_widgets.remove(
-            #                                                 energy_spectra)
-            #                                             save_file_path = os.path.join(
-            #                                                 tab.simulation.directory,
-            #                                                 energy_spectra.save_file)
-            #                                             if os.path.exists(
-            #                                                     save_file_path):
-            #                                                 os.remove(
-            #                                                     save_file_path)
-            #                                             break
 
             elif optimization_running and not only_unnotified_changed:
                 reply = QtWidgets.QMessageBox.question(

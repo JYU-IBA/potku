@@ -29,16 +29,12 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import modules.masses as masses
 import os
 import shutil
 import time
 
 import dialogs.dialog_functions as df
-from dialogs.element_selection import ElementSelectionDialog
 
-from modules.detector import Detector
-from modules.general_functions import set_input_field_red
 from modules.run import Run
 from modules.target import Target
 
@@ -254,25 +250,13 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                                      file_name + ".measurement")
 
                     if self.measurement.detector is None:
-                        # Create default Detector object for Measurement
-                        detector_file_path = os.path.join(det_folder_path,
-                                                          "Default.detector")
-                        if not os.path.exists(det_folder_path):
-                            os.makedirs(det_folder_path)
-                        self.measurement.detector = Detector(
-                            detector_file_path, measurement_settings_file_path)
-                        self.measurement.detector.update_directories(
-                            det_folder_path)
-                        # Transfer the default detector efficiencies to
-                        # new Detector
-                        self.measurement.detector.efficiencies = list(
-                            self.measurement.request.default_detector.
-                            efficiencies)
-                        self.measurement.request.default_detector.efficiencies \
-                            = []
+                        df.update_detector_settings(
+                            self.measurement,
+                            det_folder_path,
+                            measurement_settings_file_path)
 
                     # Set Detector object to settings widget
-                    self.detector_settings_widget.obj = self.measurement.\
+                    self.detector_settings_widget.obj = self.measurement. \
                         detector
 
                     # Update settings
