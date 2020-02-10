@@ -1126,10 +1126,17 @@ class ElementSimulation(Observable):
 
         if status["state"] == SimulationState.DONE:
             if self.use_default_settings:
-                # TODO there is a bug in here. use_default_settings is True
+                # FIXME there is a bug in here. use_default_settings is True
                 #      even when the simulation is running its own settings.
                 #      Next line will result in an exception.
-                self.request.running_simulations.remove(self)
+                try:
+                    self.request.running_simulations.remove(self)
+                except ValueError:
+                    # TODO this is a cheap patch to the aforementioned problem,
+                    #      not a real solution
+                    print("Did not find element simulation in request, trying "
+                          "to remove it from simulation.")
+                    self.simulation.running_simulations.remove(self)
             else:
                 self.simulation.running_simulations.remove(self)
 

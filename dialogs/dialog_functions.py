@@ -158,30 +158,7 @@ def stop_simulations(qdialog):
             elem_sim.controls.run_button.setEnabled(True)
             elem_sim.controls.stop_button.setEnabled(False)
             # Delete files
-            for recoil in elem_sim.recoil_elements:
-                gf.delete_simulation_results(elem_sim, recoil)
-                # Delete energy spectra that use recoil
-                for es in qdialog.tab.energy_spectrum_widgets:
-                    for element_path in es. \
-                            energy_spectrum_data.keys():
-                        elem = recoil.prefix + "-" + recoil.name
-                        if elem in element_path:
-                            index = element_path.find(elem)
-                            if element_path[
-                                index - 1] == os.path.sep and \
-                                    element_path[index + len(
-                                        elem)] == '.':
-                                qdialog.tab.del_widget(es)
-                                qdialog.tab.energy_spectrum_widgets. \
-                                    remove(es)
-                                save_file_path = os.path.join(
-                                    qdialog.tab.simulation.directory,
-                                    es.save_file)
-                                if os.path.exists(
-                                        save_file_path):
-                                    os.remove(
-                                        save_file_path)
-                                break
+            handle_recoils(qdialog, elem_sim)
 
             # Reset controls
             if elem_sim.controls:
@@ -272,3 +249,63 @@ def change_element(qdialog, button, combo_box):
                 qdialog.measurement_settings_widget.ui.nameLineEdit,
                 qdialog.measurement_settings_widget)
             combo_box.setStyleSheet("background-color: %s" % "None")
+
+
+def handle_element_simulation_stopping(qdialog, simulations_run,
+                                       optimization_run):
+    """
+
+    Args:
+        qdialog: settings dialog that calls this function
+        simulations_run: list of element simulations
+        optimization_run: list of element simulations used in optimization
+    """
+    for elem_sim in simulations_run:
+        handle_recoils(qdialog, elem_sim)
+
+        # Reset controls
+        if elem_sim.controls:
+            # TODO do not access controls via elem_sim. Use
+            #      observation.
+            elem_sim.controls.reset_controls()
+
+        # Change full edit unlocked
+        elem_sim.recoil_elements[0].widgets[0].parent. \
+            edit_lock_push_button.setText("Full edit unlocked")
+        elem_sim.simulations_done = False
+
+    for elem_sim in optimization_run:
+        qdialog.tab.del_widget(elem_sim.optimization_widget)
+        elem_sim.simulations_done = False
+        # Handle optimization energy spectra
+        if elem_sim.optimization_recoils:
+            # Delete energy spectra that use
+            # optimized recoils
+            delete_energy_spectra(qdialog, elem_sim)
+
+
+def handle_recoils(qdialog, elem_sim):
+    for recoil in elem_sim.recoil_elements:
+        gf.delete_simulation_results(elem_sim, recoil)
+        # Delete energy spectra that use recoil
+        for es in qdialog.tab.energy_spectrum_widgets:
+            for element_path in es. \
+                    energy_spectrum_data.keys():
+                elem = recoil.prefix + "-" + recoil.name
+                if elem in element_path:
+                    index = element_path.find(elem)
+                    if element_path[
+                        index - 1] == os.path.sep and \
+                            element_path[index + len(
+                                elem)] == '.':
+                        qdialog.tab.del_widget(es)
+                        qdialog.tab.energy_spectrum_widgets. \
+                            remove(es)
+                        save_file_path = os.path.join(
+                            qdialog.tab.simulation.directory,
+                            es.save_file)
+                        if os.path.exists(
+                                save_file_path):
+                            os.remove(
+                                save_file_path)
+                        break

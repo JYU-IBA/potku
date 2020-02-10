@@ -373,21 +373,25 @@ class Measurement(Logger):
         Update folders and selector.
         """
         for item in os.listdir(self.directory):
+            # TODO if the directory we are looking for does not exist (for
+            #  example "Energy_spectra", this will cause a crash later on
+            #  as self.directory_energy_spectra remains None. Maybe initialize
+            #  some default values for each folder
             if item.startswith("Composition_changes"):
                 self.directory_composition_changes = os.path.join(
                     self.directory, "Composition_changes")
-            if item.startswith("Data"):
+            elif item.startswith("Data"):
                 self.directory_data = os.path.join(self.directory, "Data")
-            if item.startswith("Depth_profiles"):
+            elif item.startswith("Depth_profiles"):
                 self.directory_depth_profiles = os.path.join(self.directory,
                                                              "Depth_profiles")
-            if item.startswith("Energy_spectra"):
+            elif item.startswith("Energy_spectra"):
                 self.directory_energy_spectra = os.path.join(self.directory,
                                                              "Energy_spectra")
         for file in os.listdir(self.directory_data):
             if file.endswith(".asc"):
                 self.measurement_file = file
-            if file.startswith("Cuts"):
+            elif file.startswith("Cuts"):
                 self.directory_cuts = os.path.join(self.directory_data, "Cuts")
 
         self.set_loggers(self.directory, self.request.directory)
