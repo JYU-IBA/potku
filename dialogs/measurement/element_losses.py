@@ -35,6 +35,8 @@ import sys
 
 import dialogs.dialog_functions as df
 
+from widgets.gui_utils import GUIReporter
+
 from modules.cut_file import get_scatter_element
 from modules.cut_file import is_rbs
 from modules.element_losses import ElementLosses
@@ -228,9 +230,10 @@ class ElementLossesWidget(QtWidgets.QWidget):
                                         directory_composition_changes,
                                         self.reference_cut_file,
                                         self.checked_cuts,
-                                        self.partition_count,
-                                        progress_bar=self.progress_bar)
-            self.split_counts = self.losses.count_element_cuts()
+                                        self.partition_count)
+            self.split_counts = self.losses.count_element_cuts(
+                progress=GUIReporter(self.progress_bar)
+            )
 
             # Check for RBS selections.
             rbs_list = {}
@@ -287,8 +290,8 @@ class ElementLossesWidget(QtWidgets.QWidget):
             # process.
         else:
             self.progress_bar = None
-        self.losses.progress_bar = self.progress_bar  # Update this     
-        self.losses.save_splits()
+
+        self.losses.save_splits(progress=GUIReporter(self.progress_bar))
         if self.progress_bar:
             self.measurement.statusbar.removeWidget(self.progress_bar)
             self.progress_bar.hide()

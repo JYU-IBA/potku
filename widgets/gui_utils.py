@@ -26,7 +26,10 @@ __version__ = "2.0"
 
 import abc
 
+from modules.observing import ProgressReporter
+
 from PyQt5 import QtWidgets
+from PyQt5 import QtCore
 
 
 def switch_buttons(func, button_a, button_b):
@@ -52,3 +55,23 @@ class QtOABCMeta(type(QtWidgets.QWidget), abc.ABCMeta):
     but since Observers are no longer ABCs, this class may not be needed.
     """
     pass
+
+
+class GUIReporter(ProgressReporter):
+    """GUI Progress reporter that updates the value of a progress bar.
+    """
+    def __init__(self, progress_bar):
+        """Initializes a new GUIReporter that updates the value of a given
+        progress bar.
+
+        Args:
+            progress_bar: GUI progress bar that will be updated
+        """
+
+        def __update_func(value):
+            # Callback function that is passed down to super class
+            progress_bar.setValue(value)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
+
+        ProgressReporter.__init__(self, __update_func)
