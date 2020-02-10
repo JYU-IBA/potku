@@ -90,7 +90,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
         self.measurement_settings_widget.ui.beamIonButton.clicked.connect(
-            lambda: self.__change_element(
+            lambda: df.change_element(
+                self,
                 self.measurement_settings_widget.ui.beamIonButton,
                 self.measurement_settings_widget.ui.isotopeComboBox))
 
@@ -1094,36 +1095,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                         simulations_run.append(elem_sim)
         return simulations_run
 
-    def __change_element(self, button, combo_box):
-        """ Opens element selection dialog and loads selected element's isotopes
-        to a combobox.
-
-        Args:
-            button: button whose text is changed accordingly to the made
-            selection.
-        """
-        dialog = ElementSelectionDialog()
-        if dialog.element:
-            button.setText(dialog.element)
-            # Enabled settings once element is selected
-            self.__enabled_element_information()
-            masses.load_isotopes(dialog.element, combo_box)
-
-            # Check if no isotopes
-            if combo_box.count() == 0:
-                self.measurement_settings_widget.ui.isotopeInfoLabel\
-                    .setVisible(True)
-                self.measurement_settings_widget.fields_are_valid = False
-                set_input_field_red(combo_box)
-            else:
-                self.measurement_settings_widget.ui.isotopeInfoLabel\
-                    .setVisible(False)
-                self.measurement_settings_widget.check_text(
-                    self.measurement_settings_widget.ui.nameLineEdit,
-                    self.measurement_settings_widget)
-                combo_box.setStyleSheet("background-color: %s" % "None")
-
-    def __enabled_element_information(self):
+    def enabled_element_information(self):
         """
         Change the UI accordingly when an element is selected.
         """

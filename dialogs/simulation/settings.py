@@ -96,7 +96,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
 
         self.measurement_settings_widget.ui.beamIonButton.clicked.connect(
-            lambda: self.__change_element(
+            lambda: df.change_element(
+                self,
                 self.measurement_settings_widget.ui.beamIonButton,
                 self.measurement_settings_widget.ui.isotopeComboBox))
 
@@ -131,35 +132,6 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
         self.exec()
 
-    def __change_element(self, button, combo_box):
-        """ Opens element selection dialog and loads selected element's isotopes
-        to a combobox.
-
-        Args:
-            button: button whose text is changed accordingly to the made
-            selection.
-        """
-        dialog = ElementSelectionDialog()
-        if dialog.element:
-            button.setText(dialog.element)
-            # Enabled settings once element is selected
-            self.__enabled_element_information()
-            masses.load_isotopes(dialog.element, combo_box)
-
-            # Check if no isotopes
-            if combo_box.count() == 0:
-                self.measurement_settings_widget.ui.isotopeInfoLabel \
-                    .setVisible(True)
-                self.measurement_settings_widget.fields_are_valid = False
-                set_input_field_red(combo_box)
-            else:
-                self.measurement_settings_widget.ui.isotopeInfoLabel \
-                    .setVisible(False)
-                self.measurement_settings_widget.check_text(
-                    self.measurement_settings_widget.ui.nameLineEdit,
-                    self.measurement_settings_widget)
-                combo_box.setStyleSheet("background-color: %s" % "None")
-
     def __change_used_settings(self):
         """Set specific settings enabled or disabled based on the "Use
         request settings" checkbox.
@@ -176,7 +148,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         """
         df.check_for_red(self)
 
-    def __enabled_element_information(self):
+    def enabled_element_information(self):
         """
         Change the UI accordingly when an element is selected.
         """
@@ -269,7 +241,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                                 element_path[index + len(
                                                     elem)] == '.':
                                             self.tab.del_widget(es)
-                                            self.tab.energy_spectrum_widgets.\
+                                            self.tab.energy_spectrum_widgets. \
                                                 remove(es)
                                             save_file_path = os.path.join(
                                                 self.tab.simulation.directory,
@@ -287,7 +259,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                             elem_sim.controls.reset_controls()
 
                         # Change full edit unlocked
-                        elem_sim.recoil_elements[0].widgets[0].parent.\
+                        elem_sim.recoil_elements[0].widgets[0].parent. \
                             edit_lock_push_button.setText("Full edit unlocked")
                         elem_sim.simulations_done = False
 
@@ -366,6 +338,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                             # TODO do not access controls via elem_sim. Use
                             #      observation.
                             elem_sim.controls.reset_controls()
+
                         # Change full edit unlocked
                         elem_sim.recoil_elements[0].widgets[0].parent. \
                             edit_lock_push_button.setText("Full edit unlocked")
@@ -379,7 +352,6 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
                         self.tab.del_widget(elem_sim.optimization_widget)
                         elem_sim.simulations_done = False
-
                         # Handle optimization energy spectra
                         if elem_sim.optimization_recoils:
                             # Delete energy spectra that use
@@ -741,6 +713,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                                 os.remove(
                                                     save_file_path)
                                             break
+
                         # Reset controls
                         if elem_sim.controls:
                             # TODO do not access controls via elem_sim. Use
@@ -755,6 +728,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     for elem_sim in optimization_run:
                         self.tab.del_widget(elem_sim.optimization_widget)
                         elem_sim.simulations_done = False
+                        # Handle optimization energy spectra
                         if elem_sim.optimization_recoils:
                             # Delete energy spectra that use
                             # optimized recoils
