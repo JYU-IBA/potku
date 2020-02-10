@@ -31,11 +31,12 @@ import json
 import logging
 import numpy as np
 import os
-import platform
 import threading
 import time
 import functools
 import itertools
+
+import modules.file_paths as fp
 
 from modules.element import Element
 from modules.general_functions import read_espe_file
@@ -430,9 +431,9 @@ class ElementSimulation(Observable):
                             recoil_element.name + "." + seed + ".erd"
                         rename_file(erd_file, new_name)
                 # Write mcsimu file
-                self.mcsimu_to_file(os.path.join(self.directory,
-                                         self.name_prefix + "-" + self.name + \
-                                                          ".mcsimu"))
+                self.mcsimu_to_file(os.path.join(
+                    self.directory,
+                    self.name_prefix + "-" + self.name + ".mcsimu"))
 
             simu_file = os.path.join(self.directory, recoil_element.prefix +
                                      "-" + old_name + ".simu")
@@ -623,64 +624,54 @@ class ElementSimulation(Observable):
                    optimization_recoils=optimized_recoils,
                    optimized_fluence=optimized_fluence)
 
+    def get_full_name(self):
+        if self.name_prefix:
+            return f"{self.name_prefix}-{self.name}"
+        return self.name
+
+    def to_dict(self):
+        """Returns a dictionary representation of the element simulation
+        object.
+        """
+        elem_sim = self.get_element_simulation()
+
+        # TODO maybe declare __dict__ in __slots__ so we get to use vars
+        # d = vars(elem_sim)
+
+        d = {
+            # TODO should this have the name of the elem_sim instead?
+            "name": self.get_full_name(),
+            "description": elem_sim.description,
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
+                time.time())),
+            "modification_time_unix": time.time(),
+            "simulation_type": elem_sim.simulation_type,
+            "simulation_mode": elem_sim.simulation_mode,
+            "number_of_ions": elem_sim.number_of_ions,
+            "number_of_preions": elem_sim.number_of_preions,
+            "seed_number": elem_sim.seed_number,
+            "number_of_recoils": elem_sim.number_of_recoils,
+            "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
+            "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
+            "minimum_main_scattering_angle":
+                elem_sim.minimum_main_scattering_angle,
+            "minimum_energy": elem_sim.minimum_energy,
+            "use_default_settings": str(self.use_default_settings),
+            "main_recoil": self.main_recoil.name
+        }
+
+        return d
+
     def mcsimu_to_file(self, file_path):
         """Save mcsimu settings to file.
 
         Args:
             file_path: File in which the mcsimu settings will be saved.
         """
-        # TODO add function get_full_name that returns name
-        if self.name_prefix != "":
-            name = self.name_prefix + "-" + self.name
-        else:
-            name = self.name
-
-        if not self.use_default_settings:
-            obj = {
-                "name": name,
-                "description": self.description,
-                "modification_time": time.strftime("%c %z %Z", time.localtime(
-                    time.time())),
-                "modification_time_unix": time.time(),
-                "simulation_type": self.simulation_type,
-                "simulation_mode": self.simulation_mode,
-                "number_of_ions": self.number_of_ions,
-                "number_of_preions": self.number_of_preions,
-                "seed_number": self.seed_number,
-                "number_of_recoils": self.number_of_recoils,
-                "number_of_scaling_ions": self.number_of_scaling_ions,
-                "minimum_scattering_angle": self.minimum_scattering_angle,
-                "minimum_main_scattering_angle":
-                    self.minimum_main_scattering_angle,
-                "minimum_energy": self.minimum_energy,
-                "use_default_settings": str(self.use_default_settings),
-                "main_recoil": self.main_recoil.name
-            }
-        else:
-            elem_sim = self.request.default_element_simulation
-            obj = {
-                "name": name,
-                "description": elem_sim.description,
-                "modification_time": time.strftime("%c %z %Z", time.localtime(
-                    time.time())),
-                "modification_time_unix": time.time(),
-                "simulation_type": elem_sim.simulation_type,
-                "simulation_mode": elem_sim.simulation_mode,
-                "number_of_ions": elem_sim.number_of_ions,
-                "number_of_preions": elem_sim.number_of_preions,
-                "seed_number": elem_sim.seed_number,
-                "number_of_recoils": elem_sim.number_of_recoils,
-                "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
-                "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
-                "minimum_main_scattering_angle":
-                    elem_sim.minimum_main_scattering_angle,
-                "minimum_energy": elem_sim.minimum_energy,
-                "use_default_settings": str(self.use_default_settings),
-                "main_recoil": self.main_recoil.name
-            }
-
+        # TODO maybe it is not necessary to call this every time a request
+        #      is opened
         with open(file_path, "w") as file:
-            json.dump(obj, file, indent=4)
+            json.dump(self.to_dict(), file, indent=4)
 
     def recoil_to_file(self, simulation_folder, recoil_element):
         """Save recoil settings to file.
@@ -691,6 +682,7 @@ class ElementSimulation(Observable):
             recoil_element: RecoilElement object to write to file to.
         """
         # TODO function that returns the name of the rec_file
+        # TODO make this a function of recoil element
         if recoil_element.type == "rec":
             suffix = ".rec"
         else:
@@ -844,16 +836,16 @@ class ElementSimulation(Observable):
             optimize_fluence = False
             if not optimize_recoil:     # TODO optim_mode {None, "rec", "flu"}
                 if not optimize:
-                    new_erd_file = get_erd_file_name(recoil, seed_number)
+                    new_erd_file = fp.get_erd_file_name(recoil, seed_number)
                 else:
                     optimize_fluence = True
                     self.optimized_fluence = 0
-                    new_erd_file = get_erd_file_name(recoil, seed_number,
-                                                      optim_mode="fluence")
+                    new_erd_file = fp.get_erd_file_name(recoil, seed_number,
+                                                        optim_mode="fluence")
 
             else:
-                new_erd_file = get_erd_file_name(recoil, seed_number,
-                                                 optim_mode="recoil")
+                new_erd_file = fp.get_erd_file_name(recoil, seed_number,
+                                                    optim_mode="recoil")
 
             new_erd_file = os.path.join(self.directory, new_erd_file)
 
@@ -870,7 +862,6 @@ class ElementSimulation(Observable):
                           optimize_fluence=optimize_fluence)
             mcerd.run()
             self.mcerd_objects[seed_number] = mcerd
-
 
             seed_number = seed_number + 1
             if i + 1 < number_of_processes:
@@ -1209,6 +1200,7 @@ class ElementSimulation(Observable):
             optimize_recoil: Whether recoil is optimized.
             ch: Channel width to use.
             fluence: Fluence to use.
+            optimize_fluence: TODO
         """
         if self.simulation_type == "ERD":
             suffix = ".recoil"
@@ -1434,32 +1426,3 @@ class ERDFileHandler:
         """
         self.__old_files.update(self.__active_files)
         self.__active_files.clear()
-
-
-def get_erd_file_name(recoil_element, seed, optim_mode=None,
-                      get_espe_param=False):
-    """Returns the name of a file that corresponds to given
-    recoil element, seed, optimization mode and get_espe_param.
-
-    Args:
-        recoil_element: recoil element
-        seed: seed of the simulation
-        optim_mode: either None, 'recoil' or 'fluence'
-        get_espe_param: boolean that determines if the file is going
-                        to be used as a parameter for get_espe
-
-    Return:
-        .erd file name
-    """
-    # TODO check for path traversal (maybe with a decorator)
-    espe_str = ".*" if get_espe_param else ""
-
-    if optim_mode is None:
-        return f"{recoil_element.prefix}-{recoil_element.name}." \
-               f"{seed}{espe_str}.erd"
-    if optim_mode == "fluence":
-        return f"{recoil_element.prefix}-optfl.{seed}{espe_str}.erd"
-    if optim_mode == "recoil":
-        return f"{recoil_element.prefix}-opt.{seed}{espe_str}.erd"
-
-    raise ValueError(f"Unknown optimization mode '{optim_mode}'")

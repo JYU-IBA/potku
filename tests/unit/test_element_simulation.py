@@ -29,14 +29,18 @@ __version__ = ""  # TODO
 import unittest
 import tempfile
 import os
+import time
+
 import modules.element_simulation as es
+import tests.mock_objects as mo
 
 from modules.recoil_element import RecoilElement
 from modules.element import Element
 from modules.element_simulation import ERDFileHandler
+from modules.element_simulation import ElementSimulation
 
 
-class TestErdFiles(unittest.TestCase):
+class TestErdFileHandler(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # default recoil element
@@ -192,33 +196,74 @@ class TestErdFiles(unittest.TestCase):
         # Assert that tmp dir got deleted
         self.assertFalse(os.path.exists(tmp_dir))
 
-    def test_get_erd_file_path(self):
-        from modules.element_simulation import get_erd_file_name
-        from modules.recoil_element import RecoilElement
 
-        rec_elem = RecoilElement(Element.from_string("He"), [], "red")
+class TestElementSimulation(unittest.TestCase):
 
-        self.assertEqual("He-Default.101.erd",
-                         get_erd_file_name(rec_elem, 101))
-        self.assertEqual("He-Default.102.*.erd",
-                         get_erd_file_name(rec_elem, 102, get_espe_param=True))
+    @classmethod
+    def setUp(cls):
+        cls.main_rec = mo.get_recoil_element()
+        cls.kwargs = {
+            "minimum_energy": 42.0,
+            "minimum_scattering_angle": 17.0,
+            "minimum_main_scattering_angle": 14.0,
+            "number_of_preions": 3
+        }
+        cls.elem_sim = ElementSimulation(tempfile.gettempdir(),
+                                         mo.get_request(),
+                                         [cls.main_rec],
+                                         save_on_creation=False,
+                                         **cls.kwargs)
 
-        self.assertEqual("He-opt.101.erd",
-                         get_erd_file_name(rec_elem, 101, optim_mode="recoil"))
-        self.assertEqual("He-opt.102.*.erd",
-                         get_erd_file_name(rec_elem, 102, optim_mode="recoil",
-                                           get_espe_param=True))
+    def test_get_full_name(self):
+        self.assertEqual("Default", self.elem_sim.get_full_name())
+        self.elem_sim.name = "foo"
+        self.assertEqual("foo", self.elem_sim.get_full_name())
+        self.elem_sim.name_prefix = "bar"
+        self.assertEqual("bar-foo", self.elem_sim.get_full_name())
 
-        self.assertEqual("He-optfl.101.erd",
-                         get_erd_file_name(rec_elem, 101, optim_mode="fluence"))
-        self.assertEqual("He-optfl.102.*.erd",
-                         get_erd_file_name(rec_elem, 102,
-                                           optim_mode="fluence",
-                                           get_espe_param=True))
+    def test_to_dict(self):
+        self.elem_sim.use_default_settings = False
+        expected = {
+            "name": "Default",
+            "description": "",
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
+                time.time())),
+            "simulation_type": "ERD",
+            "simulation_mode": "narrow",
+            "number_of_ions": 1_000_000,
+            "seed_number": 101,
+            "number_of_recoils": 10,
+            "number_of_scaling_ions": 5,
+            "main_recoil": self.main_rec.name
+        }
+        # Update expected with kwargs
+        original_keys = set(expected.keys())
+        expected.update(self.kwargs)
+        result = self.elem_sim.to_dict()
 
-        self.assertRaises(ValueError,
-                          lambda: get_erd_file_name(rec_elem, 101,
-                                                    optim_mode="foo"))
+        # Remove time from result and test it separately
+        self.assertAlmostEqual(time.time(), result.pop(
+            "modification_time_unix"), places=4)
+        self.assertEqual("False", result.pop("use_default_settings"))
+        self.assertEqual(expected, result)
+
+        # Test default settings
+        self.elem_sim.use_default_settings = True
+        result_default = self.elem_sim.to_dict()
+
+        self.assertAlmostEqual(time.time(), result_default.pop(
+            "modification_time_unix"), places=4)
+        self.assertEqual("True", result_default.pop("use_default_settings"))
+        self.assertCountEqual(expected, result_default)
+
+        # Assert that default keys contain expected values:
+        for k in original_keys:
+            self.assertEqual(expected[k], result_default[k])
+
+        # Assert that other values differ from nondefault dict
+        set_dif = set(result.keys()) - original_keys
+        for k in set_dif:
+            self.assertNotEqual(result[k], result_default[k])
 
 
 def write_line(file):
@@ -227,7 +272,3 @@ def write_line(file):
         # it does not care if the file contains
         # nonsensical data.
         file.write("foo\n")
-
-
-
-

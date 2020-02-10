@@ -148,11 +148,16 @@ class ElementLosses:
 
             filename_split = filename.split('.')
             element = filename_split[1] + "." + filename_split[2]
-            if len(filename_split) == 5:  # Regular cut file
+            if len(filename_split) == 4:
+                # This is a patch to make the sample files on jyu website to
+                # work
+                # TODO were those files used in an older version of the
+                #  software?
+                # TODO move stuff like this to file_paths module
+                key = "{0}".format(element)
+            elif len(filename_split) == 5:  # Regular cut file
                 key = "{0}.{1}".format(element, filename_split[3])
             else:  # Elemental Losses cut file
-                # TODO what is elem loss cut file?
-                # FIXME this is crashing with the sample data from jyu website
                 key = "{0}.{1}.{2}".format(element,
                                            filename_split[3],
                                            filename_split[4])
