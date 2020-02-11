@@ -98,7 +98,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # Add detector settings view to the settings view
         self.detector_settings_widget = DetectorSettingsWidget(
             self.request.default_detector, self.request, self.icon_manager,
-            self.measurement_settings_widget.tmp_run)
+            run=self.measurement_settings_widget.tmp_run)
+
         self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
 
         # Add simulation settings view to the settings view
@@ -220,6 +221,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 self.__close = False
                 return
 
+            # Lists of old and current simulations and optimizations
             simulations_run = self.check_if_simulations_run()
             simulations_running = self.request.simulations_running()
             optimization_running = self.request.optimization_running()

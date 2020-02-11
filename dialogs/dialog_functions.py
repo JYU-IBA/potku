@@ -207,8 +207,8 @@ def change_element(qdialog, button, combo_box):
             combo_box.setStyleSheet("background-color: %s" % "None")
 
 
-def handle_element_simulation_stopping(qdialog, simulations_run,
-                                       optimization_run):
+def handle_old_sims_and_optims(qdialog, simulations_run,
+                               optimization_run):
     """
 
     Args:

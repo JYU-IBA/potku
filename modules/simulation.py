@@ -176,7 +176,7 @@ class Simulations:
                         element_simulation = ElementSimulation.from_file(
                             self.request, prefix, simulation_folder_path,
                             mcsimu_file_path, profile_file_path)
-                        element_simulation.sample = simulation.sample
+                        # element_simulation.sample = simulation.sample
                         simulation.element_simulations.append(
                             element_simulation)
                         element_simulation.run = simulation.run

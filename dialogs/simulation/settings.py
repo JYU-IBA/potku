@@ -75,10 +75,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.resize(self.geometry().width() * 1.1,
                     screen_geometry.size().height() * 0.8)
         self.ui.defaultSettingsCheckBox.stateChanged.connect(
-            lambda: self.__change_used_settings())
-        self.ui.OKButton.clicked.connect(lambda:
-                                         self.__save_settings_and_close())
-        self.ui.applyButton.clicked.connect(lambda: self.__update_parameters())
+            self.__change_used_settings)
+        self.ui.OKButton.clicked.connect(self.__save_settings_and_close)
+        self.ui.applyButton.clicked.connect(self.__update_parameters)
         self.ui.cancelButton.clicked.connect(self.close)
 
         # Add measurement settings view to the settings view
@@ -183,6 +182,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.__close = False
             return
 
+        # Lists of old and current simulations and optimizations
         simulations_run = self.check_if_simulations_run()
         simulations_running = self.simulations_running()
         optimization_running = self.optimization_running()
@@ -223,7 +223,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                             # optimized recoils
                             df.delete_optim_espe(self, elem_sim)
 
-                            df.handle_element_simulation_stopping(
+                            df.handle_old_sims_and_optims(
                                 self, simulations_run, optimization_run)
 
             elif simulations_running:
@@ -449,9 +449,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     self.__close = False
                     return
                 else:
-                    df.handle_element_simulation_stopping(self,
-                                                          simulations_run,
-                                                          optimization_run)
+                    df.handle_old_sims_and_optims(self,
+                                                  simulations_run,
+                                                  optimization_run)
 
                     df.update_optim_running(optimization_running)
 

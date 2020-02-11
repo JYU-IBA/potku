@@ -1194,7 +1194,6 @@ class Measurement(Logger):
         # Copy efficiencies with proper name
         # File name in format 1H.eff or 1H-example.eff
 
-        # TODO check why incorrect efficiencies are assigned
         for eff in os.listdir(eff_directory):
             if not eff.endswith(".eff"):
                 continue
@@ -1258,3 +1257,24 @@ class Measurement(Logger):
             str_logmsg = "Generated tof.in with params> {0}". \
                 format(tof_in.replace("\n", "; "))
             logging.getLogger(self.name).info(str_logmsg)
+
+    def copy_settings_from(self, other):
+        """Copies settings from another Measurement.
+
+        Args:
+            other: Measurement object
+        """
+        if not isinstance(other, Measurement):
+            raise TypeError("Measurement can only copy settings from "
+                            "another Measurement object")
+
+        self.profile_description = other.profile_description
+        self.reference_density = other.reference_density
+        self.number_of_depth_steps = other.number_of_depth_steps
+        self.depth_step_for_stopping = other.depth_step_for_stopping
+        self.depth_step_for_output = other.depth_step_for_output
+        self.depth_for_concentration_from = other.depth_for_concentration_from
+        self.depth_for_concentration_to = other.depth_for_concentration_to
+        self.channel_width = other.channel_width
+        self.number_of_splits = other.number_of_splits
+        self.normalization = other.normalization

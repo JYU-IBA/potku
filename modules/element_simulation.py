@@ -99,7 +99,7 @@ class ElementSimulation(Observable):
                 "get_espe", "channel_width", "target", "detector", \
                 "settings", "espe_settings", \
                 "description", "run", "spectra", "name", \
-                "use_default_settings", "sample", "controls", "simulation", \
+                "use_default_settings", "controls", "simulation", \
                 "simulations_done", "__full_edit_on", "y_min", "main_recoil",\
                 "__erd_files", "optimization_recoils", "__previous_espe", \
                 "__opt_seed", "optimization_done", "calculated_solutions", \
@@ -119,7 +119,7 @@ class ElementSimulation(Observable):
                  use_default_settings=True, sample=None,
                  simulations_done=False, main_recoil=None,
                  optimization_recoils=None, __opt_seed=None,
-                 optimized_fluence=None, save_on_creation=True):
+                 optimized_fluence=None, save_on_creation=True, **kwargs):
         """ Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
@@ -163,12 +163,13 @@ class ElementSimulation(Observable):
         self.simulation = simulation
         self.name = name
         self.description = description
-        if not modification_time:
-            modification_time = time.time()
-        self.modification_time = modification_time
+        if modification_time is None:
+            self.modification_time = time.time()
+        else:
+            self.modification_time = modification_time
 
-        self.sample = sample    # TODO check if this is being used elsewhere
-                                #      and remove if possible
+        #self.sample = sample    # TODO check if this is being used elsewhere
+        #                        #      and remove if possible
         self.recoil_elements = recoil_elements
 
         if len(self.recoil_elements) == 1:
@@ -488,35 +489,24 @@ class ElementSimulation(Observable):
             channel width.
         """
         with open(mcsimu_file_path) as mcsimu_file:
-            obj = json.load(mcsimu_file)
+            mcsimu = json.load(mcsimu_file)
 
-        use_default_settings = obj["use_default_settings"] == "True"
+        # Pop the values that need to be converted (name and
+        # use_def_settings) from the dict
+        use_default_settings = mcsimu.pop("use_default_settings") == "True"
 
+        full_name = mcsimu.pop("name")
         try:
-            name_prefix, name = obj["name"].split("-")
+            name_prefix, name = full_name.split("-")
         except ValueError:
-            name = obj["name"]
+            name = full_name
             name_prefix = ""
-
-        description = obj["description"]
-        modification_time = obj["modification_time_unix"]
-        simulation_type = obj["simulation_type"]
-        simulation_mode = obj["simulation_mode"]
-        number_of_ions = obj["number_of_ions"]
-        number_of_preions = obj["number_of_preions"]
-        seed_number = obj["seed_number"]
-        number_of_recoils = obj["number_of_recoils"]
-        number_of_scaling_ions = obj["number_of_scaling_ions"]
-        minimum_scattering_angle = obj["minimum_scattering_angle"]
-        minimum_main_scattering_angle = obj["minimum_main_scattering_angle"]
-        minimum_energy = obj["minimum_energy"]
-        main_recoil_name = obj["main_recoil"]
 
         # Read channel width from .profile file.
         with open(profile_file_path) as prof_file:
-            obj = json.load(prof_file)
+            prof = json.load(prof_file)
 
-        channel_width = obj["energy_spectra"]["channel_width"]
+        channel_width = prof["energy_spectra"]["channel_width"]
 
         # Read .rec files from simulation folder
         recoil_elements = []
@@ -524,7 +514,7 @@ class ElementSimulation(Observable):
         # # Read optimized (optfirst and optlast) recoil files
         optimized_recoils = []
 
-        if simulation_type == "ERD":
+        if mcsimu["simulation_type"] == "ERD":
             rec_type = "rec"
         else:
             rec_type = "sct"
@@ -537,28 +527,28 @@ class ElementSimulation(Observable):
                     file[file.index(prefix) + len(prefix)].isalpha():
                 # Check that e.g. C and Cu are handled separately
                 with open(os.path.join(simulation_folder, file)) as rec_file:
-                    obj = json.load(rec_file)
+                    reco = json.load(rec_file)
 
                 points = []
-                for dictionary_point in obj["profile"]:
+                for dictionary_point in reco["profile"]:
                     x, y = dictionary_point["Point"].split(" ")
                     points.append(Point((float(x), float(y))))
 
-                color = obj["color"]
-
-                element = RecoilElement(Element.from_string(obj["element"]),
+                color = reco["color"]
+                # TODO make a RecoilElement.from_file function
+                element = RecoilElement(Element.from_string(reco["element"]),
                                         points, color=color, rec_type=rec_type)
-                element.name = obj["name"]
+                element.name = reco["name"]
 
-                if element.name == main_recoil_name:
+                if element.name == mcsimu["main_recoil"]:
                     main_recoil = element
 
-                element.description = obj["description"]
-                element.multiplier = obj["multiplier"]
-                element.reference_density = obj["reference_density"]
-                element.simulation_type = obj["simulation_type"]
+                element.description = reco["description"]
+                element.multiplier = reco["multiplier"]
+                element.reference_density = reco["reference_density"]
+                element.simulation_type = reco["simulation_type"]
 
-                element.modification_time = obj["modification_time_unix"]
+                element.modification_time = reco["modification_time_unix"]
 
                 element.channel_width = channel_width
 
@@ -602,27 +592,17 @@ class ElementSimulation(Observable):
                 simulations_done = True
                 break
 
-        return cls(directory=simulation_folder, request=request,
+        return cls(directory=simulation_folder,
+                   request=request,
                    recoil_elements=recoil_elements,
                    name_prefix=name_prefix,
-                   description=description,
-                   simulation_type=simulation_type,
-                   modification_time=modification_time, name=name,
-                   number_of_ions=number_of_ions,
-                   number_of_preions=number_of_preions,
-                   number_of_scaling_ions=number_of_scaling_ions,
-                   number_of_recoils=number_of_recoils,
-                   minimum_scattering_angle=minimum_scattering_angle,
-                   minimum_main_scattering_angle=minimum_main_scattering_angle,
-                   simulation_mode=simulation_mode,
-                   seed_number=seed_number,
-                   minimum_energy=minimum_energy,
+                   name=name,
                    use_default_settings=use_default_settings,
                    channel_width=channel_width,
                    simulations_done=simulations_done,
-                   main_recoil=main_recoil,
                    optimization_recoils=optimized_recoils,
-                   optimized_fluence=optimized_fluence)
+                   optimized_fluence=optimized_fluence,
+                   **mcsimu)
 
     def get_full_name(self):
         if self.name_prefix:
@@ -662,23 +642,29 @@ class ElementSimulation(Observable):
 
         return d
 
-    def copy_settings_from(self, other_sim):
-        if not isinstance(other_sim, ElementSimulation):
-            raise ValueError("ElementSimulation can only copy settings from "
-                             "another ElementSimulation object.")
-        self.name = other_sim.name
-        self.description = other_sim.description
-        self.simulation_mode = other_sim.simulation_mode
-        self.simulation_type = other_sim.simulation_type
-        self.number_of_ions = other_sim.number_of_ions
-        self.number_of_preions = other_sim.number_of_preions
-        self.seed_number = other_sim.seed_number
-        self.number_of_recoils = other_sim.number_of_recoils
-        self.number_of_scaling_ions = other_sim.number_of_scaling_ions
-        self.minimum_scattering_angle = other_sim.minimum_scattering_angle
+    def copy_settings_from(self, other):
+        """Copies settings from another ElementSimulation object.
+
+        Args:
+            other: ElementSimulation object
+        """
+        if not isinstance(other, ElementSimulation):
+            raise TypeError("ElementSimulation can only copy settings from "
+                            "another ElementSimulation object.")
+
+        self.name = other.name
+        self.description = other.description
+        self.simulation_mode = other.simulation_mode
+        self.simulation_type = other.simulation_type
+        self.number_of_ions = other.number_of_ions
+        self.number_of_preions = other.number_of_preions
+        self.seed_number = other.seed_number
+        self.number_of_recoils = other.number_of_recoils
+        self.number_of_scaling_ions = other.number_of_scaling_ions
+        self.minimum_scattering_angle = other.minimum_scattering_angle
         self.minimum_main_scattering_angle = \
-            other_sim.minimum_main_scattering_angle
-        self.minimum_energy = other_sim.minimum_energy
+            other.minimum_main_scattering_angle
+        self.minimum_energy = other.minimum_energy
 
     def mcsimu_to_file(self, file_path):
         """Save mcsimu settings to file.
@@ -1287,6 +1273,14 @@ class ElementSimulation(Observable):
             "recoil_file": recoil_file
         }
         self.get_espe = GetEspe(espe_settings)
+
+    def reset(self):
+        """Function that resets the state of ElementSimulation"""
+        # TODO stop running simulations
+        # TODO set necessary boolean values
+        # TODO reset ERD file handler
+        # TODO maybe remove files (perhaps this can be left for the caller)
+        raise NotImplementedError
 
 
 def get_seed(erd_file):

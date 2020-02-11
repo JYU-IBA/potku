@@ -35,6 +35,7 @@ import logging
 import platform
 
 from string import Template
+from timeit import default_timer as timer
 
 
 def get_sample_data_dir():
@@ -179,3 +180,14 @@ def get_template_file_contents(template_file, **kwargs):
 
     return temp.substitute(kwargs)
 
+
+def stopwatch(func):
+    """Decorator that measures the time it takes to execute a function
+    and prints the results.
+    """
+    def wrapper(*args, **kwargs):
+        start = timer()
+        func(*args, **kwargs)
+        stop = timer()
+        print(f">>> It took {stop - start} to run the function <<<")
+    return wrapper

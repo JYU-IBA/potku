@@ -104,10 +104,10 @@ class SimulationTabWidget(QtWidgets.QWidget):
             subwindow.setWindowIcon(icon)
         subwindow.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         widget.subwindow = subwindow
-        
+
         if minimized:
-            widget.showMinimized()         
-        else: 
+            widget.showMinimized()
+        else:
             widget.show()
 
     def add_simulation_target_and_recoil(self, progress_bar=None):
