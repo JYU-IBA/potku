@@ -662,6 +662,24 @@ class ElementSimulation(Observable):
 
         return d
 
+    def copy_settings_from(self, other_sim):
+        if not isinstance(other_sim, ElementSimulation):
+            raise ValueError("ElementSimulation can only copy settings from "
+                             "another ElementSimulation object.")
+        self.name = other_sim.name
+        self.description = other_sim.description
+        self.simulation_mode = other_sim.simulation_mode
+        self.simulation_type = other_sim.simulation_type
+        self.number_of_ions = other_sim.number_of_ions
+        self.number_of_preions = other_sim.number_of_preions
+        self.seed_number = other_sim.seed_number
+        self.number_of_recoils = other_sim.number_of_recoils
+        self.number_of_scaling_ions = other_sim.number_of_scaling_ions
+        self.minimum_scattering_angle = other_sim.minimum_scattering_angle
+        self.minimum_main_scattering_angle = \
+            other_sim.minimum_main_scattering_angle
+        self.minimum_energy = other_sim.minimum_energy
+
     def mcsimu_to_file(self, file_path):
         """Save mcsimu settings to file.
 

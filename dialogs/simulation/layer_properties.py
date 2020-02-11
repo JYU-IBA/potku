@@ -33,6 +33,8 @@ import modules.masses as masses
 import os
 import platform
 
+import dialogs.dialog_functions as df
+
 from dialogs.element_selection import ElementSelectionDialog
 
 from modules.element import Element
@@ -254,15 +256,25 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         children = self.ui.scrollAreaWidgetContents.children()
 
         # TODO: Explain the following. Maybe better implementation?
+        # TODO this could be a bit shaky. Got an AttributeError once
+        #      as isotope was being read from a PushButton instead of
+        #      a combobox
         i = 1
         while i < len(children):
+            # Get symbol from PushButton
             elem_symbol = children[i].text()
             i += 1
             try:
-                elem_isotope = int(children[i].currentText().split(" ")[0])
-            except ValueError:
+                # Get isotope from Combobox
+                # The value is a string representation of a floating point
+                # number so we need to convert it to float before converting
+                # to int.
+                elem_isotope = int(float(
+                    children[i].currentText().split(" ")[0]))
+            except ValueError as e:
                 elem_isotope = None
             i += 1
+            # Get amount from DoubleSpinBox
             elem_amount = children[i].value()
             lst.append(Element(elem_symbol, elem_isotope, elem_amount))
             i += 3
@@ -317,50 +329,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 return
             else:
                 # Stop simulations
-                tmp_sims = copy.copy(self.simulation.running_simulations)
-                for elem_sim in tmp_sims:
-                    if not elem_sim.optimization_running:
-                        elem_sim.stop()
-                        # TODO we should not access the controls directly
-                        #      via elem_sim. Controls can be updated using
-                        #      observable pattern.
-                        elem_sim.controls.state_label.setText("Stopped")
-                        elem_sim.controls.run_button.setEnabled(True)
-                        elem_sim.controls.stop_button.setEnabled(False)
-                        # Delete files
-                        for recoil in elem_sim.recoil_elements:
-                            delete_simulation_results(elem_sim, recoil)
-                        # Change full edit unlocked
-                        elem_sim.recoil_elements[0].widgets[0].parent. \
-                            edit_lock_push_button.setText("Full edit unlocked")
-                        elem_sim.simulations_done = False
-                        # Reset controls
-                        if elem_sim.controls:
-                            # TODO do not access controls via elem_sim. Use
-                            #      observation.
-                            elem_sim.controls.reset_controls()
-                    else:
-                        # Handle optimization
-                        if elem_sim.optimization_recoils:
-                            elem_sim.stop(optimize_recoil=True)
-                        else:
-                            elem_sim.stop()
-                        elem_sim.optimization_stopped = True
-                        elem_sim.optimization_running = False
-
-                        if self.tab:
-                            self.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-
-                if self.tab:
-                    for energy_spectra in self.tab.energy_spectrum_widgets:
-                        self.tab.del_widget(energy_spectra)
-                        save_file_path = os.path.join(
-                            self.tab.simulation.directory,
-                            energy_spectra.save_file)
-                        if os.path.exists(save_file_path):
-                            os.remove(save_file_path)
-                    self.tab.energy_spectrum_widgets = []
+                df.stop_simulations_layerprops(self)
 
                 for elem_sim in simulations_run:
                     if not elem_sim.optimization_widget:
@@ -409,50 +378,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 return
             else:
                 # Stop simulations
-                tmp_sims = copy.copy(self.simulation.running_simulations)
-                for elem_sim in tmp_sims:
-                    if not elem_sim.optimization_running:
-                        elem_sim.stop()
-                        # TODO we should not access the controls directly
-                        #      via elem_sim. Controls can be updated using
-                        #      observable pattern.
-                        elem_sim.controls.state_label.setText("Stopped")
-                        elem_sim.controls.run_button.setEnabled(True)
-                        elem_sim.controls.stop_button.setEnabled(False)
-                        # Delete files
-                        for recoil in elem_sim.recoil_elements:
-                            delete_simulation_results(elem_sim, recoil)
-                        # Change full edit unlocked
-                        elem_sim.recoil_elements[0].widgets[0].parent. \
-                            edit_lock_push_button.setText("Full edit unlocked")
-                        elem_sim.simulations_done = False
-
-                        if elem_sim.controls:
-                            # TODO do not access controls via elem_sim. Use
-                            #      observation.
-                            elem_sim.controls.reset_controls()
-                    else:
-                        # Handle optimization
-                        if elem_sim.optimization_recoils:
-                            elem_sim.stop(optimize_recoil=True)
-                        else:
-                            elem_sim.stop()
-                        elem_sim.optimization_stopped = True
-                        elem_sim.optimization_running = False
-
-                        if self.tab:
-                            self.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-
-                if self.tab:
-                    for energy_spectra in self.tab.energy_spectrum_widgets:
-                        self.tab.del_widget(energy_spectra)
-                        save_file_path = os.path.join(
-                            self.tab.simulation.directory,
-                            energy_spectra.save_file)
-                        if os.path.exists(save_file_path):
-                            os.remove(save_file_path)
-                    self.tab.energy_spectrum_widgets = []
+                df.stop_simulations_layerprops(self)
 
         elif simulations_run:
             reply = QtWidgets.QMessageBox.question(
@@ -492,14 +418,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                     elem_sim.simulations_done = False
 
                 if self.tab:
-                    for energy_spectra in self.tab.energy_spectrum_widgets:
-                        self.tab.del_widget(energy_spectra)
-                        save_file_path = os.path.join(
-                            self.tab.simulation.directory,
-                            energy_spectra.save_file)
-                        if os.path.exists(save_file_path):
-                            os.remove(save_file_path)
-                    self.tab.energy_spectrum_widgets = []
+                    df.update_tab(self.tab)
 
                 for elem_sim in optimization_run:
                     if self.tab:
@@ -521,28 +440,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 return
             else:
                 # Stop simulations
+                # TODO why copy here?
                 tmp_sims = copy.copy(optimization_running)
-                for elem_sim in tmp_sims:
-                    elem_sim.optimization_stopped = True
-                    elem_sim.optimization_running = False
-                    if self.tab:
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
-
-                if self.tab:
-                    for energy_spectra in self.tab.energy_spectrum_widgets:
-                        self.tab.del_widget(energy_spectra)
-                        save_file_path = os.path.join(
-                            self.tab.simulation.directory,
-                            energy_spectra.save_file)
-                        if os.path.exists(save_file_path):
-                            os.remove(save_file_path)
-                    self.tab.energy_spectrum_widgets = []
-
-                for elem_sim in optimization_run:
-                    if self.tab:
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
+                df.update_tabs_after_stopping(self, tmp_sims, optimization_run)
 
         elif optimization_run:
             reply = QtWidgets.QMessageBox.question(
@@ -564,14 +464,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                     elem_sim.simulations_done = False
 
                 if self.tab:
-                    for energy_spectra in self.tab.energy_spectrum_widgets:
-                        self.tab.del_widget(energy_spectra)
-                        save_file_path = os.path.join(
-                            self.tab.simulation.directory,
-                            energy_spectra.save_file)
-                        if os.path.exists(save_file_path):
-                            os.remove(save_file_path)
-                    self.tab.energy_spectrum_widgets = []
+                    df.update_tab(self.tab)
 
         name = self.ui.nameEdit.text()
         thickness = self.ui.thicknessEdit.value()

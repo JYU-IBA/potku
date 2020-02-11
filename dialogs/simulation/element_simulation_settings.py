@@ -33,7 +33,6 @@ import time
 import dialogs.dialog_functions as df
 
 from modules.general_functions import check_text
-from modules.general_functions import delete_simulation_results
 from modules.general_functions import set_input_field_red
 from modules.general_functions import validate_text_input
 
@@ -254,43 +253,15 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                     self.element_simulation.stop(optimize_recoil=True)
                 else:
                     self.element_simulation.stop()
-                if self.element_simulation.controls:
-                    # TODO do not access controls via elem_sim. Use
-                    #      observation.
-                    self.element_simulation.controls.state_label.setText("Stopped")
-                    self.element_simulation.controls.run_button.setEnabled(True)
-                    self.element_simulation.controls.stop_button.setEnabled(False)
+
                 # Delete files
-                for recoil in self.element_simulation.recoil_elements:
-                    # Delete files
-                    delete_simulation_results(self.element_simulation, recoil)
-
-                    # Delete energy spectra that use recoil
-                    df.delete_recoil_espe(self, recoil)
-
-                # Reset controls
-                if self.element_simulation.controls:
-                    # TODO do not access controls via elem_sim. Use
-                    #      observation.
-                    self.element_simulation.controls.reset_controls()
-                # Change full edit unlocked
-                self.element_simulation.recoil_elements[0].widgets[0].\
-                    parent.edit_lock_push_button.setText(
-                    "Full edit unlocked")
-                self.element_simulation.simulations_done = False
+                df.clear_element_simulation(self)
 
                 if self.element_simulation.optimization_running:
                     self.element_simulation.optimization_stopped = True
                     self.element_simulation.optimization_running = False
 
-                    self.tab.del_widget(
-                        self.element_simulation.optimization_widget)
-                    self.element_simulation.simulations_done = False
-                    # Handle optimization energy spectra
-                    if self.element_simulation.optimization_recoils:
-                        # Delete energy spectra that use
-                        # optimized recoils
-                        df.delete_optim_espe(self, self.element_simulation)
+                    df.delete_existing_simulations(self)
 
                 if self.element_simulation.optimization_done:
                     self.tab.del_widget(
@@ -317,33 +288,11 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 self.__close = False
                 return
             else:
-                for recoil in self.element_simulation.recoil_elements:
-                    # Delete files
-                    delete_simulation_results(self.element_simulation, recoil)
-
-                    # Delete energy spectra that use recoil
-                    df.delete_recoil_espe(self,recoil)
-                # Reset controls
-                if self.element_simulation.controls:
-                    # TODO do not access controls via elem_sim. Use
-                    #      observation.
-                    self.element_simulation.controls.reset_controls()
-                # Change full edit unlocked
-                self.element_simulation.recoil_elements[0].widgets[0].\
-                    parent.edit_lock_push_button.setText(
-                    "Full edit unlocked")
-                self.element_simulation.simulations_done = False
+                df.clear_element_simulation(self)
 
                 # Handle optimization (running or done)
                 if self.element_simulation.optimization_widget:
-                    self.tab.del_widget(
-                        self.element_simulation.optimization_widget)
-                    self.element_simulation.simulations_done = False
-                    # Handle optimization energy spectra
-                    if self.element_simulation.optimization_recoils:
-                        # Delete energy spectra that use
-                        # optimized recoils
-                        df.delete_optim_espe(self, self.element_simulation)
+                    df.delete_existing_simulations(self)
 
                 self.element_simulation.simulations_done = False
 
@@ -362,14 +311,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 self.__close = False
                 return
             else:
-                self.tab.del_widget(
-                    self.element_simulation.optimization_widget)
-                self.element_simulation.simulations_done = False
-                # Handle optimization energy spectra
-                if self.element_simulation.optimization_recoils:
-                    # Delete energy spectra that use
-                    # optimized recoils
-                    df.delete_optim_espe(self, self.element_simulation)
+                df.delete_existing_simulations(self)
 
         elif self.element_simulation.optimization_widget and not \
                 self.element_simulation.optimization_running and not \
@@ -386,14 +328,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 self.__close = False
                 return
             else:
-                self.tab.del_widget(
-                    self.element_simulation.optimization_widget)
-                self.element_simulation.simulations_done = False
-                # Handle optimization energy spectra
-                if self.element_simulation.optimization_recoils:
-                    # Delete energy spectra that use
-                    # optimized recoils
-                    df.delete_optim_espe(self, self.element_simulation)
+                df.delete_existing_simulations(self)
 
         if only_seed_changed:
             # If there are running simulation that use the same seed as the
@@ -468,41 +403,8 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
 
         # Revert ot default settings
         else:
-            self.element_simulation.name = \
-                self.element_simulation.request.default_element_simulation.name
-            self.element_simulation.description = \
-                self.element_simulation.request.default_element_simulation\
-                    .description
-            self.element_simulation.simulation_mode = \
-                self.element_simulation.request.default_element_simulation\
-                    .simulation_mode
-            self.element_simulation.simulation_type = \
-                self.element_simulation.request.default_element_simulation\
-                    .simulation_type
-            self.element_simulation.number_of_ions = \
-                self.element_simulation.request.default_element_simulation\
-                    .number_of_ions
-            self.element_simulation.number_of_preions = \
-                self.element_simulation.request.default_element_simulation\
-                    .number_of_preions
-            self.element_simulation.seed_number = \
-                self.element_simulation.request.default_element_simulation\
-                    .seed_number
-            self.element_simulation.number_of_recoils = \
-                self.element_simulation.request.default_element_simulation\
-                    .number_of_recoils
-            self.element_simulation.number_of_scaling_ions = \
-                self.element_simulation.request.default_element_simulation\
-                    .number_of_scaling_ions
-            self.element_simulation.minimum_scattering_angle = \
-                self.element_simulation.request.default_element_simulation\
-                    .minimum_scattering_angle
-            self.element_simulation.minimum_main_scattering_angle = \
-                self.element_simulation.request.default_element_simulation\
-                    .minimum_main_scattering_angle
-            self.element_simulation.minimum_energy = \
-                self.element_simulation.request.default_element_simulation\
-                    .minimum_energy
+            self.element_simulation.copy_settings_from(
+                self.element_simulation.request.default_element_simulation)
 
             self.element_simulation.mcsimu_to_file(
                 os.path.join(self.element_simulation.directory,

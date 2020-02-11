@@ -276,19 +276,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                             edit_lock_push_button.setText("Full edit unlocked")
                         elem_sim.simulations_done = False
 
-                    tmp_sims = copy.copy(optimization_running)
-                    for elem_sim in tmp_sims:
-                        # Handle optimization
-                        elem_sim.optimization_stopped = True
-                        elem_sim.optimization_running = False
-
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-                        # Handle optimization energy spectra
-                        if elem_sim.optimization_recoils:
-                            # Delete energy spectra that use
-                            # optimized recoils
-                            df.delete_optim_espe(self, elem_sim)
+                    df.update_optim_running(optimization_running)
 
                     for elem_sim in optimization_run:
                         self.tab.del_widget(elem_sim.optimization_widget)
@@ -313,19 +301,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     return
                 else:
                     # Stop simulations
-                    tmp_sims = copy.copy(optimization_running)
-                    for elem_sim in tmp_sims:
-                        # Handle optimization
-                        elem_sim.optimization_stopped = True
-                        elem_sim.optimization_running = False
-
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-                        # Handle optimization energy spectra
-                        if elem_sim.optimization_recoils:
-                            # Delete energy spectra that use
-                            # optimized recoils
-                            df.delete_optim_espe(self, elem_sim)
+                    df.update_optim_running(optimization_running)
 
             elif optimization_run:
                 reply = QtWidgets.QMessageBox.question(
@@ -340,19 +316,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     self.__close = False
                     return
                 else:
-                    tmp_sims = copy.copy(optimization_run)
-                    for elem_sim in tmp_sims:
-                        # Handle optimization
-                        elem_sim.optimization_stopped = True
-                        elem_sim.optimization_running = False
-
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-                        # Handle optimization energy spectra
-                        if elem_sim.optimization_recoils:
-                            # Delete energy spectra that use
-                            # optimized recoils
-                            df.delete_optim_espe(self, elem_sim)
+                    # Stop simulations
+                    df.update_optim_running(optimization_run)
 
             # Use request settings
             self.simulation.run = None
@@ -488,19 +453,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                                           simulations_run,
                                                           optimization_run)
 
-                    tmp_sims = copy.copy(optimization_running)
-                    for elem_sim in tmp_sims:
-                        # Handle optimization
-                        elem_sim.optimization_stopped = True
-                        elem_sim.optimization_running = False
-
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-                        # Handle optimization energy spectra
-                        if elem_sim.optimization_recoils:
-                            # Delete energy spectra that use
-                            # optimized recoils
-                            df.delete_optim_espe(self, elem_sim)
+                    df.update_optim_running(optimization_running)
 
             elif optimization_running:
                 reply = QtWidgets.QMessageBox.question(
@@ -517,19 +470,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     return
                 else:
                     # Stop simulations
-                    tmp_sims = copy.copy(optimization_running)
-                    for elem_sim in tmp_sims:
-                        # Handle optimization
-                        elem_sim.optimization_stopped = True
-                        elem_sim.optimization_running = False
-
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-                        # Handle optimization energy spectra
-                        if elem_sim.optimization_recoils:
-                            # Delete energy spectra that use
-                            # optimized recoils
-                            df.delete_optim_espe(self, elem_sim)
+                    df.update_optim_running(optimization_running)
 
             elif optimization_run:
                 reply = QtWidgets.QMessageBox.question(
@@ -545,19 +486,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     return
                 else:
                     # Stop simulations
-                    tmp_sims = copy.copy(optimization_run)
-                    for elem_sim in tmp_sims:
-                        # Handle optimization
-                        elem_sim.optimization_stopped = True
-                        elem_sim.optimization_running = False
-
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-                        # Handle optimization energy spectra
-                        if elem_sim.optimization_recoils:
-                            # Delete energy spectra that use
-                            # optimized recoils
-                            df.delete_optim_espe(self, elem_sim)
+                    df.update_optim_running(optimization_run)
 
             # Use simulation specific settings
             try:
