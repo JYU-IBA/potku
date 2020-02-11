@@ -39,6 +39,8 @@ import math
 import os
 import platform
 import subprocess
+import logging
+
 import modules.math_functions as mf
 import modules.comparison as comp
 
@@ -489,7 +491,8 @@ class DepthProfileHandler:
         file_paths = get_depth_files(elements, directory_path, [])
         self.read_files(file_paths, elements, depth_units=depth_units)
 
-    def read_files(self, file_paths, elements, depth_units="nm"):
+    def read_files(self, file_paths, elements, depth_units="nm",
+                   logger_name=None):
         """Reads depth files from given list of file paths that
         match the given set of elements.
 
@@ -500,6 +503,8 @@ class DepthProfileHandler:
             elements: collection of elements that will be matched to
                       depth files
             depth_units: unit in which depths are measured
+            logger_name: name of a Logger entity that will be used to create a
+                         log message if something goes wrong when reading files
         """
         # Clear currently stored profiles and cache for merging
         self.merge_profiles.cache_clear()
@@ -524,8 +529,9 @@ class DepthProfileHandler:
                 self.__absolute_profiles[profile.get_profile_name()] = profile
 
             except Exception as e:
-                # TODO log the exception
-                print(e)
+                if logger_name is not None:
+                    logging.getLogger(logger_name).info(
+                        f"Could not create depth profiled .depth file: {e}")
 
     def get_depth_range(self):
         """Returns the minimum and maximum depth values in the total depth

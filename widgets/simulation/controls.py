@@ -193,23 +193,16 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
                 for recoil in self.element_simulation.recoil_elements:
                     delete_simulation_results(self.element_simulation, recoil)
 
-                # TODO this is an unnecessary convoluted way of getting the
-                #      seed and ERD files. For now, this is done to maintain
-                #      compatibility with the way optimization calls element
-                #      simulation's start method. This should be refactored
-                #      and done completely in the ElementSimulation class.
-
                 # This is the seed value set in the request settings
                 start_value = self.element_simulation.seed_number
-                erd_files = None
+                use_old_erd_files = False
             else:
                 # These are the old files. Seed is set to 'last seed' + 1
-                erd_files = self.element_simulation.get_erd_files()
-                start_value = self.element_simulation. \
-                    get_last_seed(erd_files) + 1
+                start_value = self.element_simulation.get_max_seed() + 1
+                use_old_erd_files = True
         elif status["state"] == SimulationState.NOTRUN:
-                start_value = self.element_simulation.seed_number
-                erd_files = None
+            start_value = self.element_simulation.seed_number
+            use_old_erd_files = False
         else:
             # TODO we should handle these kinds of situation more gracefully
             #      but for now just raise an explicit error so that the
@@ -229,13 +222,13 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
             self.recoil_dist_widget.update_plot()
         self.element_simulation.y_min = 0.0001
 
-        # TODO indicate to user that ion sharing is in use
+        # TODO indicate to user that ion counts are shared between processes
 
         number_of_processes = self.processes_spinbox.value()
 
         self.element_simulation.start(number_of_processes,
                                       start_value,
-                                      erd_files=erd_files,
+                                      use_old_erd_files=use_old_erd_files,
                                       shared_ions=True)
 
     def show_status(self, status):

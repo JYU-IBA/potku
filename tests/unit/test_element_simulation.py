@@ -154,6 +154,25 @@ class TestErdFileHandler(unittest.TestCase):
 
         self.assertEqual(exp, [f for f in handler])
 
+    def test_len(self):
+        """Tests for handler's __len__ function"""
+        handler = ERDFileHandler([], self.elem_4he)
+        self.assertEqual(0, len(handler))
+        for f in self.valid_erd_files:
+            handler.add_active_file(f)
+
+        self.assertEqual(len(self.valid_erd_files), len(handler))
+        handler.update()
+        handler.add_active_file("4He-Default.103.erd")
+        self.assertEqual(len(self.valid_erd_files) + 1, len(handler))
+
+    def test_clear(self):
+        """Tests handler's clear method."""
+        handler = ERDFileHandler(self.valid_erd_files, self.elem_4he)
+        self.assertEqual(len(self.valid_erd_files), len(handler))
+        handler.clear()
+        self.assertEqual(0, len(handler))
+
     def test_atom_counts(self):
         """Tests atom counting by writing lines to temporary files"""
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -192,6 +211,10 @@ class TestErdFileHandler(unittest.TestCase):
 
             self.assertEqual(0, handler.get_active_atom_counts())
             self.assertEqual(6, handler.get_old_atom_counts())
+
+        # Assert that clearing also clears cache
+        handler.clear()
+        self.assertEqual(0, handler.get_old_atom_counts())
 
         # Assert that tmp dir got deleted
         self.assertFalse(os.path.exists(tmp_dir))

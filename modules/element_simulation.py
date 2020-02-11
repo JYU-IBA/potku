@@ -97,11 +97,11 @@ class ElementSimulation(Observable):
                 "minimum_energy", "simulation_mode", "seed_number", \
                 "recoil_elements", "recoil_atoms", "mcerd_objects", \
                 "get_espe", "channel_width", "target", "detector", \
-                "settings", "espe_settings", \
+                "settings", "espe_settings", "__erd_filehandler", \
                 "description", "run", "spectra", "name", \
                 "use_default_settings", "controls", "simulation", \
                 "simulations_done", "__full_edit_on", "y_min", "main_recoil",\
-                "__erd_files", "optimization_recoils", "__previous_espe", \
+                "optimization_recoils", "__previous_espe", \
                 "__opt_seed", "optimization_done", "calculated_solutions", \
                 "optimization_stopped", "optimization_widget", \
                 "optimization_running", "optimized_fluence", \
@@ -176,6 +176,7 @@ class ElementSimulation(Observable):
             self.main_recoil = self.recoil_elements[0]
         else:
             self.main_recoil = main_recoil
+
         self.target = target
         if detector:
             self.detector = detector
@@ -246,7 +247,9 @@ class ElementSimulation(Observable):
         # List for erd files to count their lines
         # TODO simulations_done and get_erd_files are somewhat redundant
         #      check who uses the first attribute and possibly remove it
-        self.__erd_files = self.get_erd_files()
+        # self.__erd_files = self.get_erd_files()
+        self.__erd_filehandler = ERDFileHandler.from_directory(
+            self.directory, self.main_recoil)
 
         # TODO check if all optimization stuff can be moved to another module
         self.optimization_recoils = optimization_recoils
@@ -388,6 +391,7 @@ class ElementSimulation(Observable):
             recoil_element: RecoilElement object to update.
             new_values: New values as a dictionary.
         """
+        # TODO this should affect erd file handler too
         old_name = recoil_element.name
         try:
             recoil_element.name = new_values["name"]
@@ -494,6 +498,7 @@ class ElementSimulation(Observable):
         # Pop the values that need to be converted (name and
         # use_def_settings) from the dict
         use_default_settings = mcsimu.pop("use_default_settings") == "True"
+        main_recoil_name = mcsimu.pop("main_recoil")
 
         full_name = mcsimu.pop("name")
         try:
@@ -540,7 +545,7 @@ class ElementSimulation(Observable):
                                         points, color=color, rec_type=rec_type)
                 element.name = reco["name"]
 
-                if element.name == mcsimu["main_recoil"]:
+                if element.name == main_recoil_name:
                     main_recoil = element
 
                 element.description = reco["description"]
@@ -602,9 +607,13 @@ class ElementSimulation(Observable):
                    simulations_done=simulations_done,
                    optimization_recoils=optimized_recoils,
                    optimized_fluence=optimized_fluence,
+                   main_recoil=main_recoil,
                    **mcsimu)
 
     def get_full_name(self):
+        """Returns the full name of the ElementSimulation object."""
+        # TODO if either the name or the prefix contains a '-', this naming
+        #      scheme becomes ambiguous
         if self.name_prefix:
             return f"{self.name_prefix}-{self.name}"
         return self.name
@@ -747,7 +756,7 @@ class ElementSimulation(Observable):
         with open(file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
 
-    def start(self, number_of_processes, start_value, erd_files=None,
+    def start(self, number_of_processes, start_value, use_old_erd_files=True,
               optimize=False, stop_p=False, check_t=False,
               optimize_recoil=False, check_max=False, check_min=False,
               shared_ions=False):
@@ -757,7 +766,8 @@ class ElementSimulation(Observable):
         Args:
             number_of_processes: How many processes are started.
             start_value: Which is the first seed.
-            erd_files: List of old erd files that need to be preserved.
+            use_old_erd_files: whether the simulation continues using old erd
+                files or not
             optimize: Whether mcerd run relates to optimization.
             stop_p: Percent for stopping the MCERD run.
             check_t: Time between checks to see whether to stop MCERD or not.
@@ -780,13 +790,8 @@ class ElementSimulation(Observable):
 
         elem_sim = self.get_element_simulation()
 
-        # These are the old ERD files that belong to the simulation. They are
-        # stored as a dict where keys are file paths to ERD files and values are
-        # seed numbers. If erd_files is None, we are starting a new simulation
-        if erd_files is not None:
-            self.__erd_files = erd_files
-        else:
-            self.__erd_files = {}
+        if not use_old_erd_files:
+            self.__erd_filehandler.clear()
 
         # Set seed to either the value provided as parameter or use the one
         # stored in current element simulation.
@@ -856,7 +861,7 @@ class ElementSimulation(Observable):
             if os.path.exists(new_erd_file):
                 os.remove(new_erd_file)
 
-            self.__erd_files[new_erd_file] = seed_number
+            self.__erd_filehandler.add_active_file(new_erd_file)
 
             if optimize:
                 self.optimization_mcerd_running = True
@@ -919,30 +924,20 @@ class ElementSimulation(Observable):
                 }
         """
         process_count = self.count_active_processes()
-        atom_counts = tuple(self.get_atom_counts())
-        total_count = sum(count for _, count in atom_counts)
+        active_count = self.__erd_filehandler.get_active_atom_counts()
+        old_count = self.__erd_filehandler.get_old_atom_counts()
+        total_count = active_count + old_count
+        erd_file_count = len(self.__erd_filehandler)
 
         if starting:
             state = SimulationState.STARTING
-        elif not self.__erd_files:
+        elif not erd_file_count:
             # No ERD files exist so simulation has not started
             state = SimulationState.NOTRUN
         elif process_count:
             # Some processes are running, we are either in presim or running
             # state
-            if not atom_counts[-1][-1]:
-                # If the last ERD file contains no atoms, we are in Presim
-                # TODO should get atom counts for all processes rather than
-                #      just the last
-
-                # TODO the order of atoms counts is the same as os.listdir
-                #      returns so it is not guaranteed to be in alphabetical
-                #      order. Furthermore, even if the files are in
-                #      alphabetical order, this does not work if seeds have
-                #      different number of digits as 'Li-Default.10.erd' would
-                #      come before 'Li-Default.6.erd. Potential solution: store
-                #      active processes in self.mcerd_objects by the ERD file
-                #      name rather than seed.
+            if not active_count:
                 state = SimulationState.PRESIM
             else:
                 # We are in full sim mode
@@ -959,44 +954,14 @@ class ElementSimulation(Observable):
             "state": state
         }
 
-    def get_last_seed(self, erd_files):
-        """Returns the last seed from given ERD files.
-
-        Args:
-            erd_files: dictionary where keys are absolute paths to ERD files
-                       and values are seeds
+    def get_max_seed(self):
+        """Returns maximum seed that has been used in simulations.
 
         Return:
-            last seed value used in simulation processes
+            maximum seed value used in simulation processes
         """
         # Last seed is just the maximum seed number
-        # TODO do this in the ERDFileHandler class
-        return max(erd_files.values(), default=0)
-
-    def get_erd_files(self):
-        """Finds ERD files in ElementSimulation's directory and returns them.
-
-        Return:
-             dict where keys are file names and values are seeds
-        """
-        # TODO do this in the ERDFileHandler class
-        erd_files = {}
-
-        start_part = "{0}-{1}.".format(self.recoil_elements[0].prefix,
-                                       self.recoil_elements[0].name)
-        end = ".erd"
-
-        for file in os.listdir(self.directory):
-            if file.startswith(start_part) and file.endswith(end):
-                try:
-                    file_path = os.path.join(self.directory,
-                                             file)
-                    seed = int(file.rsplit('.', 2)[1])
-                    erd_files[file_path] = seed
-                except ValueError:
-                    # Seed was not an int, file won't be used
-                    pass
-        return erd_files
+        return self.__erd_filehandler.get_max_seed()
 
     def check_status(self):
         """Periodically checks the status of simulation and reports the status
@@ -1013,18 +978,6 @@ class ElementSimulation(Observable):
         """Returns the number of active processes.
         """
         return len(self.mcerd_objects)
-
-    def get_atom_counts(self):
-        """Calculates the number of atoms in each ERD file.
-
-        Yield:
-            tuple where first element is an ERD file path and second
-            value is the number of atoms in that file
-        """
-        # TODO do this in the ERDFileHandler class
-        for erd_file in self.__erd_files:
-            yield erd_file, count_lines_in_file(erd_file,
-                                                check_file_exists=True)
 
     def check_spectra_change(self, stop_percent, check_time, optimize_recoil,
                              check_max, check_min):
@@ -1154,6 +1107,7 @@ class ElementSimulation(Observable):
             logging.getLogger(simulation_name).info(msg)
 
             self.simulations_done = True
+            self.__erd_filehandler.update()
             self.on_complete(self.get_current_status())
 
     def stop(self, optimize_recoil=False):
@@ -1183,10 +1137,11 @@ class ElementSimulation(Observable):
             self.optimization_mcerd_running = False
 
         # Calculate erd lines for log
-        atom_count = sum(count for _, count in self.get_atom_counts())
+        status = self.get_current_status()
 
         simulation_name = self.simulation.name
         if not optimize_recoil:
+            # TODO use main_recoil
             element = self.recoil_elements[0].element
         else:
             element = self.optimization_recoils[0].element
@@ -1195,11 +1150,13 @@ class ElementSimulation(Observable):
 
         self.simulations_done = True
 
-        msg = f"Simulation stopped. Element: {element_name}, processes: " \
-              f"{process_count}, Number of observed atoms: {atom_count}"
+        msg = f"Simulation stopped. Element: {element_name}, " \
+              f"processes: {process_count}, Number of observed " \
+              f"atoms: {status['atom_count']}"
 
         logging.getLogger(simulation_name).info(msg)
-        self.on_complete(self.get_current_status())
+        self.__erd_filehandler.update()
+        self.on_complete(status)
 
     def calculate_espe(self, recoil_element, optimize_recoil=False, ch=None,
                        fluence=None, optimize_fluence=False):
@@ -1280,6 +1237,7 @@ class ElementSimulation(Observable):
         # TODO set necessary boolean values
         # TODO reset ERD file handler
         # TODO maybe remove files (perhaps this can be left for the caller)
+        # TODO currently atom count does not reset if settings have been changed
         raise NotImplementedError
 
 
@@ -1336,12 +1294,13 @@ class ERDFileHandler:
 
     Handles counting atoms and getting seeds.
     """
-    def __init__(self, old_erd_files, recoil_element):
+    def __init__(self, old_files, recoil_element):
         """Initializes a new ERDFileHandler that tracks old and new .erd files
         belonging to the given recoil element
 
         Args:
-            old_erd_files: list of absolute paths to existing .erd files
+            old_files: list of absolute paths to .erd files that contain data
+                       that has already been simulated
             recoil_element: recoil element for which the .erd files belong to.
         """
         self.recoil_element = recoil_element
@@ -1349,7 +1308,7 @@ class ERDFileHandler:
 
         self.__old_files = {
             file: seed
-            for file, seed in validate_erd_file_names(old_erd_files,
+            for file, seed in validate_erd_file_names(old_files,
                                                       self.recoil_element)
         }
 
@@ -1445,3 +1404,15 @@ class ERDFileHandler:
         """
         self.__old_files.update(self.__active_files)
         self.__active_files.clear()
+
+    def clear(self):
+        """Removes existing ERD files from handler.
+        """
+        self.__active_files.clear()
+        self.__old_files.clear()
+        self.__get_atom_count_cached.cache_clear()
+
+    def __len__(self):
+        """Returns the number of active files and already simulated files.
+        """
+        return len(self.__active_files) + len(self.__old_files)
