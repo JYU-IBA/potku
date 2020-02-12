@@ -105,10 +105,10 @@ class ElementSimulation(Observable):
                 "__opt_seed", "optimization_done", "calculated_solutions", \
                 "optimization_stopped", "optimization_widget", \
                 "optimization_running", "optimized_fluence", \
-                "optimization_mcerd_running", "last_process_count"
+                "optimization_mcerd_running", "last_process_count", "sample"
 
     def __init__(self, directory, request, recoil_elements,
-                 simulation=None, name_prefix="",
+                 simulation=None, name_prefix="", sample=None,
                  target=None, detector=None, run=None, name="Default",
                  description="", modification_time=None,
                  simulation_type="ERD", number_of_ions=1000000,
@@ -181,6 +181,7 @@ class ElementSimulation(Observable):
             self.detector = self.request.default_detector
 
         self.run = run
+        self.sample = sample
         self.simulation_type = simulation_type
 
         self.simulation_mode = simulation_mode
@@ -231,10 +232,7 @@ class ElementSimulation(Observable):
         # Total number of processes that were run last time this simulation
         # was started
         self.last_process_count = 0
-        # List for erd files to count their lines
-        # TODO simulations_done and get_erd_files are somewhat redundant
-        #      check who uses the first attribute and possibly remove it
-        # self.__erd_files = self.get_erd_files()
+
         self.__erd_filehandler = ERDFileHandler.from_directory(
             self.directory, self.main_recoil)
 
@@ -477,7 +475,7 @@ class ElementSimulation(Observable):
 
     @classmethod
     def from_file(cls, request, prefix, simulation_folder, mcsimu_file_path,
-                  profile_file_path):
+                  profile_file_path, sample=None):
         """Initialize ElementSimulation from JSON files.
 
         Args:
@@ -575,6 +573,7 @@ class ElementSimulation(Observable):
                    optimized_fluence=optimized_fluence,
                    main_recoil=main_recoil,
                    modification_time=modification_time,
+                   sample=sample,
                    **mcsimu)
 
     def get_full_name(self):
