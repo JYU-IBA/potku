@@ -66,7 +66,7 @@ __os = platform.system()
 # Checksums are valid as of 20.1.2020
 # If depths files are modified or removed, some of the tests will be skipped
 if __os == "Windows":
-    _CHECKSUM = "a74f489d60475d4ef36963a093f109d1"
+    _CHECKSUM = "bc23c40efc30400ad93723d157c9c7f7"
 elif __os == "Linux" or __os == "Darwin":
     _CHECKSUM = "4aafa2ba9142642c5f9393bf298c6280"
 else:
@@ -114,7 +114,7 @@ class TestDepthProfileHandling(unittest.TestCase):
         abs_profiles = handler.get_absolute_profiles()
         self.assertEqual(
             set(abs_profiles.keys()).difference(elem_set),
-            set(["total"]))
+            {"total"})
 
         # Relative profiles also contain all elements, but no total
         # profile

@@ -186,8 +186,7 @@ class OptimizationDialog(QtWidgets.QDialog):
                 if self.element_simulation.optimized_fluence is None:
                     # Save optimized recoils
                     for recoil in self.element_simulation.optimization_recoils:
-                        self.element_simulation.recoil_to_file(
-                            self.element_simulation.directory, recoil)
+                        recoil.to_file(self.element_simulation.directory)
                     save_file_name = self.element_simulation.name_prefix + \
                                      "-opt.measured"
                     with open(os.path.join(self.element_simulation.directory,

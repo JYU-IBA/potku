@@ -367,6 +367,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             else:
                 settings = "simulation"
                 tmp_sims = copy.copy(self.simulation.running_simulations)
+
             if simulations_run and simulations_running and \
                     not only_unnotified_changed:
                 reply = QtWidgets.QMessageBox.question(

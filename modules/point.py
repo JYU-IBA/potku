@@ -54,6 +54,10 @@ class Point:
         """
         return self.get_x() < other.get_x()
 
+    def __str__(self):
+        """Returns a string representation of a point."""
+        return f"{round(self.get_x(), 2)} {round(self.get_y(), 4)}"
+
     def get_coordinates(self):
         """
         Get point coordinates.

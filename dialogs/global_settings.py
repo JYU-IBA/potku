@@ -121,13 +121,11 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.ui.spin_depth_iterations.setValue(
             self.settings.get_num_iterations())
 
-        dirtyinteger = 0
         colors = sorted(MatplotlibHistogramWidget.color_scheme.items())
-        for key, unused_value in colors:
+        for i, key, _ in enumerate(colors):
             self.ui.combo_tofe_colors.addItem(key)
             if key == self.settings.get_tofe_color():
-                self.ui.combo_tofe_colors.setCurrentIndex(dirtyinteger)
-            dirtyinteger += 1
+                self.ui.combo_tofe_colors.setCurrentIndex(i)
 
     def __create_spinbox(self, default):
         """

@@ -89,8 +89,8 @@ def change_wd_to_root(func):
 def get_md5_for_files(file_paths):
     """Calculates MD5 hash for the combined content of all given
     files."""
+    hasher = hashlib.md5()
     for file_path in file_paths:
-        hasher = hashlib.md5()
         with open(file_path, "rb") as file:
             buf = file.read()
             hasher.update(buf)
@@ -150,7 +150,7 @@ class PlatformSwitcher:
     with PlatformSwitcher('name of the os'):
         # os specific code here
     """
-    platforms = set(("Windows", "Linux", "Darwin"))
+    platforms = {"Windows", "Linux", "Darwin"}
 
     def __init__(self, system):
         # TODO storing os.sep seems to be useless as it does not affect file
@@ -187,7 +187,8 @@ def stopwatch(func):
     """
     def wrapper(*args, **kwargs):
         start = timer()
-        func(*args, **kwargs)
+        res = func(*args, **kwargs)
         stop = timer()
         print(f">>> It took {stop - start} to run the function <<<")
+        return res
     return wrapper

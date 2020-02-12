@@ -80,8 +80,7 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
         x_range_max = self.ui.spin_range_x_max.value()
         y_range_min = self.ui.spin_range_y_min.value()
         y_range_max = self.ui.spin_range_y_max.value()
-        if x_range_min > x_range_max: x_range_min
-        if y_range_min > y_range_max: y_range_min
+
         self.parent.axes_range = [(x_range_min, x_range_max),
                                   (y_range_min, y_range_max)]
         self.parent.on_draw()

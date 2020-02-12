@@ -138,8 +138,7 @@ class SimulationSettingsWidget(QtWidgets.QWidget):
                         os.remove(path_to_rec)
                     except OSError:
                         pass
-                    self.obj.recoil_to_file(
-                        self.obj.directory, recoil)
+                    recoil.to_file(self.obj.directory)
         else:
             if self.obj.simulation_type != "RBS":
                 self.obj.simulation_type = "RBS"
@@ -152,8 +151,7 @@ class SimulationSettingsWidget(QtWidgets.QWidget):
                         os.remove(path_to_rec)
                     except OSError:
                         pass
-                    self.obj.recoil_to_file(
-                        self.obj.directory, recoil)
+                    recoil.to_file(self.obj.directory)
 
         self.obj.simulation_mode = self.ui.modeComboBox.currentText().lower()
         self.obj.number_of_ions = self.ui.numberOfIonsSpinBox.value()

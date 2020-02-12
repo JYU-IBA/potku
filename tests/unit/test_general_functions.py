@@ -47,7 +47,7 @@ _FILE_PATHS = [
 
 _os = platform.system()
 if _os == "Windows":
-    _CHECKSUM = "cc2089d41ad55f206b941fe83d079add"
+    _CHECKSUM = "bfb9d1593ba77ab5f431c78ba23257e1"
 elif _os == "Linux" or _os == "Darwin":
     _CHECKSUM = "6bbf2f7faf8a708046d8d038c4ea8e97"
 else:

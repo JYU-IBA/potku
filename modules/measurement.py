@@ -739,12 +739,12 @@ class Measurement(Logger):
             rename_file(os.path.join(self.directory, info_file),
                         new_name + ".info")
 
-    def rename_files_in_directory(self, dir):
-        if not os.path.exists(dir):
+    def rename_files_in_directory(self, directory):
+        if not os.path.exists(directory):
             return
-        for file in os.listdir(dir):
+        for file in os.listdir(directory):
             if file.endswith(".cut"):
-                old_path = os.path.join(dir, file)
+                old_path = os.path.join(directory, file)
                 # Get everything except old measurement name from cut file
                 new_name = self.name + "." + file.split('.', 1)[1]
                 rename_file(old_path, new_name)
@@ -935,7 +935,7 @@ class Measurement(Logger):
         self.__remove_old_cut_files()
 
         # Initializes the list size to match the number of selections.
-        points_in_selection = [[] for unused_i in range(self.selector.count())]
+        points_in_selection = [[] for _ in range(self.selector.count())]
 
         # Go through all points in measurement data
         data_count = len(self.data)

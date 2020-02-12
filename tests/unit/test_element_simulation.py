@@ -31,7 +31,7 @@ import tempfile
 import os
 import time
 
-import modules.element_simulation as es
+import modules.file_paths as fp
 import tests.mock_objects as mo
 
 from modules.recoil_element import RecoilElement
@@ -72,32 +72,32 @@ class TestErdFileHandler(unittest.TestCase):
     def test_get_seed(self):
         # get_seed looks for an integer in the second part of the string
         # split by dots
-        self.assertEqual(102, es.get_seed("O.102.erd"))
-        self.assertEqual(0, es.get_seed("..3.2.1.0."))
-        self.assertEqual(-1, es.get_seed("..-1.2"))
+        self.assertEqual(102, fp.get_seed("O.102.erd"))
+        self.assertEqual(0, fp.get_seed("..3.2.1.0."))
+        self.assertEqual(-1, fp.get_seed("..-1.2"))
 
         # File paths are also valid arguments
-        self.assertEqual(101, es.get_seed("/tmp/.101.erd"))
-        self.assertEqual(101, es.get_seed("\\tmp\\.101.erd"))
+        self.assertEqual(101, fp.get_seed("/tmp/.101.erd"))
+        self.assertEqual(101, fp.get_seed("\\tmp\\.101.erd"))
 
         # get_seed makes no attempt to check if the entire string
         # is a valid file name or path to an erd file
-        self.assertEqual(101, es.get_seed(".101./erd"))
-        self.assertEqual(101, es.get_seed(".101.\\erd"))
+        self.assertEqual(101, fp.get_seed(".101./erd"))
+        self.assertEqual(101, fp.get_seed(".101.\\erd"))
 
         # Having less split parts before or after returns None
-        self.assertIsNone(es.get_seed("111."))
-        self.assertIsNone(es.get_seed("0-111."))
-        self.assertIsNone(es.get_seed(".111.."))
+        self.assertIsNone(fp.get_seed("111."))
+        self.assertIsNone(fp.get_seed("0-111."))
+        self.assertIsNone(fp.get_seed(".111.."))
 
         # So does having no splits at all
-        self.assertIsNone(es.get_seed("100"))
+        self.assertIsNone(fp.get_seed("100"))
 
     def test_get_valid_erd_files(self):
-        self.assertEqual([], list(es.validate_erd_file_names(
+        self.assertEqual([], list(fp.validate_erd_file_names(
             self.invalid_erd_files, self.elem_4he)))
 
-        res = list(es.validate_erd_file_names(self.valid_erd_files,
+        res = list(fp.validate_erd_file_names(self.valid_erd_files,
                                               self.elem_4he))
 
         self.assertEqual(self.expected_values, res)
@@ -106,7 +106,7 @@ class TestErdFileHandler(unittest.TestCase):
         # result
         new_files = self.invalid_erd_files + self.valid_erd_files
 
-        res = list(es.validate_erd_file_names(new_files,
+        res = list(fp.validate_erd_file_names(new_files,
                                               self.elem_4he))
 
         self.assertEqual(self.expected_values, res)

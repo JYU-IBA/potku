@@ -386,7 +386,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
                 self.request.default_simulation.to_file(os.path.join(
                     self.request.default_folder, "Default.simulation"))
-                self.request.default_element_simulation.mcsimu_to_file(
+                self.request.default_element_simulation.to_file(
                     os.path.join(self.request.default_folder, "Default.mcsimu"))
 
                 # Update all element simulations that use request settings to
@@ -418,13 +418,12 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                             os.remove(path_to_rec)
                                         except OSError:
                                             pass
-                                        elem_sim.recoil_to_file(
-                                            elem_sim.directory, recoil)
+                                        recoil.to_file(elem_sim.directory)
                                     fp = os.path.join(elem_sim.directory,
                                                       elem_sim.name_prefix +
                                                       "-" + elem_sim.name +
                                                       ".mcsimu")
-                                    elem_sim.mcsimu_to_file(fp)
+                                    elem_sim.to_file(fp)
 
                 self.__close = True
             except TypeError:

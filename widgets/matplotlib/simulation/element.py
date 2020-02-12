@@ -165,8 +165,7 @@ class ElementWidget(QtWidgets.QWidget):
         recoil_widget.radio_button.setChecked(True)
 
         # Save recoil element
-        self.element_simulation.recoil_to_file(
-            self.element_simulation.directory, recoil_element)
+        recoil_element.to_file(self.element_simulation.directory)
 
     def open_element_simulation_settings(self):
         """

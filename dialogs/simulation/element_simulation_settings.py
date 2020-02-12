@@ -396,7 +396,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             self.element_simulation.minimum_energy = \
                 self.ui.minimumEnergyDoubleSpinBox.value()
 
-            self.element_simulation.mcsimu_to_file(
+            self.element_simulation.to_file(
                     os.path.join(self.element_simulation.directory,
                                  self.element_simulation.name_prefix + "-" +
                                  self.element_simulation.name + ".mcsimu"))
@@ -406,7 +406,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             self.element_simulation.copy_settings_from(
                 self.element_simulation.request.default_element_simulation)
 
-            self.element_simulation.mcsimu_to_file(
+            self.element_simulation.to_file(
                 os.path.join(self.element_simulation.directory,
                              self.element_simulation.name_prefix + "-" +
                              self.element_simulation.request.
@@ -435,8 +435,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                         os.remove(path_to_sct)
                     except OSError:
                         pass
-                self.element_simulation.recoil_to_file(
-                    self.element_simulation.directory, recoil)
+                recoil.to_file(self.element_simulation.directory)
 
         self.__close = True
 
