@@ -122,7 +122,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
             self.settings.get_num_iterations())
 
         colors = sorted(MatplotlibHistogramWidget.color_scheme.items())
-        for i, key, _ in enumerate(colors):
+        for i, (key, _) in enumerate(colors):
             self.ui.combo_tofe_colors.addItem(key)
             if key == self.settings.get_tofe_color():
                 self.ui.combo_tofe_colors.setCurrentIndex(i)

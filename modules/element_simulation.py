@@ -498,6 +498,11 @@ class ElementSimulation(Observable):
         # use_def_settings) from the dict
         use_default_settings = mcsimu.pop("use_default_settings") == "True"
         main_recoil_name = mcsimu.pop("main_recoil")
+        modification_time = mcsimu.pop("modification_time_unix")
+
+        # This is the time in 'human readable' form. It is not being used
+        # apart from saving to file so it can just be removed
+        mcsimu.pop("modification_time")
 
         full_name = mcsimu.pop("name")
         try:
@@ -569,6 +574,7 @@ class ElementSimulation(Observable):
                    optimization_recoils=optimized_recoils,
                    optimized_fluence=optimized_fluence,
                    main_recoil=main_recoil,
+                   modification_time=modification_time,
                    **mcsimu)
 
     def get_full_name(self):
