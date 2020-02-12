@@ -276,7 +276,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                             edit_lock_push_button.setText("Full edit unlocked")
                         elem_sim.simulations_done = False
 
-                    df.update_optim_running(optimization_running)
+                    df.update_optim_running(self, optimization_running)
 
                     for elem_sim in optimization_run:
                         self.tab.del_widget(elem_sim.optimization_widget)
@@ -301,7 +301,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     return
                 else:
                     # Stop simulations
-                    df.update_optim_running(optimization_running)
+                    df.update_optim_running(self, optimization_running)
 
             elif optimization_run:
                 reply = QtWidgets.QMessageBox.question(
@@ -317,7 +317,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     return
                 else:
                     # Stop simulations
-                    df.update_optim_running(optimization_run)
+                    df.update_optim_running(self, optimization_run)
 
             # Use request settings
             self.simulation.run = None
@@ -454,7 +454,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                                                   simulations_run,
                                                   optimization_run)
 
-                    df.update_optim_running(optimization_running)
+                    df.update_optim_running(self, optimization_running)
 
             elif optimization_running:
                 reply = QtWidgets.QMessageBox.question(
@@ -471,7 +471,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     return
                 else:
                     # Stop simulations
-                    df.update_optim_running(optimization_running)
+                    df.update_optim_running(self, optimization_running)
 
             elif optimization_run:
                 reply = QtWidgets.QMessageBox.question(
@@ -487,7 +487,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     return
                 else:
                     # Stop simulations
-                    df.update_optim_running(optimization_run)
+                    df.update_optim_running(self, optimization_run)
 
             # Use simulation specific settings
             try:

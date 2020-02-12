@@ -771,7 +771,8 @@ class ElementSimulation(Observable):
                 if not optimize:
                     new_erd_file = fp.get_erd_file_name(recoil, seed_number)
                     # TODO check if erdfilehandler should have optim files too
-                    self.__erd_filehandler.add_active_file(new_erd_file)
+                    self.__erd_filehandler.add_active_file(
+                        Path(self.directory, new_erd_file))
                 else:
                     optimize_fluence = True
                     self.optimized_fluence = 0
@@ -1052,10 +1053,15 @@ class ElementSimulation(Observable):
             pass
         for sim in list(self.mcerd_objects.keys()):
             del self.mcerd_objects[sim]
+
         try:
             self.request.running_simulations.remove(self)
         except ValueError:
-            self.simulation.running_simulations.remove(self)
+            try:
+                self.simulation.running_simulations.remove(self)
+            except ValueError:
+                pass
+
         if self.optimization_mcerd_running:
             self.optimization_mcerd_running = False
 
