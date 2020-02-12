@@ -764,6 +764,8 @@ class ElementSimulation(Observable):
             if not optimize_recoil:     # TODO optim_mode {None, "rec", "flu"}
                 if not optimize:
                     new_erd_file = fp.get_erd_file_name(recoil, seed_number)
+                    # TODO check if erdfilehandler should have optim files too
+                    self.__erd_filehandler.add_active_file(new_erd_file)
                 else:
                     optimize_fluence = True
                     self.optimized_fluence = 0
@@ -778,8 +780,6 @@ class ElementSimulation(Observable):
 
             if os.path.exists(new_erd_file):
                 os.remove(new_erd_file)
-
-            self.__erd_filehandler.add_active_file(new_erd_file)
 
             if optimize:
                 self.optimization_mcerd_running = True
@@ -1182,7 +1182,7 @@ class ERDFileHandler:
         }
 
     @classmethod
-    def from_directory(cls, directory, recoil_element):
+    def from_directory(cls, directory, recoil_element, optim=None):
         """Initializes a new ERDFileHandler by reading ERD files
         from a directory.
 
@@ -1225,7 +1225,8 @@ class ERDFileHandler:
             raise ValueError("Given .erd file is an already simulated file")
 
         # Check that the file is valid
-        tpl = next(fp.validate_erd_file_names([erd_file], self.recoil_element),
+        tpl = next(fp.validate_erd_file_names([erd_file],
+                                              self.recoil_element),
                    None)
 
         if tpl is not None:

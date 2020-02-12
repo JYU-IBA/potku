@@ -153,6 +153,7 @@ def delete_optim_espe(qdialog, elem_sim):
 
 def delete_recoil_espe(qdialog, recoil):
     """Deletes recoil's energy spectra"""
+    # FIXME crashes when qdialog has no tab
     for energy_spectra in qdialog.tab.energy_spectrum_widgets:
         for element_path in energy_spectra. \
                 energy_spectrum_data.keys():
