@@ -50,7 +50,7 @@ class OptimizationDialog(QtWidgets.QDialog):
         super().__init__()
 
         self.simulation = simulation
-        self.parent_tab = parent
+        self.tab = parent
         self.ui = uic.loadUi(
             os.path.join("ui_files", "ui_optimization_params.ui"), self)
 
@@ -78,7 +78,7 @@ class OptimizationDialog(QtWidgets.QDialog):
         self.radios.addButton(self.ui.recoilRadioButton)
 
         self.result_files = []
-        for file in os.listdir(self.parent_tab.obj.directory):
+        for file in os.listdir(self.tab.obj.directory):
             if file.endswith(".mcsimu"):
                 name = file.split(".")[0]
                 item = QtWidgets.QTreeWidgetItem()
@@ -91,7 +91,7 @@ class OptimizationDialog(QtWidgets.QDialog):
         # Add calculated tof_list files to tof_list_tree_widget by
         # measurement under the same sample.
 
-        for sample in self.parent_tab.obj.request.samples.samples:
+        for sample in self.tab.obj.request.samples.samples:
             for measurement in sample.measurements.measurements.values():
                 if self.simulation.sample is measurement.sample:
 
@@ -294,10 +294,10 @@ class OptimizationDialog(QtWidgets.QDialog):
         optimization with given parameters.
         """
         # Delete previous results widget if it exists
-        if self.parent_tab.optimization_result_widget:
-            self.parent_tab.del_widget(
-                self.parent_tab.optimization_result_widget)
-            self.parent_tab.optimization_result_widget = None
+        if self.tab.optimization_result_widget:
+            self.tab.del_widget(
+                self.tab.optimization_result_widget)
+            self.tab.optimization_result_widget = None
             self.element_simulation.optimized_fluence = None
             self.element_simulation.calculated_solutions = 0
             self.element_simulation.optimization_done = False
@@ -422,7 +422,7 @@ class OptimizationDialog(QtWidgets.QDialog):
         self.optimization_thread = thread
 
         # Create necessary results widget
-        self.result_widget = self.parent_tab.add_optimization_results_widget(
+        self.result_widget = self.tab.add_optimization_results_widget(
             self.element_simulation, item_text, mode_recoil)
         self.element_simulation.optimization_widget = self.result_widget
 
