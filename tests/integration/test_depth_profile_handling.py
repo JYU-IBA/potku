@@ -68,7 +68,7 @@ __os = platform.system()
 if __os == "Windows":
     _CHECKSUM = "bc23c40efc30400ad93723d157c9c7f7"
 elif __os == "Linux" or __os == "Darwin":
-    _CHECKSUM = "4aafa2ba9142642c5f9393bf298c6280"
+    _CHECKSUM = "96c2eefd79f73328473ccf4109ed071c"
 else:
     _CHECKSUM = None
 
