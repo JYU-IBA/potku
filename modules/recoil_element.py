@@ -62,7 +62,10 @@ class RecoilElement:
             rec_type: Type recoil element (rec or sct).
         """
         self.element = element
-        self.name = name
+        if not name:
+            self.name = "Default"
+        else:
+            self.name = name
         self.prefix = element.get_prefix()
         self.description = description
         self.type = rec_type
@@ -406,8 +409,8 @@ class RecoilElement:
             "profile": [
                 {
                     "Point": str(point)
-                    for point in self.get_points()
                 }
+                for point in self.get_points()
             ],
             "color": self.color
         }
@@ -433,6 +436,7 @@ class RecoilElement:
         # Pop the values that need conversion and/or are provided as positional
         # arguments.
         element = Element.from_string(reco.pop("element"))
+        reco["modification_time"] = reco["modification_time_unix"]
 
         # Profile is a list of dicts where each dict is in the form of
         # { 'Point': 'x y' }. itertools.chain produces a flattened list of

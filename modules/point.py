@@ -52,7 +52,19 @@ class Point:
         Return:
             True or False.
         """
+        if not isinstance(other, Point):
+            return NotImplemented
+
         return self.get_x() < other.get_x()
+
+    def __eq__(self, other):
+        """Compares the Point to another Point and returns True if they
+        are the same, False otherwise.
+        """
+        if not isinstance(other, Point):
+            return NotImplemented
+
+        return vars(self) == vars(other)
 
     def __str__(self):
         """Returns a string representation of a point."""
