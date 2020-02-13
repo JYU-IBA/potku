@@ -30,6 +30,7 @@ import unittest
 import tempfile
 import os
 import time
+import copy
 
 import modules.file_paths as fp
 import tests.mock_objects as mo
@@ -287,6 +288,37 @@ class TestElementSimulation(unittest.TestCase):
         set_dif = set(result.keys()) - original_keys
         for k in set_dif:
             self.assertNotEqual(result[k], result_default[k])
+
+    def test_copy_from_another(self):
+        another = ElementSimulation(
+            tempfile.gettempdir(),
+            mo.get_request(),
+            [RecoilElement(Element.from_string("16O"),
+                           [], "red")],
+            save_on_creation=False,
+            description="foo",
+            simulation_mode="RBS",
+            detector=mo.get_detector(),
+            number_of_ions=15,
+            number_of_recoils=14,
+            seed_number=16,
+            channel_width=2,
+            __opt_seed=4
+        )
+
+        another.copy_settings_from(self.elem_sim)
+
+        self.assertEqual(another.name, self.elem_sim.name)
+        self.assertEqual(another.description, self.elem_sim.description)
+        self.assertEqual(another.seed_number, self.elem_sim.seed_number)
+        self.assertEqual(another.number_of_recoils,
+                         self.elem_sim.number_of_recoils)
+        self.assertEqual(another.simulation_mode,
+                         self.elem_sim.simulation_mode)
+        self.assertEqual(another.number_of_preions,
+                         self.elem_sim.number_of_preions)
+
+        self.assertNotEqual(another.channel_width, self.elem_sim.channel_width)
 
 
 def write_line(file):

@@ -95,6 +95,10 @@ def validate_erd_file_names(erd_files, recoil_element):
         tuple containing a valid erd file name or path and its seed value
     """
     for erd_file_path in erd_files:
+        # TODO on a Unix-like system this will allow file names like
+        #  '4He-default.\.101.erd' to be valid but on Win this is not the
+        #  case. Not sure how to specify what the correct behaviour should
+        #  be
         erd_file = Path(erd_file_path).name
         seed = get_seed(erd_file)
         if seed is None:

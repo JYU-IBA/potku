@@ -37,15 +37,12 @@ import functools
 import itertools
 
 import modules.file_paths as fp
+import modules.general_functions as gf
 
 from enum import Enum
 from pathlib import Path
 from collections import deque
 
-from modules.general_functions import read_espe_file
-from modules.general_functions import rename_file
-from modules.general_functions import uniform_espe_lists
-from modules.general_functions import count_lines_in_file
 from modules.get_espe import GetEspe
 from modules.mcerd import MCERD
 from modules.observing import Observable
@@ -420,7 +417,7 @@ class ElementSimulation(Observable):
             if os.path.exists(recoil_file):
                 new_name = recoil_element.prefix + "-" + recoil_element.name \
                            + recoil_suffix
-                rename_file(recoil_file, new_name)
+                gf.rename_file(recoil_file, new_name)
 
             if recoil_element is self.main_recoil:  # Only main recoil
                 # updates erd file names
@@ -431,7 +428,7 @@ class ElementSimulation(Observable):
                         seed = file.split('.')[1]
                         new_name = recoil_element.prefix + "-" + \
                             recoil_element.name + "." + seed + ".erd"
-                        rename_file(erd_file, new_name)
+                        gf.rename_file(erd_file, new_name)
                 # Write mcsimu file
                 self.to_file(os.path.join(
                     self.directory,
@@ -442,7 +439,7 @@ class ElementSimulation(Observable):
             if os.path.exists(simu_file):
                 new_name = recoil_element.prefix + "-" + recoil_element.name \
                            + ".simu"
-                rename_file(simu_file, new_name)
+                gf.rename_file(simu_file, new_name)
 
     def calculate_solid(self):
         """
@@ -627,7 +624,7 @@ class ElementSimulation(Observable):
             raise TypeError("ElementSimulation can only copy settings from "
                             "another ElementSimulation object.")
 
-        self.name = other.name
+        self.name = other.name  # TODO not prefix also?
         self.description = other.description
         self.simulation_mode = other.simulation_mode
         self.simulation_type = other.simulation_type
@@ -782,13 +779,20 @@ class ElementSimulation(Observable):
                 new_erd_file = fp.get_erd_file_name(recoil, seed_number,
                                                     optim_mode="recoil")
 
-            new_erd_file = os.path.join(self.directory, new_erd_file)
+            new_erd_file = Path(self.directory, new_erd_file)
 
             if os.path.exists(new_erd_file):
+                # TODO maybe this file should be kept when optimizing
                 os.remove(new_erd_file)
 
             if optimize:
                 self.optimization_mcerd_running = True
+                files = (f for f, _, _ in self.__erd_filehandler)
+                # TODO the idea here was to combine the previous results into
+                #   an opt-file so it can be used when comparing espes, but
+                #   mcerd just overwrites the file so this is not the right
+                #   solution to avoid simulation when optimizing
+                gf.combine_files(files, new_erd_file)
 
             mcerd = MCERD(settings,
                           self,
@@ -937,32 +941,39 @@ class ElementSimulation(Observable):
                 opt = True
                 optfl = False
                 recoil_name = self.optimization_recoils[0].name
+                opt_mode = "recoil"
             else:
                 recoils = self.recoil_elements
                 opt = False
                 optfl = True
                 recoil_name = "optfl"
+                opt_mode = "fluence"
 
             # Check if maximum time has been used for simulation
             current_time = time.time()
             if current_time - check_start >= check_max:  # Max time
                 self.stop(optimize_recoil=opt)
 
-            erd_file = os.path.join(
-                self.directory, recoils[0].prefix + "-" + recoil_name +
-                "." + str(self.__opt_seed) + ".erd")
+            # erd_file = os.path.join(
+            #     self.directory, recoils[0].prefix + "-" + recoil_name +
+            #     "." + str(self.__opt_seed) + ".erd")
+
+            erd_file = Path(self.directory,
+                            fp.get_erd_file_name(recoils[0],
+                                                 self.__opt_seed,
+                                                 optim_mode=opt_mode))
             if os.path.exists(erd_file):
                 # Calculate new energy spectrum
                 self.calculate_espe(recoils[0], optimize_recoil=opt,
                                     optimize_fluence=optfl)
                 espe_file = os.path.join(self.directory, recoils[0].prefix +
                                          "-" + recoil_name + ".simu")
-                espe = read_espe_file(espe_file)
+                espe = gf.read_espe_file(espe_file)
                 if espe:
                     # Change items to float types
                     espe = list(np.float_(espe))
                     if self.__previous_espe:
-                        espe, self.__previous_espe = uniform_espe_lists([
+                        espe, self.__previous_espe = gf.uniform_espe_lists([
                             espe, self.__previous_espe], self.channel_width)
                         # Calculate distance between energy spectra
                         sum_diff = 0
@@ -1266,7 +1277,7 @@ class ERDFileHandler:
     def __get_atom_count(self, erd_file):
         """Returns the number of counted atoms in given ERD file.
         """
-        return count_lines_in_file(erd_file, check_file_exists=True)
+        return gf.count_lines_in_file(erd_file, check_file_exists=True)
 
     @functools.lru_cache(32)
     def __get_atom_count_cached(self, erd_file):
