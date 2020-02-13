@@ -34,12 +34,15 @@ from modules.observing import Observer
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
-from PyQt5 import QtCore
+from PyQt5.QtCore import pyqtSignal
 
 
 class SimulationControlsWidget(Observer, QtWidgets.QWidget):
     """Class for creating simulation controls widget for the element simulation.
     """
+    # PyQt signal that is used to invoke the GUI thread to
+    # update simulation status
+    state_changed = pyqtSignal(dict)
 
     def __init__(self, element_simulation, recoil_dist_widget):
         """
@@ -144,6 +147,9 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
 
         self.setLayout(main_layout)
 
+        self.state_changed.connect(
+            lambda s: self.state_change_handler(s))
+
         # Update element sims status in the GUI
         # TODO state label shows 'Done' if there is an empty ERD file/s with
         #      name corresponding to the element simulation. This is slightly
@@ -160,14 +166,13 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         """
         Reset controls to default.
         """
-        self.processes_spinbox.setEnabled(True)
-
         # TODO when controls are reset, element_simulation's collection of
         #      ERD file paths is not cleared which means that the status will
         #      show 'DONE' even if the actual files have been removed. This
         #      would be trivial to fix by hard coding the status in here, but
         #      we might want to look for a nicer solution first.
-        self.show_status(self.element_simulation.get_current_status())
+        self.state_changed.emit(
+            self.element_simulation.get_current_status())
 
     def __start_simulation(self):
         """ Calls ElementSimulation's start method.
@@ -277,7 +282,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         Args:
             state: SimulationState enum
         """
-        self.state_label.setText(str(state).split(".")[-1])
+        self.state_label.setText(str(state))
 
     def show_ions_per_process(self, process_count):
         # TODO this method is supposed to show how the ion counts are divided
@@ -287,11 +292,15 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         # TODO either bind the value of ions to some variable or only show
         #      this when the simulation starts
         elem_sim = self.element_simulation.get_element_simulation()
-        preions = elem_sim.number_of_preions // process_count
-        ions = elem_sim.number_of_ions // process_count
-        print("Number of ions per process (pre/full):",
-              preions,
-              ions)
+        try:
+            preions = elem_sim.number_of_preions // process_count
+            ions = elem_sim.number_of_ions // process_count
+            print("Number of ions per process (pre/full):",
+                  preions, ions)
+        except ZeroDivisionError:
+            # User set the value of the spinbox to 0, lets
+            # not divide with it
+            pass
 
     def stop_simulation(self):
         """ Calls ElementSimulation's stop method.
@@ -317,13 +326,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         """
         # Uncomment next line to see status updates in the console
         # print(status)
-        self.show_status(status)
-        if status["state"] == SimulationState.STARTING:
-            self.run_button.setEnabled(False)
-            self.stop_button.setEnabled(True)
-            self.processes_spinbox.setEnabled(False)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+        self.state_changed.emit(status)
 
     def on_error(self, err):
         """Function that the ElementSimulation object invokes when it
@@ -341,8 +344,25 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         GUI is updated to show the status and button states are switched
         accordingly.
         """
-        self.show_status(status)
-        self.run_button.setEnabled(True)
-        self.stop_button.setEnabled(False)
-        self.processes_spinbox.setEnabled(True)
+        self.state_changed.emit(status)
 
+    def state_change_handler(self, status):
+        """Handles status changes emitted by signals.
+
+        Args:
+            status: dictionary containing status information
+                    about ElementSimulation object
+        """
+        self.show_status(status)
+
+        # TODO button states are not updating immediately
+        #      after starting multiple processes
+        if status["state"] == SimulationState.STARTING:
+            self.run_button.setEnabled(False)
+            self.stop_button.setEnabled(True)
+            self.processes_spinbox.setEnabled(False)
+
+        elif status["state"] == SimulationState.DONE:
+            self.run_button.setEnabled(True)
+            self.stop_button.setEnabled(False)
+            self.processes_spinbox.setEnabled(True)

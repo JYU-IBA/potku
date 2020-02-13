@@ -729,6 +729,11 @@ class ElementSimulation(Observable):
         self.__opt_seed = seed_number
 
         if shared_ions:
+            # ATM user can also enter value 0 to process count
+            # so lets make a quick check first
+            # FIXME prevent this in the GUI
+            if not number_of_processes:
+                number_of_processes = 1
             number_of_ions = elem_sim.number_of_ions // number_of_processes
             number_of_preions = \
                 elem_sim.number_of_preions // number_of_processes
@@ -1038,7 +1043,14 @@ class ElementSimulation(Observable):
                   " atoms: {2}".format(str(element),
                                        self.last_process_count,
                                        status["atom_count"])
-            logging.getLogger(simulation_name).info(msg)
+
+            # Logging here will cause an error msg:
+            #   QObject::connect: Cannot queue arguments of type
+            #       'QTextCursor'
+            #   (Make sure 'QTextCursor' is registered using
+            #       qRegisterMetaType().)
+            # TODO check if this can be fixed
+            # logging.getLogger(simulation_name).info(msg)
 
             self.simulations_done = True
             self.__erd_filehandler.update()
