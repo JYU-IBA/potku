@@ -732,7 +732,7 @@ class ElementSimulation(Observable):
             # ATM user can also enter value 0 to process count
             # so lets make a quick check first
             # FIXME prevent this in the GUI
-            if not number_of_processes:
+            if number_of_processes < 1:
                 number_of_processes = 1
             number_of_ions = elem_sim.number_of_ions // number_of_processes
             number_of_preions = \
