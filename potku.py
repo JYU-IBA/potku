@@ -247,6 +247,7 @@ class Potku(QtWidgets.QMainWindow):
 
             new_name = valid_text
             try:
+                # TODO function that returns full name of Simu/Mesu
                 new_path = clicked_item.obj.name_prefix + "%02d" % \
                     clicked_item.obj.serial_number + "-" + new_name
 

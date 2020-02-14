@@ -154,8 +154,7 @@ class PlatformSwitcher:
     platforms = {"Windows", "Linux", "Darwin"}
 
     def __init__(self, system):
-        # TODO storing os.sep seems to be useless as it does not affect file
-        #      paths
+        # TODO find a way to switch os specific separator chars in paths
         if system not in self.platforms:
             raise ValueError(f"PlatformSwitcher was given an unsupported os "
                              f"{system}")
@@ -170,6 +169,21 @@ class PlatformSwitcher:
     def __exit__(self, exc_type, exc_val, exc_tb):
         """When exiting, platform.system is restored."""
         platform.system = self.old_platsys
+
+
+class ListdirSwitcher:
+    """Context manager that changes the output of os.listdir to a given list
+    of strings.
+    """
+    def __init__(self, file_names):
+        self.file_names = file_names
+        self.old_listdir = os.listdir
+
+    def __enter__(self):
+        os.listdir = lambda _: self.file_names
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        os.listdir = self.old_listdir
 
 
 def get_template_file_contents(template_file, **kwargs):

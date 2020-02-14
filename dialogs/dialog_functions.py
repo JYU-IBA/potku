@@ -32,9 +32,10 @@ import copy
 import modules.masses as masses
 import modules.general_functions as gf
 
+from pathlib import Path
+
 from modules.element import Element
 from modules.detector import Detector
-
 from dialogs.element_selection import ElementSelectionDialog
 
 from PyQt5 import QtWidgets
@@ -91,18 +92,30 @@ def update_cuts(cut_files, cut_dir, changes_dir):
         _update_cuts(cut_files, changes_dir)
 
 
-def _update_cuts(cut_files, directory):
-    for file in os.listdir(directory):
-        for i in range(len(cut_files)):
-            cut = cut_files[i]
-            # TODO This does not work if there are extra '.' chars on the path
+def _update_cuts(old_cut_files, directory):
+    """Updates references to .cut files when name of the measurement
+    (and thus the directory) has been changed.
 
-            cut_split = cut.split('.')  # There is one dot more (.potku)
-            file_split = file.split('.')
-            if cut_split[2] == file_split[1] and cut_split[3] == \
-                    file_split[2] and cut_split[4] == file_split[3]:
-                cut_file = os.path.join(directory, file)
-                cut_files[i] = cut_file
+    Args:
+        old_cut_files: list of absolute paths to .cut files. List is modified
+                       in place.
+        directory: current directory that contains the .cut files
+    """
+    for file in os.listdir(directory):
+        for i, cut in enumerate(old_cut_files):
+            if isinstance(cut, Path):
+                cut_str = cut.name
+            else:
+                cut_str = os.path.basename(cut)
+
+            cut_split = cut_str.split(".")
+            file_split = file.split(".")
+
+            if len(file_split) != len(cut_split):
+                continue
+
+            if cut_split[1:5] == file_split[1:5]:
+                old_cut_files[i] = Path(directory, file)
 
 
 def get_updated_efficiency_files(qdialog, efficiency_files):
