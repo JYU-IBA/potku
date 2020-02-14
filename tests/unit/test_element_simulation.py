@@ -242,17 +242,25 @@ class TestElementSimulation(unittest.TestCase):
         result = self.elem_sim.to_dict()
 
         # Remove time from result and test it separately
-        self.assertAlmostEqual(time.time(), result.pop(
-            "modification_time_unix"), places=4)
+        timestamp = time.time()
+        self.assertAlmostEqual(timestamp, result.pop(
+            "modification_time_unix"), places=2,
+                               msg="This assertion may fail if the test "
+                                   "is running particularly slow. Run the "
+                                   "test again to confirm results."
+                               )
         self.assertEqual("False", result.pop("use_default_settings"))
         self.assertEqual(expected, result)
 
         # Test default settings
         self.elem_sim.use_default_settings = True
         result_default = self.elem_sim.to_dict()
-
-        self.assertAlmostEqual(time.time(), result_default.pop(
-            "modification_time_unix"), places=4)
+        timestamp = time.time()
+        self.assertAlmostEqual(timestamp, result_default.pop(
+            "modification_time_unix"), places=2,
+                               msg="This assertion may fail if the test "
+                                   "is running particularly slow. Run the "
+                                   "test again to confirm results.")
         self.assertEqual("True", result_default.pop("use_default_settings"))
         self.assertCountEqual(expected, result_default)
 
