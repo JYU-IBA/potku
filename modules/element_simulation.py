@@ -697,6 +697,13 @@ class ElementSimulation(Observable):
             shared_ions: boolean that determines if the ion counts are
                 divided by the number of processes
         """
+        # TODO if multiple processes are being started and user stops the
+        #   simulation, only the simulations that were already started will
+        #   stop. As this method sleeps for 5 secs before starting each
+        #   simulation, simulations that have not yet started when stopping is
+        #   requested, will still start running. Potential solution: add a
+        #   'cancellation_token' parameter that is checked every time the
+        #   loop is started.
         self.simulations_done = False
         if self.run is None:
             run = self.request.default_run
@@ -959,10 +966,6 @@ class ElementSimulation(Observable):
             if current_time - check_start >= check_max:  # Max time
                 self.stop(optimize_recoil=opt)
 
-            # erd_file = os.path.join(
-            #     self.directory, recoils[0].prefix + "-" + recoil_name +
-            #     "." + str(self.__opt_seed) + ".erd")
-
             erd_file = Path(self.directory,
                             fp.get_erd_file_name(recoils[0],
                                                  self.__opt_seed,
@@ -1036,20 +1039,23 @@ class ElementSimulation(Observable):
             else:
                 self.simulation.running_simulations.remove(self)
 
-            simulation_name = self.simulation.name
-            element = self.recoil_elements[0].element
-
-            msg = "Simulation finished. Element {0}, processes: {1}, observed" \
-                  " atoms: {2}".format(str(element),
-                                       self.last_process_count,
-                                       status["atom_count"])
-
-            # Logging here will cause an error msg:
+            # FIXME ATM, logging from another thread than main thread will
+            #       cause an error:
             #   QObject::connect: Cannot queue arguments of type
             #       'QTextCursor'
             #   (Make sure 'QTextCursor' is registered using
             #       qRegisterMetaType().)
-            # TODO check if this can be fixed
+            # GUI has a log box that is updated on each log message,
+            # so updating it from another thread leads to errors and possibly
+            # (albeit rarely) crashes. A thread safe GUI logging should
+            # nevertheless be implemented.
+
+            # msg = "Simulation finished. Element {0}, processes: {1},
+            # observed" \
+            #      " atoms: {2}".format(str(element),
+            #                           self.last_process_count,
+            #                           status["atom_count"])
+
             # logging.getLogger(simulation_name).info(msg)
 
             self.simulations_done = True
@@ -1181,6 +1187,7 @@ class ElementSimulation(Observable):
             "recoil_file": recoil_file
         }
         self.get_espe = GetEspe(espe_settings)
+        self.get_espe.run_get_espe()
 
     def reset(self):
         """Function that resets the state of ElementSimulation"""

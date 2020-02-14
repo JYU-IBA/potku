@@ -106,6 +106,7 @@ class GetEspe:
                         + " -dist " + self.__recoil_file \
                         + " -ch " + str(self.__channel_width) \
 
+        # TODO maybe not run this during __init__
         self.run_get_espe()
 
     def run_get_espe(self):

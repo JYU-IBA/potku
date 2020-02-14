@@ -50,6 +50,9 @@ def switch_buttons(func, button_a, button_b):
     First button is switched before the execution of a function and
     second one is switched after the execution.
     """
+    # This decorator may not be particularly useful as there must be
+    # a reference to the buttons at the time the interpreter reads the
+    # decorated function declaration. Also no thread safety in here.
     def wrapper(*args, **kwargs):
         button_a.setEnabled(not button_a.isEnabled())
         res = func(*args, **kwargs)
@@ -80,7 +83,8 @@ class GUIReporter(ProgressReporter):
         Args:
             progress_bar: GUI progress bar that will be updated
         """
-
+        # TODO make this thread safe by possibly inhering from QObject and
+        #   using signals
         def __update_func(value):
             # Callback function that is passed down to super class
             progress_bar.setValue(value)

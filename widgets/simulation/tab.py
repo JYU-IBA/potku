@@ -226,6 +226,9 @@ class SimulationTabWidget(QtWidgets.QWidget):
         save_energy_spectrum = False
         for file in os.listdir(self.simulation.directory):
             if file.endswith(".save"):
+                # TODO this can be a problem if the request folder has been
+                # copied elsewhere, as the '.save' file has the old file
+                # paths saved
                 file_path = os.path.join(self.simulation.directory, file)
                 save_file_int = file.rsplit('_', 1)[1].split(".save")[0]
                 lines = []
