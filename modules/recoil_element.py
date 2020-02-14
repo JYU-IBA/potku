@@ -29,9 +29,16 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
 __version__ = "2.0"
 
 import copy
+import json
+import itertools
+import time
+
+import modules.file_paths as fp
 
 from modules.element import Element
+from modules.point import Point
 from modules.general_functions import calculate_new_point
+from modules.parsing import CSVParser
 
 from shapely.geometry import Polygon
 
@@ -40,7 +47,11 @@ class RecoilElement:
     """An element that has a list of points and a widget. The points are kept
     in ascending order by their x coordinate.
     """
-    def __init__(self, element, points, color, name="Default", rec_type="rec"):
+    def __init__(self, element, points, color="red", name="Default",
+                 rec_type="rec",
+                 description="These are default recoil settings.",
+                 multiplier=1e22, reference_density=4.98,
+                 modification_time=None, channel_width=None, **kwargs):
         """Inits recoil element.
 
         Args:
@@ -51,13 +62,17 @@ class RecoilElement:
             rec_type: Type recoil element (rec or sct).
         """
         self.element = element
-        self.name = name
+        if not name:
+            self.name = "Default"
+        else:
+            self.name = name
         self.prefix = element.get_prefix()
-        self.description = "These are default recoil settings."
+        self.description = description
         self.type = rec_type
         # This is multiplied by 1e22
-        self.reference_density = 4.98
-        self.multiplier = 1e22
+        self.reference_density = reference_density
+        self.multiplier = multiplier
+        self.channel_width = channel_width
 
         # TODO do something like this: https://code.activestate.com/recipes/
         #      577197-sortedcollection/ or use
@@ -76,7 +91,7 @@ class RecoilElement:
         self.widgets = []
         self._edit_lock_on = False
 
-        self.modification_time = None
+        self.modification_time = modification_time
 
         # List for keeping track of intervals that are zero
         self.zero_intervals_on_x = []
@@ -94,6 +109,9 @@ class RecoilElement:
         self.color = color
 
         self.update_zero_values()
+
+    def get_full_name(self):
+        return f"{self.prefix}-{self.name}"
 
     def delete_widgets(self):
         """
@@ -276,9 +294,7 @@ class RecoilElement:
 
     def _sort_points(self):
         """Sorts the points in ascending order by their x coordinate."""
-        self._points.sort()  # TODO what is the use of self._xs/self._ys?
-        self._xs = [point.get_x() for point in self._points]
-        self._ys = [point.get_y() for point in self._points]
+        self._points.sort()
 
     def get_xs(self):
         """Returns a list of the x coordinates of the points."""
@@ -314,7 +330,6 @@ class RecoilElement:
         """Returns the point whose x coordinate is closest to but
         less than the given point's.
         """
-        # TODO function that return both neighbours
         ind = self._points.index(point)
         if ind == 0:
             return None
@@ -331,6 +346,115 @@ class RecoilElement:
         else:
             return self._points[ind + 1]
 
+    def get_neighbours(self, point):
+        """Returns point's left and right neighbour.
+
+        Args:
+            point: Point object
+
+        Return:
+            left and right neighbour as a tuple
+        """
+        ind = self._points.index(point)
+
+        if ind == 0:
+            ln = None
+        else:
+            ln = self._points[ind - 1]
+
+        if ind == len(self._points) - 1:
+            rn = None
+        else:
+            rn = self._points[ind + 1]
+
+        return ln, rn
+
+    def update(self, new_values):
+        """Updates the values of the RecoilElement with the given values
+
+        Raises KeyError if new_values does not contain necessary keys.
+
+        Args:
+            new_values: dictionary
+        """
+        try:
+            self.name = new_values["name"]
+            self.description = new_values["description"]
+            self.reference_density = new_values["reference_density"]
+            self.color = new_values["color"]
+            self.multiplier = new_values["multiplier"]
+        except KeyError:
+            raise
+
+    def to_file(self, simulation_folder):
+        """Save recoil settings to file.
+
+        Args:
+            simulation_folder: Path to simulation folder in which ".rec" or
+            ".sct" files are stored.
+            recoil_element: RecoilElement object to write to file to.
+        """
+        recoil_file_path = fp.get_recoil_file_path(self, simulation_folder)
+
+        obj = {
+            "name": self.name,
+            "description": self.description,
+            "modification_time": time.strftime("%c %z %Z", time.localtime(
+                time.time())),
+            "modification_time_unix": time.time(),
+            "simulation_type": self.type,
+            "element":  self.element.get_prefix(),
+            "reference_density": self.reference_density,
+            "multiplier": self.multiplier,
+            "profile": [
+                {
+                    "Point": str(point)
+                }
+                for point in self.get_points()
+            ],
+            "color": self.color
+        }
+
+        with open(recoil_file_path, "w") as file:
+            json.dump(obj, file, indent=4)
+
+    @classmethod
+    def from_file(cls, file_path, channel_width=None, rec_type="rec"):
+        """Returns a RecoilElement from a json file.
+
+        Args:
+            file_path: path to a file
+            channel_width: TODO
+            rec_type: type of recoil, either 'rec' or 'sct'
+
+        Return:
+            RecoilElement object
+        """
+        with open(file_path) as rec_file:
+            reco = json.load(rec_file)
+
+        # Pop the values that need conversion and/or are provided as positional
+        # arguments.
+        element = Element.from_string(reco.pop("element"))
+        reco["modification_time"] = reco["modification_time_unix"]
+
+        # Profile is a list of dicts where each dict is in the form of
+        # { 'Point': 'x y' }. itertools.chain produces a flattened list of
+        # the values.
+        profile = reco.pop("profile")
+        p_iter = itertools.chain.from_iterable(p.values() for p in profile)
+
+        # Use parser to convert values to float
+        # TODO smarter parser that can parse multiple columns at once
+        parser = CSVParser((0, float), (1, float))
+        points = (
+            Point(xy)
+            for xy in parser.parse_strs(p_iter, method="row")
+        )
+
+        return cls(element, list(points), channel_width=channel_width,
+                   rec_type=rec_type, **reco)
+
     def write_recoil_file(self, recoil_file):
         """Writes a file of points that is given to MCERD and get_espe.
 
@@ -338,6 +462,7 @@ class RecoilElement:
             recoil_file: File path to recoil file that ends with ".recoil" or
             ".scatter".
         """
+        # TODO make this a get_mcerd_params function
         with open(recoil_file, "w") as file_rec:
             # If there are not points all the way from 0 to 10, add this
             # small amount

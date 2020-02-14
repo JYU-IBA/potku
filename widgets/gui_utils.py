@@ -32,6 +32,18 @@ from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 
 
+def process_event_loop(func):
+    """Decorator that processes QCoreApplication's event loop.
+    after the function has been called.
+    """
+    def wrapper(*args, **kwargs):
+        res = func(*args, **kwargs)
+        QtCore.QCoreApplication.processEvents(
+            QtCore.QEventLoop.AllEvents)
+        return res
+    return wrapper
+
+
 def switch_buttons(func, button_a, button_b):
     """Decorator for that switches the status of two buttons.
 
@@ -40,8 +52,9 @@ def switch_buttons(func, button_a, button_b):
     """
     def wrapper(*args, **kwargs):
         button_a.setEnabled(not button_a.isEnabled())
-        func(*args, **kwargs)
+        res = func(*args, **kwargs)
         button_b.setEnabled(not button_b.isEnabled())
+        return res
     return wrapper
 
 

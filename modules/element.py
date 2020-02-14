@@ -78,6 +78,11 @@ class Element:
             else:
                 return cls(symbol)
         else:
+            # FIXME crashes here. Steps:
+            #           - open sample request from JYU web site
+            #           - redo cuts by saving them
+            #           - create a composition change graph or energy spectra
+            #           - crashes here because of an empty string
             raise ValueError("Incorrect string given.")
 
     def __str__(self):

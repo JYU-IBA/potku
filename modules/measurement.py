@@ -373,21 +373,25 @@ class Measurement(Logger):
         Update folders and selector.
         """
         for item in os.listdir(self.directory):
+            # TODO if the directory we are looking for does not exist (for
+            #  example "Energy_spectra", this will cause a crash later on
+            #  as self.directory_energy_spectra remains None. Maybe initialize
+            #  some default values for each folder
             if item.startswith("Composition_changes"):
                 self.directory_composition_changes = os.path.join(
                     self.directory, "Composition_changes")
-            if item.startswith("Data"):
+            elif item.startswith("Data"):
                 self.directory_data = os.path.join(self.directory, "Data")
-            if item.startswith("Depth_profiles"):
+            elif item.startswith("Depth_profiles"):
                 self.directory_depth_profiles = os.path.join(self.directory,
                                                              "Depth_profiles")
-            if item.startswith("Energy_spectra"):
+            elif item.startswith("Energy_spectra"):
                 self.directory_energy_spectra = os.path.join(self.directory,
                                                              "Energy_spectra")
         for file in os.listdir(self.directory_data):
             if file.endswith(".asc"):
                 self.measurement_file = file
-            if file.startswith("Cuts"):
+            elif file.startswith("Cuts"):
                 self.directory_cuts = os.path.join(self.directory_data, "Cuts")
 
         self.set_loggers(self.directory, self.request.directory)
@@ -735,12 +739,12 @@ class Measurement(Logger):
             rename_file(os.path.join(self.directory, info_file),
                         new_name + ".info")
 
-    def rename_files_in_directory(self, dir):
-        if not os.path.exists(dir):
+    def rename_files_in_directory(self, directory):
+        if not os.path.exists(directory):
             return
-        for file in os.listdir(dir):
+        for file in os.listdir(directory):
             if file.endswith(".cut"):
-                old_path = os.path.join(dir, file)
+                old_path = os.path.join(directory, file)
                 # Get everything except old measurement name from cut file
                 new_name = self.name + "." + file.split('.', 1)[1]
                 rename_file(old_path, new_name)
@@ -931,7 +935,7 @@ class Measurement(Logger):
         self.__remove_old_cut_files()
 
         # Initializes the list size to match the number of selections.
-        points_in_selection = [[] for unused_i in range(self.selector.count())]
+        points_in_selection = [[] for _ in range(self.selector.count())]
 
         # Go through all points in measurement data
         data_count = len(self.data)
@@ -1190,7 +1194,6 @@ class Measurement(Logger):
         # Copy efficiencies with proper name
         # File name in format 1H.eff or 1H-example.eff
 
-        # TODO check why incorrect efficiencies are assigned
         for eff in os.listdir(eff_directory):
             if not eff.endswith(".eff"):
                 continue
@@ -1254,3 +1257,24 @@ class Measurement(Logger):
             str_logmsg = "Generated tof.in with params> {0}". \
                 format(tof_in.replace("\n", "; "))
             logging.getLogger(self.name).info(str_logmsg)
+
+    def copy_settings_from(self, other):
+        """Copies settings from another Measurement.
+
+        Args:
+            other: Measurement object
+        """
+        if not isinstance(other, Measurement):
+            raise TypeError("Measurement can only copy settings from "
+                            "another Measurement object")
+
+        self.profile_description = other.profile_description
+        self.reference_density = other.reference_density
+        self.number_of_depth_steps = other.number_of_depth_steps
+        self.depth_step_for_stopping = other.depth_step_for_stopping
+        self.depth_step_for_output = other.depth_step_for_output
+        self.depth_for_concentration_from = other.depth_for_concentration_from
+        self.depth_for_concentration_to = other.depth_for_concentration_to
+        self.channel_width = other.channel_width
+        self.number_of_splits = other.number_of_splits
+        self.normalization = other.normalization

@@ -29,16 +29,12 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import modules.masses as masses
 import os
 import shutil
 import time
 
 import dialogs.dialog_functions as df
-from dialogs.element_selection import ElementSelectionDialog
 
-from modules.detector import Detector
-from modules.general_functions import set_input_field_red
 from modules.run import Run
 from modules.target import Target
 
@@ -75,13 +71,11 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         screen_geometry = QtWidgets.QDesktopWidget.availableGeometry(
             QtWidgets.QApplication.desktop())
         self.resize(self.geometry().width() * 1.1,
-                    screen_geometry.size().height()
-                    * 0.8)
+                    screen_geometry.size().height() * 0.8)
         self.ui.defaultSettingsCheckBox.stateChanged.connect(
-            lambda: self.__change_used_settings())
-        self.ui.OKButton.clicked.connect(lambda:
-                                         self.__save_settings_and_close())
-        self.ui.applyButton.clicked.connect(lambda: self.__update_parameters())
+            self.__change_used_settings)
+        self.ui.OKButton.clicked.connect(self.__save_settings_and_close)
+        self.ui.applyButton.clicked.connect(self.__update_parameters)
         self.ui.cancelButton.clicked.connect(self.close)
 
         # Add measurement settings view to the settings view
@@ -95,7 +89,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
 
         self.measurement_settings_widget.ui.beamIonButton.clicked.connect(
-            lambda: self.__change_element(
+            lambda: df.change_element(
+                self,
                 self.measurement_settings_widget.ui.beamIonButton,
                 self.measurement_settings_widget.ui.isotopeComboBox))
 
@@ -131,35 +126,6 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
 
         self.exec()
 
-    def __change_element(self, button, combo_box):
-        """ Opens element selection dialog and loads selected element's isotopes
-        to a combobox.
-
-        Args:
-            button: button whose text is changed accordingly to the made
-            selection.
-        """
-        dialog = ElementSelectionDialog()
-        if dialog.element:
-            button.setText(dialog.element)
-            # Enabled settings once element is selected
-            self.__enabled_element_information()
-            masses.load_isotopes(dialog.element, combo_box)
-
-            # Check if no isotopes
-            if combo_box.count() == 0:
-                self.measurement_settings_widget.ui.isotopeInfoLabel \
-                    .setVisible(True)
-                self.measurement_settings_widget.fields_are_valid = False
-                set_input_field_red(combo_box)
-            else:
-                self.measurement_settings_widget.ui.isotopeInfoLabel \
-                    .setVisible(False)
-                self.measurement_settings_widget.check_text(
-                    self.measurement_settings_widget.ui.nameLineEdit,
-                    self.measurement_settings_widget)
-                combo_box.setStyleSheet("background-color: %s" % "None")
-
     def __change_used_settings(self):
         check_box = self.sender()
         if check_box.isChecked():
@@ -173,7 +139,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         """
         df.check_for_red(self)
 
-    def __enabled_element_information(self):
+    def enabled_element_information(self):
         """ Change the UI accordingly when an element is selected.
         """
         self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(True)
@@ -204,31 +170,16 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         check_box = self.ui.defaultSettingsCheckBox
         if check_box.isChecked():
             # Use request settings
-            measurement = self.measurement.request.default_measurement
+            def_mesu = self.measurement.request.default_measurement
             self.measurement.run = None
             self.measurement.detector = None
             self.measurement.use_default_profile_settings = True
             self.measurement.measurement_setting_file_description = \
-                measurement.measurement_setting_file_description
+                def_mesu.measurement_setting_file_description
             self.measurement.target = None
 
             # Revert all profile parameters to default.
-            self.measurement.profile_description = \
-                measurement.profile_description
-            self.measurement.reference_density = measurement.reference_density
-            self.measurement.number_of_depth_steps = \
-                measurement.number_of_depth_steps
-            self.measurement.depth_step_for_stopping = \
-                measurement.depth_step_for_stopping
-            self.measurement.depth_step_for_output = \
-                measurement.depth_step_for_output
-            self.measurement.depth_for_concentration_from = \
-                measurement.depth_for_concentration_from
-            self.measurement.depth_for_concentration_to = \
-                measurement.depth_for_concentration_to
-            self.measurement.channel_width = measurement.channel_width
-            self.measurement.number_of_splits = measurement.number_of_splits
-            self.measurement.normalization = measurement.normalization
+            self.measurement.copy_settings_from(def_mesu)
 
             det_folder_path = os.path.join(self.measurement.directory,
                                            "Detector")
@@ -282,25 +233,13 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                                      file_name + ".measurement")
 
                     if self.measurement.detector is None:
-                        # Create default Detector object for Measurement
-                        detector_file_path = os.path.join(det_folder_path,
-                                                          "Default.detector")
-                        if not os.path.exists(det_folder_path):
-                            os.makedirs(det_folder_path)
-                        self.measurement.detector = Detector(
-                            detector_file_path, measurement_settings_file_path)
-                        self.measurement.detector.update_directories(
-                            det_folder_path)
-                        # Transfer the default detector efficiencies to
-                        # new Detector
-                        self.measurement.detector.efficiencies = list(
-                            self.measurement.request.default_detector.
-                            efficiencies)
-                        self.measurement.request.default_detector.efficiencies \
-                            = []
+                        df.update_detector_settings(
+                            self.measurement,
+                            det_folder_path,
+                            measurement_settings_file_path)
 
                     # Set Detector object to settings widget
-                    self.detector_settings_widget.obj = self.measurement.\
+                    self.detector_settings_widget.obj = self.measurement. \
                         detector
 
                     # Update settings

@@ -46,6 +46,7 @@ import tempfile
 from decimal import Decimal
 from modules.parsing import ToFListParser
 from subprocess import Popen
+from tests.utils import stopwatch
 
 
 # TODO this could still be organized into smaller modules
@@ -807,3 +808,14 @@ def count_lines_in_file(file_path, check_file_exists=False):
 
     # Add +1 to get the total number of lines
     return counter + 1
+
+
+@stopwatch
+def combine_files(file_paths, destination):
+    """Combines an iterable of files into a single file.
+    """
+    with open(destination, "w") as dest:
+        for file in file_paths:
+            with open(file) as src:
+                for line in src:
+                    dest.write(line)

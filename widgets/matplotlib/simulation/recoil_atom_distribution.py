@@ -592,26 +592,24 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             progress_bar: Progress bar.
         """
         length = len(self.element_manager.element_simulations)
-        round = 1
-        for element_simulation in self.element_manager \
-                .element_simulations:
+        for i, element_simulation in enumerate(
+                self.element_manager.element_simulations):
 
-            element_simulation.mcsimu_to_file(
+            element_simulation.to_file(
                 os.path.join(directory, element_simulation.name_prefix + "-" +
                              element_simulation.name +
                              ".mcsimu"))
             for recoil_element in element_simulation.recoil_elements:
-                element_simulation.recoil_to_file(directory, recoil_element)
+                recoil_element.to_file(directory)
             element_simulation.profile_to_file(
                 os.path.join(directory, element_simulation.name_prefix +
                              ".profile"))
             if progress_bar:
-                progress_bar.setValue((round / length) * 100)
+                progress_bar.setValue((i / length) * 100)
                 QtCore.QCoreApplication.processEvents(
                     QtCore.QEventLoop.AllEvents)
                 # Mac requires event processing to show progress bar and its
                 # process
-            round = round + 1
 
     def unlock_or_lock_edit(self):
         """

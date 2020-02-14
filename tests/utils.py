@@ -33,8 +33,10 @@ import hashlib
 import unittest
 import logging
 import platform
+import time
 
 from string import Template
+from timeit import default_timer as timer
 
 
 def get_sample_data_dir():
@@ -88,8 +90,8 @@ def change_wd_to_root(func):
 def get_md5_for_files(file_paths):
     """Calculates MD5 hash for the combined content of all given
     files."""
+    hasher = hashlib.md5()
     for file_path in file_paths:
-        hasher = hashlib.md5()
         with open(file_path, "rb") as file:
             buf = file.read()
             hasher.update(buf)
@@ -149,7 +151,7 @@ class PlatformSwitcher:
     with PlatformSwitcher('name of the os'):
         # os specific code here
     """
-    platforms = set(("Windows", "Linux", "Darwin"))
+    platforms = {"Windows", "Linux", "Darwin"}
 
     def __init__(self, system):
         # TODO storing os.sep seems to be useless as it does not affect file
@@ -179,3 +181,24 @@ def get_template_file_contents(template_file, **kwargs):
 
     return temp.substitute(kwargs)
 
+
+def stopwatch(func, log_file=None):
+    """Decorator that measures the time it takes to execute a function
+    and prints the results or writes them to a log file if one is provided
+    as an argument.
+    """
+    def wrapper(*args, **kwargs):
+        start = timer()
+        res = func(*args, **kwargs)
+        stop = timer()
+
+        timestamp = time.strftime("%y/%m/%D %H:%M.%S")
+        msg = f"{timestamp}: {func.__name__}({args, kwargs})\n\t" \
+              f"took {stop - start} to execute"
+        if log_file is None:
+            print(msg)
+        else:
+            with open(log_file, "a") as file:
+                log_file.write(msg)
+        return res
+    return wrapper

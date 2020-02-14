@@ -245,8 +245,8 @@ class Potku(QtWidgets.QMainWindow):
                 clicked_item.setText(0, clicked_item.obj.name)
                 return
 
+            new_name = valid_text
             try:
-                new_name = valid_text
                 new_path = clicked_item.obj.name_prefix + "%02d" % \
                     clicked_item.obj.serial_number + "-" + new_name
 
@@ -415,8 +415,7 @@ class Potku(QtWidgets.QMainWindow):
                 for simulation in sample.simulations.simulations.values():
                     for elem_sim in simulation.element_simulations:
                         for recoil_element in elem_sim.recoil_elements:
-                            elem_sim.recoil_to_file(elem_sim.directory,
-                                                    recoil_element)
+                            recoil_element.to_file(elem_sim.directory)
                     simulation.target.to_file(
                         os.path.join(simulation.directory,
                                      simulation.target.name + ".target"), None)

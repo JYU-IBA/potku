@@ -30,8 +30,9 @@ import unittest
 import tempfile
 import os
 import time
+import copy
 
-import modules.element_simulation as es
+import modules.file_paths as fp
 import tests.mock_objects as mo
 
 from modules.recoil_element import RecoilElement
@@ -72,32 +73,32 @@ class TestErdFileHandler(unittest.TestCase):
     def test_get_seed(self):
         # get_seed looks for an integer in the second part of the string
         # split by dots
-        self.assertEqual(102, es.get_seed("O.102.erd"))
-        self.assertEqual(0, es.get_seed("..3.2.1.0."))
-        self.assertEqual(-1, es.get_seed("..-1.2"))
+        self.assertEqual(102, fp.get_seed("O.102.erd"))
+        self.assertEqual(0, fp.get_seed("..3.2.1.0."))
+        self.assertEqual(-1, fp.get_seed("..-1.2"))
 
         # File paths are also valid arguments
-        self.assertEqual(101, es.get_seed("/tmp/.101.erd"))
-        self.assertEqual(101, es.get_seed("\\tmp\\.101.erd"))
+        self.assertEqual(101, fp.get_seed("/tmp/.101.erd"))
+        self.assertEqual(101, fp.get_seed("\\tmp\\.101.erd"))
 
         # get_seed makes no attempt to check if the entire string
         # is a valid file name or path to an erd file
-        self.assertEqual(101, es.get_seed(".101./erd"))
-        self.assertEqual(101, es.get_seed(".101.\\erd"))
+        self.assertEqual(101, fp.get_seed(".101./erd"))
+        self.assertEqual(101, fp.get_seed(".101.\\erd"))
 
         # Having less split parts before or after returns None
-        self.assertIsNone(es.get_seed("111."))
-        self.assertIsNone(es.get_seed("0-111."))
-        self.assertIsNone(es.get_seed(".111.."))
+        self.assertIsNone(fp.get_seed("111."))
+        self.assertIsNone(fp.get_seed("0-111."))
+        self.assertIsNone(fp.get_seed(".111.."))
 
         # So does having no splits at all
-        self.assertIsNone(es.get_seed("100"))
+        self.assertIsNone(fp.get_seed("100"))
 
     def test_get_valid_erd_files(self):
-        self.assertEqual([], list(es.validate_erd_file_names(
+        self.assertEqual([], list(fp.validate_erd_file_names(
             self.invalid_erd_files, self.elem_4he)))
 
-        res = list(es.validate_erd_file_names(self.valid_erd_files,
+        res = list(fp.validate_erd_file_names(self.valid_erd_files,
                                               self.elem_4he))
 
         self.assertEqual(self.expected_values, res)
@@ -106,7 +107,7 @@ class TestErdFileHandler(unittest.TestCase):
         # result
         new_files = self.invalid_erd_files + self.valid_erd_files
 
-        res = list(es.validate_erd_file_names(new_files,
+        res = list(fp.validate_erd_file_names(new_files,
                                               self.elem_4he))
 
         self.assertEqual(self.expected_values, res)
@@ -154,6 +155,25 @@ class TestErdFileHandler(unittest.TestCase):
 
         self.assertEqual(exp, [f for f in handler])
 
+    def test_len(self):
+        """Tests for handler's __len__ function"""
+        handler = ERDFileHandler([], self.elem_4he)
+        self.assertEqual(0, len(handler))
+        for f in self.valid_erd_files:
+            handler.add_active_file(f)
+
+        self.assertEqual(len(self.valid_erd_files), len(handler))
+        handler.update()
+        handler.add_active_file("4He-Default.103.erd")
+        self.assertEqual(len(self.valid_erd_files) + 1, len(handler))
+
+    def test_clear(self):
+        """Tests handler's clear method."""
+        handler = ERDFileHandler(self.valid_erd_files, self.elem_4he)
+        self.assertEqual(len(self.valid_erd_files), len(handler))
+        handler.clear()
+        self.assertEqual(0, len(handler))
+
     def test_atom_counts(self):
         """Tests atom counting by writing lines to temporary files"""
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -192,6 +212,10 @@ class TestErdFileHandler(unittest.TestCase):
 
             self.assertEqual(0, handler.get_active_atom_counts())
             self.assertEqual(6, handler.get_old_atom_counts())
+
+        # Assert that clearing also clears cache
+        handler.clear()
+        self.assertEqual(0, handler.get_old_atom_counts())
 
         # Assert that tmp dir got deleted
         self.assertFalse(os.path.exists(tmp_dir))
@@ -272,6 +296,37 @@ class TestElementSimulation(unittest.TestCase):
         set_dif = set(result.keys()) - original_keys
         for k in set_dif:
             self.assertNotEqual(result[k], result_default[k])
+
+    def test_copy_from_another(self):
+        another = ElementSimulation(
+            tempfile.gettempdir(),
+            mo.get_request(),
+            [RecoilElement(Element.from_string("16O"),
+                           [], "red")],
+            save_on_creation=False,
+            description="foo",
+            simulation_mode="RBS",
+            detector=mo.get_detector(),
+            number_of_ions=15,
+            number_of_recoils=14,
+            seed_number=16,
+            channel_width=2,
+            __opt_seed=4
+        )
+
+        another.copy_settings_from(self.elem_sim)
+
+        self.assertEqual(another.name, self.elem_sim.name)
+        self.assertEqual(another.description, self.elem_sim.description)
+        self.assertEqual(another.seed_number, self.elem_sim.seed_number)
+        self.assertEqual(another.number_of_recoils,
+                         self.elem_sim.number_of_recoils)
+        self.assertEqual(another.simulation_mode,
+                         self.elem_sim.simulation_mode)
+        self.assertEqual(another.number_of_preions,
+                         self.elem_sim.number_of_preions)
+
+        self.assertNotEqual(another.channel_width, self.elem_sim.channel_width)
 
 
 def write_line(file):

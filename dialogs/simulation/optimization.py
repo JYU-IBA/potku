@@ -30,6 +30,8 @@ import os
 import threading
 import time
 
+import dialogs.dialog_functions as df
+
 from modules.energy_spectrum import EnergySpectrum
 from modules.nsgaii import Nsgaii
 
@@ -48,7 +50,7 @@ class OptimizationDialog(QtWidgets.QDialog):
         super().__init__()
 
         self.simulation = simulation
-        self.parent_tab = parent
+        self.tab = parent
         self.ui = uic.loadUi(
             os.path.join("ui_files", "ui_optimization_params.ui"), self)
 
@@ -76,7 +78,7 @@ class OptimizationDialog(QtWidgets.QDialog):
         self.radios.addButton(self.ui.recoilRadioButton)
 
         self.result_files = []
-        for file in os.listdir(self.parent_tab.obj.directory):
+        for file in os.listdir(self.tab.obj.directory):
             if file.endswith(".mcsimu"):
                 name = file.split(".")[0]
                 item = QtWidgets.QTreeWidgetItem()
@@ -89,7 +91,7 @@ class OptimizationDialog(QtWidgets.QDialog):
         # Add calculated tof_list files to tof_list_tree_widget by
         # measurement under the same sample.
 
-        for sample in self.parent_tab.obj.request.samples.samples:
+        for sample in self.tab.obj.request.samples.samples:
             for measurement in sample.measurements.measurements.values():
                 if self.simulation.sample is measurement.sample:
 
@@ -184,8 +186,7 @@ class OptimizationDialog(QtWidgets.QDialog):
                 if self.element_simulation.optimized_fluence is None:
                     # Save optimized recoils
                     for recoil in self.element_simulation.optimization_recoils:
-                        self.element_simulation.recoil_to_file(
-                            self.element_simulation.directory, recoil)
+                        recoil.to_file(self.element_simulation.directory)
                     save_file_name = self.element_simulation.name_prefix + \
                                      "-opt.measured"
                     with open(os.path.join(self.element_simulation.directory,
@@ -293,10 +294,10 @@ class OptimizationDialog(QtWidgets.QDialog):
         optimization with given parameters.
         """
         # Delete previous results widget if it exists
-        if self.parent_tab.optimization_result_widget:
-            self.parent_tab.del_widget(
-                self.parent_tab.optimization_result_widget)
-            self.parent_tab.optimization_result_widget = None
+        if self.tab.optimization_result_widget:
+            self.tab.del_widget(
+                self.tab.optimization_result_widget)
+            self.tab.optimization_result_widget = None
             self.element_simulation.optimized_fluence = None
             self.element_simulation.calculated_solutions = 0
             self.element_simulation.optimization_done = False
@@ -305,25 +306,7 @@ class OptimizationDialog(QtWidgets.QDialog):
             # Delete previous energy spectra if there are any
             if self.element_simulation.optimization_recoils:
                 # Delete energy spectra that use optimized recoils
-                for opt_rec in self.element_simulation.optimization_recoils:
-                    for energy_spectra in \
-                            self.parent_tab.energy_spectrum_widgets:
-                        for element_path in \
-                                energy_spectra.energy_spectrum_data.keys():
-                            elem = opt_rec.prefix + "-" + opt_rec.name
-                            if elem in element_path:
-                                index = element_path.find(elem)
-                                if element_path[index - 1] == os.path.sep and \
-                                        element_path[index + len(elem)] == '.':
-                                    self.parent_tab.del_widget(energy_spectra)
-                                    self.parent_tab.energy_spectrum_widgets.\
-                                        remove(energy_spectra)
-                                    save_file_path = os.path.join(
-                                        self.parent_tab.simulation.directory,
-                                        energy_spectra.save_file)
-                                    if os.path.exists(save_file_path):
-                                        os.remove(save_file_path)
-                                    break
+                df.delete_optim_espe(self, self.element_simulation)
             self.element_simulation.optimization_recoils = []
         self.close()
         root_for_cut_files = self.ui.measurementTreeWidget.invisibleRootItem()
@@ -439,7 +422,7 @@ class OptimizationDialog(QtWidgets.QDialog):
         self.optimization_thread = thread
 
         # Create necessary results widget
-        self.result_widget = self.parent_tab.add_optimization_results_widget(
+        self.result_widget = self.tab.add_optimization_results_widget(
             self.element_simulation, item_text, mode_recoil)
         self.element_simulation.optimization_widget = self.result_widget
 

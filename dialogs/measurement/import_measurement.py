@@ -32,6 +32,8 @@ import logging
 import os
 import re
 
+import dialogs.dialog_functions as df
+
 from collections import OrderedDict
 
 from dialogs.measurement.import_timing_graph import ImportTimingGraphDialog
@@ -66,7 +68,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         self.statusbar = statusbar
         self.parent = parent
         self.global_settings = self.parent.settings
-        self.__files_added = {}  # Just placeholder
+        self.files_added = {}  # Just placeholder
         self.__files_preview = {}
         self.__added_timings = {}  # Placeholder for timing limits
         self.__import_row_count = 0  # Placeholder for adding/removing rows
@@ -101,20 +103,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                                   self.request.directory,
                                   "Select an event collection to be imported",
                                   "Event collection (*.evnt)")
-        if not files:
-            return
-        for file in files:
-            if file in self.__files_added:
-                continue
-            directoty, filename = os.path.split(file)
-            name, unused_ext = os.path.splitext(filename)
-            item = QtWidgets.QTreeWidgetItem([name])
-            item.file = file
-            item.name = name
-            item.filename = filename
-            item.directory = directoty
-            self.__files_added[file] = file
-            self.treeWidget.addTopLevelItem(item)
+        df.add_imported_files_to_tree(self, files)
         self.__load_files()
         self.__check_if_import_allowed()
 
@@ -189,12 +178,13 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
 
             sample = self.request.samples.add_sample()
             self.parent.add_root_item_to_tree(sample)
-
             item_name = item.name.replace("_", "-")
 
             regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
             item_name = validate_text_input(item_name, regex)
-            measurement = self.parent.add_new_tab("measurement", "", sample,
+
+            measurement = self.parent.add_new_tab("measurement", "",
+                                                  sample,
                                                   object_name=item_name,
                                                   import_evnt_or_binary=True)
             output_file = os.path.join(measurement.directory_data, item_name
@@ -280,7 +270,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         """
         skip_length = 10
         self.adc_occurance = {}
-        for file in self.__files_added:
+        for file in self.files_added:
             with open(file) as fp:
                 self.__files_preview[file] = []
                 reading_data = False
@@ -391,7 +381,6 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             if adc in self.__added_timings:  # Do not add multiple times
                 continue
             timing = self.global_settings.get_import_timing(adc)
-
             label = QtWidgets.QLabel("{0}".format(adc))
             spin_low = self.__create_spinbox(timing[0])
             spin_high = self.__create_spinbox(timing[1])
@@ -436,7 +425,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         root = self.treeWidget.invisibleRootItem()
         for item in self.treeWidget.selectedItems():
             (item.parent() or root).removeChild(item)
-            self.__files_added.pop(item.file)
+            self.files_added.pop(item.file)
         self.__check_if_import_allowed()
         self.__load_file_preview()
 

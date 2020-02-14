@@ -37,10 +37,9 @@ from modules.optimization import tournament_allow_doubles
 from modules.general_functions import uniform_espe_lists
 from modules.recoil_element import RecoilElement
 from modules.point import Point
+from modules.parsing import CSVParser
 
 from shapely.geometry import Polygon
-
-from PyQt5 import QtGui
 
 
 class Nsgaii:
@@ -130,11 +129,9 @@ class Nsgaii:
         self.bit_length_x = 0
         self.bit_length_y = 0
 
-        with open(self.hist_file, "r") as measu:
-            results = measu.readlines()
-        self.measured_espe = [
-            (float(line.strip().split()[0]),
-             float(line.strip().split()[1])) for line in results]
+        parser = CSVParser((0, float), (1, float))
+        self.measured_espe = list(
+            parser.parse_file(self.hist_file, method="row"))
 
         # Modify measurement file to match the simulation file in regards to
         # the x coordinates -> they have matching values for ease of distance
