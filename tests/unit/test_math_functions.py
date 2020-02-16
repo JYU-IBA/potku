@@ -175,7 +175,6 @@ class TestListIntegration(unittest.TestCase):
         self.assertEqual(0, mf.sum_running_avgs(x_axis, y_axis, a=2, b=1))
         self.assertEqual(0, mf.sum_running_avgs(x_axis, y_axis, a=10))
 
-
     def test_calculate_running_avgs(self):
         """Tests calculate_running_avgs function"""
         x_axis = [0, 1, 2]

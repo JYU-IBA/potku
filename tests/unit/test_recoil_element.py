@@ -38,12 +38,11 @@ from modules.element import Element
 
 
 class TestRecoilElement(unittest.TestCase):
-    @classmethod
-    def setUp(cls):
-        cls.timestamp = time.time()
-        cls.rec_type = "rec"
-        cls.ch_width = 4
-        cls.rec_elem = RecoilElement(
+    def setUp(self):
+        self.timestamp = time.time()
+        self.rec_type = "rec"
+        self.ch_width = 4
+        self.rec_elem = RecoilElement(
             mo.get_element(),
             [Point((0, 4)),
              Point((1, 5)),
@@ -54,8 +53,8 @@ class TestRecoilElement(unittest.TestCase):
             rec_type="rec",
             multiplier=2,
             reference_density=3,
-            channel_width=cls.ch_width,
-            modification_time=cls.timestamp
+            channel_width=self.ch_width,
+            modification_time=self.timestamp
         )
 
     def test_get_full_name(self):
@@ -78,13 +77,13 @@ class TestRecoilElement(unittest.TestCase):
 
             self.compare_rec_elems(self.rec_elem, rec_elem2)
 
+            # Test with an empty list of points and no rec_type or ch_width
             rec_elem3 = RecoilElement(Element.from_string("O"), [])
             file_path = fp.get_recoil_file_path(rec_elem3, tmp_dir)
             rec_elem3.to_file(tmp_dir)
             rec_elem4 = RecoilElement.from_file(file_path)
 
             self.compare_rec_elems(rec_elem3, rec_elem4)
-            self.assertEqual([], rec_elem4.get_points())
 
         self.assertFalse(os.path.exists(tmp_dir))
 
@@ -94,8 +93,12 @@ class TestRecoilElement(unittest.TestCase):
 
         self.assertEqual(fst.pop("_points"), snd.pop("_points"))
         self.assertEqual(fst.pop("element"), snd.pop("element"))
-        self.assertNotEqual(fst.pop("modification_time"),
-                            snd.pop("modification_time"))
+
+        times = fst.pop("modification_time"), snd.pop("modification_time")
+
+        if None not in times:
+            self.assertAlmostEqual(times[0], times[1], places=2)
+
         self.assertEqual(fst, snd)
 
 

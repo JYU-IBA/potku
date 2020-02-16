@@ -200,6 +200,12 @@ class TestGeneralFunctions(unittest.TestCase):
 
         # TODO test opening file in another process and then trying to count it
 
+    def test_rounding(self):
+        self.assertEqual(1000, gf.round_value_by_four_biggest(1000))
+        self.assertEqual(12340, gf.round_value_by_four_biggest(12345))
+        self.assertEqual(123500, gf.round_value_by_four_biggest(123456))
+        self.assertEqual(77780, gf.round_value_by_four_biggest(77777))
+
 
 if __name__ == "__main__":
     unittest.main()

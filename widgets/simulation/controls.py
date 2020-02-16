@@ -28,9 +28,12 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
+import threading
+
 from modules.element_simulation import SimulationState
 from modules.general_functions import delete_simulation_results
 from modules.observing import Observer
+from modules.concurrency import CancellationToken
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
@@ -111,6 +114,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         processes_label = QtWidgets.QLabel("Processes: ")
         self.processes_spinbox = QtWidgets.QSpinBox()
         self.processes_spinbox.setValue(1)
+        self.processes_spinbox.setMinimum(1)
         self.processes_spinbox.setToolTip(
             "Number of processes used in simulation")
         self.processes_spinbox.setFixedWidth(50)
@@ -231,10 +235,13 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
 
         number_of_processes = self.processes_spinbox.value()
 
-        self.element_simulation.start(number_of_processes,
-                                      start_value,
-                                      use_old_erd_files=use_old_erd_files,
-                                      shared_ions=True)
+        starter_thread = threading.Thread(
+            target=lambda: self.element_simulation.start(
+                number_of_processes, start_value,
+                use_old_erd_files=use_old_erd_files,
+                shared_ions=True,
+                cancellation_token=CancellationToken()))
+        starter_thread.start()
 
     def show_status(self, status):
         """Updates the status of simulation in the GUI

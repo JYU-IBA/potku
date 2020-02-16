@@ -42,7 +42,7 @@ from pathlib import Path
 
 class TestMCERD(unittest.TestCase):
     @classmethod
-    def setUp(cls):
+    def setUpClass(cls):
         cls.directory = Path(tempfile.gettempdir())
         target = Target(layers=[
             Layer("layer1", [

@@ -28,7 +28,6 @@ import abc
 
 from modules.observing import ProgressReporter
 
-from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 
 
@@ -58,7 +57,7 @@ def switch_buttons(func, button_a, button_b):
     return wrapper
 
 
-class QtOABCMeta(type(QtWidgets.QWidget), abc.ABCMeta):
+class QtABCMeta(type(QtCore.QObject), abc.ABCMeta):
     """A common metaclass for ABCs and QWidgets.
 
     QWidget has the metaclass 'sip.wrappertype' which causes a conflict
@@ -72,7 +71,14 @@ class QtOABCMeta(type(QtWidgets.QWidget), abc.ABCMeta):
 
 class GUIReporter(ProgressReporter):
     """GUI Progress reporter that updates the value of a progress bar.
+
+    Uses pyqtSignal to ensure that the progress bar is updated in the
+    Main thread.
     """
+    class Signaller(QtCore.QObject):
+        # Helpers class that has a signal for emitting status bar updates
+        sig = QtCore.pyqtSignal(float)
+
     def __init__(self, progress_bar):
         """Initializes a new GUIReporter that updates the value of a given
         progress bar.
@@ -82,9 +88,10 @@ class GUIReporter(ProgressReporter):
         """
 
         def __update_func(value):
-            # Callback function that is passed down to super class
-            progress_bar.setValue(value)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+            # Callback function that will be connected to the signal
+            if progress_bar is not None:
+                progress_bar.setValue(value)
 
-        ProgressReporter.__init__(self, __update_func)
+        self.signaller = self.Signaller()
+        ProgressReporter.__init__(self, self.signaller.sig.emit)
+        self.signaller.sig.connect(__update_func)
