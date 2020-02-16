@@ -89,8 +89,6 @@ class GUIReporter(ProgressReporter):
         Args:
             progress_bar: GUI progress bar that will be updated
         """
-        # TODO make this thread safe by possibly inhering from QObject and
-        #   using signals
         def __update_func(value):
             # Callback function that will be connected to the signal
             if progress_bar is not None:

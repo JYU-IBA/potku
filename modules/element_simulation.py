@@ -699,14 +699,9 @@ class ElementSimulation(Observable):
             check_min: Minimum time to run simulation.
             shared_ions: boolean that determines if the ion counts are
                 divided by the number of processes
+            cancellation_token: CancellationToken that can be used to stop
+                                the start process
         """
-        # TODO if multiple processes are being started and user stops the
-        #   simulation, only the simulations that were already started will
-        #   stop. As this method sleeps for 5 secs before starting each
-        #   simulation, simulations that have not yet started when stopping is
-        #   requested, will still start running. Potential solution: add a
-        #   'cancellation_token' parameter that is checked every time the
-        #   loop is started.
         self.simulations_done = False
         if self.run is None:
             run = self.request.default_run
@@ -741,7 +736,6 @@ class ElementSimulation(Observable):
         if shared_ions:
             # ATM user can also enter value 0 to process count
             # so lets make a quick check first
-            # FIXME prevent this in the GUI
             if number_of_processes < 1:
                 number_of_processes = 1
             number_of_ions = elem_sim.number_of_ions // number_of_processes
@@ -807,12 +801,11 @@ class ElementSimulation(Observable):
 
             if optimize:
                 self.optimization_mcerd_running = True
-                files = (f for f, _, _ in self.__erd_filehandler)
-                # TODO the idea here was to combine the previous results into
-                #   an opt-file so it can be used when comparing espes, but
-                #   mcerd just overwrites the file so this is not the right
-                #   solution to avoid simulation when optimizing
-                gf.combine_files(files, new_erd_file)
+                # files = (f for f, _, _ in self.__erd_filehandler)
+                # TODO get_espe takes the output of 'cat file.*.cut' as its
+                #  input. Either rename the combined file to match the wild
+                #  card or use a wild card that matches existing .erd files
+                # gf.combine_files(files, new_erd_file)
 
             mcerd = MCERD(settings,
                           self,
@@ -1015,6 +1008,22 @@ class ElementSimulation(Observable):
                         previous_avg = avg
                     self.__previous_espe = espe
 
+    def __remove(self):
+        """Removes the simulation from running simulations."""
+        # We do not particularly care in which list the simulation is, just
+        # get it removed (from both if necessary)
+        try:
+            self.request.running_simulations.remove(self)
+        except ValueError:
+            # simulation was not here, nothing to do
+            # TODO what type of Error might happen in race condition?
+            pass
+        try:
+            self.simulation.running_simulations.remove(self)
+        except ValueError:
+            # simulation was not here, nothing to do
+            pass
+
     def notify(self, sim):
         """
         Remove MCERD object from list that has finished.
@@ -1033,20 +1042,7 @@ class ElementSimulation(Observable):
         status = self.get_current_status()
 
         if status["state"] == SimulationState.DONE:
-            if self.use_default_settings:
-                # FIXME there is a bug in here. use_default_settings is True
-                #      even when the simulation is running its own settings.
-                #      Next line will result in an exception.
-                try:
-                    self.request.running_simulations.remove(self)
-                except ValueError:
-                    # TODO this is a cheap patch to the aforementioned problem,
-                    #      not a real solution
-                    print("Did not find element simulation in request, trying "
-                          "to remove it from simulation.")
-                    self.simulation.running_simulations.remove(self)
-            else:
-                self.simulation.running_simulations.remove(self)
+            self.__remove()
 
             # FIXME ATM, logging from another thread than main thread will
             #       cause an error:
@@ -1093,13 +1089,7 @@ class ElementSimulation(Observable):
         for sim in list(self.mcerd_objects.keys()):
             del self.mcerd_objects[sim]
 
-        try:
-            self.request.running_simulations.remove(self)
-        except ValueError:
-            try:
-                self.simulation.running_simulations.remove(self)
-            except ValueError:
-                pass
+        self.__remove()
 
         if self.optimization_mcerd_running:
             self.optimization_mcerd_running = False

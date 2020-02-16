@@ -37,57 +37,51 @@ from pathlib import Path
 
 class TestUpdateCuts(unittest.TestCase):
 
-    @classmethod
-    def setUp(cls):
+    def setUp(self):
         # UpdateCuts works for both strings and Paths so both need to
         # be tested
         old_prefix = "m1"
         new_prefix = "m2"
-        cls.directory = Path(tempfile.gettempdir(), "foo.po.tku")
+        self.directory = Path(tempfile.gettempdir(), "foo.po.tku")
 
         unprefixed_files = [
             "12C-default.ERD.0.cut",
             "12C.ERD.1.cut",
             "16O.ERD.0.cut",
         ]
-        old_files = [
+        self.old_files = [
             f"{old_prefix}.{f}"
             for f in unprefixed_files
         ]
-        cls.new_files = [
+        self.new_files = [
             f"{new_prefix}.{f}"
             for f in unprefixed_files
         ]
-        cls.old_paths = [
-            os.path.join(cls.directory, f)
-            for f in old_files
+        self.expected_paths = [
+            Path(self.directory, f)
+            for f in self.new_files
         ]
-        cls.new_paths = [
-            os.path.join(cls.directory, f)
-            for f in cls.new_files
-        ]
-
-        # Path versions of absolute paths
-        cls.old_paths_p = [
-            Path(f)
-            for f in cls.old_paths
-        ]
-        cls.new_paths_p = [
-            Path(f)
-            for f in cls.new_paths
-]
 
     def test_update_cuts_with_strs(self):
         # Testing strings
+        paths = [
+            os.path.join(self.directory, f)
+            for f in self.old_files
+        ]
         with ListdirSwitcher(self.new_files):
-            df._update_cuts(self.old_paths, self.directory)
-            self.assertEqual(self.new_paths_p, self.old_paths)
+            df._update_cuts(paths, self.directory)
+            self.assertEqual(self.expected_paths, paths)
 
     def test_update_cuts_with_paths(self):
         # Testing Paths
+        # Path versions of absolute paths
+        paths = [
+            Path(self.directory, f)
+            for f in self.old_files
+        ]
         with ListdirSwitcher(self.new_files):
-            df._update_cuts(self.old_paths_p, self.directory)
-            self.assertEqual(self.new_paths_p, self.old_paths_p)
+            df._update_cuts(paths, self.directory)
+            self.assertEqual(self.expected_paths, paths)
 
 
 if __name__ == '__main__':

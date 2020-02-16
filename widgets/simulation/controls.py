@@ -362,12 +362,6 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         """
         self.show_status(status)
 
-        # TODO button states are not updating immediately
-        #      after starting multiple processes. This is because the start
-        #      method blocks for 5 seconds after each process.
-        #      Potential solution: run the start method in a thread and
-        #      provide it with some cancellation flag that can be used to
-        #      stop the thread safely.
         if status["state"] == SimulationState.STARTING:
             self.run_button.setEnabled(False)
             self.stop_button.setEnabled(True)
