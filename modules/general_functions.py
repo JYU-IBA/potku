@@ -306,7 +306,8 @@ def tof_list(cut_file, directory, save_output=False):
 
         tof_output = list(tof_parser.parse_strs(
             stdout.decode().splitlines(), method="row", ignore="w"))
-
+        # TODO m1.Re.ERD.0.cut produces no output even though the file is not
+        #  empty
         if save_output:
             if not directory:
                 directory = os.path.join(os.path.realpath(os.path.curdir),

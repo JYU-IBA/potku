@@ -104,10 +104,7 @@ class GetEspe:
                         + " -avemass" \
                         + " -density " + str(self.__density) \
                         + " -dist " + self.__recoil_file \
-                        + " -ch " + str(self.__channel_width) \
-
-        # TODO maybe not run this during __init__
-        self.run_get_espe()
+                        + " -ch " + str(self.__channel_width)
 
     def run_get_espe(self):
         """Run get_espe binary with given parameters.

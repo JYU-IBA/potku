@@ -110,15 +110,13 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.lim_mode = 'a'
 
         self.canvas.mpl_connect('button_press_event', self.onclick)
-        #self.__files_read = False
+
         self.__limits_set = False
         self.__position_set = False
         self.__rel_graph = False
-        #self.__show_limits = False
         self.__log_scale = False
         self.__absolute_values = False
         self.__enable_norm_over_range = False
-        #self.__use_limit = self.__Limit()
         self.__rbs_list = rbs_list
         self.__fork_toolbar_buttons()
         self.on_draw()
@@ -129,50 +127,28 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         Args:
             event: A click event on the graph
         """
-        if event.button == 1 and self.limButton.isChecked():  # and self.__show_limits:
+        if event.button == 1 and self.limButton.isChecked():
             self.limit.set(event.xdata)
             self.on_draw()
 
-    def __sortt(self, key):
-        """
-        Get isotope for key.
-
-        Args:
-            key: String that represents an Element.
-
-        Return:
-            Isotope or -1 if not key is "total".
-        """
-        # TODO move this to some utility function module
-        if key == "total":
-            return -1
-        if type(key) is Element:
-            element_object = key
-        else:
-            element_object = Element.from_string(key)
-        element = element_object.symbol
-        isotope = element_object.isotope
-        if not isotope:
-            isotope = masses.get_standard_isotope(element)
-        return isotope
-
     def get_profiles_to_use(self):
-        # Determine what files to use for plotting
+        """Determines what files to use for plotting. Either relative, absolute
+        or a merger of the two.
+        """
         if not self.__rel_graph:
-            profiles_to_use = self.profile_handler.get_absolute_profiles()
+            return self.profile_handler.get_absolute_profiles()
         elif self.lim_mode == 'a':
-            profiles_to_use = self.profile_handler.get_relative_profiles()
-        else:
-            lim_a, lim_b = self.limit.get_limits()
-            if self.lim_mode == 'b':
-                profiles_to_use = self.profile_handler.merge_profiles(
-                    lim_a, lim_b, method="abs_rel_abs"
-                )
-            else:
-                profiles_to_use = self.profile_handler.merge_profiles(
-                    lim_a, lim_b, method="rel_abs_rel"
-                )
-        return profiles_to_use
+            return self.profile_handler.get_relative_profiles()
+
+        lim_a, lim_b = self.limit.get_limits()
+        if self.lim_mode == 'b':
+            return self.profile_handler.merge_profiles(
+                lim_a, lim_b, method="abs_rel_abs"
+            )
+
+        return self.profile_handler.merge_profiles(
+            lim_a, lim_b, method="rel_abs_rel"
+        )
 
     def on_draw(self):
         """Draws the depth profile graph
@@ -228,10 +204,14 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.canvas.draw()
 
     def __update_energy_plots(self, profiles_to_use, draw_first_time=False):
-        sorted_profile_names = sorted(profiles_to_use, key=lambda x: self.__sortt(x))
+        sorted_profile_names = sorted(filter(lambda x: x != "total",
+                                             profiles_to_use),
+                                      key=lambda x: profiles_to_use[x].element)
 
         for profile_name in sorted_profile_names:
-            if profile_name == "total" or profile_name in self.__ignore_from_graph:
+            if profile_name == "total":
+                continue
+            if profile_name in self.__ignore_from_graph:
                 continue
 
             element = profiles_to_use[profile_name].element
@@ -250,7 +230,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
 
             if draw_first_time:
                 self.energy_plots[profile_name] = self.axes.plot(
-                    axe1, axe2, label=label, color=self.selection_colors[color_key])
+                    axe1, axe2, label=label,
+                    color=self.selection_colors[color_key])
             else:
                 # TODO testing plot updating
                 self.energy_plots[profile_name].set_ydata(axe2)
@@ -273,7 +254,8 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         # Calculate values to be displayed in the legend box
         lim_a, lim_b = self.limit.get_limits()
         if self.__absolute_values:
-            concentrations = self.profile_handler.integrate_concentrations(lim_a, lim_b)
+            concentrations = self.profile_handler.integrate_concentrations(
+                lim_a, lim_b)
         else:
             percentages, moe = self.profile_handler.calculate_ratios(
                 self.__ignore_from_ratio, lim_a, lim_b, self.__systerr)

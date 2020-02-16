@@ -108,14 +108,11 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
 
     def __sortt(self, key):
         cut_file = key.split('.')
-        element_object = Element(cut_file[0].strip())
-        element = element_object.symbol
-        isotope = element_object.isotope
-        if isotope:
-            mass = float(isotope)
-        else:
-            mass = masses.get_standard_isotope(element)
-        return mass
+        # TODO use RBS selection to sort (for example m1.35Cl.RBS_Mn.0.cut
+        #  should be sorted by Mn, not Cl)
+        # TODO provide elements as parameter instead of reinitializing them
+        #  over and over again
+        return Element.from_string(cut_file[0].strip())
 
     def on_draw(self):
         """Draw method for matplotlib.
@@ -127,6 +124,8 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
                                            key=lambda x: self.__sortt(x[0]))]
         for key in keys:
             cut_file = key.split('.')
+            # TODO provide elements as parameter rather than initializing
+            #      them here
             element_object = Element.from_string(cut_file[0].strip())
             element = element_object.symbol
             isotope = element_object.isotope

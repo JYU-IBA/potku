@@ -106,7 +106,30 @@ class Element:
         Return:
             Boolean representing equality.
         """
+        if not isinstance(other, Element):
+            return NotImplemented
         return str(self) == str(other)
+
+    def __lt__(self, other):
+        """Comparison function for Elements. Elements are compared first by
+        symbols, and if those match, then by isotopes and amounts.
+        """
+        # TODO could also use atomic number for comparison
+        # TODO could use standard isotope to sort when no isotope is defined
+        if not isinstance(other, Element):
+            return NotImplemented
+
+        if self.symbol != other.symbol:
+            return self.symbol < other.symbol
+
+        # Elements that have no isotopes come before elements that do
+        if self.isotope is None and other.isotope is not None:
+            return True
+
+        if self.isotope is not None and other.isotope is None:
+            return False
+
+        return str(self) < str(other)
 
     def get_prefix(self):
         """Returns a string representation of an element without amount.

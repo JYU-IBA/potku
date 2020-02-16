@@ -82,7 +82,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.__selection_colors = parent.parent.obj.selector.get_colors()
 
         self.__initiated_box = False
-        self.__ignore_elements = []
+        self.__ignore_elements = []     # TODO should be a set
         self.__log_scale = False
 
         self.canvas.manager.set_title("Energy Spectrum")
@@ -337,12 +337,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
     def __sortt(self, key):
         cut_file = key.split('.')
-        element_object = Element.from_string(cut_file[0].strip())
-        element = element_object.symbol
-        isotope = element_object.isotope
-        if not isotope:
-            isotope = masses.get_standard_isotope(element)
-        return isotope
+        # TODO sort by RBS selection
+        # TODO provide elements as parameters, do not initialize them here
+        return Element.from_string(cut_file[0].strip())
 
     def __find_used_recoils(self):
         """
@@ -404,7 +401,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 x = tuple(float(pair[0]) for pair in cut)
                 y = tuple(float(pair[1]) for pair in cut)
 
-                if x[0] < x_min:
+                if x and x[0] < x_min:
                     x_min = x[0]
                     x_min_changed = True
 
@@ -415,7 +412,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 dirtyinteger = 0
                 if rbs_string == "*":
                     color_string = "{0}{1}{2}{3}".format("RBS_", isotope,
-                                                      element, dirtyinteger)
+                                                         element, dirtyinteger)
                 else:
                     color_string = "{0}{1}{2}".format(isotope, element,
                                                       dirtyinteger)
@@ -509,7 +506,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 x = tuple(float(pair[0]) for pair in data)
                 y = tuple(float(pair[1]) for pair in data)
 
-                if x[0] < x_min:
+                if x and x[0] < x_min:
                     x_min = x[0]
                     x_min_changed = True
 

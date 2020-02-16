@@ -93,7 +93,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.__inverted_Y = False
         self.__inverted_X = False
         self.__transposed = False
-        self.__inited__ = False
+        self.__inited = False
         self.__range_mode_automated = False
 
         # Get settings from global settings
@@ -310,14 +310,14 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.axes.legend_ = None
         if not self.measurement.selector.selections:
             return
-        if not self.__inited__:  # Do this only once.
+        if not self.__inited:  # Do this only once.
             self.fig.tight_layout(pad=0.5)
             box = self.axes.get_position()
             self.axes.set_position([box.x0,
                                     box.y0,
                                     box.width * 0.9,
                                     box.height])
-            self.__inited__ = True
+            self.__inited = True
         selection_legend = {}
 
         # Get selections for legend
@@ -345,13 +345,14 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
             label = add + element.symbol + rbs_string
 
-            selection_legend[key_string] = (label, isotope_str, sel.points)
+            selection_legend[key_string] = (label, isotope_str, sel.points,
+                                            element)
 
         # Sort legend text
         sel_text = []
         sel_points = []
-        # keys = sorted(selection_legend.keys())
-        items = sorted(selection_legend.items(), key=lambda x: x[1][1])
+
+        items = sorted(selection_legend.items(), key=lambda x: x[1][3])
         for item in items:
             # [0] is the key of the item.
             sel_text.append(item[1][0])
