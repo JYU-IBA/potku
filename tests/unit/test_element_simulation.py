@@ -222,21 +222,19 @@ class TestErdFileHandler(unittest.TestCase):
 
 
 class TestElementSimulation(unittest.TestCase):
-
-    @classmethod
-    def setUp(cls):
-        cls.main_rec = mo.get_recoil_element()
-        cls.kwargs = {
+    def setUp(self):
+        self.main_rec = mo.get_recoil_element()
+        self.kwargs = {
             "minimum_energy": 42.0,
             "minimum_scattering_angle": 17.0,
             "minimum_main_scattering_angle": 14.0,
             "number_of_preions": 3
         }
-        cls.elem_sim = ElementSimulation(tempfile.gettempdir(),
-                                         mo.get_request(),
-                                         [cls.main_rec],
-                                         save_on_creation=False,
-                                         **cls.kwargs)
+        self.elem_sim = ElementSimulation(tempfile.gettempdir(),
+                                          mo.get_request(),
+                                          [self.main_rec],
+                                          save_on_creation=False,
+                                          **self.kwargs)
 
     def test_get_full_name(self):
         self.assertEqual("Default", self.elem_sim.get_full_name())

@@ -102,7 +102,8 @@ class ElementSimulation(Observable):
                 "__opt_seed", "optimization_done", "calculated_solutions", \
                 "optimization_stopped", "optimization_widget", \
                 "optimization_running", "optimized_fluence", \
-                "optimization_mcerd_running", "last_process_count", "sample"
+                "optimization_mcerd_running", "last_process_count", "sample", \
+                "__cancellation_token"
 
     def __init__(self, directory, request, recoil_elements,
                  simulation=None, name_prefix="", sample=None,
@@ -259,6 +260,8 @@ class ElementSimulation(Observable):
         else:
             self.__full_edit_on = True
             self.y_min = 0.0
+
+        self.__cancellation_token = None
 
         # TODO check optim status
         # elif f.startswith(name_prefix + "-opt") and f.endswith(".result"):
@@ -679,7 +682,7 @@ class ElementSimulation(Observable):
     def start(self, number_of_processes, start_value, use_old_erd_files=True,
               optimize=False, stop_p=False, check_t=False,
               optimize_recoil=False, check_max=False, check_min=False,
-              shared_ions=False):
+              shared_ions=False, cancellation_token=None):
         """
         Start the simulation.
 
@@ -753,8 +756,13 @@ class ElementSimulation(Observable):
         # Notify observers that we are about to go
         self.on_next(self.get_current_status(starting=True))
 
+        self.__cancellation_token = cancellation_token
+
         # Start as many processes as is given in number of processes
         for i in range(number_of_processes):
+            if self.__cancellation_token is not None:
+                self.__cancellation_token.raise_if_cancelled()
+
             settings = {
                 "simulation_type": elem_sim.simulation_type,
                 "number_of_ions": number_of_ions,
@@ -814,7 +822,8 @@ class ElementSimulation(Observable):
 
             seed_number = seed_number + 1
             if i + 1 < number_of_processes:
-                time.sleep(5)  # This is done to avoid having a mixup in mcerd
+                time.sleep(5)
+                # This is done to avoid having a mixup in mcerd
                 # command file content when there are more than one process
                 # (without this, Potku would crash)
                 # TODO create command file for each process so they can
@@ -1065,6 +1074,8 @@ class ElementSimulation(Observable):
     def stop(self, optimize_recoil=False):
         """ Stop the simulation."""
         # TODO check if this and notify can be refactored
+        if self.__cancellation_token is not None:
+            self.__cancellation_token.request_cancellation()
         process_count = self.count_active_processes()
         ref_key = None
 
