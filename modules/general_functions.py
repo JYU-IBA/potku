@@ -187,7 +187,7 @@ def read_tof_list_file(tof_list_file):
 
 
 def calculate_spectrum(tof_listed_files, spectrum_width, measurement,
-                       directory_es):
+                       directory_es, no_foil=False):
     """Calculate energy spectrum data from .tof_list files and writes the
     results to .hist files.
 
@@ -197,6 +197,8 @@ def calculate_spectrum(tof_listed_files, spectrum_width, measurement,
         spectrum_width: TODO
         measurement: measurement which the .tof_list files belong to
         directory_es: directory
+        no_foil: whether foil thickeness was set to 0 or not. This affects
+                 the file name
 
     Returns:
         contents of .hist files as a dict
@@ -221,12 +223,21 @@ def calculate_spectrum(tof_listed_files, spectrum_width, measurement,
             continue
         file = measurement.name
         histed = histed_files[key]
+
+        if no_foil:
+            foil_txt = ".no_foil"
+        else:
+            foil_txt = ""
+
         filename = os.path.join(directory_es,
-                                "{0}.{1}.hist".format(
-                                    os.path.splitext(file)[0], key))
+                                "{0}.{1}{2}.hist".format(
+                                    os.path.splitext(file)[0],
+                                    key,
+                                    foil_txt))
         numpy_array = numpy.array(histed,
                                   dtype=[('float', float),
                                          ('int', int)])
+
         numpy.savetxt(filename, numpy_array, delimiter=" ",
                       fmt="%5.5f %6d")
 
@@ -258,7 +269,7 @@ def copy_cut_file_to_temp(cut_file):
     return new_cut_file
 
 
-def tof_list(cut_file, directory, save_output=False):
+def tof_list(cut_file, directory, save_output=False, no_foil=False):
     """ToF_list
 
     Arstila's tof_list executables interface for Python.
@@ -268,11 +279,15 @@ def tof_list(cut_file, directory, save_output=False):
         directory: A string representing measurement's energy spectrum
                    directory.
         save_output: A boolean representing whether tof_list output is saved.
+        no_foil: whether foil thickness was used when .cut files were generated.
+                 This affects the file path when saving output
 
     Returns:
         Returns cut file as list transformed through Arstila's tof_list program.
     """
-    bin_dir = os.path.join(os.path.realpath(os.path.curdir), "external",
+    # TODO move saving_output to another function
+    bin_dir = os.path.join(os.path.realpath(os.path.curdir),
+                           "external",
                            "Potku-bin")
 
     if not cut_file:
@@ -306,17 +321,25 @@ def tof_list(cut_file, directory, save_output=False):
 
         tof_output = list(tof_parser.parse_strs(
             stdout.decode().splitlines(), method="row", ignore="w"))
-        # TODO m1.Re.ERD.0.cut produces no output even though the file is not
-        #  empty
+        # TODO on Mac, m1.Re.ERD.0.cut produces no output even though the
+        #      file is not empty
         if save_output:
             if not directory:
                 directory = os.path.join(os.path.realpath(os.path.curdir),
                                          "energy_spectrum_output")
             if not os.path.exists(directory):
                 os.makedirs(directory)
-            unused_dir, file = os.path.split(cut_file)
+            _, file = os.path.split(cut_file)
+
+            if no_foil:
+                foil_txt = ".no_foil"
+            else:
+                foil_txt = ""
+
             directory_es_file = os.path.join(
-                directory, "{0}.tof_list".format(os.path.splitext(file)[0]))
+                directory,
+                "{0}{1}.tof_list".format(os.path.splitext(file)[0],
+                                         foil_txt))
             numpy_array = numpy.array(tof_output,
                                       dtype=[('float1', float),
                                              ('float2', float),

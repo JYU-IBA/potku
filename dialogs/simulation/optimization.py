@@ -338,13 +338,16 @@ class OptimizationDialog(QtWidgets.QDialog):
             i += 1
 
         # Hist all selected cut files
+        # TODO should no_foil be used here? If not, remember to remove it from
+        #      hist file name too.
         es = EnergySpectrum(used_measurement, [cut_file],
                             self.ui.histogramTicksDoubleSpinBox.value(),
-                            None)
-        es.calculate_spectrum()
+                            progress_bar=None,
+                            no_foil=True)
+        es.calculate_spectrum(no_foil=True)
         # Add result files
         hist_file = os.path.join(used_measurement.directory_energy_spectra,
-                                 item_text + ".hist")
+                                 f"{item_text}.no_foil.hist")
 
         channel_width = self.ui.histogramTicksDoubleSpinBox.value()
         crossover_prob = self.parameters_widget.crossoverProbDoubleSpinBox.value()

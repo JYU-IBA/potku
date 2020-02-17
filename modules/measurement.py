@@ -1077,12 +1077,16 @@ class Measurement(Logger):
         """
         self.selector.load(filename, progress_bar, percent_add, start)
 
-    def generate_tof_in(self):
+    def generate_tof_in(self, no_foil=False):
         """ Generate tof.in file for external programs.
+
+        Args:
+            no_foil: overrides the thickness of foil by setting it to 0
         
         Generates tof.in file for measurement to be used in external programs 
         (tof_list, erd_depth).
         """
+        # TODO refactor this into smaller functions
         tof_in_directory = os.path.join(os.path.realpath(os.path.curdir),
                                         "external",
                                         "Potku-bin")
@@ -1148,13 +1152,21 @@ class Measurement(Logger):
         str_toflen = "Toflen: {0}\n".format(time_of_flight_length)
 
         # Timing foil can only be carbon and have one layer!!!
-        carbon_foil_thickness_in_nm = 0
-        layer = detector.foils[detector.tof_foils[0]].layers[0]
-        carbon_foil_thickness_in_nm += layer.thickness  # first layer only
-        density_in_g_per_cm3 = layer.density
-        carbon_foil_thickness = carbon_foil_thickness_in_nm * \
-                                density_in_g_per_cm3 * 6.0221409e+23 * \
-                                1.660548782e-27 * 100  # density in ug_per_cm2
+        if no_foil:
+            # no_foil parameter is used when energy spectra is generated from
+            # .tof_list files in simulation mode. Foil thickness is set to 0
+            # to make MCERD energy spectra and experimental energy spectra
+            # comparable
+            carbon_foil_thickness = 0
+        else:
+            carbon_foil_thickness_in_nm = 0
+            layer = detector.foils[detector.tof_foils[0]].layers[0]
+            carbon_foil_thickness_in_nm += layer.thickness  # first layer only
+            density_in_g_per_cm3 = layer.density
+            # density in ug_per_cm2
+            carbon_foil_thickness = carbon_foil_thickness_in_nm * \
+                density_in_g_per_cm3 * 6.0221409e+23 * \
+                1.660548782e-27 * 100
 
         str_carbon = "Carbon foil thickness: {0}\n".format(
             carbon_foil_thickness)

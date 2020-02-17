@@ -332,14 +332,22 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         length = len(used_measurements)
         # Hist all selected cut files
         for measurement in used_measurements:
+            # We are using no_foil parameter here to set the foil thickness to
+            # 0 when calculating tof_list. This ensures that the observed
+            # energy spectra (from .cut files) is comparable to simulated
+            # energy spectra (from .erd files).
+            # FIXME tof_list gets called (len(used_measurements))^2 times, when
+            #       running this
             es = EnergySpectrum(measurement, cut_files[measurement],
                                 self.ui.histogramTicksDoubleSpinBox.value(),
-                                None)
-            es.calculate_spectrum()
+                                None,
+                                no_foil=True)
+            es.calculate_spectrum(no_foil=True)
+
             # Add result files
             for name in item_texts:
-                file_path = os.path.join(
-                    measurement.directory_energy_spectra, name + ".hist")
+                file_path = os.path.join(measurement.directory_energy_spectra,
+                                         f"{name}.no_foil.hist")
                 if os.path.exists(file_path):
                     if file_path in self.result_files:
                         continue

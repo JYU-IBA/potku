@@ -454,6 +454,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 symbol = ""
                 color = None
                 suffix = ""
+
+                # TODO label text needs to be reformatted when dealing with
+                #      'no_foil.hist' files
                 if file_name.endswith(".hist"):
                     measurement_name, isotope_and_symbol, erd_or_rbs, rest = \
                         file_name.split('.', 3)

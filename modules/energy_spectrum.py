@@ -33,9 +33,9 @@ import logging
 import os
 import sys
 
+import modules.general_functions as gf
+
 from modules.element import Element
-from modules.general_functions import calculate_spectrum
-from modules.general_functions import tof_list
 
 from PyQt5 import QtCore
 
@@ -44,7 +44,7 @@ class EnergySpectrum:
     """ Class for energy spectrum.
     """
     def __init__(self, measurement, cut_files, spectrum_width,
-                 progress_bar=None):
+                 progress_bar=None, no_foil=False):
         """Inits energy spectrum
         
         Args:
@@ -53,6 +53,7 @@ class EnergySpectrum:
             cut_files: String list of cut files.
             spectrum_width: Float representing energy spectrum graph width.
             progress_bar: QtWidgets.QProgressBar for GUI (None otherwise).
+            no_foil: whether foil thickness is set to 0 when running tof_list
         """
         self.__measurement = measurement
         self.__global_settings = self.__measurement.request.global_settings
@@ -62,23 +63,35 @@ class EnergySpectrum:
         self.__directory_es = measurement.directory_energy_spectra
         # tof_list files here just in case progress bar might happen to
         # 'disappear'.
-        self.__tof_listed_files = self.__load_cuts()
+        # TODO ATM tof_in is generated twice when calculating espes. This
+        #      should be refactored
+        self.__measurement.generate_tof_in(no_foil=no_foil)
+        self.__tof_listed_files = self.__load_cuts(no_foil=no_foil)
 
-    def calculate_spectrum(self):
+    def calculate_spectrum(self, no_foil=False):
         """Calculate energy spectrum data from cut files.
+
+        Args:
+            no_foil: whether foil thickness is set to 0 or original foil
+                     thickness is used
         
         Returns list of cut files 
         """
         # First generate tof.in file to match the measurement whose energy
         # spectra are drawn.
-        self.__measurement.generate_tof_in()
-        return calculate_spectrum(self.__tof_listed_files,
-                                  self.__spectrum_width, self.__measurement,
-                                  self.__directory_es)
+        self.__measurement.generate_tof_in(no_foil=no_foil)
+        return gf.calculate_spectrum(self.__tof_listed_files,
+                                     self.__spectrum_width,
+                                     self.__measurement,
+                                     self.__directory_es,
+                                     no_foil=no_foil)
 
-    def __load_cuts(self):
+    def __load_cuts(self, no_foil=False):
         """Loads cut files through tof_list into list.
-        
+
+        Args:
+            no_foil: whether foil thickness is set to 0 when running tof_list
+
         Return:
             Returns list of cut files' tof_list results.
         """
@@ -95,14 +108,18 @@ class EnergySpectrum:
                 filename_split = os.path.basename(cut_file).split('.')
                 element = Element.from_string(filename_split[1])
                 if len(filename_split) == 5:  # Regular cut file
-                    key = "{0}.{1}.{2}".format(element, filename_split[2],
+                    key = "{0}.{1}.{2}".format(element,
+                                               filename_split[2],
                                                filename_split[3])
                 else:  # Elemental Losses cut file
-                    key = "{0}.{1}.{2}.{3}".format(element, filename_split[2],
-                                               filename_split[3],
+                    key = "{0}.{1}.{2}.{3}".format(element,
+                                                   filename_split[2],
+                                                   filename_split[3],
                                                    filename_split[4])
-                cut_dict[key] = tof_list(cut_file, self.__directory_es,
-                                         save_output)
+                cut_dict[key] = gf.tof_list(cut_file,
+                                            self.__directory_es,
+                                            save_output=save_output,
+                                            no_foil=no_foil)
     
                 dirtyinteger += 1
                 if self.__progress_bar:
