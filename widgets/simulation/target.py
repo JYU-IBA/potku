@@ -193,7 +193,7 @@ class TargetWidget(QtWidgets.QWidget):
         if not thread:
             # Add progress bar
             progress_bar = QtWidgets.QProgressBar()
-            self.simulation.statusbar.addWidget(progress_bar, 1)
+            self.tab.statusbar.addWidget(progress_bar, 1)
             progress_bar.show()
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
             # Mac requires event processing to show progress bar and its
@@ -217,7 +217,7 @@ class TargetWidget(QtWidgets.QWidget):
             self.simulation.directory, progress_bar)
 
         if not thread:
-            self.simulation.statusbar.removeWidget(progress_bar)
+            self.tab.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
 
     def set_shortcuts(self):

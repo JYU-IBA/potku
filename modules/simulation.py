@@ -274,8 +274,6 @@ class Simulation(Logger):
         self.request = request
         self.sample = sample
 
-        self.statusbar = self.request.statusbar
-
         self.name = name
         self.description = description
         if not modification_time:

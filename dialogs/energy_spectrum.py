@@ -31,7 +31,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import logging
-import modules.masses as masses
 import os
 import shutil
 import sys
@@ -39,8 +38,8 @@ import sys
 import dialogs.dialog_functions as df
 
 from dialogs.file_dialogs import open_file_dialog
+from widgets.gui_utils import GUIReporter
 from modules.cut_file import is_rbs, get_scatter_element
-from modules.element import Element
 from modules.energy_spectrum import EnergySpectrum
 from modules.general_functions import read_espe_file
 from modules.measurement import Measurement
@@ -243,9 +242,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()
 
-        if self.parent.obj.statusbar:
+        if self.parent.statusbar:
             progress_bar = QtWidgets.QProgressBar()
-            self.parent.obj.statusbar.addWidget(progress_bar, 1)
+            self.parent.statusbar.addWidget(progress_bar, 1)
             progress_bar.show()
             QtCore.QCoreApplication.processEvents(
                 QtCore.QEventLoop.AllEvents)
@@ -340,7 +339,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             #       running this
             es = EnergySpectrum(measurement, cut_files[measurement],
                                 self.ui.histogramTicksDoubleSpinBox.value(),
-                                None,
+                                progress=None,
                                 no_foil=True)
             es.calculate_spectrum(no_foil=True)
 
@@ -375,7 +374,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             QtCore.QEventLoop.AllEvents)
 
         if progress_bar:
-            self.parent.obj.statusbar.removeWidget(progress_bar)
+            self.parent.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
 
         self.bin_width = self.ui.histogramTicksDoubleSpinBox.value()
@@ -564,10 +563,10 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
 
             if isinstance(self.parent.obj, Measurement):
                 self.measurement = self.parent.obj
-                if self.measurement.statusbar:
+                if self.parent.statusbar:
                     if use_progress_bar:
                         self.progress_bar = QtWidgets.QProgressBar()
-                        self.measurement.statusbar.addWidget(
+                        self.parent.statusbar.addWidget(
                             self.progress_bar, 1)
                         self.progress_bar.show()
                         QtCore.QCoreApplication.processEvents(
@@ -586,7 +585,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                     self.measurement,
                     use_cuts,
                     bin_width,
-                    progress_bar=self.progress_bar)
+                    progress=GUIReporter(self.progress_bar))
                 self.energy_spectrum_data = self.energy_spectrum.\
                     calculate_spectrum()
 
@@ -629,7 +628,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 self.matplotlib.delete()
         finally:
             if self.progress_bar:
-                self.measurement.statusbar.removeWidget(self.progress_bar)
+                self.parent.statusbar.removeWidget(self.progress_bar)
                 self.progress_bar.hide()
 
     def update_use_cuts(self):

@@ -203,10 +203,10 @@ class ElementLossesWidget(QtWidgets.QWidget):
             self.checked_cuts = checked_cuts
             self.partition_count = partition_count
             self.y_scale = y_scale
-            if self.measurement.statusbar:
+            if self.parent.statusbar:
                 if use_progress_bar:
                     self.progress_bar = QtWidgets.QProgressBar()
-                    self.measurement.statusbar.addWidget(self.progress_bar, 1)
+                    self.parent.statusbar.addWidget(self.progress_bar, 1)
                     self.progress_bar.show()
                     QtCore.QCoreApplication.processEvents(
                         QtCore.QEventLoop.AllEvents)
@@ -266,7 +266,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
                 self.matplotlib.delete()
         finally:
             if self.progress_bar:
-                self.measurement.statusbar.removeWidget(self.progress_bar)
+                self.parent.statusbar.removeWidget(self.progress_bar)
                 self.progress_bar.hide()
 
     def delete(self):
@@ -283,7 +283,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
     def __save_splits(self):
         if self.progress_bar:
             self.progress_bar = QtWidgets.QProgressBar()
-            self.measurement.statusbar.addWidget(self.progress_bar, 1)
+            self.parent.statusbar.addWidget(self.progress_bar, 1)
             self.progress_bar.show()
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
             # Mac requires event processing to show progress bar and its
@@ -293,7 +293,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
 
         self.losses.save_splits(progress=GUIReporter(self.progress_bar))
         if self.progress_bar:
-            self.measurement.statusbar.removeWidget(self.progress_bar)
+            self.parent.statusbar.removeWidget(self.progress_bar)
             self.progress_bar.hide()
 
     def closeEvent(self, evnt):

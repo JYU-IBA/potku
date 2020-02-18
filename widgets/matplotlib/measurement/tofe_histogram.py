@@ -590,7 +590,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                                     "Selection file (*.selections)")
         if filename:
             progress_bar = QtWidgets.QProgressBar()
-            self.measurement.statusbar.addWidget(progress_bar, 1)
+            self.parent.statusbar.addWidget(progress_bar, 1)
             progress_bar.show()
             progress_bar.setValue(40)
             QtCore.QCoreApplication.processEvents(
@@ -604,7 +604,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             QtCore.QCoreApplication.processEvents(
                 QtCore.QEventLoop.AllEvents)
 
-            self.measurement.statusbar.removeWidget(progress_bar)
+            self.parent.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
 
         self.__emit_selections_changed()

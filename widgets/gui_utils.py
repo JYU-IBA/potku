@@ -25,6 +25,7 @@ __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 import abc
+import platform
 
 from modules.observing import ProgressReporter
 
@@ -72,6 +73,16 @@ class QtABCMeta(type(QtCore.QObject), abc.ABCMeta):
     pass
 
 
+if platform.system() == "Darwin":
+    # Mac needs event processing to display changes in the status bar
+    def _process_event_loop():
+        QtCore.QCoreApplication.processEvents(
+            QtCore.QEventLoop.AllEvents)
+else:
+    def _process_event_loop():
+        pass
+
+
 class GUIReporter(ProgressReporter):
     """GUI Progress reporter that updates the value of a progress bar.
 
@@ -93,6 +104,8 @@ class GUIReporter(ProgressReporter):
             # Callback function that will be connected to the signal
             if progress_bar is not None:
                 progress_bar.setValue(value)
+
+                _process_event_loop()
 
         self.signaller = self.Signaller()
         ProgressReporter.__init__(self, self.signaller.sig.emit)

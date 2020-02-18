@@ -336,9 +336,6 @@ class Measurement(Logger):
 
         self.data = []
 
-        # Main window's statusbar TODO: Remove GUI stuff.
-        self.statusbar = self.request.statusbar
-
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
 
@@ -749,7 +746,7 @@ class Measurement(Logger):
                 new_name = self.name + "." + file.split('.', 1)[1]
                 rename_file(old_path, new_name)
 
-    def set_axes(self, axes, progress_bar, start, add):
+    def set_axes(self, axes, progress=None, start=0.0, add=0.0):
         """ Set axes information to selector within measurement.
         
         Sets axes information to selector to add selection points. Since 
@@ -758,19 +755,19 @@ class Measurement(Logger):
         
         Args:
             axes: Matplotlib FigureCanvas's subplot
-            progress_bar: A progress bar used when opening a measurement.
+            progress: ProgressReporter object
             start: Start value for progress bar.
             add: Value added to progress bar.
         """
         self.selector.axes = axes
         # We've set axes information, check for old selection.
-        self.__check_for_old_selection(progress_bar, start, add)
+        self.__check_for_old_selection(progress, start, add)
 
-    def __check_for_old_selection(self, progress_bar, start, add):
+    def __check_for_old_selection(self, progress=None, start=0.0, add=0.0):
         """ Use old selection file_path if exists.
 
         Args:
-            progress_bar: A progress bar used when opening a measurement.
+            progress: ProgressReporter object
             start: Start value for progress bar.
             add: Value added to progress bar.
         """
@@ -782,7 +779,7 @@ class Measurement(Logger):
                     add = 10
                 if not start:
                     start = 40
-                self.load_selection(selection_file, progress_bar, add, start)
+                self.load_selection(selection_file, progress, add, start)
         except:
             # TODO: Is it necessary to inform user with this?
             log_msg = "There was no old selection file to add to this request."
@@ -899,7 +896,7 @@ class Measurement(Logger):
             deleted = True
         return deleted
 
-    def save_cuts(self, progress_bar=None, percentage=None, add=None):
+    def save_cuts(self, progress=None, percentage=0.0, add=0.0):
         """ Save cut files
         
         Saves data points within selections into cut files.
@@ -916,17 +913,10 @@ class Measurement(Logger):
                                            self.directory_cuts)):
             self.__make_directories(self.directory_cuts)
 
-        new_created = False
-        if not progress_bar:    # TODO use ProgressReporting here
-            progress_bar = QtWidgets.QProgressBar()
-            self.statusbar.addWidget(progress_bar, 1)
-            progress_bar.show()
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process.
+        if progress is not None:
             percentage = 0
             add = 100
-            new_created = True
+
         first_add = add * 0.9
         second_add = add * 0.1
 
@@ -942,11 +932,8 @@ class Measurement(Logger):
         for n in range(data_count):  # while n < data_count: 
             if n % 5000 == 0:
                 # Do not always update UI to make it faster.
-                progress_bar.setValue(percentage + (n / data_count) * first_add)
-                QtCore.QCoreApplication.processEvents(
-                    QtCore.QEventLoop.AllEvents)
-                # Mac requires event processing to show progress bar and its
-                # process.
+                if progress is not None:
+                    progress.report(percentage + (n / data_count) * first_add)
             point = self.data[n]
             # Check if point is within selectors' limits for faster processing.
             if not self.selector.axes_limits.is_inside(point):
@@ -972,15 +959,9 @@ class Measurement(Logger):
                 cut_file.set_info(selection, points)
                 cut_file.save()
             dirtyinteger += 1
-            progress_bar.setValue(percentage + first_add +
-                                  (dirtyinteger / content_length) * second_add)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process.
-
-        if new_created:
-            self.statusbar.removeWidget(progress_bar)
-            progress_bar.hide()
+            if progress is not None:
+                progress.report(percentage + first_add + (dirtyinteger /
+                                content_length) * second_add)
 
         log_msg = "Saving finished in {0} seconds.".format(time.time() -
                                                            starttime)
@@ -1063,7 +1044,8 @@ class Measurement(Logger):
                 elem_root.addChild(item)
             treewidget.addTopLevelItem(elem_root)
 
-    def load_selection(self, filename, progress_bar, percent_add, start=40):
+    def load_selection(self, filename, progress=None, percent_add=0.0,
+                       start=40):
         """ Load selections from a file_path.
         
         Removes all current selections and loads selections from given filename.
@@ -1071,11 +1053,11 @@ class Measurement(Logger):
         Args:
             filename: String representing (full) directory to selection
             file_path.
-            progress_bar: A progress bar used when opening a measurement.
+            progress: ProgressReporter object
             percent_add: How many percents are added to progress bar.
             start: Start value for progress bar.
         """
-        self.selector.load(filename, progress_bar, percent_add, start)
+        self.selector.load(filename, progress, percent_add, start)
 
     def generate_tof_in(self, no_foil=False):
         """ Generate tof.in file for external programs.

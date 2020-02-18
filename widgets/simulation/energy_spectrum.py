@@ -79,7 +79,7 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
                 self.matplotlib.delete()
         finally:
             if self.progress_bar:
-                self.measurement.statusbar.removeWidget(self.progress_bar)
+                self.parent.statusbar.removeWidget(self.progress_bar)
                 self.progress_bar.hide()
 
     def save_spectra(self):

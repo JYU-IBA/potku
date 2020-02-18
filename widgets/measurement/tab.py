@@ -60,12 +60,13 @@ class MeasurementTabWidget(QtWidgets.QWidget):
 
     issueMaster = QtCore.pyqtSignal()
 
-    def __init__(self, tab_id, measurement, icon_manager):
+    def __init__(self, tab_id, measurement, icon_manager, statusbar=None):
         """Init measurement tab class.
         Args:
             tab_id: An integer representing ID of the tabwidget.
             measurement: A measurement class object.
             icon_manager: An iconmanager class object.
+            statusbar: A QtGui.QMainWindow's QStatusBar.
         """
         super().__init__()
         self.tab_id = tab_id
@@ -100,6 +101,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         # Enable master button
         self.toggle_master_button()
 
+        self.statusbar = statusbar
+
     def add_widget(self, widget, minimized=None, has_close_button=True,
                    icon=None):
         """Adds a new widget to current (measurement) tab.
@@ -129,22 +132,21 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             widget.show()
         self.__set_icons()
 
-    def add_histogram(self, progress_bar, start=None, add=None):
+    def add_histogram(self, progress=None, start=0.0, add=0.0):
         """Adds ToF-E histogram into tab if it doesn't have one already.
 
         Args:
-            progress_bar: A progress bar.
+            progress: ProgressReporter object
             start: Start value of progress bar.
             add: Value added to progress bar.
         """
         self.histogram = TofeHistogramWidget(self.obj,
-                                             self.icon_manager, self)
-        if progress_bar and not start:
-            progress_bar.setValue(40)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+                                             self.icon_manager,
+                                             self)
+        if progress is not None and not start:
+            progress.report(40)
 
-        self.obj.set_axes(self.histogram.matplotlib.axes, progress_bar,
+        self.obj.set_axes(self.histogram.matplotlib.axes, progress,
                           start, add)
 
         self.ui.makeSelectionsButton.clicked.connect(
@@ -153,10 +155,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         self.histogram.matplotlib.selectionsChanged.connect(
             self.__set_cut_button_enabled)
 
-        if progress_bar and not add:
-            progress_bar.setValue(60)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+        if progress is not None and not add:
+            progress.report(60)
 
         # Draw after giving axes -> selections set properly
         self.histogram.matplotlib.on_draw()

@@ -51,7 +51,8 @@ from widgets.simulation.target import TargetWidget
 class SimulationTabWidget(QtWidgets.QWidget):
     """Tab widget where simulation stuff is added.
     """
-    def __init__(self, request, tab_id, simulation, icon_manager):
+    def __init__(self, request, tab_id, simulation, icon_manager,
+                 statusbar=None):
         """ Init simulation tab class.
         
         Args:
@@ -59,6 +60,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
             tab_id: An integer representing ID of the tab widget.
             simulation: A simulation class object.
             icon_manager: An icon manager class object.
+            statusbar: A QtGui.QMainWindow's QStatusBar.
         """
         super().__init__()
         self.request = request
@@ -82,6 +84,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
                                                self.__open_optimization_dialog())
 
         self.optimization_result_widget = None
+
+        self.statusbar = statusbar
 
     def add_widget(self, widget, minimized=None, has_close_button=True,
                    icon=None):

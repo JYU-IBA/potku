@@ -37,14 +37,12 @@ import modules.general_functions as gf
 
 from modules.element import Element
 
-from PyQt5 import QtCore
-
 
 class EnergySpectrum:
     """ Class for energy spectrum.
     """
     def __init__(self, measurement, cut_files, spectrum_width,
-                 progress_bar=None, no_foil=False):
+                 progress=None, no_foil=False):
         """Inits energy spectrum
         
         Args:
@@ -52,21 +50,21 @@ class EnergySpectrum:
                          is made.
             cut_files: String list of cut files.
             spectrum_width: Float representing energy spectrum graph width.
-            progress_bar: QtWidgets.QProgressBar for GUI (None otherwise).
+            progress: ProgressReporter object.
             no_foil: whether foil thickness is set to 0 when running tof_list
         """
         self.__measurement = measurement
         self.__global_settings = self.__measurement.request.global_settings
         self.__cut_files = cut_files
         self.__spectrum_width = spectrum_width
-        self.__progress_bar = progress_bar
         self.__directory_es = measurement.directory_energy_spectra
         # tof_list files here just in case progress bar might happen to
         # 'disappear'.
         # TODO ATM tof_in is generated twice when calculating espes. This
         #      should be refactored
         self.__measurement.generate_tof_in(no_foil=no_foil)
-        self.__tof_listed_files = self.__load_cuts(no_foil=no_foil)
+        self.__tof_listed_files = self.__load_cuts(no_foil=no_foil,
+                                                   progress=progress)
 
     def calculate_spectrum(self, no_foil=False):
         """Calculate energy spectrum data from cut files.
@@ -86,11 +84,12 @@ class EnergySpectrum:
                                      self.__directory_es,
                                      no_foil=no_foil)
 
-    def __load_cuts(self, no_foil=False):
+    def __load_cuts(self, no_foil=False, progress=None):
         """Loads cut files through tof_list into list.
 
         Args:
             no_foil: whether foil thickness is set to 0 when running tof_list
+            progress: ProgressReporter object
 
         Return:
             Returns list of cut files' tof_list results.
@@ -122,12 +121,8 @@ class EnergySpectrum:
                                             no_foil=no_foil)
     
                 dirtyinteger += 1
-                if self.__progress_bar:
-                    self.__progress_bar.setValue((dirtyinteger / count) * 100)
-                    QtCore.QCoreApplication.processEvents(
-                        QtCore.QEventLoop.AllEvents)
-                # Mac requires event processing to show progress bar and its
-                # process.
+                if progress is not None:
+                    progress.report((dirtyinteger / count) * 100)
         except:
             import traceback
             msg = "Could not calculate Energy Spectrum. "

@@ -44,34 +44,28 @@ from modules.run import Run
 from modules.sample import Samples
 from modules.simulation import Simulation
 from modules.target import Target
-
-from PyQt5 import QtGui
-
-from widgets.matplotlib.simulation.recoil_atom_distribution import RecoilElement
+from modules.recoil_element import RecoilElement
 
 
 class Request:
     """Request class to handle all measurements.
     """
 
-    def __init__(self, directory, name, statusbar, global_settings,
+    def __init__(self, directory, name, global_settings,
                  tabs):
         """ Initializes Request class.
         
         Args:
             directory: A String representing request directory.
             name: Name of the request.
-            statusbar: A QtGui.QMainWindow's QStatusBar.
             global_settings: A GlobalSettings class object (of the program).
             tabs: A dictionary of MeasurementTabWidgets and SimulationTabWidgets
                   of the request.
         """
-        # TODO: Get rid of statusbar.
         self.directory = directory
         self.request_name = name
         unused_directory, tmp_dirname = os.path.split(self.directory)
         self.global_settings = global_settings
-        self.statusbar = statusbar
         self.samples = Samples(self)
 
         self.default_run = Run()
@@ -447,13 +441,13 @@ class Request:
         with open(self.request_file, "wt+") as configfile:
             self.__request_information.write(configfile)
 
-    def save_cuts(self, measurement, progress_bar=None, percentage=None,
-                  add=None):
+    def save_cuts(self, measurement, progress=None, percentage=0.0,
+                  add=0.0):
         """ Save cuts for all measurements except for master.
         
         Args:
             measurement: A measurement class object that issued save cuts.
-            progress_bar: A porgress bar.
+            progress: ProgressReporter object.
             percentage: Base percentage in progress bar.
             add: Percentage to add.
         """
@@ -471,16 +465,16 @@ class Request:
                 if tab.data_loaded and tab.obj not in nonslaves and \
                         tab_name != name:
                     # No need to save same measurement twice.
-                    tab.obj.save_cuts(progress_bar, start, added)
+                    tab.obj.save_cuts(progress, start, added)
                     if added:
                         start += added
 
-    def save_selection(self, measurement, progress_bar, percentage):
+    def save_selection(self, measurement, progress=None, percentage=0.0):
         """ Save selection for all measurements except for master.
         
         Args:
             measurement: A measurement class object that issued save cuts.
-            progress_bar: A progress bar.
+            progress: ProgressReporter object.
             percentage: Percentage to add to progress bar.
         """
         directory = measurement.directory_data
@@ -496,7 +490,7 @@ class Request:
                 tab_name = tab.obj.name
                 if tab.data_loaded and tab.obj not in nonslaves and \
                         tab_name != name:
-                    tab.obj.selector.load(selection_file, progress_bar,
+                    tab.obj.selector.load(selection_file, progress,
                                           add, start)
                     tab.histogram.matplotlib.on_draw()
                     start += add

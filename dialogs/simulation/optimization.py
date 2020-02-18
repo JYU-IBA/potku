@@ -342,7 +342,7 @@ class OptimizationDialog(QtWidgets.QDialog):
         #      hist file name too.
         es = EnergySpectrum(used_measurement, [cut_file],
                             self.ui.histogramTicksDoubleSpinBox.value(),
-                            progress_bar=None,
+                            progress=None,
                             no_foil=True)
         es.calculate_spectrum(no_foil=True)
         # Add result files

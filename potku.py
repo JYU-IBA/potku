@@ -50,6 +50,8 @@ from dialogs.request_settings import RequestSettingsDialog
 from dialogs.simulation.new_simulation import SimulationNewDialog
 from dialogs.file_dialogs import open_file_dialog
 
+from widgets.gui_utils import GUIReporter
+
 from modules.general_functions import remove_file
 from modules.general_functions import rename_file
 from modules.general_functions import validate_text_input
@@ -604,7 +606,7 @@ class Potku(QtWidgets.QMainWindow):
                     QtCore.QCoreApplication.processEvents(
                         QtCore.QEventLoop.AllEvents)
 
-                    tab.add_histogram(progress_bar)
+                    tab.add_histogram(GUIReporter(progress_bar))
 
                     progress_bar.setValue(65)
                     QtCore.QCoreApplication.processEvents(
@@ -798,8 +800,7 @@ class Potku(QtWidgets.QMainWindow):
                 "Request: {0}".format(dialog.name))
             self.__initialize_tree_view()
 
-            self.request = Request(dialog.directory, dialog.name,
-                                   self.statusbar, self.settings,
+            self.request = Request(dialog.directory, dialog.name, self.settings,
                                    self.tab_widgets)
             self.settings.set_request_directory_last_open(dialog.directory)
             # Request made, close introduction tab
@@ -916,8 +917,7 @@ class Potku(QtWidgets.QMainWindow):
             fd_with_correct_sep = os.sep.join(folders)
             tmp_name = os.path.splitext(os.path.basename(file))[0]
             self.request = Request(fd_with_correct_sep, tmp_name,
-                                   self.statusbar, self.settings,
-                                   self.tab_widgets)
+                                   self.settings, self.tab_widgets)
             self.ui.setWindowTitle("{0} - Request: {1}".format(
                 self.title,
                 self.request.get_name()))
@@ -1049,7 +1049,7 @@ class Potku(QtWidgets.QMainWindow):
             import_evnt_or_binary: Whether evnt or lst data is being imported
             or not.
         """
-        if progress_bar:
+        if progress_bar is not None:
             progress_bar.setValue((100 / file_count) * file_current)
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
 
@@ -1062,7 +1062,8 @@ class Potku(QtWidgets.QMainWindow):
                 return None
             if measurement:
                 tab = MeasurementTabWidget(self.tab_id, measurement,
-                                           self.icon_manager)
+                                           self.icon_manager,
+                                           statusbar=self.statusbar)
                 tab.issueMaster.connect(self.__master_issue_commands)
 
                 tab.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -1072,7 +1073,7 @@ class Potku(QtWidgets.QMainWindow):
                 if load_data:
                     measurement.load_data()
 
-                    tab.add_histogram(progress_bar)
+                    tab.add_histogram(GUIReporter(progress_bar))    # TODO
                     self.ui.tabs.addTab(tab, measurement.name)
                     self.ui.tabs.setCurrentWidget(tab)
 
@@ -1094,7 +1095,8 @@ class Potku(QtWidgets.QMainWindow):
 
             if simulation:
                 tab = SimulationTabWidget(self.request, self.tab_id, simulation,
-                                          self.icon_manager)
+                                          self.icon_manager,
+                                          statusbar=self.statusbar)
 
                 tab.setAttribute(QtCore.Qt.WA_DeleteOnClose)
                 tab.add_log()
@@ -1261,11 +1263,13 @@ class Potku(QtWidgets.QMainWindow):
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Load selections and save cut files
         # TODO: Make a check for these if identical already -> don't redo.
-        self.request.save_selection(master, progress_bar, 20)
+        # TODO
+        self.request.save_selection(master, GUIReporter(progress_bar), 20)
         progress_bar.setValue(21)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
 
-        self.request.save_cuts(master, progress_bar, 21, 11)
+        # TODO
+        self.request.save_cuts(master, GUIReporter(progress_bar), 21, 11)
         progress_bar.setValue(33)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
 
@@ -1315,7 +1319,8 @@ class Potku(QtWidgets.QMainWindow):
                         tab.histogram.matplotlib.on_draw()
 
                         # Save cuts
-                        tab.obj.save_cuts(progress_bar, after_hist,
+                        tab.obj.save_cuts(GUIReporter(progress_bar),
+                                          after_hist,
                                           0.1 * item_percentage)
 
                         # Update tree item icon to open folder

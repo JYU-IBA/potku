@@ -76,7 +76,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_depth_profile_params.ui"), self)
         self.measurement = parent.obj
-        self.__statusbar = parent.obj.statusbar
+        self.__statusbar = parent.statusbar
         self.__global_settings = self.measurement.request.global_settings
         
         # Connect buttons

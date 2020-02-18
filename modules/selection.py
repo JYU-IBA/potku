@@ -44,7 +44,6 @@ from matplotlib.path import Path
 from modules.element import Element
 from modules.general_functions import rename_file
 
-from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 
 
@@ -470,14 +469,14 @@ class Selector:
                 fp.write(sel.save_string(self.is_transposed) + "\n")
             fp.close()
 
-    def load(self, filename, progress_bar=None, add=None, base=None):
+    def load(self, filename, progress=None, add=0.0, base=0.0):
         """Load selections from a file.
         
         Removes all current selections and loads selections from given filename.
         
         Args:
             filename: String representing (full) path to selection file.
-            progress_bar: A preogress bar used when opening a measurement.
+            progress: ProgressReporter object.
             add: How many percents will be added to progress bar.
             base: Base value for progress bar.
         """
@@ -501,7 +500,7 @@ class Selector:
         self.update_axes_limits()
         self.draw()  # Draw all selections
         self.auto_save()
-        self.update_selection_points(progress_bar, add, base)
+        self.update_selection_points(progress, add, base)
         message = "Selection file {0} was read successfully!".format(filename)
         logging.getLogger(self.measurement_name).info(message)
 
@@ -539,31 +538,27 @@ class Selector:
             selection.point_inside(data[n])
         selection.events_counted = True
 
-    def update_selection_points(self, progress_bar, percentage,
-                                base):
+    def update_selection_points(self, progress=None, percentage=0.0,
+                                base=0.0):
         """Update all selections event counts.
 
         Args:
-            progress_bar: A progress bar when a measurement is opened.
+            progress: ProgressReporter object
             percentage: How many percents will be added to progress bar.
             base: Base value for progress bar.
         """
         data = self.measurement.data
-        dirtyinteger = 0
         for selection in self.selections:
             selection.events_counted = False
             selection.event_count = 0
-        for n in range(len(data)):
-            point = data[n]
+
+        for i, point in enumerate(data):
             for selection in self.selections:
                 if selection.is_closed:
                     selection.point_inside(point)
-            dirtyinteger += 1
-            if progress_bar:
-                progress_bar.setValue(
-                    base + (dirtyinteger / len(data) * percentage))
-                QtCore.QCoreApplication.processEvents(
-                    QtCore.QEventLoop.AllEvents)
+            if progress is not None and i % 10_000 == 0:
+                progress.report(base + (i / len(data) * percentage))
+
         for selection in self.selections:
             selection.events_counted = True
 
