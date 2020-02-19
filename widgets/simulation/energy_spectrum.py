@@ -40,7 +40,7 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
     """ Simulation energy spectrum widget which is added to the simulation tab.
     """
 
-    def __init__(self, parent, data):
+    def __init__(self, parent, data, statusbar=None):
         """ Initialize the energy spectrum widget.
         Args:
             parent: Parent of the energy spectrum widget (SimulationTabWidget)
@@ -53,7 +53,9 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
                                               "ui_energy_spectrum_simu.ui"),
                                  self)
             self.icon_manager = parent.icon_manager
-            self.progress_bar = None
+
+            # TODO progress_bar is doing nothing in here
+            progress_bar = None
             title = str(self.ui.windowTitle())
             self.ui.setWindowTitle(title)
             self.simulation = parent.simulation
@@ -78,9 +80,9 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
         finally:
-            if self.progress_bar:
-                self.parent.statusbar.removeWidget(self.progress_bar)
-                self.progress_bar.hide()
+            if progress_bar is not None:
+                statusbar.removeWidget(progress_bar)
+                progress_bar.hide()
 
     def save_spectra(self):
         """ Save the created energy spectra.

@@ -65,7 +65,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
     line_scale = False
     systerr = 0.0
     
-    def __init__(self, parent):
+    def __init__(self, parent, statusbar=None):
         """Inits depth profile dialog.
         
         Args:
@@ -76,7 +76,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_depth_profile_params.ui"), self)
         self.measurement = parent.obj
-        self.__statusbar = parent.statusbar
+        self.statusbar = statusbar
         self.__global_settings = self.measurement.request.global_settings
         
         # Connect buttons
@@ -124,7 +124,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         """Accept given parameters.
         """
         progress_bar = QtWidgets.QProgressBar()
-        self.__statusbar.addWidget(progress_bar, 1) 
+        self.statusbar.addWidget(progress_bar, 1)
         progress_bar.show() 
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         try:
@@ -308,7 +308,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
             error_log = "Unexpected error: {0}".format(e)
             logging.getLogger(self.measurement.name).error(error_log)
         finally:
-            self.__statusbar.removeWidget(progress_bar)
+            self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
 
     def __add_reference_density(self):

@@ -52,7 +52,7 @@ class ElementWidget(QtWidgets.QWidget):
         """
 
     def __init__(self, parent, element, parent_tab, element_simulation,
-                 color, icon_manager):
+                 color, icon_manager, statusbar=None):
         """
         Initializes the ElementWidget.
 
@@ -69,6 +69,7 @@ class ElementWidget(QtWidgets.QWidget):
         self.parent = parent
         self.parent_tab = parent_tab
         self.element_simulation = element_simulation
+        self.statusbar = statusbar
 
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setContentsMargins(0, 0, 0, 0)
@@ -151,7 +152,8 @@ class ElementWidget(QtWidgets.QWidget):
                                             self.parent_tab, self,
                                             self.element_simulation,
                                             color,
-                                            recoil_element)
+                                            recoil_element,
+                                            statusbar=self.statusbar)
         recoil_element.widgets.append(recoil_widget)
         self.element_simulation.recoil_elements.append(recoil_element)
 
@@ -181,7 +183,8 @@ class ElementWidget(QtWidgets.QWidget):
         previous = None
         dialog = EnergySpectrumParamsDialog(
             self.parent_tab, spectrum_type="simulation",
-            element_simulation=self.element_simulation, recoil_widget=self)
+            element_simulation=self.element_simulation, recoil_widget=self,
+            statusbar=self.statusbar)
         if dialog.result_files:
             energy_spectrum_widget = EnergySpectrumWidget(
                 parent=self.parent_tab, use_cuts=dialog.result_files,

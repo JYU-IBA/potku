@@ -72,7 +72,8 @@ class ElementManager:
     Each RecoilElement has 1 Element, 1 ElementWidget and 2...n Points.
     """
 
-    def __init__(self, parent_tab, parent, icon_manager, simulation):
+    def __init__(self, parent_tab, parent, icon_manager, simulation,
+                 statusbar=None):
         """
         Initializes element manager.
 
@@ -86,6 +87,7 @@ class ElementManager:
         self.parent = parent
         self.icon_manager = icon_manager
         self.simulation = simulation
+        self.statusbar = statusbar
         self.element_simulations = self.simulation.element_simulations
 
     def get_element_simulation_with_recoil_element(self, recoil_element):
@@ -233,7 +235,8 @@ class ElementManager:
                 element_simulation.recoil_elements[i].element,
                 self.parent_tab, main_element_widget, element_simulation,
                 element_simulation.recoil_elements[i].color,
-                element_simulation.recoil_elements[i])
+                element_simulation.recoil_elements[i],
+                statusbar=self.statusbar)
             element_simulation.recoil_elements[i].widgets.append(
                 recoil_element_widget)
             recoil_element_widget.element_simulation = element_simulation
@@ -302,7 +305,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                   2: "zoom rect"  # Matplotlib's zoom
                   }
 
-    def __init__(self, parent, simulation, target, tab, icon_manager):
+    def __init__(self, parent, simulation, target, tab, icon_manager,
+                 statusbar=None):
         """Inits recoil atom distribution widget.
 
         Args:
@@ -325,7 +329,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.current_recoil_element = None
         self.element_manager = ElementManager(self.tab, self,
                                               self.__icon_manager,
-                                              self.simulation)
+                                              self.simulation,
+                                              statusbar)
         self.target = target
         self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
 

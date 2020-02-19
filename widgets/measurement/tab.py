@@ -142,7 +142,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         """
         self.histogram = TofeHistogramWidget(self.obj,
                                              self.icon_manager,
-                                             self)
+                                             self,
+                                             statusbar=self.statusbar)
         if progress is not None and not start:
             progress.report(40)
 
@@ -367,7 +368,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             ElementLossesDialog.y_scale = y_scale
             self.elemental_losses_widget = ElementLossesWidget(
                 self, reference_cut, checked_cuts, split_count, y_scale,
-                use_progress_bar=False)
+                use_progress_bar=False, statusbar=self.statusbar)
             icon = self.icon_manager.get_icon("elemental_losses_icon_16.png")
             self.add_widget(self.elemental_losses_widget, icon=icon)
         except:  # We do not need duplicate error logs, log in widget instead
@@ -428,7 +429,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             parent: MeasurementTabWidget
         """
         previous = self.depth_profile_widget
-        DepthProfileDialog(parent)
+        DepthProfileDialog(parent, statusbar=self.statusbar)
         if self.depth_profile_widget != previous and \
                 type(self.depth_profile_widget) is not None:
             self.depth_profile_widget.save_to_file()
@@ -440,7 +441,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             parent: MeasurementTabWidget
         """
         previous = self.energy_spectrum_widget
-        EnergySpectrumParamsDialog(parent, spectrum_type="measurement")
+        EnergySpectrumParamsDialog(parent, spectrum_type="measurement",
+                                   statusbar=self.statusbar)
         if self.energy_spectrum_widget != previous and \
                 type(self.energy_spectrum_widget) is not None:
             self.energy_spectrum_widget.save_to_file()
@@ -452,7 +454,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             parent: MeasurementTabWidget
         """
         previous = self.elemental_losses_widget
-        ElementLossesDialog(parent)
+        ElementLossesDialog(parent, self.statusbar)
         if self.elemental_losses_widget != previous and \
                 type(self.elemental_losses_widget) is not None:
             self.elemental_losses_widget.save_to_file()

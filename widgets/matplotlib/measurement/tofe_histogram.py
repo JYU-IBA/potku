@@ -32,6 +32,8 @@ __version__ = "2.0"
 import modules.masses as masses
 import os
 
+from widgets.gui_utils import GUIReporter
+
 from dialogs.energy_spectrum import EnergySpectrumWidget
 from dialogs.graph_settings import TofeGraphSettingsWidget
 from dialogs.measurement.depth_profile import DepthProfileWidget
@@ -64,7 +66,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                   4: "selection select tool"
                   }
 
-    def __init__(self, parent, measurement_data, icon_manager):
+    def __init__(self, parent, measurement_data, icon_manager, statusbar=None):
         """Inits histogram widget
 
         Args:https://www.stack.nl/~dimitri/doxygen/manual/starting.html#step2
@@ -79,6 +81,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.axes.fmt_ydata = lambda y: "{0:1.0f}".format(y)
         self.__icon_manager = icon_manager
         self.parent = parent
+        self.statusbar = statusbar
 
         # Connections and setup
         self.canvas.mpl_connect('button_press_event', self.on_click)
@@ -590,13 +593,15 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                                     "Selection file (*.selections)")
         if filename:
             progress_bar = QtWidgets.QProgressBar()
-            self.parent.statusbar.addWidget(progress_bar, 1)
+            self.statusbar.addWidget(progress_bar, 1)
             progress_bar.show()
             progress_bar.setValue(40)
             QtCore.QCoreApplication.processEvents(
                 QtCore.QEventLoop.AllEvents)
 
-            self.measurement.load_selection(filename, progress_bar, 50)
+            self.measurement.load_selection(filename,
+                                            GUIReporter(progress_bar),
+                                            50)
             self.on_draw()
             self.elementSelectionSelectButton.setEnabled(True)
 
@@ -604,7 +609,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             QtCore.QCoreApplication.processEvents(
                 QtCore.QEventLoop.AllEvents)
 
-            self.parent.statusbar.removeWidget(progress_bar)
+            self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
 
         self.__emit_selections_changed()

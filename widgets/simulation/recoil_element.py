@@ -46,7 +46,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
     Class that shows a recoil element that is connected to an ElementSimulation.
     """
     def __init__(self, parent, element, parent_tab, parent_element_widget,
-                 element_simulation, color, recoil_element):
+                 element_simulation, color, recoil_element, statusbar=None):
         """
         Initialize the widget.
 
@@ -66,6 +66,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
         self.element_simulation = element_simulation
         self.parent_element_widget = parent_element_widget
         self.recoil_element = recoil_element
+        self.statusbar = statusbar
 
         horizontal_layout = QtWidgets.QHBoxLayout()
         horizontal_layout.setContentsMargins(12, 0, 0, 0)
@@ -117,7 +118,8 @@ class RecoilElementWidget(QtWidgets.QWidget):
         previous = None
         dialog = EnergySpectrumParamsDialog(
             self.parent_tab, spectrum_type="simulation",
-            element_simulation=self.element_simulation, recoil_widget=self)
+            element_simulation=self.element_simulation, recoil_widget=self,
+            statusbar=self.statusbar)
         if dialog.result_files:
             energy_spectrum_widget = EnergySpectrumWidget(
                 parent=self.parent_tab, use_cuts=dialog.result_files,

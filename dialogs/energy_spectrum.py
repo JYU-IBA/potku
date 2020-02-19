@@ -60,7 +60,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     checked_cuts = {}
 
     def __init__(self, parent, spectrum_type, element_simulation=None,
-                 recoil_widget=None):
+                 recoil_widget=None, statusbar=None):
         """Inits energy spectrum dialog.
         
         Args:
@@ -73,6 +73,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         self.parent = parent
         self.element_simulation = element_simulation
         self.spectrum_type = spectrum_type
+        self.statusbar = statusbar
+
         self.ui = uic.loadUi(
             os.path.join("ui_files", "ui_energy_spectrum_params.ui"), self)
 
@@ -242,9 +244,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()
 
-        if self.parent.statusbar:
+        if self.statusbar is not None:
             progress_bar = QtWidgets.QProgressBar()
-            self.parent.statusbar.addWidget(progress_bar, 1)
+            self.statusbar.addWidget(progress_bar, 1)
             progress_bar.show()
             QtCore.QCoreApplication.processEvents(
                 QtCore.QEventLoop.AllEvents)
@@ -373,8 +375,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         QtCore.QCoreApplication.processEvents(
             QtCore.QEventLoop.AllEvents)
 
-        if progress_bar:
-            self.parent.statusbar.removeWidget(progress_bar)
+        if progress_bar is not None:
+            self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
 
         self.bin_width = self.ui.histogramTicksDoubleSpinBox.value()
@@ -563,10 +565,10 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
 
             if isinstance(self.parent.obj, Measurement):
                 self.measurement = self.parent.obj
-                if self.parent.statusbar:
+                if self.statusbar is not None:
                     if use_progress_bar:
                         self.progress_bar = QtWidgets.QProgressBar()
-                        self.parent.statusbar.addWidget(
+                        self.statusbar.addWidget(
                             self.progress_bar, 1)
                         self.progress_bar.show()
                         QtCore.QCoreApplication.processEvents(
@@ -627,8 +629,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
         finally:
-            if self.progress_bar:
-                self.parent.statusbar.removeWidget(self.progress_bar)
+            if self.progress_bar is not None:
+                self.statusbar.removeWidget(self.progress_bar)
                 self.progress_bar.hide()
 
     def update_use_cuts(self):

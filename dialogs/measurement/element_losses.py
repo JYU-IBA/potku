@@ -57,7 +57,7 @@ class ElementLossesDialog(QtWidgets.QDialog):
     split_count = 10
     y_scale = 1
 
-    def __init__(self, parent):
+    def __init__(self, parent, statusbar=None):
         """Inits element losses class.
         
          Args:
@@ -65,6 +65,7 @@ class ElementLossesDialog(QtWidgets.QDialog):
         """
         super().__init__()
         self.parent = parent
+        self.statusbar = statusbar
         self.cuts = []
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_element_losses_params.ui"), self)
@@ -150,7 +151,8 @@ class ElementLossesDialog(QtWidgets.QDialog):
                 reference_cut,
                 checked_cuts,
                 split_count,
-                y_scale)
+                y_scale,
+                statusbar=self.statusbar)
             icon = self.parent.icon_manager \
                 .get_icon("elemental_losses_icon_16.png")
             self.parent.add_widget(self.parent.elemental_losses_widget,
@@ -182,7 +184,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
 
     def __init__(self, parent, reference_cut_file, checked_cuts,
                  partition_count, y_scale, use_progress_bar=True,
-                 ignore_ref_cut=None):
+                 ignore_ref_cut=None, statusbar=None):
         """Inits widget.
         
         Args:
@@ -203,10 +205,11 @@ class ElementLossesWidget(QtWidgets.QWidget):
             self.checked_cuts = checked_cuts
             self.partition_count = partition_count
             self.y_scale = y_scale
-            if self.parent.statusbar:
+            self.statusbar = statusbar
+            if self.statusbar is not None:
                 if use_progress_bar:
                     self.progress_bar = QtWidgets.QProgressBar()
-                    self.parent.statusbar.addWidget(self.progress_bar, 1)
+                    self.statusbar.addWidget(self.progress_bar, 1)
                     self.progress_bar.show()
                     QtCore.QCoreApplication.processEvents(
                         QtCore.QEventLoop.AllEvents)
@@ -265,8 +268,8 @@ class ElementLossesWidget(QtWidgets.QWidget):
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
         finally:
-            if self.progress_bar:
-                self.parent.statusbar.removeWidget(self.progress_bar)
+            if self.progress_bar is not None:
+                self.statusbar.removeWidget(self.progress_bar)
                 self.progress_bar.hide()
 
     def delete(self):
@@ -283,7 +286,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
     def __save_splits(self):
         if self.progress_bar:
             self.progress_bar = QtWidgets.QProgressBar()
-            self.parent.statusbar.addWidget(self.progress_bar, 1)
+            self.statusbar.addWidget(self.progress_bar, 1)
             self.progress_bar.show()
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
             # Mac requires event processing to show progress bar and its
@@ -292,8 +295,8 @@ class ElementLossesWidget(QtWidgets.QWidget):
             self.progress_bar = None
 
         self.losses.save_splits(progress=GUIReporter(self.progress_bar))
-        if self.progress_bar:
-            self.parent.statusbar.removeWidget(self.progress_bar)
+        if self.progress_bar is not None:
+            self.statusbar.removeWidget(self.progress_bar)
             self.progress_bar.hide()
 
     def closeEvent(self, evnt):

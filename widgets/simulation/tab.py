@@ -121,7 +121,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
             simulation.
         """
         self.simulation_target = TargetWidget(self, self.obj, self.obj.target,
-                                              self.icon_manager, progress_bar)
+                                              self.icon_manager, progress_bar,
+                                              statusbar=self.statusbar)
         self.add_widget(self.simulation_target, has_close_button=False)
 
     def add_optimization_results_widget(self, elem_sim, measurement_elem,

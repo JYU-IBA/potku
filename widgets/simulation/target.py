@@ -47,7 +47,7 @@ class TargetWidget(QtWidgets.QWidget):
     """
 
     def __init__(self, tab, simulation, target, icon_manager,
-                 progress_bar=None):
+                 progress_bar=None, statusbar=None):
         """Initializes thw widget that can be used to define target composition
         and
         recoil atom distribution.
@@ -71,18 +71,21 @@ class TargetWidget(QtWidgets.QWidget):
         self.tab = tab
         self.simulation = simulation
         self.target = target
+        self.statusbar = statusbar
 
         self.target_widget = TargetCompositionWidget(self, self.target,
                                                      icon_manager,
                                                      self.simulation)
 
         if progress_bar:
+            # TODO use progress reporting
             progress_bar.setValue(45)
             QtCore.QCoreApplication.processEvents(
                 QtCore.QEventLoop.AllEvents)
 
         self.recoil_distribution_widget = RecoilAtomDistributionWidget(
-            self, self.simulation, self.target, tab, icon_manager)
+            self, self.simulation, self.target, tab, icon_manager,
+            statusbar=self.statusbar)
 
         icon_manager.set_icon(self.ui.editPushButton, "edit.svg")
         self.ui.editPushButton.setIconSize(QtCore.QSize(14, 14))
@@ -193,7 +196,7 @@ class TargetWidget(QtWidgets.QWidget):
         if not thread:
             # Add progress bar
             progress_bar = QtWidgets.QProgressBar()
-            self.tab.statusbar.addWidget(progress_bar, 1)
+            self.statusbar.addWidget(progress_bar, 1)
             progress_bar.show()
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
             # Mac requires event processing to show progress bar and its
@@ -217,7 +220,7 @@ class TargetWidget(QtWidgets.QWidget):
             self.simulation.directory, progress_bar)
 
         if not thread:
-            self.tab.statusbar.removeWidget(progress_bar)
+            self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
 
     def set_shortcuts(self):

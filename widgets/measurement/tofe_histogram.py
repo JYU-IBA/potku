@@ -43,7 +43,7 @@ class TofeHistogramWidget(QtWidgets.QWidget):
     """HistogramWidget used to draw ToF-E Histograms.
     """
 
-    def __init__(self, measurement, icon_manager, tab):
+    def __init__(self, measurement, icon_manager, tab, statusbar=None):
         """Inits TofeHistogramWidget widget.
 
         Args:
@@ -58,7 +58,8 @@ class TofeHistogramWidget(QtWidgets.QWidget):
         self.measurement = measurement
         self.tab = tab
         self.matplotlib = MatplotlibHistogramWidget(self, measurement,
-                                                    icon_manager)
+                                                    icon_manager,
+                                                    statusbar=statusbar)
         self.ui.saveCutsButton.clicked.connect(self.matplotlib.save_cuts)
         self.ui.loadSelectionsButton.clicked.connect(
             self.matplotlib.load_selections)
