@@ -241,7 +241,7 @@ class ElementSimulation(Observable):
         # This is needed for optimization mcerd stopping
         self.__previous_espe = None
         self.__opt_seed = None
-        self.optimization_done = False      # TODO
+        self.optimization_done = False
         self.calculated_solutions = 0
         self.optimization_stopped = False
         self.optimization_widget = None
@@ -1067,14 +1067,13 @@ class ElementSimulation(Observable):
             self.__erd_filehandler.update()
             self.on_complete(self.get_current_status())
 
-    def stop(self, optimize_recoil=False):
+    def stop(self):
         """ Stop the simulation."""
         # TODO check if this and notify can be refactored
         if self.__cancellation_token is not None:
             self.__cancellation_token.request_cancellation()
-        process_count = self.count_active_processes()
-        ref_key = None
 
+        ref_key = None
         for seed, sim in self.mcerd_objects.items():
             if ref_key is None:
                 ref_key = seed
@@ -1091,28 +1090,22 @@ class ElementSimulation(Observable):
 
         self.__remove()
 
-        if self.optimization_mcerd_running:
-            self.optimization_mcerd_running = False
+        self.optimization_mcerd_running = False
+        self.simulations_done = True
 
         # Calculate erd lines for log
         status = self.get_current_status()
 
-        simulation_name = self.simulation.name
-        if not optimize_recoil:
-            # TODO use main_recoil
+        if not self.optimization_recoils:
             element = self.recoil_elements[0].element
         else:
             element = self.optimization_recoils[0].element
 
-        element_name = element.get_prefix()
-
-        self.simulations_done = True
-
-        msg = f"Simulation stopped. Element: {element_name}, " \
-              f"processes: {process_count}, Number of observed " \
+        msg = f"Simulation stopped. Element: {element.get_prefix()}, " \
+              f"processes: {self.last_process_count}, Number of observed " \
               f"atoms: {status['atom_count']}"
 
-        logging.getLogger(simulation_name).info(msg)
+        logging.getLogger(self.simulation.name).info(msg)
         self.__erd_filehandler.update()
         self.on_complete(status)
 
@@ -1190,14 +1183,31 @@ class ElementSimulation(Observable):
         self.get_espe = GetEspe(espe_settings)
         self.get_espe.run_get_espe()
 
-    def reset(self):
+    def delete_simulation_results(self, recoil):
+        gf.delete_simulation_results(self, recoil)
+
+    def reset(self, remove_files=True):
         """Function that resets the state of ElementSimulation"""
         # TODO stop running simulations
         # TODO set necessary boolean values
         # TODO reset ERD file handler
         # TODO maybe remove files (perhaps this can be left for the caller)
         # TODO currently atom count does not reset if settings have been changed
-        raise NotImplementedError
+
+        self.stop()
+
+        self.simulations_done = False
+        if self.optimization_running:
+            self.optimization_stopped = True
+        self.optimization_running = False
+
+        if remove_files:
+            for recoil in self.recoil_elements:
+                self.delete_simulation_results(recoil)
+
+        self.__erd_filehandler.clear()
+
+        self.on_complete(self.get_current_status())
 
 
 class ERDFileHandler:

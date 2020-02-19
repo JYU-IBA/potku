@@ -378,23 +378,12 @@ def stop_simulations_layerprops(qdialog):
                 edit_lock_push_button.setText("Full edit unlocked")
             elem_sim.simulations_done = False
 
-            # Reset controls
-            if elem_sim.controls:
-                # TODO do not access controls via elem_sim. Use
-                #      observation.
-                elem_sim.controls.reset_controls()
         else:
             # Handle optimization
-            if elem_sim.optimization_recoils:
-                elem_sim.stop(optimize_recoil=True)
-            else:
-                elem_sim.stop()
-            elem_sim.optimization_stopped = True
-            elem_sim.optimization_running = False
+            elem_sim.stop()
 
             if qdialog.tab:
                 qdialog.tab.del_widget(elem_sim.optimization_widget)
-            elem_sim.simulations_done = False
 
     if qdialog.tab:
         update_tab(qdialog.tab)
@@ -413,12 +402,10 @@ def update_tab(tab):
 
 def update_tabs_after_stopping(qdialog, optimization_running, optimization_run):
     for elem_sim in optimization_running:
-        elem_sim.optimization_stopped = True
-        elem_sim.optimization_running = False
+        elem_sim.reset()
 
         if qdialog.tab:
             qdialog.tab.del_widget(elem_sim.optimization_widget)
-        elem_sim.simulations_done = False
 
     if qdialog.tab:
         update_tab(qdialog.tab)
@@ -426,18 +413,15 @@ def update_tabs_after_stopping(qdialog, optimization_running, optimization_run):
     for elem_sim in optimization_run:
         if qdialog.tab:
             qdialog.tab.del_widget(elem_sim.optimization_widget)
-        elem_sim.simulations_done = False
 
 
 def update_optim_running(qdialog, optimization_running):
     tmp_sims = copy.copy(optimization_running)
     for elem_sim in tmp_sims:
         # Handle optimization
-        elem_sim.optimization_stopped = True
-        elem_sim.optimization_running = False
+        elem_sim.reset()
 
         qdialog.tab.del_widget(elem_sim.optimization_widget)
-        elem_sim.simulations_done = False
         # Handle optimization energy spectra
         if elem_sim.optimization_recoils:
             # Delete energy spectra that use
@@ -455,12 +439,7 @@ def req_settings_stop(qdialog):
 
         else:
             # Handle optimization
-            if elem_sim.optimization_recoils:
-                elem_sim.stop(optimize_recoil=True)
-            else:
-                elem_sim.stop()
-            elem_sim.optimization_stopped = True
-            elem_sim.optimization_running = False
+            elem_sim.reset()
 
             tab_del(qdialog, elem_sim)
 
