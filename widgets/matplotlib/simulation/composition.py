@@ -27,10 +27,12 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import copy
 import matplotlib
 import os
 import widgets
+import itertools
+
+import dialogs.dialog_functions as df
 
 from dialogs.simulation.layer_properties import LayerPropertiesDialog
 from dialogs.simulation.target_info_dialog import TargetInfoDialog
@@ -211,256 +213,68 @@ class _CompositionWidget(MatplotlibWidget):
             optimization_running = []
 
         if simulations_run and simulations_running:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Simulated and running simulations",
+            header, txt = ("Simulated and running simulations",
                 "There are simulations that use the current target, "
                 "and either have been simulated or are currently running."
                 "\nIf you save changes, the running simulations "
                 "will be stopped, and the result files of the simulated "
                 "and stopped simulations are deleted. This also affects "
-                "possible optimization.\n\nDo you want to "
-                "save changes anyway?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                self.__close = False
-                return
-            else:
-                # Stop simulations
-                tmp_sims = simulations_running
-                for elem_sim in tmp_sims:
-                    if not elem_sim.optimization_running:
-                        elem_sim.stop()
-                        elem_sim.controls.state_label.setText("Stopped")
-                        elem_sim.controls.run_button.setEnabled(True)
-                        elem_sim.controls.stop_button.setEnabled(False)
-                        # Delete files
-                        for recoil in elem_sim.recoil_elements:
-                            delete_simulation_results(elem_sim, recoil)
-
-                        # Change full edit unlocked
-                        elem_sim.recoil_elements[0].widgets[0].parent. \
-                            edit_lock_push_button.setText("Full edit unlocked")
-                        elem_sim.simulations_done = False
-
-                        # Reset controls
-                        if elem_sim.controls:
-                            elem_sim.controls.reset_controls()
-                    else:
-                        # Handle optimization
-                        if elem_sim.optimization_recoils:
-                            elem_sim.stop(optimize_recoil=True)
-                        else:
-                            elem_sim.stop()
-                        elem_sim.optimization_stopped = True
-                        elem_sim.optimization_running = False
-                        self.parent.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-
-                for energy_spectra in self.parent.tab.energy_spectrum_widgets:
-                    self.parent.tab.del_widget(energy_spectra)
-                    save_file_path = os.path.join(
-                        self.parent.tab.simulation.directory,
-                        energy_spectra.save_file)
-                    if os.path.exists(save_file_path):
-                        os.remove(save_file_path)
-                self.parent.tab.energy_spectrum_widgets = []
-
-                for elem_sim in simulations_run:
-                    for recoil in elem_sim.recoil_elements:
-                        delete_simulation_results(elem_sim, recoil)
-                    # Change full edit unlocked
-                    elem_sim.recoil_elements[0].widgets[0].parent. \
-                        edit_lock_push_button.setText("Full edit unlocked")
-                    elem_sim.simulations_done = False
-
-                    if elem_sim.controls:
-                        elem_sim.controls.reset_controls()
-
-                for elem_sim in optimization_run:
-                    self.parent.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
-
-                for elem_sim in optimization_running:
-                    elem_sim.optimization_stopped = True
-                    elem_sim.optimization_running = False
-                    self.parent.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
+                "possible optimization.\n\n" \
+                "Do you want to save changes anyway?")
 
         elif simulations_running:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Simulations running",
+            header, txt = ("Simulations running",
                 "There are simulations running that use the current "
                 "target.\nIf you save changes, the running "
                 "simulations will be stopped, and their result files "
                 "deleted. This also affects possible optimization.\n\nDo "
-                "you want to save changes anyway?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                self.__close = False
-                return
-            else:
-                # Stop simulations
-                tmp_sims = simulations_running
-                for elem_sim in tmp_sims:
-                    if elem_sim.optimization_recoils:
-                        elem_sim.stop(optimize_recoil=True)
-                    else:
-                        elem_sim.stop()
-                    if elem_sim.controls:
-                        elem_sim.controls.state_label.setText("Stopped")
-                        elem_sim.controls.run_button.setEnabled(True)
-                        elem_sim.controls.stop_button.setEnabled(False)
-                    # Delete files
-                    for recoil in elem_sim.recoil_elements:
-                        delete_simulation_results(elem_sim, recoil)
-
-                    # Change full edit unlocked
-                    elem_sim.recoil_elements[0].widgets[0].parent. \
-                        edit_lock_push_button.setText("Full edit unlocked")
-                    elem_sim.simulations_done = False
-
-                    # Reset controls
-                    if elem_sim.controls:
-                        elem_sim.controls.reset_controls()
-
-                    if elem_sim.optimization_running:
-                        elem_sim.optimization_stopped = True
-                        elem_sim.optimization_running = False
-                        self.parent.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-
-                for energy_spectra in \
-                        self.parent.tab.energy_spectrum_widgets:
-                    self.parent.tab.del_widget(energy_spectra)
-                    save_file_path = os.path.join(
-                        self.parent.tab.simulation.directory,
-                        energy_spectra.save_file)
-                    if os.path.exists(save_file_path):
-                        os.remove(save_file_path)
-                self.parent.tab.energy_spectrum_widgets = []
-
-                for elem_sim in optimization_run:
-                    self.parent.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
+                "you want to save changes anyway?")
 
         elif simulations_run:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Simulated simulations",
+            header, txt = ("Simulated simulations",
                 "There are simulations that use the current target, "
                 "and have been simulated.\nIf you save changes,"
                 " the result files of the simulated simulations are "
                 "deleted. This also affects possible "
-                "optimization.\n\nDo you want to save changes anyway?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                self.__close = False
-                return
-            else:
-                for elem_sim in simulations_run:
-                    for recoil in elem_sim.recoil_elements:
-                        delete_simulation_results(elem_sim, recoil)
-
-                    # Change full edit unlocked
-                    elem_sim.recoil_elements[0].widgets[0].parent. \
-                        edit_lock_push_button.setText("Full edit unlocked")
-                    elem_sim.simulations_done = False
-
-                    if elem_sim.controls:
-                        elem_sim.controls.reset_controls()
-
-                for elem_sim in optimization_running:
-                    elem_sim.optimization_stopped = True
-                    elem_sim.optimization_running = False
-
-                    self.parent.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
-
-                for elem_sim in optimization_run:
-                    self.parent.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
-
-                for energy_spectra in \
-                        self.parent.tab.energy_spectrum_widgets:
-                    self.parent.tab.del_widget(energy_spectra)
-                    save_file_path = os.path.join(
-                        self.parent.tab.simulation.directory,
-                        energy_spectra.save_file)
-                    if os.path.exists(save_file_path):
-                        os.remove(save_file_path)
-                self.parent.tab.energy_spectrum_widgets = []
+                "optimization.\n\nDo you want to save changes anyway?")
 
         elif optimization_running:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Optimization running",
+            header, txt = ("Optimization running",
                 "There are optimizations running that use the current "
                 "target.\nIf you save changes, the running "
                 "optimizations will be stopped, and their result files "
-                "deleted.\n\nDo you want to save changes anyway?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                self.__close = False
-                return
-            else:
-                tmp_sims = optimization_running
-                for elem_sim in tmp_sims:
-                    # Handle optimization
-                    elem_sim.optimization_stopped = True
-                    elem_sim.optimization_running = False
-                    self.parent.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
-
-                for energy_spectra in \
-                        self.parent.tab.energy_spectrum_widgets:
-                    self.parent.tab.del_widget(energy_spectra)
-                    save_file_path = os.path.join(
-                        self.parent.tab.simulation.directory,
-                        energy_spectra.save_file)
-                    if os.path.exists(save_file_path):
-                        os.remove(save_file_path)
-                self.parent.tab.energy_spectrum_widgets = []
-
-                for elem_sim in optimization_run:
-                    self.parent.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
+                "deleted.\n\nDo you want to save changes anyway?")
 
         elif optimization_run:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Optimization results",
+            header, txt = ("Optimization results",
                 "There are optimization results that use the current "
                 "target.\nIf you save changes, result files will be "
-                "deleted.\n\nDo you want to save changes anyway?",
+                "deleted.\n\nDo you want to save changes anyway?")
+
+        reply = QtWidgets.QMessageBox.question(
+                self, header, txt,
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
                 QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                self.__close = False
-                return
-            else:
-                tmp_sims = optimization_run
-                for elem_sim in tmp_sims:
-                    # Handle optimization
-                    elem_sim.optimization_stopped = True
-                    elem_sim.optimization_running = False
-                    self.parent.tab.del_widget(elem_sim.optimization_widget)
-                    elem_sim.simulations_done = False
+        if reply == QtWidgets.QMessageBox.No or reply == \
+                QtWidgets.QMessageBox.Cancel:
+            self.__close = False
+            return
+        else:
+            # Stop simulations
+            for elem_sim in itertools.chain(simulations_running,
+                                            simulations_run,
+                                            optimization_running,
+                                            optimization_run):
+                elem_sim.reset()
 
-                for energy_spectra in \
-                        self.parent.tab.energy_spectrum_widgets:
-                    self.parent.tab.del_widget(energy_spectra)
-                    save_file_path = os.path.join(
-                        self.parent.tab.simulation.directory,
-                        energy_spectra.save_file)
-                    if os.path.exists(save_file_path):
-                        os.remove(save_file_path)
-                self.parent.tab.energy_spectrum_widgets = []
+                # Change full edit unlocked
+                # TODO remove this
+                elem_sim.recoil_elements[0].widgets[0].parent. \
+                    edit_lock_push_button.setText("Full edit unlocked")
+
+                self.parent.tab.del_widget(elem_sim.optimization_widget)
+
+            df.update_tab(self.parent.tab)
 
         # Delete from layers list
         if self.__selected_layer in self.layers:

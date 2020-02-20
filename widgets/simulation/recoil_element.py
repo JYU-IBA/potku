@@ -113,7 +113,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
 
     def plot_spectrum(self):
         """
-        Plot an energy spectrum.
+        Plot an energy spectrum and show it in a widget.
         """
         previous = None
         dialog = EnergySpectrumParamsDialog(
@@ -135,6 +135,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
                     self.parent_tab.energy_spectrum_widgets.remove(e_widget)
                     self.parent_tab.del_widget(e_widget)
                     break
+
             self.parent_tab.energy_spectrum_widgets.append(
                 energy_spectrum_widget)
             icon = self.parent.element_manager.icon_manager.get_icon(
