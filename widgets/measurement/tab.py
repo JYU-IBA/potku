@@ -52,6 +52,7 @@ from PyQt5 import uic
 
 from widgets.log import LogWidget
 from widgets.measurement.tofe_histogram import TofeHistogramWidget
+from widgets.gui_utils import StatusBarHandler
 
 
 class MeasurementTabWidget(QtWidgets.QWidget):
@@ -404,7 +405,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
             self.energy_spectrum_widget = EnergySpectrumWidget(
                 self, spectrum_type="measurement",
                 use_cuts=use_cuts,
-                bin_width=width, use_progress_bar=False)
+                bin_width=width)
             icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
             self.add_widget(self.energy_spectrum_widget, icon=icon)
         except:  # We do not need duplicate error logs, log in widget instead
@@ -413,7 +414,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
     def measurement_save_cuts(self):
         """Save measurement selections to cut files.
         """
-        self.obj.save_cuts()
+        sbh = StatusBarHandler(self.statusbar)
+        self.obj.save_cuts(progress=sbh.reporter)
         # Do for all slaves if master.
         self.obj.request.save_cuts(self.obj)
 

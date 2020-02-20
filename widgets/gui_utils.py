@@ -30,6 +30,17 @@ import platform
 from modules.observing import ProgressReporter
 
 from PyQt5 import QtCore
+from PyQt5 import QtWidgets
+
+
+if platform.system() == "Darwin":
+    # Mac needs event processing to display changes in the status bar
+    def _process_event_loop():
+        QtCore.QCoreApplication.processEvents(
+            QtCore.QEventLoop.AllEvents)
+else:
+    def _process_event_loop():
+        pass
 
 
 def process_event_loop(func):
@@ -38,8 +49,7 @@ def process_event_loop(func):
     """
     def wrapper(*args, **kwargs):
         res = func(*args, **kwargs)
-        QtCore.QCoreApplication.processEvents(
-            QtCore.QEventLoop.AllEvents)
+        _process_event_loop()
         return res
     return wrapper
 
@@ -73,16 +83,6 @@ class QtABCMeta(type(QtCore.QObject), abc.ABCMeta):
     pass
 
 
-if platform.system() == "Darwin":
-    # Mac needs event processing to display changes in the status bar
-    def _process_event_loop():
-        QtCore.QCoreApplication.processEvents(
-            QtCore.QEventLoop.AllEvents)
-else:
-    def _process_event_loop():
-        pass
-
-
 class GUIReporter(ProgressReporter):
     """GUI Progress reporter that updates the value of a progress bar.
 
@@ -100,13 +100,38 @@ class GUIReporter(ProgressReporter):
         Args:
             progress_bar: GUI progress bar that will be updated
         """
+        @process_event_loop
         def __update_func(value):
             # Callback function that will be connected to the signal
             if progress_bar is not None:
                 progress_bar.setValue(value)
 
-                _process_event_loop()
-
         self.signaller = self.Signaller()
         ProgressReporter.__init__(self, self.signaller.sig.emit)
         self.signaller.sig.connect(__update_func)
+
+
+class StatusBarHandler(ProgressReporter):
+    @process_event_loop
+    def __init__(self, statusbar, autoremove=True):
+        self.statusbar = statusbar
+        if self.statusbar is not None:
+            self.progress_bar = QtWidgets.QProgressBar()
+            self.statusbar.addWidget(
+                self.progress_bar, 1)
+            self.progress_bar.show()
+        else:
+            self.progress_bar = None
+        self.reporter = GUIReporter(self.progress_bar)
+        if autoremove:
+            self.progress_bar.valueChanged.connect(self.__check_progress)
+
+    def __check_progress(self, value):
+        if value > 99:
+            self.remove_progress_bar()
+
+    @process_event_loop
+    def remove_progress_bar(self):
+        self.statusbar.removeWidget(self.progress_bar)
+        self.progress_bar.hide()
+

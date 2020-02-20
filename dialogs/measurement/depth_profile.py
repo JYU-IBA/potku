@@ -123,19 +123,24 @@ class DepthProfileDialog(QtWidgets.QDialog):
     def __accept_params(self):
         """Accept given parameters.
         """
-        progress_bar = QtWidgets.QProgressBar()
-        self.statusbar.addWidget(progress_bar, 1)
-        progress_bar.show() 
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+        if self.statusbar is not None:
+            progress_bar = QtWidgets.QProgressBar()
+            self.statusbar.addWidget(progress_bar, 1)
+            progress_bar.show()
+            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+        else:
+            progress_bar = None
+
         try:
             use_cut = []
             output_dir = self.measurement.directory_depth_profiles
             elements = []
-                
-            progress_bar.setValue(10)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process.
+
+            if progress_bar is not None:
+                progress_bar.setValue(10)
+                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+                # Mac requires event processing to show progress bar and its
+                # process.
             
             # Get the filepaths of the selected items
             root = self.ui.treeWidget.invisibleRootItem()
@@ -165,10 +170,12 @@ class DepthProfileDialog(QtWidgets.QDialog):
                             elements.append(element)
                             DepthProfileDialog.checked_cuts[m_name].\
                                 append(item_child.file_name)
-            progress_bar.setValue(20)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process.
+
+            if progress_bar is not None:
+                progress_bar.setValue(20)
+                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+                # Mac requires event processing to show progress bar and its
+                # process.
             
             # Get the x-axis unit to be used from the radio buttons
             x_unit = DepthProfileDialog.x_unit
@@ -177,10 +184,12 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 if radio_button.isChecked():
                     x_unit = radio_button.text()
             DepthProfileDialog.x_unit = x_unit
-            progress_bar.setValue(57)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process.
+
+            if progress_bar is not None:
+                progress_bar.setValue(57)
+                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+                # Mac requires event processing to show progress bar and its
+                # process.
             
             DepthProfileDialog.line_zero = self.ui.check_0line.isChecked()
             DepthProfileDialog.line_scale = self.ui.check_scaleline.isChecked() 
@@ -291,11 +300,13 @@ class DepthProfileDialog(QtWidgets.QDialog):
                                        DepthProfileDialog.line_zero,
                                        DepthProfileDialog.line_scale,
                                        DepthProfileDialog.systerr)
-                progress_bar.setValue(90)
-                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.
-                                                      AllEvents)
-                # Mac requires event processing to show progress bar and its 
-                # process.
+
+                if progress_bar is not None:
+                    progress_bar.setValue(90)
+                    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.
+                                                          AllEvents)
+                    # Mac requires event processing to show progress bar and its
+                    # process.
                 
                 icon = self.parent.icon_manager.\
                     get_icon("depth_profile_icon_2_16.png")
@@ -308,8 +319,9 @@ class DepthProfileDialog(QtWidgets.QDialog):
             error_log = "Unexpected error: {0}".format(e)
             logging.getLogger(self.measurement.name).error(error_log)
         finally:
-            self.statusbar.removeWidget(progress_bar)
-            progress_bar.hide()
+            if self.statusbar is not None:
+                self.statusbar.removeWidget(progress_bar)
+                progress_bar.hide()
 
     def __add_reference_density(self):
         """

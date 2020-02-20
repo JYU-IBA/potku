@@ -48,6 +48,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 
 from widgets.matplotlib.base import MatplotlibWidget
+from widgets.gui_utils import StatusBarHandler
 
 
 class MatplotlibHistogramWidget(MatplotlibWidget):
@@ -592,12 +593,15 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                                     "Load Element Selection",
                                     "Selection file (*.selections)")
         if filename:
-            progress_bar = QtWidgets.QProgressBar()
-            self.statusbar.addWidget(progress_bar, 1)
-            progress_bar.show()
-            progress_bar.setValue(40)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+            if self.statusbar is not None:
+                progress_bar = QtWidgets.QProgressBar()
+                self.statusbar.addWidget(progress_bar, 1)
+                progress_bar.show()
+                progress_bar.setValue(40)
+                QtCore.QCoreApplication.processEvents(
+                    QtCore.QEventLoop.AllEvents)
+            else:
+                progress_bar = None
 
             self.measurement.load_selection(filename,
                                             GUIReporter(progress_bar),
@@ -605,19 +609,21 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.on_draw()
             self.elementSelectionSelectButton.setEnabled(True)
 
-            progress_bar.setValue(100)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+            if self.statusbar is not None:
+                progress_bar.setValue(100)
+                QtCore.QCoreApplication.processEvents(
+                    QtCore.QEventLoop.AllEvents)
 
-            self.statusbar.removeWidget(progress_bar)
-            progress_bar.hide()
+                self.statusbar.removeWidget(progress_bar)
+                progress_bar.hide()
 
         self.__emit_selections_changed()
 
     def save_cuts(self):
         """Save measurement cuts.
         """
-        self.measurement.save_cuts()
+        sbh = StatusBarHandler(self.statusbar)
+        self.measurement.save_cuts(progress=sbh.reporter)
         self.__emit_save_cuts()
 
     def enable_element_selection(self):

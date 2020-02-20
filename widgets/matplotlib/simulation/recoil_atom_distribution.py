@@ -180,8 +180,6 @@ class ElementManager:
         else:
             rec_type = "sct"
 
-        # TODO color should be hex code so it can be jsoned
-        #      this currently crashes when exporting elements
         recoil_element = RecoilElement(element, points, color,
                                        rec_type=rec_type)
         element_widget = ElementWidget(self.parent, element,

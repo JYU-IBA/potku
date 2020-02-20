@@ -35,6 +35,7 @@ from PyQt5 import QtCore
 from PyQt5 import uic
 from PyQt5 import QtWidgets
 
+from widgets.gui_utils import StatusBarHandler
 from widgets.matplotlib.measurement.tofe_histogram import \
     MatplotlibHistogramWidget
 
@@ -57,6 +58,7 @@ class TofeHistogramWidget(QtWidgets.QWidget):
                              self)
         self.measurement = measurement
         self.tab = tab
+        self.statusbar = statusbar
         self.matplotlib = MatplotlibHistogramWidget(self, measurement,
                                                     icon_manager,
                                                     statusbar=statusbar)

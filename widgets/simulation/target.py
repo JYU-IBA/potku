@@ -192,8 +192,7 @@ class TargetWidget(QtWidgets.QWidget):
             thread: Whether saving happens in a thread or by pressing the
             button.
         """
-        progress_bar = None
-        if not thread:
+        if not thread and self.statusbar is not None:
             # Add progress bar
             progress_bar = QtWidgets.QProgressBar()
             self.statusbar.addWidget(progress_bar, 1)
@@ -201,6 +200,8 @@ class TargetWidget(QtWidgets.QWidget):
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
             # Mac requires event processing to show progress bar and its
             # process.
+        else:
+            progress_bar = None
 
         target_name = "temp"
         if self.target.name is not "":
@@ -209,7 +210,7 @@ class TargetWidget(QtWidgets.QWidget):
                                    ".target")
         self.target.to_file(target_path, None)
 
-        if not thread:
+        if not thread and progress_bar is not None:
             progress_bar.setValue(50)
             QtCore.QCoreApplication.processEvents(
                 QtCore.QEventLoop.AllEvents)
@@ -219,7 +220,7 @@ class TargetWidget(QtWidgets.QWidget):
         self.recoil_distribution_widget.save_mcsimu_rec_profile(
             self.simulation.directory, progress_bar)
 
-        if not thread:
+        if not thread and progress_bar is not None:
             self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
 

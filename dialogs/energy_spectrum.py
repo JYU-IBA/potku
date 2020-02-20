@@ -287,7 +287,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                                     self.parent.obj.directory,
                                     rec_elem_prefix_and_name + ".simu"))
 
-        if child_count == 0:
+        if child_count == 0 and progress_bar is not None:
             progress_bar.setValue(33)
             QtCore.QCoreApplication.processEvents(
                 QtCore.QEventLoop.AllEvents)
@@ -325,7 +325,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             QtCore.QCoreApplication.processEvents(
                 QtCore.QEventLoop.AllEvents)
 
-        if child_count == 0:
+        if child_count == 0 and progress_bar is not None:
             progress_bar.setValue(66)
             QtCore.QCoreApplication.processEvents(
                 QtCore.QEventLoop.AllEvents)
@@ -354,9 +354,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                         continue
                     self.result_files.append(file_path)
                     dirtyinteger += 1
-                    progress_bar.setValue((dirtyinteger / length) * 33)
-                    QtCore.QCoreApplication.processEvents(
-                        QtCore.QEventLoop.AllEvents)
+                    if progress_bar is not None:
+                        progress_bar.setValue((dirtyinteger / length) * 33)
+                        QtCore.QCoreApplication.processEvents(
+                            QtCore.QEventLoop.AllEvents)
 
         root_for_ext_files = self.external_tree_widget.invisibleRootItem()
         child_count = root_for_ext_files.childCount()
@@ -371,11 +372,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                             os.path.join(self.imported_files_folder, ext))
                         break
 
-        progress_bar.setValue(100)
-        QtCore.QCoreApplication.processEvents(
-            QtCore.QEventLoop.AllEvents)
-
         if progress_bar is not None:
+            progress_bar.setValue(100)
+            QtCore.QCoreApplication.processEvents(
+                QtCore.QEventLoop.AllEvents)
             self.statusbar.removeWidget(progress_bar)
             progress_bar.hide()
 
@@ -531,7 +531,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     save_file = "widget_energy_spectrum.save"
 
     def __init__(self, parent, spectrum_type, use_cuts=None, bin_width=0.025,
-                 save_file_int=0, use_progress_bar=True):
+                 save_file_int=0, statusbar=None):
         """Inits widget.
         
         Args:
@@ -541,7 +541,6 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             width.
             save_file_int: n integer to have unique save file names for
             simulation energy spectra combinations.
-            use_progress_bar: Whether to add a new progress bar or not.
         """
         try:
             super().__init__()
@@ -554,6 +553,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.bin_width = bin_width
             self.energy_spectrum_data = {}
             self.spectrum_type = spectrum_type
+            self.statusbar = statusbar
             rbs_list = {}
 
             self.ui = uic.loadUi(os.path.join("ui_files",
@@ -566,17 +566,14 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             if isinstance(self.parent.obj, Measurement):
                 self.measurement = self.parent.obj
                 if self.statusbar is not None:
-                    if use_progress_bar:
-                        self.progress_bar = QtWidgets.QProgressBar()
-                        self.statusbar.addWidget(
-                            self.progress_bar, 1)
-                        self.progress_bar.show()
-                        QtCore.QCoreApplication.processEvents(
-                            QtCore.QEventLoop.AllEvents)
-                        # Mac requires event processing to show progress bar
-                        # and its process.
-                    else:
-                        self.progress_bar = None
+                    self.progress_bar = QtWidgets.QProgressBar()
+                    self.statusbar.addWidget(
+                        self.progress_bar, 1)
+                    self.progress_bar.show()
+                    QtCore.QCoreApplication.processEvents(
+                        QtCore.QEventLoop.AllEvents)
+                    # Mac requires event processing to show progress bar
+                    # and its process.
                 else:
                     self.progress_bar = None
 
