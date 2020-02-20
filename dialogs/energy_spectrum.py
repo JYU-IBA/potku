@@ -329,15 +329,16 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         es.calculate_spectrum(no_foil=True)
 
         # Add result files
-        for name in item_texts:
-            file_path = os.path.join(measurement.directory_energy_spectra,
-                                     f"{name}.no_foil.hist")
-            if os.path.exists(file_path):
-                if file_path in self.result_files:
-                    continue
-                self.result_files.append(file_path)
-                dirtyinteger += 1
-                sbh.reporter.report((dirtyinteger / length) * 33)
+        for measurement in used_measurements:
+            for name in item_texts:
+                file_path = os.path.join(measurement.directory_energy_spectra,
+                                         f"{name}.no_foil.hist")
+                if os.path.exists(file_path):
+                    if file_path in self.result_files:
+                        continue
+                    self.result_files.append(file_path)
+                    dirtyinteger += 1
+                    sbh.reporter.report((dirtyinteger / length) * 33)
 
         root_for_ext_files = self.external_tree_widget.invisibleRootItem()
         child_count = root_for_ext_files.childCount()
