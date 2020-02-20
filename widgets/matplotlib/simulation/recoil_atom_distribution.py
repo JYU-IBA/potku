@@ -183,7 +183,8 @@ class ElementManager:
                                        rec_type=rec_type)
         element_widget = ElementWidget(self.parent, element,
                                        self.parent_tab, None, color,
-                                       self.icon_manager)
+                                       self.icon_manager,
+                                       statusbar=self.statusbar)
         recoil_element.widgets.append(element_widget)
         element_simulation = self.simulation.add_element_simulation(
             recoil_element)
@@ -211,7 +212,8 @@ class ElementManager:
                           element_simulation.recoil_elements[0].element,
                           self.parent_tab, element_simulation,
                           element_simulation.recoil_elements[0].color,
-                          self.icon_manager)
+                          self.icon_manager,
+                          statusbar=self.statusbar)
         element_simulation.recoil_elements[0] \
             .widgets.append(main_element_widget)
         main_element_widget.element_simulation = element_simulation

@@ -112,26 +112,46 @@ class GUIReporter(ProgressReporter):
 
 
 class StatusBarHandler(ProgressReporter):
+    """Helper class to show, hide and update a progress bar in the
+    given statusbar.
+    """
     @process_event_loop
     def __init__(self, statusbar, autoremove=True):
+        """Initializes a new StatusBarHandler.
+
+        Args:
+            statusbar: PyQt statusbar
+            autoremove: automatically hides the progress bar when its
+                        surpasses 99
+        """
+        # TODO could also use a remove_at parameter that defines when
+        #      the progress bar is removed
         self.statusbar = statusbar
         if self.statusbar is not None:
             self.progress_bar = QtWidgets.QProgressBar()
             self.statusbar.addWidget(
                 self.progress_bar, 1)
             self.progress_bar.show()
+            if autoremove:
+                self.progress_bar.valueChanged.connect(self.__check_progress)
         else:
             self.progress_bar = None
         self.reporter = GUIReporter(self.progress_bar)
-        if autoremove:
-            self.progress_bar.valueChanged.connect(self.__check_progress)
 
     def __check_progress(self, value):
+        """Checks if the value of progress bar is over 99 and calls
+        remove_progress_bar if so.
+
+        Args:
+            value: current value of the progress bar
+        """
         if value > 99:
             self.remove_progress_bar()
 
     @process_event_loop
     def remove_progress_bar(self):
+        """Removes progress bar from status bar.
+        """
         self.statusbar.removeWidget(self.progress_bar)
         self.progress_bar.hide()
 

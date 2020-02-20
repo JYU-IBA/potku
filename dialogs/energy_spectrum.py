@@ -39,6 +39,7 @@ import dialogs.dialog_functions as df
 
 from dialogs.file_dialogs import open_file_dialog
 from widgets.gui_utils import GUIReporter
+from widgets.gui_utils import StatusBarHandler
 from modules.cut_file import is_rbs, get_scatter_element
 from modules.energy_spectrum import EnergySpectrum
 from modules.general_functions import read_espe_file
@@ -244,16 +245,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         root = self.ui.treeWidget.invisibleRootItem()
         child_count = root.childCount()
 
-        if self.statusbar is not None:
-            progress_bar = QtWidgets.QProgressBar()
-            self.statusbar.addWidget(progress_bar, 1)
-            progress_bar.show()
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process.
-        else:
-            progress_bar = None
+        sbh = StatusBarHandler(self.statusbar)
+
         dirtyinteger = 0
 
         for i in range(child_count):
@@ -271,9 +264,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                                 self.parent.obj.directory,
                                 rec_elem_prefix_and_name + ".simu"))
                         dirtyinteger += 1
-                        progress_bar.setValue((dirtyinteger / child_count) * 33)
-                        QtCore.QCoreApplication.processEvents(
-                            QtCore.QEventLoop.AllEvents)
+                        sbh.reporter.report((dirtyinteger / child_count) * 33)
                     if elem_sim.optimization_done:
                         for rec in elem_sim.optimization_recoils:
                             rec_elem_prefix_and_name = rec.prefix + "-" \
@@ -287,10 +278,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                                     self.parent.obj.directory,
                                     rec_elem_prefix_and_name + ".simu"))
 
-        if child_count == 0 and progress_bar is not None:
-            progress_bar.setValue(33)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+        if child_count == 0:
+            sbh.reporter.report(33)
 
         root_for_tof_list_files = self.tof_list_tree_widget.invisibleRootItem()
         child_count = root_for_tof_list_files.childCount()
@@ -321,43 +310,34 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                             "Changes", item.text(0)) + ".cut"
                     cut_files[measurement].append(cut_file)
             dirtyinteger += 1
-            progress_bar.setValue((dirtyinteger / child_count) * 33)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+            sbh.reporter.report((dirtyinteger / child_count) * 33)
 
-        if child_count == 0 and progress_bar is not None:
-            progress_bar.setValue(66)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+        if child_count == 0:
+            sbh.reporter.report(66)
 
         length = len(used_measurements)
-        # Hist all selected cut files
-        for measurement in used_measurements:
-            # We are using no_foil parameter here to set the foil thickness to
-            # 0 when calculating tof_list. This ensures that the observed
-            # energy spectra (from .cut files) is comparable to simulated
-            # energy spectra (from .erd files).
-            # FIXME tof_list gets called (len(used_measurements))^2 times, when
-            #       running this
-            es = EnergySpectrum(measurement, cut_files[measurement],
-                                self.ui.histogramTicksDoubleSpinBox.value(),
-                                progress=None,
-                                no_foil=True)
-            es.calculate_spectrum(no_foil=True)
 
-            # Add result files
-            for name in item_texts:
-                file_path = os.path.join(measurement.directory_energy_spectra,
-                                         f"{name}.no_foil.hist")
-                if os.path.exists(file_path):
-                    if file_path in self.result_files:
-                        continue
-                    self.result_files.append(file_path)
-                    dirtyinteger += 1
-                    if progress_bar is not None:
-                        progress_bar.setValue((dirtyinteger / length) * 33)
-                        QtCore.QCoreApplication.processEvents(
-                            QtCore.QEventLoop.AllEvents)
+        # Hist all selected cut files
+        # We are using no_foil parameter here to set the foil thickness to
+        # 0 when calculating tof_list. This ensures that the observed
+        # energy spectra (from .cut files) is comparable to simulated
+        # energy spectra (from .erd files).
+        es = EnergySpectrum(measurement, used_measurements,
+                            self.ui.histogramTicksDoubleSpinBox.value(),
+                            progress=None,
+                            no_foil=True)
+        es.calculate_spectrum(no_foil=True)
+
+        # Add result files
+        for name in item_texts:
+            file_path = os.path.join(measurement.directory_energy_spectra,
+                                     f"{name}.no_foil.hist")
+            if os.path.exists(file_path):
+                if file_path in self.result_files:
+                    continue
+                self.result_files.append(file_path)
+                dirtyinteger += 1
+                sbh.reporter.report((dirtyinteger / length) * 33)
 
         root_for_ext_files = self.external_tree_widget.invisibleRootItem()
         child_count = root_for_ext_files.childCount()
@@ -372,12 +352,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                             os.path.join(self.imported_files_folder, ext))
                         break
 
-        if progress_bar is not None:
-            progress_bar.setValue(100)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
-            self.statusbar.removeWidget(progress_bar)
-            progress_bar.hide()
+        sbh.reporter.report(100)
 
         self.bin_width = self.ui.histogramTicksDoubleSpinBox.value()
 
@@ -428,7 +403,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             self.parent.energy_spectrum_widget = EnergySpectrumWidget(
                 self.parent, spectrum_type=self.spectrum_type,
                 use_cuts=use_cuts,
-                bin_width=width)
+                bin_width=width,
+                statusbar=self.statusbar)
 
             # Check that matplotlib attribute exists after creation of energy
             # spectrum widget.
@@ -553,7 +529,6 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.bin_width = bin_width
             self.energy_spectrum_data = {}
             self.spectrum_type = spectrum_type
-            self.statusbar = statusbar
             rbs_list = {}
 
             self.ui = uic.loadUi(os.path.join("ui_files",
@@ -562,20 +537,14 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             title = "{0} - Bin Width: {1}".format(self.ui.windowTitle(),
                                                   bin_width)
             self.ui.setWindowTitle(title)
+            sbh = None
 
             if isinstance(self.parent.obj, Measurement):
                 self.measurement = self.parent.obj
-                if self.statusbar is not None:
-                    self.progress_bar = QtWidgets.QProgressBar()
-                    self.statusbar.addWidget(
-                        self.progress_bar, 1)
-                    self.progress_bar.show()
-                    QtCore.QCoreApplication.processEvents(
-                        QtCore.QEventLoop.AllEvents)
-                    # Mac requires event processing to show progress bar
-                    # and its process.
-                else:
-                    self.progress_bar = None
+                # Removal is done in the finally block so autoremove
+                # is set to False
+                sbh = StatusBarHandler(statusbar,
+                                       autoremove=False)
 
                 # Generate new tof.in file for external programs
                 self.measurement.generate_tof_in()
@@ -584,7 +553,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                     self.measurement,
                     use_cuts,
                     bin_width,
-                    progress=GUIReporter(self.progress_bar))
+                    progress=sbh.reporter)
                 self.energy_spectrum_data = self.energy_spectrum.\
                     calculate_spectrum()
 
@@ -626,9 +595,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
         finally:
-            if self.progress_bar is not None:
-                self.statusbar.removeWidget(self.progress_bar)
-                self.progress_bar.hide()
+            if sbh is not None:
+                sbh.remove_progress_bar()
 
     def update_use_cuts(self):
         """
@@ -644,7 +612,6 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
         """Delete variables and do clean up.
         """
         self.energy_spectrum = None
-        self.progress_bar = None
         self.matplotlib.delete()
         self.matplotlib = None
         self.ui.close()
@@ -668,7 +635,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
 
         Args:
             measurement: Whether energy spectrum belong to measurement or
-            simulation.
+                         simulation.
+            update: TODO
         """
         if measurement:
             files = "\t".join([os.path.relpath(tmp,
