@@ -111,6 +111,8 @@ class RecoilElement:
         self.update_zero_values()
 
     def get_full_name(self):
+        """Returns the prefixed name of the RecoilElement.
+        """
         return f"{self.prefix}-{self.name}"
 
     def delete_widgets(self):
@@ -147,7 +149,9 @@ class RecoilElement:
         Save current points for undoing or redoing.
 
         Args:
+            full_edit_used: TODO
             exclude: A point that needs to be excluded from backlog entry.
+            save_before_undo: TODO
         """
         points = []
         if exclude:
@@ -346,7 +350,7 @@ class RecoilElement:
         else:
             return self._points[ind + 1]
 
-    def get_neighbours(self, point):
+    def get_neighbors(self, point):
         """Returns point's left and right neighbour.
 
         Args:
@@ -391,8 +395,7 @@ class RecoilElement:
 
         Args:
             simulation_folder: Path to simulation folder in which ".rec" or
-            ".sct" files are stored.
-            recoil_element: RecoilElement object to write to file to.
+                               ".sct" files are stored.
         """
         recoil_file_path = fp.get_recoil_file_path(self, simulation_folder)
 
