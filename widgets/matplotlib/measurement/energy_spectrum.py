@@ -57,7 +57,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     """
 
     def __init__(self, parent, histed_files, rbs_list, spectrum_type,
-                 legend=True):
+                 legend=True, spectra_changed=None):
         """Inits Energy Spectrum widget.
 
         Args:
@@ -66,6 +66,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             rbs_list: A dictionary of RBS selection elements containing
                       scatter elements.
             legend: Boolean representing whether to draw legend or not.
+            spectra_changed: pyQtSignal that indicates a change in spectra
+                             that requires redrawing
         """
         super().__init__(parent)
         self.parent = parent
@@ -130,6 +132,12 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.anchored_box = None
         self.lines_of_area = []
         self.clipboard = QGuiApplication.clipboard()
+
+        # This stores the plotted lines so we can update individual spectra
+        # separately
+        self.plots = {}
+        if spectra_changed is not None:
+            spectra_changed.connect(self.update_spectra)
 
         self.on_draw()
 
@@ -203,11 +211,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         for line in self.lines_of_area:
             for key, values in line.items():
                 if key.endswith(".hist"):
-                    i = i + 1
+                    i += 1
                     break
             if i != 0:
                 break
-            j = j + 1
+            j += 1
 
         if i != 0:
             if j == 1 and i == 1 and area_2 != 0:
@@ -228,9 +236,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.anchored_box.set_visible(False)
             self.anchored_box = None
 
-        text = "Difference: %s" % str(round(area, 2)) + \
-               "\nRatio: %s" % str(round(ratio, ratio_round)) + "\nInterval: [%s, %s]" % \
-               (str(round(start, 2)), str(round(end, 2)))
+        text = f"Difference: {round(area, 2)}\n" \
+               f"Ratio: {round(ratio, ratio_round)}\n" \
+               f"Interval: [{round(start, 2)}, {round(end, 2)}]"
         box1 = offsetbox.TextArea(text, textprops=dict(color="k", size=12))
 
         text_2 = "\nRatio copied to clipboard."
@@ -369,6 +377,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.axes.set_ylabel("Yield (counts)")
         self.axes.set_xlabel("Energy (MeV)")
 
+        # TODO refactor the draw function so that measurement and simulation
+        #      do not use so many lines of different code
         if isinstance(self.parent.parent.obj, Measurement):
             element_counts = {}
             keys = [item[0] for item in sorted(self.histed_files.items(),
@@ -398,12 +408,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                         isotope = element_object.isotope
                         rbs_string = "*"
 
-                x = tuple(float(pair[0]) for pair in cut)
-                y = tuple(float(pair[1]) for pair in cut)
-
-                if x and x[0] < x_min:
-                    x_min = x[0]
-                    x_min_changed = True
+                x, y = get_axis_values(cut)
+                x_min, x_min_changed = fix_minimum(x, x_min)
 
                 if isotope is None:
                     isotope = ""
@@ -438,9 +444,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 else:
                     label = r"$^{" + str(isotope) + "}$" + element \
                             + rbs_string + "$_{split: " + cut_file[2] + "}$"
-                self.axes.plot(x, y,
-                               color=color,
-                               label=label)
+                self.plots[key] = self.axes.plot(x, y,
+                                                 color=color,
+                                                 label=label)
 
         else:  # Simulation energy spectrum
             if self.__ignore_elements:
@@ -506,17 +512,14 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 else:
                     label = file_name
 
-                x = tuple(float(pair[0]) for pair in data)
-                y = tuple(float(pair[1]) for pair in data)
-
-                if x and x[0] < x_min:
-                    x_min = x[0]
-                    x_min_changed = True
+                x, y = get_axis_values(data)
+                x_min, x_min_changed = fix_minimum(x, x_min)
 
                 if not color:
-                    self.axes.plot(x, y, label=label)
+                    self.plots[key] = self.axes.plot(x, y, label=label)
                 else:
-                    self.axes.plot(x, y, label=label, color=color)
+                    self.plots[key] = self.axes.plot(x, y, label=label,
+                                                     color=color)
 
         if self.draw_legend:
             if not self.__initiated_box:
@@ -621,3 +624,21 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.__ignore_elements = dialog.ignored_elements
         self.on_draw()
         self.limits = []
+
+    def update_spectra(self, rec_elem):
+        """Updates spectra from given hist_files"""
+        print("Got: ", rec_elem)
+
+
+def get_axis_values(data):
+    """Returns the x and y axis values from given data."""
+    return (
+        tuple(float(pair[0]) for pair in data),
+        tuple(float(pair[1]) for pair in data)
+    )
+
+
+def fix_minimum(lst, minimum):
+    if lst and lst[0] < minimum:
+        return lst[0], True
+    return minimum, False

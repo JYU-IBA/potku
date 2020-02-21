@@ -46,7 +46,8 @@ class RecoilElementWidget(QtWidgets.QWidget):
     Class that shows a recoil element that is connected to an ElementSimulation.
     """
     def __init__(self, parent, element, parent_tab, parent_element_widget,
-                 element_simulation, color, recoil_element, statusbar=None):
+                 element_simulation, color, recoil_element, statusbar=None,
+                 spectra_changed=None):
         """
         Initialize the widget.
 
@@ -90,7 +91,8 @@ class RecoilElementWidget(QtWidgets.QWidget):
             "ui_icons/potku/energy_spectrum_icon.svg"))
         draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                            QtWidgets.QSizePolicy.Fixed)
-        draw_spectrum_button.clicked.connect(self.plot_spectrum)
+        draw_spectrum_button.clicked.connect(
+            lambda: self.plot_spectrum(spectra_changed))
         draw_spectrum_button.setToolTip("Draw energy spectra")
 
         remove_recoil_button = QtWidgets.QPushButton()
@@ -111,7 +113,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
 
         self.setLayout(horizontal_layout)
 
-    def plot_spectrum(self):
+    def plot_spectrum(self, spectra_changed=None):
         """
         Plot an energy spectrum.
         """
@@ -122,8 +124,11 @@ class RecoilElementWidget(QtWidgets.QWidget):
             statusbar=self.statusbar)
         if dialog.result_files:
             energy_spectrum_widget = EnergySpectrumWidget(
-                parent=self.parent_tab, use_cuts=dialog.result_files,
-                bin_width=dialog.bin_width, spectrum_type="simulation")
+                parent=self.parent_tab,
+                use_cuts=dialog.result_files,
+                bin_width=dialog.bin_width,
+                spectrum_type="simulation",
+                spectra_changed=spectra_changed)
 
             # Check all energy spectrum widgets, if one has the same
             # elements, delete it

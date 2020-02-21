@@ -186,7 +186,8 @@ class SimulationTabWidget(QtWidgets.QWidget):
             progress_bar: A QtWidgets.QProgressBar where loading of previous
                           graph can be shown.
         """
-        self.make_energy_spectra()
+        self.make_energy_spectra(
+            spectra_changed=self.simulation_target.spectra_changed)
         # Show optimized results if there are any
         used_measured_element = ""
         for element_simulation in self.simulation.element_simulations:
@@ -223,7 +224,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         # Mac requires event processing to show progress bar and its
         # process.
 
-    def make_energy_spectra(self):
+    def make_energy_spectra(self, spectra_changed=None):
         """
         Make corresponding energy spectra for each save file in simulation
         directory.
@@ -251,8 +252,11 @@ class SimulationTabWidget(QtWidgets.QWidget):
                 bin_width = float(lines[1].strip())
                 icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
                 energy_spectrum_widget = EnergySpectrumWidget(
-                    self, "simulation", used_files_confirmed, bin_width,
-                    save_file_int)
+                    self, "simulation",
+                    used_files_confirmed,
+                    bin_width,
+                    save_file_int,
+                    spectra_changed=spectra_changed)
                 self.energy_spectrum_widgets.append(energy_spectrum_widget)
                 self.add_widget(energy_spectrum_widget, icon=icon)
 

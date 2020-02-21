@@ -49,10 +49,10 @@ from widgets.simulation.recoil_element import RecoilElementWidget
 
 class ElementWidget(QtWidgets.QWidget):
     """Class for creating an element widget for the recoil atom distribution.
-        """
+    """
 
     def __init__(self, parent, element, parent_tab, element_simulation,
-                 color, icon_manager, statusbar=None):
+                 color, icon_manager, statusbar=None, spectra_changed=None):
         """
         Initializes the ElementWidget.
 
@@ -63,6 +63,9 @@ class ElementWidget(QtWidgets.QWidget):
             element_simulation: ElementSimulation object.
             color: Color for the circle.
             icon_manager: Icon manager.
+            statusbar: PyQt statusbar
+            spectra_changed: pyqtSignal that indicates a change in energy
+                spectra
         """
         super().__init__()
 
@@ -128,6 +131,8 @@ class ElementWidget(QtWidgets.QWidget):
 
         self.running_int_recoil = 1
 
+        self.spectra_changed = spectra_changed
+
     def add_new_recoil(self):
         """
         Add new recoil to element simulation.
@@ -182,13 +187,18 @@ class ElementWidget(QtWidgets.QWidget):
         """
         previous = None
         dialog = EnergySpectrumParamsDialog(
-            self.parent_tab, spectrum_type="simulation",
-            element_simulation=self.element_simulation, recoil_widget=self,
+            self.parent_tab,
+            spectrum_type="simulation",
+            element_simulation=self.element_simulation,
+            recoil_widget=self,
             statusbar=self.statusbar)
         if dialog.result_files:
             energy_spectrum_widget = EnergySpectrumWidget(
-                parent=self.parent_tab, use_cuts=dialog.result_files,
-                bin_width=dialog.bin_width, spectrum_type="simulation")
+                parent=self.parent_tab,
+                use_cuts=dialog.result_files,
+                bin_width=dialog.bin_width,
+                spectrum_type="simulation",
+                spectra_changed=self.spectra_changed)
 
             # Check all energy spectrum widgets, if one has the same
             # elements, delete it

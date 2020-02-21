@@ -61,7 +61,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     checked_cuts = {}
 
     def __init__(self, parent, spectrum_type, element_simulation=None,
-                 recoil_widget=None, statusbar=None):
+                 recoil_widget=None, statusbar=None, spectra_changed=None):
         """Inits energy spectrum dialog.
         
         Args:
@@ -100,7 +100,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
         if isinstance(self.parent.obj, Measurement):
             self.measurement = self.parent.obj
-            self.ui.pushButton_OK.clicked.connect(self.__accept_params)
+            self.ui.pushButton_OK.clicked.connect(
+                lambda: self.__accept_params(spectra_changed=spectra_changed))
 
             m_name = self.measurement.name
             if m_name not in EnergySpectrumParamsDialog.checked_cuts.keys():
@@ -370,7 +371,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             "Created Energy Spectrum. Bin width: {0} Used files: {1}".format(
                 self.bin_width, ", ".join(self.result_files)))
 
-    def __accept_params(self):
+    def __accept_params(self, spectra_changed=None):
         """Accept given parameters and cut files.
         """
         width = self.ui.histogramTicksDoubleSpinBox.value()
@@ -407,7 +408,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 self.parent, spectrum_type=self.spectrum_type,
                 use_cuts=use_cuts,
                 bin_width=width,
-                statusbar=self.statusbar)
+                statusbar=self.statusbar,
+                spectra_changed=spectra_changed)
 
             # Check that matplotlib attribute exists after creation of energy
             # spectrum widget.
@@ -510,16 +512,18 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     save_file = "widget_energy_spectrum.save"
 
     def __init__(self, parent, spectrum_type, use_cuts=None, bin_width=0.025,
-                 save_file_int=0, statusbar=None):
+                 save_file_int=0, statusbar=None, spectra_changed=None):
         """Inits widget.
         
         Args:
             parent: A TabWidget.
             use_cuts: A string list representing Cut files.
             bin_width: A float representing Energy Spectrum histogram's bin
-            width.
+                width.
             save_file_int: n integer to have unique save file names for
-            simulation energy spectra combinations.
+                simulation energy spectra combinations.
+            spectra_changed: pyqtSignal that indicates a change in energy
+                spectra.
         """
         try:
             super().__init__()
@@ -583,7 +587,9 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.matplotlib = MatplotlibEnergySpectrumWidget(
                 self,
                 self.energy_spectrum_data,
-                rbs_list, spectrum_type)
+                rbs_list,
+                spectrum_type,
+                spectra_changed=spectra_changed)
         except Exception as e:
             print(e)
             import traceback
