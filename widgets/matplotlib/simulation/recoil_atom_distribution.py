@@ -134,7 +134,7 @@ class ElementManager:
             if recoil_element.widgets[0].radio_button == radio_button:
                 return recoil_element
 
-    def add_new_element_simulation(self, element, color, spectra_changed=None):
+    def add_new_element_simulation(self, element, color):
         """
         Create a new ElementSimulation and RecoilElement with default points.
 
@@ -187,7 +187,7 @@ class ElementManager:
                                        statusbar=self.statusbar)
         recoil_element.widgets.append(element_widget)
         element_simulation = self.simulation.add_element_simulation(
-            recoil_element, spectra_changed)
+            recoil_element)
         element_widget.element_simulation = element_simulation
 
         # Add simulation controls widget
@@ -1076,10 +1076,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if element_simulation is None:
             # Create new ElementSimulation
             element_simulation = self.element_manager \
-                .add_new_element_simulation(element, color,
-                                            self.recoil_element_points_changed)
+                .add_new_element_simulation(element, color)
         else:
-            # element_simulation = element_simulation
             self.element_manager.add_element_simulation(
                 element_simulation, self.recoil_element_points_changed)
 
