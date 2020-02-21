@@ -322,7 +322,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # 0 when calculating tof_list. This ensures that the observed
         # energy spectra (from .cut files) is comparable to simulated
         # energy spectra (from .erd files).
-        es = EnergySpectrum(measurement, used_measurements,
+        es = EnergySpectrum(measurement,
+                            [file for lst in cut_files.values()
+                             for file in lst],
                             self.ui.histogramTicksDoubleSpinBox.value(),
                             progress=None,
                             no_foil=True)
