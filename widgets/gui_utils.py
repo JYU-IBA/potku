@@ -152,6 +152,8 @@ class StatusBarHandler(ProgressReporter):
     def remove_progress_bar(self):
         """Removes progress bar from status bar.
         """
-        self.statusbar.removeWidget(self.progress_bar)
-        self.progress_bar.hide()
+        if self.statusbar is not None:
+            self.statusbar.removeWidget(self.progress_bar)
+        if self.progress_bar is not None:
+            self.progress_bar.hide()
 
