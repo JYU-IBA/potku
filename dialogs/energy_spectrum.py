@@ -34,11 +34,13 @@ import logging
 import os
 import shutil
 import sys
+import itertools
 
 import dialogs.dialog_functions as df
 
+from pathlib import Path
+
 from dialogs.file_dialogs import open_file_dialog
-from widgets.gui_utils import GUIReporter
 from widgets.gui_utils import StatusBarHandler
 from modules.cut_file import is_rbs, get_scatter_element
 from modules.energy_spectrum import EnergySpectrum
@@ -238,55 +240,15 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 self.__import_external_file)
             self.exec_()
 
-    def __calculate_selected_spectra(self):
-        """Calculate selected spectra.
+    def get_selected_measurements(self):
+        """Returns a dictionary that contains selected measurements,
+        cut files belonging to each measurement, and the corresponding
+        result file.
         """
-        self.close()
-        root = self.ui.treeWidget.invisibleRootItem()
-        child_count = root.childCount()
-
-        sbh = StatusBarHandler(self.statusbar)
-
-        dirtyinteger = 0
-
-        for i in range(child_count):
-            item = root.child(i)
-            if item.checkState(0):
-                for elem_sim in self.parent.obj.element_simulations:
-                    for rec_elem in elem_sim.recoil_elements:
-                        rec_elem_prefix_and_name = rec_elem.prefix + "-"\
-                                                   + rec_elem.name
-                        if rec_elem_prefix_and_name == item.text(0):
-                            elem_sim.channel_width = self.ui.\
-                                histogramTicksDoubleSpinBox.value()
-                            elem_sim.calculate_espe(rec_elem)
-                            self.result_files.append(os.path.join(
-                                self.parent.obj.directory,
-                                rec_elem_prefix_and_name + ".simu"))
-                        dirtyinteger += 1
-                        sbh.reporter.report((dirtyinteger / child_count) * 33)
-                    if elem_sim.optimization_done:
-                        for rec in elem_sim.optimization_recoils:
-                            rec_elem_prefix_and_name = rec.prefix + "-" \
-                                                       + rec.name
-                            if rec_elem_prefix_and_name == item.text(0):
-                                elem_sim.channel_width = self.ui. \
-                                    histogramTicksDoubleSpinBox.value()
-                                elem_sim.calculate_espe(rec,
-                                                        optimize_recoil=True)
-                                self.result_files.append(os.path.join(
-                                    self.parent.obj.directory,
-                                    rec_elem_prefix_and_name + ".simu"))
-
-        if child_count == 0:
-            sbh.reporter.report(33)
-
         root_for_tof_list_files = self.tof_list_tree_widget.invisibleRootItem()
         child_count = root_for_tof_list_files.childCount()
 
-        cut_files = {}
-        item_texts = []
-        used_measurements = []
+        used_measurements = {}
 
         for i in range(child_count):
             measurement_item = root_for_tof_list_files.child(i)
@@ -295,80 +257,127 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 item = measurement_item.child(j)
                 if item.checkState(0):
                     measurement = item.parent().obj
-                    if measurement not in cut_files.keys():
-                        cut_files[measurement] = []
-                    used_measurements.append(measurement)
-                    # Calculate energy spectra for cut
-                    item_texts.append(item.text(0))
-                    if len(item.text(0).split('.')) < 5:
+                    if len(item.text(0).split(".")) < 5:
                         # Normal cut
-                        cut_file = os.path.join(measurement.directory_cuts,
-                                                item.text(0)) + ".cut"
+                        cut_file = Path(measurement.directory_cuts,
+                                        f"{item.text(0)}.cut")
                     else:
-                        cut_file = os.path.join(
+                        cut_file = Path(
                             measurement.directory_composition_changes,
-                            "Changes", item.text(0)) + ".cut"
-                    cut_files[measurement].append(cut_file)
-            dirtyinteger += 1
-            sbh.reporter.report((dirtyinteger / child_count) * 33)
+                            "Changes", f"{item.text(0)}.cut")
+                    result_file = Path(measurement.directory_energy_spectra,
+                                       f"{item.text(0)}.no_foil.hist")
+                    used_measurements.setdefault(measurement, []).append({
+                            "cut_file": cut_file,
+                            "result_file": result_file
+                        })
 
-        if child_count == 0:
-            sbh.reporter.report(66)
+        return used_measurements
 
-        length = len(used_measurements)
+    def get_selected_simulations(self):
+        """Returns a dictionary that contains selected simulations and list
+        of recoil elements and corresponding result files.
+        """
+        root = self.ui.treeWidget.invisibleRootItem()
+        child_count = root.childCount()
 
-        # Hist all selected cut files
-        # We are using no_foil parameter here to set the foil thickness to
-        # 0 when calculating tof_list. This ensures that the observed
-        # energy spectra (from .cut files) is comparable to simulated
-        # energy spectra (from .erd files).
-        es = EnergySpectrum(measurement,
-                            [file for lst in cut_files.values()
-                             for file in lst],
-                            self.ui.histogramTicksDoubleSpinBox.value(),
-                            progress=None,
-                            no_foil=True)
-        es.calculate_spectrum(no_foil=True)
+        used_simulations = {}
 
-        # Add result files
-        for measurement in used_measurements:
-            for name in item_texts:
-                file_path = os.path.join(measurement.directory_energy_spectra,
-                                         f"{name}.no_foil.hist")
-                if os.path.exists(file_path):
-                    if file_path in self.result_files:
-                        continue
-                    self.result_files.append(file_path)
-                    dirtyinteger += 1
-                    sbh.reporter.report((dirtyinteger / length) * 33)
+        for i in range(child_count):
+            item = root.child(i)
+            if item.checkState(0):
+                for elem_sim in self.parent.obj.element_simulations:
+                    for rec_elem in elem_sim.recoil_elements:
+                        rec_elem_name = rec_elem.get_full_name()
+                        if rec_elem_name == item.text(0):
+                            result_file = Path(self.parent.obj.directory,
+                                               f"{rec_elem_name}.simu")
+                            used_simulations.setdefault(elem_sim, []).append({
+                                "recoil_element": rec_elem,
+                                "result_file": result_file,
+                                "optimize_recoil": False
+                            })
+                            break
+                    if elem_sim.optimization_done:
+                        for rec_elem in elem_sim.optimization_recoils:
+                            rec_elem_name = rec_elem.get_full_name()
+                            if rec_elem_name == item.text(0):
+                                result_file = Path(self.parent.obj.directory,
+                                                   f"{rec_elem_name}.simu")
+                                used_simulations.setdefault(
+                                    elem_sim, []).append({
+                                        "recoil_element": rec_elem,
+                                        "result_file": result_file,
+                                        "optimize_recoil": True
+                                    })
+                                break
 
+        return used_simulations
+
+    def get_selected_external_files(self):
+        """Returns a list of selected external files.
+        """
+        # Add external files to result files
+        used_external_files = []
         root_for_ext_files = self.external_tree_widget.invisibleRootItem()
         child_count = root_for_ext_files.childCount()
-
-        # Add external files to result files
         for k in range(child_count):
             item = root_for_ext_files.child(k)
             if item.checkState(0):
-                for ext in os.listdir(self.imported_files_folder):
-                    if ext == item.text(0):
-                        self.result_files.append(
-                            os.path.join(self.imported_files_folder, ext))
-                        break
+                ext_file = Path(self.imported_files_folder, item.text(0))
+                if ext_file.exists():
+                    used_external_files.append(ext_file)
+
+        return used_external_files
+
+    def __calculate_selected_spectra(self):
+        """Calculate selected spectra.
+        """
+        self.close()
+        self.bin_width = self.ui.histogramTicksDoubleSpinBox.value()
+
+        sbh = StatusBarHandler(self.statusbar)
+
+        # Get all
+        used_simulations = self.get_selected_simulations()
+        used_measurements = self.get_selected_measurements()
+        used_externals = self.get_selected_external_files()
+
+        sbh.reporter.report(33)
+
+        # Calculate espes for simulations
+        for elem_sim, lst in used_simulations.items():
+            elem_sim.channel_width = self.bin_width
+            for d in lst:
+                self.result_files.append(d.pop("result_file"))
+                elem_sim.calculate_espe(**d)
+
+        sbh.reporter.report(66)
+
+        # Calculate espes for measurements. 'no_foil' parameter is used to
+        # make the results comparable with simulation espes. Basically
+        # this increases the calculated energy values, shifting the espe
+        # histograms to the right on the x axis.
+        for mesu, lst in used_measurements.items():
+            self.result_files.extend(d["result_file"] for d in lst)
+            es = EnergySpectrum(mesu,
+                                [d["cut_file"] for d in lst],
+                                self.bin_width,
+                                no_foil=True)
+            es.calculate_spectrum(no_foil=True)
+
+        # Add external files
+        self.result_files.extend(used_externals)
 
         sbh.reporter.report(100)
 
-        self.bin_width = self.ui.histogramTicksDoubleSpinBox.value()
-
         simulation_name = self.element_simulation.simulation.name
-        msg = "[{0}] Created Energy Spectrum. {1} {2}".format(
-            simulation_name,
-            "Bin width: {0}".format(self.bin_width),
-            "Used files: {0}".format(", ".join(self.result_files))
-        )
-        logging.getLogger("request").info(msg)
-        logging.getLogger(simulation_name).info(
-            "Created Energy Spectrum. Bin width: {0} Used files: {1}".format(
-                self.bin_width, ", ".join(self.result_files)))
+        msg = f"Created Energy Spectrum. " \
+              f"Bin width: {self.bin_width} " \
+              f"Used files: {', '.join(str(f) for f in self.result_files)}"
+
+        logging.getLogger("request").info(f"[{simulation_name}] {msg}")
+        logging.getLogger(simulation_name).info(msg)
 
     def __accept_params(self):
         """Accept given parameters and cut files.
@@ -648,7 +657,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             file = os.path.join(self.measurement.directory_energy_spectra,
                                 self.save_file)
         else:
-            files = "\t".join([tmp for tmp in self.use_cuts])
+            files = "\t".join([str(tmp) for tmp in self.use_cuts])
 
             file_name_start = "widget_energy_spectrum_"
             i = self.save_file_int
