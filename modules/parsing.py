@@ -58,7 +58,7 @@ class CSVParser:
                   at that column index
         """
         # Converters are used to convert values within strings
-        self.__converters = tuple(_Converter(*arg)
+        self.__converters = tuple(_get_conversion_function(*arg)
                                   for arg in args)
 
         # These are functions given to a filter function, when parsing multiple
@@ -110,8 +110,8 @@ class CSVParser:
             separator: string that separates values in data
             skip: number of strings to skip from the beginning
             ignore: ignore mode. Determines which strings are ignored if any.
-                    Valid values are None for none, 'e' for empty strings and 'w'
-                    for strings containing only whitespace characters.
+                    Valid values are None for none, 'e' for empty strings and
+                    'w' for strings containing only whitespace characters.
             method: either 'col' to generate a collection of columns, or
                     'row' to generate a collection of rows
 
@@ -209,38 +209,23 @@ class ToFListParser(CSVParser):
                          (7, int))
 
 
-class _Converter:
-    """Helper class for CSVParsing. Applies a conversion function to an
-    element in a list and returns the result.
+def _get_conversion_function(idx, func):
+    """Returns a function that will be applied to a list element
+    at a given index.
+
+    Args:
+        idx: index of the element in a list
+        func: function to be applied to the element
+
+    Return:
+        callable that takes a list and applies a function to a single element.
     """
-    __slots__ = "idx", "func"
+    if not isinstance(idx, int):
+        raise TypeError("List index must be an integer")
+    if not callable(func):
+        raise TypeError("Converter must be callable")
 
-    def __init__(self, idx, func):
-        """Initializes a new _Converter.
-
-        Args:
-            idx: index of the element in a list (must be an integer)
-            func: conversion function that will be applied to the
-                  element (must be callable)
-        """
-        if not isinstance(idx, int):
-            raise TypeError("List index must be an integer")
-        if not callable(func):
-            raise TypeError("Converter must be callable")
-
-        self.idx = idx
-        self.func = func
-
-    def __call__(self, lst):
-        """Applies the conversion function to a list element.
-
-        Args:
-            lst: a collection of values
-
-        Returns:
-            converted value
-        """
-        return self.func(lst[self.idx])
+    return lambda lst: func(lst[idx])
 
 
 if __name__ == "__main__":
