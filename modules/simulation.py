@@ -35,10 +35,13 @@ import logging
 import os
 import sys
 import time
+import itertools
+import collections
+
+import modules.general_functions as gf
 
 from modules.detector import Detector
 from modules.element_simulation import ElementSimulation
-from modules.general_functions import rename_file
 from modules.run import Run
 from modules.target import Target
 from modules.ui_log_handlers import Logger
@@ -248,7 +251,8 @@ class Simulation(Logger):
                  modification_time=None, tab_id=-1, run=None,
                  detector=None, target=None,
                  measurement_setting_file_name="",
-                 measurement_setting_file_description="", sample=None):
+                 measurement_setting_file_description="", sample=None,
+                 save_on_creation=True):
         """Initializes Simulation object.
 
         Args:
@@ -265,6 +269,8 @@ class Simulation(Logger):
             measurement_setting_file_description: Measurement settings file
             description.
             sample: Sample object under which Simulation belongs.
+            save_on_creation: whether the Simulation is written to file when
+                              initialized.
         """
         # Run the base class initializer to establish logging
         Logger.__init__(self, name, "Simulation")
@@ -304,7 +310,8 @@ class Simulation(Logger):
         self.create_folder_structure()
         self.running_simulations = []
 
-        self.to_file(self.path)
+        if save_on_creation:
+            self.to_file(self.path)
 
     def create_folder_structure(self):
         """
@@ -334,8 +341,8 @@ class Simulation(Logger):
                 simulation_file = file
                 break
         if simulation_file:
-            rename_file(os.path.join(self.directory, simulation_file),
-                        self.simulation_file)
+            gf.rename_file(os.path.join(self.directory, simulation_file),
+                           self.simulation_file)
 
     def add_element_simulation(self, recoil_element):
         """Adds ElementSimulation to Simulation.
@@ -421,3 +428,56 @@ class Simulation(Logger):
             elem_sim.directory = new_dir
 
         self.set_loggers(self.directory, self.request.directory)
+
+    def get_running_simulations(self):
+        """Returns a shallow copy of ElementSimulations that are running on
+        either simulation specific settings or request specific settings.
+        """
+        request_sims = (elem_sim for elem_sim in self.element_simulations
+                        if elem_sim in self.request.running_simulations)
+        return list(itertools.chain(request_sims, self.running_simulations))
+
+    def get_finished_simulations(self):
+        """Returns a list of ElementSimulations that have finished.
+        """
+        return list(
+            elem_sim for elem_sim in self.element_simulations
+            if elem_sim.simulations_done
+        )
+
+    def get_running_optimizations(self):
+        """Returns a list of ElementSimulations that have a running
+        optimization.
+        """
+        return list(
+            elem_sim for elem_sim in self.element_simulations
+            if elem_sim.optimization_running
+        )
+
+    def get_finished_optimizations(self):
+        """Returns a list of finished optimizations.
+        """
+        return list(
+            elem_sim for elem_sim in self.element_simulations
+            # TODO better way to determine if an optimization has been
+            #      done. ElementSimulation should not have a direct
+            #      reference to a widget
+            if elem_sim.optimization_widget is not None and
+            not elem_sim.optimization_running
+        )
+
+    def get_active_simulations(self):
+        """Returns a named tuple of all simulations that are either running
+        or have results.
+        """
+        simulations = collections.namedtuple(
+            "Simulations",
+            ("running_simulations", "finished_simulations",
+             "running_optimizations", "finished_optimizations"),
+        )
+        return simulations(
+            self.get_running_simulations(),
+            self.get_finished_simulations(),
+            self.get_running_optimizations(),
+            self.get_finished_optimizations()
+        )
