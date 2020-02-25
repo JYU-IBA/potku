@@ -32,9 +32,9 @@ import modules.masses as masses
 import os
 import platform
 
-from dialogs.element_selection import ElementSelectionDialog
+import widgets.input_validation as iv
 
-from modules.general_functions import set_input_field_red
+from dialogs.element_selection import ElementSelectionDialog
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
@@ -142,7 +142,7 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
 
             if self.ui.isotope_combobox.count() == 0:
                 self.ui.isotopeInfoLabel.setVisible(True)
-                set_input_field_red(self.ui.isotope_combobox)
+                iv.set_input_field_red(self.ui.isotope_combobox)
                 self.setMinimumHeight(243)
             else:
                 self.ui.isotopeInfoLabel.setVisible(False)

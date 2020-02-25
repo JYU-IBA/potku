@@ -33,8 +33,9 @@ import os
 import struct
 
 import dialogs.dialog_functions as df
+import widgets.input_validation as iv
+
 from dialogs.file_dialogs import open_files_dialog
-from modules.general_functions import validate_text_input
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -128,7 +129,7 @@ class ImportDialogBinary(QtWidgets.QDialog):
             item_name = item.name.replace("_", "-")
 
             regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-            item_name = validate_text_input(item_name, regex)
+            item_name = iv.validate_text_input(item_name, regex)
 
             measurement = self.parent.add_new_tab("measurement", "",
                                                   sample,

@@ -33,10 +33,9 @@ import modules.masses as masses
 import os
 import time
 
+import widgets.input_validation as iv
+
 from modules.element import Element
-from modules.general_functions import set_input_field_red
-from modules.general_functions import check_text
-from modules.general_functions import validate_text_input
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -62,7 +61,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
                              self)
         self.obj = obj
 
-        set_input_field_red(self.ui.nameLineEdit)
+        iv.set_input_field_red(self.ui.nameLineEdit)
         self.fields_are_valid = False
         self.ui.nameLineEdit.textChanged.connect(lambda: self.check_text(
             self.ui.nameLineEdit, self))
@@ -343,7 +342,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         Args:
             input_field: Input field the contents of which are checked.
         """
-        settings.fields_are_valid = check_text(input_field)
+        settings.fields_are_valid = iv.check_text(input_field)
 
     def __validate(self):
         """
@@ -351,7 +350,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         """
         text = self.ui.nameLineEdit.text()
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = validate_text_input(text, regex)
+        valid_text = iv.validate_text_input(text, regex)
 
         self.ui.nameLineEdit.setText(valid_text)
 

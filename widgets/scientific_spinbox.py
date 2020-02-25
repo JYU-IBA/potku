@@ -27,11 +27,11 @@ __version__ = "2.0"
 
 import os
 
-from decimal import Decimal
+import widgets.input_validation as iv
 
-from modules.general_functions import set_input_field_red
-from modules.general_functions import set_input_field_white
-from modules.input_validator import InputValidator
+from widgets.input_validation import InputValidator
+
+from decimal import Decimal
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -93,7 +93,7 @@ class ScientificSpinBox(QtWidgets.QWidget):
                 self.ui.scientificLineEdit.setText(str(self.minimum))
             elif value > self.maximum:
                 self.ui.scientificLineEdit.setText(str(self.maximum))
-            set_input_field_white(self.ui.scientificLineEdit)
+            iv.set_input_field_white(self.ui.scientificLineEdit)
             if 'e' in value_str:
                 index = value_str.index('e')
                 self.value = float(Decimal(value_str[:index]))
@@ -117,10 +117,10 @@ class ScientificSpinBox(QtWidgets.QWidget):
             float(value_str)
             if value_str.endswith('.'):
                 raise ValueError
-            set_input_field_white(self.ui.scientificLineEdit)
+            iv.set_input_field_white(self.ui.scientificLineEdit)
             return True
         except ValueError:
-            set_input_field_red(self.ui.scientificLineEdit)
+            iv.set_input_field_red(self.ui.scientificLineEdit)
             self.value = None
             self.multiplier = None
             return False
@@ -147,6 +147,7 @@ class ScientificSpinBox(QtWidgets.QWidget):
                 final_value = int(parts[0]) - 1
                 new_text = str(final_value) + multiply_part
             else:
+                # TODO remove duplicate code and add tests
                 decimals = parts[1]
                 decimal_length = len(decimals)
                 decrease = 1 / (10 ** decimal_length)
@@ -312,5 +313,5 @@ class ScientificSpinBox(QtWidgets.QWidget):
 
         self.ui.scientificLineEdit.setText(match)
         self.ui.scientificLineEdit.setCursorPosition(pos)
-        set_input_field_white(self.ui.scientificLineEdit)
+        iv.set_input_field_white(self.ui.scientificLineEdit)
         self.check_valid()

@@ -34,15 +34,12 @@ import os
 import platform
 
 import dialogs.dialog_functions as df
+import widgets.input_validation as iv
 
 from dialogs.element_selection import ElementSelectionDialog
 
 from modules.element import Element
-from modules.general_functions import check_text
 from modules.general_functions import delete_simulation_results
-from modules.general_functions import set_input_field_red
-from modules.general_functions import set_input_field_white
-from modules.general_functions import validate_text_input
 from modules.layer import Layer
 
 from PyQt5 import QtGui
@@ -74,9 +71,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.ok_pressed = False
         self.simulation = simulation
 
-        set_input_field_red(self.ui.nameEdit)
-        set_input_field_red(self.ui.thicknessEdit)
-        set_input_field_red(self.ui.densityEdit)
+        iv.set_input_field_red(self.ui.nameEdit)
+        iv.set_input_field_red(self.ui.thicknessEdit)
+        iv.set_input_field_red(self.ui.densityEdit)
         self.fields_are_valid = True
         self.amount_mismatch = False
         self.ui.nameEdit.textChanged.connect(
@@ -152,24 +149,24 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
         # Check if 'scrollArea' is empty (no elements).
         if self.ui.scrollAreaWidgetContents.layout().isEmpty():
-            set_input_field_red(self.ui.scrollArea)
+            iv.set_input_field_red(self.ui.scrollArea)
             self.fields_are_valid = False
 
         # Check if 'thicknessEdit' is empty.
         if not self.ui.thicknessEdit.value():
-            set_input_field_red(self.ui.thicknessEdit)
+            iv.set_input_field_red(self.ui.thicknessEdit)
             self.fields_are_valid = False
 
         # Check if 'densityEdit' is empty.
         if not self.ui.densityEdit.value():
-            set_input_field_red(self.ui.densityEdit)
+            iv.set_input_field_red(self.ui.densityEdit)
             self.fields_are_valid = False
 
         # Check that the element specific settings are okay.
         for child in self.ui.scrollAreaWidgetContents.children():
             if type(child) is QtWidgets.QPushButton:
                 if child.text() == "Select":
-                    set_input_field_red(child)
+                    iv.set_input_field_red(child)
                     self.fields_are_valid = False
             if type(child) is QtWidgets.QDoubleSpinBox:
                 if child.isEnabled():
@@ -177,17 +174,17 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                         help_sum += child.value()
                         spinboxes.append(child)
                     else:
-                        set_input_field_red(child)
+                        iv.set_input_field_red(child)
                         self.fields_are_valid = False
 
         if help_sum != 1.0 and help_sum != 100.0:
             for sb in spinboxes:
-                set_input_field_red(sb)
+                iv.set_input_field_red(sb)
             self.fields_are_valid = False
             self.amount_mismatch = True
         else:
             for sb in spinboxes:
-                set_input_field_white(sb)
+                iv.set_input_field_white(sb)
             self.amount_mismatch = False
 
     @staticmethod
@@ -198,7 +195,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             input_field: Input field the contents of which are checked.
             dialog: Layer dialog.
         """
-        dialog.fields_are_valid = check_text(input_field)
+        dialog.fields_are_valid = iv.check_text(input_field)
 
     def validate_spinbox(self, spinbox):
         """
@@ -209,10 +206,10 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         """
         if spinbox.value() == 0.0:
             self.fields_are_valid = False
-            set_input_field_red(spinbox)
+            iv.set_input_field_red(spinbox)
         else:
             self.fields_are_valid = True
-            set_input_field_white(spinbox)
+            iv.set_input_field_white(spinbox)
 
     def values_changed(self):
         """
@@ -569,7 +566,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         """
         text = self.ui.nameEdit.text()
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = validate_text_input(text, regex)
+        valid_text = iv.validate_text_input(text, regex)
 
         self.ui.nameEdit.setText(valid_text)
 
@@ -661,11 +658,11 @@ class ElementLayout(QtWidgets.QVBoxLayout):
             self.isotope_combobox.setEnabled(True)
             self.amount_spinbox.setEnabled(True)
             if not self.amount_spinbox.value():
-                set_input_field_red(self.amount_spinbox)
+                iv.set_input_field_red(self.amount_spinbox)
 
             # Check if no isotopes
             if self.isotope_combobox.currentText().startswith("0.0"):
-                set_input_field_red(self.isotope_combobox)
+                iv.set_input_field_red(self.isotope_combobox)
                 self.dialog.fields_are_valid = False
                 self.isotope_info_label.setText(
                     "If you wish to use this element, please modify masses.dat "

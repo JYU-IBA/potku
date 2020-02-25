@@ -28,9 +28,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 
 import time
 
-from modules.general_functions import check_text
-from modules.general_functions import set_input_field_red
-from modules.general_functions import validate_text_input
+import widgets.input_validation as iv
 
 from os import path
 
@@ -54,7 +52,7 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
                                        "ui_profile_settings_tab.ui"), self)
         self.measurement = measurement
 
-        set_input_field_red(self.ui.nameLineEdit)
+        iv.set_input_field_red(self.ui.nameLineEdit)
         self.fields_are_valid = False
         self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
             self.ui.nameLineEdit, self))
@@ -233,7 +231,7 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
             input_field: Input field the contents of which are checked.
             settings: Settings widget.
         """
-        settings.fields_are_valid = check_text(input_field)
+        settings.fields_are_valid = iv.check_text(input_field)
 
     def __validate(self):
         """
@@ -241,6 +239,6 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
         """
         text = self.ui.nameLineEdit.text()
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = validate_text_input(text, regex)
+        valid_text = iv.validate_text_input(text, regex)
 
         self.ui.nameLineEdit.setText(valid_text)

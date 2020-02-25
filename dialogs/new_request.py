@@ -33,9 +33,7 @@ import logging
 import os
 import platform
 
-from modules.general_functions import check_text
-from modules.general_functions import set_input_field_red
-from modules.general_functions import validate_text_input
+import widgets.input_validation as iv
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -68,7 +66,7 @@ class RequestNewDialog(QtWidgets.QDialog):
 
         self.ui.requestNameLineEdit.textEdited.connect(lambda:
                                                          self.__validate())
-        set_input_field_red(self.ui.requestNameLineEdit)
+        iv.set_input_field_red(self.ui.requestNameLineEdit)
         self.ui.requestNameLineEdit.textChanged.connect(
             lambda: self.__check_text(self.ui.requestNameLineEdit))
 
@@ -98,7 +96,7 @@ class RequestNewDialog(QtWidgets.QDialog):
         """
         text = self.ui.requestNameLineEdit.text()
         regex = "^[A-Za-z0-9_ÖöÄäÅå-]*"
-        valid_text = validate_text_input(text, regex)
+        valid_text = iv.validate_text_input(text, regex)
 
         self.ui.requestNameLineEdit.setText(valid_text)
 
@@ -109,7 +107,7 @@ class RequestNewDialog(QtWidgets.QDialog):
         Args:
             input_field: Input field the contents of which are checked.
         """
-        check_text(input_field)
+        iv.check_text(input_field)
 
     def __create_request(self):
         """Create new request.

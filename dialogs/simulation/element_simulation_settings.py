@@ -31,10 +31,7 @@ import os
 import time
 
 import dialogs.dialog_functions as df
-
-from modules.general_functions import check_text
-from modules.general_functions import set_input_field_red
-from modules.general_functions import validate_text_input
+import widgets.input_validation as iv
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -72,7 +69,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
 
         self.set_spinbox_maximums()
 
-        set_input_field_red(self.ui.nameLineEdit)
+        iv.set_input_field_red(self.ui.nameLineEdit)
         self.fields_are_valid = False
         self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
             self.ui.nameLineEdit, self))
@@ -101,7 +98,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             input_field: Input field the contents of which are checked.
             settings: Settings dialog.
         """
-        settings.fields_are_valid = check_text(input_field)
+        settings.fields_are_valid = iv.check_text(input_field)
 
     def __validate(self):
         """
@@ -109,7 +106,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         """
         text = self.ui.nameLineEdit.text()
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = validate_text_input(text, regex)
+        valid_text = iv.validate_text_input(text, regex)
 
         self.ui.nameLineEdit.setText(valid_text)
 

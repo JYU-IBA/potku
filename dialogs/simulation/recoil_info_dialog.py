@@ -31,12 +31,10 @@ __version__ = "2.0"
 import os
 import time
 
+import widgets.input_validation as iv
+
 from PyQt5 import QtWidgets
 from PyQt5 import uic
-
-from modules.general_functions import check_text
-from modules.general_functions import set_input_field_red
-from modules.general_functions import validate_text_input
 
 from widgets.scientific_spinbox import ScientificSpinBox
 
@@ -63,7 +61,7 @@ class RecoilInfoDialog(QtWidgets.QDialog):
         self.__ui.cancelPushButton.clicked.connect(self.close)
         self.__ui.colorPushButton.clicked.connect(self.__change_color)
 
-        set_input_field_red(self.__ui.nameLineEdit)
+        iv.set_input_field_red(self.__ui.nameLineEdit)
         self.text_is_valid = True
         self.__ui.nameLineEdit.textChanged.connect(
             lambda: self.__check_text(self.__ui.nameLineEdit, self))
@@ -214,7 +212,7 @@ class RecoilInfoDialog(QtWidgets.QDialog):
             input_field: Input field the contents of which are checked.
             settings: Settings dialog.
         """
-        settings.fields_are_valid = check_text(input_field)
+        settings.fields_are_valid = iv.check_text(input_field)
 
     def __set_color_button_color(self, element):
         """Set default color of element to color button.
@@ -232,6 +230,6 @@ class RecoilInfoDialog(QtWidgets.QDialog):
         """
         text = self.__ui.nameLineEdit.text()
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = validate_text_input(text, regex)
+        valid_text = iv.validate_text_input(text, regex)
 
         self.__ui.nameLineEdit.setText(valid_text)

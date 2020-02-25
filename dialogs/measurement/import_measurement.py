@@ -33,14 +33,13 @@ import os
 import re
 
 import dialogs.dialog_functions as df
+import modules.general_functions as gf
+import widgets.input_validation as iv
 
 from collections import OrderedDict
 
 from dialogs.measurement.import_timing_graph import ImportTimingGraphDialog
 from dialogs.file_dialogs import open_files_dialog
-
-from modules.general_functions import coinc
-from modules.general_functions import validate_text_input
 
 from PyQt5 import uic
 from PyQt5 import QtCore
@@ -181,7 +180,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
             item_name = item.name.replace("_", "-")
 
             regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-            item_name = validate_text_input(item_name, regex)
+            item_name = iv.validate_text_input(item_name, regex)
 
             measurement = self.parent.add_new_tab("measurement", "",
                                                   sample,
@@ -197,15 +196,15 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                  + os.sep + item_name, "asc", n)
                 n += 1
             imported_files[sample] = output_file
-            coinc(item.file,
-                  output_file,
-                  skip_lines=self.spin_skiplines.value(),
-                  tablesize=10,
-                  trigger=self.spin_adctrigger.value(),
-                  adc_count=self.spin_adccount.value(),
-                  timing=timing,
-                  columns=string_column,
-                  nevents=self.spin_eventcount.value())
+            gf.coinc(item.file,
+                     output_file,
+                     skip_lines=self.spin_skiplines.value(),
+                     tablesize=10,
+                     trigger=self.spin_adctrigger.value(),
+                     adc_count=self.spin_adccount.value(),
+                     timing=timing,
+                     columns=string_column,
+                     nevents=self.spin_eventcount.value())
             measurement.measurement_file = output_file
 
             progress_bar.setValue(10 + (i + 1) / root_child_count * 90)
