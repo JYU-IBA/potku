@@ -35,6 +35,7 @@ import widgets.input_validation as iv
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
+from PyQt5.QtGui import QColor
 
 from widgets.scientific_spinbox import ScientificSpinBox
 
@@ -100,7 +101,7 @@ class RecoilInfoDialog(QtWidgets.QDialog):
 
         self.__close = True
         self.color = None
-        self.tmp_color = self.recoil_element.color
+        self.tmp_color = QColor(self.recoil_element.color)
         self.colormap = colormap
 
         self.__set_color_button_color(recoil_element.element.symbol)
@@ -168,7 +169,7 @@ class RecoilInfoDialog(QtWidgets.QDialog):
         self.description = self.__ui.descriptionLineEdit.toPlainText()
         self.reference_density = self.__scientific_spinbox.value
         self.multiplier = self.__scientific_spinbox.multiplier
-        self.color = self.tmp_color
+        self.color = self.tmp_color.name()
         self.isOk = True
         self.__close = True
 
@@ -221,7 +222,7 @@ class RecoilInfoDialog(QtWidgets.QDialog):
             element: String representing element.
         """
         self.__ui.colorPushButton.setEnabled(True)
-        self.tmp_color = self.recoil_element.color
+        self.tmp_color = QColor(self.recoil_element.color)
         self.__change_color_button_color(element)
 
     def __validate(self):
