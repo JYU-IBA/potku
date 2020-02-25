@@ -42,7 +42,8 @@ class ScientificSpinBox(QtWidgets.QWidget):
     """
     Class for custom double spinbox that handles scientific notation.
     """
-    def __init__(self, value, multiplier, minimum, maximum, double=True):
+    def __init__(self, value, multiplier, minimum, maximum, double=True,
+                 show_btns=True):
         """
         Initializes the spinbox.
 
@@ -52,6 +53,8 @@ class ScientificSpinBox(QtWidgets.QWidget):
             minimum: Minimum allowed value.
             maximum: Maximum allowed value.
             double: Whether to validate for double or int.
+            show_btns: Whether buttons that increase or decrease the value
+                       are shown.
         """
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
@@ -76,8 +79,12 @@ class ScientificSpinBox(QtWidgets.QWidget):
             self.ui.scientificLineEdit.cursorPosition()
         ))
 
-        self.ui.upButton.clicked.connect(self.increase_value)
-        self.ui.downButton.clicked.connect(self.decrease_value)
+        if show_btns:
+            self.ui.upButton.clicked.connect(self.increase_value)
+            self.ui.downButton.clicked.connect(self.decrease_value)
+        else:
+            self.ui.upButton.hide()
+            self.ui.downButton.hide()
 
         self.ui.scientificLineEdit.installEventFilter(self)
 

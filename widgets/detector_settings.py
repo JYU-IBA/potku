@@ -137,7 +137,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             multiply_part = 1
         self.scientific_tof_slope = ScientificSpinBox(number_part,
                                                       multiply_part,
-                                                      -math.inf, math.inf)
+                                                      -math.inf, math.inf,
+                                                      show_btns=False)
 
         # Parse the value and multiplier
         offset_value_and_mult = str(self.obj.tof_offset)
@@ -150,13 +151,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             multiply_part = 1
         self.scientific_tof_offset = ScientificSpinBox(number_part,
                                                        multiply_part,
-                                                       -math.inf, math.inf)
-
-        # Hide unnecessary up and down buttons
-        self.scientific_tof_slope.ui.upButton.hide()
-        self.scientific_tof_slope.ui.downButton.hide()
-        self.scientific_tof_offset.ui.upButton.hide()
-        self.scientific_tof_offset.ui.downButton.hide()
+                                                       -math.inf, math.inf,
+                                                       show_btns=False)
 
         self.ui.formLayout_2.insertRow(0, "ToF slope [s/channel]:",
                                        self.scientific_tof_slope)
