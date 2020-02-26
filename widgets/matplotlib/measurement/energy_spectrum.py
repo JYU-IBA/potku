@@ -37,6 +37,7 @@ import modules.general_functions as gf
 
 from dialogs.graph_ignore_elements import GraphIgnoreElements
 
+from pathlib import Path
 from matplotlib import offsetbox
 from matplotlib.widgets import SpanSelector
 
@@ -140,6 +141,13 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         # separately
         self.plots = {}
         if spectra_changed is not None:
+            # Disconnect previous slots so only the last spectra graph
+            # gets updated
+            try:
+                spectra_changed.disconnect()
+            except TypeError:
+                # signal had no previous connections, nothing to do
+                pass
             spectra_changed.connect(self.update_spectra)
 
         self.on_draw()
@@ -635,21 +643,27 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     @stopwatch
     def update_spectra(self, rec_elem, elem_sim):
         """Updates spectra from given hist_files"""
-        print("Got: ", rec_elem, elem_sim)
-        elem_sim.calculate_espe(rec_elem)
+        # TODO update only happens when one of the points is moved along the
+        #      x axis. Update should also happen when a point is moved along
+        #      the y axis or gets removed, or change gets undone
+        # TODO this just assumes that the recoil is a simulated one,
+        #      not optimized. This should perhaps be changed.
+        # TODO add a checkbox that toggles automatic updates on and off
 
-        spectrum_file = os.path.join(elem_sim.directory, rec_elem.prefix +
-                                     "-" + rec_elem.name + ".simu")
+        spectrum_file = Path(elem_sim.directory,
+                             f"{rec_elem.get_full_name()}.simu")
 
-        espe_data = gf.read_espe_file(spectrum_file)
+        if spectrum_file in self.plots:
+            elem_sim.calculate_espe(rec_elem)
+            espe_data = gf.read_espe_file(spectrum_file)
 
-        x_min, _ = self.axes.get_xlim()
-        x, y = get_axis_values(espe_data)
-        x_min, x_min_changed = fix_minimum(x, x_min)
-        self.plots[spectrum_file][0].set_ydata(y)
+            _, y = get_axis_values(espe_data)
 
-        self.canvas.draw()
-        self.canvas.flush_events()
+            # TODO change plot range if necessary
+            self.plots[spectrum_file][0].set_ydata(y)
+
+            self.canvas.draw()
+            self.canvas.flush_events()
 
 
 def get_axis_values(data):

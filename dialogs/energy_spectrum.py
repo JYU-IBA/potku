@@ -392,7 +392,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         for i in range(child_count):
             item = root.child(i)
             if item.checkState(0):
-                use_cuts.append(os.path.join(item.directory, item.file_name))
+                use_cuts.append(Path(item.directory, item.file_name))
                 EnergySpectrumParamsDialog.checked_cuts[m_name].append(
                     item.file_name)
             child_count = item.childCount()
@@ -403,7 +403,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     item_child = item.child(j)
                     if item_child.checkState(0):
                         use_cuts.append(
-                            os.path.join(dir_elo, item_child.file_name))
+                            Path(dir_elo, item_child.file_name))
                         EnergySpectrumParamsDialog.checked_cuts[m_name].append(
                             item_child.file_name)
                 EnergySpectrumParamsDialog.bin_width = width
@@ -434,14 +434,12 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 msg = "[{0}] Created Energy Spectrum. {1} {2}".format(
                     measurement_name,
                     "Bin width: {0}".format(width),
-                    "Cut files: {0}".format(", ".join(use_cuts))
-                )
+                    "Cut files: {0}".format(", ".join(str(cut) for cut
+                                                      in use_cuts)))
                 logging.getLogger("request").info(msg)
                 logging.getLogger(measurement_name).info(
                     "Created Energy Spectrum. Bin width: {0} Cut files: {1}".
-                    format(
-                        width,
-                        ", ".join(use_cuts)))
+                    format(width, ", ".join(str(cut) for cut in use_cuts)))
                 log_info = "Energy Spectrum graph points:\n"
                 data = self.parent.energy_spectrum_widget.energy_spectrum_data
                 splitinfo = "\n".join(["{0}: {1}".format(key, ", ".join(
@@ -580,7 +578,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                     if is_rbs(cut):
                         # This should work for regular cut and split.
                         key = "{0}.{1}.{2}.{3}".format(split[1], split[2],
-                                                    split[3], split[4])
+                                                       split[3], split[4])
                         rbs_list[key] = get_scatter_element(cut)
 
             else:

@@ -31,6 +31,7 @@ import logging
 import os
 
 from collections import Counter
+from pathlib import Path
 
 from dialogs.energy_spectrum import EnergySpectrumWidget
 from dialogs.simulation.optimization import OptimizationDialog
@@ -242,10 +243,10 @@ class SimulationTabWidget(QtWidgets.QWidget):
                     lines = save_file.readlines()
                 if not lines:
                     return
-                used_files = lines[0].strip().split("\t")
+                used_files = [Path(f) for f in lines[0].strip().split("\t")]
                 used_files_confirmed = []
                 for u_f in used_files:
-                    if os.path.exists(u_f):
+                    if u_f.exists():
                         used_files_confirmed.append(u_f)
                 if Counter(used_files) != Counter(used_files_confirmed):
                     save_energy_spectrum = True

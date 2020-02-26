@@ -37,12 +37,12 @@ import json
 import numpy
 import os
 import platform
-import re
 import shutil
 import subprocess
 import sys
 import tempfile
 
+from pathlib import Path
 from decimal import Decimal
 from modules.parsing import ToFListParser
 from subprocess import Popen
@@ -229,11 +229,10 @@ def calculate_spectrum(tof_listed_files, spectrum_width, measurement,
         else:
             foil_txt = ""
 
-        filename = os.path.join(directory_es,
-                                "{0}.{1}{2}.hist".format(
-                                    os.path.splitext(file)[0],
-                                    key,
-                                    foil_txt))
+        filename = Path(directory_es,
+                        "{0}.{1}{2}.hist".format(os.path.splitext(file)[0],
+                                                 key,
+                                                 foil_txt))
         numpy_array = numpy.array(histed,
                                   dtype=[('float', float),
                                          ('int', int)])
