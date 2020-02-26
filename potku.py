@@ -37,6 +37,8 @@ import shutil
 import subprocess
 import sys
 
+import widgets.input_validation as iv
+
 from datetime import datetime
 from datetime import timedelta
 
@@ -51,12 +53,11 @@ from dialogs.simulation.new_simulation import SimulationNewDialog
 from dialogs.file_dialogs import open_file_dialog
 
 from widgets.gui_utils import GUIReporter
+from widgets.icon_manager import IconManager
 
 from modules.general_functions import remove_file
 from modules.general_functions import rename_file
-from modules.general_functions import validate_text_input
 from modules.global_settings import GlobalSettings
-from modules.icon_manager import IconManager
 from modules.measurement import Measurement
 from modules.request import Request
 from modules.simulation import Simulation
@@ -227,7 +228,7 @@ class Potku(QtWidgets.QMainWindow):
 
         if clicked_item:
             regex = "^[A-Za-z0-9-ÖöÄäÅå]+"
-            valid_text = validate_text_input(clicked_item.text(0), regex)
+            valid_text = iv.validate_text_input(clicked_item.text(0), regex)
 
             if valid_text != clicked_item.text(0):
                 QtWidgets.QMessageBox.information(

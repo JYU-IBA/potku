@@ -3,11 +3,14 @@
 Created on 3.8.2018
 Updated on 16.8.2018
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.  
-Copyright (C) 2018 Heta Rekilä
+
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
+Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
+Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
+Sinikka Siironen
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -22,7 +25,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Heta Rekilä"
+
+__author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n Samuli " \
+             "Rahkonen \n Miika Raunio \n" \
+             "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
+             "\n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import re
@@ -94,3 +101,62 @@ class InputValidator(QValidator):
                 return match.group(0)
             else:
                 return ""
+
+
+def check_text(input_field):
+    """Checks if the given QLineEdit input field contains text. If not,
+    field's background is set red.
+
+    Args:
+        input_field: QLineEdit object.
+
+    Return:
+        True for white, False for red.
+    """
+    if not input_field.text():
+        set_input_field_red(input_field)
+        return False
+    else:
+        set_input_field_white(input_field)
+        return True
+
+
+def set_input_field_red(input_field):
+    """Sets the background of given input field red.
+
+    Args:
+        input_field: Qt widget that supports Qt Style Sheets.
+    """
+    input_field.setStyleSheet("background-color: %s" % "#f6989d")
+
+
+def set_input_field_white(input_field):
+    """Sets the background of given input field white.
+
+    Args:
+        input_field: Qt widget that supports Qt Style Sheets.
+    """
+    input_field.setStyleSheet("background-color: %s" % "#ffffff")
+
+
+def validate_text_input(text, regex):
+    """
+    Validate the text using given regular expression. If not valid, remove
+    invalid characters.
+
+    Args:
+        text: Text to validate.
+        regex: Regular expression to match.
+    """
+    valid = re.match(regex + "$", text)
+
+    if "_" in regex:  # Request name
+        substitute_regex = "[^A-Za-z0-9_ÖöÄäÅå-]"
+    else:  # Other names
+        substitute_regex = "[^A-Za-z0-9-ÖöÄäÅå]"
+
+    if not valid:
+        valid_text = re.sub(substitute_regex, '', text)
+        return valid_text
+    else:
+        return text

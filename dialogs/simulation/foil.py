@@ -31,11 +31,10 @@ __version__ = "2.0"
 import copy
 import os
 
+import widgets.input_validation as iv
+
 from modules.foil import CircularFoil
 from modules.foil import RectangularFoil
-from modules.general_functions import set_input_field_red
-from modules.general_functions import check_text
-from modules.general_functions import validate_text_input
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -84,7 +83,7 @@ class FoilDialog(QtWidgets.QDialog):
         self.ui.dimensionLayout.addWidget(self.dimension_label)
         self.ui.dimensionLayout.addWidget(self.dimension_edits[0])
 
-        set_input_field_red(self.ui.nameEdit)
+        iv.set_input_field_red(self.ui.nameEdit)
         self.fields_are_valid = False
         self.ui.nameEdit.textChanged.connect(lambda: self.__check_text(
             self.ui.nameEdit, self))
@@ -166,7 +165,7 @@ class FoilDialog(QtWidgets.QDialog):
             input_field: Input field the contents of which are checked.
             dialog: Foil dialog.
         """
-        dialog.fields_are_valid = check_text(input_field)
+        dialog.fields_are_valid = iv.check_text(input_field)
 
     def _save_foil_info_and_close(self):
         """Saves foil information and closes dialog."""
@@ -215,6 +214,6 @@ class FoilDialog(QtWidgets.QDialog):
         """
         text = self.ui.nameEdit.text()
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = validate_text_input(text, regex)
+        valid_text = iv.validate_text_input(text, regex)
 
         self.ui.nameEdit.setText(valid_text)

@@ -30,15 +30,13 @@ __version__ = "2.0"
 
 import os
 
+import widgets.input_validation as iv
+
 from PyQt5 import uic
 from PyQt5 import QtWidgets
 
 from dialogs.new_sample import NewSampleDialog
 from dialogs.file_dialogs import open_file_dialog
-from modules.general_functions import check_text
-from modules.general_functions import set_input_field_red
-from modules.general_functions import set_input_field_white
-from modules.general_functions import validate_text_input
 
 
 class LoadMeasurementDialog(QtWidgets.QDialog):
@@ -72,13 +70,13 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
                 "Sample " + "%02d" % sample.serial_number + " " + sample.name)
 
         if not samples:
-            set_input_field_red(self.ui.samplesComboBox)
+            iv.set_input_field_red(self.ui.samplesComboBox)
 
-        set_input_field_red(self.ui.nameLineEdit)
+        iv.set_input_field_red(self.ui.nameLineEdit)
         self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
             self.ui.nameLineEdit))
 
-        set_input_field_red(self.ui.pathLineEdit)
+        iv.set_input_field_red(self.ui.pathLineEdit)
         self.ui.pathLineEdit.textChanged.connect(lambda: self.__check_text(
             self.ui.pathLineEdit))
 
@@ -93,7 +91,7 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
             self.ui.samplesComboBox.addItem(dialog.name)
             self.ui.samplesComboBox.setCurrentIndex(
                 self.ui.samplesComboBox.findText(dialog.name))
-            set_input_field_white(self.ui.samplesComboBox)
+            iv.set_input_field_white(self.ui.samplesComboBox)
 
     def __load_measurement(self):
         self.path = self.ui.pathLineEdit.text()
@@ -139,7 +137,7 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
 
     @staticmethod
     def __check_text(input_field):
-        check_text(input_field)
+        iv.check_text(input_field)
 
     def __find_existing_sample(self):
         """
@@ -160,6 +158,6 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
         """
         text = self.ui.nameLineEdit.text()
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = validate_text_input(text, regex)
+        valid_text = iv.validate_text_input(text, regex)
 
         self.ui.nameLineEdit.setText(valid_text)

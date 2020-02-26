@@ -32,12 +32,9 @@ __version__ = "2.0"
 import os
 import platform
 
-from dialogs.new_sample import NewSampleDialog
+import widgets.input_validation as iv
 
-from modules.general_functions import check_text
-from modules.general_functions import set_input_field_red
-from modules.general_functions import set_input_field_white
-from modules.general_functions import validate_text_input
+from dialogs.new_sample import NewSampleDialog
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -64,9 +61,9 @@ class SimulationNewDialog(QtWidgets.QDialog):
                                             + " " + sample.name)
 
         if not samples:
-            set_input_field_red(self.ui.samplesComboBox)
+            iv.set_input_field_red(self.ui.samplesComboBox)
 
-        set_input_field_red(self.ui.simulationNameLineEdit)
+        iv.set_input_field_red(self.ui.simulationNameLineEdit)
         self.ui.simulationNameLineEdit.textChanged.connect(
             lambda: self.__check_text(self.ui.simulationNameLineEdit))
 
@@ -93,7 +90,7 @@ class SimulationNewDialog(QtWidgets.QDialog):
             self.ui.samplesComboBox.addItem(dialog.name)
             self.ui.samplesComboBox.setCurrentIndex(self.ui.samplesComboBox
                                                     .findText(dialog.name))
-            set_input_field_white(self.ui.samplesComboBox)
+            iv.set_input_field_white(self.ui.samplesComboBox)
 
     def __create_simulation(self):
         """Check given values and store them in dialog object.
@@ -136,7 +133,7 @@ class SimulationNewDialog(QtWidgets.QDialog):
         Args:
             input_field: Input field the contents of which are checked.
         """
-        check_text(input_field)
+        iv.check_text(input_field)
 
     def __find_existing_sample(self):
         """
@@ -157,6 +154,6 @@ class SimulationNewDialog(QtWidgets.QDialog):
         """
         text = self.ui.simulationNameLineEdit.text()
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = validate_text_input(text, regex)
+        valid_text = iv.validate_text_input(text, regex)
 
         self.ui.simulationNameLineEdit.setText(valid_text)

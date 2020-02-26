@@ -33,10 +33,11 @@ import modules.masses as masses
 import platform
 import os
 
+import widgets.input_validation as iv
+
 from dialogs.element_selection import ElementSelectionDialog
 
 from modules.element import Element
-from modules.general_functions import set_input_field_red
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
@@ -217,7 +218,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
 
             if isotope_combobox.count() == 0:
                 isotope_info_label.setVisible(True)
-                set_input_field_red(isotope_combobox)
+                iv.set_input_field_red(isotope_combobox)
             else:
                 isotope_info_label.setVisible(False)
                 isotope_combobox.setStyleSheet("background-color: %s" % "None")
@@ -359,12 +360,12 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
                         "background-color: %s" % "None")
                 else:
                     current_isotope = None
-                    set_input_field_red(self.ui.rbs_isotope_combobox)
+                    iv.set_input_field_red(self.ui.rbs_isotope_combobox)
                     self.ui.rbsIsotopeInfoLabel.setVisible(True)
             else:
                 if self.ui.sampleIsotopeInfoLabel.isVisible():
                     current_isotope = None
-                    set_input_field_red(self.ui.rbs_isotope_combobox)
+                    iv.set_input_field_red(self.ui.rbs_isotope_combobox)
                     self.ui.rbsIsotopeInfoLabel.setVisible(True)
                 else:
                     self.ui.rbsIsotopeInfoLabel.setVisible(False)
@@ -447,11 +448,11 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
                     self.ui.sample_isotope_combobox.setStyleSheet(
                         "background-color: %s" % "None")
                 else:
-                    set_input_field_red(self.ui.sample_isotope_combobox)
+                    iv.set_input_field_red(self.ui.sample_isotope_combobox)
                     self.ui.sampleIsotopeInfoLabel.setVisible(True)
             else:
                 if self.ui.rbsIsotopeInfoLabel.isVisible():
-                    set_input_field_red(self.ui.sample_isotope_combobox)
+                    iv.set_input_field_red(self.ui.sample_isotope_combobox)
                     self.ui.sampleIsotopeInfoLabel.setVisible(True)
                 else:
                     self.ui.sample_isotope_combobox.setStyleSheet(

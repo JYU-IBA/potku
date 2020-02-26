@@ -562,65 +562,6 @@ def to_superscript(string):
     return "".join(sups.get(char, char) for char in string)
 
 
-def check_text(input_field):
-    """Checks if the given QLineEdit input field contains text. If not,
-    field's background is set red.
-
-    Args:
-        input_field: QLineEdit object.
-
-    Return:
-        True for white, False for red.
-    """
-    if not input_field.text():
-        set_input_field_red(input_field)
-        return False
-    else:
-        set_input_field_white(input_field)
-        return True
-
-
-def set_input_field_red(input_field):
-    """Sets the background of given input field red.
-
-    Args:
-        input_field: Qt widget that supports Qt Style Sheets.
-    """
-    input_field.setStyleSheet("background-color: %s" % "#f6989d")
-
-
-def set_input_field_white(input_field):
-    """Sets the background of given input field white.
-
-    Args:
-        input_field: Qt widget that supports Qt Style Sheets.
-    """
-    input_field.setStyleSheet("background-color: %s" % "#ffffff")
-
-
-def validate_text_input(text, regex):
-    """
-    Validate the text using given regular expression. If not valid, remove
-    invalid characters.
-
-    Args:
-        text: Text to validate.
-        regex: Regular expression to match.
-    """
-    valid = re.match(regex + "$", text)
-
-    if "_" in regex:  # Request name
-        substitute_regex = "[^A-Za-z0-9_ÖöÄäÅå-]"
-    else:  # Other names
-        substitute_regex = "[^A-Za-z0-9-ÖöÄäÅå]"
-
-    if not valid:
-        valid_text = re.sub(substitute_regex, '', text)
-        return valid_text
-    else:
-        return text
-
-
 def find_y_on_line(point1, point2, x):
     """
     Find the y(x) based on a line that goes through point1 and 2.
