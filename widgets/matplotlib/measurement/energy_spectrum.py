@@ -31,8 +31,9 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import copy
-import modules.masses as masses
 import os
+
+import modules.general_functions as gf
 
 from dialogs.graph_ignore_elements import GraphIgnoreElements
 
@@ -50,6 +51,8 @@ from scipy import integrate
 from shapely.geometry import Polygon
 
 from widgets.matplotlib.base import MatplotlibWidget
+
+from tests.utils import stopwatch
 
 
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
@@ -461,8 +464,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 color = None
                 suffix = ""
 
-                # TODO label text needs to be reformatted when dealing with
-                #      'no_foil.hist' files
                 if file_name.endswith(".hist"):
                     measurement_name, isotope_and_symbol, erd_or_rbs, rest = \
                         file_name.split('.', 3)
@@ -482,8 +483,14 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                         isotope = ""
                     symbol = element.symbol
 
-                    rest_split = rest.split('.')
-                    if len(rest_split)  == 2:  # regular hist file
+                    rest_split = rest.split(".")
+                    if "no_foil" in rest_split:
+                        # TODO make a function that splits all the necessary
+                        #      parts from a file name at once so there is no
+                        #      need to do these kinds of checks
+                        rest_split.remove("no_foil")
+
+                    if len(rest_split) == 2:  # regular hist file
                         label = r"$^{" + str(isotope) + "}$" + symbol + suffix \
                             + " (exp)"
                     else:  # split
@@ -625,9 +632,24 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.on_draw()
         self.limits = []
 
-    def update_spectra(self, rec_elem):
+    @stopwatch
+    def update_spectra(self, rec_elem, elem_sim):
         """Updates spectra from given hist_files"""
-        print("Got: ", rec_elem)
+        print("Got: ", rec_elem, elem_sim)
+        elem_sim.calculate_espe(rec_elem)
+
+        spectrum_file = os.path.join(elem_sim.directory, rec_elem.prefix +
+                                     "-" + rec_elem.name + ".simu")
+
+        espe_data = gf.read_espe_file(spectrum_file)
+
+        x_min, _ = self.axes.get_xlim()
+        x, y = get_axis_values(espe_data)
+        x_min, x_min_changed = fix_minimum(x, x_min)
+        self.plots[spectrum_file][0].set_ydata(y)
+
+        self.canvas.draw()
+        self.canvas.flush_events()
 
 
 def get_axis_values(data):

@@ -47,6 +47,7 @@ from matplotlib.widgets import SpanSelector
 from modules.element import Element
 from modules.point import Point
 from modules.recoil_element import RecoilElement
+from modules.element_simulation import ElementSimulation
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
@@ -305,7 +306,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                   1: "pan/zoom",  # Matplotlib's drag
                   2: "zoom rect"  # Matplotlib's zoom
                   }
-    recoil_element_points_changed = pyqtSignal(RecoilElement)
+    recoil_element_points_changed = pyqtSignal(RecoilElement, ElementSimulation)
 
     def __init__(self, parent, simulation, target, tab, icon_manager,
                  statusbar=None):
@@ -1549,7 +1550,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             clicked.set_x(right_neighbor.get_x() - self.x_res)
 
         # TODO for now, just emit this after x value changes
-        self.recoil_element_points_changed.emit(self.current_recoil_element)
+        self.recoil_element_points_changed.emit(self.current_recoil_element,
+                                                self.current_element_simulation)
         self.update_plot()
 
     def set_selected_point_y(self, y=None, clicked=None):
