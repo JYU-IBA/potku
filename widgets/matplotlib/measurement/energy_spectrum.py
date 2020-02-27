@@ -624,11 +624,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             dialog = GraphIgnoreElements(elements, ignore_elements_for_dialog)
             for elem in dialog.ignored_elements:
                 for path in paths:
-                    if elem in path:
-                        index = path.find(elem)
-                        if path[index - 1] == os.path.sep and path[index +
-                                                                   len(elem)]\
-                                == '.':
+                    file_name = path.name
+                    if elem in file_name:
+                        index = file_name.find(elem)
+                        if file_name[index + len(elem)] == ".":
+                            # TODO this check seems a bit unnecessary
                             ignored_elements.append(path)
             self.__ignore_elements = ignored_elements
         else:
