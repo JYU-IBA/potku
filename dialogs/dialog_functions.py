@@ -103,12 +103,9 @@ def _update_cuts(old_cut_files, directory):
     """
     for file in os.listdir(directory):
         for i, cut in enumerate(old_cut_files):
-            if isinstance(cut, Path):
-                cut_str = cut.name
-            else:
-                cut_str = os.path.basename(cut)
+            file_name = Path(cut).name
 
-            cut_split = cut_str.split(".")
+            cut_split = file_name.split(".")
             file_split = file.split(".")
 
             if len(file_split) != len(cut_split):
@@ -161,26 +158,22 @@ def delete_optim_espe(qdialog, elem_sim):
     """Deletes energy spectra from optimized recoils"""
     # TODO refactor this wit delete_simu_espe
     for opt_rec in elem_sim.optimization_recoils:
-        delete_recoil_espe(qdialog, opt_rec)
+        delete_recoil_espe(qdialog, opt_rec.get_full_name())
 
 
-def delete_recoil_espe(qdialog, recoil):
-    """Deletes recoil's energy spectra"""
+def delete_recoil_espe(qdialog, recoil_name):
+    """Deletes recoil's energy spectra.
+    """
     for energy_spectra in qdialog.tab.energy_spectrum_widgets:
-        for element_path in energy_spectra. \
-                energy_spectrum_data.keys():
-            elem = recoil.prefix + "-" + recoil.name
-            if elem in element_path:
-                index = element_path.find(elem)
-                if element_path[index - 1] == os.path.sep and \
-                        element_path[index + len(elem)] == '.':
+        for element_path in energy_spectra.energy_spectrum_data:
+            file_name = Path(element_path).name
+            if file_name.startswith(recoil_name):
+                if file_name[len(recoil_name)] == ".":
                     qdialog.tab.del_widget(energy_spectra)
-                    qdialog.tab.energy_spectrum_widgets.remove(
-                        energy_spectra)
-                    save_file_path = os.path.join(
-                        qdialog.tab.simulation.directory,
-                        energy_spectra.save_file)
-                    if os.path.exists(save_file_path):
+                    qdialog.tab.energy_spectrum_widgets.remove(energy_spectra)
+                    save_file_path = Path(qdialog.tab.simulation.directory,
+                                          energy_spectra.save_file)
+                    if save_file_path.exists():
                         os.remove(save_file_path)
                     break
 
@@ -260,7 +253,7 @@ def delete_simu_espe(qdialog, elem_sim):
     for recoil in elem_sim.recoil_elements:
         gf.delete_simulation_results(elem_sim, recoil)
         # Delete energy spectra that use recoil
-        delete_recoil_espe(qdialog, recoil)
+        delete_recoil_espe(qdialog, recoil.get_full_name())
 
 
 def update_detector_settings(entity, det_folder_path,
@@ -340,7 +333,7 @@ def clear_element_simulation(qdialog):
         gf.delete_simulation_results(qdialog.element_simulation, recoil)
 
         # Delete energy spectra that use recoil
-        delete_recoil_espe(qdialog, recoil)
+        delete_recoil_espe(qdialog, recoil.get_full_name())
 
     # Reset controls
     if qdialog.element_simulation.controls:

@@ -658,6 +658,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         # TODO add a checkbox that toggles automatic updates on and off
         # TODO might want to prevent two widgets running this simultaneously
         #      as they are writing/reading the same files
+        # TODO add some kind of backlog to store changes in spectra that are
+        #      ignored so they can be updated immediately after they no longer
+        #      are ignored.
         if rec_elem is None or elem_sim is None:
             return
 

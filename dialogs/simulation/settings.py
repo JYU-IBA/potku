@@ -405,7 +405,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                         for recoil in elem_sim.recoil_elements:
                             delete_simulation_results(elem_sim, recoil)
                             # Delete energy spectra that use recoil
-                            df.delete_recoil_espe(self, recoil)
+                            df.delete_recoil_espe(self, recoil.get_full_name())
                         elem_sim.simulations_done = False
 
                     for elem_sim in optimization_run:

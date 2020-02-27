@@ -32,6 +32,7 @@ import matplotlib
 import os
 
 import modules.general_functions as gf
+import dialogs.dialog_functions as df
 
 from dialogs.simulation.element_simulation_settings import \
     ElementSimulationSettingsDialog
@@ -562,24 +563,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 # If name has changed
                 if old_recoil_name != self.current_recoil_element.name:
                     # Delete energy spectra that use recoil
-                    for energy_spectra in self.tab.energy_spectrum_widgets:
-                        for element_path in energy_spectra. \
-                                energy_spectrum_data.keys():
-                            elem = self.current_recoil_element.prefix + "-" + \
-                                   old_recoil_name
-                            if elem in element_path:
-                                index = element_path.find(elem)
-                                if element_path[index - 1] == os.path.sep and \
-                                        element_path[index + len(elem)] == '.':
-                                    self.tab.del_widget(energy_spectra)
-                                    self.tab.energy_spectrum_widgets.remove(
-                                        energy_spectra)
-                                    save_file_path = os.path.join(
-                                        self.tab.simulation.directory,
-                                        energy_spectra.save_file)
-                                    if os.path.exists(save_file_path):
-                                        os.remove(save_file_path)
-                                    break
+                    df.delete_recoil_espe(
+                        self,
+                        f"{self.current_recoil_element.prefix}-"
+                        f"{old_recoil_name}")
 
                 self.update_recoil_element_info_labels()
                 self.update_colors()
@@ -671,23 +658,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.current_element_simulation, recoil)
 
                 # Delete energy spectra that use recoil
-                for energy_spectra in self.tab.energy_spectrum_widgets:
-                    for element_path in energy_spectra. \
-                            energy_spectrum_data.keys():
-                        elem = recoil.prefix + "-" + recoil.name
-                        if elem in element_path:
-                            index = element_path.find(elem)
-                            if element_path[index - 1] == os.path.sep and \
-                                    element_path[index + len(elem)] == '.':
-                                self.tab.del_widget(energy_spectra)
-                                self.tab.energy_spectrum_widgets.remove(
-                                    energy_spectra)
-                                save_file_path = os.path.join(
-                                    self.tab.simulation.directory,
-                                    energy_spectra.save_file)
-                                if os.path.exists(save_file_path):
-                                    os.remove(save_file_path)
-                                break
+                df.delete_recoil_espe(self, recoil.get_full_name())
 
             # Reset controls
             if self.current_element_simulation.controls:
@@ -1214,24 +1185,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.remove_recoil_element(recoil_elem.widgets[0],
                                                element_simulation, recoil_elem)
                     # Delete energy spectra that use recoil
-                    for energy_spectra in self.tab.energy_spectrum_widgets:
-                        for element_path in energy_spectra. \
-                                energy_spectrum_data.keys():
-                            elem = recoil_elem.prefix + "-" + recoil_elem.name
-                            if elem in element_path:
-                                index = element_path.find(elem)
-                                if element_path[index - 1] == os.path.sep and \
-                                        element_path[index + len(elem)] == '.':
-                                    self.tab.del_widget(energy_spectra)
-                                    self.tab.energy_spectrum_widgets.remove(
-                                        energy_spectra)
-                                    save_file_path = os.path.join(
-                                        self.simulation.directory,
-                                        energy_spectra
-                                            .save_file)
-                                    if os.path.exists(save_file_path):
-                                        os.remove(save_file_path)
-                                    break
+                    df.delete_recoil_espe(self, recoil_elem.get_full_name())
+
         self.current_recoil_element = None
         self.remove_element(element_simulation)
         # Remove recoil lines
@@ -1239,24 +1194,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if recoil in self.other_recoils:
                 self.other_recoils.remove(recoil)
             # Delete energy spectra that use recoil
-            for energy_spectra in self.tab.energy_spectrum_widgets:
-                for element_path in energy_spectra. \
-                        energy_spectrum_data.keys():
-                    elem = recoil.prefix + "-" + recoil.name
-                    # FIXME crash here when element_path is Path object
-                    if elem in element_path:
-                        index = element_path.find(elem)
-                        if element_path[index - 1] == os.path.sep and \
-                                element_path[index + len(elem)] == '.':
-                            self.tab.del_widget(energy_spectra)
-                            self.tab.energy_spectrum_widgets.remove(
-                                energy_spectra)
-                            save_file_path = os.path.join(
-                                self.simulation.directory,
-                                energy_spectra.save_file)
-                            if os.path.exists(save_file_path):
-                                os.remove(save_file_path)
-                            break
+            df.delete_recoil_espe(self, recoil.get_full_name())
 
         # Handle optimization results
         if self.current_element_simulation.optimization_recoils:
@@ -1264,23 +1202,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.current_element_simulation.optimization_widget)
             # Delete energy spectra that use optimized recoils
             for opt_rec in self.current_element_simulation.optimization_recoils:
-                for energy_spectra in self.tab.energy_spectrum_widgets:
-                    for element_path in energy_spectra. \
-                            energy_spectrum_data.keys():
-                        elem = opt_rec.prefix + "-" + opt_rec.name
-                        if elem in element_path:
-                            index = element_path.find(elem)
-                            if element_path[index - 1] == os.path.sep and \
-                                    element_path[index + len(elem)] == '.':
-                                self.tab.del_widget(energy_spectra)
-                                self.tab.energy_spectrum_widgets.remove(
-                                    energy_spectra)
-                                save_file_path = os.path.join(
-                                    self.simulation.directory,
-                                    energy_spectra.save_file)
-                                if os.path.exists(save_file_path):
-                                    os.remove(save_file_path)
-                                break
+                df.delete_recoil_espe(self, opt_rec.get_full_name())
 
         # Handle fluence optimization results deleting
         if self.current_element_simulation.optimization_widget:
