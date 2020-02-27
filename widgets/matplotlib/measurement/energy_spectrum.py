@@ -61,17 +61,20 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     """
 
     def __init__(self, parent, histed_files, rbs_list, spectrum_type,
-                 legend=True, spectra_changed=None):
+                 legend=True, spectra_changed=None, disconnect_previous=False):
         """Inits Energy Spectrum widget.
 
         Args:
             parent: EnergySpectrumWidget class object.
             histed_files: List of calculated energy spectrum files.
             rbs_list: A dictionary of RBS selection elements containing
-                      scatter elements.
+                scatter elements.
             legend: Boolean representing whether to draw legend or not.
             spectra_changed: pyQtSignal that indicates a change in spectra
-                             that requires redrawing
+                that requires redrawing
+            disconnect_previous: whether energy spectrum widgets that were
+                previously connected to the spectra_changed signal will be
+                disconnected
         """
         super().__init__(parent)
         self.parent = parent
@@ -141,13 +144,14 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         # separately
         self.plots = {}
         if spectra_changed is not None:
-            # Disconnect previous slots so only the last spectra graph
-            # gets updated
-            try:
-                spectra_changed.disconnect()
-            except TypeError:
-                # signal had no previous connections, nothing to do
-                pass
+            if disconnect_previous:
+                # Disconnect previous slots so only the last spectra graph
+                # gets updated
+                try:
+                    spectra_changed.disconnect()
+                except TypeError:
+                    # signal had no previous connections, nothing to do
+                    pass
             spectra_changed.connect(self.update_spectra)
 
         self.on_draw()
@@ -642,13 +646,20 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
 
     @stopwatch
     def update_spectra(self, rec_elem, elem_sim):
-        """Updates spectra from given hist_files"""
-        # TODO update only happens when one of the points is moved along the
-        #      x axis. Update should also happen when a point is moved along
-        #      the y axis or gets removed, or change gets undone
+        """Updates spectra line that belongs to given recoil element.
+
+        Args:
+            rec_elem: RecoilElement object
+            elem_sim: ElementSimulation object that is used to calculate
+                the spectrum
+        """
         # TODO this just assumes that the recoil is a simulated one,
         #      not optimized. This should perhaps be changed.
         # TODO add a checkbox that toggles automatic updates on and off
+        # TODO might want to prevent two widgets running this simultaneously
+        #      as they are writing/reading the same files
+        if rec_elem is None or elem_sim is None:
+            return
 
         spectrum_file = Path(elem_sim.directory,
                              f"{rec_elem.get_full_name()}.simu")

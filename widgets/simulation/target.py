@@ -87,7 +87,7 @@ class TargetWidget(QtWidgets.QWidget):
             self, self.simulation, self.target, tab, icon_manager,
             statusbar=self.statusbar)
         self.spectra_changed = self.recoil_distribution_widget. \
-            recoil_element_points_changed
+            recoil_dist_changed
 
         icon_manager.set_icon(self.ui.editPushButton, "edit.svg")
         self.ui.editPushButton.setIconSize(QtCore.QSize(14, 14))

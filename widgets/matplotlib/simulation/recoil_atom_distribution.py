@@ -306,7 +306,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                   1: "pan/zoom",  # Matplotlib's drag
                   2: "zoom rect"  # Matplotlib's zoom
                   }
-    recoil_element_points_changed = pyqtSignal(RecoilElement, ElementSimulation)
+    # Signal that is emitted when recoil distribution changes
+    recoil_dist_changed = pyqtSignal(RecoilElement, ElementSimulation)
 
     def __init__(self, parent, simulation, target, tab, icon_manager,
                  statusbar=None):
@@ -1080,7 +1081,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 .add_new_element_simulation(element, color)
         else:
             self.element_manager.add_element_simulation(
-                element_simulation, self.recoil_element_points_changed)
+                element_simulation, self.recoil_dist_changed)
 
         # Add recoil element widgets
         for recoil_element in element_simulation.recoil_elements:
@@ -1242,6 +1243,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 for element_path in energy_spectra. \
                         energy_spectrum_data.keys():
                     elem = recoil.prefix + "-" + recoil.name
+                    # FIXME crash here when element_path is Path object
                     if elem in element_path:
                         index = element_path.find(elem)
                         if element_path[index - 1] == os.path.sep and \
@@ -1549,9 +1551,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         elif right_neighbor.get_x() <= x:
             clicked.set_x(right_neighbor.get_x() - self.x_res)
 
-        # TODO for now, just emit this after x value changes
-        self.recoil_element_points_changed.emit(self.current_recoil_element,
-                                                self.current_element_simulation)
         self.update_plot()
 
     def set_selected_point_y(self, y=None, clicked=None):
@@ -2147,6 +2146,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.selected_points.clear()
             self.update_plot()
 
+            self.recoil_dist_changed.emit(self.current_recoil_element,
+                                          self.current_element_simulation)
+
     def on_release(self, event):
         """Callback method for mouse release event. Stops dragging.
 
@@ -2165,6 +2167,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.update_plot()
 
             if self.point_clicked:
+                self.recoil_dist_changed.emit(self.current_recoil_element,
+                                              self.current_element_simulation)
                 self.span_selector.set_active(True)
 
             # If graph was clicked and span not used
@@ -2229,6 +2233,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.coordinates_widget.x_coordinate_box.setVisible(False)
         self.coordinates_widget.y_coordinate_box.setVisible(False)
         self.update_plot()
+
+        self.recoil_dist_changed.emit(self.current_recoil_element,
+                                      self.current_element_simulation)
 
     def redo_recoil_changes(self):
         """
@@ -2551,6 +2558,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         if click_x == self.__rectangle_event_release.x \
                 and round(self.__rectangle_event_click.xdata, 5) != \
                 round(xmin, 5):
+            # FIXME this does works really poorly on Windows. Context menu only
+            #       gets opened when dragging from right to left when it should
+            #       be opened after single click.
             self.__context_menu(self.__rectangle_event_click)
             return
 
