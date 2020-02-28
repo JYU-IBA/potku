@@ -239,7 +239,9 @@ class ElementManager:
                 self.parent_tab, main_element_widget, element_simulation,
                 element_simulation.recoil_elements[i].color,
                 element_simulation.recoil_elements[i],
-                statusbar=self.statusbar)
+                statusbar=self.statusbar,
+                spectra_changed=spectra_changed
+            )
             element_simulation.recoil_elements[i].widgets.append(
                 recoil_element_widget)
             recoil_element_widget.element_simulation = element_simulation

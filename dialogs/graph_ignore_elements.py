@@ -46,7 +46,7 @@ class GraphIgnoreElements(QtWidgets.QDialog):
         
         Args:
             elements: A list of elements in Depth Profile.
-            ignored: A list of elements ignored previously for ratio
+            ignored: A set of elements ignored previously for ratio
             calculation.
         """
         super().__init__()
@@ -80,5 +80,5 @@ class GraphIgnoreElements(QtWidgets.QDialog):
         for i in range(child_count):
             item = root.child(i)
             if not item.checkState(0):
-                self.ignored_elements.append(item.element)
+                self.ignored_elements.add(item.element)
         self.close()

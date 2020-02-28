@@ -70,6 +70,7 @@ class ElementWidget(QtWidgets.QWidget):
         super().__init__()
 
         self.parent = parent
+        # TODO rename parent_tab to tab
         self.parent_tab = parent_tab
         self.element_simulation = element_simulation
         self.statusbar = statusbar
@@ -152,13 +153,15 @@ class ElementWidget(QtWidgets.QWidget):
 
         recoil_element = RecoilElement(element, points, color, name,
                                        rec_type=rec_type)
-        self.running_int_recoil = self.running_int_recoil + 1
-        recoil_widget = RecoilElementWidget(self.parent, element,
-                                            self.parent_tab, self,
-                                            self.element_simulation,
-                                            color,
-                                            recoil_element,
-                                            statusbar=self.statusbar)
+        self.running_int_recoil += 1
+        recoil_widget = RecoilElementWidget(
+            self.parent, element,
+            self.parent_tab, self,
+            self.element_simulation,
+            color, recoil_element,
+            statusbar=self.statusbar,
+            spectra_changed=self.spectra_changed
+        )
         recoil_element.widgets.append(recoil_widget)
         self.element_simulation.recoil_elements.append(recoil_element)
 

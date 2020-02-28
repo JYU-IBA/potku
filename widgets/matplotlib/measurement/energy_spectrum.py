@@ -59,6 +59,8 @@ from tests.utils import stopwatch
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     """Energy spectrum widget
     """
+    # By default, draw spectra lines with a solid line
+    default_linestyle = "-"
 
     def __init__(self, parent, histed_files, rbs_list, spectrum_type,
                  legend=True, spectra_changed=None, disconnect_previous=False):
@@ -91,7 +93,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.__selection_colors = parent.parent.obj.selector.get_colors()
 
         self.__initiated_box = False
-        self.__ignore_elements = []     # TODO should be a set
+        self.__ignore_elements = set()
         self.__log_scale = False
 
         self.canvas.manager.set_title("Energy Spectrum")
@@ -469,9 +471,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 else:
                     label = r"$^{" + str(isotope) + "}$" + element \
                             + rbs_string + "$_{split: " + cut_file[2] + "}$"
-                self.plots[key] = self.axes.plot(x, y,
-                                                 color=color,
-                                                 label=label)
+                line, = self.axes.plot(x, y, color=color, label=label,
+                                       linestyle=self.default_linestyle)
+                self.plots[key] = line
 
         else:  # Simulation energy spectrum
             if self.__ignore_elements:
@@ -546,10 +548,12 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 x_min, x_min_changed = fix_minimum(x, x_min)
 
                 if not color:
-                    self.plots[key] = self.axes.plot(x, y, label=label)
+                    line, = self.axes.plot(x, y, label=label,
+                                           linestyle=self.default_linestyle)
                 else:
-                    self.plots[key] = self.axes.plot(x, y, label=label,
-                                                     color=color)
+                    line, = self.axes.plot(x, y, label=label, color=color,
+                                           linestyle=self.default_linestyle)
+                self.plots[key] = line
 
         if self.draw_legend:
             if not self.__initiated_box:
@@ -645,15 +649,35 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                         if file_name[index + len(elem)] == ".":
                             # TODO this check seems a bit unnecessary
                             ignored_elements.append(path)
-            self.__ignore_elements = ignored_elements
+            self.__ignore_elements = {ie for ie in ignored_elements}
         else:
             elements = [item[0] for item in sorted(self.histed_files.items(),
                                                    key=lambda x: self.__sortt(
                                                     x[0]))]
             dialog = GraphIgnoreElements(elements, self.__ignore_elements)
-            self.__ignore_elements = dialog.ignored_elements
-        self.on_draw()
+            self.__ignore_elements = {ie for ie in dialog.ignored_elements}
+
+        # FIXME when a plot is hidden and scale is changed to logarithmic,
+        #       plot will not reappear when it is unselected in the ignore
+        #       dialog. It only appears when changing the scale is changed
+        #       again.
         self.limits = []
+        self.hide_plots(self.__ignore_elements)
+
+    def hide_plots(self, plots_to_hide):
+        """Hides given plots from the graph.
+
+        Args:
+            plots_to_hide: collection of plot names that will be hidden.
+        """
+        for file_name, line in self.plots.items():
+            if file_name in plots_to_hide:
+                line.set_linestyle("None")
+            else:
+                # Any other plot will use the default style
+                line.set_linestyle(self.default_linestyle)
+        self.canvas.draw()
+        self.canvas.flush_events()
 
     @stopwatch
     def update_spectra(self, rec_elem, elem_sim):
@@ -669,9 +693,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         # TODO add a checkbox that toggles automatic updates on and off
         # TODO might want to prevent two widgets running this simultaneously
         #      as they are writing/reading the same files
-        # TODO add some kind of backlog to store changes in spectra that are
-        #      ignored so they can be updated immediately after they no longer
-        #      are ignored.
+        # FIXME this crashes if two widgets are drawn with different bin widths
+        #      'ValueError: shape mismatch: objects cannot be broadcast to a
+        #      single shape'
         if rec_elem is None or elem_sim is None:
             return
 
@@ -685,7 +709,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             _, y = get_axis_values(espe_data)
 
             # TODO change plot range if necessary
-            self.plots[spectrum_file][0].set_ydata(y)
+            # TODO try set data instead
+            self.plots[spectrum_file].set_ydata(y)
 
             self.canvas.draw()
             self.canvas.flush_events()
