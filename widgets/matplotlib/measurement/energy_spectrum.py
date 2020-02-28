@@ -63,7 +63,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     default_linestyle = "-"
 
     def __init__(self, parent, histed_files, rbs_list, spectrum_type,
-                 legend=True, spectra_changed=None, disconnect_previous=False):
+                 legend=True, spectra_changed=None, disconnect_previous=False,
+                 channel_width=None):
         """Inits Energy Spectrum widget.
 
         Args:
@@ -77,6 +78,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             disconnect_previous: whether energy spectrum widgets that were
                 previously connected to the spectra_changed signal will be
                 disconnected
+            channel_width: channel width used in spectra calculation
         """
         super().__init__(parent)
         self.parent = parent
@@ -147,17 +149,18 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.plots = {}
 
         self.spectra_changed = spectra_changed
-        if self.spectra_changed  is not None:
+        if self.spectra_changed is not None:
             if disconnect_previous:
                 # Disconnect previous slots so only the last spectra graph
                 # gets updated
                 try:
-                    self.spectra_changed .disconnect()
+                    self.spectra_changed.disconnect()
                 except TypeError:
                     # signal had no previous connections, nothing to do
                     pass
-            self.spectra_changed .connect(self.update_spectra)
+            self.spectra_changed.connect(self.update_spectra)
 
+        self.channel_width = channel_width
         self.on_draw()
 
     def closeEvent(self, evnt):
@@ -168,18 +171,13 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.spectra_changed.disconnect(self.update_spectra)
         super().closeEvent(evnt)
 
-    def __calculate_selected_area(self):
+    def __calculate_selected_area(self, start, end):
         """
         Calculate the ratio between the two spectra areas.
+
+        Return:
+            ratio, area(?) or None, None
         """
-        if not self.limits:
-            return
-        if not self.limits_visible:
-            return
-
-        start = self.limits[0].get_xdata()[0]
-        end = self.limits[1].get_xdata()[0]
-
         all_areas = []
         for line_points in self.lines_of_area:
             area_points = []
@@ -218,6 +216,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         for value in all_areas[1][::-1]:
             polygon_points.append((value[0], value[1]))
 
+        if not polygon_points:
+            return None, None
         # Add the first point again to close the rectangle
         polygon_points.append(polygon_points[0])
 
@@ -225,8 +225,12 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         area = polygon.area
 
         # Calculate also the ratio of the two curve's areas
-        x_1, y_1 = zip(*all_areas[0])
-        x_2, y_2 = zip(*all_areas[1])
+        try:
+            x_1, y_1 = zip(*all_areas[0])
+            x_2, y_2 = zip(*all_areas[1])
+        except ValueError:
+            # one of the areas contains no points
+            return None, None
 
         area_1 = integrate.simps(y_1, x_1)
         area_2 = integrate.simps(y_2, x_2)
@@ -237,7 +241,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         j = 0
         for line in self.lines_of_area:
             for key, values in line.items():
-                if key.endswith(".hist"):
+                if key.name.endswith(".hist"):
                     i += 1
                     break
             if i != 0:
@@ -255,22 +259,47 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             else:
                 ratio = area_1 / area_2
 
-        # Copy ratio to clipboard
-        ratio_round = 9  # Round decimal number
-        self.clipboard.setText(str(round(ratio, ratio_round)))
+        return ratio, area
 
+    def show_ratio(self):
+        """Calculates the ratio of spectra areas between the current limit
+        range and displays it on screen.
+        """
+        start, end = self.get_limit_range()
+        ratio, area = self.__calculate_selected_area(start, end)
+        self.show_ratio_box(ratio, area, start, end)
+
+    def show_ratio_box(self, ratio, area, start, end, copy_to_clipboard=True):
+        """Displays a text box that shows the ratio and of areas between two
+        spectra within start and end.
+        """
         if self.anchored_box:
             self.anchored_box.set_visible(False)
             self.anchored_box = None
 
-        text = f"Difference: {round(area, 2)}\n" \
-               f"Ratio: {round(ratio, ratio_round)}\n" \
-               f"Interval: [{round(start, 2)}, {round(end, 2)}]"
-        box1 = offsetbox.TextArea(text, textprops=dict(color="k", size=12))
+        child_boxes = []
 
-        text_2 = "\nRatio copied to clipboard."
-        box2 = offsetbox.TextArea(text_2, textprops=dict(color="k", size=10))
-        box = offsetbox.VPacker(children=[box1, box2], align="center", pad=0,
+        if ratio is None:
+            text = "Invalid selection, no ratio could be calculated"
+            child_boxes.append(offsetbox.TextArea(
+                text, textprops=dict(color="k", size=12)))
+
+        else:
+            ratio_round = 9  # Round decimal number
+
+            text = f"Difference: {round(area, 2)}\n" \
+                   f"Ratio: {round(ratio, ratio_round)}\n" \
+                   f"Interval: [{round(start, 2)}, {round(end, 2)}]"
+            child_boxes.append(offsetbox.TextArea(
+                text, textprops=dict(color="k", size=12)))
+
+            if copy_to_clipboard:
+                self.clipboard.setText(str(round(ratio, ratio_round)))
+                text_2 = "\nRatio copied to clipboard."
+                child_boxes.append(offsetbox.TextArea(
+                    text_2, textprops=dict(color="k", size=10)))
+
+        box = offsetbox.VPacker(children=child_boxes, align="center", pad=0,
                                 sep=0)
 
         self.anchored_box = offsetbox.AnchoredOffsetbox(
@@ -350,7 +379,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.__button_area_calculation.setEnabled(True)
         self.canvas.draw_idle()
 
-        self.__calculate_selected_area()
+        self.show_ratio()
 
     def __toggle_area_limits(self):
         """
@@ -368,7 +397,20 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 lim.set_linestyle('--')
             if self.limits:
                 self.limits_visible = True
-                self.__calculate_selected_area()
+                self.show_ratio()
+
+    def get_limit_range(self):
+        """Returns the limit range between the two limit lines or None, None
+        if no limits are displayed.
+        """
+        if not self.limits:
+            return None
+        if not self.limits_visible:
+            return None
+
+        start = self.limits[0].get_xdata()[0]
+        end = self.limits[1].get_xdata()[0]
+        return start, end
 
     def __sortt(self, key):
         cut_file = key.split('.')
@@ -618,7 +660,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.axes.add_artist(self.limits[0])
             self.axes.add_artist(self.limits[1])
         if self.limits_visible:
-            self.__calculate_selected_area()
+            self.show_ratio()
 
     def __ignore_elements_from_graph(self):
         """Ignore elements from elements ratio calculation.
@@ -649,13 +691,13 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                         if file_name[index + len(elem)] == ".":
                             # TODO this check seems a bit unnecessary
                             ignored_elements.append(path)
-            self.__ignore_elements = {ie for ie in ignored_elements}
+            self.__ignore_elements = set(ignored_elements)
         else:
             elements = [item[0] for item in sorted(self.histed_files.items(),
                                                    key=lambda x: self.__sortt(
                                                     x[0]))]
             dialog = GraphIgnoreElements(elements, self.__ignore_elements)
-            self.__ignore_elements = {ie for ie in dialog.ignored_elements}
+            self.__ignore_elements = set(dialog.ignored_elements)
 
         # FIXME when a plot is hidden and scale is changed to logarithmic,
         #       plot will not reappear when it is unselected in the ignore
@@ -693,9 +735,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         # TODO add a checkbox that toggles automatic updates on and off
         # TODO might want to prevent two widgets running this simultaneously
         #      as they are writing/reading the same files
-        # FIXME this crashes if two widgets are drawn with different bin widths
-        #      'ValueError: shape mismatch: objects cannot be broadcast to a
-        #      single shape'
+        # TODO change plot range if necessary
+
         if rec_elem is None or elem_sim is None:
             return
 
@@ -703,14 +744,12 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                              f"{rec_elem.get_full_name()}.simu")
 
         if spectrum_file in self.plots:
-            elem_sim.calculate_espe(rec_elem)
+            elem_sim.calculate_espe(rec_elem, ch=self.channel_width)
             espe_data = gf.read_espe_file(spectrum_file)
 
-            _, y = get_axis_values(espe_data)
+            data = get_axis_values(espe_data)
 
-            # TODO change plot range if necessary
-            # TODO try set data instead
-            self.plots[spectrum_file].set_ydata(y)
+            self.plots[spectrum_file].set_data(data)
 
             self.canvas.draw()
             self.canvas.flush_events()

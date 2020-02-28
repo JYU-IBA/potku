@@ -51,7 +51,7 @@ class GraphIgnoreElements(QtWidgets.QDialog):
         """
         super().__init__()
         self.__elements = elements
-        self.ignored_elements = ignored
+        self.ignored_elements = set(ignored)
         uic.loadUi(os.path.join("ui_files", "ui_graph_ignored_elements.ui"),
                    self)
         self.button_ok.clicked.connect(self.__ok_button)

@@ -596,7 +596,9 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 self.energy_spectrum_data,
                 rbs_list,
                 spectrum_type,
-                spectra_changed=spectra_changed)
+                spectra_changed=spectra_changed,
+                channel_width=bin_width
+            )
         except Exception as e:
             print(e)
             import traceback
