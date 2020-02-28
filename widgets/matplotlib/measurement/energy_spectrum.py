@@ -629,7 +629,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             self.axes.set_xlim([x_min, x_max])
 
         if self.__log_scale:
-            self.axes.set_yscale('symlog')
+            self.axes.set_yscale("symlog")
 
         # Remove axis ticks
         self.remove_axes_ticks()
@@ -656,7 +656,14 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         """Toggle log scaling for Y axis in depth profile graph.
         """
         self.__log_scale = self.__button_toggle_log.isChecked()
-        self.on_draw()
+        if self.__log_scale:
+            self.axes.set_yscale("symlog")
+        else:
+            self.axes.set_yscale("linear")
+
+        self.canvas.draw()
+        self.canvas.flush_events()
+
         if self.limits:
             self.axes.add_artist(self.limits[0])
             self.axes.add_artist(self.limits[1])
@@ -700,10 +707,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             dialog = GraphIgnoreElements(elements, self.__ignore_elements)
             self.__ignore_elements = set(dialog.ignored_elements)
 
-        # FIXME when a plot is hidden and scale is changed to logarithmic,
-        #       plot will not reappear when it is unselected in the ignore
-        #       dialog. It only appears when changing the scale is changed
-        #       again.
         self.limits = []
         self.hide_plots(self.__ignore_elements)
 
