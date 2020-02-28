@@ -67,8 +67,6 @@ class ProgressReporter(ABCReporter):
         """
         self.progress_callback(value)
 
-# TODO thread safe reporter for GUI purposes
-
 
 class Observable:
     """Observables are objects that publish messages to subscribed

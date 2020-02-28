@@ -74,10 +74,8 @@ class RecoilElement:
         self.multiplier = multiplier
         self.channel_width = channel_width
 
-        # TODO do something like this: https://code.activestate.com/recipes/
-        #      577197-sortedcollection/ or use
-        #      http://www.grantjenks.com/docs/sortedcontainers/ to store
-        #      points in order
+        # TODO might want to use some sort of sorted collection instead of a
+        #  list, although this depends on the number of elements in the list.
         self._points = sorted(points)
         self.points_backlog = []
         # This is out of bounds if no undo is done, telss the index of the
@@ -324,7 +322,7 @@ class RecoilElement:
     def add_point(self, point):
         """Adds a point and maintains sort order."""
         self._points.append(point)
-        self._sort_points()     # TODO use bisect.insort
+        self._sort_points()
 
     def remove_point(self, point):
         """Removes the given point."""

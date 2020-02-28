@@ -32,17 +32,16 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import modules.depth_files as df
-import modules.masses as masses
-import os
-import re
+import modules.math_functions as mf
 
-from modules.depth_files import DepthProfileHandler
 from dialogs.measurement.depth_profile_ignore_elements \
     import DepthProfileIgnoreElements
-from modules.element import Element
-from PyQt5 import QtWidgets
 from widgets.matplotlib.base import MatplotlibWidget
+
+from modules.depth_files import DepthProfileHandler
+from modules.element import Element
+
+from PyQt5 import QtWidgets
 
 
 class MatplotlibDepthProfileWidget(MatplotlibWidget):
@@ -280,7 +279,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             # None when element is ignored from ratio calculation.
             if not self.__absolute_values and percentages[element_str] is not \
                     None:
-                rounding = self.__physic_rounding_decimals(moe[element_str])
+                rounding = mf.get_rounding_decimals(moe[element_str])
                 if rounding:
                     str_ratio = "{0}%".format(round(percentages[element_str],
                                                     rounding))
@@ -308,21 +307,6 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
                                                       'family': "monospace"})
         for handle in leg.legendHandles:
             handle.set_linewidth(3.0)
-
-    def __physic_rounding_decimals(self, floater):
-        """Find correct decimal count for rounding to 15-rule.
-        """
-        # TODO move this to some utility function module
-        i = 0
-        temp = floater
-        if temp < 0.001:
-            return 3
-        while temp < 15:
-            temp *= 10
-            i += 1
-        # At the index i the value is above 15 so return i - 1 
-        # for correct decimal count.
-        return i - 1
 
     def __fork_toolbar_buttons(self):
         """Custom toolbar buttons be here.

@@ -263,11 +263,6 @@ class ElementSimulation(Observable):
 
         self.__cancellation_token = None
 
-        # TODO check optim status
-        # elif f.startswith(name_prefix + "-opt") and f.endswith(".result"):
-        #     simulations_done = True
-        #     break
-
     def unlock_edit(self):
         """
         Unlock full edit.
@@ -681,7 +676,10 @@ class ElementSimulation(Observable):
             }
             # Delete corresponding erd file
             optimize_fluence = False
-            if not optimize_recoil:     # TODO optim_mode {None, "rec", "flu"}
+
+            # TODO create an optimization_mode enum {None, "rec", "flu"} instead
+            #      of using three different booleans
+            if not optimize_recoil:
                 if not optimize:
                     new_erd_file = fp.get_erd_file_name(recoil, seed_number)
                     # TODO check if erdfilehandler should have optim files too
@@ -717,7 +715,7 @@ class ElementSimulation(Observable):
             mcerd.run()
             self.mcerd_objects[seed_number] = mcerd
 
-            seed_number = seed_number + 1
+            seed_number += 1
             if i + 1 < number_of_processes:
                 time.sleep(5)
                 # This is done to avoid having a mixup in mcerd
@@ -890,6 +888,7 @@ class ElementSimulation(Observable):
                         espe, self.__previous_espe = gf.uniform_espe_lists([
                             espe, self.__previous_espe], self.channel_width)
                         # Calculate distance between energy spectra
+                        # TODO move this to math_functions
                         sum_diff = 0
                         i = 0
                         amount = 0
@@ -1087,17 +1086,12 @@ class ElementSimulation(Observable):
         self.get_espe = GetEspe(espe_settings)
         self.get_espe.run_get_espe()
 
-    def delete_simulation_results(self, recoil):
-        gf.delete_simulation_results(self, recoil)
-
     def reset(self, remove_files=True):
-        """Function that resets the state of ElementSimulation"""
-        # TODO stop running simulations
-        # TODO set necessary boolean values
-        # TODO reset ERD file handler
-        # TODO maybe remove files (perhaps this can be left for the caller)
-        # TODO currently atom count does not reset if settings have been changed
+        """Function that resets the state of ElementSimulation.
 
+        Args:
+            remove_files: whether simulation result files are also removed
+        """
         self.stop()
 
         self.simulations_done = False
@@ -1107,7 +1101,7 @@ class ElementSimulation(Observable):
 
         if remove_files:
             for recoil in self.recoil_elements:
-                self.delete_simulation_results(recoil)
+                gf.delete_simulation_results(self, recoil)
 
         self.__erd_filehandler.clear()
 

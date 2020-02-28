@@ -178,6 +178,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         Return:
             ratio, area(?) or None, None
         """
+        # TODO move at least parts of this function to math_functions module
         all_areas = []
         for line_points in self.lines_of_area:
             area_points = []

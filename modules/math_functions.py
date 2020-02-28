@@ -150,3 +150,18 @@ def get_elements_in_range(x_axis, y_axis, a=-math.inf, b=math.inf):
             #      needs to be revised
             yield x, y
             return
+
+
+def get_rounding_decimals(floater):
+    """Find correct decimal count for rounding to 15-rule.
+    """
+    i = 0
+    temp = floater
+    if temp < 0.001:
+        return 3
+    while temp < 15:
+        temp *= 10
+        i += 1
+    # At the index i the value is above 15 so return i - 1
+    # for correct decimal count.
+    return i - 1

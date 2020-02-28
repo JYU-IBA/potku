@@ -85,8 +85,8 @@ class DepthFileGenerator(object):
 
         if used_os == 'Windows':
             try:
-                # TODO this is not working properly in Pycharm 2019
-                #      on Windows. Process returns code 3221225477
+                # TODO tof_list may not always work properly. Log the error
+                #  instead of printing it.
                 res = subprocess.check_call(self.command_win, shell=True)
                 print("\n\n", res)
             except Exception as e:
@@ -120,9 +120,6 @@ class DepthProfile:
                      the depth profile is considered an aggregation of different
                      profiles
         """
-        # TODO check that depths are in order and values are numerical
-        # TODO maybe use Decimal for better floating point precision
-        # TODO store RBS value
         # TODO binary operations (__add__, merge, etc) could raise exception
         #      when depths of the two DepthProfiles do not line up
         if element is not None:
@@ -577,10 +574,6 @@ class DepthProfileHandler:
 
     # It is likely that this function gets called many times with same args so
     # results are cached
-    # TODO consider caching in other similar functions
-    # TODO profile memory usage with caching
-    # TODO caching may not be a good idea if callers are going to modify the
-    #      results
     @lru_cache(maxsize=32)
     def merge_profiles(self, depth_a=-math.inf, depth_b=math.inf,
                        method="abs_rel_abs"):
