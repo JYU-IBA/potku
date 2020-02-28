@@ -628,9 +628,13 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
         """Delete variables and do clean up.
         """
         self.energy_spectrum = None
-        self.matplotlib.delete()
+        if self.matplotlib is not None:
+            self.matplotlib.delete()
         self.matplotlib = None
-        self.ui.close()
+
+        if self.ui is not None:
+            self.ui.close()
+
         self.ui = None
         self.close()
 
@@ -644,6 +648,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                     os.unlink(file)
             except:
                 pass
+        self.delete()
         super().closeEvent(evnt)
 
     def save_to_file(self, measurement=True, update=False):

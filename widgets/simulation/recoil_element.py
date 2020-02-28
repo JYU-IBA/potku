@@ -28,10 +28,12 @@ __version__ = "2.0"
 import os
 import platform
 
+import dialogs.dialog_functions as df
+
 from collections import Counter
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
-from  dialogs.energy_spectrum import EnergySpectrumWidget
+from dialogs.energy_spectrum import EnergySpectrumWidget
 
 from modules.general_functions import to_superscript
 
@@ -63,7 +65,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
         super().__init__()
 
         self.parent = parent
-        self.parent_tab = parent_tab
+        self.tab = parent_tab
         self.element_simulation = element_simulation
         self.parent_element_widget = parent_element_widget
         self.recoil_element = recoil_element
@@ -119,12 +121,12 @@ class RecoilElementWidget(QtWidgets.QWidget):
         """
         previous = None
         dialog = EnergySpectrumParamsDialog(
-            self.parent_tab, spectrum_type="simulation",
+            self.tab, spectrum_type="simulation",
             element_simulation=self.element_simulation, recoil_widget=self,
             statusbar=self.statusbar)
         if dialog.result_files:
             energy_spectrum_widget = EnergySpectrumWidget(
-                parent=self.parent_tab,
+                parent=self.tab,
                 use_cuts=dialog.result_files,
                 bin_width=dialog.bin_width,
                 spectrum_type="simulation",
@@ -132,20 +134,20 @@ class RecoilElementWidget(QtWidgets.QWidget):
 
             # Check all energy spectrum widgets, if one has the same
             # elements, delete it
-            for e_widget in self.parent_tab.energy_spectrum_widgets:
+            for e_widget in self.tab.energy_spectrum_widgets:
                 keys = e_widget.energy_spectrum_data.keys()
                 if Counter(keys) == Counter(
                         energy_spectrum_widget.energy_spectrum_data.keys()):
                     previous = e_widget
-                    self.parent_tab.energy_spectrum_widgets.remove(e_widget)
-                    self.parent_tab.del_widget(e_widget)
+                    self.tab.energy_spectrum_widgets.remove(e_widget)
+                    self.tab.del_widget(e_widget)
                     break
 
-            self.parent_tab.energy_spectrum_widgets.append(
+            self.tab.energy_spectrum_widgets.append(
                 energy_spectrum_widget)
             icon = self.parent.element_manager.icon_manager.get_icon(
                 "energy_spectrum_icon_16.png")
-            self.parent_tab.add_widget(energy_spectrum_widget, icon=icon)
+            self.tab.add_widget(energy_spectrum_widget, icon=icon)
 
             if previous and energy_spectrum_widget is not None:
                 energy_spectrum_widget.save_file_int = previous.save_file_int
@@ -177,21 +179,4 @@ class RecoilElementWidget(QtWidgets.QWidget):
         self.parent.remove_recoil_element(self)
 
         # Delete energy spectra that use recoil
-        for energy_spectra in self.parent_tab.energy_spectrum_widgets:
-            for element_path in energy_spectra. \
-                    energy_spectrum_data.keys():
-                elem = self.recoil_element.prefix + "-" + \
-                       self.recoil_element.name
-                if elem in element_path:
-                    index = element_path.find(elem)
-                    if element_path[index - 1] == os.path.sep and \
-                            element_path[index + len(elem)] == '.':
-                        self.parent_tab.del_widget(energy_spectra)
-                        self.parent_tab.energy_spectrum_widgets.remove(
-                            energy_spectra)
-                        save_file_path = os.path.join(
-                            self.element_simulation.directory, energy_spectra
-                                .save_file)
-                        if os.path.exists(save_file_path):
-                            os.remove(save_file_path)
-                        break
+        df.delete_recoil_espe(self, self.recoil_element.get_full_name())

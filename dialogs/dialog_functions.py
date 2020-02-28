@@ -164,6 +164,7 @@ def delete_optim_espe(qdialog, elem_sim):
 def delete_recoil_espe(qdialog, recoil_name):
     """Deletes recoil's energy spectra.
     """
+    # TODO change qdialog to tab
     for energy_spectra in qdialog.tab.energy_spectrum_widgets:
         for element_path in energy_spectra.energy_spectrum_data:
             file_name = Path(element_path).name
@@ -385,9 +386,8 @@ def stop_simulations_layerprops(qdialog):
 def update_tab(tab):
     for energy_spectra in tab.energy_spectrum_widgets:
         tab.del_widget(energy_spectra)
-        save_file_path = os.path.join(
-            tab.simulation.directory,
-            energy_spectra.save_file)
+        save_file_path = Path(tab.simulation.directory,
+                              energy_spectra.save_file)
         if os.path.exists(save_file_path):
             os.remove(save_file_path)
     tab.energy_spectrum_widgets = []
@@ -455,9 +455,9 @@ def tab_del(qdialog, elem_sim):
             # Handle optimization energy spectra
 
             # TODO check that this is never None
-            #if elem_sim.optimization_recoils:
             # Delete energy spectra that use optimized recoils
-            del_espes_for_recs(tab, elem_sim.optimization_recoils)
+            for recoil in elem_sim.optimization_recoils:
+                del_espes_for_recs(tab, recoil)
 
 
 def reg_settings_del_sims(qdialog, simulations_run):
@@ -491,24 +491,24 @@ def update_inner_recoils(qdialog, elem_sim):
         elem_sim.controls.reset_controls()
 
 
-def del_espes_for_recs(tab, recoils):
-    for recoil in recoils:
-        # Delete energy spectra that use recoil
-        for energy_spectra in tab.energy_spectrum_widgets:
-            for element_path in energy_spectra.energy_spectrum_data.keys():
-                elem = recoil.prefix + "-" + recoil.name
-                if elem in element_path:
-                    index = element_path.find(elem)
-                    if element_path[index - 1] == os.path.sep \
-                            and element_path[index + len(elem)] == '.':
-                        tab.del_widget(energy_spectra)
-                        tab.energy_spectrum_widgets.remove(energy_spectra)
-                        save_file_path = os.path.join(
-                            tab.simulation.directory,
-                            energy_spectra.save_file)
-                        if os.path.exists(save_file_path):
-                            os.remove(save_file_path)
-                        break
+def del_espes_for_recs(tab, recoil):
+    # TODO refactor this with delete_recoil_espe
+    # Delete energy spectra that use recoil
+    for energy_spectra in tab.energy_spectrum_widgets:
+        for element_path in energy_spectra.energy_spectrum_data.keys():
+            elem = recoil.prefix + "-" + recoil.name
+            if elem in element_path:
+                index = element_path.find(elem)
+                if element_path[index - 1] == os.path.sep \
+                        and element_path[index + len(elem)] == '.':
+                    tab.del_widget(energy_spectra)
+                    tab.energy_spectrum_widgets.remove(energy_spectra)
+                    save_file_path = os.path.join(
+                        tab.simulation.directory,
+                        energy_spectra.save_file)
+                    if os.path.exists(save_file_path):
+                        os.remove(save_file_path)
+                    break
 
 
 # TODO common base class for import dialogs

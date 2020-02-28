@@ -143,18 +143,28 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         # This stores the plotted lines so we can update individual spectra
         # separately
         self.plots = {}
-        if spectra_changed is not None:
+
+        self.spectra_changed = spectra_changed
+        if self.spectra_changed  is not None:
             if disconnect_previous:
                 # Disconnect previous slots so only the last spectra graph
                 # gets updated
                 try:
-                    spectra_changed.disconnect()
+                    self.spectra_changed .disconnect()
                 except TypeError:
                     # signal had no previous connections, nothing to do
                     pass
-            spectra_changed.connect(self.update_spectra)
+            self.spectra_changed .connect(self.update_spectra)
 
         self.on_draw()
+
+    def closeEvent(self, evnt):
+        """Disconnects the slot from the spectra_changed signal
+        when widget is closed.
+        """
+        if self.spectra_changed is not None:
+            self.spectra_changed.disconnect(self.update_spectra)
+        super().closeEvent(evnt)
 
     def __calculate_selected_area(self):
         """
@@ -470,7 +480,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 self.files_to_draw = copy.deepcopy(self.histed_files)
             for key, data in self.files_to_draw.items():
                 # Parse the element symbol and isotope.
-                file_name = os.path.split(key)[1]
+                file_name = key.name
                 isotope = ""
                 symbol = ""
                 color = None
@@ -523,10 +533,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                     label = r"$^{" + isotope + "}$" + symbol + " " + recoil_name
 
                     for used_recoil in self.__used_recoils:
-                        used_recoil_file_name = used_recoil.prefix + "-" + \
-                                                used_recoil.name + ".simu"
+                        used_recoil_file_name = \
+                            f"{used_recoil.get_full_name()}.simu"
                         if used_recoil_file_name == file_name:
                             color = used_recoil.color
+                            break
 
                 else:
                     label = file_name
