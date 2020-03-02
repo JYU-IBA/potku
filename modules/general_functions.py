@@ -164,8 +164,10 @@ def read_espe_file(espe_file):
                     continue
                 else:
                     data.append(data_point)
-    except FileNotFoundError:
-        return data
+    except (FileNotFoundError, UnicodeDecodeError):
+        # File was not found, or it could not be decoded (for example, it could
+        # have been .png)
+        pass
     return data
 
 

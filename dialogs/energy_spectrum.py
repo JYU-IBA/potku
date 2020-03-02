@@ -599,19 +599,15 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 spectra_changed=spectra_changed,
                 channel_width=bin_width
             )
-        except Exception as e:
-            print(e)
-            import traceback
-            msg = "Could not create Energy Spectrum graph. "
-            err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
-            str_err = ", ".join([sys.exc_info()[
-                                     0].__name__ + ": " + traceback._some_str(
-                sys.exc_info()[1]), err_file,
-                                 str(sys.exc_info()[2].tb_lineno)])
-            msg += str_err
+        except (PermissionError, IsADirectoryError) as e:
+            # If the file path points to directory, this will either raise
+            # PermissionError (Windows) or IsADirectoryError (Mac)
+            msg = f"Could not create Energy Spectrum graph: {e}"
             logging.getLogger(self.parent.obj.name).error(msg)
+
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
+            self.matplotlib = None
         finally:
             if sbh is not None:
                 sbh.remove_progress_bar()
