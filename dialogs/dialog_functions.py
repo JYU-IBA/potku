@@ -482,7 +482,8 @@ def update_inner_recoils(qdialog, elem_sim):
         tab = qdialog.find_related_tab(tab_id)
         if tab:
             # Delete energy spectra that use recoil
-            del_espes_for_recs(tab, elem_sim.recoil_elements)
+            for recoil in elem_sim.recoil_elements:
+                del_espes_for_recs(tab, recoil)
 
     # Reset controls
     if elem_sim.controls:
