@@ -179,4 +179,4 @@ class RecoilElementWidget(QtWidgets.QWidget):
         self.parent.remove_recoil_element(self)
 
         # Delete energy spectra that use recoil
-        df.delete_recoil_espe(self, self.recoil_element.get_full_name())
+        df.delete_recoil_espe(self.tab, self.recoil_element.get_full_name())

@@ -158,24 +158,24 @@ def delete_optim_espe(qdialog, elem_sim):
     """Deletes energy spectra from optimized recoils"""
     # TODO refactor this wit delete_simu_espe
     for opt_rec in elem_sim.optimization_recoils:
-        delete_recoil_espe(qdialog, opt_rec.get_full_name())
+        delete_recoil_espe(qdialog.tab, opt_rec.get_full_name())
 
 
-def delete_recoil_espe(qdialog, recoil_name):
+def delete_recoil_espe(tab, recoil_name):
     """Deletes recoil's energy spectra.
     """
-    # TODO change qdialog to tab
-    for energy_spectra in qdialog.tab.energy_spectrum_widgets:
+    for energy_spectra in tab.energy_spectrum_widgets:
         for element_path in energy_spectra.energy_spectrum_data:
             file_name = Path(element_path).name
             if file_name.startswith(recoil_name):
                 if file_name[len(recoil_name)] == ".":
-                    qdialog.tab.del_widget(energy_spectra)
-                    qdialog.tab.energy_spectrum_widgets.remove(energy_spectra)
-                    save_file_path = Path(qdialog.tab.simulation.directory,
+                    tab.del_widget(energy_spectra)
+                    tab.energy_spectrum_widgets.remove(energy_spectra)
+                    save_file_path = Path(tab.simulation.directory,
                                           energy_spectra.save_file)
                     if save_file_path.exists():
                         os.remove(save_file_path)
+                    # TODO check if more files need to be deleted
                     break
 
 
@@ -254,7 +254,7 @@ def delete_simu_espe(qdialog, elem_sim):
     for recoil in elem_sim.recoil_elements:
         gf.delete_simulation_results(elem_sim, recoil)
         # Delete energy spectra that use recoil
-        delete_recoil_espe(qdialog, recoil.get_full_name())
+        delete_recoil_espe(qdialog.tab, recoil.get_full_name())
 
 
 def update_detector_settings(entity, det_folder_path,
@@ -334,7 +334,7 @@ def clear_element_simulation(qdialog):
         gf.delete_simulation_results(qdialog.element_simulation, recoil)
 
         # Delete energy spectra that use recoil
-        delete_recoil_espe(qdialog, recoil.get_full_name())
+        delete_recoil_espe(qdialog.tab, recoil.get_full_name())
 
     # Reset controls
     if qdialog.element_simulation.controls:
@@ -457,7 +457,7 @@ def tab_del(qdialog, elem_sim):
             # TODO check that this is never None
             # Delete energy spectra that use optimized recoils
             for recoil in elem_sim.optimization_recoils:
-                del_espes_for_recs(tab, recoil)
+                delete_recoil_espe(tab, recoil.get_full_name())
 
 
 def reg_settings_del_sims(qdialog, simulations_run):
@@ -483,33 +483,13 @@ def update_inner_recoils(qdialog, elem_sim):
         if tab:
             # Delete energy spectra that use recoil
             for recoil in elem_sim.recoil_elements:
-                del_espes_for_recs(tab, recoil)
+                delete_recoil_espe(tab, recoil.get_full_name())
 
     # Reset controls
     if elem_sim.controls:
         # TODO do not access controls via elem_sim. Use
         #      observation.
         elem_sim.controls.reset_controls()
-
-
-def del_espes_for_recs(tab, recoil):
-    # TODO refactor this with delete_recoil_espe
-    # Delete energy spectra that use recoil
-    for energy_spectra in tab.energy_spectrum_widgets:
-        for element_path in energy_spectra.energy_spectrum_data.keys():
-            elem = recoil.prefix + "-" + recoil.name
-            if elem in element_path:
-                index = element_path.find(elem)
-                if element_path[index - 1] == os.path.sep \
-                        and element_path[index + len(elem)] == '.':
-                    tab.del_widget(energy_spectra)
-                    tab.energy_spectrum_widgets.remove(energy_spectra)
-                    save_file_path = os.path.join(
-                        tab.simulation.directory,
-                        energy_spectra.save_file)
-                    if os.path.exists(save_file_path):
-                        os.remove(save_file_path)
-                    break
 
 
 # TODO common base class for import dialogs
