@@ -520,7 +520,8 @@ def add_imported_files_to_tree(qdialog, files):
         qdialog.treeWidget.addTopLevelItem(item)
 
 
-def _get_confirmation_msg(finished_simulations=None,
+def _get_confirmation_msg(msg_str="settings",
+                          finished_simulations=None,
                           running_simulations=None,
                           finished_optimizations=None,
                           running_optimizations=None):
@@ -537,7 +538,7 @@ def _get_confirmation_msg(finished_simulations=None,
     msg = collections.namedtuple("Msg", ("title", "body"))
     if finished_simulations and running_simulations:
         return msg("Simulated and running simulations",
-                   "There are simulations that use the current target, "
+                   f"There are simulations that use the current {msg_str}, "
                    "and either have been simulated or are currently running.\n"
                    "If you save changes, the running simulations "
                    "will be stopped, and the result files of the simulated "
@@ -548,7 +549,7 @@ def _get_confirmation_msg(finished_simulations=None,
     if running_simulations:
         return msg("Simulations running",
                    "There are simulations running that use the current "
-                   "target.\n"
+                   f"{msg_str}.\n"
                    "If you save changes, the running simulations will be "
                    "stopped, and their result files deleted. This also affects "
                    "possible optimization.\n\n"
@@ -556,7 +557,7 @@ def _get_confirmation_msg(finished_simulations=None,
 
     if finished_simulations:
         return msg("Finished simulations",
-                   "There are simulations that use the current target, "
+                   f"There are simulations that use the current {msg_str}, "
                    "and have been simulated.\n"
                    "If you save changes, the result files of the simulated "
                    "simulations are deleted. This also affects possible "
@@ -566,7 +567,7 @@ def _get_confirmation_msg(finished_simulations=None,
     if running_optimizations:
         return msg("Optimization running",
                    "There are optimizations running that use the current "
-                   "target.\n"
+                   f"{msg_str}.\n"
                    "If you save changes, the running optimizations will be "
                    "stopped, and their result files deleted.\n\n"
                    "Do you want to save changes anyway?")
@@ -574,7 +575,7 @@ def _get_confirmation_msg(finished_simulations=None,
     if finished_optimizations:
         return msg("Optimization results",
                    "There are optimization results that use the current "
-                   "target.\n"
+                   f"{msg_str}.\n"
                    "If you save changes, result files will be deleted.\n\n"
                    "Do you want to save changes anyway?")
 
@@ -600,7 +601,7 @@ def _get_confirmation(qdialog, **kwargs):
     return reply == QtWidgets.QMessageBox.Yes
 
 
-def delete_element_simulations(qdialog, simulation):
+def delete_element_simulations(qdialog, tab, simulation, msg_str="settings"):
     """Deletes running and finished simulations if given confirmation by
     the user.
 
@@ -609,7 +610,8 @@ def delete_element_simulations(qdialog, simulation):
     """
     all_sims = simulation.get_active_simulations()
 
-    if not _get_confirmation(qdialog, **all_sims._asdict()):
+    if not _get_confirmation(qdialog, msg_str=msg_str,
+                             **all_sims._asdict()):
         return False
 
     # Reset simulations
@@ -621,8 +623,8 @@ def delete_element_simulations(qdialog, simulation):
         elem_sim.recoil_elements[0].widgets[0].parent. \
             edit_lock_push_button.setText("Full edit unlocked")
 
-        qdialog.parent.tab.del_widget(elem_sim.optimization_widget)
+        tab.del_widget(elem_sim.optimization_widget)
 
-    update_tab(qdialog.parent.tab)
+    update_tab(tab)
 
     return True

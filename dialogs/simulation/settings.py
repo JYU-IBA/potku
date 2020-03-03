@@ -182,142 +182,12 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.__close = False
             return
 
-        # Lists of old and current simulations and optimizations
-        simulations_run = self.check_if_simulations_run()
-        simulations_running = self.simulations_running()
-        optimization_running = self.optimization_running()
-        optimization_run = self.check_if_optimization_run()
-
         check_box = self.ui.defaultSettingsCheckBox
         if check_box.isChecked() and not self.use_default_settings:
-            if simulations_run and simulations_running:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Simulated and running simulations",
-                    "There are simulations that use simulation settings, "
-                    "and either have been simulated or are currently running."
-                    "\nIf you save changes, the running simulations "
-                    "will be stopped, and the result files of the simulated "
-                    "and stopped simulations are deleted. This also applies "
-                    "to possible optimization.\n\nDo you want to "
-                    "save changes anyway?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    self.__close = False
-                    return
-                else:
-                    tmp_sims = copy.copy(self.simulation.running_simulations)
-                    # Stop simulations
-                    df.stop_simulations(self, tmp_sims)
-
-                    for elem_sim in optimization_running:
-                        elem_sim.optimization_stopped = True
-                        elem_sim.optimization_running = False
-
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-                        # Handle optimization energy spectra
-                        if elem_sim.optimization_recoils:
-                            # Delete energy spectra that use
-                            # optimized recoils
-                            df.delete_optim_espe(self, elem_sim)
-
-                            df.handle_old_sims_and_optims(
-                                self, simulations_run, optimization_run)
-
-            elif simulations_running:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Simulations running",
-                    "There are simulations running that use simulation "
-                    "settings.\nIf you save changes, the running "
-                    "simulations will be stopped, and their result files "
-                    "deleted. This also applies to possible "
-                    "optimization.\n\nDo you want to save "
-                    "changes anyway?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    self.__close = False
-                    return
-                else:
-                    tmp_sims = copy.copy(self.simulation.running_simulations)
-                    # Stop simulations
-                    df.stop_simulations(self, tmp_sims)
-
-            elif simulations_run:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Simulated simulations",
-                    "There are simulations that use simulation settings, "
-                    "and have been simulated.\nIf you save changes,"
-                    " the result files of the simulated simulations are "
-                    "deleted. This also affects possible "
-                    "optimization.\n\nDo you want to save changes anyway?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    self.__close = False
-                    return
-                else:
-                    for elem_sim in simulations_run:
-                        # Delete files
-                        df.delete_simu_espe(self, elem_sim)
-
-                        # Reset controls
-                        if elem_sim.controls:
-                            # TODO do not access controls via elem_sim. Use
-                            #      observation.
-                            elem_sim.controls.reset_controls()
-
-                        # Change full edit unlocked
-                        elem_sim.recoil_elements[0].widgets[0].parent. \
-                            edit_lock_push_button.setText("Full edit unlocked")
-                        elem_sim.simulations_done = False
-
-                    df.update_optim_running(self, optimization_running)
-
-                    for elem_sim in optimization_run:
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-                        if elem_sim.optimization_recoils:
-                            # Delete energy spectra that use
-                            # optimized recoils
-                            df.delete_optim_espe(self, elem_sim)
-
-            elif optimization_running:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Optimization running",
-                    "There are optimizations running that use simulation "
-                    "settings.\nIf you save changes, the running "
-                    "optimizations will be stopped, and their result files "
-                    "deleted.\n\nDo you want to save changes anyway?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    self.__close = False
-                    return
-                else:
-                    # Stop simulations
-                    df.update_optim_running(self, optimization_running)
-
-            elif optimization_run:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Optimization results",
-                    "There are optimizations done that use simulation "
-                    "settings.\nIf you save changes, result files will be "
-                    "deleted.\n\nDo you want to save changes anyway?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    self.__close = False
-                    return
-                else:
-                    # Stop simulations
-                    df.update_optim_running(self, optimization_run)
+            if not df.delete_element_simulations(
+                    self, self.tab, self.simulation,
+                    msg_str="simulation settings"):
+                return
 
             # Use request settings
             self.simulation.run = None
@@ -358,137 +228,14 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                         self.__close = True
                         return
             if self.use_default_settings:
-                settings = "request"
-                tmp_sims = []
-                for elem_sim in self.simulation.element_simulations:
-                    if elem_sim in \
-                            self.simulation.request.running_simulations:
-                        tmp_sims.append(elem_sim)
+                settings = "request settings"
             else:
-                settings = "simulation"
-                tmp_sims = copy.copy(self.simulation.running_simulations)
+                settings = "simulation settings"
 
-            if simulations_run and simulations_running and \
-                    not only_unnotified_changed:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Simulated and running simulations",
-                    "There are simulations that use " + settings + " settings, "
-                    "and either have been simulated or are currently running."
-                    "\nIf you save changes, the running simulations "
-                    "will be stopped, and the result files of the simulated "
-                    "and stopped simulations are deleted. This also applies "
-                    "to possible optimization.\n\nDo you want to "
-                    "save changes anyway?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    self.__close = False
-                    return
-                else:
-                    # Stop simulations
-                    df.stop_simulations(self, tmp_sims)
-
-                    for elem_sim in optimization_running:
-                        elem_sim.optimization_stopped = True
-                        elem_sim.optimization_running = False
-
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-                        # Handle optimization energy spectra
-                        if elem_sim.optimization_recoils:
-                            # Delete energy spectra that use
-                            # optimized recoils
-                            df.delete_optim_espe(self, elem_sim)
-
-                    for elem_sim in simulations_run:
-                        for recoil in elem_sim.recoil_elements:
-                            delete_simulation_results(elem_sim, recoil)
-                            # Delete energy spectra that use recoil
-                            df.delete_recoil_espe(self.tab,
-                                                  recoil.get_full_name())
-                        elem_sim.simulations_done = False
-
-                    for elem_sim in optimization_run:
-                        self.tab.del_widget(elem_sim.optimization_widget)
-                        elem_sim.simulations_done = False
-                        if elem_sim.optimization_recoils:
-                            # Delete energy spectra that use
-                            # optimized recoils
-                            df.delete_optim_espe(self, elem_sim)
-
-            elif simulations_running and not only_unnotified_changed:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Simulations running",
-                    "There are simulations running that use " + settings +
-                    " settings.\nIf you save changes, the running "
-                    "simulations will be stopped, and their result files "
-                    "deleted. This also applies to possible "
-                    "optimization.\n\nDo you want to save changes anyway?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    self.__close = False
-                    return
-                else:
-                    # Stop simulations
-                    df.stop_simulations(self, tmp_sims)
-
-            elif simulations_run and not only_unnotified_changed:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Simulated simulations",
-                    "There are simulations that use " + settings +
-                    " settings, and have been simulated.\nIf you save changes,"
-                    " the result files of the simulated simulations are "
-                    "deleted. This also affects possible optimization.\n\nDo "
-                    "you want to save changes "
-                    "anyway?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    self.__close = False
-                    return
-                else:
-                    df.handle_old_sims_and_optims(self,
-                                                  simulations_run,
-                                                  optimization_run)
-
-                    df.update_optim_running(self, optimization_running)
-
-            elif optimization_running:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Optimization running",
-                    "There are optimizations running that use " + settings +
-                    " settings.\nIf you save changes, the running "
-                    "optimizations will be stopped, and their result files "
-                    "deleted.\n\nDo you want to save changes anyway?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    self.__close = False
-                    return
-                else:
-                    # Stop simulations
-                    df.update_optim_running(self, optimization_running)
-
-            elif optimization_run:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Optimization results",
-                    "There are optimizations done that use " + settings +
-                    " settings.\nIf you save changes, result files will be "
-                    "deleted.\n\nDo you want to save changes anyway?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    self.__close = False
-                    return
-                else:
-                    # Stop simulations
-                    df.update_optim_running(self, optimization_run)
+            if not df.delete_element_simulations(
+                    self, self.tab, self.simulation,
+                    msg_str=settings):
+                return
 
             # Use simulation specific settings
             try:
@@ -592,55 +339,6 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.__update_parameters()
         if self.__close:
             self.close()
-
-    def check_if_optimization_run(self):
-        """
-        Check if the re are any element simulations that have optimization
-        results.
-
-        Return:
-             List of optimized simulations.
-        """
-        opt_run = []
-        for elem_sim in self.simulation.element_simulations:
-            if elem_sim.optimization_widget and not \
-                    elem_sim.optimization_running:
-                opt_run.append(elem_sim)
-        return opt_run
-
-    def check_if_simulations_run(self):
-        """
-        Check if the re are any element simulations that have been simulated.
-
-        Return:
-             List of run simulations.
-        """
-        simulations_run = []
-        for elem_sim in self.simulation.element_simulations:
-            if elem_sim.simulations_done:
-                simulations_run.append(elem_sim)
-        return simulations_run
-
-    def simulations_running(self):
-        """
-        Check if there are any simulations running.
-
-        Return:
-            True or False.
-        """
-        for elem_sim in self.simulation.element_simulations:
-            if elem_sim in self.simulation.request.running_simulations:
-                return True
-            elif elem_sim in self.simulation.running_simulations:
-                return True
-        return False
-
-    def optimization_running(self):
-        ret = []
-        for elem_sim in self.simulation.element_simulations:
-            if elem_sim.optimization_running:
-                ret.append(elem_sim)
-        return ret
 
     def values_changed(self):
         """

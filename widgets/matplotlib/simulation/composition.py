@@ -151,7 +151,9 @@ class _CompositionWidget(MatplotlibWidget):
         # finished element simulations and confirm whether these should be
         # deleted as well.
         if self.simulation is not None:
-            if not df.delete_element_simulations(self, self.simulation):
+            if not df.delete_element_simulations(self, self.parent.tab,
+                                                 self.simulation,
+                                                 msg_str="target"):
                 return
 
         # Delete from layers list
