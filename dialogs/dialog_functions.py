@@ -28,6 +28,8 @@ __version__ = ""    # TODO
 
 import os
 import copy
+import itertools
+import collections
 
 import modules.masses as masses
 import modules.general_functions as gf
@@ -516,3 +518,111 @@ def add_imported_files_to_tree(qdialog, files):
         item.directory = directory
         qdialog.files_added[file] = file
         qdialog.treeWidget.addTopLevelItem(item)
+
+
+def _get_confirmation_msg(finished_simulations=None,
+                          running_simulations=None,
+                          finished_optimizations=None,
+                          running_optimizations=None):
+    """Returns a message to be displayed on a MessageBox when simulations
+    are about to be deleted.
+
+    Keyword arguments are truthy values representing finished or running
+    simulations or optimizations.
+
+    Return:
+        namedtuple with message title and body if at least one of the keyword
+        arguments is True. Otherwise returns None.
+    """
+    msg = collections.namedtuple("Msg", ("title", "body"))
+    if finished_simulations and running_simulations:
+        return msg("Simulated and running simulations",
+                   "There are simulations that use the current target, "
+                   "and either have been simulated or are currently running.\n"
+                   "If you save changes, the running simulations "
+                   "will be stopped, and the result files of the simulated "
+                   "and stopped simulations are deleted. This also affects "
+                   "possible optimization.\n\n"
+                   "Do you want to save changes anyway?")
+
+    if running_simulations:
+        return msg("Simulations running",
+                   "There are simulations running that use the current "
+                   "target.\n"
+                   "If you save changes, the running simulations will be "
+                   "stopped, and their result files deleted. This also affects "
+                   "possible optimization.\n\n"
+                   "Do you want to save changes anyway?")
+
+    if finished_simulations:
+        return msg("Finished simulations",
+                   "There are simulations that use the current target, "
+                   "and have been simulated.\n"
+                   "If you save changes, the result files of the simulated "
+                   "simulations are deleted. This also affects possible "
+                   "optimization.\n\n"
+                   "Do you want to save changes anyway?")
+
+    if running_optimizations:
+        return msg("Optimization running",
+                   "There are optimizations running that use the current "
+                   "target.\n"
+                   "If you save changes, the running optimizations will be "
+                   "stopped, and their result files deleted.\n\n"
+                   "Do you want to save changes anyway?")
+
+    if finished_optimizations:
+        return msg("Optimization results",
+                   "There are optimization results that use the current "
+                   "target.\n"
+                   "If you save changes, result files will be deleted.\n\n"
+                   "Do you want to save changes anyway?")
+
+    # No simulations are running or finished so no message needs to be shown
+    return None
+
+
+def _get_confirmation(qdialog, **kwargs):
+    """Displays a MessageBox to user to get a confirmation on deleting
+    existing simulations.
+    """
+    msg = _get_confirmation_msg(**kwargs)
+    if msg is None:
+        # No text to shown so there were no running or finished simulations.
+        # Safe to return True.
+        return True
+
+    reply = QtWidgets.QMessageBox.question(
+        qdialog, msg.title, msg.body,
+        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+        QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+
+    return reply == QtWidgets.QMessageBox.Yes
+
+
+def delete_element_simulations(qdialog, simulation):
+    """Deletes running and finished simulations if given confirmation by
+    the user.
+
+    Return:
+        True if simulations were deleted, False otherwise.
+    """
+    all_sims = simulation.get_active_simulations()
+
+    if not _get_confirmation(qdialog, **all_sims._asdict()):
+        return False
+
+    # Reset simulations
+    for elem_sim in itertools.chain(*all_sims):
+        elem_sim.reset()
+
+        # Change full edit unlocked
+        # TODO remove reference to GUI element from RecoilElement
+        elem_sim.recoil_elements[0].widgets[0].parent. \
+            edit_lock_push_button.setText("Full edit unlocked")
+
+        qdialog.parent.tab.del_widget(elem_sim.optimization_widget)
+
+    update_tab(qdialog.parent.tab)
+
+    return True

@@ -33,6 +33,7 @@ import dialogs.dialog_functions as df
 from tests.utils import ListdirSwitcher
 
 from pathlib import Path
+from unittest.mock import patch
 
 
 class TestUpdateCuts(unittest.TestCase):
@@ -82,6 +83,25 @@ class TestUpdateCuts(unittest.TestCase):
         with ListdirSwitcher(self.new_files):
             df._update_cuts(paths, self.directory)
             self.assertEqual(self.expected_paths, paths)
+
+
+class TestDeleteConfirmation(unittest.TestCase):
+    def test_confirmation_msg(self):
+        self.assertIsNone(df._get_confirmation_msg())
+        self.assertIsNone(df._get_confirmation_msg(False, False, False, False))
+
+        msg = df._get_confirmation_msg(running_simulations=[1])
+        self.assertIsInstance(msg, tuple)
+        self.assertEqual("Simulations running", msg.title)
+
+        msg = df._get_confirmation_msg(finished_simulations=True)
+        self.assertEqual("Finished simulations", msg.title)
+
+        msg = df._get_confirmation_msg(running_optimizations=True)
+        self.assertEqual("Optimization running", msg.title)
+
+        msg = df._get_confirmation_msg(finished_optimizations=True)
+        self.assertEqual("Optimization results", msg.title)
 
 
 if __name__ == '__main__':
