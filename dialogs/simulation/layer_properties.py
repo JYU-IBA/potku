@@ -490,7 +490,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         Return:
              List of optimized element simulations.
         """
-        if not self.simulation:
+        if self.simulation is None:
             return False
         opt_run = []
         for elem_sim in self.simulation.element_simulations:
@@ -506,7 +506,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         Return:
              List of run element simulations.
         """
-        if not self.simulation:
+        if self.simulation is None:
             return False
         simulations_run = []
         for elem_sim in self.simulation.element_simulations:
@@ -521,7 +521,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         Return:
             True or False.
         """
-        if not self.simulation:
+        if self.simulation is None:
             return False
         for elem_sim in self.simulation.element_simulations:
             if elem_sim in self.simulation.request.running_simulations:
@@ -531,6 +531,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         return False
 
     def optimization_running(self):
+        if self.simulation is None:
+            return False
         ret = []
         for elem_sim in self.simulation.element_simulations:
             if elem_sim.optimization_running:
