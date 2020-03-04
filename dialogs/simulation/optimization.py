@@ -103,6 +103,8 @@ class OptimizationDialog(QtWidgets.QDialog):
                     tree_item.obj = measurement
                     self.ui.measurementTreeWidget.addTopLevelItem(tree_item)
 
+                    # TODO make each of these into their own functions under
+                    #      modules package
                     for file in os.listdir(
                             measurement.directory_cuts):
                         if file.endswith(".cut"):
@@ -236,21 +238,15 @@ class OptimizationDialog(QtWidgets.QDialog):
         Return:
             List of used paramaters.
         """
-        population_size = self.parameters_widget.populationSpinBox.value()
-        generations = self.parameters_widget.generationSpinBox.value()
-        no_of_processes = self.parameters_widget.processesSpinBox.value()
-        stop_percent = self.parameters_widget.percentDoubleSpinBox.value()
-        check_time = self.parameters_widget.timeSpinBox.value()
+        population_size, generations, no_of_processes, stop_percent, \
+            check_time, check_max_t, check_min_t, crossover_prob, \
+            mutation_prob = self.__get_general_optim_params()
 
-        check_max_t = self.parameters_widget.maxTimeEdit.time()
-        check_min_t = self.parameters_widget.minTimeEdit.time()
-
-        crossover_prob = self.parameters_widget.crossoverProbDoubleSpinBox.value()
-        mutation_prob = self.parameters_widget.mutationProbDoubleSpinBox.value()
         dist_index_crossover = self.parameters_widget.disCSpinBox.value()
         dist_index_mutation = self.parameters_widget.disMSpinBox.value()
         fluence_upper_limit = self.parameters_widget.fluenceDoubleSpinBox.value()
 
+        # TODO check if the order matters before refactoring duplicated code
         params = [population_size, generations, no_of_processes,
                   stop_percent, check_time, crossover_prob, mutation_prob,
                   dist_index_crossover, dist_index_mutation,
@@ -264,29 +260,47 @@ class OptimizationDialog(QtWidgets.QDialog):
         Return:
             List of used parameters.
         """
+        population_size, generations, no_of_processes, stop_percent, \
+            check_time, check_max_t, check_min_t, crossover_prob, \
+            mutation_prob = self.__get_general_optim_params()
+
+        recoil_type = self.parameters_widget.recoilTypeComboBox.currentText()
+
         upper_x = self.parameters_widget.upperXDoubleSpinBox.value()
         lower_x = self.parameters_widget.lowerXDoubleSpinBox.value()
         upper_y = self.parameters_widget.upperYDoubleSpinBox.value()
         lower_y = self.parameters_widget.lowerYDoubleSpinBox.value()
-        crossover_prob = self.parameters_widget.crossoverProbDoubleSpinBox.value()
-        mutation_prob = self.parameters_widget.mutationProbDoubleSpinBox.value()
-        stop_percent = self.parameters_widget.percentDoubleSpinBox.value()
-
-        population_size = self.parameters_widget.populationSpinBox.value()
-        generations = self.parameters_widget.generationSpinBox.value()
-        no_of_processes = self.parameters_widget.processesSpinBox.value()
-        check_time = self.parameters_widget.timeSpinBox.value()
-
-        check_max_t = self.parameters_widget.maxTimeEdit.time()
-        check_min_t = self.parameters_widget.minTimeEdit.time()
-
-        recoil_type = self.parameters_widget.recoilTypeComboBox.currentText()
 
         params = [upper_x, lower_x, upper_y, lower_y, population_size,
                   generations, no_of_processes, crossover_prob,
                   mutation_prob, stop_percent, check_time, recoil_type,
                   check_max_t, check_min_t]
         return params
+
+    def __get_general_optim_params(self):
+        """Returns a tuple of optimization parameters that are used in
+
+        :return:
+        """
+        # TODO make this return a dict or a namedtuple so these can be easily
+        #      be turned into kwargs
+        population_size = self.parameters_widget.populationSpinBox.value()
+        generations = self.parameters_widget.generationSpinBox.value()
+        no_of_processes = self.parameters_widget.processesSpinBox.value()
+        stop_percent = self.parameters_widget.percentDoubleSpinBox.value()
+        check_time = self.parameters_widget.timeSpinBox.value()
+
+        check_max_t = self.parameters_widget.maxTimeEdit.time()
+        check_min_t = self.parameters_widget.minTimeEdit.time()
+
+        crossover_prob = \
+            self.parameters_widget.crossoverProbDoubleSpinBox.value()
+        mutation_prob = self.parameters_widget.mutationProbDoubleSpinBox.value()
+
+        return (
+            population_size, generations, no_of_processes, stop_percent,
+            check_time, check_max_t, check_min_t, crossover_prob, mutation_prob
+        )
 
     def start_optimization(self):
         """
@@ -349,6 +363,7 @@ class OptimizationDialog(QtWidgets.QDialog):
         hist_file = os.path.join(used_measurement.directory_energy_spectra,
                                  f"{item_text}.no_foil.hist")
 
+        # TODO use the get params method here too
         channel_width = self.ui.histogramTicksDoubleSpinBox.value()
         crossover_prob = self.parameters_widget.crossoverProbDoubleSpinBox.value()
         mutation_prob = self.parameters_widget.mutationProbDoubleSpinBox.value()
