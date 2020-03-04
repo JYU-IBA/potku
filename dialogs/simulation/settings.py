@@ -187,6 +187,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             if not df.delete_element_simulations(
                     self, self.tab, self.simulation,
                     msg_str="simulation settings"):
+                self.__close = False
                 return
 
             # Use request settings
@@ -235,6 +236,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             if not df.delete_element_simulations(
                     self, self.tab, self.simulation,
                     msg_str=settings):
+                self.__close = False
                 return
 
             # Use simulation specific settings
