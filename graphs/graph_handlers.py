@@ -109,7 +109,7 @@ class DepthProfileGraphHandler(GraphHandler):
         Return:
             callback id
         """
-        return self.line_chart.canvas.set_callback(event, callback)
+        return self.line_chart.canvas.mpl_connect(event, callback)
 
 
 if __name__ == "__main__":
