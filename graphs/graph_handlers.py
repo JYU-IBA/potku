@@ -44,6 +44,10 @@ class GraphHandler(abc.ABC):
     def show_legend(self, *args, **kwargs):
         pass
 
+    @abc.abstractmethod
+    def set_callback(self, event, callback):
+        pass
+
 
 class DepthProfileGraphHandler(GraphHandler):
     def __init__(self, figure, elements, depth_directory, color_map=None,
@@ -94,6 +98,18 @@ class DepthProfileGraphHandler(GraphHandler):
 
     def set_scale(self, scale):
         self.line_chart.set_scale(scale)
+
+    def set_callback(self, event, callback):
+        """Connects a callback to a matplotlib canvas event.
+
+        Args:
+            event: name of a matplotlib canvas event
+            callback: function that is called when the event happens
+
+        Return:
+            callback id
+        """
+        return self.line_chart.canvas.set_callback(event, callback)
 
 
 if __name__ == "__main__":
