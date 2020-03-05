@@ -72,7 +72,7 @@
 
 #define STOPSTEP    0.1
 #define CAL_ACC     0.02
-#define MAX_FACTOR  2.0
+#define MAX_FACTOR  1.2
 
 #define EFF_MEV     C_MEV
 #define EFF_KEV     C_KEV
@@ -163,6 +163,12 @@ int main(int argc, char *argv[])
       printf("Usage: tof_list [filename] [filename] ...\n");
       exit(1);
    }
+   fprintf(stderr, "It is me, %s here. I have %i cut files to process.\n", argv[0], argc-1);
+   int argi;
+   for(argi=1; argi < argc; argi++) {
+        fprintf(stderr, "argv[%i] = \"%s\"\n", argi, argv[argi]);
+   }
+   fprintf(stderr, "\n");
 
    fp = (FILE **) malloc(sizeof(FILE *)*(argc-1));
    input.ecalib = (double *) malloc(sizeof(double)*(argc-1));
@@ -205,6 +211,7 @@ int main(int argc, char *argv[])
         return 0;
     }
     for(i=0; i<argc-1; i++){
+      fprintf(stderr, "fp[%i] is \"%s\"\n", i, argv[i+1]);
       input.ecalib[i] = 0.0;
       symbol[i] = (char *) malloc(sizeof(char)*3);
       fp[i] = fopen(argv[i+1],"r");
@@ -218,12 +225,15 @@ int main(int argc, char *argv[])
       while(isalpha(*argv[i+1])) *symbol[i]++ = *argv[i+1]++; *symbol[i] = '\0';
       while(!isupper(*--symbol[i]));
       ZZ = Z[i];
+      fprintf(stderr, "ZZ=%i (mass number), symbol[%i]=%s\n", ZZ, i, symbol[i]);
       M[i] = get_mass(symbol[i],&ZZ);
+      fprintf(stderr, "ZZ=%i (the proton number corresponding to %s\n", ZZ, symbol[i]);
 	  M2[i] = 0;
       tmpi = input.beamZ;
       beamM = get_mass(input.beam,&tmpi);
-      emax[i] = input.beamE*4.0*ipow(cos(input.theta*C_DEG),2)*beamM*M[i]/ipow(beamM+M[i],2);
+      emax[i] = input.beamE;
       sto[i] = set_sto(table, (Z[i])?Z[i]:ZZ,M[i],emax[i]*MAX_FACTOR);
+      fprintf(stderr, "For stopping purposes (in carbon foil), this is Z=%i and mass is %g u\n", ZZ, M[i]/C_U);
 /*    step[i] = get_step(emax[i]*MAX_FACTOR,sto[i]); */
       weight[i] = set_weight(symbol[i],(Z[i])?Z[i]:ZZ,&input);
       Z[i] = ZZ;
@@ -257,6 +267,7 @@ int main(int argc, char *argv[])
    char herp_scatter [6];
    int herp_isotope=0;
    for(i=0;i<argc-1;i++){
+      fprintf(stderr, "Processing file %i.\n", i);
 	  tech = ERD;
 	  herp_d = (char *) malloc(sizeof(char)*WORD_LENGTH);
       /* Don't read the first ten lines, except the one line which 
@@ -265,26 +276,31 @@ int main(int argc, char *argv[])
 	     fgets(herp_c, 100, fp[i]);
          if(derp_n == 1){//line number2 in cut file = RBS or ERD
             sscanf(herp_c, "%s %s", &herpderp_1, &herp_type);
-			if (strcmp(herp_type, "RBS") == 0) tech = RBS;
+			if (strcmp(herp_type, "RBS") == 0) {
+                tech = RBS;
+                fprintf(stderr, "This is RBS\n");
+            }
          }
          if(derp_n == 2){ //line number3 in cut file = user weight factor
 			sscanf(herp_c, "%s %s %f", &herpderp_1, &herpderp_2, &user_weight);
          }
-		 if(derp_n == 5 && tech == 0){ //line number6 in cut file = scatter element
+		 if(derp_n == 5 && tech == RBS) { //line number6 in cut file = scatter element
             sscanf(herp_c, "%s %s %s", &herpderp_1, &herpderp_2, herp_d);
 			
 			// Parse isotope from string -separate mass from element (from line 6)
+            herp_isotope=0;
 			while(isdigit(*herp_d)) herp_isotope = herp_isotope*10 + *herp_d++ - '0';
 			
 			// Parse element
 			sscanf(herp_d, "%s", herp_scatter);
 			
-			//printf("Scatter element: %s\n", herp_scatter);
-			//printf("Scatter isotope: %i\n", herp_isotope);
-			//printf("Scatter isotope mass: %8.4f\n", get_mass(herp_scatter, &herp_isotope)/C_U);
-			// Get new mass and update values to scatter element.
-			M2[i] = get_mass(herp_scatter, &herp_isotope);  // herp_isotope is changed, only one call to get_mass with same second parameter is possible
+			fprintf(stderr, "Scatter element: %s\n", herp_scatter);
+			fprintf(stderr, "Scatter isotope: %i\n", herp_isotope);
+			double m_scatter=get_mass(herp_scatter, &herp_isotope);
+            fprintf(stderr, "Scatter isotope mass: %8.4f\n", m_scatter/C_U);
+			M2[i] = m_scatter;
 			Z[i] = herp_isotope;  // here herp_isotope is proton number, not isotope number A
+            fprintf(stderr, "M2[%i]=%g u and Z[%i]=%i\n", i, M2[i]/C_U, i, Z[i]);
 			/*
 			emax[i] = input.beamE*4.0*ipow(cos(input.theta*C_DEG),2)*beamM*M[i]/ipow(beamM+M[i],2);
 #ifdef ZBL96
@@ -322,7 +338,7 @@ int main(int argc, char *argv[])
             if(energy > -0.1 && energy < emax[i]*MAX_FACTOR){
                printf("%e %e ",angle1,ANGLE2);
                //printf("%10.5lf %3d %8.4f ",energy/C_MEV,Z[i],M[i]/C_U); // Original
-               printf("%10.5lf %3d %8.4f ",energy/C_MEV, Z[i], (tech == 0)?M2[i]/C_U:M[i]/C_U);
+               printf("%10.5lf %3d %8.4f ",energy/C_MEV, Z[i], (tech == RBS)?M2[i]/C_U:M[i]/C_U);
                printf("%s %6.3f %5d\n",(tech)?"ERD":"RBS",(noweight)?1.0:get_weight(weight[i],energy)*user_weight,evnum);
             }
          }
@@ -375,7 +391,7 @@ double **set_sto(gsto_table_t *table, double z, double m, double e)
     int i,n;
     double **sto;
     double E, S;
-    
+    fprintf(stderr, "set_sto(%p, z=%g, m=%g u, e=%g keV)\n", table, z, m/C_U, e/C_KEV);
     n=(int) (e/(STOPSTEP*C_MEV))+1;
     sto = malloc(sizeof(double *)*2);
     sto[0]=calloc(n, sizeof(double));
@@ -468,12 +484,13 @@ double get_weight(double **table, double e)
 
 }
 
-double get_mass(char *symbol, int *z)
+double get_mass(char *symbol, int *z) /* The second parameter (int *z) is actually mass number A as an input (with *z==0 we assume natural isotopic distribution) and simultaneously this function stores the proton number (Z) into z. So the same variable acts both as an input and an output and has different meanings. Whoever programmed this will be first against the wall when the revolution comes. */
 {
    FILE *fp;
    char S[3];
    int A,N,Z;
    double C,M,MC=0.0,MM=0.0;
+   fprintf(stderr, "Trying to find mass for \"%s\" (mass number A is %i)\n", symbol, *z);
 
    fp = fopen(XSTR(MASS_FILE),"r");
    if(fp == NULL){
