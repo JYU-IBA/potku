@@ -132,61 +132,6 @@ class _CompositionWidget(MatplotlibWidget):
         for action in self.__layer_actions:
             action.setEnabled(True)
 
-    def check_if_optimization_run(self):
-        """
-        Check if simulation has optimization results.
-
-        Return:
-             List of optimized simulations.
-        """
-        if not self.simulation:
-            return False
-        opt_run = []
-        for elem_sim in self.simulation.element_simulations:
-            if elem_sim.optimization_widget and not \
-                    elem_sim.optimization_running:
-                opt_run.append(elem_sim)
-        return opt_run
-
-    def check_if_simulations_run(self):
-        """
-        Check if simulation have been run.
-
-        Return:
-             List of run simulations.
-        """
-        if not self.simulation:
-            return False
-        simulations_run = []
-        for elem_sim in self.simulation.element_simulations:
-            if elem_sim.simulations_done:
-                simulations_run.append(elem_sim)
-        return simulations_run
-
-    def simulations_running(self):
-        """
-        Check if there are any simulations running.
-
-        Return:
-            True or False.
-        """
-        ret = []
-        if not self.simulation:
-            return ret
-        for elem_sim in self.simulation.element_simulations:
-            if elem_sim in self.simulation.request.running_simulations:
-                ret.append(elem_sim)
-            elif elem_sim in self.simulation.running_simulations:
-                ret.append(elem_sim)
-        return ret
-
-    def optimization_running(self):
-        ret = []
-        for elem_sim in self.simulation.element_simulations:
-            if elem_sim.optimization_running:
-                ret.append(elem_sim)
-        return ret
-
     def __delete_layer(self):
         """
         Delete selected layer.
@@ -200,81 +145,16 @@ class _CompositionWidget(MatplotlibWidget):
                                                QtWidgets.QMessageBox.Cancel)
         if reply == QtWidgets.QMessageBox.No or reply == \
                 QtWidgets.QMessageBox.Cancel:
-            return  # If clicked Yes, then continue normally
-
-        simulations_run = self.check_if_simulations_run()
-        simulations_running = self.simulations_running()
-        optimization_running = self.optimization_running()
-        optimization_run = self.check_if_optimization_run()
-
-        if self.foil_behaviour:
-            simulations_run = []
-            simulations_running = False
-            optimization_running = []
-
-        if simulations_run and simulations_running:
-            header, txt = ("Simulated and running simulations",
-                "There are simulations that use the current target, "
-                "and either have been simulated or are currently running."
-                "\nIf you save changes, the running simulations "
-                "will be stopped, and the result files of the simulated "
-                "and stopped simulations are deleted. This also affects "
-                "possible optimization.\n\n" \
-                "Do you want to save changes anyway?")
-
-        elif simulations_running:
-            header, txt = ("Simulations running",
-                "There are simulations running that use the current "
-                "target.\nIf you save changes, the running "
-                "simulations will be stopped, and their result files "
-                "deleted. This also affects possible optimization.\n\nDo "
-                "you want to save changes anyway?")
-
-        elif simulations_run:
-            header, txt = ("Simulated simulations",
-                "There are simulations that use the current target, "
-                "and have been simulated.\nIf you save changes,"
-                " the result files of the simulated simulations are "
-                "deleted. This also affects possible "
-                "optimization.\n\nDo you want to save changes anyway?")
-
-        elif optimization_running:
-            header, txt = ("Optimization running",
-                "There are optimizations running that use the current "
-                "target.\nIf you save changes, the running "
-                "optimizations will be stopped, and their result files "
-                "deleted.\n\nDo you want to save changes anyway?")
-
-        elif optimization_run:
-            header, txt = ("Optimization results",
-                "There are optimization results that use the current "
-                "target.\nIf you save changes, result files will be "
-                "deleted.\n\nDo you want to save changes anyway?")
-
-        reply = QtWidgets.QMessageBox.question(
-                self, header, txt,
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-        if reply == QtWidgets.QMessageBox.No or reply == \
-                QtWidgets.QMessageBox.Cancel:
-            self.__close = False
             return
-        else:
-            # Stop simulations
-            for elem_sim in itertools.chain(simulations_running,
-                                            simulations_run,
-                                            optimization_running,
-                                            optimization_run):
-                elem_sim.reset()
 
-                # Change full edit unlocked
-                # TODO remove this
-                elem_sim.recoil_elements[0].widgets[0].parent. \
-                    edit_lock_push_button.setText("Full edit unlocked")
-
-                self.parent.tab.del_widget(elem_sim.optimization_widget)
-
-            df.update_tab(self.parent.tab)
+        # If clicked Yes, then check if current simulation has any running or
+        # finished element simulations and confirm whether these should be
+        # deleted as well.
+        if self.simulation is not None:
+            if not df.delete_element_simulations(self, self.parent.tab,
+                                                 self.simulation,
+                                                 msg_str="target"):
+                return
 
         # Delete from layers list
         if self.__selected_layer in self.layers:

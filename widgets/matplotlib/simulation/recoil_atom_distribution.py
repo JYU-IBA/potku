@@ -566,7 +566,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 if old_recoil_name != self.current_recoil_element.name:
                     # Delete energy spectra that use recoil
                     df.delete_recoil_espe(
-                        self,
+                        self.tab,
                         f"{self.current_recoil_element.prefix}-"
                         f"{old_recoil_name}")
 
@@ -660,7 +660,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.current_element_simulation, recoil)
 
                 # Delete energy spectra that use recoil
-                df.delete_recoil_espe(self, recoil.get_full_name())
+                df.delete_recoil_espe(self.tab, recoil.get_full_name())
 
             # Reset controls
             if self.current_element_simulation.controls:
@@ -1187,7 +1187,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.remove_recoil_element(recoil_elem.widgets[0],
                                                element_simulation, recoil_elem)
                     # Delete energy spectra that use recoil
-                    df.delete_recoil_espe(self, recoil_elem.get_full_name())
+                    df.delete_recoil_espe(self.tab, recoil_elem.get_full_name())
 
         self.current_recoil_element = None
         self.remove_element(element_simulation)
@@ -1196,7 +1196,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if recoil in self.other_recoils:
                 self.other_recoils.remove(recoil)
             # Delete energy spectra that use recoil
-            df.delete_recoil_espe(self, recoil.get_full_name())
+            df.delete_recoil_espe(self.tab, recoil.get_full_name())
 
         # Handle optimization results
         if self.current_element_simulation.optimization_recoils:
@@ -1204,7 +1204,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.current_element_simulation.optimization_widget)
             # Delete energy spectra that use optimized recoils
             for opt_rec in self.current_element_simulation.optimization_recoils:
-                df.delete_recoil_espe(self, opt_rec.get_full_name())
+                df.delete_recoil_espe(self.tab, opt_rec.get_full_name())
 
         # Handle fluence optimization results deleting
         if self.current_element_simulation.optimization_widget:

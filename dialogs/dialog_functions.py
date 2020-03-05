@@ -28,6 +28,8 @@ __version__ = ""    # TODO
 
 import os
 import copy
+import itertools
+import collections
 
 import modules.masses as masses
 import modules.general_functions as gf
@@ -158,24 +160,24 @@ def delete_optim_espe(qdialog, elem_sim):
     """Deletes energy spectra from optimized recoils"""
     # TODO refactor this wit delete_simu_espe
     for opt_rec in elem_sim.optimization_recoils:
-        delete_recoil_espe(qdialog, opt_rec.get_full_name())
+        delete_recoil_espe(qdialog.tab, opt_rec.get_full_name())
 
 
-def delete_recoil_espe(qdialog, recoil_name):
+def delete_recoil_espe(tab, recoil_name):
     """Deletes recoil's energy spectra.
     """
-    # TODO change qdialog to tab
-    for energy_spectra in qdialog.tab.energy_spectrum_widgets:
+    for energy_spectra in tab.energy_spectrum_widgets:
         for element_path in energy_spectra.energy_spectrum_data:
             file_name = Path(element_path).name
             if file_name.startswith(recoil_name):
                 if file_name[len(recoil_name)] == ".":
-                    qdialog.tab.del_widget(energy_spectra)
-                    qdialog.tab.energy_spectrum_widgets.remove(energy_spectra)
-                    save_file_path = Path(qdialog.tab.simulation.directory,
+                    tab.del_widget(energy_spectra)
+                    tab.energy_spectrum_widgets.remove(energy_spectra)
+                    save_file_path = Path(tab.simulation.directory,
                                           energy_spectra.save_file)
                     if save_file_path.exists():
                         os.remove(save_file_path)
+                    # TODO check if more files need to be deleted
                     break
 
 
@@ -214,49 +216,6 @@ def change_element(qdialog, button, combo_box):
             combo_box.setStyleSheet("background-color: %s" % "None")
 
 
-def handle_old_sims_and_optims(qdialog, simulations_run,
-                               optimization_run):
-    """
-
-    Args:
-        qdialog: settings dialog that calls this function
-        simulations_run: list of element simulations
-        optimization_run: list of element simulations used in optimization
-    """
-    for elem_sim in simulations_run:
-        delete_simu_espe(qdialog, elem_sim)
-
-        # Reset controls
-        if elem_sim.controls:
-            # TODO do not access controls via elem_sim. Use
-            #      observation.
-            elem_sim.controls.reset_controls()
-
-        # Change full edit unlocked
-        elem_sim.recoil_elements[0].widgets[0].parent. \
-            edit_lock_push_button.setText("Full edit unlocked")
-        elem_sim.simulations_done = False
-
-    for elem_sim in optimization_run:
-        qdialog.tab.del_widget(elem_sim.optimization_widget)
-        elem_sim.simulations_done = False
-        # Handle optimization energy spectra
-        if elem_sim.optimization_recoils:
-            # Delete energy spectra that use
-            # optimized recoils
-            delete_optim_espe(qdialog, elem_sim)
-
-
-def delete_simu_espe(qdialog, elem_sim):
-    """Deletes energy spectra related to the given element simulation as well
-    as the simulation results.
-    """
-    for recoil in elem_sim.recoil_elements:
-        gf.delete_simulation_results(elem_sim, recoil)
-        # Delete energy spectra that use recoil
-        delete_recoil_espe(qdialog, recoil.get_full_name())
-
-
 def update_detector_settings(entity, det_folder_path,
                              measurement_settings_file_path):
     """
@@ -289,42 +248,6 @@ def update_detector_settings(entity, det_folder_path,
         efficiencies = []
 
 
-def stop_simulations(qdialog, tmp_sims):
-    for elem_sim in tmp_sims:
-        if not elem_sim.optimization_running:
-            elem_sim.stop()
-
-            # Delete files
-            delete_simu_espe(qdialog, elem_sim)
-
-            # Reset controls
-            if elem_sim.controls:
-                # TODO do not access controls via elem_sim. Use
-                #      observation.
-                elem_sim.controls.reset_controls()
-
-        else:
-            # Handle optimization
-            if elem_sim.optimization_recoils:
-                elem_sim.stop(optimize_recoil=True)
-            else:
-                elem_sim.stop()
-            elem_sim.optimization_stopped = True
-            elem_sim.optimization_running = False
-
-            qdialog.tab.del_widget(elem_sim.optimization_widget)
-            # Handle optimization energy spectra
-            if elem_sim.optimization_recoils:
-                # Delete energy spectra that use
-                # optimized recoils
-                delete_optim_espe(qdialog, elem_sim)
-
-        # Change full edit unlocked
-        elem_sim.recoil_elements[0].widgets[0].parent. \
-            edit_lock_push_button.setText("Full edit unlocked")
-        elem_sim.simulations_done = False
-
-
 def clear_element_simulation(qdialog):
     """Removes everything from the element simulation belonging to the
     given qdialog.
@@ -334,7 +257,7 @@ def clear_element_simulation(qdialog):
         gf.delete_simulation_results(qdialog.element_simulation, recoil)
 
         # Delete energy spectra that use recoil
-        delete_recoil_espe(qdialog, recoil.get_full_name())
+        delete_recoil_espe(qdialog.tab, recoil.get_full_name())
 
     # Reset controls
     if qdialog.element_simulation.controls:
@@ -358,31 +281,6 @@ def delete_existing_simulations(qdialog):
         delete_optim_espe(qdialog, qdialog.element_simulation)
 
 
-def stop_simulations_layerprops(qdialog):
-    tmp_sims = copy.copy(qdialog.simulation.running_simulations)
-    for elem_sim in tmp_sims:
-        if not elem_sim.optimization_running:
-            elem_sim.stop()
-
-            # Delete files
-            for recoil in elem_sim.recoil_elements:
-                gf.delete_simulation_results(elem_sim, recoil)
-            # Change full edit unlocked
-            elem_sim.recoil_elements[0].widgets[0].parent. \
-                edit_lock_push_button.setText("Full edit unlocked")
-            elem_sim.simulations_done = False
-
-        else:
-            # Handle optimization
-            elem_sim.stop()
-
-            if qdialog.tab:
-                qdialog.tab.del_widget(elem_sim.optimization_widget)
-
-    if qdialog.tab:
-        update_tab(qdialog.tab)
-
-
 def update_tab(tab):
     for energy_spectra in tab.energy_spectrum_widgets:
         tab.del_widget(energy_spectra)
@@ -391,35 +289,6 @@ def update_tab(tab):
         if os.path.exists(save_file_path):
             os.remove(save_file_path)
     tab.energy_spectrum_widgets = []
-
-
-def update_tabs_after_stopping(qdialog, optimization_running, optimization_run):
-    for elem_sim in optimization_running:
-        elem_sim.reset()
-
-        if qdialog.tab:
-            qdialog.tab.del_widget(elem_sim.optimization_widget)
-
-    if qdialog.tab:
-        update_tab(qdialog.tab)
-
-    for elem_sim in optimization_run:
-        if qdialog.tab:
-            qdialog.tab.del_widget(elem_sim.optimization_widget)
-
-
-def update_optim_running(qdialog, optimization_running):
-    tmp_sims = copy.copy(optimization_running)
-    for elem_sim in tmp_sims:
-        # Handle optimization
-        elem_sim.reset()
-
-        qdialog.tab.del_widget(elem_sim.optimization_widget)
-        # Handle optimization energy spectra
-        if elem_sim.optimization_recoils:
-            # Delete energy spectra that use
-            # optimized recoils
-            delete_optim_espe(qdialog, elem_sim)
 
 
 def req_settings_stop(qdialog):
@@ -457,7 +326,7 @@ def tab_del(qdialog, elem_sim):
             # TODO check that this is never None
             # Delete energy spectra that use optimized recoils
             for recoil in elem_sim.optimization_recoils:
-                del_espes_for_recs(tab, recoil)
+                delete_recoil_espe(tab, recoil.get_full_name())
 
 
 def reg_settings_del_sims(qdialog, simulations_run):
@@ -483,33 +352,13 @@ def update_inner_recoils(qdialog, elem_sim):
         if tab:
             # Delete energy spectra that use recoil
             for recoil in elem_sim.recoil_elements:
-                del_espes_for_recs(tab, recoil)
+                delete_recoil_espe(tab, recoil.get_full_name())
 
     # Reset controls
     if elem_sim.controls:
         # TODO do not access controls via elem_sim. Use
         #      observation.
         elem_sim.controls.reset_controls()
-
-
-def del_espes_for_recs(tab, recoil):
-    # TODO refactor this with delete_recoil_espe
-    # Delete energy spectra that use recoil
-    for energy_spectra in tab.energy_spectrum_widgets:
-        for element_path in energy_spectra.energy_spectrum_data.keys():
-            elem = recoil.prefix + "-" + recoil.name
-            if elem in element_path:
-                index = element_path.find(elem)
-                if element_path[index - 1] == os.path.sep \
-                        and element_path[index + len(elem)] == '.':
-                    tab.del_widget(energy_spectra)
-                    tab.energy_spectrum_widgets.remove(energy_spectra)
-                    save_file_path = os.path.join(
-                        tab.simulation.directory,
-                        energy_spectra.save_file)
-                    if os.path.exists(save_file_path):
-                        os.remove(save_file_path)
-                    break
 
 
 # TODO common base class for import dialogs
@@ -536,3 +385,114 @@ def add_imported_files_to_tree(qdialog, files):
         item.directory = directory
         qdialog.files_added[file] = file
         qdialog.treeWidget.addTopLevelItem(item)
+
+
+def _get_confirmation_msg(msg_str="settings",
+                          finished_simulations=None,
+                          running_simulations=None,
+                          finished_optimizations=None,
+                          running_optimizations=None):
+    """Returns a message to be displayed on a MessageBox when simulations
+    are about to be deleted.
+
+    Keyword arguments are truthy values representing finished or running
+    simulations or optimizations.
+
+    Return:
+        namedtuple with message title and body if at least one of the keyword
+        arguments is True. Otherwise returns None.
+    """
+    msg = collections.namedtuple("Msg", ("title", "body"))
+    if finished_simulations and running_simulations:
+        return msg("Simulated and running simulations",
+                   f"There are simulations that use the current {msg_str}, "
+                   "and either have been simulated or are currently running.\n"
+                   "If you save changes, the running simulations "
+                   "will be stopped, and the result files of the simulated "
+                   "and stopped simulations are deleted. This also affects "
+                   "possible optimization.\n\n"
+                   "Do you want to save changes anyway?")
+
+    if running_simulations:
+        return msg("Simulations running",
+                   "There are simulations running that use the current "
+                   f"{msg_str}.\n"
+                   "If you save changes, the running simulations will be "
+                   "stopped, and their result files deleted. This also affects "
+                   "possible optimization.\n\n"
+                   "Do you want to save changes anyway?")
+
+    if finished_simulations:
+        return msg("Finished simulations",
+                   f"There are simulations that use the current {msg_str}, "
+                   "and have been simulated.\n"
+                   "If you save changes, the result files of the simulated "
+                   "simulations are deleted. This also affects possible "
+                   "optimization.\n\n"
+                   "Do you want to save changes anyway?")
+
+    if running_optimizations:
+        return msg("Optimization running",
+                   "There are optimizations running that use the current "
+                   f"{msg_str}.\n"
+                   "If you save changes, the running optimizations will be "
+                   "stopped, and their result files deleted.\n\n"
+                   "Do you want to save changes anyway?")
+
+    if finished_optimizations:
+        return msg("Optimization results",
+                   "There are optimization results that use the current "
+                   f"{msg_str}.\n"
+                   "If you save changes, result files will be deleted.\n\n"
+                   "Do you want to save changes anyway?")
+
+    # No simulations are running or finished so no message needs to be shown
+    return None
+
+
+def _get_confirmation(qdialog, **kwargs):
+    """Displays a MessageBox to user to get a confirmation on deleting
+    existing simulations.
+    """
+    msg = _get_confirmation_msg(**kwargs)
+    if msg is None:
+        # No text to shown so there were no running or finished simulations.
+        # Safe to return True.
+        return True
+
+    reply = QtWidgets.QMessageBox.question(
+        qdialog, msg.title, msg.body,
+        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+        QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+
+    return reply == QtWidgets.QMessageBox.Yes
+
+
+def delete_element_simulations(qdialog, tab, simulation, msg_str="settings"):
+    """Deletes running and finished simulations if given confirmation by
+    the user.
+
+    Return:
+        True if simulations were deleted, False otherwise.
+    """
+    # TODO add ability to start a new simulation instead of deleting old one
+    all_sims = simulation.get_active_simulations()
+
+    if not _get_confirmation(qdialog, msg_str=msg_str,
+                             **all_sims._asdict()):
+        return False
+
+    # Reset simulations
+    for elem_sim in itertools.chain(*all_sims):
+        elem_sim.reset()
+
+        # Change full edit unlocked
+        # TODO remove reference to GUI element from RecoilElement
+        elem_sim.recoil_elements[0].widgets[0].parent. \
+            edit_lock_push_button.setText("Full edit unlocked")
+
+        tab.del_widget(elem_sim.optimization_widget)
+
+    update_tab(tab)
+
+    return True
