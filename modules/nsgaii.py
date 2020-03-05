@@ -29,11 +29,11 @@ import numpy as np
 import os
 import time
 
-from modules.optimization import dominates
+import modules.optimization as opt
+
 from modules.general_functions import format_to_binary
 from modules.general_functions import read_espe_file
 from modules.general_functions import round_value_by_four_biggest
-from modules.optimization import tournament_allow_doubles
 from modules.general_functions import uniform_espe_lists
 from modules.recoil_element import RecoilElement
 from modules.point import Point
@@ -214,8 +214,6 @@ class Nsgaii:
         Return:
             Solutions and their objective function values.
         """
-        size = len(sols)
-        objective_values = np.zeros((size, 2))
         if self.opt_recoil:
             # Empty the list of optimization recoils
             self.element_simulation.optimization_recoils = []
@@ -243,7 +241,6 @@ class Nsgaii:
                 recoil = self.form_recoil(solution)
                 self.element_simulation.optimization_recoils.append(recoil)
 
-            j = 0
             for recoil in self.element_simulation.optimization_recoils:
                 if self.element_simulation.optimization_stopped:
                     return None
@@ -255,45 +252,10 @@ class Nsgaii:
                 espe_file = os.path.join(
                     self.element_simulation.directory, recoil.prefix + "-" +
                     recoil.name + ".simu")
-                espe = read_espe_file(espe_file)
-                if espe:
-                    # Change from string to float items
-                    espe = list(np.float_(espe))
+                objective_values = self.get_objective_values(len(sols),
+                                                             espe_file)
 
-                    # Make spectra the same size
-                    espe, measured_espe = uniform_espe_lists(
-                        [espe, self.measured_espe],
-                        self.element_simulation.channel_width)
-
-                    # Find the area between simulated and measured energy
-                    # spectra
-                    polygon_points = []
-                    for value in espe:
-                        polygon_points.append(value)
-
-                    for value in measured_espe[::-1]:
-                        polygon_points.append(value)
-
-                    # Add the first point again to close the rectangle
-                    polygon_points.append(polygon_points[0])
-
-                    polygon = Polygon(polygon_points)
-                    area = polygon.area
-                    # Find the summed distance between thw points of these two
-                    # spectra
-                    sum_diff = 0
-                    i = 0
-                    for point in measured_espe:
-                        simu_point = espe[i]
-                        diff = abs(point[1] - simu_point[1])
-                        sum_diff += diff
-                        i += 1
-                    objective_values[j] = np.array([area, sum_diff])
-                else:  # If failed to create energy spectrum
-                    objective_values[j] = np.array([np.inf, np.inf])
-                j += 1
         else:  # Evaluate fluence
-            # self.mcerd_run = True
             if not self.mcerd_run:
                 self.element_simulation.start(self.number_of_processes, 201,
                                               optimize=True,
@@ -306,7 +268,6 @@ class Nsgaii:
                     return None
                 self.mcerd_run = True
 
-            j = 0
             recoil = self.element_simulation.recoil_elements[0]
             for solution in sols:
                 if self.element_simulation.optimization_stopped:
@@ -323,46 +284,55 @@ class Nsgaii:
                 espe_file = os.path.join(
                     self.element_simulation.directory, recoil.prefix +
                     "-optfl.simu")
-                espe = read_espe_file(espe_file)
-                if espe:
-                    # Change from string to float items
-                    espe = list(np.float_(espe))
-
-                    # Make spectra the same size
-                    espe, measured_espe = uniform_espe_lists(
-                        [espe, self.measured_espe],
-                        self.element_simulation.channel_width)
-
-                    # Find the area between simulated and measured energy
-                    # spectra
-                    polygon_points = []
-                    for value in espe:
-                        polygon_points.append(value)
-
-                    for value in measured_espe[::-1]:
-                        polygon_points.append(value)
-
-                    # Add the first point again to close the rectangle
-                    polygon_points.append(polygon_points[0])
-
-                    polygon = Polygon(polygon_points)
-                    area = polygon.area
-                    # Find the summed distance between thw points of these two
-                    # spectra
-                    sum_diff = 0
-                    i = 0
-                    for point in measured_espe:
-                        simu_point = espe[i]
-                        diff = abs(point[1] - simu_point[1])
-                        sum_diff += diff
-                        i += 1
-                    objective_values[j] = np.array([area, sum_diff])
-                else:  # If failed to create energy spectrum
-                    objective_values[j] = np.array([np.inf, np.inf])
-                j += 1
+                objective_values = self.get_objective_values(len(sols),
+                                                             espe_file)
 
         population = [sols, objective_values]
         return population
+
+    def get_objective_values(self, sol_count, espe_file):
+        """Calculates the objective values and returns them as a np.array.
+        """
+        j = 0
+        objective_values = np.zeros((sol_count, 2))
+        espe = read_espe_file(espe_file)
+        if espe:
+            # Change from string to float items
+            espe = list(np.float_(espe))
+
+            # Make spectra the same size
+            espe, measured_espe = uniform_espe_lists(
+                [espe, self.measured_espe],
+                self.element_simulation.channel_width)
+
+            # Find the area between simulated and measured energy
+            # spectra
+            polygon_points = []
+            for value in espe:
+                polygon_points.append(value)
+
+            for value in measured_espe[::-1]:
+                polygon_points.append(value)
+
+            # Add the first point again to close the rectangle
+            polygon_points.append(polygon_points[0])
+
+            polygon = Polygon(polygon_points)
+            area = polygon.area
+            # Find the summed distance between thw points of these two
+            # spectra
+            sum_diff = 0
+            i = 0
+            for point in measured_espe:
+                simu_point = espe[i]
+                diff = abs(point[1] - simu_point[1])
+                sum_diff += diff
+                i += 1
+            objective_values[j] = np.array([area, sum_diff])
+        else:  # If failed to create energy spectrum
+            objective_values[j] = np.array([np.inf, np.inf])
+        j += 1
+        return objective_values
 
     def find_bit_variable_lengths(self):
         # Find needed size to hold x and y in binary
@@ -809,7 +779,6 @@ class Nsgaii:
                 i += 2
                 j += 1
         else:  # Initialize a population for fluence
-            pass
             # Change upper and lower limits to have individual indices
             #  for each solution (makes variation easier for real values)
             upper_limits = np.zeros((1, self.sol_size))
@@ -890,9 +859,9 @@ class Nsgaii:
                 q = pop_obj[h]
                 if np.array_equal(p, q):
                     continue
-                if dominates(p, q):
+                if opt.dominates(p, q):
                     s_p.append((q, h))
-                elif dominates(q, p):
+                elif opt.dominates(q, p):
                     n_p += 1
             if n_p == 0:
                 front_no[i] = 1
@@ -990,7 +959,7 @@ class Nsgaii:
             # Select group of parents (mating pool) by binary_tournament,
             # usually number of parents is half of population.
             pool_size = round(self.pop_size / 2)
-            pool_ind = tournament_allow_doubles(2, pool_size, fit)
+            pool_ind = opt.tournament_allow_doubles(2, pool_size, fit)
             pop_sol, pop_obj = self.population[0], self.population[1]
             pool = [pop_sol[pool_ind, :], pop_obj[pool_ind, :]]
             # Form offspring solutions with this pool, and do variation on them
@@ -1117,28 +1086,12 @@ class Nsgaii:
                 # Transform child 1 and 2 into binary mode, to match the
                 # possible values when taking decimal precision into account
                 # Transform variables into binary
-                for i in range(len(parent_1)):
-                    if i % 2 == 0:
-                        # Get rid of decimals
-                        var = int(parent_1[i] * 100)
-                        format_x = format_to_binary(var, self.bit_length_x)
-                        binary_parent_1.append(format_x)
-                    else:
-                        # Get rid of decimals
-                        var = int(parent_1[i] * 10000)
-                        format_y = format_to_binary(var, self.bit_length_y)
-                        binary_parent_1.append(format_y)
-                for i in range(len(parent_2)):
-                    if i % 2 == 0:
-                        # Get rid of decimals
-                        var = int(parent_2[i] * 100)
-                        format_x = format_to_binary(var, self.bit_length_x)
-                        binary_parent_2.append(format_x)
-                    else:
-                        # Get rid of decimals
-                        var = int(parent_2[i] * 10000)
-                        format_y = format_to_binary(var, self.bit_length_y)
-                        binary_parent_2.append(format_y)
+                binary_parent_1 = parent_to_binary(parent_1,
+                                                   self.bit_length_x,
+                                                   self.bit_length_y)
+                binary_parent_2 = parent_to_binary(parent_2,
+                                                   self.bit_length_x,
+                                                   self.bit_length_y)
                 child_1 = binary_parent_1
                 child_2 = binary_parent_2
             else:
@@ -1147,45 +1100,14 @@ class Nsgaii:
             if np.random.uniform() <= self.cross_p:  # Do crossover.
                 # Select between real coded of binary handling
                 if self.opt_recoil:
-                    # Do binary crossover
-                    # Find random point to do the cut
-                    rand_i = np.random.randint(0, len(binary_parent_1))
-                    # Create heads and tails
-                    head_1 = binary_parent_1[:rand_i]
-                    tail_1 = binary_parent_1[rand_i:]
-                    head_2 = binary_parent_2[:rand_i]
-                    tail_2 = binary_parent_2[rand_i:]
-                    # Join to make new children
-                    binary_child_1 = head_1 + tail_2
-                    binary_child_2 = head_2 + tail_1
-
-                    child_1 = binary_child_1
-                    child_2 = binary_child_2
+                    child_1, child_2 = opt.single_point_crossover(
+                        binary_parent_1, binary_parent_2)
 
                 else:  # Fluence finding crossover
-                    for j in range(self.sol_size):
-                        # Simulated Binary Crossover - SBX
-                        u = np.random.uniform()
-                        if u <= 0.5:
-                            beta = (2*u) ** (1/(self.dis_c + 1))
-                        else:
-                            beta = (1/(2*(1 - u)))**(1/(self.dis_c + 1))
-                        c_1 = 0.5*((1 + beta)*parent_1[j] +
-                                       (1 - beta)*parent_2[j])
-                        c_2 = 0.5*((1 - beta)*parent_1[j] +
-                                       (1 + beta)*parent_2[j])
-
-                        if c_1 > self.upper_limits[j]:
-                            c_1 = self.upper_limits[j]
-                        elif c_1 < self.lower_limits[j]:
-                            c_1 = self.lower_limits[j]
-                        if c_2 > self.upper_limits[j]:
-                            c_2 = self.upper_limits[j]
-                        elif c_2 < self.lower_limits[j]:
-                            c_2 = self.lower_limits[j]
-
-                        child_1 = c_1
-                        child_2 = c_2
+                    child_1, child_2 = opt.simulated_binary_crossover(
+                        parent_1, parent_2, self.lower_limits,
+                        self.upper_limits, self.dis_c, self.sol_size
+                    )
 
             offspring.append(child_1)
             p += 1
@@ -1330,3 +1252,21 @@ class Nsgaii:
             offspring = offspring_limits
 
         return np.array(offspring)
+
+
+def parent_to_binary(parent, bit_length_x, bit_length_y):
+    """Returns a binary representation of a parent.
+    """
+    bin_parent = []
+    for i in range(len(parent)):
+        if i % 2 == 0:
+            # Get rid of decimals
+            var = int(parent[i] * 100)
+            format_x = format_to_binary(var, bit_length_x)
+            bin_parent.append(format_x)
+        else:
+            # Get rid of decimals
+            var = int(parent[i] * 10000)
+            format_y = format_to_binary(var, bit_length_y)
+            bin_parent.append(format_y)
+    return bin_parent
