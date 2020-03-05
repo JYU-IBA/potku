@@ -269,6 +269,9 @@ class ElementManager:
         self.element_simulations.remove(element_simulation)
 
         # Delete all files that relate to element_simulation
+        # TODO should .erd files be also deleted?
+        # TODO elem_sim could have a get_files function
+        # TODO this should also delete secondary recoil elements
         files_to_be_removed = []
         for file in os.listdir(element_simulation.directory):
             if file.startswith(element_simulation.name_prefix) and \

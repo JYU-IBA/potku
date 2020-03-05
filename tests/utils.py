@@ -216,3 +216,11 @@ def stopwatch(func, log_file=None):
                 log_file.write(msg)
         return res
     return wrapper
+
+
+def expected_failure_if(cond):
+    """Decorator that expects a test to fail if the condition is True.
+    """
+    if cond:
+        return unittest.expectedFailure
+    return lambda func: func
