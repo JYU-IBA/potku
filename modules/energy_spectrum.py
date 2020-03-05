@@ -118,7 +118,8 @@ class EnergySpectrum:
                 cut_dict[key] = gf.tof_list(cut_file,
                                             self.__directory_es,
                                             save_output=save_output,
-                                            no_foil=no_foil)
+                                            no_foil=no_foil,
+                                            logger_name=self.__measurement.name)
     
                 dirtyinteger += 1
                 if progress is not None:
