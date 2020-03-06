@@ -718,16 +718,20 @@ class ElementSimulation(Observable):
                 # TODO create command file for each process so they can
                 #  be started at the same time?
 
-        if self.use_default_settings and not self.simulation.detector:
-            self.request.running_simulations.append(self)
-        else:
-            self.simulation.running_simulations.append(self)
-
         if not optimize:
             # Start updating observers on current progress
             thread = threading.Thread(target=self.check_status)
             thread.daemon = True
             thread.start()
+
+            if self.use_default_settings and not self.simulation.detector:
+                # TODO instead of having these lists of running simulations
+                #      simulation object could just iterate over its element
+                #      simulations and check the boolean values to determine
+                #      which simulations are running when needed
+                self.request.running_simulations.append(self)
+            else:
+                self.simulation.running_simulations.append(self)
         else:
             # Check the change between current and previous energy spectra (if
             # the spectra have been calculated)

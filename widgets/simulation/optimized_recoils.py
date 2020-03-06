@@ -74,7 +74,7 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         """
         if self.element_simulation.mcerd_objects and \
                 self.element_simulation.optimization_running:
-            self.element_simulation.stop(optimize_recoil=True)
+            self.element_simulation.stop()
             self.element_simulation.optimization_running = False
         self.element_simulation.optimization_stopped = True
         self.element_simulation.optimization_widget = None

@@ -28,12 +28,16 @@ __version__ = ""  # TODO
 import os
 import tempfile
 
+from pathlib import Path
+
 from modules.detector import Detector
 from modules.recoil_element import RecoilElement
 from modules.element import Element
 from modules.element_simulation import ElementSimulation
 from modules.beam import Beam
 from modules.target import Target
+from modules.simulation import Simulation
+from modules.run import Run
 
 
 # This module can be used to generate various helper objects for testing
@@ -69,6 +73,10 @@ def get_recoil_element():
     return RecoilElement(get_element(), [], "red")
 
 
+def get_run():
+    """Returns a Run object"""
+    return Run(get_beam())
+
 def get_element_simulation(request=None):
     """Returns an ElementSimulation object."""
     if request is None:
@@ -76,6 +84,15 @@ def get_element_simulation(request=None):
 
     return ElementSimulation(tempfile.gettempdir(), request,
                              [get_recoil_element()], save_on_creation=False)
+
+
+def get_simulation(request=None):
+    """Returns a Simulation object."""
+    if request is None:
+        request = get_request()
+
+    return Simulation(Path(tempfile.gettempdir(), "foo.simulation"),
+                      request)
 
 
 def get_request():
@@ -91,5 +108,7 @@ def get_request():
                 request=self)
             self.statusbar = None
             self.directory = tempfile.gettempdir()
+            self.running_simulations = []
+            self.default_run = get_run()
 
     return MockRequest()

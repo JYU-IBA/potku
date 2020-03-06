@@ -30,8 +30,8 @@ import tempfile
 import os
 import tests.mock_objects as mo
 
+from unittest.mock import patch
 from tests.utils import disable_logging
-from modules.request import Request
 from modules.simulation import Simulation
 
 
@@ -54,3 +54,22 @@ class TestSimulation(unittest.TestCase):
 
         # Just in case make sure that the temp_dir got deleted
         self.assertFalse(os.path.exists(temp_dir))
+
+    @patch("modules.mcerd.MCERD")
+    @patch("modules.mcerd.MCERD.run")
+    @patch("modules.mcerd.MCERD.stop_process")
+    def test_get_active_simulation(self, mock1, mock2, mock3):
+        sim = mo.get_simulation()
+
+        sim.add_element_simulation(mo.get_recoil_element())
+        self.assertEqual(([], [], [], []), sim.get_active_simulations())
+
+        elem_sim = sim.element_simulations[0]
+        elem_sim.use_default_settings = False
+        elem_sim.start(1, 1)
+        self.assertEqual(([elem_sim], [], [], []),
+                         sim.get_active_simulations())
+
+        elem_sim.stop()
+        self.assertEqual(([], [elem_sim], [], []),
+                         sim.get_active_simulations())

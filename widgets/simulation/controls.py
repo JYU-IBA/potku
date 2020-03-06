@@ -362,12 +362,15 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         """
         self.show_status(status)
 
-        if status["state"] == SimulationState.STARTING:
+        state = status["state"]
+        # TODO maybe disable these buttons altogether when optimizing.
+        #      And also disable optimization when simulation is running
+        if state == SimulationState.STARTING:
             self.run_button.setEnabled(False)
             self.stop_button.setEnabled(True)
             self.processes_spinbox.setEnabled(False)
 
-        elif status["state"] == SimulationState.DONE:
+        elif state == SimulationState.DONE or state == SimulationState.NOTRUN:
             self.run_button.setEnabled(True)
             self.stop_button.setEnabled(False)
             self.processes_spinbox.setEnabled(True)

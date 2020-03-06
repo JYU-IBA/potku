@@ -41,6 +41,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import logging
 
 from pathlib import Path
 from decimal import Decimal
@@ -270,7 +271,8 @@ def copy_cut_file_to_temp(cut_file):
     return new_cut_file
 
 
-def tof_list(cut_file, directory, save_output=False, no_foil=False):
+def tof_list(cut_file, directory, save_output=False, no_foil=False,
+             logger_name=None):
     """ToF_list
 
     Arstila's tof_list executables interface for Python.
@@ -282,6 +284,7 @@ def tof_list(cut_file, directory, save_output=False, no_foil=False):
         save_output: A boolean representing whether tof_list output is saved.
         no_foil: whether foil thickness was used when .cut files were generated.
                  This affects the file path when saving output
+        logger_name: name of a logging entity
 
     Returns:
         Returns cut file as list transformed through Arstila's tof_list program.
@@ -322,8 +325,7 @@ def tof_list(cut_file, directory, save_output=False, no_foil=False):
 
         tof_output = list(tof_parser.parse_strs(
             stdout.decode().splitlines(), method="row", ignore="w"))
-        # TODO on Mac, m1.Re.ERD.0.cut produces no output even though the
-        #      file is not empty
+
         if save_output:
             if not directory:
                 directory = os.path.join(os.path.realpath(os.path.curdir),
@@ -353,7 +355,7 @@ def tof_list(cut_file, directory, save_output=False, no_foil=False):
             numpy.savetxt(directory_es_file, numpy_array,
                           delimiter=" ",
                           fmt="%5.1f %5.1f %10.5f %3d %8.4f %s %6.3f %d")
-
+        return tof_output
     except:
         import traceback
         msg = "Error in tof_list: "
@@ -362,10 +364,13 @@ def tof_list(cut_file, directory, save_output=False, no_foil=False):
                              traceback._some_str(sys.exc_info()[1]), err_file,
                              str(sys.exc_info()[2].tb_lineno)])
         msg += str_err
-        print(msg)
+        if logger_name is not None:
+            logging.getLogger(logger_name).error(msg)
+        else:
+            print(msg)
+        return []
     finally:
         remove_file(new_cut_file)
-        return tof_output
 
 
 def convert_mev_to_joule(energy_in_MeV):

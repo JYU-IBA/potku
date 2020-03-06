@@ -25,13 +25,11 @@ __author__ = "Juhani Sundell"
 __version__ = ""  # TODO
 
 import unittest
-import os
 
 import modules.file_paths as fp
 
 from modules.recoil_element import RecoilElement
 from modules.element import Element
-from tests.utils import stopwatch
 
 
 class TestFilePaths(unittest.TestCase):
