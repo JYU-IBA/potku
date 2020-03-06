@@ -31,31 +31,25 @@ __version__ = ""  # TODO
 from pathlib import Path
 
 
-def get_erd_file_name(recoil_element, seed, optim_mode=None,
-                      get_espe_param=False):
+def get_erd_file_name(recoil_element, seed, optim_mode=None):
     """Returns the name of a file that corresponds to given
-    recoil element, seed, optimization mode and get_espe_param.
+    recoil element, seed and optimization mode.
 
     Args:
         recoil_element: recoil element
         seed: seed of the simulation
         optim_mode: either None, 'recoil' or 'fluence'
-        get_espe_param: boolean that determines if the file is going
-                        to be used as a parameter for get_espe
 
     Return:
         .erd file name
     """
-    # TODO check for path traversal (maybe with a decorator)
-    espe_str = ".*" if get_espe_param else ""
-
     if optim_mode is None:
         return f"{recoil_element.prefix}-{recoil_element.name}." \
-               f"{seed}{espe_str}.erd"
+               f"{seed}.erd"
     if optim_mode == "fluence":
-        return f"{recoil_element.prefix}-optfl.{seed}{espe_str}.erd"
+        return f"{recoil_element.prefix}-optfl.{seed}.erd"
     if optim_mode == "recoil":
-        return f"{recoil_element.prefix}-opt.{seed}{espe_str}.erd"
+        return f"{recoil_element.prefix}-opt.{seed}.erd"
 
     raise ValueError(f"Unknown optimization mode '{optim_mode}'")
 

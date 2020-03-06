@@ -40,25 +40,16 @@ class TestFilePaths(unittest.TestCase):
 
         self.assertEqual("He-Default.101.erd",
                          fp.get_erd_file_name(rec_elem, 101))
-        self.assertEqual("He-Default.102.*.erd",
-                         fp.get_erd_file_name(rec_elem, 102,
-                                              get_espe_param=True))
+        self.assertEqual("He-Default.102.erd",
+                         fp.get_erd_file_name(rec_elem, 102))
 
         self.assertEqual("He-opt.101.erd",
                          fp.get_erd_file_name(rec_elem, 101,
                                               optim_mode="recoil"))
-        self.assertEqual("He-opt.102.*.erd",
-                         fp.get_erd_file_name(rec_elem, 102,
-                                              optim_mode="recoil",
-                                              get_espe_param=True))
 
         self.assertEqual("He-optfl.101.erd",
                          fp.get_erd_file_name(rec_elem, 101,
                                               optim_mode="fluence"))
-        self.assertEqual("He-optfl.102.*.erd",
-                         fp.get_erd_file_name(rec_elem, 102,
-                                              optim_mode="fluence",
-                                              get_espe_param=True))
 
         self.assertRaises(ValueError,
                           lambda: fp.get_erd_file_name(rec_elem, 101,

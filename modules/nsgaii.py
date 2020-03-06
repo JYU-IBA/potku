@@ -30,11 +30,11 @@ import os
 import time
 
 import modules.optimization as opt
+import modules.general_functions as gf
+import modules.file_paths as fp
 
-from modules.general_functions import format_to_binary
-from modules.general_functions import read_espe_file
-from modules.general_functions import round_value_by_four_biggest
-from modules.general_functions import uniform_espe_lists
+from pathlib import Path
+
 from modules.recoil_element import RecoilElement
 from modules.point import Point
 from modules.parsing import CSVParser
@@ -143,6 +143,21 @@ class Nsgaii:
         parser = CSVParser((0, float), (1, float))
         self.measured_espe = list(
             parser.parse_file(self.hist_file, method="row"))
+
+        # Previous erd files are used as the starting point so combine them
+        # into a single file
+        if self.opt_recoil:
+            erd_file_name = fp.get_erd_file_name(
+                self.element_simulation.recoil_elements[0], "test",
+                optim_mode="recoil")
+        else:
+            erd_file_name = fp.get_erd_file_name(
+                self.element_simulation.recoil_elements[0], "test",
+                optim_mode="fluence")
+
+        gf.combine_files(self.element_simulation.get_erd_files(),
+                         Path(self.element_simulation.directory,
+                              erd_file_name))
 
         # Modify measurement file to match the simulation file in regards to
         # the x coordinates -> they have matching values for ease of distance
@@ -272,7 +287,7 @@ class Nsgaii:
                 if self.element_simulation.optimization_stopped:
                     return None
                 # Round solution appropriately
-                sol_fluence = round_value_by_four_biggest(solution[0])
+                sol_fluence = gf.round_value_by_four_biggest(solution[0])
                 # Run get_espe
                 self.element_simulation.calculate_espe(recoil,
                                                        optimize_recoil=False,
@@ -294,13 +309,13 @@ class Nsgaii:
         """
         j = 0
         objective_values = np.zeros((sol_count, 2))
-        espe = read_espe_file(espe_file)
+        espe = gf.read_espe_file(espe_file)
         if espe:
             # Change from string to float items
             espe = list(np.float_(espe))
 
             # Make spectra the same size
-            espe, measured_espe = uniform_espe_lists(
+            espe, measured_espe = gf.uniform_espe_lists(
                 [espe, self.measured_espe],
                 self.element_simulation.channel_width)
 
@@ -810,6 +825,8 @@ class Nsgaii:
         # Add zero points to start and end to get correct mean values
         first_x = self.measured_espe[0][0]
         last_x = self.measured_espe[-1][0]
+
+        # TODO could use deque for quicker inserts
         self.measured_espe.insert(
             0, (round(first_x - self.element_simulation.channel_width, 4), 0.0))
         self.measured_espe.append(
@@ -1281,11 +1298,11 @@ def parent_to_binary(parent, bit_length_x, bit_length_y):
         if i % 2 == 0:
             # Get rid of decimals
             var = int(parent[i] * 100)
-            format_x = format_to_binary(var, bit_length_x)
+            format_x = gf.format_to_binary(var, bit_length_x)
             bin_parent.append(format_x)
         else:
             # Get rid of decimals
             var = int(parent[i] * 10000)
-            format_y = format_to_binary(var, bit_length_y)
+            format_y = gf.format_to_binary(var, bit_length_y)
             bin_parent.append(format_y)
     return bin_parent

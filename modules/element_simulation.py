@@ -701,13 +701,7 @@ class ElementSimulation(Observable):
                 # TODO maybe this file should be kept when optimizing
                 os.remove(new_erd_file)
 
-            if optimize:
-                self.optimization_mcerd_running = True
-                # files = (f for f, _, _ in self.__erd_filehandler)
-                # TODO get_espe takes the output of 'cat file.*.cut' as its
-                #  input. Either rename the combined file to match the wild
-                #  card or use a wild card that matches existing .erd files
-                # gf.combine_files(files, new_erd_file)
+            self.optimization_mcerd_running = optimize
 
             mcerd = MCERD(settings,
                           self,
@@ -806,6 +800,11 @@ class ElementSimulation(Observable):
         """
         return self.__erd_filehandler.get_max_seed()
 
+    def get_erd_files(self):
+        """Returns both active and already simulated ERD files.
+        """
+        return list(f for f, _, _ in self.__erd_filehandler)
+
     def check_status(self):
         """Periodically checks the status of simulation and reports the status
         to observers.
@@ -868,7 +867,7 @@ class ElementSimulation(Observable):
             # Check if maximum time has been used for simulation
             current_time = time.time()
             if current_time - check_start >= check_max:  # Max time
-                self.stop(optimize_recoil=opt)
+                self.stop()
 
             erd_file = Path(self.directory,
                             fp.get_erd_file_name(recoils[0],
@@ -906,7 +905,7 @@ class ElementSimulation(Observable):
                         if previous_avg:
                             avg_ratio = avg/previous_avg
                             if avg_ratio < stop_percent:
-                                self.stop(optimize_recoil=opt)
+                                self.stop()
                                 break
                         previous_avg = avg
                     self.__previous_espe = espe
