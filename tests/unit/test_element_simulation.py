@@ -30,7 +30,7 @@ import unittest
 import tempfile
 import os
 import time
-import sys
+import platform
 
 import modules.file_paths as fp
 import tests.mock_objects as mo
@@ -99,7 +99,7 @@ class TestErdFileHandler(unittest.TestCase):
     # Expect failure on *nix systems because they accept different file names
     # compared to Windows.
     # TODO correct behaviour should be specified in the future
-    @expected_failure_if(sys.platform != "Windows")
+    @expected_failure_if(platform.system() != "Windows")
     def test_get_valid_erd_files(self):
         self.assertEqual([], list(fp.validate_erd_file_names(
             self.invalid_erd_files, self.elem_4he)))
