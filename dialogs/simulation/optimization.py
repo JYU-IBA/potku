@@ -352,8 +352,7 @@ class OptimizationDialog(QtWidgets.QDialog):
             i += 1
 
         # Hist all selected cut files
-        # TODO should no_foil be used here? If not, remember to remove it from
-        #      hist file name too.
+        # TODO this could also be done in the Nsga2 __init__
         es = EnergySpectrum(used_measurement, [cut_file],
                             self.ui.histogramTicksDoubleSpinBox.value(),
                             progress=None,
@@ -422,22 +421,27 @@ class OptimizationDialog(QtWidgets.QDialog):
 
         self.measured_element = item_text
         # Update result widget with progress or results
-        thread_results = threading.Thread(
-            target=self.check_progress_and_results)
-        self.check_results_thread = thread_results
 
-        # Run optimization in a thread
-        thread = threading.Thread(
-            target=Nsgaii, args=(generations, self.element_simulation,
-                                 population_size, solution_size,
-                                 upper_limit, lower_limit,
-                                 optimize_recoil, recoil_type, None,
-                                 no_of_processes, crossover_prob,
-                                 mutation_prob, stop_percent,
-                                 check_time, channel_width, hist_file,
-                                 dist_index_crossover, dist_index_mutation,
-                                 check_max, check_min))
-        self.optimization_thread = thread
+        nsgaii = Nsgaii(
+            generations, self.element_simulation,
+            population_size, solution_size,
+            upper_limit, lower_limit,
+            optimize_recoil, recoil_type,
+            no_of_processes, crossover_prob,
+            mutation_prob, stop_percent,
+            check_time, channel_width, hist_file,
+            dist_index_crossover, dist_index_mutation,
+            check_max, check_min
+        )
+
+        # Result checking thread
+        self.check_results_thread = threading.Thread(
+            target=self.check_progress_and_results)
+
+        # Optimization running thread
+        # TODO multiprocessing could also be an option instead of a thread.
+        self.optimization_thread = threading.Thread(
+            target=nsgaii.start_optimization)
 
         # Create necessary results widget
         self.result_widget = self.tab.add_optimization_results_widget(
@@ -450,4 +454,5 @@ class OptimizationDialog(QtWidgets.QDialog):
         self.optimization_thread.daemon = True
         self.optimization_thread.start()
 
+        # TODO this should be set by the element_simulation itself
         self.element_simulation.optimization_running = True

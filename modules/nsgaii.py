@@ -53,8 +53,7 @@ class Nsgaii:
     """
     def __init__(self, gen, element_simulation=None, pop_size=100, sol_size=5,
                  upper_limits=None, lower_limits=None, optimize_recoil=True,
-                 recoil_type="box", starting_solutions=None,
-                 number_of_processes=1, cross_p=0.9, mut_p=1,
+                 recoil_type="box", number_of_processes=1, cross_p=0.9, mut_p=1,
                  stop_percent=0.3, check_time=20, ch=0.025,
                  hist_file=None, dis_c=20,
                  dis_m=20, check_max=900, check_min=0):
@@ -73,8 +72,6 @@ class Nsgaii:
             recoil_type: Type of recoil: either "box" (4 points or 5),
             "two-peak" (high areas at both ends of recoil, low in the middle)
              or "free" (no limits to the shape of the recoil).
-            starting_solutions: First solutions used in optimization. If
-            none, initialize new solutions.
             number_of_processes: How many processes are used in MCERD
             calculation.
             cross_p: Crossover probability.
@@ -105,10 +102,6 @@ class Nsgaii:
         self.opt_recoil = optimize_recoil
         self.rec_type = recoil_type
 
-        self.hist_file = hist_file
-        if not self.hist_file:
-            return
-
         # MCERd specific parameters
         self.number_of_processes = number_of_processes
         self.mcerd_run = False
@@ -124,10 +117,28 @@ class Nsgaii:
         self.dis_c = dis_c
         self.mut_p = mut_p
         self.dis_m = dis_m
-        self.__start = None
         self.__const_var_i = []
         self.bit_length_x = 0
         self.bit_length_y = 0
+
+        self.hist_file = hist_file
+
+        # Starting time of optimization
+        self.__start = None
+        self.population = None
+        self.measured_espe = None
+
+    def __prepare_optimization(self):
+        """Performs internal preparation before optimization begins. If this
+        returns False, optimization should not begin.
+        """
+        # If mcerd run was stopped by closing the widget -> optimization
+        # needs to stop
+        if self.element_simulation.optimization_stopped:
+            return False
+
+        if self.hist_file is None:
+            return False
 
         parser = CSVParser((0, float), (1, float))
         self.measured_espe = list(
@@ -142,19 +153,7 @@ class Nsgaii:
         if self.opt_recoil:
             self.find_bit_variable_lengths()
 
-        # Create initial population
-        if starting_solutions:
-            # Change pop_size and sol_size to match given solutions
-            self.__start = time.clock()
-            self.population = self.evaluate_solutions(starting_solutions)
-        else:
-            self.population = self.initialize_population()
-
-        # If mcerd run was stopped by closing the widget -> optimization
-        # needs to stop
-        if self.element_simulation.optimization_stopped:
-            return
-        self.start_optimization()
+        return True
 
     def crowding_distance(self, front_no, pop_obj=None):
         """
@@ -937,13 +936,33 @@ class Nsgaii:
 
         return next_pop, front_no[index], crowd_dis[index]
 
-    def start_optimization(self):
+    def start_optimization(self, starting_solutions=None):
         """
         Start the optimization. This includes sorting based on
         non-domination and crowding distance, creating offspring population
         by crossover and mutation, and selecting individuals to the new
         population.
+
+        Args:
+            starting_solutions: First solutions used in optimization. If
+                None, initialize new solutions.
         """
+        if not self.__prepare_optimization():
+            # TODO could also raise error
+            return
+
+        # TODO timer might be better choice as time.clock depends on the
+        #  platform
+        # https://docs.python.org/3.6/library/time.html#time.clock
+        self.__start = time.clock()
+
+        # Create initial population
+        if starting_solutions is not None:
+            # Change pop_size and sol_size to match given solutions
+            self.population = self.evaluate_solutions(starting_solutions)
+        else:
+            self.population = self.initialize_population()
+
         # Sort the initial population according to non-domination
         front_no, last_front_no = self.nd_sort(self.population[1],
                                                self.pop_size)
