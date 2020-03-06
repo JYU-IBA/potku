@@ -1175,10 +1175,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         # Stop simulation if running
         if add:
             if self.current_element_simulation.optimization_running:
-                if self.current_element_simulation.optimization_recoils:
-                    self.current_element_simulation.stop(optimize_recoil=True)
-                else:
-                    self.current_element_simulation.stop()
+                self.current_element_simulation.stop()
                 self.current_element_simulation.optimization_stopped = True
                 self.current_element_simulation.optimization_running = False
             else:

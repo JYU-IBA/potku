@@ -872,7 +872,7 @@ class ElementSimulation(Observable):
             # Check if maximum time has been used for simulation
             current_time = time.time()
             if current_time - check_start >= check_max:  # Max time
-                self.stop(optimize_recoil=opt)
+                self.stop()
 
             erd_file = Path(self.directory,
                             fp.get_erd_file_name(recoils[0],
@@ -910,7 +910,7 @@ class ElementSimulation(Observable):
                         if previous_avg:
                             avg_ratio = avg/previous_avg
                             if avg_ratio < stop_percent:
-                                self.stop(optimize_recoil=opt)
+                                self.stop()
                                 break
                         previous_avg = avg
                     self.__previous_espe = espe

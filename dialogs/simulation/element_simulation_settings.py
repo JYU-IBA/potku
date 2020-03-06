@@ -246,10 +246,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 self.__close = False
                 return
             else:
-                if self.element_simulation.optimization_recoils:
-                    self.element_simulation.stop(optimize_recoil=True)
-                else:
-                    self.element_simulation.stop()
+                self.element_simulation.stop()
 
                 # Delete files
                 df.clear_element_simulation(self)
