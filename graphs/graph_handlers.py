@@ -48,6 +48,10 @@ class GraphHandler(abc.ABC):
     def set_callback(self, event, callback):
         pass
 
+    @abc.abstractmethod
+    def remove_callback(self, callback_id):
+        pass
+
 
 class DepthProfileGraphHandler(GraphHandler):
     def __init__(self, figure, elements, depth_directory, color_map=None,
@@ -110,6 +114,9 @@ class DepthProfileGraphHandler(GraphHandler):
             callback id
         """
         return self.line_chart.canvas.mpl_connect(event, callback)
+
+    def remove_callback(self, callback_id):
+        self.line_chart.canvas.mpl_disconnect(callback_id)
 
 
 if __name__ == "__main__":
