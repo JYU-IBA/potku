@@ -271,6 +271,7 @@ class Nsgaii:
 
         else:  # Evaluate fluence
             if not self.mcerd_run:
+                # TODO maybe move this to the __prepare method?
                 self.element_simulation.start(self.number_of_processes, 201,
                                               optimize=True,
                                               stop_p=self.stop_percent,
@@ -992,7 +993,8 @@ class Nsgaii:
             # usually number of parents is half of population.
             pool_size = round(self.pop_size / 2)
             pool_ind = opt.tournament_allow_doubles(2, pool_size, fit)
-            pop_sol, pop_obj = self.population[0], self.population[1]
+            pop_sol, pop_obj = np.array(self.population[0]), \
+                               np.array(self.population[1])
             pool = [pop_sol[pool_ind, :], pop_obj[pool_ind, :]]
             # Form offspring solutions with this pool, and do variation on them
             offspring = self.variation(pool[0])
@@ -1053,6 +1055,7 @@ class Nsgaii:
             first_sol = pareto_optimal_sols[f_i]
             last_sol = pareto_optimal_sols[l_i]
 
+            # TODO
             new_f, new_l = pick_final_solutions(pareto_optimal_objs,
                                                 pareto_optimal_sols)
             print(first_sol == new_f, last_sol == new_l)
