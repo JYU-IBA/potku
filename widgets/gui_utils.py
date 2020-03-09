@@ -32,6 +32,10 @@ from modules.observing import ProgressReporter
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 
+from PyQt5.QtCore import QTime
+from PyQt5.QtWidgets import QTimeEdit
+from PyQt5.QtWidgets import QComboBox
+
 
 if platform.system() == "Darwin":
     # Mac needs event processing to display changes in the status bar
@@ -157,3 +161,89 @@ class StatusBarHandler(ProgressReporter):
         if self.progress_bar is not None:
             self.progress_bar.hide()
 
+
+def _fget(qobj):
+    if isinstance(qobj, QTimeEdit):
+        return qobj.time
+    if isinstance(qobj, QComboBox):
+        return qobj.currentText
+    return qobj.value
+
+
+def _fset(qobj):
+    if isinstance(qobj, QTimeEdit):
+        return lambda sec: qobj.setTime(QTime(0, 0, sec))
+    return qobj.setValue
+
+
+class BindingPropertyWidget(abc.ABC):
+    """Base class for a widget that contains bindable properties.
+    """
+    def _get_properties(self):
+        """Returns the names of all properties the widget has.
+        """
+        return [
+            d for d in dir(self)
+            if hasattr(type(self), d) and
+            isinstance(getattr(type(self), d), property)
+        ]
+
+    def set_properties(self, **kwargs):
+        for p in self._get_properties():
+            if p in kwargs:
+                try:
+                    setattr(self, p, kwargs[p])
+                except AttributeError:
+                    pass
+
+    def get_properties(self):
+        """Returns a dictionary where key-value pairs are property names and
+        their values.
+        """
+        return {
+            p: getattr(self, p)
+            for p in self._get_properties()
+        }
+
+
+def bind(qobj_name, func, twoway=True):
+    """Returns a property that is bound to a QObject.
+
+    Widget that uses this function has to have a reference to QObject with
+    given attribute name.
+
+    Args:
+        qobj_name: name of an attribute that is a reference to a QObject
+        func: function that is applied to the value of the QObject when
+              it is returned
+        twoway: whether binding is two-way (setting the property also sets
+                the QObject value) or one-way.
+    """
+    def getter(self):
+        qobj = getattr(self, qobj_name)
+        return func(_fget(qobj)())
+
+    def setter(self, value):
+        if twoway:
+            qobj = getattr(self, qobj_name)
+            _fset(qobj)(value)
+
+    return property(getter, setter)
+
+
+def multi_bind(qobjs, funcs, twoway=True):
+    # TODO refactor this with bind
+    # TODO enable twoway binding with combobox
+    def getter(self):
+        return tuple(
+            conv(_fget(getattr(self, qobj))())
+            for qobj, conv in zip(qobjs, funcs)
+        )
+
+    def setter(self, values):
+        if twoway:
+            for qobj, value in zip(qobjs, values):
+                obj = getattr(self, qobj)
+                _fset(obj)(value)
+
+    return property(getter, setter)

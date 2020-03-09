@@ -25,10 +25,23 @@ __author__ = "Juhani Sundell"
 __version__ = ""  # TODO
 
 import unittest
+import sys
+
+import widgets.gui_utils as gutils
 
 from unittest.mock import Mock
 
 from widgets.gui_utils import GUIReporter
+
+from PyQt5.QtWidgets import QWidget
+
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtWidgets import QSpinBox
+from PyQt5.QtWidgets import QDoubleSpinBox
+from PyQt5.QtTest import QTest
+from PyQt5.QtCore import Qt
+
+app = QApplication(sys.argv)
 
 
 class TestGUIReporter(unittest.TestCase):
@@ -65,6 +78,51 @@ class TestGUIReporter(unittest.TestCase):
         # This test should test that the callback is always executed in the
         # main thread.
         self.assertTrue(False)
+
+
+class BWidget(QWidget, gutils.BindingPropertyWidget,
+              metaclass=gutils.QtABCMeta):
+    foo = gutils.bind("spinbox", int)
+    bar = gutils.bind("doubleSpinbox", float)
+
+    def __init__(self):
+        super().__init__()
+        self.spinbox = QSpinBox()
+        self.doubleSpinbox = QDoubleSpinBox()
+
+
+class TestBinding(unittest.TestCase):
+    def setUp(self):
+        self.widget = BWidget()
+
+    def test_getproperties(self):
+        self.assertEqual(
+            {
+                "foo": 0,
+                "bar": 0.0
+            }, self.widget.get_properties()
+        )
+
+    def test_spinbox_value(self):
+        """Tests that spinbox value is bound to a property."""
+        self.widget.spinbox.setValue(2)
+        self.assertEqual(2, self.widget.foo)
+
+        self.widget.foo = 5
+        self.assertEqual(5, self.widget.spinbox.value())
+
+        self.widget.doubleSpinbox.setValue(3.3)
+        self.assertEqual(3.3, self.widget.bar)
+
+    def test_set_properties(self):
+        """Tests setting multiple properties at once."""
+        self.widget.set_properties(foo=3, bar=4.5)
+        self.assertEqual(
+            {
+                "foo": 3,
+                "bar": 4.5
+            }, self.widget.get_properties()
+        )
 
 
 if __name__ == '__main__':

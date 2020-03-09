@@ -23,55 +23,147 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 
-__author__ = "Heta Rekilä"
+__author__ = "Heta Rekilä \n Juhani Sundell"
 __version__ = "2.0"
 
 import os
+import abc
+import itertools
+
+import widgets.gui_utils as gutils
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
-from PyQt5.QtCore import Qt
+
+_REC_TYPES = {
+    "4-point box": ("box", 5),
+    "6-point box": ("box", 7),
+    "8-point two-peak": ("two-peak", 9),
+    "10-point two-peak": ("two-peak", 11),
+}
 
 
-class OptimizationRecoilParameterWidget(QtWidgets.QWidget):
+def time_conversion(qtime):
+    """Converts QTime object to seconds.
+    """
+    return qtime.hour() * 60 * 60 + qtime.minute() * 60 + qtime.second()
+
+
+def recoil_type_conversion(string):
+    """Returns the recoil type for the given string.
+    """
+    return _REC_TYPES[string][0]
+
+
+def sol_size_conversion(string):
+    """Returns solution size for given string.
+    """
+    return _REC_TYPES[string][1]
+
+
+class OptimizationParameterWidget(QtWidgets.QWidget,
+                                  gutils.BindingPropertyWidget,
+                                  abc.ABC,
+                                  metaclass=gutils.QtABCMeta):
+    """Abstract base class for recoil and fluence optimization parameter
+    widgets.
+    """
+    # Common properties
+    gen = gutils.bind("generationSpinBox", int)
+    pop_size = gutils.bind("populationSpinBox", int)
+    number_of_processes = gutils.bind("processesSpinBox", int)
+    cross_p = gutils.bind("crossoverProbDoubleSpinBox", float)
+    mut_p = gutils.bind("mutationProbDoubleSpinBox", float)
+    stop_percent = gutils.bind("percentDoubleSpinBox", float)
+    check_time = gutils.bind("timeSpinBox", float)
+    check_max = gutils.bind("maxTimeEdit", time_conversion)
+    check_min = gutils.bind("minTimeEdit", time_conversion)
+
+    def __init__(self, ui_file, **kwargs):
+        """Initializes a optimization parameter widget.
+
+        Args:
+            ui_file: relative path to a ui_file
+            kwargs: values to show in the widget
+        """
+        super().__init__()
+        uic.loadUi(ui_file, self)
+
+        locale = QLocale.c()
+        self.crossoverProbDoubleSpinBox.setLocale(locale)
+        self.mutationProbDoubleSpinBox.setLocale(locale)
+        self.percentDoubleSpinBox.setLocale(locale)
+
+        self.set_properties(**kwargs)
+
+
+class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
     """
     Class that handles the recoil optimization parameters' ui.
     """
-    def __init__(self, params=None):
-        """
-        Initialize the widget.
+
+    # Recoil specific properties
+    upper_limits = gutils.multi_bind(
+        ("upperXDoubleSpinBox", "upperYDoubleSpinBox"),
+        (float, float)
+    )
+    lower_limits = gutils.multi_bind(
+        ("lowerXDoubleSpinBox", "lowerYDoubleSpinBox"),
+        (float, float)
+    )
+    sol_size = gutils.bind("recoilTypeComboBox", sol_size_conversion,
+                           twoway=False)
+    recoil_type = gutils.bind("recoilTypeComboBox", recoil_type_conversion,
+                              twoway=False)
+
+    @property
+    def optimize_recoil(self):
+        return True
+
+    def __init__(self, **kwargs):
+        """Initialize the widget.
 
         Args:
-            params: Possible paramaters tos display in the widget.
+            kwargs: property values to be shown in the widget.
         """
-        super().__init__()
-        self.ui = uic.loadUi(
-            os.path.join("ui_files", "ui_optimization_recoil_params.ui"), self)
+        ui_file = os.path.join("ui_files", "ui_optimization_recoil_params.ui")
+        super().__init__(ui_file, **kwargs)
 
         locale = QLocale.c()
-        self.ui.upperXDoubleSpinBox.setLocale(locale)
-        self.ui.lowerXDoubleSpinBox.setLocale(locale)
-        self.ui.upperYDoubleSpinBox.setLocale(locale)
-        self.ui.lowerYDoubleSpinBox.setLocale(locale)
-        self.ui.crossoverProbDoubleSpinBox.setLocale(locale)
-        self.ui.mutationProbDoubleSpinBox.setLocale(locale)
-        self.ui.percentDoubleSpinBox.setLocale(locale)
+        self.upperXDoubleSpinBox.setLocale(locale)
+        self.lowerXDoubleSpinBox.setLocale(locale)
+        self.upperYDoubleSpinBox.setLocale(locale)
+        self.lowerYDoubleSpinBox.setLocale(locale)
 
-        if params:
-            self.ui.upperXDoubleSpinBox.setValue(params[0])
-            self.ui.lowerXDoubleSpinBox.setValue(params[1])
-            self.ui.upperYDoubleSpinBox.setValue(params[2])
-            self.ui.lowerYDoubleSpinBox.setValue(params[3])
-            self.ui.populationSpinBox.setValue(params[4])
-            self.ui.generationSpinBox.setValue(params[5])
-            self.ui.processesSpinBox.setValue(params[6])
-            self.ui.crossoverProbDoubleSpinBox.setValue(params[7])
-            self.ui.mutationProbDoubleSpinBox.setValue(params[8])
-            self.ui.percentDoubleSpinBox.setValue(params[9])
-            self.ui.timeSpinBox.setValue(params[10])
-            self.ui.recoilTypeComboBox.setCurrentIndex(
-                self.recoilTypeComboBox.findText(
-            params[11], Qt.MatchFixedString))
-            self.ui.maxTimeEdit.setTime(params[12])
-            self.ui.minTimeEdit.setTime(params[13])
+
+class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
+    """
+    Class that handles the fluence optimization parameters' ui.
+    """
+
+    # Fluence specific properties
+    upper_limits = gutils.bind("fluenceDoubleSpinBox", float)
+    dis_c = gutils.bind("disCSpinBox", int)
+    dis_m = gutils.bind("disMSpinBox", int)
+
+    @property
+    def lower_limits(self):
+        return 0.0
+
+    @property
+    def sol_size(self):
+        return 1
+
+    @property
+    def optimize_recoil(self):
+        return False
+
+    def __init__(self, **kwargs):
+        """Initialize the widget.
+
+        Args:
+            kwargs: property values to be shown in the widget.
+        """
+        ui_file = os.path.join("ui_files", "ui_optimization_fluence_params.ui")
+        super().__init__(ui_file, **kwargs)
