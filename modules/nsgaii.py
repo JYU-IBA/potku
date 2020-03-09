@@ -171,19 +171,19 @@ class Nsgaii:
 
         return True
 
-    def crowding_distance(self, front_no, pop_obj=None):
+    def crowding_distance(self, front_no, objective_values):
         """
         Calculate crowding distnce for each solution in the population, by the
         Pareto front it belongs to.
 
         Args:
             front_no: Front numbers for all solutions.
+            objective_values: collection of objective values
 
         Return:
             Array that holds crowding distances for all solutions.
         """
-        if pop_obj is None:
-            pop_obj = self.population[1]
+        pop_obj = np.array(objective_values)
         n, m = np.shape(pop_obj)
         crowd_dis = np.zeros(n)
         # Get all front numbers.
@@ -309,7 +309,6 @@ class Nsgaii:
     def get_objective_values(self, sol_count, espe_file):
         """Calculates the objective values and returns them as a np.array.
         """
-        # TODO rename espe to optim_espe?
         obj_values = collections.namedtuple("ObjectiveValues",
                                             ("area", "sum_distance"))
         optim_espe = gf.read_espe_file(espe_file)
@@ -983,7 +982,7 @@ class Nsgaii:
         # Initial population is sorted according to non-domination, without
         # crowding distance. crowd_dis is still needed when initial population
         # is joined with the offspring population.
-        crowd_dis = self.crowding_distance(front_no)
+        crowd_dis = self.crowding_distance(front_no, self.population[1])
         # In a loop until number of evaluations is reached:
         evaluations = self.evaluations
         while evaluations > 0:

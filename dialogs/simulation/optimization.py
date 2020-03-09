@@ -29,6 +29,7 @@ __version__ = "2.0"
 import os
 import threading
 import time
+import json
 
 import dialogs.dialog_functions as df
 
@@ -56,11 +57,14 @@ class OptimizationDialog(QtWidgets.QDialog):
         self.ui = uic.loadUi(
             os.path.join("ui_files", "ui_optimization_params.ui"), self)
 
-        locale = QLocale.c()
-        self.parameters_widget = OptimizationRecoilParameterWidget()
-        self.recoil_parameters = self.parameters_widget.get_properties()
         self.fluence_parameters = {}
+        self.recoil_parameters = {}
+        self.parameters_from_file()
 
+        self.parameters_widget = OptimizationRecoilParameterWidget(
+            **self.recoil_parameters)
+
+        locale = QLocale.c()
         self.ui.histogramTicksDoubleSpinBox.setLocale(locale)
 
         self.element_simulation = None
@@ -140,6 +144,46 @@ class OptimizationDialog(QtWidgets.QDialog):
         self.check_results_thread = None
 
         self.exec_()
+
+    def closeEvent(self, evnt):
+        """Save current parameters to file so they can be reopened.
+        """
+        self.parameters_to_file()
+        evnt.accept()
+
+    def get_file_name(self):
+        """Returns a file path that is used to save the optimization
+        parameters.
+        """
+        return Path(self.simulation.directory, ".optimization_parameters")
+
+    def parameters_to_file(self):
+        """Writes current parameters to file.
+        """
+        # FIXME max_time parameter does not get properly saved
+        params = {
+            "rec": self.recoil_parameters,
+            "flu": self.fluence_parameters
+        }
+        with open(self.get_file_name(), "w") as file:
+            json.dump(params, file, indent=4)
+
+    def parameters_from_file(self):
+        """Loads previous parameters from file.
+        """
+        try:
+            with open(self.get_file_name()) as file:
+                params = json.load(file)
+        except FileNotFoundError:
+            return
+        try:
+            self.recoil_parameters = params["rec"]
+        except KeyError:
+            pass
+        try:
+            self.fluence_parameters = params["flu"]
+        except KeyError:
+            pass
 
     def change_selected_cut_file(self, item):
         """
