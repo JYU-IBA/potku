@@ -25,17 +25,32 @@ __author__ = ""  # TODO
 __version__ = ""  # TODO
 
 import unittest
+import random
 
 from modules.nsgaii import pick_final_solutions
 
 
 class TestNsgaii(unittest.TestCase):
     def test_pick_final_solutions(self):
-        front = [
-            (4, 4), (3, 1), (2, 2), (1, 3)
+        obj_vals = [
+            (3, 0), (2, 2), (0, 3), (2.5, 1.5), (2.9, 0.1), (0.1, 2.9)
+        ]
+        random.shuffle(obj_vals)
+        sols = [
+            o for o in obj_vals
         ]
 
-        self.assertEqual(((1, 3), (3, 1)), pick_final_solutions(front))
+        self.assertEqual(((3, 0), (0, 3)),
+                         pick_final_solutions(obj_vals, sols, count=2))
+
+        self.assertEqual(((3, 0), (2, 2), (0, 3)),
+                         pick_final_solutions(obj_vals, sols, count=3))
+
+        self.assertRaises(ValueError,
+                          lambda: pick_final_solutions(obj_vals, sols, count=0))
+
+        self.assertRaises(ValueError,
+                          lambda: pick_final_solutions(obj_vals, sols, count=4))
 
 
 if __name__ == '__main__':

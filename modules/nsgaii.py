@@ -1058,6 +1058,10 @@ class Nsgaii:
             first_sol = pareto_optimal_sols[f_i]
             last_sol = pareto_optimal_sols[l_i]
 
+            new_f, new_l = pick_final_solutions(pareto_optimal_objs,
+                                                pareto_optimal_sols)
+            print(first_sol == new_f, last_sol == new_l)
+
             # Save the two pareto solutions as recoils
             self.element_simulation.optimization_recoils = []
             first_recoil = self.form_recoil(first_sol, "optfirst")
@@ -1309,26 +1313,23 @@ def parent_to_binary(parent, bit_length_x, bit_length_y):
     return bin_parent
 
 
-def pick_final_solutions(pareto_front, count=2):
+def pick_final_solutions(obj_vals, sols, count=2):
     # Find front's first and last individual: these two are the
     # solutions the user needs
-    first = pareto_front[0]
-    last = pareto_front[-1]
-    f_i = 0
-    l_i = len(pareto_front) - 1
-    for i in range(1, len(pareto_front)):
-        current = pareto_front[i]
-        if current[0] > last[0]:
-            last = current
-            l_i = i
-        if current[1] > first[1]:
-            first = current
-            f_i = i
+    if not 2 <= count <= 3:
+        raise ValueError("Solution count must be either 2 or 3.")
 
-    first_sol = pareto_front[f_i]
-    last_sol = pareto_front[l_i]
+    zipped = list(zip(obj_vals, sols))
 
-    return first_sol, last_sol
+    # TODO check that the objective values were indeed area and distance
+    sorted_by_area = sorted(zipped, key=lambda tpl: tpl[0][0])
+    sorted_by_distance = sorted(zipped, key=lambda tpl: tpl[0][1])
+
+    first, last = sorted_by_distance[0][1], sorted_by_area[0][1]
+
+    if count == 3:
+        return first, sorted_by_distance[len(sorted_by_distance) // 2][1], last
+    return first, last
 
 
 def remove_files(optim_mode="recoil"):
