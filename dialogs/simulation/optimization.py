@@ -41,9 +41,9 @@ from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 from PyQt5 import QtWidgets
 
-from widgets.simulation.optimization_recoil_parameters import \
+from widgets.simulation.optimization_parameters import \
     OptimizationFluenceParameterWidget
-from widgets.simulation.optimization_recoil_parameters import \
+from widgets.simulation.optimization_parameters import \
     OptimizationRecoilParameterWidget
 
 

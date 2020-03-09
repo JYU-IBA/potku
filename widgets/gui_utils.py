@@ -182,11 +182,11 @@ class BindingPropertyWidget(abc.ABC):
     def _get_properties(self):
         """Returns the names of all properties the widget has.
         """
-        return [
+        return (
             d for d in dir(self)
             if hasattr(type(self), d) and
             isinstance(getattr(type(self), d), property)
-        ]
+        )
 
     def set_properties(self, **kwargs):
         for p in self._get_properties():

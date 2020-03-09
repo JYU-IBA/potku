@@ -309,6 +309,7 @@ class Nsgaii:
         """
         j = 0
         objective_values = np.zeros((sol_count, 2))
+        # TODO rename espe to optim_espe?
         espe = gf.read_espe_file(espe_file)
         if espe:
             # Change from string to float items
@@ -1054,7 +1055,7 @@ class Nsgaii:
                     first = current
                     f_i = i
 
-            first_sol  = pareto_optimal_sols[f_i]
+            first_sol = pareto_optimal_sols[f_i]
             last_sol = pareto_optimal_sols[l_i]
 
             # Save the two pareto solutions as recoils
@@ -1091,7 +1092,7 @@ class Nsgaii:
     def variation(self, pop_sols):
         """
         Generate offspring population using SBX and polynomial mutation for
-       fluence, and simple binary crossover and binary
+        fluence, and simple binary crossover and binary
         mutation for recoil element points.
 
         Args:
@@ -1306,3 +1307,29 @@ def parent_to_binary(parent, bit_length_x, bit_length_y):
             format_y = gf.format_to_binary(var, bit_length_y)
             bin_parent.append(format_y)
     return bin_parent
+
+
+def pick_final_solutions(pareto_front, count=2):
+    # Find front's first and last individual: these two are the
+    # solutions the user needs
+    first = pareto_front[0]
+    last = pareto_front[-1]
+    f_i = 0
+    l_i = len(pareto_front) - 1
+    for i in range(1, len(pareto_front)):
+        current = pareto_front[i]
+        if current[0] > last[0]:
+            last = current
+            l_i = i
+        if current[1] > first[1]:
+            first = current
+            f_i = i
+
+    first_sol = pareto_front[f_i]
+    last_sol = pareto_front[l_i]
+
+    return first_sol, last_sol
+
+
+def remove_files(optim_mode="recoil"):
+    pass

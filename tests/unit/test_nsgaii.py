@@ -25,32 +25,17 @@ __author__ = ""  # TODO
 __version__ = ""  # TODO
 
 import unittest
-import sys
-from unittest.mock import patch
 
-from tests.utils import change_wd_to_root
-import tests.mock_objects as mo
-
-from dialogs.simulation.optimization import OptimizationDialog
-
-from PyQt5.QtWidgets import QApplication
-from PyQt5.QtTest import QTest
-from PyQt5.QtCore import Qt
+from modules.nsgaii import pick_final_solutions
 
 
-app = QApplication(sys.argv)
+class TestNsgaii(unittest.TestCase):
+    def test_pick_final_solutions(self):
+        front = [
+            (4, 4), (3, 1), (2, 2), (1, 3)
+        ]
 
-
-class MyTestCase(unittest.TestCase):
-    @change_wd_to_root
-    @patch("modules.nsgaii.Nsgaii")
-    @patch("modules.nsgaii.Nsgaii.start_optimization")
-    def test_something(self, mock_nsgaii, mock_start):
-        opt_dialog = OptimizationDialog(mo.get_simulation(), None)
-
-        down_btn = opt_dialog.ui.downButton
-        QTest.mouseClick(down_btn, Qt.LeftButton)
-
+        self.assertEqual(((1, 3), (3, 1)), pick_final_solutions(front))
 
 
 if __name__ == '__main__':
