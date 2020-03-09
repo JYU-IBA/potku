@@ -44,22 +44,16 @@ _REC_TYPES = {
 }
 
 
-def time_conversion(qtime):
-    """Converts QTime object to seconds.
-    """
-    return qtime.hour() * 60 * 60 + qtime.minute() * 60 + qtime.second()
-
-
-def recoil_type_conversion(string):
+def recoil_type_conversion(combobox):
     """Returns the recoil type for the given string.
     """
-    return _REC_TYPES[string][0]
+    return _REC_TYPES[combobox.currentText()][0]
 
 
-def sol_size_conversion(string):
+def sol_size_conversion(combobox):
     """Returns solution size for given string.
     """
-    return _REC_TYPES[string][1]
+    return _REC_TYPES[combobox.currentText()][1]
 
 
 class OptimizationParameterWidget(QtWidgets.QWidget,
@@ -70,15 +64,15 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
     widgets.
     """
     # Common properties
-    gen = gutils.bind("generationSpinBox", int)
-    pop_size = gutils.bind("populationSpinBox", int)
-    number_of_processes = gutils.bind("processesSpinBox", int)
-    cross_p = gutils.bind("crossoverProbDoubleSpinBox", float)
-    mut_p = gutils.bind("mutationProbDoubleSpinBox", float)
-    stop_percent = gutils.bind("percentDoubleSpinBox", float)
-    check_time = gutils.bind("timeSpinBox", float)
-    check_max = gutils.bind("maxTimeEdit", time_conversion)
-    check_min = gutils.bind("minTimeEdit", time_conversion)
+    gen = gutils.bind("generationSpinBox")
+    pop_size = gutils.bind("populationSpinBox")
+    number_of_processes = gutils.bind("processesSpinBox")
+    cross_p = gutils.bind("crossoverProbDoubleSpinBox")
+    mut_p = gutils.bind("mutationProbDoubleSpinBox")
+    stop_percent = gutils.bind("percentDoubleSpinBox")
+    check_time = gutils.bind("timeSpinBox")
+    check_max = gutils.bind("maxTimeEdit")
+    check_min = gutils.bind("minTimeEdit")
 
     def __init__(self, ui_file, **kwargs):
         """Initializes a optimization parameter widget.
@@ -112,9 +106,9 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
         ("lowerXDoubleSpinBox", "lowerYDoubleSpinBox"),
         (float, float)
     )
-    sol_size = gutils.bind("recoilTypeComboBox", sol_size_conversion,
+    sol_size = gutils.bind("recoilTypeComboBox", fget=sol_size_conversion,
                            twoway=False)
-    recoil_type = gutils.bind("recoilTypeComboBox", recoil_type_conversion,
+    recoil_type = gutils.bind("recoilTypeComboBox", fget=recoil_type_conversion,
                               twoway=False)
 
     @property
@@ -143,9 +137,9 @@ class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
     """
 
     # Fluence specific properties
-    upper_limits = gutils.bind("fluenceDoubleSpinBox", float)
-    dis_c = gutils.bind("disCSpinBox", int)
-    dis_m = gutils.bind("disMSpinBox", int)
+    upper_limits = gutils.bind("fluenceDoubleSpinBox")
+    dis_c = gutils.bind("disCSpinBox")
+    dis_m = gutils.bind("disMSpinBox")
 
     @property
     def lower_limits(self):

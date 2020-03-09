@@ -33,8 +33,6 @@ from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 
 from PyQt5.QtCore import QTime
-from PyQt5.QtWidgets import QTimeEdit
-from PyQt5.QtWidgets import QComboBox
 
 
 if platform.system() == "Darwin":
@@ -162,23 +160,48 @@ class StatusBarHandler(ProgressReporter):
             self.progress_bar.hide()
 
 
+def from_qtime(qtime: QTime) -> int:
+    """Converts QTime object to seconds.
+    """
+    return qtime.hour() * 60 * 60 + qtime.minute() * 60 + qtime.second()
+
+
+def to_qtime(seconds: int) -> QTime:
+    """Converts seconds to QTime.
+    """
+    t = QTime(0, 0, 0).addSecs(seconds)
+    return t
+
+
 def _fget(qobj):
-    if isinstance(qobj, QTimeEdit):
-        return qobj.time
-    if isinstance(qobj, QComboBox):
+    """Returns a default getter method based on the type of the given
+    QObject.
+    """
+    if isinstance(qobj, QtWidgets.QTimeEdit):
+        return lambda: from_qtime(qobj.time())
+    if isinstance(qobj, QtWidgets.QComboBox):
         return qobj.currentText
+    if isinstance(qobj, QtWidgets.QTextEdit):
+        return qobj.toPlainText
     return qobj.value
 
 
 def _fset(qobj):
-    if isinstance(qobj, QTimeEdit):
-        return lambda sec: qobj.setTime(QTime(0, 0, sec))
+    """Returns a default setter method based on the type of the given
+    QObject.
+    """
+    if isinstance(qobj, QtWidgets.QTimeEdit):
+        return lambda sec: qobj.setTime(to_qtime(sec))
+    if isinstance(qobj, QtWidgets.QTextEdit):
+        return qobj.setText
     return qobj.setValue
 
 
 class BindingPropertyWidget(abc.ABC):
     """Base class for a widget that contains bindable properties.
     """
+    # TODO possibly add a base widget that can save its properties to a file
+    #      and load them
     def _get_properties(self):
         """Returns the names of all properties the widget has.
         """
@@ -189,6 +212,11 @@ class BindingPropertyWidget(abc.ABC):
         )
 
     def set_properties(self, **kwargs):
+        """Sets property values.
+
+        Args:
+            kwargs: properties and values as keyword arguments.
+        """
         for p in self._get_properties():
             if p in kwargs:
                 try:
@@ -206,7 +234,7 @@ class BindingPropertyWidget(abc.ABC):
         }
 
 
-def bind(qobj_name, func, twoway=True):
+def bind(qobj_name, fget=None, fset=None, twoway=True):
     """Returns a property that is bound to a QObject.
 
     Widget that uses this function has to have a reference to QObject with
@@ -214,19 +242,26 @@ def bind(qobj_name, func, twoway=True):
 
     Args:
         qobj_name: name of an attribute that is a reference to a QObject
-        func: function that is applied to the value of the QObject when
-              it is returned
+        fget: function that takes the QObject as parameter and returns the
+            value of the property
+        fset: function that takes the QObject and a value as parameters and
+            sets the value of the QObject to the given value
         twoway: whether binding is two-way (setting the property also sets
                 the QObject value) or one-way.
     """
     def getter(self):
         qobj = getattr(self, qobj_name)
-        return func(_fget(qobj)())
+        if fget is None:
+            return _fget(qobj)()
+        return fget(qobj)
 
     def setter(self, value):
         if twoway:
             qobj = getattr(self, qobj_name)
-            _fset(qobj)(value)
+            if fset is None:
+                _fset(qobj)(value)
+            else:
+                fset(qobj, value)
 
     return property(getter, setter)
 

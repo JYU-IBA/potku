@@ -160,7 +160,6 @@ class OptimizationDialog(QtWidgets.QDialog):
     def parameters_to_file(self):
         """Writes current parameters to file.
         """
-        # FIXME max_time parameter does not get properly saved
         # Update the set of parameters that are currently in use
         if self.current_mode == "recoil":
             self.recoil_parameters = self.parameters_widget.get_properties()

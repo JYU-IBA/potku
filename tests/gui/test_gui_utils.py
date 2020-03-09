@@ -38,6 +38,9 @@ from PyQt5.QtWidgets import QWidget
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtWidgets import QSpinBox
 from PyQt5.QtWidgets import QDoubleSpinBox
+from PyQt5.QtWidgets import QTextEdit
+from PyQt5.QtWidgets import QTimeEdit
+from PyQt5.QtCore import QTime
 from PyQt5.QtTest import QTest
 from PyQt5.QtCore import Qt
 
@@ -82,13 +85,17 @@ class TestGUIReporter(unittest.TestCase):
 
 class BWidget(QWidget, gutils.BindingPropertyWidget,
               metaclass=gutils.QtABCMeta):
-    foo = gutils.bind("spinbox", int)
-    bar = gutils.bind("doubleSpinbox", float)
+    foo = gutils.bind("spinbox")
+    bar = gutils.bind("doubleSpinbox")
+    baz = gutils.bind("textBox")
+    tim = gutils.bind("timeEdit")
 
     def __init__(self):
         super().__init__()
         self.spinbox = QSpinBox()
         self.doubleSpinbox = QDoubleSpinBox()
+        self.textBox = QTextEdit()
+        self.timeEdit = QTimeEdit()
 
 
 class TestBinding(unittest.TestCase):
@@ -99,7 +106,9 @@ class TestBinding(unittest.TestCase):
         self.assertEqual(
             {
                 "foo": 0,
-                "bar": 0.0
+                "bar": 0.0,
+                "baz": "",
+                "tim": 0
             }, self.widget.get_properties()
         )
 
@@ -113,16 +122,30 @@ class TestBinding(unittest.TestCase):
 
         self.widget.doubleSpinbox.setValue(3.3)
         self.assertEqual(3.3, self.widget.bar)
+        self.widget.textBox.setText("kissa istuu")
+        self.assertEqual("kissa istuu", self.widget.baz)
+
+        self.widget.tim = 4485
+        self.assertEqual(QTime(1, 14, 45), self.widget.timeEdit.time())
 
     def test_set_properties(self):
         """Tests setting multiple properties at once."""
         self.widget.set_properties(foo=3, bar=4.5)
-        self.assertEqual(
-            {
+        self.assertEqual({
                 "foo": 3,
-                "bar": 4.5
+                "bar": 4.5,
+                "baz": "",
+                "tim": 0
             }, self.widget.get_properties()
         )
+
+        self.widget.set_properties(baz="test", tim=100)
+        self.assertEqual({
+            "foo": 3,
+            "bar": 4.5,
+            "baz": "test",
+            "tim": 100
+        }, self.widget.get_properties())
 
 
 if __name__ == '__main__':
