@@ -46,11 +46,15 @@ class TestNsgaii(unittest.TestCase):
         self.assertEqual(((3, 0), (2, 2), (0, 3)),
                          pick_final_solutions(obj_vals, sols, count=3))
 
+    def test_bad_inputs(self):
+        self.assertRaises(IndexError,
+                          lambda: pick_final_solutions([], [], count=2))
+        self.assertRaises(IndexError,
+                          lambda: pick_final_solutions([], [], count=3))
         self.assertRaises(ValueError,
-                          lambda: pick_final_solutions(obj_vals, sols, count=0))
-
+                          lambda: pick_final_solutions([], [], count=0))
         self.assertRaises(ValueError,
-                          lambda: pick_final_solutions(obj_vals, sols, count=4))
+                          lambda: pick_final_solutions([], [], count=4))
 
 
 if __name__ == '__main__':

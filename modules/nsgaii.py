@@ -28,6 +28,7 @@ __version__ = "2.0"
 import numpy as np
 import os
 import time
+import collections
 
 import modules.optimization as opt
 import modules.general_functions as gf
@@ -228,6 +229,7 @@ class Nsgaii:
         Return:
             Solutions and their objective function values.
         """
+        objective_values = []
         if self.opt_recoil:
             # Empty the list of optimization recoils
             self.element_simulation.optimization_recoils = []
@@ -262,12 +264,10 @@ class Nsgaii:
                 self.element_simulation.calculate_espe(recoil,
                                                        optimize_recoil=True,
                                                        ch=self.channel_width)
-                # Read espe file
-                espe_file = os.path.join(
-                    self.element_simulation.directory, recoil.prefix + "-" +
-                    recoil.name + ".simu")
-                objective_values = self.get_objective_values(len(sols),
-                                                             espe_file)
+                espe_file = Path(self.element_simulation.directory,
+                                 f"{recoil.get_full_name()}.simu")
+                objective_values.append(self.get_objective_values(len(sols),
+                                                                  espe_file))
 
         else:  # Evaluate fluence
             if not self.mcerd_run:
@@ -295,35 +295,37 @@ class Nsgaii:
                                                        fluence=sol_fluence,
                                                        optimize_fluence=True)
                 # Read espe file
-                espe_file = os.path.join(
-                    self.element_simulation.directory, recoil.prefix +
-                    "-optfl.simu")
-                objective_values = self.get_objective_values(len(sols),
-                                                             espe_file)
+                # TODO should it be recoil.get_full_name?
+                espe_file = Path(self.element_simulation.directory,
+                                 recoil.prefix + "-optfl.simu")
 
-        population = [sols, objective_values]
-        return population
+                objective_values.append(self.get_objective_values(len(sols),
+                                                                  espe_file))
+
+        pop = collections.namedtuple("Population",
+                                     ("solutions", "objective_values"))
+        return pop(sols, objective_values)
 
     def get_objective_values(self, sol_count, espe_file):
         """Calculates the objective values and returns them as a np.array.
         """
-        j = 0
-        objective_values = np.zeros((sol_count, 2))
         # TODO rename espe to optim_espe?
-        espe = gf.read_espe_file(espe_file)
-        if espe:
+        obj_values = collections.namedtuple("ObjectiveValues",
+                                            ("area", "sum_distance"))
+        optim_espe = gf.read_espe_file(espe_file)
+        if optim_espe:
             # Change from string to float items
-            espe = list(np.float_(espe))
+            optim_espe = list(np.float_(optim_espe))
 
             # Make spectra the same size
-            espe, measured_espe = gf.uniform_espe_lists(
-                [espe, self.measured_espe],
+            optim_espe, measured_espe = gf.uniform_espe_lists(
+                [optim_espe, self.measured_espe],
                 self.element_simulation.channel_width)
 
             # Find the area between simulated and measured energy
             # spectra
             polygon_points = []
-            for value in espe:
+            for value in optim_espe:
                 polygon_points.append(value)
 
             for value in measured_espe[::-1]:
@@ -336,18 +338,12 @@ class Nsgaii:
             area = polygon.area
             # Find the summed distance between thw points of these two
             # spectra
-            sum_diff = 0
-            i = 0
-            for point in measured_espe:
-                simu_point = espe[i]
-                diff = abs(point[1] - simu_point[1])
-                sum_diff += diff
-                i += 1
-            objective_values[j] = np.array([area, sum_diff])
-        else:  # If failed to create energy spectrum
-            objective_values[j] = np.array([np.inf, np.inf])
-        j += 1
-        return objective_values
+            sum_diff = sum(abs(opt_p[1] - mesu_p[1])
+                           for opt_p, mesu_p in zip(optim_espe, measured_espe))
+
+            return obj_values(area, sum_diff)
+        # If failed to create energy spectrum
+        return obj_values(np.inf, np.inf)
 
     def find_bit_variable_lengths(self):
         # Find needed size to hold x and y in binary
@@ -1322,6 +1318,8 @@ def pick_final_solutions(obj_vals, sols, count=2):
     zipped = list(zip(obj_vals, sols))
 
     # TODO check that the objective values were indeed area and distance
+    # TODO if we assume that the solutions are pareto optimal, only one
+    #  sorting is enough(?)
     sorted_by_area = sorted(zipped, key=lambda tpl: tpl[0][0])
     sorted_by_distance = sorted(zipped, key=lambda tpl: tpl[0][1])
 
