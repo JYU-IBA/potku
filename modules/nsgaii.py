@@ -580,31 +580,14 @@ class Nsgaii:
                 if self.sol_size == 5:  # 4-point recoil
                     # Needed variables per solution for 4-point recoil:
                     # x0, y0, x1, y1, x2 (x0, y1 and x2 constants)
-                    # Create x coordinates (ints)
-                    x_coords = np.random.randint(int(x_lower * 100),
-                                                 int(x_upper * 100) + 1,
-                                                 size=(self.pop_size - 1))
-                    # Make x coords have the correct decimal precision
-                    x_coords = np.around(x_coords/100, 2)
-                    # Add x0
-                    zeros = np.zeros(self.pop_size - 1)
-                    x_coords = np.vstack((zeros, x_coords)).T
-                    # Add x0 index to constant variables
+
+                    x_coords = get_xs(x_lower, x_upper, self.pop_size)
+
                     self.__const_var_i.append(0)
-                    # Make last x match the upper limit, add to constants
-                    x_lasts = np.full((self.pop_size - 1, 1), x_upper)
-                    x_coords = np.append(x_coords, x_lasts, axis=1)
                     self.__const_var_i.append(4)
 
-                    # Create y coordinates
-                    y_coords = np.random.randint(int(y_lower * 10000),
-                                                 int(y_upper * 10000) + 1,
-                                                 size=(self.pop_size - 1))
-                    # Make y coords have the correct decimal precision
-                    y_coords = np.around(y_coords / 10000, 4)
-                    # Make last y coords be lower limit
-                    y_lasts = np.full(self.pop_size - 1, y_lower)
-                    y_coords = np.array([y_coords, y_lasts])
+                    y_coords = get_ys(y_lower, y_upper, self.pop_size)
+
                     # Add y1 to constants
                     self.__const_var_i.append(3)
 
@@ -623,34 +606,15 @@ class Nsgaii:
                 else:  # Handle 6-point recoil
                     # Needed variables per solution for 6-point recoil:
                     # x0, y0, x1, y1, x2, y2, x3 (x0, y0, y2 and x3 constants)
-                    # Create x coordinates (ints)
-                    x_coords = np.random.randint(int(x_lower * 100),
-                                                 int(x_upper * 100) + 1,
-                                                 size=(self.pop_size - 1, 2))
-                    # Make x coords have the correct decimal precision
-                    x_coords = np.around(x_coords / 100, 2)
-                    # Add x0
-                    zeros = np.zeros(self.pop_size - 1)
-                    x_coords = np.insert(x_coords, 0, zeros, axis=1)
+                    x_coords = get_xs(x_lower, x_upper, self.pop_size, 2)
+
                     # Add x0 index to constant variables
                     self.__const_var_i.append(0)
-
-                    # Make x3 match the upper limit, add to constants
-                    x_lasts = np.full((self.pop_size - 1, 1), x_upper)
-                    x_coords = np.append(x_coords, x_lasts, axis=1)
                     self.__const_var_i.append(6)
 
-                    # Create y coordinates
-                    y_coords = np.random.randint(int(y_lower * 10000),
-                                                 int(y_upper * 10000) + 1,
-                                                 size=(self.pop_size - 1))
-                    # Make y coords have the correct decimal precision
-                    y_coords = np.around(y_coords / 10000, 4)
-                    # Make y0 coords be lower limit
-                    y_firsts = np.full(self.pop_size - 1, y_lower)
-                    # Make y2 coords be lower limit
-                    y_lasts = np.full(self.pop_size - 1, y_lower)
-                    y_coords = np.array([y_firsts, y_coords, y_lasts])
+                    y_coords = get_ys(y_lower, y_upper, self.pop_size,
+                                      lower_limit_at_first=True)
+
                     # Add y0 and y2 to constants
                     self.__const_var_i.append(1)
                     self.__const_var_i.append(5)
@@ -675,34 +639,14 @@ class Nsgaii:
                     # Needed variables per solution for 6-point recoil:
                     # x0, y0, x1, y1, x2, y2, x3, y3, x4
                     # (x0, y3 and x4 constants)
-                    # Create x coordinates (ints)
-                    x_coords = np.random.randint(int(x_lower * 100),
-                                                 int(x_upper * 100) + 1,
-                                                 size=(self.pop_size - 1, 3))
+                    x_coords = get_xs(x_lower, x_upper, self.pop_size, 3)
 
-                    # Make x coords have the correct decimal precision
-                    x_coords = np.around(x_coords / 100, 2)
-                    # Add x0
-                    zeros = np.zeros(self.pop_size - 1)
-                    x_coords = np.insert(x_coords, 0, zeros, axis=1)
                     # Add x0 index to constant variables
                     self.__const_var_i.append(0)
-
-                    # Make x4 match the upper limit, add to constants
-                    x_lasts = np.full((self.pop_size - 1, 1), x_upper)
-                    x_coords = np.append(x_coords, x_lasts, axis=1)
                     self.__const_var_i.append(8)
 
-                    # Create y coordinates
-                    y_coords = np.random.randint(int(y_lower * 10000),
-                                                 int(y_upper * 10000) + 1,
-                                                 size=(3, self.pop_size - 1))
-                    # Make y coords have the correct decimal precision
-                    y_coords = np.around(y_coords / 10000, 4)
-                    # Make y3 coords be lower limit
-                    y_lasts = np.full(self.pop_size - 1, y_lower)
-                    y_coords = np.array([y_coords[0], y_coords[1],
-                                         y_coords[2], y_lasts])
+                    y_coords = get_ys(y_lower, y_upper, self.pop_size, z=3)
+
                     # Add y3 to constants
                     self.__const_var_i.append(7)
 
@@ -726,36 +670,14 @@ class Nsgaii:
                     # Needed variables per solution for 6-point recoil:
                     # x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5
                     # (x0, y0, y4 and x5 constants)
-                    # Create x coordinates (ints)
-                    x_coords = np.random.randint(int(x_lower * 100),
-                                                 int(x_upper * 100) + 1,
-                                                 size=(self.pop_size - 1, 4))
+                    x_coords = get_xs(x_lower, x_upper, self.pop_size, 4)
 
-                    # Make x coords have the correct decimal precision
-                    x_coords = np.around(x_coords / 100, 2)
-                    # Add x0
-                    zeros = np.zeros(self.pop_size - 1)
-                    x_coords = np.insert(x_coords, 0, zeros, axis=1)
-                    # Add x0 index to constant variables
                     self.__const_var_i.append(0)
-
-                    # Make x5 match the upper limit, add to constants
-                    x_lasts = np.full((self.pop_size - 1, 1), x_upper)
-                    x_coords = np.append(x_coords, x_lasts, axis=1)
                     self.__const_var_i.append(10)
 
-                    # Create y coordinates
-                    y_coords = np.random.randint(int(y_lower * 10000),
-                                                 int(y_upper * 10000) + 1,
-                                                 size=(3, self.pop_size - 1))
-                    # Make y coords have the correct decimal precision
-                    y_coords = np.around(y_coords / 10000, 4)
-                    # Make y0 coords be lower limit
-                    y_firsts = np.full(self.pop_size - 1, y_lower)
-                    # Make y4 coords be lower limit
-                    y_lasts = np.full(self.pop_size - 1, y_lower)
-                    y_coords = np.array([y_firsts, y_coords[0], y_coords[1],
-                                         y_coords[2], y_lasts])
+                    y_coords = get_ys(y_lower, y_upper, self.pop_size, z=3,
+                                      lower_limit_at_first=True)
+
                     # Add y0 and y4 to constants
                     self.__const_var_i.append(1)
                     self.__const_var_i.append(9)
@@ -853,7 +775,7 @@ class Nsgaii:
             last front found.
         """
         if r_n == np.inf:
-            r_n = self.pop_size
+            r_n = n
         # Coded according to algorithm given by Deb(2002)
         # Go through all solutions
         front_no = np.inf * np.ones(n)
@@ -1332,5 +1254,55 @@ def pick_final_solutions(obj_vals, sols, count=2):
     return first, last
 
 
-def remove_files(optim_mode="recoil"):
-    pass
+def get_xs(x_lower, x_upper, pop_size, z=None):
+    """Returns x coordinates for all initial solutions.
+    """
+    if z is None:
+        size = pop_size - 1
+    else:
+        size = (pop_size - 1, z)
+    # Create x coordinates (ints)
+    x_coords = np.random.randint(int(x_lower * 100),
+                                 int(x_upper * 100) + 1,
+                                 size=size)
+    # Make x coords have the correct decimal precision
+    x_coords = np.around(x_coords / 100, 2)
+    # Add x0
+    zeros = np.zeros(pop_size - 1)
+    if z is None:
+        x_coords = np.vstack((zeros, x_coords)).T
+    else:
+        x_coords = np.insert(x_coords, 0, zeros, axis=1)
+
+    # Make last x match the upper limit, add to constants
+    x_lasts = np.full((pop_size - 1, 1), x_upper)
+    return np.append(x_coords, x_lasts, axis=1)
+
+
+def get_ys(y_lower, y_upper, pop_size, z=None, lower_limit_at_first=False):
+    """Returns y coordinates for all initial solutions.
+    """
+    if z is None:
+        size = pop_size - 1
+    else:
+        size = (z, pop_size - 1)
+    # Create y coordinates
+    y_coords = np.random.randint(int(y_lower * 10000),
+                                 int(y_upper * 10000) + 1,
+                                 size=size)
+    # Make y coords have the correct decimal precision
+    y_coords = np.around(y_coords / 10000, 4)
+    # Make y2 coords be lower limit
+    low_limit = np.full(pop_size - 1, y_lower)
+
+    if z is None:
+        # Make y0 coords be lower limit
+        if lower_limit_at_first:
+            return np.array([low_limit, y_coords, low_limit])
+        else:
+            return np.array([y_coords, low_limit])
+    else:
+        if lower_limit_at_first:
+            return np.array([low_limit, y_coords[0], y_coords[1],
+                             y_coords[2], low_limit])
+    return np.array([y_coords[0], y_coords[1], y_coords[2], low_limit])
