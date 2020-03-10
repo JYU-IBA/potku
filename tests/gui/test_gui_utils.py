@@ -29,6 +29,8 @@ import sys
 
 import widgets.gui_utils as gutils
 
+import numpy as np
+
 from unittest.mock import Mock
 
 from widgets.gui_utils import GUIReporter
@@ -146,6 +148,19 @@ class TestBinding(unittest.TestCase):
             "baz": "test",
             "tim": 100
         }, self.widget.get_properties())
+
+
+class TestTimeConversion(unittest.TestCase):
+    def test_conversion(self):
+        for i in range(100):
+            s = np.random.randint(0, 86_399)
+            self.assertEqual(
+                s, gutils.from_qtime(gutils.to_qtime(s))
+            )
+        # QTime wraps around at 86 400 seconds (i.e. 24 hours)
+        self.assertEqual(86_399, gutils.from_qtime(gutils.to_qtime(86_399)))
+        self.assertEqual(0, gutils.from_qtime(gutils.to_qtime(86_400)))
+        self.assertEqual(86_399, gutils.from_qtime(gutils.to_qtime(-1)))
 
 
 if __name__ == '__main__':
