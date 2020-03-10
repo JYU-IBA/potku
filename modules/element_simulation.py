@@ -343,35 +343,6 @@ class ElementSimulation(Observable):
                            + ".simu"
                 gf.rename_file(simu_file, new_name)
 
-    def calculate_solid(self):
-        """
-        Calculate the solid parameter.
-        Return:
-            Returns the solid parameter calculated.
-        """
-        transmissions = self.detector.foils[0].transmission
-        for f in self.detector.foils:
-            transmissions *= f.transmission
-
-        smallest_solid_angle = self.calculate_smallest_solid_angle()
-
-        return smallest_solid_angle * transmissions
-
-    def calculate_smallest_solid_angle(self):
-        """
-        Calculate the smallest solid angle.
-        Return:
-            Smallest solid angle. (unit millisteradian)
-        """
-        # TODO this seems to be called often when optimizing. If the foil
-        #      collection is not changing, result could be cached
-        # TODO this could also be a function of the detector
-        try:
-            return min(foil.get_solid_angle(units="msr")
-                       for foil in self.detector.foils)
-        except ZeroDivisionError:
-            return 0
-
     @classmethod
     def from_file(cls, request, prefix, simulation_folder, mcsimu_file_path,
                   profile_file_path, sample=None):
@@ -1081,7 +1052,7 @@ class ElementSimulation(Observable):
             "multiplier": recoil_element.multiplier,
             "fluence": used_fluence,
             "timeres": detector.timeres,
-            "solid": self.calculate_solid(),
+            "solid": detector.calculate_solid(),
             "erd_file": erd_file,
             "spectrum_file": spectrum_file,
             "recoil_file": recoil_file

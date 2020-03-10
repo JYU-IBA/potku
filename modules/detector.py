@@ -427,3 +427,33 @@ class Detector:
             f"Virtual detector size: {'%0.1f %0.1f' % self.virtual_size}",
             f"Timing detector numbers: {self.tof_foils[0]} {self.tof_foils[1]}"
         ]
+
+    def calculate_solid(self):
+        """
+        Calculate the solid parameter.
+        Return:
+            Returns the solid parameter calculated.
+        """
+        try:
+            transmissions = self.foils[0].transmission
+        except IndexError:
+            return 0
+
+        for f in self.foils:
+            transmissions *= f.transmission
+
+        smallest_solid_angle = self.calculate_smallest_solid_angle()
+
+        return smallest_solid_angle * transmissions
+
+    def calculate_smallest_solid_angle(self):
+        """
+        Calculate the smallest solid angle.
+        Return:
+            Smallest solid angle. (unit millisteradian)
+        """
+        try:
+            return min(foil.get_solid_angle(units="msr")
+                       for foil in self.foils)
+        except (ZeroDivisionError, ValueError):
+            return 0
