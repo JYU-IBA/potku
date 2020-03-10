@@ -26,6 +26,8 @@ __version__ = "2.0"
 
 import abc
 import platform
+import os
+import json
 
 from modules.observing import ProgressReporter
 
@@ -234,6 +236,58 @@ class BindingPropertyWidget(abc.ABC):
         }
 
 
+class PropertySavingWidget(BindingPropertyWidget, abc.ABC):
+    """Property widget that saves the current state of its properties
+    to file.
+    """
+    @abc.abstractmethod
+    def get_property_file_path(self):
+        """Returns Path object to the file that is used to save and load
+        properties.
+        """
+        pass
+
+    def closeEvent(self, event):
+        """Overrides QWidgets closeEvent. Saves the properties to default
+        file.
+        """
+        self.save_properties_to_file(file_path=self.get_property_file_path())
+        # TODO event.accept should probably be passed down to super class
+        event.accept()
+
+    def save_properties_to_file(self, file_path=None):
+        """Saves properties to a file.
+
+        Args:
+            file_path: Path object to a file that is used for saving. If None,
+                widget's default property file location is used.
+        """
+        if file_path is None:
+            file_path = self.get_property_file_path()
+
+        os.makedirs(file_path.parent, exist_ok=True)
+        params = self.get_properties()
+        with open(file_path, "w") as file:
+            json.dump(params, file, indent=4)
+
+    def load_properties_from_file(self, file_path=None):
+        """Loads properties from a file.
+
+        Args:
+            file_path: Path object to a file that is used for loading. If None,
+                widget's default property file location is used.
+        """
+        if file_path is None:
+            file_path = self.get_property_file_path()
+        try:
+            with open(file_path) as file:
+                params = json.load(file)
+        except FileNotFoundError:
+            return
+
+        self.set_properties(**params)
+
+
 def bind(qobj_name, fget=None, fset=None, twoway=True):
     """Returns a property that is bound to a QObject.
 
@@ -256,12 +310,25 @@ def bind(qobj_name, fget=None, fset=None, twoway=True):
         return fget(qobj)
 
     def setter(self, value):
+        # TODO possibly add TypeError checks
         if twoway:
             qobj = getattr(self, qobj_name)
             if fset is None:
                 _fset(qobj)(value)
             else:
                 fset(qobj, value)
+
+    return property(getter, setter)
+
+
+def nonbind(attr_name):
+    """Returns a regular property for the given attribute name.
+    """
+    def getter(self):
+        return getattr(self, attr_name)
+
+    def setter(self, value):
+        setattr(self, attr_name, value)
 
     return property(getter, setter)
 

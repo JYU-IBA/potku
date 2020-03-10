@@ -32,6 +32,7 @@ import time
 import json
 
 import dialogs.dialog_functions as df
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
@@ -48,40 +49,72 @@ from widgets.simulation.optimization_parameters import \
     OptimizationRecoilParameterWidget
 
 
-class OptimizationDialog(QtWidgets.QDialog):
+class OptimizationDialog(QtWidgets.QDialog, gutils.PropertySavingWidget,
+                         metaclass=gutils.QtABCMeta):
+    """
+    TODO
+    """
+    ch = gutils.bind("histogramTicksDoubleSpinBox")
+
+    @property
+    def fluence_parameters(self):
+        if self.current_mode != "recoil":
+            self._fluence_parameters = self.parameters_widget.get_properties()
+        return self._fluence_parameters
+
+    @fluence_parameters.setter
+    def fluence_parameters(self, value):
+        self._fluence_parameters = value
+
+    @property
+    def recoil_parameters(self):
+        if self.current_mode == "recoil":
+            self._recoil_parameters = self.parameters_widget.get_properties()
+        return self._recoil_parameters
+
+    @recoil_parameters.setter
+    def recoil_parameters(self, value):
+        self._recoil_parameters = value
+
     def __init__(self, simulation, parent):
+        """
+        TODO
+
+        Args:
+            simulation: TODO
+            parent: TODO
+        """
         super().__init__()
 
         self.simulation = simulation
         self.tab = parent
-        self.ui = uic.loadUi(
-            os.path.join("ui_files", "ui_optimization_params.ui"), self)
+        uic.loadUi(Path("ui_files", "ui_optimization_params.ui"), self)
 
-        self.fluence_parameters = {}
-        self.recoil_parameters = {}
-        self.parameters_from_file()
+        self._fluence_parameters = {}
+        self._recoil_parameters = {}
+        self.load_properties_from_file()
 
         self.parameters_widget = OptimizationRecoilParameterWidget(
-            **self.recoil_parameters)
+            **self._recoil_parameters)
 
         locale = QLocale.c()
-        self.ui.histogramTicksDoubleSpinBox.setLocale(locale)
+        self.histogramTicksDoubleSpinBox.setLocale(locale)
 
         self.element_simulation = None
         self.selected_cut_file = None
-        self.ui.pushButton_OK.setEnabled(False)
+        self.pushButton_OK.setEnabled(False)
 
-        self.ui.pushButton_Cancel.clicked.connect(self.close)
-        self.ui.pushButton_OK.clicked.connect(self.start_optimization)
+        self.pushButton_Cancel.clicked.connect(self.close)
+        self.pushButton_OK.clicked.connect(self.start_optimization)
 
         self.radios = QtWidgets.QButtonGroup(self)
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
             self.choose_optimization_mode)
         self.current_mode = "recoil"
-        self.ui.parametersLayout.addWidget(self.parameters_widget)
+        self.parametersLayout.addWidget(self.parameters_widget)
 
-        self.radios.addButton(self.ui.fluenceRadioButton)
-        self.radios.addButton(self.ui.recoilRadioButton)
+        self.radios.addButton(self.fluenceRadioButton)
+        self.radios.addButton(self.recoilRadioButton)
 
         self.result_files = []
         for file in os.listdir(self.tab.obj.directory):
@@ -89,10 +122,10 @@ class OptimizationDialog(QtWidgets.QDialog):
                 name = file.split(".")[0]
                 item = QtWidgets.QTreeWidgetItem()
                 item.setText(0, name)
-                self.ui.simulationTreeWidget.addTopLevelItem(item)
-        self.ui.simulationTreeWidget.itemSelectionChanged.connect(
+                self.simulationTreeWidget.addTopLevelItem(item)
+        self.simulationTreeWidget.itemSelectionChanged.connect(
             lambda: self.change_selected_element_simulation(
-                 self.ui.simulationTreeWidget.currentItem()))
+                 self.simulationTreeWidget.currentItem()))
 
         # Add calculated tof_list files to tof_list_tree_widget by
         # measurement under the same sample.
@@ -107,7 +140,7 @@ class OptimizationDialog(QtWidgets.QDialog):
                     tree_item.setText(0, measurement.name)
                     tree_item.obj = measurement
                     tree_item.obj = measurement
-                    self.ui.measurementTreeWidget.addTopLevelItem(tree_item)
+                    self.measurementTreeWidget.addTopLevelItem(tree_item)
 
                     # TODO make each of these into their own functions under
                     #      modules package
@@ -134,9 +167,9 @@ class OptimizationDialog(QtWidgets.QDialog):
                         item.setText(0, cut)
                         tree_item.addChild(item)
                         tree_item.setExpanded(True)
-        self.ui.measurementTreeWidget.itemSelectionChanged.connect(
+        self.measurementTreeWidget.itemSelectionChanged.connect(
             lambda: self.change_selected_cut_file(
-                self.ui.measurementTreeWidget.currentItem()))
+                self.measurementTreeWidget.currentItem()))
 
         self.result_widget = None
         self.measured_element = ""
@@ -144,51 +177,6 @@ class OptimizationDialog(QtWidgets.QDialog):
         self.check_results_thread = None
 
         self.exec_()
-
-    def closeEvent(self, evnt):
-        """Save current parameters to file so they can be reopened.
-        """
-        self.parameters_to_file()
-        evnt.accept()
-
-    def get_file_name(self):
-        """Returns a file path that is used to save the optimization
-        parameters.
-        """
-        return Path(self.simulation.directory, ".optimization_parameters")
-
-    def parameters_to_file(self):
-        """Writes current parameters to file.
-        """
-        # Update the set of parameters that are currently in use
-        if self.current_mode == "recoil":
-            self.recoil_parameters = self.parameters_widget.get_properties()
-        else:
-            self.fluence_parameters = self.parameters_widget.get_properties()
-
-        params = {
-            "rec": self.recoil_parameters,
-            "flu": self.fluence_parameters
-        }
-        with open(self.get_file_name(), "w") as file:
-            json.dump(params, file, indent=4)
-
-    def parameters_from_file(self):
-        """Loads previous parameters from file.
-        """
-        try:
-            with open(self.get_file_name()) as file:
-                params = json.load(file)
-        except FileNotFoundError:
-            return
-        try:
-            self.recoil_parameters = params["rec"]
-        except KeyError:
-            pass
-        try:
-            self.fluence_parameters = params["flu"]
-        except KeyError:
-            pass
 
     def change_selected_cut_file(self, item):
         """
@@ -201,10 +189,10 @@ class OptimizationDialog(QtWidgets.QDialog):
         if "." in item.text(0):
             self.selected_cut_file = item.text(0)
             if self.element_simulation:
-                self.ui.pushButton_OK.setEnabled(True)
+                self.pushButton_OK.setEnabled(True)
         else:
             self.selected_cut_file = None
-            self.ui.pushButton_OK.setEnabled(False)
+            self.pushButton_OK.setEnabled(False)
 
     def change_selected_element_simulation(self, item):
         """
@@ -219,15 +207,12 @@ class OptimizationDialog(QtWidgets.QDialog):
                     == item_text:
                 self.element_simulation = element_simulation
                 if self.selected_cut_file:
-                    self.ui.pushButton_OK.setEnabled(True)
+                    self.pushButton_OK.setEnabled(True)
                 break
 
     def check_progress_and_results(self):
         """
         Check whether result widget needs updating.
-
-        Args:
-            measured_element: Which element (cut file) was used in optimization.
         """
         while not self.element_simulation.optimization_stopped:
             calc_sols = self.element_simulation.calculated_solutions
@@ -262,27 +247,27 @@ class OptimizationDialog(QtWidgets.QDialog):
         """
         if checked:
             if button.text() == "Recoil":
-                self.fluence_parameters = \
+                self._fluence_parameters = \
                     self.parameters_widget.get_properties()
                 self.current_mode = "recoil"
                 # Clear fluence stuff
-                self.ui.parametersLayout.removeWidget(self.parameters_widget)
+                self.parametersLayout.removeWidget(self.parameters_widget)
                 # Add recoil stuff
                 self.parameters_widget.deleteLater()
                 self.parameters_widget = OptimizationRecoilParameterWidget(
-                    **self.recoil_parameters)
-                self.ui.parametersLayout.addWidget(self.parameters_widget)
+                    **self._recoil_parameters)
+                self.parametersLayout.addWidget(self.parameters_widget)
             else:
-                self.recoil_parameters = \
+                self._recoil_parameters = \
                     self.parameters_widget.get_properties()
                 self.current_mode = "fluence"
                 # Clear recoil stuff
-                self.ui.parametersLayout.removeWidget(self.parameters_widget)
+                self.parametersLayout.removeWidget(self.parameters_widget)
                 self.parameters_widget.deleteLater()
                 # Add fluence stuff
                 self.parameters_widget = OptimizationFluenceParameterWidget(
-                    **self.fluence_parameters)
-                self.ui.parametersLayout.addWidget(self.parameters_widget)
+                    **self._fluence_parameters)
+                self.parametersLayout.addWidget(self.parameters_widget)
 
     def start_optimization(self):
         """
@@ -305,7 +290,7 @@ class OptimizationDialog(QtWidgets.QDialog):
                 df.delete_optim_espe(self, self.element_simulation)
             self.element_simulation.optimization_recoils = []
         self.close()
-        root_for_cut_files = self.ui.measurementTreeWidget.invisibleRootItem()
+        root_for_cut_files = self.measurementTreeWidget.invisibleRootItem()
 
         cut_file = None
         item_text = None
@@ -333,11 +318,10 @@ class OptimizationDialog(QtWidgets.QDialog):
                     break
             i += 1
 
-        ch = self.ui.histogramTicksDoubleSpinBox.value()
         # Hist all selected cut files
-        # TODO this could also be done in the Nsga2 __init__
+        # TODO this could also be done in the Nsga2 __prepare
         es = EnergySpectrum(used_measurement, [cut_file],
-                            ch,
+                            self.ch,
                             progress=None,
                             no_foil=True)
         es.calculate_spectrum(no_foil=True)
@@ -347,7 +331,7 @@ class OptimizationDialog(QtWidgets.QDialog):
 
         nsgaii = Nsgaii(element_simulation=self.element_simulation,
                         hist_file=hist_file,
-                        ch=ch,
+                        ch=self.ch,
                         **self.parameters_widget.get_properties())
 
         # Result checking thread
