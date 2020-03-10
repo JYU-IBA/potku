@@ -28,13 +28,13 @@ __version__ = "2.0"
 
 import os
 import abc
-import itertools
 
 import widgets.gui_utils as gutils
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
+from PyQt5.QtCore import Qt
 
 _REC_TYPES = {
     "4-point box": ("box", 5),
@@ -42,18 +42,34 @@ _REC_TYPES = {
     "8-point two-peak": ("two-peak", 9),
     "10-point two-peak": ("two-peak", 11),
 }
+# Update _REC_TYPES to enable two-way binding based on solution sizes.
+_REC_TYPES.update({
+    (sol_size, key)
+    for key, (rtype, sol_size) in _REC_TYPES.items()
+})
 
 
-def recoil_type_conversion(combobox):
-    """Returns the recoil type for the given string.
+def recoil_from_combobox(combobox):
+    """Converts the text value shown in combobox to a recoil type.
     """
     return _REC_TYPES[combobox.currentText()][0]
 
 
-def sol_size_conversion(combobox):
-    """Returns solution size for given string.
+def sol_size_from_combobox(combobox):
+    """Converts the text value shown in combobox to solution size.
     """
     return _REC_TYPES[combobox.currentText()][1]
+
+
+def sol_size_to_combobox(combobox, value):
+    """Sets the selected item in the given combobox based on the solution size.
+    """
+    try:
+        str_value = _REC_TYPES[value]
+        combobox.setCurrentIndex(combobox.findText(str_value,
+                                                   Qt.MatchFixedString))
+    except KeyError:
+        pass
 
 
 class OptimizationParameterWidget(QtWidgets.QWidget,
@@ -106,9 +122,11 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
         ("lowerXDoubleSpinBox", "lowerYDoubleSpinBox"),
         (float, float)
     )
-    sol_size = gutils.bind("recoilTypeComboBox", fget=sol_size_conversion,
-                           twoway=False)
-    recoil_type = gutils.bind("recoilTypeComboBox", fget=recoil_type_conversion,
+    # sol_size values are unique (5, 7, 9 or 11) so they can be used in
+    # two-way binding
+    sol_size = gutils.bind("recoilTypeComboBox", fget=sol_size_from_combobox,
+                           fset=sol_size_to_combobox)
+    recoil_type = gutils.bind("recoilTypeComboBox", fget=recoil_from_combobox,
                               twoway=False)
 
     @property

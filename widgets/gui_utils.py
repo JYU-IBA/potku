@@ -310,13 +310,15 @@ def bind(qobj_name, fget=None, fset=None, twoway=True):
         return fget(qobj)
 
     def setter(self, value):
-        # TODO possibly add TypeError checks
         if twoway:
             qobj = getattr(self, qobj_name)
-            if fset is None:
-                _fset(qobj)(value)
-            else:
-                fset(qobj, value)
+            try:
+                if fset is None:
+                    _fset(qobj)(value)
+                else:
+                    fset(qobj, value)
+            except TypeError:
+                pass
 
     return property(getter, setter)
 
@@ -346,6 +348,9 @@ def multi_bind(qobjs, funcs, twoway=True):
         if twoway:
             for qobj, value in zip(qobjs, values):
                 obj = getattr(self, qobj)
-                _fset(obj)(value)
+                try:
+                    _fset(obj)(value)
+                except TypeError:
+                    pass
 
     return property(getter, setter)

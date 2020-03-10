@@ -178,6 +178,14 @@ class OptimizationDialog(QtWidgets.QDialog, gutils.PropertySavingWidget,
 
         self.exec_()
 
+    def get_property_file_path(self):
+        """Returns absolute path to the file that is used for saving and
+        loading parameters.
+        """
+        return Path(self.simulation.directory,
+                    ".parameters",
+                    ".optimization_parameters")
+
     def change_selected_cut_file(self, item):
         """
         Update the selected cut file.
