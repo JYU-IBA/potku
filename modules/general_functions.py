@@ -781,7 +781,7 @@ def count_lines_in_file(file_path, check_file_exists=False):
     return counter + 1
 
 
-@stopwatch
+@stopwatch()
 def combine_files(file_paths, destination):
     """Combines an iterable of files into a single file.
     """

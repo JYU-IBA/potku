@@ -725,7 +725,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.canvas.draw()
         self.canvas.flush_events()
 
-    @stopwatch
+    @stopwatch()
     def update_spectra(self, rec_elem, elem_sim):
         """Updates spectra line that belongs to given recoil element.
 

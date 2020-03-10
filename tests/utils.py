@@ -196,26 +196,28 @@ def get_template_file_contents(template_file, **kwargs):
     return temp.substitute(kwargs)
 
 
-def stopwatch(func, log_file=None):
+def stopwatch(log_file=None):
     """Decorator that measures the time it takes to execute a function
     and prints the results or writes them to a log file if one is provided
     as an argument.
     """
-    def wrapper(*args, **kwargs):
-        start = timer()
-        res = func(*args, **kwargs)
-        stop = timer()
+    def outer(func):
+        def inner(*args, **kwargs):
+            start = timer()
+            res = func(*args, **kwargs)
+            stop = timer()
 
-        timestamp = time.strftime("%y/%m/%D %H:%M.%S")
-        msg = f"{timestamp}: {func.__name__}({args, kwargs})\n\t" \
-              f"took {stop - start} to execute"
-        if log_file is None:
-            print(msg)
-        else:
-            with open(log_file, "a") as file:
-                log_file.write(msg)
-        return res
-    return wrapper
+            timestamp = time.strftime("%y/%m/%D %H:%M.%S")
+            msg = f"{timestamp}: {func.__name__}({args, kwargs})\n\t" \
+                  f"took {stop - start} to execute.\n"
+            if log_file is None:
+                print(msg)
+            else:
+                with open(log_file, "a") as file:
+                    file.write(msg)
+            return res
+        return inner
+    return outer
 
 
 def expected_failure_if(cond):
