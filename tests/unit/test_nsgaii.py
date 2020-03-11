@@ -30,20 +30,60 @@ import random
 from modules.nsgaii import pick_final_solutions
 
 
-class TestNsgaii(unittest.TestCase):
+class TestPickFinalSolutions(unittest.TestCase):
+    """Tests for the pick_final_solutions function that returns solutions
+    from the final pareto front to be presented to the user.
+
+    For simplicity's sake the objective values and solutions have the same
+    values.
+    """
+
     def test_pick_final_solutions(self):
+        """Tests picking solutions from a pareto front"""
+        # Create some objective values and shuffle them.
         obj_vals = [
             (3, 0), (2, 2), (0, 3), (2.5, 1.5), (2.9, 0.1), (0.1, 2.9)
         ]
         random.shuffle(obj_vals)
-        sols = [
-            o for o in obj_vals
-        ]
+        sols = list(obj_vals)
+        # Also take copies of both lists to ensure that they are not modified
+        # during the function
+        c_obj = list(obj_vals)
+        c_sol = list(sols)
 
-        self.assertEqual(((3, 0), (0, 3)),
+        self.assertEqual(((0, 3), (3, 0)),
                          pick_final_solutions(obj_vals, sols, count=2))
 
-        self.assertEqual(((3, 0), (2, 2), (0, 3)),
+        self.assertEqual(((0, 3), (2, 2), (3, 0)),
+                         pick_final_solutions(obj_vals, sols, count=3))
+
+        self.assertEqual(c_obj, obj_vals)
+        self.assertEqual(c_sol, sols)
+
+    def test_nonpareto_front(self):
+        """Tests picking solutions from a non-pareto front."""
+        # Currently the function makes no assumptions about pareto optimality,
+        # which makes the function slower. If the assumption is made, this
+        # test may fail.
+        obj_vals = [(1, 2), (0, 0), (2, 1)]
+        sols = list(obj_vals)
+
+        self.assertEqual(((0, 0), (0, 0)),
+                         pick_final_solutions(obj_vals, sols, count=2))
+
+        self.assertEqual(((0, 0), (2, 1), (0, 0)),
+                         pick_final_solutions(obj_vals, sols, count=3))
+
+    def test_single_pareto_solution(self):
+        """Tests picking solutions from a front containing single solution.
+        """
+        obj_vals = [(0, 0)]
+        sols = list(obj_vals)
+
+        self.assertEqual(((0, 0), (0, 0)),
+                         pick_final_solutions(obj_vals, sols, count=2))
+
+        self.assertEqual(((0, 0), (0, 0), (0, 0)),
                          pick_final_solutions(obj_vals, sols, count=3))
 
     def test_bad_inputs(self):

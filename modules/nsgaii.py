@@ -171,7 +171,8 @@ class Nsgaii:
 
         return True
 
-    def crowding_distance(self, front_no, objective_values):
+    @classmethod
+    def crowding_distance(cls, front_no, objective_values):
         """
         Calculate crowding distnce for each solution in the population, by the
         Pareto front it belongs to.
@@ -266,8 +267,7 @@ class Nsgaii:
                                                        ch=self.channel_width)
                 espe_file = Path(self.element_simulation.directory,
                                  f"{recoil.get_full_name()}.simu")
-                objective_values.append(self.get_objective_values(len(sols),
-                                                                  espe_file))
+                objective_values.append(self.get_objective_values(espe_file))
 
         else:  # Evaluate fluence
             if not self.mcerd_run:
@@ -300,14 +300,13 @@ class Nsgaii:
                 espe_file = Path(self.element_simulation.directory,
                                  recoil.prefix + "-optfl.simu")
 
-                objective_values.append(self.get_objective_values(len(sols),
-                                                                  espe_file))
+                objective_values.append(self.get_objective_values(espe_file))
 
         pop = collections.namedtuple("Population",
                                      ("solutions", "objective_values"))
         return pop(sols, objective_values)
 
-    def get_objective_values(self, sol_count, espe_file):
+    def get_objective_values(self, espe_file):
         """Calculates the objective values and returns them as a np.array.
         """
         obj_values = collections.namedtuple("ObjectiveValues",
@@ -761,7 +760,8 @@ class Nsgaii:
             i += 1
         self.measured_espe = new
 
-    def nd_sort(self, pop_obj, n, r_n=np.inf):
+    @classmethod
+    def nd_sort(cls, pop_obj, n, r_n=np.inf):
         """
         Sort population pop_obj according to non-domination.
 
@@ -831,21 +831,22 @@ class Nsgaii:
             fronts += 1
         return front_no, fronts
 
-    def new_population_selection(self, population):
+    @classmethod
+    def new_population_selection(cls, population, pop_size):
         """
         Select individuals to a new population based on crowded comparison
         operator.
 
         Args:
             population: Current intermediate population.
+            pop_size: TODO
 
         Return:
             Next generation population.
         """
         pop_n, t = np.shape(population[0])
         # Sort intermediate population based on non-domination
-        front_no, last_front_no = self.nd_sort(population[1], pop_n,
-                                               self.pop_size)
+        front_no, last_front_no = Nsgaii.nd_sort(population[1], pop_n, pop_size)
         include_in_next = [False for i in range(front_no.size)]
         # Find all individuals that belong to better fronts, except the last one
         # that doesn't fit
@@ -853,14 +854,14 @@ class Nsgaii:
             if front_no[i] < last_front_no:
                 include_in_next[i] = True
         # Calculate crowding distance for all individuals
-        crowd_dis = self.crowding_distance(front_no, population[1])
+        crowd_dis = Nsgaii.crowding_distance(front_no, population[1])
 
         # Find last front that maybe doesn't fit properly
         last = [i for i in range(len(front_no)) if front_no[i] == last_front_no]
         # Rank holds the indices corresponding to last that have crowding
         # distance from biggest to smallest
         rank = np.argsort(-crowd_dis[last])
-        delta_n = rank[: (self.pop_size - int(np.sum(include_in_next)))]
+        delta_n = rank[: (pop_size - int(np.sum(include_in_next)))]
         # Get indices corresponding to population for individuals to be included
         #  in the next generation.
         rest = [last[i] for i in delta_n]
@@ -932,7 +933,7 @@ class Nsgaii:
             # population (size self.pop_size) based on non-domination and
             # crowding distance
             new_population, front_no, crowd_dis = self.new_population_selection(
-                intermediate_population)
+                intermediate_population, self.pop_size)
             # Change surrent population to new population
             self.population = new_population
 
@@ -959,33 +960,15 @@ class Nsgaii:
         pareto_optimal_sols = self.population[0][front_no == 1, :]
         pareto_optimal_objs = self.population[1][front_no == 1, :]
         if self.opt_recoil:
-            # Find front's first and last individual: these two are the
-            # solutions the user needs
-            first = pareto_optimal_objs[0]
-            last = pareto_optimal_objs[-1]
-            f_i = 0
-            l_i = len(pareto_optimal_objs) - 1
-            for i in range(1, len(pareto_optimal_objs)):
-                current = pareto_optimal_objs[i]
-                if current[0] > last[0]:
-                    last = current
-                    l_i = i
-                if current[1] > first[1]:
-                    first = current
-                    f_i = i
+            first_sol, med_sol, last_sol = pick_final_solutions(
+                pareto_optimal_objs, pareto_optimal_sols, count=3)
 
-            first_sol = pareto_optimal_sols[f_i]
-            last_sol = pareto_optimal_sols[l_i]
-
-            # TODO
-            new_f, new_l = pick_final_solutions(pareto_optimal_objs,
-                                                pareto_optimal_sols)
-            print(first_sol == new_f, last_sol == new_l)
-
-            # Save the two pareto solutions as recoils
+            # Save the three pareto solutions as recoils
             self.element_simulation.optimization_recoils = []
             first_recoil = self.form_recoil(first_sol, "optfirst")
             self.element_simulation.optimization_recoils.append(first_recoil)
+            med_recoil = self.form_recoil(med_sol, "optmed")
+            self.element_simulation.optimization_recoils.append(med_recoil)
             last_recoil = self.form_recoil(last_sol, "optlast")
             self.element_simulation.optimization_recoils.append(last_recoil)
 
@@ -1047,12 +1030,12 @@ class Nsgaii:
                 # Transform child 1 and 2 into binary mode, to match the
                 # possible values when taking decimal precision into account
                 # Transform variables into binary
-                binary_parent_1 = parent_to_binary(parent_1,
-                                                   self.bit_length_x,
-                                                   self.bit_length_y)
-                binary_parent_2 = parent_to_binary(parent_2,
-                                                   self.bit_length_x,
-                                                   self.bit_length_y)
+                binary_parent_1 = solution_to_binary(parent_1,
+                                                     self.bit_length_x,
+                                                     self.bit_length_y)
+                binary_parent_2 = solution_to_binary(parent_2,
+                                                     self.bit_length_x,
+                                                     self.bit_length_y)
                 child_1 = binary_parent_1
                 child_2 = binary_parent_2
             else:
@@ -1215,39 +1198,51 @@ class Nsgaii:
         return np.array(offspring)
 
 
-def parent_to_binary(parent, bit_length_x, bit_length_y):
-    """Returns a binary representation of a parent.
+def solution_to_binary(solution, bit_length_x, bit_length_y):
+    """Returns a binary representation of a solution.
     """
-    bin_parent = []
-    for i in range(len(parent)):
+    bin_sol = []
+    for i in range(len(solution)):
         if i % 2 == 0:
             # Get rid of decimals
-            var = int(parent[i] * 100)
+            var = int(solution[i] * 100)
             format_x = gf.format_to_binary(var, bit_length_x)
-            bin_parent.append(format_x)
+            bin_sol.append(format_x)
         else:
             # Get rid of decimals
-            var = int(parent[i] * 10000)
+            var = int(solution[i] * 10000)
             format_y = gf.format_to_binary(var, bit_length_y)
-            bin_parent.append(format_y)
-    return bin_parent
+            bin_sol.append(format_y)
+    return bin_sol
 
 
-def pick_final_solutions(obj_vals, sols, count=2):
+def pick_final_solutions(objective_values, solutions, count=2):
+    """Picks solutions from the given set of solutions based on the
+    corresponding objective values.
+
+    Args:
+        objective_values: collections of objective values
+        solutions: collections of solutions
+        count: how many solutions to return (2 or 3)
+
+    Returns:
+        tuple of solutions. Either (first solution, last solution) or
+        (first solution, median solution, last solution) depending on
+        the count parameter.
+    """
     # Find front's first and last individual: these two are the
     # solutions the user needs
     if not 2 <= count <= 3:
         raise ValueError("Solution count must be either 2 or 3.")
 
-    zipped = list(zip(obj_vals, sols))
+    zipped = list(zip(objective_values, solutions))
 
-    # TODO check that the objective values were indeed area and distance
     # TODO if we assume that the solutions are pareto optimal, only one
-    #  sorting is enough(?)
+    #  sorting is enough
     sorted_by_area = sorted(zipped, key=lambda tpl: tpl[0][0])
     sorted_by_distance = sorted(zipped, key=lambda tpl: tpl[0][1])
 
-    first, last = sorted_by_distance[0][1], sorted_by_area[0][1]
+    first, last = sorted_by_area[0][1], sorted_by_distance[0][1]
 
     if count == 3:
         return first, sorted_by_distance[len(sorted_by_distance) // 2][1], last

@@ -447,11 +447,8 @@ class ElementSimulation(Observable):
                    **mcsimu)
 
     def get_full_name(self):
-        """Returns the full name of the ElementSimulation object."""
-        # TODO if either the name or the prefix contains a '-', this naming
-        #      scheme becomes ambiguous
-        # TODO check the difference between this and recoil element
-        #  get_full_name
+        """Returns the full name of the ElementSimulation object.
+        """
         if self.name_prefix:
             return f"{self.name_prefix}-{self.name}"
         return self.name

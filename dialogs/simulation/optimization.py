@@ -211,8 +211,7 @@ class OptimizationDialog(QtWidgets.QDialog, gutils.PropertySavingWidget,
         """
         item_text = item.text(0)
         for element_simulation in self.simulation.element_simulations:
-            if element_simulation.name_prefix + "-" + element_simulation.name\
-                    == item_text:
+            if element_simulation.get_full_name() == item_text:
                 self.element_simulation = element_simulation
                 if self.selected_cut_file:
                     self.pushButton_OK.setEnabled(True)

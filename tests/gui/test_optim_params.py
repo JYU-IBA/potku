@@ -94,6 +94,17 @@ class TestRecoilParameters(unittest.TestCase):
         widget.upper_limits = "foo", 2.0
         self.assertEqual((120.0, 2.0), widget.upper_limits)
 
+        # Directly setting optimize_recoil to False will cause an
+        # AttributeError.
+        def assign_false():
+            widget.optimize_recoil = False
+        self.assertRaises(AttributeError, assign_false)
+
+        # Providing the value as kwargs does nothing as the exception is
+        # handled in the set_properties method
+        widget = OptimizationRecoilParameterWidget(optimize_recoil=False)
+        self.assertTrue(widget.optimize_recoil)
+
 
 if __name__ == '__main__':
     unittest.main()
