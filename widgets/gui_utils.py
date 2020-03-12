@@ -86,7 +86,7 @@ def switch_buttons(button_a, button_b):
 
 
 class QtABCMeta(type(QtCore.QObject), abc.ABCMeta):
-    """A common metaclass for ABCs and QWidgets.
+    """A common metaclass for ABCs and QObjects.
 
     QObject has the metaclass 'sip.wrappertype' which causes a conflict
     in multi-inheritance with an ABC. This metaclass fixes that issue.
@@ -209,8 +209,6 @@ def _fset(qobj):
 class BindingPropertyWidget(abc.ABC):
     """Base class for a widget that contains bindable properties.
     """
-    # TODO possibly add a base widget that can save its properties to a file
-    #      and load them
     def _get_properties(self):
         """Returns the names of all properties the widget has.
         """
@@ -249,6 +247,8 @@ class PropertySavingWidget(BindingPropertyWidget, abc.ABC):
     the inheriting widget overrides the closeEvent function.
 
     Loading is done by calling the load_properties_from_file function.
+
+    Property values must be JSON encodable.
     """
     # TODO maybe do loading in showEvent function
 
@@ -278,8 +278,11 @@ class PropertySavingWidget(BindingPropertyWidget, abc.ABC):
 
         os.makedirs(file_path.parent, exist_ok=True)
         params = self.get_properties()
-        with open(file_path, "w") as file:
-            json.dump(params, file, indent=4)
+        try:
+            with open(file_path, "w") as file:
+                json.dump(params, file, indent=4)
+        except (PermissionError, IsADirectoryError):
+            pass
 
     def load_properties_from_file(self, file_path=None):
         """Loads properties from a file.
@@ -293,7 +296,8 @@ class PropertySavingWidget(BindingPropertyWidget, abc.ABC):
         try:
             with open(file_path) as file:
                 params = json.load(file)
-        except FileNotFoundError:
+        except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError,
+                PermissionError, IsADirectoryError):
             return
 
         self.set_properties(**params)
