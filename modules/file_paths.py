@@ -146,6 +146,12 @@ def is_optfirst(prefix, file_name):
     return f"{prefix}-optfirst.rec" == file_name
 
 
+def is_optmed(prefix, file_name):
+    """Checks whether a file name is a optmed file for the given prefix.
+    """
+    return f"{prefix}-optmed.rec" == file_name
+
+
 def is_optlast(prefix, file_name):
     """Checks whether a file name is a optlast file for the given prefix.
     """

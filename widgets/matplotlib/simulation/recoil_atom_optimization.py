@@ -82,12 +82,11 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
                                        QtWidgets.QSizePolicy.Expanding)
         self.recoil_vertical_layout.addItem(spacer)
 
-        # Lines connecting markers
+        # A dictionary where keys are recoil elements and values are line
+        # objects
         self.lines = {}
-        # Markers representing selected points
-        self.markers_selected = None
-        # Clicked point
-        self.clicked_point = None
+        self.selected_line = None
+        self.highlighted_marker = None
 
         self.coordinates_widget = None
         self.coordinates_action = None
@@ -112,14 +111,7 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
             except AttributeError:
                 return
 
-        self.clicked_point = None
-        if self.markers_selected:
-            self.markers_selected.set_visible(False)
-            self.coordinates_widget.x_coordinate_box.setEnabled(False)
-            self.coordinates_widget.y_coordinate_box.setEnabled(False)
-
         self.update_plot()
-        # self.__update_figure()
 
     def __fork_toolbar_buttons(self):
         """
@@ -172,16 +164,24 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         # Only inside the actual graph axes, else do nothing.
         if event.inaxes != self.axes:
             return
-        if event.button == 1:  # Left click
-            marker_contains, marker_info = self.markers.contains(event)
-            if marker_contains:  # If clicked a point
-                self.coordinates_widget.x_coordinate_box.setEnabled(True)
-                self.coordinates_widget.y_coordinate_box.setEnabled(True)
-                i = marker_info['ind'][0]  # The clicked point's index
+        if event.button == 1 and self.selected_line is not None:
+            line_contains, line_info = self.selected_line.contains(event)
+            if line_contains:
+                i = line_info["ind"][0]
                 clicked_point = self.current_recoil.get_point_by_i(i)
-                self.clicked_point = clicked_point
 
-                self.update_plot()
+                if clicked_point is not None:
+                    self.highlighted_marker.set_data(clicked_point.get_x(),
+                                                     clicked_point.get_y())
+                    self.highlighted_marker.set_visible(True)
+
+                    self.coordinates_widget.x_coordinate_box.setValue(
+                        clicked_point.get_x())
+                    self.coordinates_widget.y_coordinate_box.setValue(
+                        clicked_point.get_y())
+
+                    self.canvas.draw()
+                    self.canvas.flush_events()
 
     def on_draw(self):
         """
@@ -224,6 +224,7 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         #      Window won't be drawn but it can still be opened by clicking
         #      on the simulation again. Progress bar gets stuck though.
         self.canvas.draw()
+        self.canvas.flush_events()
 
     def show_recoils(self):
         """
@@ -237,21 +238,20 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
             btn.recoil_element = recoil
             line, = self.axes.plot(recoil.get_xs(), recoil.get_ys(),
                                    color=recoil.color)
-            markers, = self.axes.plot(recoil.get_xs(),
-                                      recoil.get_ys(),
-                                      color=recoil.color,
-                                      marker="o", markersize=10,
-                                      linestyle="None")
-            self.lines[recoil] = {
-                "line": line,
-                "markers": markers
-            }
+            self.lines[recoil] = line
 
-        self.markers_selected, = self.axes.plot(0, 0, marker="o",
-                                                markersize=10,
-                                                linestyle="None",
-                                                color='yellow',
-                                                visible=False)
+        self.selected_line, = self.axes.plot(0, 0,
+                                             marker="o",
+                                             markersize=10,
+                                             linestyle="None",
+                                             zorder=15,
+                                             visible=False)
+        self.highlighted_marker, = self.axes.plot(0, 0, marker="o",
+                                                  markersize=10,
+                                                  linestyle="None",
+                                                  color="yellow",
+                                                  zorder=20,
+                                                  visible=False)
 
         self.radios.buttons()[0].setChecked(True)
 
@@ -265,7 +265,7 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         else:
             self.mpl_toolbar.mode_tool = 0
             self.__show_all_recoil = True
-        self.canvas.draw_idle()
+        # self.canvas.draw_idle()
 
     def __toggle_tool_zoom(self):
         """
@@ -275,7 +275,7 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
             self.mpl_toolbar.mode_tool = 2
         else:
             self.mpl_toolbar.mode_tool = 0
-        self.canvas.draw_idle()
+        # self.canvas.draw_idle()
 
     def __toggle_drag_zoom(self):
         """
@@ -289,52 +289,19 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.__button_drag.setChecked(False)
         self.__button_zoom.setChecked(False)
 
-    def __update_figure(self):
-        """
-        Update figure.
-        """
-        if self.other_recoil_line:
-            self.other_recoil_line.set_visible(False)
-
-        xs = self.other_recoils.get_xs()
-        ys = self.other_recoils.get_ys()
-        line = self.axes.plot(xs, ys, color=self.other_recoils.color,
-                              alpha=0.3, visible=True, zorder=1)
-        self.other_recoil_line = line[0]
-
-        self.fig.canvas.draw_idle()
-
     def update_plot(self):
-        for recoil, graph_attrs in self.lines.items():
+        for recoil, line in self.lines.items():
             if recoil == self.current_recoil:
-                graph_attrs["line"].set_alpha = 1.0
-                graph_attrs["markers"].set_visible = True
+                line.set_alpha(1.0)
+                line.set_zorder(5)
+                self.selected_line.set_data(line.get_xdata(), line.get_ydata())
+                self.selected_line.set_color(line.get_color())
+                self.selected_line.set_visible(True)
             else:
-                graph_attrs["line"].set_alpha = 0.3
-                graph_attrs["markers"].set_visible = False
+                line.set_alpha(0.3)
+                line.set_zorder(1)
 
-
-        # self.markers.set_data(self.current_recoil.get_xs(),
-        #                      self.current_recoil.get_ys())
-        # self.lines.set_data(self.current_recoil.get_xs(),
-        #                     self.current_recoil.get_ys())
-
-        # self.markers.set_color("red")
-        # self.lines.set_color("red")
-
-        # self.markers.set_visible(True)
-        # self.lines.set_visible(True)
-
-        if self.clicked_point:
-            self.markers_selected.set_visible(True)
-            selected_xs = self.clicked_point.get_x()
-            selected_ys = self.clicked_point.get_y()
-            self.markers_selected.set_data(selected_xs, selected_ys)
-
-            self.coordinates_widget.x_coordinate_box.setValue(
-                self.clicked_point.get_x())
-            self.coordinates_widget.y_coordinate_box.setValue(
-                self.clicked_point.get_y())
+        self.highlighted_marker.set_visible(False)
 
         last_point = self.current_recoil.get_point_by_i(len(
             self.current_recoil.get_points()) - 1)
@@ -343,4 +310,5 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         if x_max < last_point_x:
             self.axes.set_xlim(x_min, last_point_x + 0.04 * last_point_x)
 
-        self.fig.canvas.draw_idle()
+        self.canvas.draw()
+        self.canvas.flush_events()
