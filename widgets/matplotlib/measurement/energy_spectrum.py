@@ -137,7 +137,10 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                               button=1, span_stays=True)
             self.__used_recoils = self.__find_used_recoils()
 
-        self.limits = []
+        self.limits = {
+            "lower": None,
+            "upper": None
+        }
         self.limits_visible = False
         self.leg = None  # Original legend
         self.anchored_box = None
@@ -281,7 +284,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         child_boxes = []
 
         if ratio is None:
-            text = "Invalid selection, no ratio could be calculated"
+            text = "Invalid selection, \nno ratio could \nbe calculated"
             child_boxes.append(offsetbox.TextArea(
                 text, textprops=dict(color="k", size=12)))
 
@@ -327,7 +330,13 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             return
 
         # Limit files_to_draw to only two
-        if len(self.files_to_draw) != 2:
+
+        drawn_lines = {
+            path: self.files_to_draw[path]
+            for path, line in self.plots.items()
+            if line.get_linestyle() != "None"
+        }
+        if len(drawn_lines) != 2:
             QtWidgets.QMessageBox.critical(self.parent.parent, "Warning",
                                            "Limits can only be set when two "
                                            "elements are drawn.\n\nPlease add"
@@ -339,15 +348,12 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         low_x = round(xmin, 3)
         high_x = round(xmax, 3)
 
-        for lim in self.limits:
-            lim.set_linestyle('None')
-
         lowest = None
         highest = None
         self.lines_of_area = []
 
         # Find the min and max of the files
-        for key, val in self.files_to_draw.items():
+        for key, val in drawn_lines.items():
             first = float(val[0][0])
             last = float(val[-1][0])
 
@@ -368,11 +374,14 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         if highest < high_x:
             high_x = highest
 
-        self.limits = []
         ylim = self.axes.get_ylim()
-        self.limits.append(self.axes.axvline(x=low_x, linestyle="--"))
-        self.limits.append(self.axes.axvline(x=high_x, linestyle="--",
-                                             color='red'))
+        try:
+            self.limits["lower"].set_xdata((low_x, low_x))
+            self.limits["upper"].set_xdata((high_x, high_x))
+        except AttributeError:
+            self.limits["lower"] = self.axes.axvline(x=low_x, linestyle="--")
+            self.limits["upper"] = self.axes.axvline(x=high_x, linestyle="--",
+                                                     color='red')
         self.limits_visible = True
 
         self.axes.set_ybound(ylim[0], ylim[1])
@@ -387,31 +396,29 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         Toggle the area limits on and off.
         """
         if self.limits_visible:
-            for lim in self.limits:
+            for lim in self.limits.values():
                 lim.set_linestyle('None')
             self.limits_visible = False
-            self.anchored_box.set_visible(False)
-            self.anchored_box = None
-            self.canvas.draw_idle()
         else:
-            for lim in self.limits:
+            for lim in self.limits.values():
                 lim.set_linestyle('--')
-            if self.limits:
-                self.limits_visible = True
-                self.show_ratio()
+            self.limits_visible = True
+            self.show_ratio()
+        self.canvas.draw_idle()
 
     def get_limit_range(self):
         """Returns the limit range between the two limit lines or None, None
         if no limits are displayed.
         """
-        if not self.limits:
-            return None
         if not self.limits_visible:
             return None
 
-        start = self.limits[0].get_xdata()[0]
-        end = self.limits[1].get_xdata()[0]
-        return start, end
+        try:
+            start = self.limits["lower"].get_xdata()[0]
+            end = self.limits["upper"].get_xdata()[0]
+            return start, end
+        except AttributeError:
+            return None
 
     def __sortt(self, key):
         cut_file = key.split('.')
@@ -664,9 +671,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.canvas.draw()
         self.canvas.flush_events()
 
-        if self.limits:
-            self.axes.add_artist(self.limits[0])
-            self.axes.add_artist(self.limits[1])
         if self.limits_visible:
             self.show_ratio()
 
@@ -707,7 +711,6 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             dialog = GraphIgnoreElements(elements, self.__ignore_elements)
             self.__ignore_elements = set(dialog.ignored_elements)
 
-        self.limits = []
         self.hide_plots(self.__ignore_elements)
 
     def hide_plots(self, plots_to_hide):
@@ -722,6 +725,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             else:
                 # Any other plot will use the default style
                 line.set_linestyle(self.default_linestyle)
+
         self.canvas.draw()
         self.canvas.flush_events()
 
