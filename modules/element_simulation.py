@@ -374,7 +374,7 @@ class ElementSimulation(Observable):
 
     @classmethod
     def from_file(cls, request, prefix, simulation_folder, mcsimu_file_path,
-                  profile_file_path, sample=None):
+                  profile_file_path, sample=None, detector=None):
         """Initialize ElementSimulation from JSON files.
 
         Args:
@@ -396,6 +396,14 @@ class ElementSimulation(Observable):
         use_default_settings = mcsimu.pop("use_default_settings") == "True"
         main_recoil_name = mcsimu.pop("main_recoil")
         modification_time = mcsimu.pop("modification_time_unix")
+        if not use_default_settings:
+            # If default settings are not used, use the detector provided as
+            # parameter
+            detector = detector
+        else:
+            # Otherwise detector is None, which means the request setting
+            # detector gets used in simulation
+            detector = None
 
         # This is the time in 'human readable' form. It is not being used
         # apart from saving to file so it can just be removed
@@ -473,6 +481,7 @@ class ElementSimulation(Observable):
                    main_recoil=main_recoil,
                    modification_time=modification_time,
                    sample=sample,
+                   detector=detector,
                    **mcsimu)
 
     def get_full_name(self):

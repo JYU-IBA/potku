@@ -268,7 +268,8 @@ class Detector:
         Return:
             Detector object.
         """
-        obj = json.load(open(detector_file_path))
+        with open(detector_file_path) as dfp:
+            obj = json.load(dfp)
 
         name = obj["name"]
         description = obj["description"]
@@ -283,7 +284,7 @@ class Detector:
         tof_foils = obj["tof_foils"]
         foils = []
 
-        # Read foils
+        # Read foils        # TODO foil from_file function
         for foil in obj["foils"]:
 
             distance = foil["distance"]
@@ -315,7 +316,8 @@ class Detector:
 
         try:
             # Read .measurement file and update detector angle
-            measurement_obj = json.load(open(measurement_file_path))
+            with open(measurement_file_path) as mesu_file:
+                measurement_obj = json.load(mesu_file)
             detector_theta = measurement_obj["geometry"]["detector_theta"]
         except KeyError:
             # Get default detector angle from default detector

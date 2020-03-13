@@ -119,15 +119,32 @@ class Simulations:
                     simulation.run = Run.from_file(
                         os.path.join(
                             simulation.directory, measurement_settings_file))
-                    obj = json.load(open(os.path.join(
-                        simulation.directory, measurement_settings_file)))
-                    simulation.measurement_setting_file_name = obj[
-                        "general"]["name"]
-                    simulation.measurement_setting_file_description = obj[
-                        "general"]["description"]
-                    simulation.modification_time = obj["general"][
-                        "modification_time_unix"]
+                    with open(
+                            os.path.join(simulation.directory,
+                                         measurement_settings_file)) as mesu_f:
+                        mesu_settings = json.load(mesu_f)
+
+                    simulation.measurement_setting_file_name = \
+                        mesu_settings["general"]["name"]
+                    simulation.measurement_setting_file_description = \
+                        mesu_settings["general"]["description"]
+                    simulation.modification_time = \
+                        mesu_settings["general"]["modification_time_unix"]
                     break
+
+            # Read Detector information from file.
+            det_folder = os.path.join(simulation_folder_path,
+                                      "Detector")
+            if os.path.isdir(det_folder):
+                for file in os.listdir(det_folder):
+                    if file.endswith(detector_extension):
+                        simulation.detector = Detector.from_file(
+                            os.path.join(det_folder, file),
+                            os.path.join(simulation.directory,
+                                         measurement_settings_file),
+                            self.request)
+                        simulation.detector.update_directories(det_folder)
+                        break
 
             for file in os.listdir(simulation_folder_path):
                 # Read Target information from file.
@@ -136,19 +153,6 @@ class Simulations:
                         simulation_folder_path, file), os.path.join(
                         simulation_folder_path,
                         measurement_settings_file), self.request)
-
-                # Read Detector information from file.
-                if file.startswith("Detector"):
-                    det_folder = os.path.join(simulation_folder_path,
-                                              "Detector")
-                    for f in os.listdir(det_folder):
-                        if f.endswith(detector_extension):
-                            simulation.detector = Detector.from_file(
-                                os.path.join(det_folder, f),
-                                os.path.join(simulation.directory,
-                                             measurement_settings_file),
-                                self.request)
-                            simulation.detector.update_directories(det_folder)
 
                 # Read read ElementSimulation information from files.
                 if file.endswith(element_simulation_extension):
@@ -179,7 +183,9 @@ class Simulations:
                         element_simulation = ElementSimulation.from_file(
                             self.request, prefix, simulation_folder_path,
                             mcsimu_file_path, profile_file_path,
-                            sample=simulation.sample)
+                            sample=simulation.sample,
+                            detector=simulation.detector
+                        )
                         simulation.element_simulations.append(
                             element_simulation)
                         element_simulation.run = simulation.run
