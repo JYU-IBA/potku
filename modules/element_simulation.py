@@ -1049,7 +1049,7 @@ class ElementSimulation(Observable):
         recoil_file = os.path.join(self.directory,
                                    recoil_element.prefix + "-" +
                                    recoil_name + suffix)
-        recoil_element.write_recoil_file(recoil_file)
+        recoil_element.get_mcerd_params(recoil_file)
 
         erd_file = os.path.join(self.directory, recoil_elements[0].prefix +
                                 "-" + erd_recoil_name + ".*.erd")

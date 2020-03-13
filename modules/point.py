@@ -124,3 +124,9 @@ class Point:
         """
         self._x = xy[0]
         self._y = xy[1]
+
+    def get_mcerd_params(self):
+        """Returns a string representation of the point as used in MCERD
+        simulation.
+        """
+        return f"{round(self.get_x(), 2)} {round(self.get_y(), 4)}"

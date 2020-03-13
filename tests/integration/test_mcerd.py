@@ -167,3 +167,12 @@ class TestMCERD(unittest.TestCase):
         output = self.mcerd.get_foils_file_contents()
 
         self.assertEqual(expected, output)
+
+    def test_recoil_file_contents(self):
+        recoil_file = Path(get_resource_dir()) / "mcerd_recoil_file.txt"
+        expected = get_template_file_contents(
+            recoil_file
+        )
+        output = self.mcerd.get_recoil_file_contents()
+
+        self.assertEqual(expected, output)

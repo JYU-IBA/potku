@@ -171,8 +171,15 @@ class MCERD:
         with open(self.__foils_file, "w") as file:
             file.write(self.get_foils_file_contents())
 
+        # Create the recoil file
+        with open(self.recoil_file) as file:
+            file.write(self.get_recoil_file_contents())
+
+    def get_recoil_file_contents(self):
+        """Returns the contents of the recoil file.
+        """
         recoil_element = self.__settings["recoil_element"]
-        recoil_element.write_recoil_file(self.recoil_file)
+        return "\n".join(recoil_element.get_mcerd_params())
 
     def get_command_file_contents(self):
         """Returns the contents of MCERD's command file as a string.

@@ -456,40 +456,34 @@ class RecoilElement:
         return cls(element, list(points), channel_width=channel_width,
                    rec_type=rec_type, **reco)
 
-    def write_recoil_file(self, recoil_file):
-        """Writes a file of points that is given to MCERD and get_espe.
-
-        Args:
-            recoil_file: File path to recoil file that ends with ".recoil" or
-            ".scatter".
+    def get_mcerd_params(self):
+        """Returns the parameters used in MCERD calculations as a list of
+        strings.
         """
-        # TODO make this a get_mcerd_params function
-        with open(recoil_file, "w") as file_rec:
-            # If there are not points all the way from 0 to 10, add this
-            # small amount
-            points = self.get_points()
-            if 0 < points[0].get_x():
-                point_x = round(points[0].get_x() - 0.01, 2)
-                if points[0].get_x() <= 10.0:
-                    file_rec.write("0.00 0.000001\n" + str(point_x) +
-                                   " 0.000001\n")
-                else:
-                    file_rec.write("0.00 0.000001\n10.00 0.000001\n" +
-                                   "10.01 0.0000\n" + str(point_x) +
-                                   " 0.0000\n")
+        params = []
 
-            for point in points:
-                file_rec.write(
-                    str(round(point.get_x(), 2)) + " " +
-                    str(round(point.get_y(), 4)) + "\n")
+        # If there are not points all the way from 0 to 10, add this
+        # small amount
+        points = self.get_points()
+        if 0 < points[0].get_x():
+            point_x = round(points[0].get_x() - 0.01, 2)
+            if points[0].get_x() <= 10.0:
+                params.append(f"0.00 0.000001\n{point_x} 0.000001")
+            else:
+                params.append(f"0.00 0.000001\n10.00 0.000001\n"
+                              f"10.01 0.0000\n{point_x} 0.0000")
 
-            # MCERD requires the recoil atom distribution to end with these
-            # points
-            file_rec.write(
-                str(round(self.get_points()[-1].get_x() + 0.01, 2)) +
-                " 0.0\n" +
-                str(round(self.get_points()[-1].get_x() + 0.02, 2)) +
-                " 0.0\n")
+        for point in points:
+            params.append(point.get_mcerd_params())
+
+        # MCERD requires the recoil atom distribution to end with these
+        # points
+        params.append(f"{round(self.get_points()[-1].get_x() + 0.01, 2)} "
+                      f"0.0")
+        params.append(f"{round(self.get_points()[-1].get_x() + 0.02, 2)} "
+                      f"0.0\n")
+
+        return params
 
     def calculate_area_for_interval(self, start=None, end=None):
         """
