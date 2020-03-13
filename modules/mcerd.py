@@ -152,55 +152,9 @@ class MCERD:
         else:
             print("It appears we do not support your OS.")
 
-    def __tmp_file_content_test(self):
-        # TODO this is a temporary function that tests that the previous file
-        #   contents are the same as the new ones
-        # import difflib
-        try:
-            with open(self.__command_file) as file:
-                cmd_a = file.read()
-            cmd_b = self.get_command_file_contents()
-            print("CMD", cmd_a == cmd_b)
-            if cmd_a != cmd_b:
-                # as seed value is incremented each time, this difference is
-                # expected
-                print(cmd_a)
-
-            with open(self.__detector_file) as file:
-                cmd_a = file.read()
-            cmd_b = self.get_detector_file_contents()
-            print("DET", cmd_a == cmd_b)
-            if cmd_a != cmd_b:
-                print(cmd_a)
-
-            with open(self.__target_file) as file:
-                cmd_a = file.read()
-            cmd_b = self.get_target_file_contents()
-            print("TGT", cmd_a == cmd_b)
-            if cmd_a != cmd_b:
-                print(cmd_a)
-
-            with open(self.__foils_file) as file:
-                cmd_a = file.read()
-            cmd_b = self.get_foils_file_contents()
-            print("FOI", cmd_a == cmd_b)
-            if cmd_a != cmd_b:
-                print(cmd_a)
-
-            with open(self.recoil_file) as file:
-                cmd_a = file.read()
-            cmd_b = self.get_recoil_file_contents()
-            print("REC", cmd_a == cmd_b)
-            if cmd_a != cmd_b:
-                print(cmd_a)
-        except FileNotFoundError as e:
-            print(f"FILE NOT FOUND {e}")
-
     def __create_mcerd_files(self):
         """Creates the temporary files needed for running MCERD.
         """
-        self.__tmp_file_content_test()
-
         # Create the main MCERD command file
         with open(self.__command_file, "w") as file:
             file.write(self.get_command_file_contents())
@@ -360,8 +314,6 @@ class MCERD:
         Delete mcerd files that are not needed anymore.
         """
         try:
-            # temporary prevent files from getting removed when testing
-            raise OSError
             os.remove(self.__command_file)
             os.remove(self.__detector_file)
             os.remove(self.__target_file)

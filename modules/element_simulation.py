@@ -396,14 +396,14 @@ class ElementSimulation(Observable):
         use_default_settings = mcsimu.pop("use_default_settings") == "True"
         main_recoil_name = mcsimu.pop("main_recoil")
         modification_time = mcsimu.pop("modification_time_unix")
-        if not use_default_settings:
-            # If default settings are not used, use the detector provided as
+        # if not use_default_settings:
+        #    # If default settings are not used, use the detector provided as
             # parameter
-            detector = detector
-        else:
+        #    detector = detector
+        #else:
             # Otherwise detector is None, which means the request setting
             # detector gets used in simulation
-            detector = None
+        #    detector = None
 
         # This is the time in 'human readable' form. It is not being used
         # apart from saving to file so it can just be removed
@@ -611,17 +611,18 @@ class ElementSimulation(Observable):
                                 the start process
         """
         self.simulations_done = False
-        if self.run is None:
-            run = self.request.default_run
-        else:
-            run = self.run
-
-        if self.detector is None:
-            detector = self.request.default_detector
-        else:
-            detector = self.detector
 
         elem_sim = self.get_element_simulation()
+
+        if elem_sim.run is None:
+            run = self.request.default_run
+        else:
+            run = elem_sim.run
+
+        if elem_sim.detector is None:
+            detector = self.request.default_detector
+        else:
+            detector = elem_sim.detector
 
         if not use_old_erd_files:
             self.__erd_filehandler.clear()

@@ -189,27 +189,26 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     msg_str="simulation settings"):
                 self.__close = False
                 return
-
             # Use request settings
-            self.simulation.run = None
-            self.simulation.detector = None
-            self.simulation.measurement_setting_file_description = ""
-            self.simulation.target.target_theta = \
-                self.simulation.request.default_target.target_theta
+            # self.simulation.run = None
+            # self.simulation.detector = None
+            # self.simulation.measurement_setting_file_description = ""
+            # self.simulation.target.target_theta = \
+            #     self.simulation.request.default_target.target_theta
 
             # Remove setting files and folders
-            det_folder_path = os.path.join(self.simulation.directory,
-                                           "Detector")
-            if os.path.exists(det_folder_path):
-                shutil.rmtree(det_folder_path)
-            filename_to_remove = ""
-            for file in os.listdir(self.simulation.directory):
-                if file.endswith(".measurement"):
-                    filename_to_remove = file
-                    break
-            if filename_to_remove:
-                os.remove(os.path.join(self.simulation.directory,
-                                       filename_to_remove))
+            # det_folder_path = os.path.join(self.simulation.directory,
+            #                                "Detector")
+            # if os.path.exists(det_folder_path):
+            #     shutil.rmtree(det_folder_path)
+            # filename_to_remove = ""
+            # for file in os.listdir(self.simulation.directory):
+            #     if file.endswith(".measurement"):
+            #         filename_to_remove = file
+            #         break
+            # if filename_to_remove:
+            #     os.remove(os.path.join(self.simulation.directory,
+            #                            filename_to_remove))
             self.use_default_settings = True
         else:
             if self.use_default_settings and check_box.isChecked():
