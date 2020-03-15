@@ -66,13 +66,13 @@ def check_for_red(widget):
     """Looks for invalid values in widgets tab collection
     and blocks signals if it finds one.
     """
-    for i in range(widget.ui.tabs.count()):
-        tab_widget = widget.ui.tabs.widget(i)
+    for i in range(widget.tabs.count()):
+        tab_widget = widget.tabs.widget(i)
         valid = tab_widget.fields_are_valid
         if not valid:
-            widget.ui.tabs.blockSignals(True)
+            widget.tabs.blockSignals(True)
             widget.tabs.setCurrentWidget(tab_widget)
-            widget.ui.tabs.blockSignals(False)
+            widget.tabs.blockSignals(False)
             break
 
 

@@ -95,7 +95,7 @@ class Simulations:
 
         simulation_folder_path, simulation_file = os.path.split(simulation_path)
         sample_folder, simulation_folder = os.path.split(simulation_folder_path)
-        directory_prefix = "MC_simulation_"
+        directory_prefix = Simulation.DIRECTORY_PREFIX
         target_extension = ".target"
         measurement_extension = ".measurement"
         detector_extension = ".detector"
@@ -247,10 +247,12 @@ class Simulation(Logger):
     """
     __slots__ = "path", "request", "simulation_file", "name", "tab_id", \
                 "description", "modification_time", "run", "detector", \
-                "target", "element_simulations", "name_prefix", \
+                "target", "element_simulations", \
                 "serial_number", "directory", "measurement_setting_file_name", \
                 "measurement_setting_file_description", \
-                "sample", "running_simulations", "statusbar"
+                "sample", "running_simulations", "use_request_settings"
+
+    DIRECTORY_PREFIX = "MC_simulation_"
 
     def __init__(self, path, request, name="Default",
                  description="",
@@ -258,6 +260,7 @@ class Simulation(Logger):
                  detector=None, target=None,
                  measurement_setting_file_name="",
                  measurement_setting_file_description="", sample=None,
+                 use_request_settings=True,
                  save_on_creation=True):
         """Initializes Simulation object.
 
@@ -275,6 +278,8 @@ class Simulation(Logger):
             measurement_setting_file_description: Measurement settings file
             description.
             sample: Sample object under which Simulation belongs.
+            use_request_settings: whether ElementSimulations under this
+                simulation use request settings or simulation settings
             save_on_creation: whether the Simulation is written to file when
                               initialized.
         """
@@ -303,10 +308,10 @@ class Simulation(Logger):
         self.run = run
         self.detector = detector
         self.target = target
+        self.use_request_settings = use_request_settings
         if not self.target:
             self.target = Target()
 
-        self.name_prefix = "MC_simulation_"
         self.serial_number = 0
 
         self.defaultlog = None
@@ -371,8 +376,7 @@ class Simulation(Logger):
                                                name=name,
                                                target=self.target,
                                                detector=self.detector,
-                                               recoil_elements=[
-                                                   recoil_element],
+                                               recoil_elements=[recoil_element],
                                                run=self.run,
                                                sample=self.sample,
                                                simulation_type=simulation_type)
@@ -389,28 +393,30 @@ class Simulation(Logger):
             file_path: A file path to JSON file containing the
             simulation information.
         """
-        obj = json.load(open(file_path))
+        with open(file_path) as file:
+            simu_obj = json.load(file)
 
-        # Below we do conversion from dictionary to Simulation object
-        name = obj["name"]
-        description = obj["description"]
-        modification_time = obj["modification_time_unix"]
+        # Overwrite the human readable time stamp with unix time stamp, as
+        # that is what the Simulation object uses internally
+        simu_obj["modification_time"] = simu_obj.pop("modification_time_unix")
 
-        return cls(request=request, path=file_path, name=name,
-                   description=description, modification_time=modification_time)
+        return cls(request=request, path=file_path, **simu_obj)
 
     def to_file(self, file_path):
         """Save simulation settings to a file.
 
         Args:
-            file_path: File in which the simulation settings will be saved."""
+            file_path: File in which the simulation settings will be saved.
+        """
 
+        # TODO could add file paths to detector and run files here too
         obj = {
             "name": self.name,
             "description": self.description,
             "modification_time": time.strftime("%c %z %Z", time.localtime(
                 time.time())),
             "modification_time_unix": time.time(),
+            "use_request_settings": self.use_request_settings
         }
 
         with open(file_path, "w") as file:

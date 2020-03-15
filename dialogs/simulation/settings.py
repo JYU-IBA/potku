@@ -66,24 +66,26 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.tab = tab
         self.simulation = simulation
         self.icon_manager = icon_manager
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_specific_settings.ui"), self)
-        self.ui.setWindowTitle("Simulation Settings")
+
+        uic.loadUi(os.path.join("ui_files",
+                                "ui_specific_settings.ui"), self)
+
+        self.setWindowTitle("Simulation Settings")
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         screen_geometry = QtWidgets.QDesktopWidget.availableGeometry(
             QtWidgets.QApplication.desktop())
         self.resize(self.geometry().width() * 1.1,
                     screen_geometry.size().height() * 0.8)
-        self.ui.defaultSettingsCheckBox.stateChanged.connect(
+        self.defaultSettingsCheckBox.stateChanged.connect(
             self.__change_used_settings)
-        self.ui.OKButton.clicked.connect(self.__save_settings_and_close)
-        self.ui.applyButton.clicked.connect(self.__update_parameters)
-        self.ui.cancelButton.clicked.connect(self.close)
+        self.OKButton.clicked.connect(self.__save_settings_and_close)
+        self.applyButton.clicked.connect(self.__update_parameters)
+        self.cancelButton.clicked.connect(self.close)
 
         # Add measurement settings view to the settings view
         self.measurement_settings_widget = MeasurementSettingsWidget(
             self.simulation)
-        self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
+        self.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
         self.measurement_settings_widget.ui.picture.setScaledContents(True)
         pixmap = QtGui.QPixmap(os.path.join("images",
@@ -98,8 +100,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
         # Add detector settings view to the settings view
         detector_object = self.simulation.detector
-        if not detector_object:
+        if detector_object is None:
             detector_object = self.simulation.request.default_detector
+
         self.detector_settings_widget = DetectorSettingsWidget(
             detector_object, self.simulation.request, self.icon_manager)
 
@@ -108,22 +111,23 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.detector_settings_widget.ui.tabs.removeTab(2)
         calib_tab_widget.deleteLater()
 
-        self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
+        self.tabs.addTab(self.detector_settings_widget, "Detector")
 
-        if self.simulation.detector is not None:
-            self.ui.defaultSettingsCheckBox.setCheckState(0)
-            self.measurement_settings_widget.ui.nameLineEdit.setText(
-                self.simulation.measurement_setting_file_name)
-            self.measurement_settings_widget.ui.descriptionPlainTextEdit \
-                .setPlainText(
-                    self.simulation.measurement_setting_file_description)
-            self.measurement_settings_widget.dateLabel.setText(time.strftime(
-                "%c %z %Z", time.localtime(self.simulation.modification_time)))
+        if not self.simulation.use_request_settings:
+            self.defaultSettingsCheckBox.setCheckState(0)
 
-        self.ui.tabs.currentChanged.connect(lambda: self.__check_for_red())
+        self.measurement_settings_widget.ui.nameLineEdit.setText(
+            self.simulation.measurement_setting_file_name)
+        self.measurement_settings_widget.ui.descriptionPlainTextEdit \
+            .setPlainText(
+                self.simulation.measurement_setting_file_description)
+        self.measurement_settings_widget.dateLabel.setText(time.strftime(
+            "%c %z %Z", time.localtime(self.simulation.modification_time)))
+
+        self.tabs.currentChanged.connect(lambda: self.__check_for_red())
         self.__close = True
 
-        self.use_default_settings = self.ui.defaultSettingsCheckBox.isChecked()
+        self.use_default_settings = self.defaultSettingsCheckBox.isChecked()
 
         self.exec()
 
@@ -133,9 +137,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         """
         check_box = self.sender()
         if check_box.isChecked():
-            self.ui.tabs.setEnabled(False)
+            self.tabs.setEnabled(False)
         else:
-            self.ui.tabs.setEnabled(True)
+            self.tabs.setEnabled(True)
 
     def __check_for_red(self):
         """
@@ -149,7 +153,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         """
         self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(True)
         self.measurement_settings_widget.ui.isotopeLabel.setEnabled(True)
-        self.ui.OKButton.setEnabled(True)
+        self.OKButton.setEnabled(True)
 
     def __update_parameters(self):
         """
@@ -171,7 +175,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.simulation.measurement_setting_file_name = \
                 self.simulation.name
 
-        if not self.ui.tabs.currentWidget().fields_are_valid:
+        if not self.tabs.currentWidget().fields_are_valid:
             QtWidgets.QMessageBox.critical(self, "Warning",
                                            "Some of the setting values have"
                                            " not been set.\n" +
@@ -182,7 +186,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.__close = False
             return
 
-        check_box = self.ui.defaultSettingsCheckBox
+        check_box = self.defaultSettingsCheckBox
         if check_box.isChecked() and not self.use_default_settings:
             if not df.delete_element_simulations(
                     self, self.tab, self.simulation,
@@ -338,6 +342,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         """Save settings and close the dialog.
         """
         self.__update_parameters()
+        self.simulation.use_request_settings = self.use_default_settings
         if self.__close:
             self.close()
 
