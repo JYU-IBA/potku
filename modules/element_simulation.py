@@ -362,23 +362,14 @@ class ElementSimulation(Observable):
         with open(mcsimu_file_path) as mcsimu_file:
             mcsimu = json.load(mcsimu_file)
 
-        # Pop the values that need to be converted (name and
-        # use_def_settings) from the dict
-        use_default_settings = mcsimu.pop("use_default_settings") == "True"
+        # Pop the recoil name so it can be converted to a RecoilElement
         main_recoil_name = mcsimu.pop("main_recoil")
-        modification_time = mcsimu.pop("modification_time_unix")
-        # if not use_default_settings:
-        #    # If default settings are not used, use the detector provided as
-            # parameter
-        #    detector = detector
-        #else:
-            # Otherwise detector is None, which means the request setting
-            # detector gets used in simulation
-        #    detector = None
 
-        # This is the time in 'human readable' form. It is not being used
-        # apart from saving to file so it can just be removed
-        mcsimu.pop("modification_time")
+        # Convert modification_time and use_default_settings to correct
+        # types
+        mcsimu["modification_time"] = mcsimu.pop("modification_time_unix")
+        mcsimu["use_default_settings"] = \
+            mcsimu["use_default_settings"] == "True"
 
         full_name = mcsimu.pop("name")
         try:
@@ -449,12 +440,10 @@ class ElementSimulation(Observable):
                    recoil_elements=recoil_elements,
                    name_prefix=name_prefix,
                    name=name,
-                   use_default_settings=use_default_settings,
                    channel_width=channel_width,
                    optimization_recoils=optimized_recoils,
                    optimized_fluence=optimized_fluence,
                    main_recoil=main_recoil,
-                   modification_time=modification_time,
                    sample=sample,
                    detector=detector,
                    **mcsimu)
@@ -586,15 +575,14 @@ class ElementSimulation(Observable):
 
         elem_sim = self.get_element_simulation()
 
-        if elem_sim.run is None:
+        if self.simulation is None or self.simulation.use_request_settings:
+            target = self.request.default_target
             run = self.request.default_run
-        else:
-            run = elem_sim.run
-
-        if elem_sim.detector is None:
             detector = self.request.default_detector
         else:
-            detector = elem_sim.detector
+            target = self.target
+            run = self.run
+            detector = self.detector
 
         if not use_old_erd_files:
             self.__erd_filehandler.clear()
@@ -651,7 +639,7 @@ class ElementSimulation(Observable):
                 "simulation_mode": elem_sim.simulation_mode,
                 "seed_number": seed_number,
                 "beam": run.beam,
-                "target": self.target,
+                "target": target,
                 "detector": detector,
                 "recoil_element": recoil,
                 "sim_dir": self.directory
@@ -680,7 +668,6 @@ class ElementSimulation(Observable):
             new_erd_file = Path(self.directory, new_erd_file)
 
             if os.path.exists(new_erd_file):
-                # TODO maybe this file should be kept when optimizing
                 os.remove(new_erd_file)
 
             self.optimization_mcerd_running = optimize

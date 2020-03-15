@@ -115,5 +115,6 @@ def get_request():
             self.directory = tempfile.gettempdir()
             self.running_simulations = []
             self.default_run = get_run()
+            self.default_target = get_target()
 
     return MockRequest()

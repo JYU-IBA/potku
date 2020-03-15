@@ -26,6 +26,8 @@ __version__ = ""  # TODO
 
 import unittest
 import tempfile
+import os
+
 import tests.utils as utils
 
 from pathlib import Path
@@ -42,19 +44,25 @@ from modules.simulation import Simulation
 from modules.global_settings import GlobalSettings
 from modules.recoil_element import RecoilElement
 from modules.point import Point
+from modules.run import Run
+from modules.beam import Beam
 
 
 class TestElementSimulationSettings(unittest.TestCase):
     @patch("modules.mcerd.MCERD.__init__", return_value=None)
     @patch("modules.mcerd.MCERD.run")
-    def test_something(self, mock_mcerd_run: Mock,  mock_mcerd: Mock):
+    def test_elementsimulation_settings(self, mock_mcerd_run, mock_mcerd):
+        """This tests that ElementSimulation is run with the correct settings
+        depending on how 'use_default_settings' and 'use_request_settings'
+        have been set.
+        """
         with tempfile.TemporaryDirectory() as tmp_dir:
             # File paths
             tmp_dir = Path(tmp_dir)
             mesu_file = tmp_dir / "mesu"
             det_dir = tmp_dir / "det"
             sim_dir = tmp_dir / "Sample_01-foo" / \
-                      f"{Simulation.DIRECTORY_PREFIX}_01-bar"
+                f"{Simulation.DIRECTORY_PREFIX}01-bar"
             simu_file = sim_dir / "bar.simulation"
 
             # Request
@@ -72,15 +80,16 @@ class TestElementSimulationSettings(unittest.TestCase):
             self.assertEqual(request, sample.request)
 
             # Simulation
-            sim_foils = [CircularFoil("Foil1", 7.0, 256.0,
-                                  [Layer("Layer_12C",
-                                         [Element("C", 12.011, 1)],
-                                         0.1, 2.25, 0.0)])]
-            sim_detector = Detector(det_dir, mesu_file, foils=sim_foils)
             sample.simulations.add_simulation_file(
                 sample, simu_file, 0)
+            sim_foils = [CircularFoil("Foil1", 7.0, 256.0,
+                                      [Layer("Layer_12C",
+                                             [Element("C", 12.011, 1)],
+                                       0.1, 2.25, 0.0)])]
             sim: Simulation = sample.simulations.get_key_value(0)
-            sim.detector = sim_detector
+            sim.detector = Detector(det_dir, mesu_file, name="simu_detector",
+                                    foils=sim_foils)
+            sim.run = Run(Beam(energy=20))
             self.assertEqual("bar", sim.name)
             self.assertEqual(request, sim.request)
             self.assertEqual(sample, sim.sample)
@@ -95,9 +104,11 @@ class TestElementSimulationSettings(unittest.TestCase):
             self.assertEqual(request, elem_sim.request)
             self.assertEqual("Fe-Default", elem_sim.get_full_name())
 
+            # Disable logging so the logging file handlers do not cause
+            # an exception when the tmp dir is removed
             utils.disable_logging()
 
-            # Setting both to True should mean request settings are used
+            # Test with all setting combinations
             elem_sim.use_default_settings = True
             sim.use_request_settings = True
             self.assert_expected_settings(elem_sim, request, sim,
@@ -110,7 +121,6 @@ class TestElementSimulationSettings(unittest.TestCase):
 
             elem_sim.use_default_settings = False
             sim.use_request_settings = True
-            elem_sim.start(1, 1)
             self.assert_expected_settings(elem_sim, request, sim,
                                           mock_mcerd)
 
@@ -119,8 +129,11 @@ class TestElementSimulationSettings(unittest.TestCase):
             self.assert_expected_settings(elem_sim, request, sim,
                                           mock_mcerd)
 
-    def assert_expected_settings(self, elem_sim, request, sim, mock_mcerd):
-        elem_sim.start(1, 1)
+        self.assertFalse(os.path.exists(tmp_dir))
+
+    def assert_expected_settings(self, elem_sim, request, sim,
+                                 mock_mcerd: Mock):
+        elem_sim.start(1, 1, use_old_erd_files=False)
         settings = mock_mcerd.call_args[0][0]
         self.assertEqual(get_expected_settings(elem_sim, request, sim),
                          settings)
