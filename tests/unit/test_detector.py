@@ -30,17 +30,60 @@ import tempfile
 import os
 
 from modules.detector import Detector
+from modules.foil import CircularFoil
+from modules.foil import RectangularFoil
 
 
 class TestBeam(unittest.TestCase):
-    def test_get_mcerd_params(self):
+    def setUp(self):
         path = os.path.join(tempfile.gettempdir(), ".detector")
         mesu = os.path.join(tempfile.gettempdir(), "mesu")
-        det = Detector(path, mesu, save_in_creation=False)
+        self.det = Detector(path, mesu, save_in_creation=False)
+        self.unit_foil = CircularFoil(diameter=1, distance=1, transmission=1)
+        self.rect_foil = RectangularFoil(size_x=2, size_y=2, distance=2,
+                                         transmission=2)
+
+    def test_get_mcerd_params(self):
         self.assertEqual(
             ["Detector type: TOF",
              "Detector angle: 41",
              "Virtual detector size: 2.0 5.0",
              "Timing detector numbers: 1 2"],
-            det.get_mcerd_params()
+            self.det.get_mcerd_params()
         )
+
+    def test_default_init(self):
+        # If no foils are given, detector is initialized with 4 default foils
+        self.assertEqual(4, len(self.det.foils))
+        self.assertEqual([1, 2], self.det.tof_foils)
+
+    def test_calculate_smallest_solid_angle(self):
+        self.assertAlmostEqual(0.1805,
+                               self.det.calculate_smallest_solid_angle(),
+                               places=3)
+
+        self.det.foils.clear()
+        self.assertEqual(0, self.det.calculate_smallest_solid_angle())
+
+        self.det.foils.append(self.unit_foil)
+        self.assertAlmostEqual(785.398,
+                               self.det.calculate_smallest_solid_angle(),
+                               places=3)
+
+    def test_calculate_solid(self):
+        self.assertAlmostEqual(0.1805,
+                               self.det.calculate_solid(),
+                               places=3)
+
+        self.det.foils.clear()
+        self.assertEqual(0, self.det.calculate_solid())
+
+        self.det.foils.append(self.unit_foil)
+        self.assertAlmostEqual(785.398,
+                               self.det.calculate_solid(),
+                               places=3)
+
+        self.det.foils.append(self.rect_foil)
+        self.assertAlmostEqual(1570.796,
+                               self.det.calculate_solid(),
+                               places=3)

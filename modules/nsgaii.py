@@ -28,13 +28,14 @@ __version__ = "2.0"
 import numpy as np
 import os
 import time
+import collections
 
-from modules.optimization import dominates
-from modules.general_functions import format_to_binary
-from modules.general_functions import read_espe_file
-from modules.general_functions import round_value_by_four_biggest
-from modules.optimization import tournament_allow_doubles
-from modules.general_functions import uniform_espe_lists
+import modules.optimization as opt
+import modules.general_functions as gf
+import modules.file_paths as fp
+
+from pathlib import Path
+
 from modules.recoil_element import RecoilElement
 from modules.point import Point
 from modules.parsing import CSVParser
@@ -53,8 +54,7 @@ class Nsgaii:
     """
     def __init__(self, gen, element_simulation=None, pop_size=100, sol_size=5,
                  upper_limits=None, lower_limits=None, optimize_recoil=True,
-                 recoil_type="box", starting_solutions=None,
-                 number_of_processes=1, cross_p=0.9, mut_p=1,
+                 recoil_type="box", number_of_processes=1, cross_p=0.9, mut_p=1,
                  stop_percent=0.3, check_time=20, ch=0.025,
                  hist_file=None, dis_c=20,
                  dis_m=20, check_max=900, check_min=0):
@@ -73,8 +73,6 @@ class Nsgaii:
             recoil_type: Type of recoil: either "box" (4 points or 5),
             "two-peak" (high areas at both ends of recoil, low in the middle)
              or "free" (no limits to the shape of the recoil).
-            starting_solutions: First solutions used in optimization. If
-            none, initialize new solutions.
             number_of_processes: How many processes are used in MCERD
             calculation.
             cross_p: Crossover probability.
@@ -105,10 +103,6 @@ class Nsgaii:
         self.opt_recoil = optimize_recoil
         self.rec_type = recoil_type
 
-        self.hist_file = hist_file
-        if not self.hist_file:
-            return
-
         # MCERd specific parameters
         self.number_of_processes = number_of_processes
         self.mcerd_run = False
@@ -124,14 +118,47 @@ class Nsgaii:
         self.dis_c = dis_c
         self.mut_p = mut_p
         self.dis_m = dis_m
-        self.__start = None
         self.__const_var_i = []
         self.bit_length_x = 0
         self.bit_length_y = 0
 
+        self.hist_file = hist_file
+
+        # Starting time of optimization
+        self.__start = None
+        self.population = None
+        self.measured_espe = None
+
+    def __prepare_optimization(self):
+        """Performs internal preparation before optimization begins. If this
+        returns False, optimization should not begin.
+        """
+        # If mcerd run was stopped by closing the widget -> optimization
+        # needs to stop
+        if self.element_simulation.optimization_stopped:
+            return False
+
+        if self.hist_file is None:
+            return False
+
         parser = CSVParser((0, float), (1, float))
         self.measured_espe = list(
             parser.parse_file(self.hist_file, method="row"))
+
+        # Previous erd files are used as the starting point so combine them
+        # into a single file
+        if self.opt_recoil:
+            erd_file_name = fp.get_erd_file_name(
+                self.element_simulation.recoil_elements[0], "test",
+                optim_mode="recoil")
+        else:
+            erd_file_name = fp.get_erd_file_name(
+                self.element_simulation.recoil_elements[0], "test",
+                optim_mode="fluence")
+
+        gf.combine_files(self.element_simulation.get_erd_files(),
+                         Path(self.element_simulation.directory,
+                              erd_file_name))
 
         # Modify measurement file to match the simulation file in regards to
         # the x coordinates -> they have matching values for ease of distance
@@ -142,33 +169,22 @@ class Nsgaii:
         if self.opt_recoil:
             self.find_bit_variable_lengths()
 
-        # Create initial population
-        if starting_solutions:
-            # Change pop_size and sol_size to match given solutions
-            self.__start = time.clock()
-            self.population = self.evaluate_solutions(starting_solutions)
-        else:
-            self.population = self.initialize_population()
+        return True
 
-        # If mcerd run was stopped by closing the widget -> optimization
-        # needs to stop
-        if self.element_simulation.optimization_stopped:
-            return
-        self.start_optimization()
-
-    def crowding_distance(self, front_no, pop_obj=None):
+    @classmethod
+    def crowding_distance(cls, front_no, objective_values):
         """
         Calculate crowding distnce for each solution in the population, by the
         Pareto front it belongs to.
 
         Args:
             front_no: Front numbers for all solutions.
+            objective_values: collection of objective values
 
         Return:
             Array that holds crowding distances for all solutions.
         """
-        if pop_obj is None:
-            pop_obj = self.population[1]
+        pop_obj = np.array(objective_values)
         n, m = np.shape(pop_obj)
         crowd_dis = np.zeros(n)
         # Get all front numbers.
@@ -214,8 +230,7 @@ class Nsgaii:
         Return:
             Solutions and their objective function values.
         """
-        size = len(sols)
-        objective_values = np.zeros((size, 2))
+        objective_values = []
         if self.opt_recoil:
             # Empty the list of optimization recoils
             self.element_simulation.optimization_recoils = []
@@ -243,7 +258,6 @@ class Nsgaii:
                 recoil = self.form_recoil(solution)
                 self.element_simulation.optimization_recoils.append(recoil)
 
-            j = 0
             for recoil in self.element_simulation.optimization_recoils:
                 if self.element_simulation.optimization_stopped:
                     return None
@@ -251,50 +265,13 @@ class Nsgaii:
                 self.element_simulation.calculate_espe(recoil,
                                                        optimize_recoil=True,
                                                        ch=self.channel_width)
-                # Read espe file
-                espe_file = os.path.join(
-                    self.element_simulation.directory, recoil.prefix + "-" +
-                    recoil.name + ".simu")
-                espe = read_espe_file(espe_file)
-                if espe:
-                    # Change from string to float items
-                    espe = list(np.float_(espe))
+                espe_file = Path(self.element_simulation.directory,
+                                 f"{recoil.get_full_name()}.simu")
+                objective_values.append(self.get_objective_values(espe_file))
 
-                    # Make spectra the same size
-                    espe, measured_espe = uniform_espe_lists(
-                        [espe, self.measured_espe],
-                        self.element_simulation.channel_width)
-
-                    # Find the area between simulated and measured energy
-                    # spectra
-                    polygon_points = []
-                    for value in espe:
-                        polygon_points.append(value)
-
-                    for value in measured_espe[::-1]:
-                        polygon_points.append(value)
-
-                    # Add the first point again to close the rectangle
-                    polygon_points.append(polygon_points[0])
-
-                    polygon = Polygon(polygon_points)
-                    area = polygon.area
-                    # Find the summed distance between thw points of these two
-                    # spectra
-                    sum_diff = 0
-                    i = 0
-                    for point in measured_espe:
-                        simu_point = espe[i]
-                        diff = abs(point[1] - simu_point[1])
-                        sum_diff += diff
-                        i += 1
-                    objective_values[j] = np.array([area, sum_diff])
-                else:  # If failed to create energy spectrum
-                    objective_values[j] = np.array([np.inf, np.inf])
-                j += 1
         else:  # Evaluate fluence
-            # self.mcerd_run = True
             if not self.mcerd_run:
+                # TODO maybe move this to the __prepare method?
                 self.element_simulation.start(self.number_of_processes, 201,
                                               optimize=True,
                                               stop_p=self.stop_percent,
@@ -306,13 +283,12 @@ class Nsgaii:
                     return None
                 self.mcerd_run = True
 
-            j = 0
             recoil = self.element_simulation.recoil_elements[0]
             for solution in sols:
                 if self.element_simulation.optimization_stopped:
                     return None
                 # Round solution appropriately
-                sol_fluence = round_value_by_four_biggest(solution[0])
+                sol_fluence = gf.round_value_by_four_biggest(solution[0])
                 # Run get_espe
                 self.element_simulation.calculate_espe(recoil,
                                                        optimize_recoil=False,
@@ -320,49 +296,53 @@ class Nsgaii:
                                                        fluence=sol_fluence,
                                                        optimize_fluence=True)
                 # Read espe file
-                espe_file = os.path.join(
-                    self.element_simulation.directory, recoil.prefix +
-                    "-optfl.simu")
-                espe = read_espe_file(espe_file)
-                if espe:
-                    # Change from string to float items
-                    espe = list(np.float_(espe))
+                # TODO should it be recoil.get_full_name?
+                espe_file = Path(self.element_simulation.directory,
+                                 recoil.prefix + "-optfl.simu")
 
-                    # Make spectra the same size
-                    espe, measured_espe = uniform_espe_lists(
-                        [espe, self.measured_espe],
-                        self.element_simulation.channel_width)
+                objective_values.append(self.get_objective_values(espe_file))
 
-                    # Find the area between simulated and measured energy
-                    # spectra
-                    polygon_points = []
-                    for value in espe:
-                        polygon_points.append(value)
+        pop = collections.namedtuple("Population",
+                                     ("solutions", "objective_values"))
+        return pop(sols, objective_values)
 
-                    for value in measured_espe[::-1]:
-                        polygon_points.append(value)
+    def get_objective_values(self, espe_file):
+        """Calculates the objective values and returns them as a np.array.
+        """
+        obj_values = collections.namedtuple("ObjectiveValues",
+                                            ("area", "sum_distance"))
+        optim_espe = gf.read_espe_file(espe_file)
+        if optim_espe:
+            # Change from string to float items
+            optim_espe = list(np.float_(optim_espe))
 
-                    # Add the first point again to close the rectangle
-                    polygon_points.append(polygon_points[0])
+            # Make spectra the same size
+            optim_espe, measured_espe = gf.uniform_espe_lists(
+                [optim_espe, self.measured_espe],
+                self.element_simulation.channel_width)
 
-                    polygon = Polygon(polygon_points)
-                    area = polygon.area
-                    # Find the summed distance between thw points of these two
-                    # spectra
-                    sum_diff = 0
-                    i = 0
-                    for point in measured_espe:
-                        simu_point = espe[i]
-                        diff = abs(point[1] - simu_point[1])
-                        sum_diff += diff
-                        i += 1
-                    objective_values[j] = np.array([area, sum_diff])
-                else:  # If failed to create energy spectrum
-                    objective_values[j] = np.array([np.inf, np.inf])
-                j += 1
+            # Find the area between simulated and measured energy
+            # spectra
+            polygon_points = []
+            for value in optim_espe:
+                polygon_points.append(value)
 
-        population = [sols, objective_values]
-        return population
+            for value in measured_espe[::-1]:
+                polygon_points.append(value)
+
+            # Add the first point again to close the rectangle
+            polygon_points.append(polygon_points[0])
+
+            polygon = Polygon(polygon_points)
+            area = polygon.area
+            # Find the summed distance between thw points of these two
+            # spectra
+            sum_diff = sum(abs(opt_p[1] - mesu_p[1])
+                           for opt_p, mesu_p in zip(optim_espe, measured_espe))
+
+            return obj_values(area, sum_diff)
+        # If failed to create energy spectrum
+        return obj_values(np.inf, np.inf)
 
     def find_bit_variable_lengths(self):
         # Find needed size to hold x and y in binary
@@ -599,31 +579,14 @@ class Nsgaii:
                 if self.sol_size == 5:  # 4-point recoil
                     # Needed variables per solution for 4-point recoil:
                     # x0, y0, x1, y1, x2 (x0, y1 and x2 constants)
-                    # Create x coordinates (ints)
-                    x_coords = np.random.randint(int(x_lower * 100),
-                                                 int(x_upper * 100) + 1,
-                                                 size=(self.pop_size - 1))
-                    # Make x coords have the correct decimal precision
-                    x_coords = np.around(x_coords/100, 2)
-                    # Add x0
-                    zeros = np.zeros(self.pop_size - 1)
-                    x_coords = np.vstack((zeros, x_coords)).T
-                    # Add x0 index to constant variables
+
+                    x_coords = get_xs(x_lower, x_upper, self.pop_size)
+
                     self.__const_var_i.append(0)
-                    # Make last x match the upper limit, add to constants
-                    x_lasts = np.full((self.pop_size - 1, 1), x_upper)
-                    x_coords = np.append(x_coords, x_lasts, axis=1)
                     self.__const_var_i.append(4)
 
-                    # Create y coordinates
-                    y_coords = np.random.randint(int(y_lower * 10000),
-                                                 int(y_upper * 10000) + 1,
-                                                 size=(self.pop_size - 1))
-                    # Make y coords have the correct decimal precision
-                    y_coords = np.around(y_coords / 10000, 4)
-                    # Make last y coords be lower limit
-                    y_lasts = np.full(self.pop_size - 1, y_lower)
-                    y_coords = np.array([y_coords, y_lasts])
+                    y_coords = get_ys(y_lower, y_upper, self.pop_size)
+
                     # Add y1 to constants
                     self.__const_var_i.append(3)
 
@@ -642,34 +605,15 @@ class Nsgaii:
                 else:  # Handle 6-point recoil
                     # Needed variables per solution for 6-point recoil:
                     # x0, y0, x1, y1, x2, y2, x3 (x0, y0, y2 and x3 constants)
-                    # Create x coordinates (ints)
-                    x_coords = np.random.randint(int(x_lower * 100),
-                                                 int(x_upper * 100) + 1,
-                                                 size=(self.pop_size - 1, 2))
-                    # Make x coords have the correct decimal precision
-                    x_coords = np.around(x_coords / 100, 2)
-                    # Add x0
-                    zeros = np.zeros(self.pop_size - 1)
-                    x_coords = np.insert(x_coords, 0, zeros, axis=1)
+                    x_coords = get_xs(x_lower, x_upper, self.pop_size, 2)
+
                     # Add x0 index to constant variables
                     self.__const_var_i.append(0)
-
-                    # Make x3 match the upper limit, add to constants
-                    x_lasts = np.full((self.pop_size - 1, 1), x_upper)
-                    x_coords = np.append(x_coords, x_lasts, axis=1)
                     self.__const_var_i.append(6)
 
-                    # Create y coordinates
-                    y_coords = np.random.randint(int(y_lower * 10000),
-                                                 int(y_upper * 10000) + 1,
-                                                 size=(self.pop_size - 1))
-                    # Make y coords have the correct decimal precision
-                    y_coords = np.around(y_coords / 10000, 4)
-                    # Make y0 coords be lower limit
-                    y_firsts = np.full(self.pop_size - 1, y_lower)
-                    # Make y2 coords be lower limit
-                    y_lasts = np.full(self.pop_size - 1, y_lower)
-                    y_coords = np.array([y_firsts, y_coords, y_lasts])
+                    y_coords = get_ys(y_lower, y_upper, self.pop_size,
+                                      lower_limit_at_first=True)
+
                     # Add y0 and y2 to constants
                     self.__const_var_i.append(1)
                     self.__const_var_i.append(5)
@@ -694,34 +638,14 @@ class Nsgaii:
                     # Needed variables per solution for 6-point recoil:
                     # x0, y0, x1, y1, x2, y2, x3, y3, x4
                     # (x0, y3 and x4 constants)
-                    # Create x coordinates (ints)
-                    x_coords = np.random.randint(int(x_lower * 100),
-                                                 int(x_upper * 100) + 1,
-                                                 size=(self.pop_size - 1, 3))
+                    x_coords = get_xs(x_lower, x_upper, self.pop_size, 3)
 
-                    # Make x coords have the correct decimal precision
-                    x_coords = np.around(x_coords / 100, 2)
-                    # Add x0
-                    zeros = np.zeros(self.pop_size - 1)
-                    x_coords = np.insert(x_coords, 0, zeros, axis=1)
                     # Add x0 index to constant variables
                     self.__const_var_i.append(0)
-
-                    # Make x4 match the upper limit, add to constants
-                    x_lasts = np.full((self.pop_size - 1, 1), x_upper)
-                    x_coords = np.append(x_coords, x_lasts, axis=1)
                     self.__const_var_i.append(8)
 
-                    # Create y coordinates
-                    y_coords = np.random.randint(int(y_lower * 10000),
-                                                 int(y_upper * 10000) + 1,
-                                                 size=(3, self.pop_size - 1))
-                    # Make y coords have the correct decimal precision
-                    y_coords = np.around(y_coords / 10000, 4)
-                    # Make y3 coords be lower limit
-                    y_lasts = np.full(self.pop_size - 1, y_lower)
-                    y_coords = np.array([y_coords[0], y_coords[1],
-                                         y_coords[2], y_lasts])
+                    y_coords = get_ys(y_lower, y_upper, self.pop_size, z=3)
+
                     # Add y3 to constants
                     self.__const_var_i.append(7)
 
@@ -745,36 +669,14 @@ class Nsgaii:
                     # Needed variables per solution for 6-point recoil:
                     # x0, y0, x1, y1, x2, y2, x3, y3, x4, y4, x5
                     # (x0, y0, y4 and x5 constants)
-                    # Create x coordinates (ints)
-                    x_coords = np.random.randint(int(x_lower * 100),
-                                                 int(x_upper * 100) + 1,
-                                                 size=(self.pop_size - 1, 4))
+                    x_coords = get_xs(x_lower, x_upper, self.pop_size, 4)
 
-                    # Make x coords have the correct decimal precision
-                    x_coords = np.around(x_coords / 100, 2)
-                    # Add x0
-                    zeros = np.zeros(self.pop_size - 1)
-                    x_coords = np.insert(x_coords, 0, zeros, axis=1)
-                    # Add x0 index to constant variables
                     self.__const_var_i.append(0)
-
-                    # Make x5 match the upper limit, add to constants
-                    x_lasts = np.full((self.pop_size - 1, 1), x_upper)
-                    x_coords = np.append(x_coords, x_lasts, axis=1)
                     self.__const_var_i.append(10)
 
-                    # Create y coordinates
-                    y_coords = np.random.randint(int(y_lower * 10000),
-                                                 int(y_upper * 10000) + 1,
-                                                 size=(3, self.pop_size - 1))
-                    # Make y coords have the correct decimal precision
-                    y_coords = np.around(y_coords / 10000, 4)
-                    # Make y0 coords be lower limit
-                    y_firsts = np.full(self.pop_size - 1, y_lower)
-                    # Make y4 coords be lower limit
-                    y_lasts = np.full(self.pop_size - 1, y_lower)
-                    y_coords = np.array([y_firsts, y_coords[0], y_coords[1],
-                                         y_coords[2], y_lasts])
+                    y_coords = get_ys(y_lower, y_upper, self.pop_size, z=3,
+                                      lower_limit_at_first=True)
+
                     # Add y0 and y4 to constants
                     self.__const_var_i.append(1)
                     self.__const_var_i.append(9)
@@ -809,7 +711,6 @@ class Nsgaii:
                 i += 2
                 j += 1
         else:  # Initialize a population for fluence
-            pass
             # Change upper and lower limits to have individual indices
             #  for each solution (makes variation easier for real values)
             upper_limits = np.zeros((1, self.sol_size))
@@ -842,6 +743,8 @@ class Nsgaii:
         # Add zero points to start and end to get correct mean values
         first_x = self.measured_espe[0][0]
         last_x = self.measured_espe[-1][0]
+
+        # TODO could use deque for quicker inserts
         self.measured_espe.insert(
             0, (round(first_x - self.element_simulation.channel_width, 4), 0.0))
         self.measured_espe.append(
@@ -857,7 +760,8 @@ class Nsgaii:
             i += 1
         self.measured_espe = new
 
-    def nd_sort(self, pop_obj, n, r_n=np.inf):
+    @classmethod
+    def nd_sort(cls, pop_obj, n, r_n=np.inf):
         """
         Sort population pop_obj according to non-domination.
 
@@ -871,7 +775,7 @@ class Nsgaii:
             last front found.
         """
         if r_n == np.inf:
-            r_n = self.pop_size
+            r_n = n
         # Coded according to algorithm given by Deb(2002)
         # Go through all solutions
         front_no = np.inf * np.ones(n)
@@ -890,9 +794,9 @@ class Nsgaii:
                 q = pop_obj[h]
                 if np.array_equal(p, q):
                     continue
-                if dominates(p, q):
+                if opt.dominates(p, q):
                     s_p.append((q, h))
-                elif dominates(q, p):
+                elif opt.dominates(q, p):
                     n_p += 1
             if n_p == 0:
                 front_no[i] = 1
@@ -927,21 +831,22 @@ class Nsgaii:
             fronts += 1
         return front_no, fronts
 
-    def new_population_selection(self, population):
+    @classmethod
+    def new_population_selection(cls, population, pop_size):
         """
         Select individuals to a new population based on crowded comparison
         operator.
 
         Args:
             population: Current intermediate population.
+            pop_size: TODO
 
         Return:
             Next generation population.
         """
         pop_n, t = np.shape(population[0])
         # Sort intermediate population based on non-domination
-        front_no, last_front_no = self.nd_sort(population[1], pop_n,
-                                               self.pop_size)
+        front_no, last_front_no = Nsgaii.nd_sort(population[1], pop_n, pop_size)
         include_in_next = [False for i in range(front_no.size)]
         # Find all individuals that belong to better fronts, except the last one
         # that doesn't fit
@@ -949,14 +854,14 @@ class Nsgaii:
             if front_no[i] < last_front_no:
                 include_in_next[i] = True
         # Calculate crowding distance for all individuals
-        crowd_dis = self.crowding_distance(front_no, population[1])
+        crowd_dis = Nsgaii.crowding_distance(front_no, population[1])
 
         # Find last front that maybe doesn't fit properly
         last = [i for i in range(len(front_no)) if front_no[i] == last_front_no]
         # Rank holds the indices corresponding to last that have crowding
         # distance from biggest to smallest
         rank = np.argsort(-crowd_dis[last])
-        delta_n = rank[: (self.pop_size - int(np.sum(include_in_next)))]
+        delta_n = rank[: (pop_size - int(np.sum(include_in_next)))]
         # Get indices corresponding to population for individuals to be included
         #  in the next generation.
         rest = [last[i] for i in delta_n]
@@ -968,20 +873,40 @@ class Nsgaii:
 
         return next_pop, front_no[index], crowd_dis[index]
 
-    def start_optimization(self):
+    def start_optimization(self, starting_solutions=None):
         """
         Start the optimization. This includes sorting based on
         non-domination and crowding distance, creating offspring population
         by crossover and mutation, and selecting individuals to the new
         population.
+
+        Args:
+            starting_solutions: First solutions used in optimization. If
+                None, initialize new solutions.
         """
+        if not self.__prepare_optimization():
+            # TODO could also raise error
+            return
+
+        # TODO timer might be better choice as time.clock depends on the
+        #  platform
+        # https://docs.python.org/3.6/library/time.html#time.clock
+        self.__start = time.clock()
+
+        # Create initial population
+        if starting_solutions is not None:
+            # Change pop_size and sol_size to match given solutions
+            self.population = self.evaluate_solutions(starting_solutions)
+        else:
+            self.population = self.initialize_population()
+
         # Sort the initial population according to non-domination
         front_no, last_front_no = self.nd_sort(self.population[1],
                                                self.pop_size)
         # Initial population is sorted according to non-domination, without
         # crowding distance. crowd_dis is still needed when initial population
         # is joined with the offspring population.
-        crowd_dis = self.crowding_distance(front_no)
+        crowd_dis = self.crowding_distance(front_no, self.population[1])
         # In a loop until number of evaluations is reached:
         evaluations = self.evaluations
         while evaluations > 0:
@@ -990,8 +915,9 @@ class Nsgaii:
             # Select group of parents (mating pool) by binary_tournament,
             # usually number of parents is half of population.
             pool_size = round(self.pop_size / 2)
-            pool_ind = tournament_allow_doubles(2, pool_size, fit)
-            pop_sol, pop_obj = self.population[0], self.population[1]
+            pool_ind = opt.tournament_allow_doubles(2, pool_size, fit)
+            pop_sol, pop_obj = np.array(self.population[0]), \
+                               np.array(self.population[1])
             pool = [pop_sol[pool_ind, :], pop_obj[pool_ind, :]]
             # Form offspring solutions with this pool, and do variation on them
             offspring = self.variation(pool[0])
@@ -1007,7 +933,7 @@ class Nsgaii:
             # population (size self.pop_size) based on non-domination and
             # crowding distance
             new_population, front_no, crowd_dis = self.new_population_selection(
-                intermediate_population)
+                intermediate_population, self.pop_size)
             # Change surrent population to new population
             self.population = new_population
 
@@ -1034,28 +960,15 @@ class Nsgaii:
         pareto_optimal_sols = self.population[0][front_no == 1, :]
         pareto_optimal_objs = self.population[1][front_no == 1, :]
         if self.opt_recoil:
-            # Find front's first and last individual: these two are the
-            # solutions the user needs
-            first = pareto_optimal_objs[0]
-            last = pareto_optimal_objs[-1]
-            f_i = 0
-            l_i = len(pareto_optimal_objs) - 1
-            for i in range(1, len(pareto_optimal_objs)):
-                current = pareto_optimal_objs[i]
-                if current[0] > last[0]:
-                    last = current
-                    l_i = i
-                if current[1] > first[1]:
-                    first = current
-                    f_i = i
+            first_sol, med_sol, last_sol = pick_final_solutions(
+                pareto_optimal_objs, pareto_optimal_sols, count=3)
 
-            first_sol  = pareto_optimal_sols[f_i]
-            last_sol = pareto_optimal_sols[l_i]
-
-            # Save the two pareto solutions as recoils
+            # Save the three pareto solutions as recoils
             self.element_simulation.optimization_recoils = []
             first_recoil = self.form_recoil(first_sol, "optfirst")
             self.element_simulation.optimization_recoils.append(first_recoil)
+            med_recoil = self.form_recoil(med_sol, "optmed")
+            self.element_simulation.optimization_recoils.append(med_recoil)
             last_recoil = self.form_recoil(last_sol, "optlast")
             self.element_simulation.optimization_recoils.append(last_recoil)
 
@@ -1086,7 +999,7 @@ class Nsgaii:
     def variation(self, pop_sols):
         """
         Generate offspring population using SBX and polynomial mutation for
-       fluence, and simple binary crossover and binary
+        fluence, and simple binary crossover and binary
         mutation for recoil element points.
 
         Args:
@@ -1117,28 +1030,12 @@ class Nsgaii:
                 # Transform child 1 and 2 into binary mode, to match the
                 # possible values when taking decimal precision into account
                 # Transform variables into binary
-                for i in range(len(parent_1)):
-                    if i % 2 == 0:
-                        # Get rid of decimals
-                        var = int(parent_1[i] * 100)
-                        format_x = format_to_binary(var, self.bit_length_x)
-                        binary_parent_1.append(format_x)
-                    else:
-                        # Get rid of decimals
-                        var = int(parent_1[i] * 10000)
-                        format_y = format_to_binary(var, self.bit_length_y)
-                        binary_parent_1.append(format_y)
-                for i in range(len(parent_2)):
-                    if i % 2 == 0:
-                        # Get rid of decimals
-                        var = int(parent_2[i] * 100)
-                        format_x = format_to_binary(var, self.bit_length_x)
-                        binary_parent_2.append(format_x)
-                    else:
-                        # Get rid of decimals
-                        var = int(parent_2[i] * 10000)
-                        format_y = format_to_binary(var, self.bit_length_y)
-                        binary_parent_2.append(format_y)
+                binary_parent_1 = solution_to_binary(parent_1,
+                                                     self.bit_length_x,
+                                                     self.bit_length_y)
+                binary_parent_2 = solution_to_binary(parent_2,
+                                                     self.bit_length_x,
+                                                     self.bit_length_y)
                 child_1 = binary_parent_1
                 child_2 = binary_parent_2
             else:
@@ -1147,45 +1044,14 @@ class Nsgaii:
             if np.random.uniform() <= self.cross_p:  # Do crossover.
                 # Select between real coded of binary handling
                 if self.opt_recoil:
-                    # Do binary crossover
-                    # Find random point to do the cut
-                    rand_i = np.random.randint(0, len(binary_parent_1))
-                    # Create heads and tails
-                    head_1 = binary_parent_1[:rand_i]
-                    tail_1 = binary_parent_1[rand_i:]
-                    head_2 = binary_parent_2[:rand_i]
-                    tail_2 = binary_parent_2[rand_i:]
-                    # Join to make new children
-                    binary_child_1 = head_1 + tail_2
-                    binary_child_2 = head_2 + tail_1
-
-                    child_1 = binary_child_1
-                    child_2 = binary_child_2
+                    child_1, child_2 = opt.single_point_crossover(
+                        binary_parent_1, binary_parent_2)
 
                 else:  # Fluence finding crossover
-                    for j in range(self.sol_size):
-                        # Simulated Binary Crossover - SBX
-                        u = np.random.uniform()
-                        if u <= 0.5:
-                            beta = (2*u) ** (1/(self.dis_c + 1))
-                        else:
-                            beta = (1/(2*(1 - u)))**(1/(self.dis_c + 1))
-                        c_1 = 0.5*((1 + beta)*parent_1[j] +
-                                       (1 - beta)*parent_2[j])
-                        c_2 = 0.5*((1 - beta)*parent_1[j] +
-                                       (1 + beta)*parent_2[j])
-
-                        if c_1 > self.upper_limits[j]:
-                            c_1 = self.upper_limits[j]
-                        elif c_1 < self.lower_limits[j]:
-                            c_1 = self.lower_limits[j]
-                        if c_2 > self.upper_limits[j]:
-                            c_2 = self.upper_limits[j]
-                        elif c_2 < self.lower_limits[j]:
-                            c_2 = self.lower_limits[j]
-
-                        child_1 = c_1
-                        child_2 = c_2
+                    child_1, child_2 = opt.simulated_binary_crossover(
+                        parent_1, parent_2, self.lower_limits,
+                        self.upper_limits, self.dis_c, self.sol_size
+                    )
 
             offspring.append(child_1)
             p += 1
@@ -1330,3 +1196,108 @@ class Nsgaii:
             offspring = offspring_limits
 
         return np.array(offspring)
+
+
+def solution_to_binary(solution, bit_length_x, bit_length_y):
+    """Returns a binary representation of a solution.
+    """
+    bin_sol = []
+    for i in range(len(solution)):
+        if i % 2 == 0:
+            # Get rid of decimals
+            var = int(solution[i] * 100)
+            format_x = gf.format_to_binary(var, bit_length_x)
+            bin_sol.append(format_x)
+        else:
+            # Get rid of decimals
+            var = int(solution[i] * 10000)
+            format_y = gf.format_to_binary(var, bit_length_y)
+            bin_sol.append(format_y)
+    return bin_sol
+
+
+def pick_final_solutions(objective_values, solutions, count=2):
+    """Picks solutions from the given set of solutions based on the
+    corresponding objective values.
+
+    Args:
+        objective_values: collections of objective values
+        solutions: collections of solutions
+        count: how many solutions to return (2 or 3)
+
+    Returns:
+        tuple of solutions. Either (first solution, last solution) or
+        (first solution, median solution, last solution) depending on
+        the count parameter.
+    """
+    # Find front's first and last individual: these two are the
+    # solutions the user needs
+    if not 2 <= count <= 3:
+        raise ValueError("Solution count must be either 2 or 3.")
+
+    zipped = list(zip(objective_values, solutions))
+
+    # TODO if we assume that the solutions are pareto optimal, only one
+    #  sorting is enough
+    sorted_by_area = sorted(zipped, key=lambda tpl: tpl[0][0])
+    sorted_by_distance = sorted(zipped, key=lambda tpl: tpl[0][1])
+
+    first, last = sorted_by_area[0][1], sorted_by_distance[0][1]
+
+    if count == 3:
+        return first, sorted_by_distance[len(sorted_by_distance) // 2][1], last
+    return first, last
+
+
+def get_xs(x_lower, x_upper, pop_size, z=None):
+    """Returns x coordinates for all initial solutions.
+    """
+    if z is None:
+        size = pop_size - 1
+    else:
+        size = (pop_size - 1, z)
+    # Create x coordinates (ints)
+    x_coords = np.random.randint(int(x_lower * 100),
+                                 int(x_upper * 100) + 1,
+                                 size=size)
+    # Make x coords have the correct decimal precision
+    x_coords = np.around(x_coords / 100, 2)
+    # Add x0
+    zeros = np.zeros(pop_size - 1)
+    if z is None:
+        x_coords = np.vstack((zeros, x_coords)).T
+    else:
+        x_coords = np.insert(x_coords, 0, zeros, axis=1)
+
+    # Make last x match the upper limit, add to constants
+    x_lasts = np.full((pop_size - 1, 1), x_upper)
+    return np.append(x_coords, x_lasts, axis=1)
+
+
+def get_ys(y_lower, y_upper, pop_size, z=None, lower_limit_at_first=False):
+    """Returns y coordinates for all initial solutions.
+    """
+    if z is None:
+        size = pop_size - 1
+    else:
+        size = (z, pop_size - 1)
+    # Create y coordinates
+    y_coords = np.random.randint(int(y_lower * 10000),
+                                 int(y_upper * 10000) + 1,
+                                 size=size)
+    # Make y coords have the correct decimal precision
+    y_coords = np.around(y_coords / 10000, 4)
+    # Make y2 coords be lower limit
+    low_limit = np.full(pop_size - 1, y_lower)
+
+    if z is None:
+        # Make y0 coords be lower limit
+        if lower_limit_at_first:
+            return np.array([low_limit, y_coords, low_limit])
+        else:
+            return np.array([y_coords, low_limit])
+    else:
+        if lower_limit_at_first:
+            return np.array([low_limit, y_coords[0], y_coords[1],
+                             y_coords[2], low_limit])
+    return np.array([y_coords[0], y_coords[1], y_coords[2], low_limit])
