@@ -343,35 +343,6 @@ class ElementSimulation(Observable):
                            + ".simu"
                 gf.rename_file(simu_file, new_name)
 
-    def calculate_solid(self):
-        """
-        Calculate the solid parameter.
-        Return:
-            Returns the solid parameter calculated.
-        """
-        transmissions = self.detector.foils[0].transmission
-        for f in self.detector.foils:
-            transmissions *= f.transmission
-
-        smallest_solid_angle = self.calculate_smallest_solid_angle()
-
-        return smallest_solid_angle * transmissions
-
-    def calculate_smallest_solid_angle(self):
-        """
-        Calculate the smallest solid angle.
-        Return:
-            Smallest solid angle. (unit millisteradian)
-        """
-        # TODO this seems to be called often when optimizing. If the foil
-        #      collection is not changing, result could be cached
-        # TODO this could also be a function of the detector
-        try:
-            return min(foil.get_solid_angle(units="msr")
-                       for foil in self.detector.foils)
-        except ZeroDivisionError:
-            return 0
-
     @classmethod
     def from_file(cls, request, prefix, simulation_folder, mcsimu_file_path,
                   profile_file_path, sample=None, detector=None):
@@ -431,7 +402,7 @@ class ElementSimulation(Observable):
         main_recoil = None
         optimized_fluence = None
         recoil_elements = deque()
-        optimized_recoils = deque()
+        optimized_recoils_dict = {}
 
         for file in os.listdir(simulation_folder):
             if fp.is_recoil_file(prefix, file):
@@ -447,9 +418,11 @@ class ElementSimulation(Observable):
 
                 # Check whether element in regular or part of optimized recoils
                 if fp.is_optfirst(prefix, file):
-                    optimized_recoils.appendleft(rec_elem)
+                    optimized_recoils_dict[0] = rec_elem
+                elif fp.is_optmed(prefix, file):
+                    optimized_recoils_dict[1] = rec_elem
                 elif fp.is_optlast(prefix, file):
-                    optimized_recoils.append(rec_elem)
+                    optimized_recoils_dict[2] = rec_elem
                 else:
                     # Find if file has a matching erd file (=has been simulated)
                     for f in os.listdir(simulation_folder):
@@ -468,7 +441,9 @@ class ElementSimulation(Observable):
             elif fp.is_optfl_result(prefix, file):
                 with open(Path(simulation_folder, file), "r") as f:
                     optimized_fluence = float(f.readline())
-
+        optimized_recoils = [val
+                             for key, val
+                             in sorted(optimized_recoils_dict.items())]
         return cls(directory=simulation_folder,
                    request=request,
                    recoil_elements=recoil_elements,
@@ -485,11 +460,8 @@ class ElementSimulation(Observable):
                    **mcsimu)
 
     def get_full_name(self):
-        """Returns the full name of the ElementSimulation object."""
-        # TODO if either the name or the prefix contains a '-', this naming
-        #      scheme becomes ambiguous
-        # TODO check the difference between this and recoil element
-        #  get_full_name
+        """Returns the full name of the ElementSimulation object.
+        """
         if self.name_prefix:
             return f"{self.name_prefix}-{self.name}"
         return self.name
@@ -711,13 +683,7 @@ class ElementSimulation(Observable):
                 # TODO maybe this file should be kept when optimizing
                 os.remove(new_erd_file)
 
-            if optimize:
-                self.optimization_mcerd_running = True
-                # files = (f for f, _, _ in self.__erd_filehandler)
-                # TODO get_espe takes the output of 'cat file.*.cut' as its
-                #  input. Either rename the combined file to match the wild
-                #  card or use a wild card that matches existing .erd files
-                # gf.combine_files(files, new_erd_file)
+            self.optimization_mcerd_running = optimize
 
             mcerd = MCERD(settings,
                           self,
@@ -819,6 +785,11 @@ class ElementSimulation(Observable):
             maximum seed value used in simulation processes
         """
         return self.__erd_filehandler.get_max_seed()
+
+    def get_erd_files(self):
+        """Returns both active and already simulated ERD files.
+        """
+        return list(f for f, _, _ in self.__erd_filehandler)
 
     def check_status(self):
         """Periodically checks the status of simulation and reports the status
@@ -1092,7 +1063,7 @@ class ElementSimulation(Observable):
             "multiplier": recoil_element.multiplier,
             "fluence": used_fluence,
             "timeres": detector.timeres,
-            "solid": self.calculate_solid(),
+            "solid": detector.calculate_solid(),
             "erd_file": erd_file,
             "spectrum_file": spectrum_file,
             "recoil_file": recoil_file

@@ -87,3 +87,45 @@ def tournament_allow_doubles(t, p, fit):
             pool.append(min_candidates[0])
 
     return np.array(pool)
+
+
+def single_point_crossover(parent1, parent2):
+    # Find random point to do the cut
+    rand_i = np.random.randint(0, len(parent1))
+    # Create heads and tails
+    head_1 = parent1[:rand_i]
+    tail_1 = parent1[rand_i:]
+    head_2 = parent2[:rand_i]
+    tail_2 = parent2[rand_i:]
+    # Join to make new children
+    binary_child_1 = head_1 + tail_2
+    binary_child_2 = head_2 + tail_1
+
+    return binary_child_1, binary_child_2
+
+
+def simulated_binary_crossover(parent1, parent2, lower_limits, upper_limits,
+                               dis_c, sol_size):
+    # TODO sol_size is probably always same as parent sizes?
+    for j in range(sol_size):
+        # Simulated Binary Crossover - SBX
+        u = np.random.uniform()
+        if u <= 0.5:
+            beta = (2*u) ** (1/(dis_c + 1))
+        else:
+            beta = (1/(2*(1 - u)))**(1/(dis_c + 1))
+        c_1 = 0.5*((1 + beta)*parent1[j] +
+                   (1 - beta)*parent2[j])
+        c_2 = 0.5*((1 - beta)*parent1[j] +
+                   (1 + beta)*parent2[j])
+
+        if c_1 > upper_limits[j]:
+            c_1 = upper_limits[j]
+        elif c_1 < lower_limits[j]:
+            c_1 = lower_limits[j]
+        if c_2 > upper_limits[j]:
+            c_2 = upper_limits[j]
+        elif c_2 < lower_limits[j]:
+            c_2 = lower_limits[j]
+
+    return c_1, c_2

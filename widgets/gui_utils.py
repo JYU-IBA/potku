@@ -26,11 +26,15 @@ __version__ = "2.0"
 
 import abc
 import platform
+import os
+import json
 
 from modules.observing import ProgressReporter
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
+
+from PyQt5.QtCore import QTime
 
 
 if platform.system() == "Darwin":
@@ -54,31 +58,38 @@ def process_event_loop(func):
     return wrapper
 
 
-def switch_buttons(func, button_a, button_b):
+def switch_buttons(button_a, button_b):
     """Decorator for that switches the status of two buttons.
 
-    First button is switched before the execution of a function and
-    second one is switched after the execution.
+    This decorator must be used in an object instance that has reference
+    to button_a and button_b.
+
+    Args:
+        button_a: name of a reference to a Qt button.
+        button_b: name of a reference to a Qt button.
     """
-    # This decorator may not be particularly useful as there must be
-    # a reference to the buttons at the time the interpreter reads the
-    # decorated function declaration. Also no thread safety in here.
-    def wrapper(*args, **kwargs):
-        button_a.setEnabled(not button_a.isEnabled())
-        res = func(*args, **kwargs)
-        button_b.setEnabled(not button_b.isEnabled())
-        return res
-    return wrapper
+    def outer(func):
+        def inner(self, *args, **kwargs):
+            # TODO exception handling
+            btn_a = getattr(self, button_a)
+            btn_a.setEnabled(not btn_a.isEnabled())
+            _process_event_loop()
+
+            res = func(self, *args, **kwargs)
+
+            btn_b = getattr(self, button_b)
+            btn_b.setEnabled(not btn_b.isEnabled())
+            _process_event_loop()
+            return res
+        return inner
+    return outer
 
 
 class QtABCMeta(type(QtCore.QObject), abc.ABCMeta):
-    """A common metaclass for ABCs and QWidgets.
+    """A common metaclass for ABCs and QObjects.
 
-    QWidget has the metaclass 'sip.wrappertype' which causes a conflict
-    in multi-inheritance with an ABC.
-
-    Originally this was intended as a metaclass for QWidgets and Observers
-    but since Observers are no longer ABCs, this class may not be needed.
+    QObject has the metaclass 'sip.wrappertype' which causes a conflict
+    in multi-inheritance with an ABC. This metaclass fixes that issue.
     """
     pass
 
@@ -157,3 +168,204 @@ class StatusBarHandler(ProgressReporter):
         if self.progress_bar is not None:
             self.progress_bar.hide()
 
+
+def from_qtime(qtime: QTime) -> int:
+    """Converts QTime object to seconds.
+    """
+    return qtime.hour() * 60 * 60 + qtime.minute() * 60 + qtime.second()
+
+
+def to_qtime(seconds: int) -> QTime:
+    """Converts seconds to QTime.
+    """
+    t = QTime(0, 0, 0).addSecs(seconds)
+    return t
+
+
+def _fget(qobj):
+    """Returns a default getter method based on the type of the given
+    QObject.
+    """
+    if isinstance(qobj, QtWidgets.QTimeEdit):
+        return lambda: from_qtime(qobj.time())
+    if isinstance(qobj, QtWidgets.QComboBox):
+        return qobj.currentText
+    if isinstance(qobj, QtWidgets.QTextEdit):
+        return qobj.toPlainText
+    return qobj.value
+
+
+def _fset(qobj):
+    """Returns a default setter method based on the type of the given
+    QObject.
+    """
+    if isinstance(qobj, QtWidgets.QTimeEdit):
+        return lambda sec: qobj.setTime(to_qtime(sec))
+    if isinstance(qobj, QtWidgets.QTextEdit):
+        return qobj.setText
+    return qobj.setValue
+
+
+class BindingPropertyWidget(abc.ABC):
+    """Base class for a widget that contains bindable properties.
+    """
+    def _get_properties(self):
+        """Returns the names of all properties the widget has.
+        """
+        return (
+            d for d in dir(self)
+            if hasattr(type(self), d) and
+            isinstance(getattr(type(self), d), property)
+        )
+
+    def set_properties(self, **kwargs):
+        """Sets property values.
+
+        Args:
+            kwargs: properties and values as keyword arguments.
+        """
+        for p in self._get_properties():
+            if p in kwargs:
+                try:
+                    setattr(self, p, kwargs[p])
+                except AttributeError:
+                    pass
+
+    def get_properties(self):
+        """Returns a dictionary where key-value pairs are property names and
+        their values.
+        """
+        return {
+            p: getattr(self, p)
+            for p in self._get_properties()
+        }
+
+
+class PropertySavingWidget(BindingPropertyWidget, abc.ABC):
+    """Property widget that saves the current state of its properties
+    to file. Saving is done automatically when the widget closes, unless
+    the inheriting widget overrides the closeEvent function.
+
+    Loading is done by calling the load_properties_from_file function.
+
+    Property values must be JSON encodable.
+    """
+    # TODO maybe do loading in showEvent function
+
+    @abc.abstractmethod
+    def get_property_file_path(self):
+        """Returns Path object to the file that is used to save and load
+        properties.
+        """
+        pass
+
+    def closeEvent(self, event):
+        """Overrides QWidgets closeEvent. Saves the properties to default
+        file.
+        """
+        self.save_properties_to_file(file_path=self.get_property_file_path())
+        event.accept()
+
+    def save_properties_to_file(self, file_path=None):
+        """Saves properties to a file.
+
+        Args:
+            file_path: Path object to a file that is used for saving. If None,
+                widget's default property file location is used.
+        """
+        if file_path is None:
+            file_path = self.get_property_file_path()
+
+        os.makedirs(file_path.parent, exist_ok=True)
+        params = self.get_properties()
+        try:
+            with open(file_path, "w") as file:
+                json.dump(params, file, indent=4)
+        except (PermissionError, IsADirectoryError):
+            pass
+
+    def load_properties_from_file(self, file_path=None):
+        """Loads properties from a file.
+
+        Args:
+            file_path: Path object to a file that is used for loading. If None,
+                widget's default property file location is used.
+        """
+        if file_path is None:
+            file_path = self.get_property_file_path()
+        try:
+            with open(file_path) as file:
+                params = json.load(file)
+        except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError,
+                PermissionError, IsADirectoryError):
+            return
+
+        self.set_properties(**params)
+
+
+def bind(qobj_name, fget=None, fset=None, twoway=True):
+    """Returns a property that is bound to a QObject.
+
+    Widget that uses this function has to have a reference to QObject with
+    given attribute name.
+
+    Args:
+        qobj_name: name of an attribute that is a reference to a QObject
+        fget: function that takes the QObject as parameter and returns the
+            value of the property
+        fset: function that takes the QObject and a value as parameters and
+            sets the value of the QObject to the given value
+        twoway: whether binding is two-way (setting the property also sets
+                the QObject value) or one-way.
+    """
+    def getter(self):
+        qobj = getattr(self, qobj_name)
+        if fget is None:
+            return _fget(qobj)()
+        return fget(qobj)
+
+    def setter(self, value):
+        if twoway:
+            qobj = getattr(self, qobj_name)
+            try:
+                if fset is None:
+                    _fset(qobj)(value)
+                else:
+                    fset(qobj, value)
+            except TypeError:
+                pass
+
+    return property(getter, setter)
+
+
+def nonbind(attr_name):
+    """Returns a regular property for the given attribute name.
+    """
+    def getter(self):
+        return getattr(self, attr_name)
+
+    def setter(self, value):
+        setattr(self, attr_name, value)
+
+    return property(getter, setter)
+
+
+def multi_bind(qobjs, funcs, twoway=True):
+    # TODO refactor this with bind
+    # TODO enable twoway binding with combobox
+    def getter(self):
+        return tuple(
+            conv(_fget(getattr(self, qobj))())
+            for qobj, conv in zip(qobjs, funcs)
+        )
+
+    def setter(self, values):
+        if twoway:
+            for qobj, value in zip(qobjs, values):
+                obj = getattr(self, qobj)
+                try:
+                    _fset(obj)(value)
+                except TypeError:
+                    pass
+
+    return property(getter, setter)
