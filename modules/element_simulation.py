@@ -345,7 +345,7 @@ class ElementSimulation(Observable):
 
     @classmethod
     def from_file(cls, request, prefix, simulation_folder, mcsimu_file_path,
-                  profile_file_path, sample=None):
+                  profile_file_path, sample=None, detector=None):
         """Initialize ElementSimulation from JSON files.
 
         Args:
@@ -362,15 +362,14 @@ class ElementSimulation(Observable):
         with open(mcsimu_file_path) as mcsimu_file:
             mcsimu = json.load(mcsimu_file)
 
-        # Pop the values that need to be converted (name and
-        # use_def_settings) from the dict
-        use_default_settings = mcsimu.pop("use_default_settings") == "True"
+        # Pop the recoil name so it can be converted to a RecoilElement
         main_recoil_name = mcsimu.pop("main_recoil")
-        modification_time = mcsimu.pop("modification_time_unix")
 
-        # This is the time in 'human readable' form. It is not being used
-        # apart from saving to file so it can just be removed
-        mcsimu.pop("modification_time")
+        # Convert modification_time and use_default_settings to correct
+        # types
+        mcsimu["modification_time"] = mcsimu.pop("modification_time_unix")
+        mcsimu["use_default_settings"] = \
+            mcsimu["use_default_settings"] == "True"
 
         full_name = mcsimu.pop("name")
         try:
@@ -441,13 +440,12 @@ class ElementSimulation(Observable):
                    recoil_elements=recoil_elements,
                    name_prefix=name_prefix,
                    name=name,
-                   use_default_settings=use_default_settings,
                    channel_width=channel_width,
                    optimization_recoils=optimized_recoils,
                    optimized_fluence=optimized_fluence,
                    main_recoil=main_recoil,
-                   modification_time=modification_time,
                    sample=sample,
+                   detector=detector,
                    **mcsimu)
 
     def get_full_name(self):
@@ -574,17 +572,10 @@ class ElementSimulation(Observable):
                                 the start process
         """
         self.simulations_done = False
-        if self.run is None:
-            run = self.request.default_run
-        else:
-            run = self.run
-
-        if self.detector is None:
-            detector = self.request.default_detector
-        else:
-            detector = self.detector
 
         elem_sim = self.get_element_simulation()
+
+        target, run, detector = self.get_simulation_parameters()
 
         if not use_old_erd_files:
             self.__erd_filehandler.clear()
@@ -641,7 +632,7 @@ class ElementSimulation(Observable):
                 "simulation_mode": elem_sim.simulation_mode,
                 "seed_number": seed_number,
                 "beam": run.beam,
-                "target": self.target,
+                "target": target,
                 "detector": detector,
                 "recoil_element": recoil,
                 "sim_dir": self.directory
@@ -670,7 +661,6 @@ class ElementSimulation(Observable):
             new_erd_file = Path(self.directory, new_erd_file)
 
             if os.path.exists(new_erd_file):
-                # TODO maybe this file should be kept when optimizing
                 os.remove(new_erd_file)
 
             self.optimization_mcerd_running = optimize
@@ -1017,10 +1007,10 @@ class ElementSimulation(Observable):
             recoil_name = recoil_element.name
             erd_recoil_name = "opt"
 
-        recoil_file = os.path.join(self.directory,
-                                   recoil_element.prefix + "-" +
-                                   recoil_name + suffix)
-        recoil_element.write_recoil_file(recoil_file)
+        recoil_file = os.path.join(self.directory, recoil_element.prefix +
+                                   "-" + recoil_name + suffix)
+        with open(recoil_file) as rec_file:
+            rec_file.write("\n".join(recoil_element.get_mcerd_params()))
 
         erd_file = os.path.join(self.directory, recoil_elements[0].prefix +
                                 "-" + erd_recoil_name + ".*.erd")
@@ -1031,23 +1021,17 @@ class ElementSimulation(Observable):
         else:
             channel_width = self.channel_width
 
-        if self.run is None:
-            run = self.request.default_run
-        else:
-            run = self.run
-        if self.detector is None:
-            detector = self.request.default_detector
-        else:
-            detector = self.detector
+        target, run, detector = self.get_simulation_parameters()
 
         if fluence is not None:
             used_fluence = fluence
         else:
             used_fluence = run.fluence
+
         espe_settings = {
             "beam": run.beam,
             "detector": detector,
-            "target": self.target,
+            "target": target,
             "ch": channel_width,
             "reference_density": recoil_element.reference_density,
             "multiplier": recoil_element.multiplier,
@@ -1060,6 +1044,19 @@ class ElementSimulation(Observable):
         }
         self.get_espe = GetEspe(espe_settings)
         self.get_espe.run_get_espe()
+
+    def get_simulation_parameters(self):
+        if self.simulation is None or self.simulation.use_request_settings:
+            target = self.request.default_target
+            run = self.request.default_run
+            detector = self.request.default_detector
+        else:
+            target = self.target
+            run = self.run
+            detector = self.detector
+
+        return target, run, detector
+
 
     def reset(self, remove_files=True):
         """Function that resets the state of ElementSimulation.

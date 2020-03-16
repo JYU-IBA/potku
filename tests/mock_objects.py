@@ -38,6 +38,7 @@ from modules.beam import Beam
 from modules.target import Target
 from modules.simulation import Simulation
 from modules.run import Run
+from modules.point import Point
 
 
 # This module can be used to generate various helper objects for testing
@@ -70,12 +71,16 @@ def get_target():
 
 def get_recoil_element():
     """Returns a RecoilElement object."""
-    return RecoilElement(get_element(), [], "red")
+    return RecoilElement(get_element(), [
+        Point((1, 1)),
+        Point((2, 2)),
+    ], "red")
 
 
 def get_run():
     """Returns a Run object"""
     return Run(get_beam())
+
 
 def get_element_simulation(request=None):
     """Returns an ElementSimulation object."""
@@ -110,5 +115,6 @@ def get_request():
             self.directory = tempfile.gettempdir()
             self.running_simulations = []
             self.default_run = get_run()
+            self.default_target = get_target()
 
     return MockRequest()

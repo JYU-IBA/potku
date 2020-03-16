@@ -214,7 +214,7 @@ class Sample:
             A list of .simulation file paths.
         """
         all_simulations = []
-        name_prefix = "MC_simulation_"
+        name_prefix = Simulation.DIRECTORY_PREFIX
         all_dirs = os.listdir(os.path.join(self.request.directory,
                                            self.directory))
         all_dirs.sort()

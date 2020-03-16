@@ -95,7 +95,7 @@ class Simulations:
 
         simulation_folder_path, simulation_file = os.path.split(simulation_path)
         sample_folder, simulation_folder = os.path.split(simulation_folder_path)
-        directory_prefix = "MC_simulation_"
+        directory_prefix = Simulation.DIRECTORY_PREFIX
         target_extension = ".target"
         measurement_extension = ".measurement"
         detector_extension = ".detector"
@@ -119,15 +119,32 @@ class Simulations:
                     simulation.run = Run.from_file(
                         os.path.join(
                             simulation.directory, measurement_settings_file))
-                    obj = json.load(open(os.path.join(
-                        simulation.directory, measurement_settings_file)))
-                    simulation.measurement_setting_file_name = obj[
-                        "general"]["name"]
-                    simulation.measurement_setting_file_description = obj[
-                        "general"]["description"]
-                    simulation.modification_time = obj["general"][
-                        "modification_time_unix"]
+                    with open(
+                            os.path.join(simulation.directory,
+                                         measurement_settings_file)) as mesu_f:
+                        mesu_settings = json.load(mesu_f)
+
+                    simulation.measurement_setting_file_name = \
+                        mesu_settings["general"]["name"]
+                    simulation.measurement_setting_file_description = \
+                        mesu_settings["general"]["description"]
+                    simulation.modification_time = \
+                        mesu_settings["general"]["modification_time_unix"]
                     break
+
+            # Read Detector information from file.
+            det_folder = os.path.join(simulation_folder_path,
+                                      "Detector")
+            if os.path.isdir(det_folder):
+                for file in os.listdir(det_folder):
+                    if file.endswith(detector_extension):
+                        simulation.detector = Detector.from_file(
+                            os.path.join(det_folder, file),
+                            os.path.join(simulation.directory,
+                                         measurement_settings_file),
+                            self.request)
+                        simulation.detector.update_directories(det_folder)
+                        break
 
             for file in os.listdir(simulation_folder_path):
                 # Read Target information from file.
@@ -136,19 +153,6 @@ class Simulations:
                         simulation_folder_path, file), os.path.join(
                         simulation_folder_path,
                         measurement_settings_file), self.request)
-
-                # Read Detector information from file.
-                if file.startswith("Detector"):
-                    det_folder = os.path.join(simulation_folder_path,
-                                              "Detector")
-                    for f in os.listdir(det_folder):
-                        if f.endswith(detector_extension):
-                            simulation.detector = Detector.from_file(
-                                os.path.join(det_folder, f),
-                                os.path.join(simulation.directory,
-                                             measurement_settings_file),
-                                self.request)
-                            simulation.detector.update_directories(det_folder)
 
                 # Read read ElementSimulation information from files.
                 if file.endswith(element_simulation_extension):
@@ -179,7 +183,9 @@ class Simulations:
                         element_simulation = ElementSimulation.from_file(
                             self.request, prefix, simulation_folder_path,
                             mcsimu_file_path, profile_file_path,
-                            sample=simulation.sample)
+                            sample=simulation.sample,
+                            detector=simulation.detector
+                        )
                         simulation.element_simulations.append(
                             element_simulation)
                         element_simulation.run = simulation.run
@@ -241,10 +247,12 @@ class Simulation(Logger):
     """
     __slots__ = "path", "request", "simulation_file", "name", "tab_id", \
                 "description", "modification_time", "run", "detector", \
-                "target", "element_simulations", "name_prefix", \
+                "target", "element_simulations", \
                 "serial_number", "directory", "measurement_setting_file_name", \
                 "measurement_setting_file_description", \
-                "sample", "running_simulations", "statusbar"
+                "sample", "running_simulations", "use_request_settings"
+
+    DIRECTORY_PREFIX = "MC_simulation_"
 
     def __init__(self, path, request, name="Default",
                  description="",
@@ -252,6 +260,7 @@ class Simulation(Logger):
                  detector=None, target=None,
                  measurement_setting_file_name="",
                  measurement_setting_file_description="", sample=None,
+                 use_request_settings=True,
                  save_on_creation=True):
         """Initializes Simulation object.
 
@@ -269,6 +278,8 @@ class Simulation(Logger):
             measurement_setting_file_description: Measurement settings file
             description.
             sample: Sample object under which Simulation belongs.
+            use_request_settings: whether ElementSimulations under this
+                simulation use request settings or simulation settings
             save_on_creation: whether the Simulation is written to file when
                               initialized.
         """
@@ -297,10 +308,10 @@ class Simulation(Logger):
         self.run = run
         self.detector = detector
         self.target = target
+        self.use_request_settings = use_request_settings
         if not self.target:
             self.target = Target()
 
-        self.name_prefix = "MC_simulation_"
         self.serial_number = 0
 
         self.defaultlog = None
@@ -365,8 +376,7 @@ class Simulation(Logger):
                                                name=name,
                                                target=self.target,
                                                detector=self.detector,
-                                               recoil_elements=[
-                                                   recoil_element],
+                                               recoil_elements=[recoil_element],
                                                run=self.run,
                                                sample=self.sample,
                                                simulation_type=simulation_type)
@@ -383,28 +393,30 @@ class Simulation(Logger):
             file_path: A file path to JSON file containing the
             simulation information.
         """
-        obj = json.load(open(file_path))
+        with open(file_path) as file:
+            simu_obj = json.load(file)
 
-        # Below we do conversion from dictionary to Simulation object
-        name = obj["name"]
-        description = obj["description"]
-        modification_time = obj["modification_time_unix"]
+        # Overwrite the human readable time stamp with unix time stamp, as
+        # that is what the Simulation object uses internally
+        simu_obj["modification_time"] = simu_obj.pop("modification_time_unix")
 
-        return cls(request=request, path=file_path, name=name,
-                   description=description, modification_time=modification_time)
+        return cls(request=request, path=file_path, **simu_obj)
 
     def to_file(self, file_path):
         """Save simulation settings to a file.
 
         Args:
-            file_path: File in which the simulation settings will be saved."""
+            file_path: File in which the simulation settings will be saved.
+        """
 
+        # TODO could add file paths to detector and run files here too
         obj = {
             "name": self.name,
             "description": self.description,
             "modification_time": time.strftime("%c %z %Z", time.localtime(
                 time.time())),
             "modification_time_unix": time.time(),
+            "use_request_settings": self.use_request_settings
         }
 
         with open(file_path, "w") as file:

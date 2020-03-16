@@ -192,6 +192,8 @@ def _fget(qobj):
         return qobj.currentText
     if isinstance(qobj, QtWidgets.QTextEdit):
         return qobj.toPlainText
+    if isinstance(qobj, QtWidgets.QCheckBox):
+        return qobj.isChecked
     return qobj.value
 
 
@@ -203,6 +205,8 @@ def _fset(qobj):
         return lambda sec: qobj.setTime(to_qtime(sec))
     if isinstance(qobj, QtWidgets.QTextEdit):
         return qobj.setText
+    if isinstance(qobj, QtWidgets.QCheckBox):
+        return qobj.setChecked
     return qobj.setValue
 
 

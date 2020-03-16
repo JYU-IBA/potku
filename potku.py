@@ -888,7 +888,8 @@ class Potku(QtWidgets.QMainWindow):
 
             self.add_new_tab("simulation", os.path.join(
                 self.request.directory, sample_item.obj.directory,
-                "MC_simulation_" + "%02d" % serial_number + "-" + dialog.name,
+                Simulation.directory_prefix + "%02d" % serial_number + "-" +
+                dialog.name,
                 dialog.name + ".simulation"), sample_item.obj, progress_bar,
                                load_data=True)
             self.__remove_info_tab()
