@@ -30,13 +30,11 @@ __version__ = "2.0"
 
 import json
 import os
-import shutil
 import time
-import copy
 
 import dialogs.dialog_functions as df
+import widgets.gui_utils as gutils
 
-from modules.general_functions import delete_simulation_results
 from modules.run import Run
 
 from PyQt5 import QtCore
@@ -52,6 +50,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
     """
     Dialog class for handling the simulation parameter input.
     """
+    use_request_settings = gutils.bind("defaultSettingsCheckBox")
 
     def __init__(self, tab, simulation, icon_manager):
         """
@@ -113,8 +112,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
         self.tabs.addTab(self.detector_settings_widget, "Detector")
 
-        if not self.simulation.use_request_settings:
-            self.defaultSettingsCheckBox.setCheckState(0)
+        self.use_request_settings = self.simulation.use_request_settings
 
         self.measurement_settings_widget.ui.nameLineEdit.setText(
             self.simulation.measurement_setting_file_name)
@@ -126,8 +124,6 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
         self.tabs.currentChanged.connect(lambda: self.__check_for_red())
         self.__close = True
-
-        self.use_default_settings = self.defaultSettingsCheckBox.isChecked()
 
         self.exec()
 
@@ -186,163 +182,130 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.__close = False
             return
 
-        check_box = self.defaultSettingsCheckBox
-        if check_box.isChecked() and not self.use_default_settings:
+        if self.use_request_settings != self.simulation.use_request_settings:
+            # User has switched from simulation settings to request settings,
+            # or vice versa. Confirm if the user wants to delete old simulations
             if not df.delete_element_simulations(
                     self, self.tab, self.simulation,
                     msg_str="simulation settings"):
                 self.__close = False
                 return
-            # Use request settings
-            # self.simulation.run = None
-            # self.simulation.detector = None
-            # self.simulation.measurement_setting_file_description = ""
-            # self.simulation.target.target_theta = \
-            #     self.simulation.request.default_target.target_theta
 
-            # Remove setting files and folders
-            # det_folder_path = os.path.join(self.simulation.directory,
-            #                                "Detector")
-            # if os.path.exists(det_folder_path):
-            #     shutil.rmtree(det_folder_path)
-            # filename_to_remove = ""
-            # for file in os.listdir(self.simulation.directory):
-            #     if file.endswith(".measurement"):
-            #         filename_to_remove = file
-            #         break
-            # if filename_to_remove:
-            #     os.remove(os.path.join(self.simulation.directory,
-            #                            filename_to_remove))
-            self.use_default_settings = True
-        else:
-            if self.use_default_settings and check_box.isChecked():
-                self.__close = True
-                return
-            only_unnotified_changed = False
-            if not self.use_default_settings and not check_box.isChecked():
-                # Check that values have been changed
-                if not self.values_changed():
-                    # Check if only those values that don't require rerunning
-                    #  the simulations have been changed
-                    if self.measurement_settings_widget.other_values_changed():
-                        only_unnotified_changed = True
-                    if self.detector_settings_widget.other_values_changed():
-                        only_unnotified_changed = True
-                    if not only_unnotified_changed:
-                        self.__close = True
-                        return
-            if self.use_default_settings:
-                settings = "request settings"
-            else:
-                settings = "simulation settings"
-
+        if self.values_changed():
+            # If values that require rerunning simulations, prompt user
+            # delete previous or currently running simulation results (if those
+            # exists)
             if not df.delete_element_simulations(
                     self, self.tab, self.simulation,
-                    msg_str=settings):
+                    msg_str="simulation settings"):
                 self.__close = False
                 return
 
-            # Use simulation specific settings
-            try:
-                measurement_settings_file_path = os.path.join(
-                    self.simulation.directory,
-                    self.simulation.measurement_setting_file_name
-                    + ".measurement")
-                target_file_path = os.path.join(self.simulation.directory,
-                                                self.simulation.target.name
-                                                + ".target")
-                det_folder_path = os.path.join(self.simulation.directory,
-                                               "Detector")
+        try:
+            # Update simulation settings
+            self.simulation.use_request_settings = \
+                self.use_request_settings
+            measurement_settings_file_path = os.path.join(
+                self.simulation.directory,
+                self.simulation.measurement_setting_file_name
+                + ".measurement")
+            target_file_path = os.path.join(self.simulation.directory,
+                                            self.simulation.target.name
+                                            + ".target")
+            det_folder_path = os.path.join(self.simulation.directory,
+                                           "Detector")
 
-                if self.simulation.run is None:
-                    # Create a default Run for simulation
-                    self.simulation.run = Run()
-                if self.simulation.detector is None:
-                    df.update_detector_settings(
-                        self.simulation,
-                        det_folder_path,
-                        measurement_settings_file_path)
+            if self.simulation.run is None:
+                # Create a default Run for simulation
+                self.simulation.run = Run()
+            if self.simulation.detector is None:
+                df.update_detector_settings(
+                    self.simulation,
+                    det_folder_path,
+                    measurement_settings_file_path)
 
-                # Set Detector object to settings widget
-                self.detector_settings_widget.obj = self.simulation. \
-                    detector
+            # Set Detector object to settings widget
+            self.detector_settings_widget.obj = self.simulation. \
+                detector
 
-                # Update settings
-                self.measurement_settings_widget.update_settings()
-                self.detector_settings_widget.update_settings()
-                self.simulation.detector.path = \
-                    os.path.join(det_folder_path,
-                                 self.simulation.detector.name +
-                                 ".detector")
+            # Update settings
+            self.measurement_settings_widget.update_settings()
+            self.detector_settings_widget.update_settings()
+            self.simulation.detector.path = \
+                os.path.join(det_folder_path,
+                             self.simulation.detector.name +
+                             ".detector")
 
-                df.update_efficiency_files(self.simulation.detector)
+            df.update_efficiency_files(self.simulation.detector)
 
-                # Save measurement settings parameters.
-                new_measurement_settings_file_path = os.path.join(
-                    self.simulation.directory,
-                    self.simulation.measurement_setting_file_name +
-                    ".measurement")
-                general_obj = {
-                    "name": self.simulation.measurement_setting_file_name,
-                    "description":
-                        self.simulation.
-                            measurement_setting_file_description,
-                    "modification_time":
-                        time.strftime("%c %z %Z", time.localtime(
-                            time.time())),
-                    "modification_time_unix": time.time()
+            # Save measurement settings parameters.
+            new_measurement_settings_file_path = os.path.join(
+                self.simulation.directory,
+                self.simulation.measurement_setting_file_name +
+                ".measurement")
+            general_obj = {
+                "name": self.simulation.measurement_setting_file_name,
+                "description":
+                    self.simulation.
+                        measurement_setting_file_description,
+                "modification_time":
+                    time.strftime("%c %z %Z", time.localtime(
+                        time.time())),
+                "modification_time_unix": time.time(),
+                "use_request_settings": self.simulation.use_request_settings
+            }
+
+            if os.path.exists(new_measurement_settings_file_path):
+                obj = json.load(open(
+                    new_measurement_settings_file_path))
+                obj["general"] = general_obj
+            else:
+                obj = {
+                    "general": general_obj
                 }
 
-                if os.path.exists(new_measurement_settings_file_path):
-                    obj = json.load(open(
-                        new_measurement_settings_file_path))
-                    obj["general"] = general_obj
-                else:
-                    obj = {
-                        "general": general_obj
-                    }
+            # Delete possible extra .measurement files
+            filename_to_remove = ""
+            for file in os.listdir(self.simulation.directory):
+                if file.endswith(".measurement"):
+                    filename_to_remove = file
+                    break
+            if filename_to_remove:
+                os.remove(os.path.join(self.simulation.directory,
+                                       filename_to_remove))
 
-                # Delete possible extra .measurement files
-                filename_to_remove = ""
-                for file in os.listdir(self.simulation.directory):
-                    if file.endswith(".measurement"):
-                        filename_to_remove = file
-                        break
-                if filename_to_remove:
-                    os.remove(os.path.join(self.simulation.directory,
-                                           filename_to_remove))
+            # Write measurement settings to file
+            with open(new_measurement_settings_file_path, "w") as file:
+                json.dump(obj, file, indent=4)
 
-                # Write measurement settings to file
-                with open(new_measurement_settings_file_path, "w") as file:
-                    json.dump(obj, file, indent=4)
+            self.simulation.to_file(self.simulation.path)
 
-                # Save Run object to file
-                self.simulation.run.to_file(
-                    new_measurement_settings_file_path)
-                # Save Detector object to file
-                self.simulation.detector.to_file(
-                    self.simulation.detector.path,
-                    new_measurement_settings_file_path)
+            # Save Run object to file
+            self.simulation.run.to_file(
+                new_measurement_settings_file_path)
+            # Save Detector object to file
+            self.simulation.detector.to_file(
+                self.simulation.detector.path,
+                new_measurement_settings_file_path)
 
-                # Save Target object to file
-                self.simulation.target.to_file(
-                    target_file_path, new_measurement_settings_file_path)
+            # Save Target object to file
+            self.simulation.target.to_file(
+                target_file_path, new_measurement_settings_file_path)
+            self.__close = True
 
-            except TypeError:
-                QtWidgets.QMessageBox.question(self, "Warning",
-                                               "Some of the setting values "
-                                               "have not been set.\n" +
-                                               "Please input setting values"
-                                               " to save them.",
-                                               QtWidgets.QMessageBox.Ok,
-                                               QtWidgets.QMessageBox.Ok)
-            self.use_default_settings = False
+        except TypeError:
+            QtWidgets.QMessageBox.question(self, "Warning",
+                                           "Some of the setting values "
+                                           "have not been set.\n" +
+                                           "Please input setting values"
+                                           " to save them.",
+                                           QtWidgets.QMessageBox.Ok,
+                                           QtWidgets.QMessageBox.Ok)
 
     def __save_settings_and_close(self):
         """Save settings and close the dialog.
         """
         self.__update_parameters()
-        self.simulation.use_request_settings = self.use_default_settings
         if self.__close:
             self.close()
 

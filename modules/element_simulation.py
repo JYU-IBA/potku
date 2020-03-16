@@ -575,14 +575,7 @@ class ElementSimulation(Observable):
 
         elem_sim = self.get_element_simulation()
 
-        if self.simulation is None or self.simulation.use_request_settings:
-            target = self.request.default_target
-            run = self.request.default_run
-            detector = self.request.default_detector
-        else:
-            target = self.target
-            run = self.run
-            detector = self.detector
+        target, run, detector = self.get_simulation_parameters()
 
         if not use_old_erd_files:
             self.__erd_filehandler.clear()
@@ -1014,10 +1007,10 @@ class ElementSimulation(Observable):
             recoil_name = recoil_element.name
             erd_recoil_name = "opt"
 
-        recoil_file = os.path.join(self.directory,
-                                   recoil_element.prefix + "-" +
-                                   recoil_name + suffix)
-        recoil_element.get_mcerd_params(recoil_file)
+        recoil_file = os.path.join(self.directory, recoil_element.prefix +
+                                   "-" + recoil_name + suffix)
+        with open(recoil_file) as rec_file:
+            rec_file.write("\n".join(recoil_element.get_mcerd_params()))
 
         erd_file = os.path.join(self.directory, recoil_elements[0].prefix +
                                 "-" + erd_recoil_name + ".*.erd")
@@ -1028,23 +1021,17 @@ class ElementSimulation(Observable):
         else:
             channel_width = self.channel_width
 
-        if self.run is None:
-            run = self.request.default_run
-        else:
-            run = self.run
-        if self.detector is None:
-            detector = self.request.default_detector
-        else:
-            detector = self.detector
+        target, run, detector = self.get_simulation_parameters()
 
         if fluence is not None:
             used_fluence = fluence
         else:
             used_fluence = run.fluence
+
         espe_settings = {
             "beam": run.beam,
             "detector": detector,
-            "target": self.target,
+            "target": target,
             "ch": channel_width,
             "reference_density": recoil_element.reference_density,
             "multiplier": recoil_element.multiplier,
@@ -1057,6 +1044,19 @@ class ElementSimulation(Observable):
         }
         self.get_espe = GetEspe(espe_settings)
         self.get_espe.run_get_espe()
+
+    def get_simulation_parameters(self):
+        if self.simulation is None or self.simulation.use_request_settings:
+            target = self.request.default_target
+            run = self.request.default_run
+            detector = self.request.default_detector
+        else:
+            target = self.target
+            run = self.run
+            detector = self.detector
+
+        return target, run, detector
+
 
     def reset(self, remove_files=True):
         """Function that resets the state of ElementSimulation.

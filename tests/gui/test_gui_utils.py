@@ -42,6 +42,7 @@ from PyQt5.QtWidgets import QSpinBox
 from PyQt5.QtWidgets import QDoubleSpinBox
 from PyQt5.QtWidgets import QTextEdit
 from PyQt5.QtWidgets import QTimeEdit
+from PyQt5.QtWidgets import QCheckBox
 from PyQt5.QtCore import QTime
 from PyQt5.QtTest import QTest
 from PyQt5.QtCore import Qt
@@ -91,6 +92,7 @@ class BWidget(QWidget, gutils.BindingPropertyWidget,
     bar = gutils.bind("doubleSpinbox")
     baz = gutils.bind("textBox")
     tim = gutils.bind("timeEdit")
+    che = gutils.bind("checkBox")
 
     def __init__(self):
         super().__init__()
@@ -98,6 +100,7 @@ class BWidget(QWidget, gutils.BindingPropertyWidget,
         self.doubleSpinbox = QDoubleSpinBox()
         self.textBox = QTextEdit()
         self.timeEdit = QTimeEdit()
+        self.checkBox = QCheckBox()
 
 
 class TestBinding(unittest.TestCase):
@@ -110,7 +113,8 @@ class TestBinding(unittest.TestCase):
                 "foo": 0,
                 "bar": 0.0,
                 "baz": "",
-                "tim": 0
+                "tim": 0,
+                "che": False
             }, self.widget.get_properties()
         )
 
@@ -137,16 +141,18 @@ class TestBinding(unittest.TestCase):
                 "foo": 3,
                 "bar": 4.5,
                 "baz": "",
-                "tim": 0
+                "tim": 0,
+                "che": False
             }, self.widget.get_properties()
         )
 
-        self.widget.set_properties(baz="test", tim=100)
+        self.widget.set_properties(baz="test", tim=100, che=True)
         self.assertEqual({
             "foo": 3,
             "bar": 4.5,
             "baz": "test",
-            "tim": 100
+            "tim": 100,
+            "che": True
         }, self.widget.get_properties())
 
 
