@@ -188,12 +188,18 @@ def _fget(qobj):
     """
     if isinstance(qobj, QtWidgets.QTimeEdit):
         return lambda: from_qtime(qobj.time())
+    if isinstance(qobj, QtWidgets.QLineEdit):
+        return qobj.text
     if isinstance(qobj, QtWidgets.QComboBox):
         return qobj.currentText
     if isinstance(qobj, QtWidgets.QTextEdit):
         return qobj.toPlainText
     if isinstance(qobj, QtWidgets.QCheckBox):
         return qobj.isChecked
+    if isinstance(qobj, QtWidgets.QPlainTextEdit):
+        return qobj.toPlainText
+    if isinstance(qobj, QtWidgets.QLabel):
+        return qobj.text
     return qobj.value
 
 
@@ -203,10 +209,16 @@ def _fset(qobj):
     """
     if isinstance(qobj, QtWidgets.QTimeEdit):
         return lambda sec: qobj.setTime(to_qtime(sec))
+    if isinstance(qobj, QtWidgets.QLineEdit):
+        return qobj.setText
     if isinstance(qobj, QtWidgets.QTextEdit):
         return qobj.setText
     if isinstance(qobj, QtWidgets.QCheckBox):
         return qobj.setChecked
+    if isinstance(qobj, QtWidgets.QPlainTextEdit):
+        return qobj.setPlainText
+    if isinstance(qobj, QtWidgets.QLabel):
+        return qobj.setText
     return qobj.setValue
 
 
@@ -328,16 +340,19 @@ def bind(qobj_name, fget=None, fset=None, twoway=True):
             return _fget(qobj)()
         return fget(qobj)
 
+    if not twoway:
+        return property(getter)
+
     def setter(self, value):
-        if twoway:
-            qobj = getattr(self, qobj_name)
-            try:
-                if fset is None:
-                    _fset(qobj)(value)
-                else:
-                    fset(qobj, value)
-            except TypeError:
-                pass
+        qobj = getattr(self, qobj_name)
+        try:
+            if fset is None:
+                _fset(qobj)(value)
+            else:
+                fset(qobj, value)
+        except TypeError as e:
+            print(e)
+            pass
 
     return property(getter, setter)
 

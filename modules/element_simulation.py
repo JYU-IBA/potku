@@ -180,9 +180,11 @@ class ElementSimulation(Observable):
 
         self.run = run
         self.sample = sample
-        self.simulation_type = simulation_type
 
+        # TODO raise errors if the type and mode are wrong
+        self.simulation_type = simulation_type
         self.simulation_mode = simulation_mode
+
         self.number_of_ions = number_of_ions
         self.number_of_preions = number_of_preions
         self.number_of_scaling_ions = number_of_scaling_ions
@@ -707,6 +709,22 @@ class ElementSimulation(Observable):
         if self.use_default_settings:
             return self.request.default_element_simulation
         return self
+
+    def get_simulation_settings(self):
+        """Returns simulation parameters as a dict.
+        """
+        return {
+            "simulation_type": self.simulation_type,
+            "simulation_mode": self.simulation_mode,
+            "number_of_ions": self.number_of_ions,
+            "number_of_ions_in_presimu": self.number_of_preions,
+            "number_of_scaling_ions": self.number_of_scaling_ions,
+            "number_of_recoils": self.number_of_recoils,
+            "minimum_scattering_angle": self.minimum_scattering_angle,
+            "minimum_main_scattering_angle":
+                self.minimum_main_scattering_angle,
+            "minimum_energy_of_ions": self.minimum_energy
+        }
 
     def get_current_status(self, starting=False):
         """Returns the number of atoms counted, number of running processes and

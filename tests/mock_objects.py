@@ -45,7 +45,7 @@ from modules.point import Point
 # purposes.
 
 
-def get_detector():
+def get_detector() -> Detector:
     """Returns a Detector object that has the default foils (3 circular,
     1 rectangular)."""
     path = os.path.join(tempfile.gettempdir(), ".detector")
@@ -54,22 +54,22 @@ def get_detector():
     return Detector(path, mesu, save_in_creation=False)
 
 
-def get_element():
+def get_element() -> Element:
     """Returns a Helium element"""
     return Element.from_string("He")
 
 
-def get_beam():
+def get_beam() -> Beam:
     """Returns a default Beam object."""
     return Beam()
 
 
-def get_target():
+def get_target() -> Target:
     """Returns a default Target object."""
     return Target()
 
 
-def get_recoil_element():
+def get_recoil_element() -> RecoilElement:
     """Returns a RecoilElement object."""
     return RecoilElement(get_element(), [
         Point((1, 1)),
@@ -77,12 +77,12 @@ def get_recoil_element():
     ], "red")
 
 
-def get_run():
+def get_run() -> Run:
     """Returns a Run object"""
     return Run(get_beam())
 
 
-def get_element_simulation(request=None):
+def get_element_simulation(request=None) -> ElementSimulation:
     """Returns an ElementSimulation object."""
     if request is None:
         request = get_request()
@@ -91,7 +91,7 @@ def get_element_simulation(request=None):
                              [get_recoil_element()], save_on_creation=False)
 
 
-def get_simulation(request=None):
+def get_simulation(request=None) -> Simulation:
     """Returns a Simulation object."""
     if request is None:
         request = get_request()

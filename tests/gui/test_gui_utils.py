@@ -35,15 +35,9 @@ from unittest.mock import Mock
 
 from widgets.gui_utils import GUIReporter
 
-from PyQt5.QtWidgets import QWidget
-
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtWidgets import QSpinBox
-from PyQt5.QtWidgets import QDoubleSpinBox
-from PyQt5.QtWidgets import QTextEdit
-from PyQt5.QtWidgets import QTimeEdit
-from PyQt5.QtWidgets import QCheckBox
 from PyQt5.QtCore import QTime
+from PyQt5 import QtWidgets
 from PyQt5.QtTest import QTest
 from PyQt5.QtCore import Qt
 
@@ -86,21 +80,25 @@ class TestGUIReporter(unittest.TestCase):
         self.assertTrue(False)
 
 
-class BWidget(QWidget, gutils.BindingPropertyWidget,
+class BWidget(QtWidgets.QWidget, gutils.BindingPropertyWidget,
               metaclass=gutils.QtABCMeta):
     foo = gutils.bind("spinbox")
     bar = gutils.bind("doubleSpinbox")
     baz = gutils.bind("textBox")
     tim = gutils.bind("timeEdit")
     che = gutils.bind("checkBox")
+    lab = gutils.bind("label")
+    pla = gutils.bind("plaintext")
 
     def __init__(self):
         super().__init__()
-        self.spinbox = QSpinBox()
-        self.doubleSpinbox = QDoubleSpinBox()
-        self.textBox = QTextEdit()
-        self.timeEdit = QTimeEdit()
-        self.checkBox = QCheckBox()
+        self.spinbox = QtWidgets.QSpinBox()
+        self.doubleSpinbox = QtWidgets.QDoubleSpinBox()
+        self.textBox = QtWidgets.QTextEdit()
+        self.timeEdit = QtWidgets.QTimeEdit()
+        self.checkBox = QtWidgets.QCheckBox()
+        self.label = QtWidgets.QLabel()
+        self.plaintext = QtWidgets.QPlainTextEdit()
 
 
 class TestBinding(unittest.TestCase):
@@ -114,7 +112,9 @@ class TestBinding(unittest.TestCase):
                 "bar": 0.0,
                 "baz": "",
                 "tim": 0,
-                "che": False
+                "che": False,
+                "pla": "",
+                "lab": ""
             }, self.widget.get_properties()
         )
 
@@ -142,7 +142,9 @@ class TestBinding(unittest.TestCase):
                 "bar": 4.5,
                 "baz": "",
                 "tim": 0,
-                "che": False
+                "che": False,
+                "pla": "",
+                "lab": ""
             }, self.widget.get_properties()
         )
 
@@ -152,7 +154,20 @@ class TestBinding(unittest.TestCase):
             "bar": 4.5,
             "baz": "test",
             "tim": 100,
-            "che": True
+            "che": True,
+            "pla": "",
+            "lab": ""
+        }, self.widget.get_properties())
+
+        self.widget.set_properties(pla="foo", lab="bar")
+        self.assertEqual({
+            "foo": 3,
+            "bar": 4.5,
+            "baz": "test",
+            "tim": 100,
+            "che": True,
+            "pla": "foo",
+            "lab": "bar"
         }, self.widget.get_properties())
 
 

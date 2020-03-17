@@ -31,6 +31,9 @@ import os
 import time
 
 import widgets.input_validation as iv
+import widgets.gui_utils as gutils
+
+from modules.element_simulation import ElementSimulation
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -38,10 +41,42 @@ from PyQt5.QtCore import QLocale
 from PyQt5.QtCore import Qt
 
 
-class SimulationSettingsWidget(QtWidgets.QWidget):
+def simulation_mode_to_combobox(combobox, value):
+    combobox.setCurrentIndex(combobox.findText(value, Qt.MatchFixedString))
+
+def simulation_mode_from_combobox():
+    pass
+
+def simulation_type_from_combobox():
+    pass
+
+def simulation_type_to_combobox():
+    pass
+
+
+class SimulationSettingsWidget(QtWidgets.QWidget,
+                               gutils.BindingPropertyWidget,
+                               metaclass=gutils.QtABCMeta):
     """Class for creating a simulation settings tab.
     """
-    def __init__(self, element_simulation):
+    name = gutils.bind("nameLineEdit")
+    description = gutils.bind("descriptionPlainTextEdit")
+    simulation_type = gutils.bind("typeOfSimulationComboBox")
+    simulation_mode = gutils.bind("modeComboBox")
+    number_of_ions = gutils.bind("numberOfIonsSpinBox")
+    number_of_ions_in_presimu = gutils.bind("numberOfPreIonsSpinBox")
+    number_of_scaling_ions = gutils.bind("numberOfScalingIonsSpinBox")
+    number_of_recoils = gutils.bind("numberOfRecoilsSpinBox")
+    minimum_scattering_angle = gutils.bind("minimumScatterAngleDoubleSpinBox")
+    minimum_main_scattering_angle = gutils.bind(
+        "minimumMainScatterAngleDoubleSpinBox")
+    minimum_energy_of_ions = gutils.bind("minimumEnergyDoubleSpinBox")
+    seed = gutils.bind("seedSpinBox")
+    date = gutils.bind("dateLabel",
+                       fset=lambda t: time.strftime("%c %z %Z",
+                                                    time.localtime(t)))
+
+    def __init__(self, element_simulation: ElementSimulation):
         """
         Initializes the widget.
 
@@ -52,6 +87,9 @@ class SimulationSettingsWidget(QtWidgets.QWidget):
         uic.loadUi(os.path.join("ui_files",
                                 "ui_request_simulation_settings.ui"),
                    self)
+        # By default, disable the widget, so caller has to enable it. Without
+        # this, name and description fields would always be enabled when the
+        # widget loads.
         self.setEnabled(False)
         self.element_simulation = element_simulation
 
@@ -67,7 +105,11 @@ class SimulationSettingsWidget(QtWidgets.QWidget):
         self.minimumMainScatterAngleDoubleSpinBox.setLocale(locale)
         self.minimumEnergyDoubleSpinBox.setLocale(locale)
 
-        self.show_settings()
+        self.set_properties(
+            name=self.element_simulation.name,
+            description=self.element_simulation.description,
+            date=self.element_simulation.modification_time,
+            **self.element_simulation.get_simulation_settings())
 
     def show_settings(self):
         """

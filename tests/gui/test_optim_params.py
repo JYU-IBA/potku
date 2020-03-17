@@ -61,10 +61,13 @@ class TestRecoilParameters(unittest.TestCase):
         self.assertEqual("8-point two-peak",
                          widget.recoilTypeComboBox.currentText())
 
-        # Note that recoil_type is not two-way bound, so setting it does not
-        # change anything
-        widget.recoil_type = "box"
+        # recoil_type is not two-way bound, so setting it raises an error
+        def set_val():
+            widget.recoil_type = "box"
+        self.assertRaises(AttributeError,
+                          lambda: set_val())
 
+        # Previously set values remain the same
         self.assertEqual(9, widget.sol_size)
         self.assertEqual("two-peak", widget.recoil_type)
         self.assertEqual("8-point two-peak",
