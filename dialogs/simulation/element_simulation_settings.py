@@ -51,40 +51,40 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             tab: A SimulationTabWidget.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_element_simulation_settings.ui"),
-                             self)
+        uic.loadUi(os.path.join("ui_files",
+                                "ui_element_simulation_settings.ui"),
+                   self)
 
-        self.ui.okPushButton.clicked.connect(self.update_settings_and_close)
-        self.ui.applyPushButton.clicked.connect(self.update_settings)
-        self.ui.cancelPushButton.clicked.connect(self.close)
+        self.okPushButton.clicked.connect(self.update_settings_and_close)
+        self.applyPushButton.clicked.connect(self.update_settings)
+        self.cancelPushButton.clicked.connect(self.close)
 
         self.element_simulation = element_simulation
         self.tab = tab
 
         self.use_default_settings = element_simulation.use_default_settings
 
-        self.ui.useRequestSettingsValuesCheckBox.stateChanged.connect(
+        self.useRequestSettingsValuesCheckBox.stateChanged.connect(
             self.toggle_settings)
 
         self.set_spinbox_maximums()
 
-        iv.set_input_field_red(self.ui.nameLineEdit)
+        iv.set_input_field_red(self.nameLineEdit)
         self.fields_are_valid = False
-        self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
-            self.ui.nameLineEdit, self))
+        self.nameLineEdit.textChanged.connect(lambda: self.__check_text(
+            self.nameLineEdit, self))
         self.original_use_default_settings = \
-            self.ui.useRequestSettingsValuesCheckBox.isChecked()
+            self.useRequestSettingsValuesCheckBox.isChecked()
         self.original_simulation_type = self.element_simulation.simulation_type
 
         self.show_settings()
 
-        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+        self.nameLineEdit.textEdited.connect(lambda: self.__validate())
 
         locale = QLocale.c()
-        self.ui.minimumScatterAngleDoubleSpinBox.setLocale(locale)
-        self.ui.minimumMainScatterAngleDoubleSpinBox.setLocale(locale)
-        self.ui.minimumEnergyDoubleSpinBox.setLocale(locale)
+        self.minimumScatterAngleDoubleSpinBox.setLocale(locale)
+        self.minimumMainScatterAngleDoubleSpinBox.setLocale(locale)
+        self.minimumEnergyDoubleSpinBox.setLocale(locale)
 
         self.__close = True
 
@@ -104,24 +104,24 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         """
         Validate the mcsimu settings file name.
         """
-        text = self.ui.nameLineEdit.text()
+        text = self.nameLineEdit.text()
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
         valid_text = iv.validate_text_input(text, regex)
 
-        self.ui.nameLineEdit.setText(valid_text)
+        self.nameLineEdit.setText(valid_text)
 
     def set_spinbox_maximums(self):
         """Set maximum values to spinbox components."""
         int_max = 2147483647
         float_max = 1000000000000000013287555072.00
-        self.ui.numberOfIonsSpinBox.setMaximum(int_max)
-        self.ui.numberOfPreIonsSpinBox.setMaximum(int_max)
-        self.ui.seedSpinBox.setMaximum(int_max)
-        self.ui.numberOfRecoilsSpinBox.setMaximum(int_max)
-        self.ui.numberOfScalingIonsSpinBox.setMaximum(int_max)
-        self.ui.minimumScatterAngleDoubleSpinBox.setMaximum(float_max)
-        self.ui.minimumMainScatterAngleDoubleSpinBox.setMaximum(float_max)
-        self.ui.minimumEnergyDoubleSpinBox.setMaximum(float_max)
+        self.numberOfIonsSpinBox.setMaximum(int_max)
+        self.numberOfPreIonsSpinBox.setMaximum(int_max)
+        self.seedSpinBox.setMaximum(int_max)
+        self.numberOfRecoilsSpinBox.setMaximum(int_max)
+        self.numberOfScalingIonsSpinBox.setMaximum(int_max)
+        self.minimumScatterAngleDoubleSpinBox.setMaximum(float_max)
+        self.minimumMainScatterAngleDoubleSpinBox.setMaximum(float_max)
+        self.minimumEnergyDoubleSpinBox.setMaximum(float_max)
 
     def show_settings(self):
         """Show settings of ElementSimulation object in view."""
@@ -130,52 +130,52 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
                 default_element_simulation
         else:
             elem_simu = self.element_simulation
-            self.ui.useRequestSettingsValuesCheckBox.setCheckState(0)
+            self.useRequestSettingsValuesCheckBox.setCheckState(0)
             self.original_use_default_settings = False
-            self.ui.settingsGroupBox.setEnabled(True)
+            self.settingsGroupBox.setEnabled(True)
             self.use_default_settings = False
-        self.ui.nameLineEdit.setText(
+        self.nameLineEdit.setText(
             elem_simu.name)
-        self.ui.descriptionPlainTextEdit.setPlainText(
+        self.descriptionPlainTextEdit.setPlainText(
             elem_simu.description)
-        self.ui.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+        self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             elem_simu.modification_time)))
         if elem_simu.simulation_type == "ERD":
-            self.ui.typeOfSimulationComboBox.setCurrentIndex(
-                self.ui.typeOfSimulationComboBox.findText(
+            self.typeOfSimulationComboBox.setCurrentIndex(
+                self.typeOfSimulationComboBox.findText(
                     "REC", Qt.MatchFixedString))
         else:
-            self.ui.typeOfSimulationComboBox.setCurrentIndex(
-                self.ui.typeOfSimulationComboBox.findText(
+            self.typeOfSimulationComboBox.setCurrentIndex(
+                self.typeOfSimulationComboBox.findText(
                     "SCT", Qt.MatchFixedString))
-        self.ui.modeComboBox.setCurrentIndex(
-            self.ui.modeComboBox.findText(
+        self.modeComboBox.setCurrentIndex(
+            self.modeComboBox.findText(
                 elem_simu.simulation_mode, Qt.MatchFixedString))
-        self.ui.numberOfIonsSpinBox.setValue(
+        self.numberOfIonsSpinBox.setValue(
             elem_simu.number_of_ions)
-        self.ui.numberOfPreIonsSpinBox.setValue(
+        self.numberOfPreIonsSpinBox.setValue(
             elem_simu.number_of_preions)
-        self.ui.seedSpinBox.setValue(
+        self.seedSpinBox.setValue(
             elem_simu.seed_number)
-        self.ui.numberOfRecoilsSpinBox.setValue(
+        self.numberOfRecoilsSpinBox.setValue(
             elem_simu.number_of_recoils)
-        self.ui.numberOfScalingIonsSpinBox.setValue(
+        self.numberOfScalingIonsSpinBox.setValue(
             elem_simu.number_of_scaling_ions)
-        self.ui.minimumScatterAngleDoubleSpinBox.setValue(
+        self.minimumScatterAngleDoubleSpinBox.setValue(
             elem_simu.minimum_scattering_angle)
-        self.ui.minimumMainScatterAngleDoubleSpinBox.setValue(
+        self.minimumMainScatterAngleDoubleSpinBox.setValue(
             elem_simu.minimum_main_scattering_angle)
-        self.ui.minimumEnergyDoubleSpinBox.setValue(
+        self.minimumEnergyDoubleSpinBox.setValue(
             elem_simu.minimum_energy)
 
     def toggle_settings(self):
         """If request settings checkbox is checked, disables settings in dialog.
         Otherwise enables settings.
         """
-        if self.ui.useRequestSettingsValuesCheckBox.isChecked():
-            self.ui.settingsGroupBox.setEnabled(False)
+        if self.useRequestSettingsValuesCheckBox.isChecked():
+            self.settingsGroupBox.setEnabled(False)
         else:
-            self.ui.settingsGroupBox.setEnabled(True)
+            self.settingsGroupBox.setEnabled(True)
 
     def update_settings_and_close(self):
         """Updates settings and closes the dialog."""
@@ -190,7 +190,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         If default settings are not used, read settings from dialog,
         put them to element simulation and save them to file.
         """
-        if self.ui.useRequestSettingsValuesCheckBox.isChecked():
+        if self.useRequestSettingsValuesCheckBox.isChecked():
             self.use_default_settings = True
             self.element_simulation.use_default_settings = True
         else:
@@ -216,7 +216,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         only_seed_changed = False
         # If element simulation settings are used and they have not been changed
         if not self.use_default_settings and not self.values_changed():
-            if self.ui.seedSpinBox.value() != \
+            if self.seedSpinBox.value() != \
                     self.element_simulation.seed_number:
                 only_seed_changed = True
             else:
@@ -327,7 +327,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         if only_seed_changed:
             # If there are running simulation that use the same seed as the
             # new one, stop them
-            seed = self.ui.seedSpinBox.value()
+            seed = self.seedSpinBox.value()
             running_simulation = self.running_simulation_by_seed(seed)
             if running_simulation:
                 reply = QtWidgets.QMessageBox.question(
@@ -363,37 +363,37 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         if not self.use_default_settings:
             # Use element specific settings
             self.element_simulation.name = \
-                self.ui.nameLineEdit.text()
+                self.nameLineEdit.text()
             self.element_simulation.description = \
-                self.ui.descriptionPlainTextEdit.toPlainText()
+                self.descriptionPlainTextEdit.toPlainText()
             self.element_simulation.simulation_mode = \
-                self.ui.modeComboBox.currentText()
-            if self.ui.typeOfSimulationComboBox.currentText() == "REC":
+                self.modeComboBox.currentText()
+            if self.typeOfSimulationComboBox.currentText() == "REC":
                 self.element_simulation.simulation_type = "ERD"
             else:
                 self.element_simulation.simulation_type = "RBS"
             self.element_simulation.number_of_ions = \
-                self.ui.numberOfIonsSpinBox.value()
+                self.numberOfIonsSpinBox.value()
             self.element_simulation.number_of_preions = \
-                self.ui.numberOfPreIonsSpinBox\
+                self.numberOfPreIonsSpinBox\
                 .value()
             self.element_simulation.seed_number = \
-                self.ui.seedSpinBox.value()
+                self.seedSpinBox.value()
             self.element_simulation.number_of_recoils = \
-                self.ui.numberOfRecoilsSpinBox.value()
+                self.numberOfRecoilsSpinBox.value()
             self.element_simulation.number_of_scaling_ions = \
-                self.ui.numberOfScalingIonsSpinBox.value()
+                self.numberOfScalingIonsSpinBox.value()
             self.element_simulation.minimum_scattering_angle = \
-                self.ui.minimumScatterAngleDoubleSpinBox.value()
+                self.minimumScatterAngleDoubleSpinBox.value()
             self.element_simulation.minimum_main_scattering_angle = \
-                self.ui.minimumMainScatterAngleDoubleSpinBox.value()
+                self.minimumMainScatterAngleDoubleSpinBox.value()
             self.element_simulation.minimum_energy = \
-                self.ui.minimumEnergyDoubleSpinBox.value()
+                self.minimumEnergyDoubleSpinBox.value()
 
             self.element_simulation.to_file(
                     os.path.join(self.element_simulation.directory,
-                                 self.element_simulation.name_prefix + "-" +
-                                 self.element_simulation.name + ".mcsimu"))
+                                 self.element_simulation.get_full_name()
+                                 + ".mcsimu"))
 
         # Revert ot default settings
         else:
@@ -441,40 +441,40 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         Return:
             True or False.
         """
-        if self.element_simulation.name != self.ui.nameLineEdit.text():
+        if self.element_simulation.name != self.nameLineEdit.text():
             return True
         if self.element_simulation.description != \
-           self.ui.descriptionPlainTextEdit.toPlainText():
+           self.descriptionPlainTextEdit.toPlainText():
             return True
         if self.element_simulation.simulation_mode != \
-           self.ui.modeComboBox.currentText():
+           self.modeComboBox.currentText():
             return True
-        if self.ui.typeOfSimulationComboBox.currentText() == "REC":
+        if self.typeOfSimulationComboBox.currentText() == "REC":
             if self.element_simulation.simulation_type != "ERD":
                 return True
         else:
             if self.element_simulation.simulation_type != "RBS":
                 return True
         if self.element_simulation.number_of_ions != \
-           self.ui.numberOfIonsSpinBox.value():
+           self.numberOfIonsSpinBox.value():
             return True
         if self.element_simulation.number_of_preions != \
-           self.ui.numberOfPreIonsSpinBox.value():
+           self.numberOfPreIonsSpinBox.value():
             return True
         if self.element_simulation.number_of_recoils != \
-           self.ui.numberOfRecoilsSpinBox.value():
+           self.numberOfRecoilsSpinBox.value():
             return True
         if self.element_simulation.number_of_scaling_ions != \
-           self.ui.numberOfScalingIonsSpinBox.value():
+           self.numberOfScalingIonsSpinBox.value():
             return True
         if self.element_simulation.minimum_scattering_angle != \
-           self.ui.minimumScatterAngleDoubleSpinBox.value():
+           self.minimumScatterAngleDoubleSpinBox.value():
             return True
         if self.element_simulation.minimum_main_scattering_angle != \
-           self.ui.minimumMainScatterAngleDoubleSpinBox.value():
+           self.minimumMainScatterAngleDoubleSpinBox.value():
             return True
         if self.element_simulation.minimum_energy != \
-           self.ui.minimumEnergyDoubleSpinBox.value():
+           self.minimumEnergyDoubleSpinBox.value():
             return True
         return False
 
