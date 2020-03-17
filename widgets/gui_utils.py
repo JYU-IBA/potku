@@ -211,6 +211,9 @@ def _fset(qobj):
         return lambda sec: qobj.setTime(to_qtime(sec))
     if isinstance(qobj, QtWidgets.QLineEdit):
         return qobj.setText
+    if isinstance(qobj, QtWidgets.QComboBox):
+        return lambda value: qobj.setCurrentIndex(qobj.findText(
+            value, QtCore.Qt.MatchFixedString))
     if isinstance(qobj, QtWidgets.QTextEdit):
         return qobj.setText
     if isinstance(qobj, QtWidgets.QCheckBox):

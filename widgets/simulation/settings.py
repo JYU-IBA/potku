@@ -40,18 +40,29 @@ from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 from PyQt5.QtCore import Qt
 
+_TYPE_CONVERSION = {
+    # 'RBS' and 'ERD' are the values stored internally in ElementSimulation,
+    # while 'SCT' and 'REC' are shown in the dialog.
+    "RBS": "SCT",
+    "ERD": "REC",
+    "SCT": "RBS",
+    "REC": "ERD"
+}
 
-def simulation_mode_to_combobox(combobox, value):
-    combobox.setCurrentIndex(combobox.findText(value, Qt.MatchFixedString))
 
-def simulation_mode_from_combobox():
-    pass
+def _simulation_mode_from_combobox(combobox):
+    return combobox.currentText().lower()
 
-def simulation_type_from_combobox():
-    pass
 
-def simulation_type_to_combobox():
-    pass
+def _simulation_type_to_combobox(combobox, value):
+    converted_type = _TYPE_CONVERSION[value]
+    combobox.setCurrentIndex(combobox.findText(converted_type,
+                                               Qt.MatchFixedString))
+
+
+def _simulation_type_from_combobox(combobox):
+    value = combobox.currentText()
+    return _TYPE_CONVERSION[value]
 
 
 class SimulationSettingsWidget(QtWidgets.QWidget,
@@ -61,8 +72,11 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
     """
     name = gutils.bind("nameLineEdit")
     description = gutils.bind("descriptionPlainTextEdit")
-    simulation_type = gutils.bind("typeOfSimulationComboBox")
-    simulation_mode = gutils.bind("modeComboBox")
+    simulation_type = gutils.bind("typeOfSimulationComboBox",
+                                  fget=_simulation_type_from_combobox,
+                                  fset=_simulation_type_to_combobox)
+    simulation_mode = gutils.bind("modeComboBox",
+                                  fget=_simulation_mode_from_combobox)
     number_of_ions = gutils.bind("numberOfIonsSpinBox")
     number_of_ions_in_presimu = gutils.bind("numberOfPreIonsSpinBox")
     number_of_scaling_ions = gutils.bind("numberOfScalingIonsSpinBox")
@@ -72,9 +86,10 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
         "minimumMainScatterAngleDoubleSpinBox")
     minimum_energy_of_ions = gutils.bind("minimumEnergyDoubleSpinBox")
     seed = gutils.bind("seedSpinBox")
-    date = gutils.bind("dateLabel",
-                       fset=lambda t: time.strftime("%c %z %Z",
-                                                    time.localtime(t)))
+    date = gutils.bind(
+        "dateLabel",
+        fset=lambda qobj, t: qobj.setText(time.strftime("%c %z %Z",
+                                                        time.localtime(t))))
 
     def __init__(self, element_simulation: ElementSimulation):
         """

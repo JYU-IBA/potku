@@ -264,8 +264,6 @@ class TestElementSimulation(unittest.TestCase):
             "number_of_scaling_ions": 5,
             "main_recoil": self.main_rec.name
         }
-        # Update expected with kwargs
-        original_keys = set(expected.keys())
         expected.update(self.kwargs)
         result = self.elem_sim.to_dict()
 
@@ -279,27 +277,6 @@ class TestElementSimulation(unittest.TestCase):
                                )
         self.assertEqual("False", result.pop("use_default_settings"))
         self.assertEqual(expected, result)
-
-        # Test default settings
-        self.elem_sim.use_default_settings = True
-        result_default = self.elem_sim.to_dict()
-        timestamp = time.time()
-        self.assertAlmostEqual(timestamp, result_default.pop(
-            "modification_time_unix"), places=2,
-                               msg="This assertion may fail if the test "
-                                   "is running particularly slow. Run the "
-                                   "test again to confirm results.")
-        self.assertEqual("True", result_default.pop("use_default_settings"))
-        self.assertCountEqual(expected, result_default)
-
-        # Assert that default keys contain expected values:
-        for k in original_keys:
-            self.assertEqual(expected[k], result_default[k])
-
-        # Assert that other values differ from nondefault dict
-        set_dif = set(result.keys()) - original_keys
-        for k in set_dif:
-            self.assertNotEqual(result[k], result_default[k])
 
     def test_copy_from_another(self):
         another = ElementSimulation(

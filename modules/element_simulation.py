@@ -461,29 +461,27 @@ class ElementSimulation(Observable):
         """Returns a dictionary representation of the element simulation
         object.
         """
-        elem_sim = self.get_element_simulation()
-
         # TODO maybe declare __dict__ in __slots__ so we get to use vars
         # d = vars(elem_sim)
 
         return {
             # TODO should this have the name of the elem_sim instead?
             "name": self.get_full_name(),
-            "description": elem_sim.description,
+            "description": self.description,
             "modification_time": time.strftime("%c %z %Z", time.localtime(
                 time.time())),
             "modification_time_unix": time.time(),
-            "simulation_type": elem_sim.simulation_type,
-            "simulation_mode": elem_sim.simulation_mode,
-            "number_of_ions": elem_sim.number_of_ions,
-            "number_of_preions": elem_sim.number_of_preions,
-            "seed_number": elem_sim.seed_number,
-            "number_of_recoils": elem_sim.number_of_recoils,
-            "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
-            "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
+            "simulation_type": self.simulation_type,
+            "simulation_mode": self.simulation_mode,
+            "number_of_ions": self.number_of_ions,
+            "number_of_preions": self.number_of_preions,
+            "seed_number": self.seed_number,
+            "number_of_recoils": self.number_of_recoils,
+            "number_of_scaling_ions": self.number_of_scaling_ions,
+            "minimum_scattering_angle": self.minimum_scattering_angle,
             "minimum_main_scattering_angle":
-                elem_sim.minimum_main_scattering_angle,
-            "minimum_energy": elem_sim.minimum_energy,
+                self.minimum_main_scattering_angle,
+            "minimum_energy": self.minimum_energy,
             "use_default_settings": str(self.use_default_settings),
             "main_recoil": self.main_recoil.name
         }
@@ -723,7 +721,8 @@ class ElementSimulation(Observable):
             "minimum_scattering_angle": self.minimum_scattering_angle,
             "minimum_main_scattering_angle":
                 self.minimum_main_scattering_angle,
-            "minimum_energy_of_ions": self.minimum_energy
+            "minimum_energy_of_ions": self.minimum_energy,
+            "seed": self.seed_number
         }
 
     def get_current_status(self, starting=False):

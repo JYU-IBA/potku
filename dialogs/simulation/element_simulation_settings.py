@@ -82,7 +82,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             self.toggle_settings)
         self.use_default_settings = self.element_simulation.use_default_settings
 
-        self.set_spinbox_maximums()     # TODO do this in Simuwidget
+        self.set_spinbox_maximums()
 
         self.original_use_default_settings = \
             self.element_simulation.use_default_settings
@@ -91,28 +91,11 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         self.__close = True
         self.exec_()
 
-    @staticmethod
-    def __check_text(input_field, settings):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-            settings: Settings dialog.
-        """
-        settings.fields_are_valid = iv.check_text(input_field)
-
-    def __validate(self):
-        """
-        Validate the mcsimu settings file name.
-        """
-        text = self.nameLineEdit.text()
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = iv.validate_text_input(text, regex)
-
-        self.nameLineEdit.setText(valid_text)
-
     def set_spinbox_maximums(self):
         """Set maximum values to spinbox components."""
+        # TODO find out if element simulation settings should have different
+        #      maxima than request settings.
+        #      If not, this can be moved to SimulationSettingsWidget
         int_max = 2147483647
         float_max = 1000000000000000013287555072.00
         self.sim_widget.numberOfIonsSpinBox.setMaximum(int_max)
@@ -124,48 +107,6 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         self.sim_widget.minimumMainScatterAngleDoubleSpinBox.setMaximum(
             float_max)
         self.sim_widget.minimumEnergyDoubleSpinBox.setMaximum(float_max)
-
-    def show_settings(self):
-        """Show settings of ElementSimulation object in view."""
-        uds = self.element_simulation.use_default_settings
-        self.defaultSettingsCheckBox.setChecked(uds)
-        self.original_use_default_settings = uds
-        self.settingsGroupBox.setEnabled(uds)
-        self.use_default_settings = uds
-
-        self.sim_widget.nameLineEdit.setText(
-            self.element_simulation.name)
-        self.sim_widget.descriptionPlainTextEdit.setPlainText(
-            self.element_simulation.description)
-        self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
-            self.element_simulation.modification_time)))
-        if self.element_simulation.simulation_type == "ERD":
-            self.typeOfSimulationComboBox.setCurrentIndex(
-                self.typeOfSimulationComboBox.findText(
-                    "REC", Qt.MatchFixedString))
-        else:
-            self.typeOfSimulationComboBox.setCurrentIndex(
-                self.typeOfSimulationComboBox.findText(
-                    "SCT", Qt.MatchFixedString))
-        self.modeComboBox.setCurrentIndex(
-            self.modeComboBox.findText(
-                self.element_simulation.simulation_mode, Qt.MatchFixedString))
-        self.numberOfIonsSpinBox.setValue(
-            self.element_simulation.number_of_ions)
-        self.numberOfPreIonsSpinBox.setValue(
-            self.element_simulation.number_of_preions)
-        self.seedSpinBox.setValue(
-            self.element_simulation.seed_number)
-        self.numberOfRecoilsSpinBox.setValue(
-            self.element_simulation.number_of_recoils)
-        self.numberOfScalingIonsSpinBox.setValue(
-            self.element_simulation.number_of_scaling_ions)
-        self.minimumScatterAngleDoubleSpinBox.setValue(
-            self.element_simulation.minimum_scattering_angle)
-        self.minimumMainScatterAngleDoubleSpinBox.setValue(
-            self.element_simulation.minimum_main_scattering_angle)
-        self.minimumEnergyDoubleSpinBox.setValue(
-            self.element_simulation.minimum_energy)
 
     def toggle_settings(self):
         """If request settings checkbox is checked, disables settings in dialog.
