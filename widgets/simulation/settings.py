@@ -41,30 +41,31 @@ from PyQt5.QtCore import Qt
 class SimulationSettingsWidget(QtWidgets.QWidget):
     """Class for creating a simulation settings tab.
     """
-    def __init__(self, obj):
+    def __init__(self, element_simulation):
         """
         Initializes the widget.
 
         Args:
-            obj: Element simulation object.
+            element_simulation: Element simulation object.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_request_simulation_settings.ui"),
-                             self)
-        self.obj = obj
+        uic.loadUi(os.path.join("ui_files",
+                                "ui_request_simulation_settings.ui"),
+                   self)
+        self.setEnabled(False)
+        self.element_simulation = element_simulation
 
-        iv.set_input_field_red(self.ui.nameLineEdit)
+        iv.set_input_field_red(self.nameLineEdit)
         self.fields_are_valid = False
-        self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
-            self.ui.nameLineEdit, self))
+        self.nameLineEdit.textChanged.connect(lambda: self.__check_text(
+            self.nameLineEdit, self))
 
-        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+        self.nameLineEdit.textEdited.connect(lambda: self.__validate())
 
         locale = QLocale.c()
-        self.ui.minimumScatterAngleDoubleSpinBox.setLocale(locale)
-        self.ui.minimumMainScatterAngleDoubleSpinBox.setLocale(locale)
-        self.ui.minimumEnergyDoubleSpinBox.setLocale(locale)
+        self.minimumScatterAngleDoubleSpinBox.setLocale(locale)
+        self.minimumMainScatterAngleDoubleSpinBox.setLocale(locale)
+        self.minimumEnergyDoubleSpinBox.setLocale(locale)
 
         self.show_settings()
 
@@ -72,31 +73,49 @@ class SimulationSettingsWidget(QtWidgets.QWidget):
         """
         Show simualtion settings.
         """
-        self.ui.nameLineEdit.setText(self.obj.name)
-        self.ui.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
-            self.obj.modification_time)))
-        self.ui.descriptionPlainTextEdit.setPlainText(self.obj.description)
-        self.ui.modeComboBox.setCurrentIndex(self.ui.modeComboBox.findText(
-            self.obj.simulation_mode, Qt.MatchFixedString))
-        if self.obj.simulation_type == "ERD":
-            self.ui.typeOfSimulationComboBox.setCurrentIndex(
-                self.ui.typeOfSimulationComboBox.findText(
+        self.nameLineEdit.setText(self.element_simulation.name)
+        self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+            self.element_simulation.modification_time)))
+        self.descriptionPlainTextEdit.setPlainText(
+            self.element_simulation.description)
+        self.modeComboBox.setCurrentIndex(self.modeComboBox.findText(
+            self.element_simulation.simulation_mode, Qt.MatchFixedString))
+        if self.element_simulation.simulation_type == "ERD":
+            self.typeOfSimulationComboBox.setCurrentIndex(
+                self.typeOfSimulationComboBox.findText(
                     "REC", Qt.MatchFixedString))
         else:
-            self.ui.typeOfSimulationComboBox.setCurrentIndex(
-                self.ui.typeOfSimulationComboBox.findText("SCT",
+            self.typeOfSimulationComboBox.setCurrentIndex(
+                self.typeOfSimulationComboBox.findText("SCT",
                                                          Qt.MatchFixedString))
-        self.ui.minimumScatterAngleDoubleSpinBox.setValue(
-            self.obj.minimum_scattering_angle)
-        self.ui.minimumMainScatterAngleDoubleSpinBox.setValue(
-            self.obj.minimum_main_scattering_angle)
-        self.ui.minimumEnergyDoubleSpinBox.setValue(self.obj.minimum_energy)
-        self.ui.numberOfIonsSpinBox.setValue(self.obj.number_of_ions)
-        self.ui.numberOfPreIonsSpinBox.setValue(self.obj.number_of_preions)
-        self.ui.seedSpinBox.setValue(self.obj.seed_number)
-        self.ui.numberOfRecoilsSpinBox.setValue(self.obj.number_of_recoils)
-        self.ui.numberOfScalingIonsSpinBox.setValue(
-            self.obj.number_of_scaling_ions)
+        self.minimumScatterAngleDoubleSpinBox.setValue(
+            self.element_simulation.minimum_scattering_angle)
+        self.minimumMainScatterAngleDoubleSpinBox.setValue(
+            self.element_simulation.minimum_main_scattering_angle)
+        self.minimumEnergyDoubleSpinBox.setValue(
+            self.element_simulation.minimum_energy)
+        self.numberOfIonsSpinBox.setValue(
+            self.element_simulation.number_of_ions)
+        self.numberOfPreIonsSpinBox.setValue(
+            self.element_simulation.number_of_preions)
+        self.seedSpinBox.setValue(self.element_simulation.seed_number)
+        self.numberOfRecoilsSpinBox.setValue(
+            self.element_simulation.number_of_recoils)
+        self.numberOfScalingIonsSpinBox.setValue(
+            self.element_simulation.number_of_scaling_ions)
+
+    def setEnabled(self, b):
+        """Either enables or disables widgets input fields.
+        """
+        super().setEnabled(b)
+        try:
+            # setEnabled is called when ui file is being loaded and these
+            # attributes do not yet exist, so we have to catch the exception.
+            self.formLayout.setEnabled(b)
+            self.generalParametersGroupBox.setEnabled(b)
+            self.physicalParametersGroupBox.setEnabled(b)
+        except AttributeError:
+            pass
 
     @staticmethod
     def __check_text(input_field, settings):
@@ -112,57 +131,65 @@ class SimulationSettingsWidget(QtWidgets.QWidget):
         """
         Validate the mcsimu settings file name.
         """
-        text = self.ui.nameLineEdit.text()
+        text = self.nameLineEdit.text()
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
         valid_text = iv.validate_text_input(text, regex)
 
-        self.ui.nameLineEdit.setText(valid_text)
+        self.nameLineEdit.setText(valid_text)
 
     def update_settings(self):
         """
         Update simulation settings.
         """
-        self.obj.name = self.ui.nameLineEdit.text()
-        self.obj.description = self.ui.descriptionPlainTextEdit.toPlainText()
-        if self.ui.typeOfSimulationComboBox.currentText() == "REC":
-            if self.obj.simulation_type != "ERD":
-                self.obj.simulation_type = "ERD"
-                for recoil in self.obj.recoil_elements:
+        self.element_simulation.name = self.nameLineEdit.text()
+        self.element_simulation.description = \
+            self.descriptionPlainTextEdit.toPlainText()
+        if self.typeOfSimulationComboBox.currentText() == "REC":
+            if self.element_simulation.simulation_type != "ERD":
+                self.element_simulation.simulation_type = "ERD"
+                for recoil in self.element_simulation.recoil_elements:
                     recoil.type = "rec"
                     try:
                         path_to_rec = os.path.join(
-                            self.obj.directory,
-                            recoil.prefix + "-" + recoil.name + ".sct")
+                            self.element_simulation.directory,
+                            recoil.get_full_name() + ".sct")
                         os.remove(path_to_rec)
                     except OSError:
                         pass
-                    recoil.to_file(self.obj.directory)
+                    recoil.to_file(self.element_simulation.directory)
         else:
-            if self.obj.simulation_type != "RBS":
-                self.obj.simulation_type = "RBS"
-                for recoil in self.obj.recoil_elements:
+            if self.element_simulation.simulation_type != "RBS":
+                self.element_simulation.simulation_type = "RBS"
+                for recoil in self.element_simulation.recoil_elements:
                     recoil.type = "sct"
                     try:
                         path_to_rec = os.path.join(
-                            self.obj.directory,
-                            recoil.prefix + "-" + recoil.name + ".rec")
+                            self.element_simulation.directory,
+                            recoil.get_full_name() + ".rec")
                         os.remove(path_to_rec)
                     except OSError:
                         pass
-                    recoil.to_file(self.obj.directory)
+                    recoil.to_file(self.element_simulation.directory)
 
-        self.obj.simulation_mode = self.ui.modeComboBox.currentText().lower()
-        self.obj.number_of_ions = self.ui.numberOfIonsSpinBox.value()
-        self.obj.number_of_preions = self.ui.numberOfPreIonsSpinBox.value()
-        self.obj.seed_number = self.ui.seedSpinBox.value()
-        self.obj.number_of_recoils = self.ui.numberOfRecoilsSpinBox.value()
-        self.obj.number_of_scaling_ions = self.ui.numberOfScalingIonsSpinBox. \
+        self.element_simulation.simulation_mode = \
+            self.modeComboBox.currentText().lower()
+        self.element_simulation.number_of_ions = \
+            self.numberOfIonsSpinBox.value()
+        self.element_simulation.number_of_preions = \
+            self.numberOfPreIonsSpinBox.value()
+        self.element_simulation.seed_number = \
+            self.seedSpinBox.value()
+        self.element_simulation.number_of_recoils = \
+            self.numberOfRecoilsSpinBox.value()
+        self.element_simulation.number_of_scaling_ions = \
+            self.numberOfScalingIonsSpinBox. \
             value()
-        self.obj.minimum_scattering_angle = \
-            self.ui.minimumScatterAngleDoubleSpinBox.value()
-        self.obj.minimum_main_scattering_angle = \
-            self.ui.minimumMainScatterAngleDoubleSpinBox.value()
-        self.obj.minimum_energy = self.ui.minimumEnergyDoubleSpinBox.value()
+        self.element_simulation.minimum_scattering_angle = \
+            self.minimumScatterAngleDoubleSpinBox.value()
+        self.element_simulation.minimum_main_scattering_angle = \
+            self.minimumMainScatterAngleDoubleSpinBox.value()
+        self.element_simulation.minimum_energy = \
+            self.minimumEnergyDoubleSpinBox.value()
 
     def values_changed(self):
         """
@@ -172,36 +199,39 @@ class SimulationSettingsWidget(QtWidgets.QWidget):
         Return:
             True or False.
         """
-        if self.obj.name != self.ui.nameLineEdit.text():
+        if self.element_simulation.name != self.nameLineEdit.text():
             return True
-        if self.obj.description != \
-                self.ui.descriptionPlainTextEdit.toPlainText():
+        if self.element_simulation.description != \
+                self.descriptionPlainTextEdit.toPlainText():
             return True
-        if self.ui.typeOfSimulationComboBox.currentText() == "REC":
-            if self.obj.simulation_type != "ERD":
+        if self.typeOfSimulationComboBox.currentText() == "REC":
+            if self.element_simulation.simulation_type != "ERD":
                 return True
         else:
-            if self.obj.simulation_type != "RBS":
+            if self.element_simulation.simulation_type != "RBS":
                 return True
-        if self.obj.simulation_mode != self.ui.modeComboBox.currentText().\
-           lower():
+        if self.element_simulation.simulation_mode != \
+                self.modeComboBox.currentText().lower():
             return True
-        if self.obj.number_of_ions != self.ui.numberOfIonsSpinBox.value():
+        if self.element_simulation.number_of_ions != \
+                self.numberOfIonsSpinBox.value():
             return True
-        if self.obj.number_of_preions != self.ui.numberOfPreIonsSpinBox.value():
+        if self.element_simulation.number_of_preions != \
+                self.numberOfPreIonsSpinBox.value():
             return True
-        if self.obj.number_of_recoils != self.ui.numberOfRecoilsSpinBox.value():
+        if self.element_simulation.number_of_recoils != \
+                self.numberOfRecoilsSpinBox.value():
             return True
-        if self.obj.number_of_scaling_ions != \
-                self.ui.numberOfScalingIonsSpinBox.value():
+        if self.element_simulation.number_of_scaling_ions != \
+                self.numberOfScalingIonsSpinBox.value():
             return True
-        if self.obj.minimum_scattering_angle != \
-            self.ui.minimumScatterAngleDoubleSpinBox.value():
+        if self.element_simulation.minimum_scattering_angle != \
+            self.minimumScatterAngleDoubleSpinBox.value():
             return True
-        if self.obj.minimum_main_scattering_angle != \
-            self.ui.minimumMainScatterAngleDoubleSpinBox.value():
+        if self.element_simulation.minimum_main_scattering_angle != \
+            self.minimumMainScatterAngleDoubleSpinBox.value():
             return True
-        if self.obj.minimum_energy != \
-                self.ui.minimumEnergyDoubleSpinBox.value():
+        if self.element_simulation.minimum_energy != \
+                self.minimumEnergyDoubleSpinBox.value():
             return True
         return False

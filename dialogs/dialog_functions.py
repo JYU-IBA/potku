@@ -468,7 +468,8 @@ def _get_confirmation(qdialog, **kwargs):
     return reply == QtWidgets.QMessageBox.Yes
 
 
-def delete_element_simulations(qdialog, tab, simulation, msg_str="settings"):
+def delete_element_simulations(qdialog, tab, simulation,
+                               element_simulation=None, msg_str="settings"):
     """Deletes running and finished simulations if given confirmation by
     the user.
 
@@ -477,6 +478,10 @@ def delete_element_simulations(qdialog, tab, simulation, msg_str="settings"):
     """
     # TODO add ability to start a new simulation instead of deleting old one
     all_sims = simulation.get_active_simulations()
+    if element_simulation is not None:
+        for elem_sim_list in all_sims:
+            elem_sim_list[:] = [elem_sim for elem_sim in elem_sim_list if
+                                elem_sim is element_simulation]
 
     if not _get_confirmation(qdialog, msg_str=msg_str,
                              **all_sims._asdict()):

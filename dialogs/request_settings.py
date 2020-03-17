@@ -107,10 +107,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_element_simulation)
         self.ui.tabs.addTab(self.simulation_settings_widget, "Simulation")
 
-        self.simulation_settings_widget.ui.generalParametersGroupBox \
-            .setEnabled(True)
-        self.simulation_settings_widget.ui.physicalParametersGroupBox \
-            .setEnabled(True)
+        self.simulation_settings_widget.setEnabled(True)
 
         # Add profile settings view to the settings view
         self.profile_settings_widget = ProfileSettingsWidget(
@@ -194,7 +191,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             #  rerunning simulations
             if self.measurement_settings_widget.other_values_changed():
                 only_unnotified_changed = True
-            if self.simulation_settings_widget.ui.seedSpinBox.value() != \
+            if self.simulation_settings_widget.seedSpinBox.value() != \
                     self.request.default_element_simulation.seed_number:
                 only_seed_changed = True
             if self.detector_settings_widget.other_values_changed():
@@ -332,7 +329,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             if only_seed_changed:
                 # If there are running simulation that use the same seed as the
                 # new one, stop them
-                seed = self.simulation_settings_widget.ui.seedSpinBox.value()
+                seed = self.simulation_settings_widget.seedSpinBox.value()
                 running_simulations = self.request.running_simulations_by_seed(
                     seed)
                 if running_simulations:
