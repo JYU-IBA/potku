@@ -182,10 +182,11 @@ def to_qtime(seconds: int) -> QTime:
     return t
 
 
-def _fget(qobj):
+def _fget(instance, qobj_name):
     """Returns a default getter method based on the type of the given
     QObject.
     """
+    qobj = getattr(instance, qobj_name)
     if isinstance(qobj, QtWidgets.QTimeEdit):
         return lambda: from_qtime(qobj.time())
     if isinstance(qobj, QtWidgets.QLineEdit):
@@ -203,10 +204,11 @@ def _fget(qobj):
     return qobj.value
 
 
-def _fset(qobj):
+def _fset(instance, qobj_name):
     """Returns a default setter method based on the type of the given
     QObject.
     """
+    qobj = getattr(instance, qobj_name)
     if isinstance(qobj, QtWidgets.QTimeEdit):
         return lambda sec: qobj.setTime(to_qtime(sec))
     if isinstance(qobj, QtWidgets.QLineEdit):
@@ -228,6 +230,9 @@ def _fset(qobj):
 class BindingPropertyWidget(abc.ABC):
     """Base class for a widget that contains bindable properties.
     """
+    def __init__(self):
+        self._original_property_values = {}
+
     def _get_properties(self):
         """Returns the names of all properties the widget has.
         """
@@ -258,6 +263,10 @@ class BindingPropertyWidget(abc.ABC):
             p: getattr(self, p)
             for p in self._get_properties()
         }
+
+    def are_values_changed(self):
+        return any(getattr(type(self), p).is_value_changed(self)
+                   for p in self.get_properties())
 
 
 class PropertySavingWidget(BindingPropertyWidget, abc.ABC):
@@ -322,14 +331,46 @@ class PropertySavingWidget(BindingPropertyWidget, abc.ABC):
         self.set_properties(**params)
 
 
-def bind(qobj_name, fget=None, fset=None, twoway=True):
-    """Returns a property that is bound to a QObject.
+class BindingProperty(property):
+    def __init__(self, *args, prop_name=None, track_change=False, **kwargs):
+        super().__init__(*args, **kwargs)
 
-    Widget that uses this function has to have a reference to QObject with
-    given attribute name.
+        if track_change and prop_name is None:
+            raise ValueError("If changes in property value are to be "
+                             "tracked, property name must not be None.")
+
+        self.__prop_name = prop_name
+        self.__track_change = track_change
+
+    def __set__(self, instance, value):
+        self.fset(instance, value)
+        if self.__track_change and isinstance(instance, BindingPropertyWidget):
+            set_val = self.fget(instance)
+            if set_val is None:
+                return
+
+            orig_props = getattr(instance, "_original_property_values", None)
+            if orig_props is None:
+                instance._original_property_values = {
+                    self.__prop_name: set_val
+                }
+            elif self.__prop_name not in orig_props:
+                instance._original_property_values[self.__prop_name] = set_val
+
+    def is_value_changed(self, instance):
+        if self.__track_change:
+            orig_props = getattr(instance, "_original_property_values", {})
+            orig_value = orig_props.get(self.__prop_name, None)
+            return self.fget(instance) != orig_value
+        return False
+
+
+def bind(prop_name, fget=None, fset=None, twoway=True,
+         track_change=False):
+    """Returns a property that is bound to an attribute.
 
     Args:
-        qobj_name: name of an attribute that is a reference to a QObject
+        prop_name: name of an attribute that the property will be bound to
         fget: function that takes the QObject as parameter and returns the
             value of the property
         fset: function that takes the QObject and a value as parameters and
@@ -337,57 +378,44 @@ def bind(qobj_name, fget=None, fset=None, twoway=True):
         twoway: whether binding is two-way (setting the property also sets
                 the QObject value) or one-way.
     """
-    def getter(self):
-        qobj = getattr(self, qobj_name)
+    def getter(instance):
         if fget is None:
-            return _fget(qobj)()
-        return fget(qobj)
+            return _fget(instance, prop_name)()
+        return fget(instance, prop_name)
 
     if not twoway:
-        return property(getter)
+        return BindingProperty(getter)
 
-    def setter(self, value):
-        qobj = getattr(self, qobj_name)
+    def setter(instance, value):
         try:
             if fset is None:
-                _fset(qobj)(value)
+                _fset(instance, prop_name)(value)
             else:
-                fset(qobj, value)
-        except TypeError as e:
-            print(e)
+                fset(instance, prop_name, value)
+        except TypeError:
             pass
 
-    return property(getter, setter)
-
-
-def nonbind(attr_name):
-    """Returns a regular property for the given attribute name.
-    """
-    def getter(self):
-        return getattr(self, attr_name)
-
-    def setter(self, value):
-        setattr(self, attr_name, value)
-
-    return property(getter, setter)
+    return BindingProperty(getter, setter, prop_name=prop_name,
+                           track_change=track_change)
 
 
 def multi_bind(qobjs, funcs, twoway=True):
     # TODO refactor this with bind
     # TODO enable twoway binding with combobox
-    def getter(self):
+    def getter(instance):
         return tuple(
-            conv(_fget(getattr(self, qobj))())
+            conv(_fget(instance, qobj)())
             for qobj, conv in zip(qobjs, funcs)
         )
 
-    def setter(self, values):
-        if twoway:
-            for qobj, value in zip(qobjs, values):
-                obj = getattr(self, qobj)
-                try:
-                    _fset(obj)(value)
-                except TypeError:
-                    pass
+    if not twoway:
+        return BindingProperty(getter)
 
-    return property(getter, setter)
+    def setter(instance, values):
+        for qobj, value in zip(qobjs, values):
+            try:
+                _fset(instance, qobj)(value)
+            except TypeError:
+                pass
+
+    return BindingProperty(getter, setter)

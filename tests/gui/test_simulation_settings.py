@@ -85,9 +85,9 @@ class TestSimulationSettingsWidget(unittest.TestCase):
                          sim_widget.typeOfSimulationComboBox.currentText())
 
     @patch("os.remove")
-    @patch("modules.element_simulation.ElementSimulation.to_file")
+    @patch("modules.recoil_element.RecoilElement.to_file")
     @utils.change_wd_to_root
-    def test_update_elementsimulation(self, mock_remove, mock_to_file):
+    def test_update_elementsimulation(self, mock_remove, mock_rec_to_file):
         """Tests if updating properties also updates ElementSimulation
         object.
 
@@ -116,22 +116,34 @@ class TestSimulationSettingsWidget(unittest.TestCase):
         self.assertEqual(12.5, self.elem_sim.minimum_scattering_angle)
         self.assertEqual(45, self.elem_sim.seed_number)
 
+        # Assert that the patched methods got called at least once
+        mock_remove.assert_called()
+        mock_rec_to_file.assert_called()
+
     @utils.change_wd_to_root
     def test_value_changed(self):
         sim_widget = SimulationSettingsWidget(self.elem_sim)
 
         self.assertFalse(sim_widget.values_changed())
+        self.assertEqual(sim_widget.values_changed(),
+                         sim_widget.are_values_changed())
 
         # Seed is not taken into account
         sim_widget.seed = 45
         self.assertFalse(sim_widget.values_changed())
+        self.assertEqual(sim_widget.values_changed(),
+                         sim_widget.are_values_changed())
 
         sim_widget.name = "bar"
         self.assertTrue(sim_widget.values_changed())
+        self.assertEqual(sim_widget.values_changed(),
+                         sim_widget.are_values_changed())
 
         # Changing the name back also resets value_changed
         sim_widget.name = "foo"
         self.assertFalse(sim_widget.values_changed())
+        self.assertEqual(sim_widget.values_changed(),
+                         sim_widget.are_values_changed())
 
 
 if __name__ == '__main__':

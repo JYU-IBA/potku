@@ -50,18 +50,20 @@ _TYPE_CONVERSION = {
 }
 
 
-def _simulation_mode_from_combobox(combobox):
-    return combobox.currentText().lower()
+def _simulation_mode_from_combobox(instance, combobox):
+    qbox = getattr(instance, combobox)
+    return qbox.currentText().lower()
 
 
-def _simulation_type_to_combobox(combobox, value):
+def _simulation_type_to_combobox(instance, combobox, value):
+    qbox = getattr(instance, combobox)
     converted_type = _TYPE_CONVERSION[value]
-    combobox.setCurrentIndex(combobox.findText(converted_type,
-                                               Qt.MatchFixedString))
+    qbox.setCurrentIndex(qbox.findText(converted_type, Qt.MatchFixedString))
 
 
-def _simulation_type_from_combobox(combobox):
-    value = combobox.currentText()
+def _simulation_type_from_combobox(instance, combobox):
+    qbox = getattr(instance, combobox)
+    value = qbox.currentText()
     return _TYPE_CONVERSION[value]
 
 
@@ -70,21 +72,30 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
                                metaclass=gutils.QtABCMeta):
     """Class for creating a simulation settings tab.
     """
-    name = gutils.bind("nameLineEdit")
-    description = gutils.bind("descriptionPlainTextEdit")
+    name = gutils.bind("nameLineEdit", track_change=True)
+    description = gutils.bind("descriptionPlainTextEdit", track_change=True)
     simulation_type = gutils.bind("typeOfSimulationComboBox",
                                   fget=_simulation_type_from_combobox,
-                                  fset=_simulation_type_to_combobox)
+                                  fset=_simulation_type_to_combobox,
+                                  track_change=True)
     simulation_mode = gutils.bind("modeComboBox",
-                                  fget=_simulation_mode_from_combobox)
-    number_of_ions = gutils.bind("numberOfIonsSpinBox")
-    number_of_ions_in_presimu = gutils.bind("numberOfPreIonsSpinBox")
-    number_of_scaling_ions = gutils.bind("numberOfScalingIonsSpinBox")
-    number_of_recoils = gutils.bind("numberOfRecoilsSpinBox")
-    minimum_scattering_angle = gutils.bind("minimumScatterAngleDoubleSpinBox")
+                                  fget=_simulation_mode_from_combobox,
+                                  track_change=True)
+    number_of_ions = gutils.bind("numberOfIonsSpinBox", track_change=True)
+    number_of_ions_in_presimu = gutils.bind("numberOfPreIonsSpinBox",
+                                            track_change=True)
+    number_of_scaling_ions = gutils.bind("numberOfScalingIonsSpinBox",
+                                         track_change=True)
+    number_of_recoils = gutils.bind("numberOfRecoilsSpinBox",
+                                    track_change=True)
+    minimum_scattering_angle = gutils.bind("minimumScatterAngleDoubleSpinBox",
+                                           track_change=True)
     minimum_main_scattering_angle = gutils.bind(
-        "minimumMainScatterAngleDoubleSpinBox")
-    minimum_energy_of_ions = gutils.bind("minimumEnergyDoubleSpinBox")
+        "minimumMainScatterAngleDoubleSpinBox", track_change=True)
+    minimum_energy_of_ions = gutils.bind("minimumEnergyDoubleSpinBox",
+                                         track_change=True)
+
+    # Seed and date are not tracked for changes
     seed = gutils.bind("seedSpinBox")
     date = gutils.bind(
         "dateLabel",
@@ -112,7 +123,6 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
         self.fields_are_valid = False
         self.nameLineEdit.textChanged.connect(lambda: self.__check_text(
             self.nameLineEdit, self))
-
         self.nameLineEdit.textEdited.connect(lambda: self.__validate())
 
         locale = QLocale.c()
@@ -125,41 +135,6 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
             description=self.element_simulation.description,
             date=self.element_simulation.modification_time,
             **self.element_simulation.get_simulation_settings())
-
-    def show_settings(self):
-        """
-        Show simualtion settings.
-        """
-        self.nameLineEdit.setText(self.element_simulation.name)
-        self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
-            self.element_simulation.modification_time)))
-        self.descriptionPlainTextEdit.setPlainText(
-            self.element_simulation.description)
-        self.modeComboBox.setCurrentIndex(self.modeComboBox.findText(
-            self.element_simulation.simulation_mode, Qt.MatchFixedString))
-        if self.element_simulation.simulation_type == "ERD":
-            self.typeOfSimulationComboBox.setCurrentIndex(
-                self.typeOfSimulationComboBox.findText(
-                    "REC", Qt.MatchFixedString))
-        else:
-            self.typeOfSimulationComboBox.setCurrentIndex(
-                self.typeOfSimulationComboBox.findText("SCT",
-                                                         Qt.MatchFixedString))
-        self.minimumScatterAngleDoubleSpinBox.setValue(
-            self.element_simulation.minimum_scattering_angle)
-        self.minimumMainScatterAngleDoubleSpinBox.setValue(
-            self.element_simulation.minimum_main_scattering_angle)
-        self.minimumEnergyDoubleSpinBox.setValue(
-            self.element_simulation.minimum_energy)
-        self.numberOfIonsSpinBox.setValue(
-            self.element_simulation.number_of_ions)
-        self.numberOfPreIonsSpinBox.setValue(
-            self.element_simulation.number_of_preions)
-        self.seedSpinBox.setValue(self.element_simulation.seed_number)
-        self.numberOfRecoilsSpinBox.setValue(
-            self.element_simulation.number_of_recoils)
-        self.numberOfScalingIonsSpinBox.setValue(
-            self.element_simulation.number_of_scaling_ions)
 
     def setEnabled(self, b):
         """Either enables or disables widgets input fields.
@@ -198,55 +173,43 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
         """
         Update simulation settings.
         """
-        self.element_simulation.name = self.nameLineEdit.text()
-        self.element_simulation.description = \
-            self.descriptionPlainTextEdit.toPlainText()
-        if self.typeOfSimulationComboBox.currentText() == "REC":
-            if self.element_simulation.simulation_type != "ERD":
-                self.element_simulation.simulation_type = "ERD"
-                for recoil in self.element_simulation.recoil_elements:
-                    recoil.type = "rec"
-                    try:
-                        path_to_rec = os.path.join(
-                            self.element_simulation.directory,
-                            recoil.get_full_name() + ".sct")
-                        os.remove(path_to_rec)
-                    except OSError:
-                        pass
-                    recoil.to_file(self.element_simulation.directory)
-        else:
-            if self.element_simulation.simulation_type != "RBS":
-                self.element_simulation.simulation_type = "RBS"
-                for recoil in self.element_simulation.recoil_elements:
-                    recoil.type = "sct"
-                    try:
-                        path_to_rec = os.path.join(
-                            self.element_simulation.directory,
-                            recoil.get_full_name() + ".rec")
-                        os.remove(path_to_rec)
-                    except OSError:
-                        pass
-                    recoil.to_file(self.element_simulation.directory)
+        self.element_simulation.name = self.name
+        self.element_simulation.description = self.description
 
-        self.element_simulation.simulation_mode = \
-            self.modeComboBox.currentText().lower()
-        self.element_simulation.number_of_ions = \
-            self.numberOfIonsSpinBox.value()
+        if self.simulation_type != self.element_simulation.simulation_type:
+            self.element_simulation.simulation_type = self.simulation_type
+
+            if self.simulation_type == "ERD":
+                new_type = "rec"
+                old_type = ".sct"
+            else:
+                new_type = "sct"
+                old_type = ".rec"
+            for recoil in self.element_simulation.recoil_elements:
+                recoil.type = new_type
+                try:
+                    path_to_rec = os.path.join(
+                        self.element_simulation.directory,
+                        recoil.get_full_name() + old_type)
+                    os.remove(path_to_rec)
+                except OSError:
+                    pass
+                recoil.to_file(self.element_simulation.directory)
+
+        self.element_simulation.simulation_mode = self.simulation_mode
+        self.element_simulation.number_of_ions = self.number_of_ions
         self.element_simulation.number_of_preions = \
-            self.numberOfPreIonsSpinBox.value()
-        self.element_simulation.seed_number = \
-            self.seedSpinBox.value()
-        self.element_simulation.number_of_recoils = \
-            self.numberOfRecoilsSpinBox.value()
+            self.number_of_ions_in_presimu
+        self.element_simulation.seed_number = self.seed
+        self.element_simulation.number_of_recoils = self.number_of_recoils
         self.element_simulation.number_of_scaling_ions = \
-            self.numberOfScalingIonsSpinBox. \
-            value()
+            self.number_of_scaling_ions
         self.element_simulation.minimum_scattering_angle = \
-            self.minimumScatterAngleDoubleSpinBox.value()
+            self.minimum_scattering_angle
         self.element_simulation.minimum_main_scattering_angle = \
-            self.minimumMainScatterAngleDoubleSpinBox.value()
+            self.minimum_main_scattering_angle
         self.element_simulation.minimum_energy = \
-            self.minimumEnergyDoubleSpinBox.value()
+            self.minimum_energy_of_ions
 
     def values_changed(self):
         """
@@ -256,39 +219,33 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
         Return:
             True or False.
         """
-        if self.element_simulation.name != self.nameLineEdit.text():
+        if self.element_simulation.name != self.name:
             return True
-        if self.element_simulation.description != \
-                self.descriptionPlainTextEdit.toPlainText():
+        if self.element_simulation.description != self.description:
             return True
-        if self.typeOfSimulationComboBox.currentText() == "REC":
-            if self.element_simulation.simulation_type != "ERD":
-                return True
-        else:
-            if self.element_simulation.simulation_type != "RBS":
-                return True
-        if self.element_simulation.simulation_mode != \
-                self.modeComboBox.currentText().lower():
+        if self.element_simulation.simulation_type != self.simulation_type:
             return True
-        if self.element_simulation.number_of_ions != \
-                self.numberOfIonsSpinBox.value():
+        if self.element_simulation.simulation_mode.lower() != \
+                self.simulation_mode:
+            return True
+        if self.element_simulation.number_of_ions != self.number_of_ions:
             return True
         if self.element_simulation.number_of_preions != \
-                self.numberOfPreIonsSpinBox.value():
+                self.number_of_ions_in_presimu:
             return True
         if self.element_simulation.number_of_recoils != \
-                self.numberOfRecoilsSpinBox.value():
+                self.number_of_recoils:
             return True
         if self.element_simulation.number_of_scaling_ions != \
-                self.numberOfScalingIonsSpinBox.value():
+                self.number_of_scaling_ions:
             return True
         if self.element_simulation.minimum_scattering_angle != \
-            self.minimumScatterAngleDoubleSpinBox.value():
+            self.minimum_scattering_angle:
             return True
         if self.element_simulation.minimum_main_scattering_angle != \
-            self.minimumMainScatterAngleDoubleSpinBox.value():
+            self.minimum_main_scattering_angle:
             return True
         if self.element_simulation.minimum_energy != \
-                self.minimumEnergyDoubleSpinBox.value():
+                self.minimum_energy_of_ions:
             return True
         return False

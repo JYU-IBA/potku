@@ -64,7 +64,7 @@ class TestRecoilParameters(unittest.TestCase):
         # recoil_type is not two-way bound, so setting it raises an error
         def set_val():
             widget.recoil_type = "box"
-        self.assertRaises(AttributeError,
+        self.assertRaises(TypeError,
                           lambda: set_val())
 
         # Previously set values remain the same

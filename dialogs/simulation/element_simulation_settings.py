@@ -132,6 +132,11 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         If default settings are not used, read settings from dialog,
         put them to element simulation and save them to file.
         """
+        # TODO this is for tmp testing
+        if self.sim_widget.values_changed() != \
+                self.sim_widget.are_values_changed():
+            raise Exception("this should not happen")
+
         if self.defaultSettingsCheckBox.isChecked():
             self.use_default_settings = True
             self.element_simulation.use_default_settings = True

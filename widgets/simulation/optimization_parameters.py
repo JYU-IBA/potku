@@ -49,25 +49,27 @@ _REC_TYPES.update({
 })
 
 
-def recoil_from_combobox(combobox):
+def recoil_from_combobox(instance, combobox):
     """Converts the text value shown in combobox to a recoil type.
     """
-    return _REC_TYPES[combobox.currentText()][0]
+    qbox = getattr(instance, combobox)
+    return _REC_TYPES[qbox.currentText()][0]
 
 
-def sol_size_from_combobox(combobox):
+def sol_size_from_combobox(instance, combobox):
     """Converts the text value shown in combobox to solution size.
     """
-    return _REC_TYPES[combobox.currentText()][1]
+    qbox = getattr(instance, combobox)
+    return _REC_TYPES[qbox.currentText()][1]
 
 
-def sol_size_to_combobox(combobox, value):
+def sol_size_to_combobox(instance, combobox, value):
     """Sets the selected item in the given combobox based on the solution size.
     """
+    qbox = getattr(instance, combobox)
     try:
         str_value = _REC_TYPES[value]
-        combobox.setCurrentIndex(combobox.findText(str_value,
-                                                   Qt.MatchFixedString))
+        qbox.setCurrentIndex(qbox.findText(str_value, Qt.MatchFixedString))
     except KeyError:
         pass
 

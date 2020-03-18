@@ -170,6 +170,27 @@ class TestBinding(unittest.TestCase):
             "lab": "bar"
         }, self.widget.get_properties())
 
+    def test_track_change(self):
+        class Foo(gutils.BindingPropertyWidget):
+            bar = gutils.bind("_bar", getattr, setattr, track_change=True)
+
+            def __init__(self):
+                self._bar = None
+
+        f = Foo()
+        self.assertFalse(f.are_values_changed())
+        f.bar = 1
+        self.assertFalse(f.are_values_changed())
+        f.bar = 2
+        self.assertTrue(f.are_values_changed())
+
+        f2 = Foo()
+        self.assertFalse(f2.are_values_changed())
+        f2.bar = 3
+        self.assertFalse(f2.are_values_changed())
+        f2.bar = 4
+        self.assertTrue(f2.are_values_changed())
+
 
 class TestTimeConversion(unittest.TestCase):
     def test_conversion(self):

@@ -182,16 +182,11 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.__close = False
             return
 
-        if self.use_request_settings != self.simulation.use_request_settings:
+        if (self.use_request_settings != self.simulation.use_request_settings) \
+                or (not self.use_request_settings and self.values_changed()):
             # User has switched from simulation settings to request settings,
             # or vice versa. Confirm if the user wants to delete old simulations
-            if not df.delete_element_simulations(
-                    self, self.tab, self.simulation,
-                    msg_str="simulation settings"):
-                self.__close = False
-                return
-
-        if self.values_changed():
+            # OR
             # If values that require rerunning simulations, prompt user
             # delete previous or currently running simulation results (if those
             # exists)

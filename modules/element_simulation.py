@@ -465,7 +465,6 @@ class ElementSimulation(Observable):
         # d = vars(elem_sim)
 
         return {
-            # TODO should this have the name of the elem_sim instead?
             "name": self.get_full_name(),
             "description": self.description,
             "modification_time": time.strftime("%c %z %Z", time.localtime(
