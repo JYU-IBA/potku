@@ -46,59 +46,65 @@ def to_qtime(seconds: int) -> QTime:
     return t
 
 
+# Collections of default getter and setter methods for various QObjects.
+# Keys are the types of the QObjects and values are methods.
+_DEFAULT_GETTERS = {
+    QtWidgets.QTimeEdit: lambda qobj: from_qtime(qobj.time()),
+    QtWidgets.QLineEdit: lambda qobj: qobj.text(),
+    QtWidgets.QComboBox: lambda qobj: qobj.currentText(),
+    QtWidgets.QTextEdit: lambda qobj: qobj.toPlainText(),
+    QtWidgets.QCheckBox: lambda qobj: qobj.isChecked(),
+    QtWidgets.QLabel: lambda qobj: qobj.text(),
+    QtWidgets.QPlainTextEdit: lambda qobj: qobj.toPlainText()
+}
+
+_DEFAULT_SETTERS = {
+    QtWidgets.QTimeEdit: lambda qobj, sec: qobj.setTime(to_qtime(sec)),
+    QtWidgets.QLineEdit: lambda qobj, txt: qobj.setText(txt),
+    QtWidgets.QComboBox: lambda qobj, txt: qobj.setCurrentIndex(qobj.findText(
+        txt, QtCore.Qt.MatchFixedString)),
+    QtWidgets.QTextEdit: lambda qobj, txt: qobj.setText(txt),
+    QtWidgets.QCheckBox: lambda qobj, b: qobj.setChecked(b),
+    QtWidgets.QLabel: lambda qobj, txt: qobj.setText(txt),
+    QtWidgets.QPlainTextEdit: lambda qobj, txt: qobj.setPlainText(txt)
+}
+
+
 def _fget(instance, qobj_name):
-    """Returns a default getter method based on the type of the given
-    QObject.
+    """Returns the value of a QObject.
+
+    Args:
+        instance: object that holds a reference to a QObject.
+        qobj_name: name of the reference to a QObject.
+
+    Return:
+        value of the QObject.
     """
     qobj = getattr(instance, qobj_name)
-    if isinstance(qobj, QtWidgets.QTimeEdit):
-        return lambda: from_qtime(qobj.time())
-    if isinstance(qobj, QtWidgets.QLineEdit):
-        return qobj.text
-    if isinstance(qobj, QtWidgets.QComboBox):
-        return qobj.currentText
-    if isinstance(qobj, QtWidgets.QTextEdit):
-        return qobj.toPlainText
-    if isinstance(qobj, QtWidgets.QCheckBox):
-        return qobj.isChecked
-    if isinstance(qobj, QtWidgets.QPlainTextEdit):
-        return qobj.toPlainText
-    if isinstance(qobj, QtWidgets.QLabel):
-        return qobj.text
-    return qobj.value
+    getter = _DEFAULT_GETTERS.get(type(qobj), lambda obj: obj.value())
+    return getter(qobj)
 
 
-def _fset(instance, qobj_name):
-    """Returns a default setter method based on the type of the given
-    QObject.
+def _fset(instance, qobj_name, value):
+    """Sets the value of a QObject.
+
+    Args:
+        instance: object that holds a reference to a QObject.
+        qobj_name: name of the reference to a QObject.
+        value: new value for the QObject.
     """
     qobj = getattr(instance, qobj_name)
-    if isinstance(qobj, QtWidgets.QTimeEdit):
-        return lambda sec: qobj.setTime(to_qtime(sec))
-    if isinstance(qobj, QtWidgets.QLineEdit):
-        return qobj.setText
-    if isinstance(qobj, QtWidgets.QComboBox):
-        return lambda value: qobj.setCurrentIndex(qobj.findText(
-            value, QtCore.Qt.MatchFixedString))
-    if isinstance(qobj, QtWidgets.QTextEdit):
-        return qobj.setText
-    if isinstance(qobj, QtWidgets.QCheckBox):
-        return qobj.setChecked
-    if isinstance(qobj, QtWidgets.QPlainTextEdit):
-        return qobj.setPlainText
-    if isinstance(qobj, QtWidgets.QLabel):
-        return qobj.setText
-    return qobj.setValue
+    setter = _DEFAULT_SETTERS.get(type(qobj),
+                                  lambda obj, val: obj.setValue(val))
+    setter(qobj, value)
 
 
-class BindingPropertyWidget(abc.ABC):
+class PropertyBindingWidget(abc.ABC):
     """Base class for a widget that contains bindable properties.
     """
-    def __init__(self):
-        self._original_property_values = {}
-
     def _get_properties(self):
-        """Returns the names of all properties the widget has.
+        """Returns a generator of the names of all the properties the widget
+        has.
         """
         return (
             d for d in dir(self)
@@ -110,7 +116,7 @@ class BindingPropertyWidget(abc.ABC):
         """Sets property values.
 
         Args:
-            kwargs: properties and values as keyword arguments.
+            kwargs: property names and values as keyword arguments.
         """
         for p in self._get_properties():
             if p in kwargs:
@@ -120,20 +126,38 @@ class BindingPropertyWidget(abc.ABC):
                     pass
 
     def get_properties(self):
-        """Returns a dictionary where key-value pairs are property names and
-        their values.
+        """Returns property names and their values as a dictionary.
+
+        Return:
+            a dictionary.
         """
         return {
             p: getattr(self, p)
             for p in self._get_properties()
         }
 
+
+class PropertyTrackingWidget(PropertyBindingWidget, abc.ABC):
+    """Widget that stores the original values of its properties, and is
+    able to check if the values have changed.
+    """
+    @abc.abstractmethod
+    def get_original_property_values(self):
+        """Returns a dictionary of property names and their values.
+        """
+        pass
+
     def are_values_changed(self):
+        """Checks if current property values differ from original ones.
+
+        Return:
+            boolean.
+        """
         return any(getattr(type(self), p).is_value_changed(self)
                    for p in self.get_properties())
 
 
-class PropertySavingWidget(BindingPropertyWidget, abc.ABC):
+class PropertySavingWidget(PropertyBindingWidget, abc.ABC):
     """Property widget that saves the current state of its properties
     to file. Saving is done automatically when the widget closes, unless
     the inheriting widget overrides the closeEvent function.
@@ -195,35 +219,54 @@ class PropertySavingWidget(BindingPropertyWidget, abc.ABC):
         self.set_properties(**params)
 
 
-class BindingProperty(property):
-    def __init__(self, *args, prop_name=None, track_change=False, **kwargs):
+class TrackingProperty(property):
+    def __init__(self, *args, prop_name=None, **kwargs):
+        """Initializes a TrackingProperty.
+
+        Args:
+            args: arguments passed down to property constructor.
+            kwargs: keyword arguments passed down to property constructor.
+            prop_name: name of the property. Must not be None if the value
+                of the property is to be tracked.
+        """
         super().__init__(*args, **kwargs)
-
-        if track_change and prop_name is None:
-            raise ValueError("If changes in property value are to be "
-                             "tracked, property name must not be None.")
-
         self.__prop_name = prop_name
-        self.__track_change = track_change
 
     def __set__(self, instance, value):
+        """Sets the value of the property.
+
+        Args:
+            instance: object that holds a reference to the property.
+            value: new value of the property.
+        """
         self.fset(instance, value)
-        if self.__track_change and isinstance(instance, BindingPropertyWidget):
+        if self.__prop_name is not None and \
+                isinstance(instance, PropertyTrackingWidget):
+            # Only PropertyTrackingWidget can store original values.
             set_val = self.fget(instance)
             if set_val is None:
                 return
 
-            orig_props = getattr(instance, "_original_property_values", None)
-            if orig_props is None:
-                instance._original_property_values = {
-                    self.__prop_name: set_val
-                }
-            elif self.__prop_name not in orig_props:
-                instance._original_property_values[self.__prop_name] = set_val
+            orig_props = instance.get_original_property_values()
+            if self.__prop_name not in orig_props:
+                # If the property has not yet been stored, store it now.
+                orig_props[self.__prop_name] = set_val
 
     def is_value_changed(self, instance):
-        if self.__track_change:
-            orig_props = getattr(instance, "_original_property_values", {})
+        """Checks if the current value of the property differs from the original
+        one.
+
+        Args:
+            instance: object that has a reference to the property. If the
+                object is not an instance of PropertyTrackingWidget,
+                this returns False.
+
+        Return:
+            boolean.
+        """
+        if self.__prop_name is not None and \
+                isinstance(instance, PropertyTrackingWidget):
+            orig_props = instance.get_original_property_values()
             orig_value = orig_props.get(self.__prop_name, None)
             return self.fget(instance) != orig_value
         return False
@@ -241,26 +284,34 @@ def bind(prop_name, fget=None, fset=None, twoway=True,
             sets the value of the QObject to the given value
         twoway: whether binding is two-way (setting the property also sets
                 the QObject value) or one-way.
+        track_change: whether the property tracks changes in its value or not.
     """
     def getter(instance):
         if fget is None:
-            return _fget(instance, prop_name)()
+            return _fget(instance, prop_name)
         return fget(instance, prop_name)
 
     if not twoway:
-        return BindingProperty(getter)
+        return TrackingProperty(getter)
 
     def setter(instance, value):
         try:
             if fset is None:
-                _fset(instance, prop_name)(value)
+                _fset(instance, prop_name, value)
             else:
                 fset(instance, prop_name, value)
         except TypeError:
+            # value is wrong type, nothing to do
             pass
 
-    return BindingProperty(getter, setter, prop_name=prop_name,
-                           track_change=track_change)
+    if not track_change:
+        # If changes in property names do not need to be tracked, pass the
+        # name as None for the TrackingProperty
+        prop_name_ = None
+    else:
+        prop_name_ = prop_name
+
+    return TrackingProperty(getter, setter, prop_name=prop_name_)
 
 
 def multi_bind(qobjs, funcs, twoway=True):
@@ -268,18 +319,18 @@ def multi_bind(qobjs, funcs, twoway=True):
     # TODO enable twoway binding with combobox
     def getter(instance):
         return tuple(
-            conv(_fget(instance, qobj)())
+            conv(_fget(instance, qobj))
             for qobj, conv in zip(qobjs, funcs)
         )
 
     if not twoway:
-        return BindingProperty(getter)
+        return TrackingProperty(getter)
 
     def setter(instance, values):
         for qobj, value in zip(qobjs, values):
             try:
-                _fset(instance, qobj)(value)
+                _fset(instance, qobj, value)
             except TypeError:
                 pass
 
-    return BindingProperty(getter, setter)
+    return TrackingProperty(getter, setter)

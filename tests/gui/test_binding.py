@@ -32,7 +32,7 @@ import numpy as np
 import widgets.binding as bnd
 import widgets.gui_utils as gutils
 
-from widgets.binding import BindingPropertyWidget
+from widgets.binding import PropertyBindingWidget
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTime
@@ -41,7 +41,7 @@ from PyQt5 import QtWidgets
 app = QApplication(sys.argv)
 
 
-class BWidget(QtWidgets.QWidget, bnd.BindingPropertyWidget,
+class BWidget(QtWidgets.QWidget, bnd.PropertyBindingWidget,
               metaclass=gutils.QtABCMeta):
     foo = bnd.bind("spinbox")
     bar = bnd.bind("doubleSpinbox")
@@ -132,11 +132,15 @@ class TestBinding(unittest.TestCase):
         }, self.widget.get_properties())
 
     def test_track_change(self):
-        class Foo(BindingPropertyWidget):
+        class Foo(bnd.PropertyTrackingWidget):
             bar = bnd.bind("_bar", getattr, setattr, track_change=True)
 
             def __init__(self):
                 self._bar = None
+                self._orig = {}
+
+            def get_original_property_values(self):
+                return self._orig
 
         f = Foo()
         self.assertFalse(f.are_values_changed())
@@ -144,6 +148,8 @@ class TestBinding(unittest.TestCase):
         self.assertFalse(f.are_values_changed())
         f.bar = 2
         self.assertTrue(f.are_values_changed())
+        f.bar = 1
+        self.assertFalse(f.are_values_changed())
 
         f2 = Foo()
         self.assertFalse(f2.are_values_changed())

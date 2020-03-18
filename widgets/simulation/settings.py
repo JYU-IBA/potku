@@ -35,7 +35,7 @@ import widgets.binding as bnd
 
 from modules.element_simulation import ElementSimulation
 
-from widgets.binding import BindingPropertyWidget
+from widgets.binding import PropertyTrackingWidget
 from widgets.gui_utils import QtABCMeta
 
 from PyQt5 import QtWidgets
@@ -71,7 +71,7 @@ def _simulation_type_from_combobox(instance, combobox):
 
 
 class SimulationSettingsWidget(QtWidgets.QWidget,
-                               BindingPropertyWidget,
+                               PropertyTrackingWidget,
                                metaclass=QtABCMeta):
     """Class for creating a simulation settings tab.
     """
@@ -133,11 +133,18 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
         self.minimumMainScatterAngleDoubleSpinBox.setLocale(locale)
         self.minimumEnergyDoubleSpinBox.setLocale(locale)
 
+        self.__original_property_values = {}
+
         self.set_properties(
             name=self.element_simulation.name,
             description=self.element_simulation.description,
             date=self.element_simulation.modification_time,
             **self.element_simulation.get_simulation_settings())
+
+    def get_original_property_values(self):
+        """Returns a dictionary of original property values.
+        """
+        return self.__original_property_values
 
     def setEnabled(self, b):
         """Either enables or disables widgets input fields.

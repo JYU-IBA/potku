@@ -31,7 +31,7 @@ import abc
 
 import widgets.binding as bnd
 
-from widgets.binding import BindingPropertyWidget
+from widgets.binding import PropertyBindingWidget
 from widgets.gui_utils import QtABCMeta
 
 from PyQt5 import QtWidgets
@@ -78,7 +78,7 @@ def sol_size_to_combobox(instance, combobox, value):
 
 
 class OptimizationParameterWidget(QtWidgets.QWidget,
-                                  BindingPropertyWidget,
+                                  PropertyBindingWidget,
                                   abc.ABC,
                                   metaclass=QtABCMeta):
     """Abstract base class for recoil and fluence optimization parameter
