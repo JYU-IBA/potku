@@ -251,66 +251,6 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
 
         self.__close = True
 
-    def values_changed(self):
-        """
-        Check if simulation settings have been changed. Seed number change is
-        not registered as value change.
-
-        Return:
-            True or False.
-        """
-        if self.element_simulation.name != self.nameLineEdit.text():
-            return True
-        if self.element_simulation.description != \
-           self.descriptionPlainTextEdit.toPlainText():
-            return True
-        if self.element_simulation.simulation_mode != \
-           self.modeComboBox.currentText():
-            return True
-        if self.typeOfSimulationComboBox.currentText() == "REC":
-            if self.element_simulation.simulation_type != "ERD":
-                return True
-        else:
-            if self.element_simulation.simulation_type != "RBS":
-                return True
-        if self.element_simulation.number_of_ions != \
-           self.numberOfIonsSpinBox.value():
-            return True
-        if self.element_simulation.number_of_preions != \
-           self.numberOfPreIonsSpinBox.value():
-            return True
-        if self.element_simulation.number_of_recoils != \
-           self.numberOfRecoilsSpinBox.value():
-            return True
-        if self.element_simulation.number_of_scaling_ions != \
-           self.numberOfScalingIonsSpinBox.value():
-            return True
-        if self.element_simulation.minimum_scattering_angle != \
-           self.minimumScatterAngleDoubleSpinBox.value():
-            return True
-        if self.element_simulation.minimum_main_scattering_angle != \
-           self.minimumMainScatterAngleDoubleSpinBox.value():
-            return True
-        if self.element_simulation.minimum_energy != \
-           self.minimumEnergyDoubleSpinBox.value():
-            return True
-        return False
-
-    def simulation_running(self):
-        """
-        Check if element simulation is running.
-
-        Return:
-            True or False.
-        """
-        if self.element_simulation in \
-                self.element_simulation.simulation.request.running_simulations:
-            return True
-        elif self.element_simulation in \
-                self.element_simulation.simulation.running_simulations:
-            return True
-        return False
-
     def is_seed_used(self, seed):
         """
         Check if element simulation has man mcerd process with the given seed.

@@ -248,39 +248,6 @@ def update_detector_settings(entity, det_folder_path,
         efficiencies = []
 
 
-def clear_element_simulation(qdialog):
-    """Removes everything from the element simulation belonging to the
-    given qdialog.
-    """
-    for recoil in qdialog.element_simulation.recoil_elements:
-        # Delete files
-        gf.delete_simulation_results(qdialog.element_simulation, recoil)
-
-        # Delete energy spectra that use recoil
-        delete_recoil_espe(qdialog.tab, recoil.get_full_name())
-
-    # Reset controls
-    if qdialog.element_simulation.controls:
-        # TODO do not access controls via elem_sim. Use
-        #      observation.
-        qdialog.element_simulation.controls.reset_controls()
-    # Change full edit unlocked
-    qdialog.element_simulation.recoil_elements[0].widgets[0]. \
-        parent.edit_lock_push_button.setText(
-        "Full edit unlocked")
-    qdialog.element_simulation.simulations_done = False
-
-
-def delete_existing_simulations(qdialog):
-    qdialog.tab.del_widget(qdialog.element_simulation.optimization_widget)
-    qdialog.element_simulation.simulations_done = False
-    # Handle optimization energy spectra
-    if qdialog.element_simulation.optimization_recoils:
-        # Delete energy spectra that use
-        # optimized recoils
-        delete_optim_espe(qdialog, qdialog.element_simulation)
-
-
 def update_tab(tab):
     for energy_spectra in tab.energy_spectrum_widgets:
         tab.del_widget(energy_spectra)

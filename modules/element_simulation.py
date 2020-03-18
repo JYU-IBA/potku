@@ -491,6 +491,8 @@ class ElementSimulation(Observable):
         Args:
             other: ElementSimulation object
         """
+        # TODO change this to a function that updates the element simulation
+        #   based on kwargs
         if not isinstance(other, ElementSimulation):
             raise TypeError("ElementSimulation can only copy settings from "
                             "another ElementSimulation object.")
