@@ -31,9 +31,12 @@ import os
 import time
 
 import widgets.input_validation as iv
-import widgets.gui_utils as gutils
+import widgets.binding as bnd
 
 from modules.element_simulation import ElementSimulation
+
+from widgets.binding import BindingPropertyWidget
+from widgets.gui_utils import QtABCMeta
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -68,36 +71,36 @@ def _simulation_type_from_combobox(instance, combobox):
 
 
 class SimulationSettingsWidget(QtWidgets.QWidget,
-                               gutils.BindingPropertyWidget,
-                               metaclass=gutils.QtABCMeta):
+                               BindingPropertyWidget,
+                               metaclass=QtABCMeta):
     """Class for creating a simulation settings tab.
     """
-    name = gutils.bind("nameLineEdit", track_change=True)
-    description = gutils.bind("descriptionPlainTextEdit", track_change=True)
-    simulation_type = gutils.bind("typeOfSimulationComboBox",
-                                  fget=_simulation_type_from_combobox,
-                                  fset=_simulation_type_to_combobox,
-                                  track_change=True)
-    simulation_mode = gutils.bind("modeComboBox",
-                                  fget=_simulation_mode_from_combobox,
-                                  track_change=True)
-    number_of_ions = gutils.bind("numberOfIonsSpinBox", track_change=True)
-    number_of_ions_in_presimu = gutils.bind("numberOfPreIonsSpinBox",
-                                            track_change=True)
-    number_of_scaling_ions = gutils.bind("numberOfScalingIonsSpinBox",
+    name = bnd.bind("nameLineEdit", track_change=True)
+    description = bnd.bind("descriptionPlainTextEdit", track_change=True)
+    simulation_type = bnd.bind("typeOfSimulationComboBox",
+                               fget=_simulation_type_from_combobox,
+                               fset=_simulation_type_to_combobox,
+                               track_change=True)
+    simulation_mode = bnd.bind("modeComboBox",
+                               fget=_simulation_mode_from_combobox,
+                               track_change=True)
+    number_of_ions = bnd.bind("numberOfIonsSpinBox", track_change=True)
+    number_of_ions_in_presimu = bnd.bind("numberOfPreIonsSpinBox",
                                          track_change=True)
-    number_of_recoils = gutils.bind("numberOfRecoilsSpinBox",
-                                    track_change=True)
-    minimum_scattering_angle = gutils.bind("minimumScatterAngleDoubleSpinBox",
-                                           track_change=True)
-    minimum_main_scattering_angle = gutils.bind(
+    number_of_scaling_ions = bnd.bind("numberOfScalingIonsSpinBox",
+                                      track_change=True)
+    number_of_recoils = bnd.bind("numberOfRecoilsSpinBox",
+                                 track_change=True)
+    minimum_scattering_angle = bnd.bind("minimumScatterAngleDoubleSpinBox",
+                                        track_change=True)
+    minimum_main_scattering_angle = bnd.bind(
         "minimumMainScatterAngleDoubleSpinBox", track_change=True)
-    minimum_energy_of_ions = gutils.bind("minimumEnergyDoubleSpinBox",
-                                         track_change=True)
+    minimum_energy_of_ions = bnd.bind("minimumEnergyDoubleSpinBox",
+                                      track_change=True)
 
     # Seed and date are not tracked for changes
-    seed = gutils.bind("seedSpinBox")
-    date = gutils.bind(
+    seed = bnd.bind("seedSpinBox")
+    date = bnd.bind(
         "dateLabel",
         fset=lambda qobj, t: qobj.setText(time.strftime("%c %z %Z",
                                                         time.localtime(t))))

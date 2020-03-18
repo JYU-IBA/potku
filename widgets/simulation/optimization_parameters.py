@@ -29,7 +29,10 @@ __version__ = "2.0"
 import os
 import abc
 
-import widgets.gui_utils as gutils
+import widgets.binding as bnd
+
+from widgets.binding import BindingPropertyWidget
+from widgets.gui_utils import QtABCMeta
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -75,22 +78,22 @@ def sol_size_to_combobox(instance, combobox, value):
 
 
 class OptimizationParameterWidget(QtWidgets.QWidget,
-                                  gutils.BindingPropertyWidget,
+                                  BindingPropertyWidget,
                                   abc.ABC,
-                                  metaclass=gutils.QtABCMeta):
+                                  metaclass=QtABCMeta):
     """Abstract base class for recoil and fluence optimization parameter
     widgets.
     """
     # Common properties
-    gen = gutils.bind("generationSpinBox")
-    pop_size = gutils.bind("populationSpinBox")
-    number_of_processes = gutils.bind("processesSpinBox")
-    cross_p = gutils.bind("crossoverProbDoubleSpinBox")
-    mut_p = gutils.bind("mutationProbDoubleSpinBox")
-    stop_percent = gutils.bind("percentDoubleSpinBox")
-    check_time = gutils.bind("timeSpinBox")
-    check_max = gutils.bind("maxTimeEdit")
-    check_min = gutils.bind("minTimeEdit")
+    gen = bnd.bind("generationSpinBox")
+    pop_size = bnd.bind("populationSpinBox")
+    number_of_processes = bnd.bind("processesSpinBox")
+    cross_p = bnd.bind("crossoverProbDoubleSpinBox")
+    mut_p = bnd.bind("mutationProbDoubleSpinBox")
+    stop_percent = bnd.bind("percentDoubleSpinBox")
+    check_time = bnd.bind("timeSpinBox")
+    check_max = bnd.bind("maxTimeEdit")
+    check_min = bnd.bind("minTimeEdit")
 
     def __init__(self, ui_file, **kwargs):
         """Initializes a optimization parameter widget.
@@ -116,20 +119,20 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
     """
 
     # Recoil specific properties
-    upper_limits = gutils.multi_bind(
+    upper_limits = bnd.multi_bind(
         ("upperXDoubleSpinBox", "upperYDoubleSpinBox"),
         (float, float)
     )
-    lower_limits = gutils.multi_bind(
+    lower_limits = bnd.multi_bind(
         ("lowerXDoubleSpinBox", "lowerYDoubleSpinBox"),
         (float, float)
     )
     # sol_size values are unique (5, 7, 9 or 11) so they can be used in
     # two-way binding
-    sol_size = gutils.bind("recoilTypeComboBox", fget=sol_size_from_combobox,
-                           fset=sol_size_to_combobox)
-    recoil_type = gutils.bind("recoilTypeComboBox", fget=recoil_from_combobox,
-                              twoway=False)
+    sol_size = bnd.bind("recoilTypeComboBox", fget=sol_size_from_combobox,
+                        fset=sol_size_to_combobox)
+    recoil_type = bnd.bind("recoilTypeComboBox", fget=recoil_from_combobox,
+                           twoway=False)
 
     @property
     def optimize_recoil(self):
@@ -157,9 +160,9 @@ class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
     """
 
     # Fluence specific properties
-    upper_limits = gutils.bind("fluenceDoubleSpinBox")
-    dis_c = gutils.bind("disCSpinBox")
-    dis_m = gutils.bind("disMSpinBox")
+    upper_limits = bnd.bind("fluenceDoubleSpinBox")
+    dis_c = bnd.bind("disCSpinBox")
+    dis_m = bnd.bind("disMSpinBox")
 
     @property
     def lower_limits(self):

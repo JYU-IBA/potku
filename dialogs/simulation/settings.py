@@ -33,7 +33,7 @@ import os
 import time
 
 import dialogs.dialog_functions as df
-import widgets.gui_utils as gutils
+import widgets.binding as bnd
 
 from modules.run import Run
 
@@ -50,7 +50,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
     """
     Dialog class for handling the simulation parameter input.
     """
-    use_request_settings = gutils.bind("defaultSettingsCheckBox")
+    use_request_settings = bnd.bind("defaultSettingsCheckBox")
 
     def __init__(self, tab, simulation, icon_manager):
         """

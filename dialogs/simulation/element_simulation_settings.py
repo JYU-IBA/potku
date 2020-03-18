@@ -28,11 +28,9 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 
 import os
-import time
 
-import widgets.gui_utils as gutils
+import widgets.binding as bnd
 import dialogs.dialog_functions as df
-import widgets.input_validation as iv
 
 from widgets.simulation.settings import SimulationSettingsWidget
 
@@ -40,13 +38,12 @@ from PyQt5 import uic
 from PyQt5 import QtWidgets
 from PyQt5.QtWidgets import QDesktopWidget
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtCore import Qt
 
 
 class ElementSimulationSettingsDialog(QtWidgets.QDialog):
     """Class for creating an element simulation settings tab.
     """
-    use_default_settings = gutils.bind("defaultSettingsCheckBox")
+    use_default_settings = bnd.bind("defaultSettingsCheckBox")
 
     def __init__(self, element_simulation, tab):
         """
