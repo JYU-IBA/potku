@@ -84,8 +84,6 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
         self.__original_property_values = {}
         self.use_default_settings = self.element_simulation.use_default_settings
 
-        self.set_spinbox_maximums()
-
         self.__close = True
         self.exec_()
 
@@ -93,23 +91,6 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
         """Returns the original values of the properties that this widget
         has."""
         return self.__original_property_values
-
-    def set_spinbox_maximums(self):
-        """Set maximum values to spinbox components."""
-        # TODO find out if element simulation settings should have different
-        #      maxima than request settings.
-        #      If not, this can be moved to SimulationSettingsWidget
-        int_max = 2147483647
-        float_max = 1000000000000000013287555072.00
-        self.sim_widget.numberOfIonsSpinBox.setMaximum(int_max)
-        self.sim_widget.numberOfPreIonsSpinBox.setMaximum(int_max)
-        self.sim_widget.seedSpinBox.setMaximum(int_max)
-        self.sim_widget.numberOfRecoilsSpinBox.setMaximum(int_max)
-        self.sim_widget.numberOfScalingIonsSpinBox.setMaximum(int_max)
-        self.sim_widget.minimumScatterAngleDoubleSpinBox.setMaximum(float_max)
-        self.sim_widget.minimumMainScatterAngleDoubleSpinBox.setMaximum(
-            float_max)
-        self.sim_widget.minimumEnergyDoubleSpinBox.setMaximum(float_max)
 
     def toggle_settings(self):
         """If request settings checkbox is checked, disables settings in dialog.
@@ -164,32 +145,6 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
                 self.__close = False
                 return
 
-        # If there are running simulation that use the same seed as the
-        # new one, stop them
-        # TODO this seems unnecessary. The seed is automatically incremented
-        #   to a unique value when a new simulation is run, so why should this
-        #   require stopping?
-        # seed = self.sim_widget.seedSpinBox.value()
-        # if self.is_seed_used(seed):
-        #     reply = QtWidgets.QMessageBox.question(
-        #         self, "Running simulations",
-        #         "There is a simulation process that has the same seed "
-        #         "number as the new one.\nIf you save changes, this "
-        #         "simulation process will be stopped (but its results will "
-        #         "not be deleted).\n\nDo you want save changes anyway?",
-        #         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-        #         QtWidgets.QMessageBox.Cancel,
-        #         QtWidgets.QMessageBox.Cancel)
-        #     if reply == QtWidgets.QMessageBox.No or reply == \
-        #             QtWidgets.QMessageBox.Cancel:
-        #         self.__close = False
-        #         return
-        #     else:
-        #         # Stop the running simulation's mcerd process
-        #         # that corresponds to seed
-        #         self.element_simulation.mcerd_objects[seed].stop_process()
-        #         del self.element_simulation.mcerd_objects[seed]
-
         self.sim_widget.update_settings()
         self.element_simulation.use_default_settings = self.use_default_settings
         self.element_simulation.to_file(
@@ -200,16 +155,3 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
         # TODO remove files with old name, if name has changed
 
         self.__close = True
-
-    # def is_seed_used(self, seed):
-    #     """
-    #     Check if element simulation has man mcerd process with the given seed.
-    #
-    #     Args:
-    #         seed: Seed number.
-    #
-    #     Return:
-    #         Whether seed is being used
-    #     """
-    #     # TODO function of element simulation
-    #     return seed in self.element_simulation.mcerd_objects

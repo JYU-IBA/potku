@@ -395,6 +395,9 @@ class RecoilElement:
             simulation_folder: Path to simulation folder in which ".rec" or
                                ".sct" files are stored.
         """
+        # TODO is it necessary to have the recoil type ('rec' or 'sct') in the
+        #  file extension? Currently Potku always has to delete the other types
+        #  of files when the simulation type is changed.
         recoil_file_path = fp.get_recoil_file_path(self, simulation_folder)
 
         obj = {

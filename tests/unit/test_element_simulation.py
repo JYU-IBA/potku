@@ -289,7 +289,7 @@ class TestElementSimulation(unittest.TestCase):
             "minimum_scattering_angle": 5,
             "minimum_main_scattering_angle": 6,
             "minimum_energy_of_ions": 7,
-            "seed": 8
+            "seed_number": 8
         }
         self.assertNotEqual(new_settings,
                             self.elem_sim.get_simulation_settings())

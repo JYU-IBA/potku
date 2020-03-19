@@ -101,7 +101,7 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
                                       track_change=True)
 
     # Seed and date are not tracked for changes
-    seed = bnd.bind("seedSpinBox")
+    seed_number = bnd.bind("seedSpinBox")
     date = bnd.bind(
         "dateLabel",
         fset=lambda qobj, t: qobj.setText(time.strftime("%c %z %Z",
@@ -123,6 +123,7 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
         # widget loads.
         self.setEnabled(False)
         self.element_simulation = element_simulation
+        self.set_spinbox_maximums()
 
         iv.set_input_field_red(self.nameLineEdit)
         self.fields_are_valid = False
@@ -160,6 +161,19 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
             self.physicalParametersGroupBox.setEnabled(b)
         except AttributeError:
             pass
+
+    def set_spinbox_maximums(self, int_max=2147483647,
+                             float_max=1000000000000000013287555072.00):
+        """Set maximum values to spinbox components.
+        """
+        self.numberOfIonsSpinBox.setMaximum(int_max)
+        self.numberOfPreIonsSpinBox.setMaximum(int_max)
+        self.seedSpinBox.setMaximum(int_max)
+        self.numberOfRecoilsSpinBox.setMaximum(int_max)
+        self.numberOfScalingIonsSpinBox.setMaximum(int_max)
+        self.minimumScatterAngleDoubleSpinBox.setMaximum(float_max)
+        self.minimumMainScatterAngleDoubleSpinBox.setMaximum(float_max)
+        self.minimumEnergyDoubleSpinBox.setMaximum(float_max)
 
     @staticmethod
     def __check_text(input_field, settings):

@@ -93,7 +93,7 @@ _SETTINGS_MAP = {
     "minimum_scattering_angle": "minimum_scattering_angle",
     "minimum_main_scattering_angle": "minimum_main_scattering_angle",
     "minimum_energy_of_ions": "minimum_energy",
-    "seed": "seed_number"
+    "seed_number": "seed_number"
 }
 
 
@@ -538,7 +538,8 @@ class ElementSimulation(Observable):
         with open(file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
 
-    def start(self, number_of_processes, start_value, use_old_erd_files=True,
+    def start(self, number_of_processes, start_value=None,
+              use_old_erd_files=True,
               optimize=False, stop_p=False, check_t=False,
               optimize_recoil=False, check_max=False, check_min=False,
               shared_ions=False, cancellation_token=None):
@@ -563,41 +564,35 @@ class ElementSimulation(Observable):
         """
         self.simulations_done = False
 
-        elem_sim = self.get_element_simulation()
-
-        target, run, detector = self.get_simulation_parameters()
-
         if not use_old_erd_files:
             self.__erd_filehandler.clear()
 
+        settings, target, run, detector = self.get_mcerd_params()
+
         # Set seed to either the value provided as parameter or use the one
         # stored in current element simulation.
-        # TODO should this also accept 0? It does not now. Is there an
-        #      acceptable range of values that should be checked for?
-        if start_value:
+        max_seed = self.get_max_seed()
+        seed_number = settings.pop("seed_number")
+        if start_value is not None:
             seed_number = start_value
-        else:
-            seed_number = elem_sim.seed_number
+        if max_seed is not None and seed_number <= max_seed:
+            seed_number = max_seed + 1
 
         if not optimize_recoil:
             recoil = self.recoil_elements[0]
         else:
             recoil = self.optimization_recoils[0]
+
         self.__opt_seed = seed_number
 
-        if shared_ions:
-            # ATM user can also enter value 0 to process count
-            # so lets make a quick check first
-            if number_of_processes < 1:
-                number_of_processes = 1
-            number_of_ions = elem_sim.number_of_ions // number_of_processes
-            number_of_preions = \
-                elem_sim.number_of_preions // number_of_processes
-        else:
-            number_of_ions = elem_sim.number_of_ions
-            number_of_preions = elem_sim.number_of_preions
+        if number_of_processes < 1:
+            number_of_processes = 1
 
         self.last_process_count = number_of_processes
+
+        if shared_ions:
+            settings["number_of_ions"] //= number_of_processes
+            settings["number_of_ions_in_presimu"] //= number_of_processes
 
         # Notify observers that we are about to go
         self.on_next(self.get_current_status(starting=True))
@@ -609,43 +604,35 @@ class ElementSimulation(Observable):
             if self.__cancellation_token is not None:
                 self.__cancellation_token.raise_if_cancelled()
 
-            settings = {
-                "simulation_type": elem_sim.simulation_type,
-                "number_of_ions": number_of_ions,
-                "number_of_ions_in_presimu": number_of_preions,
-                "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
-                "number_of_recoils": elem_sim.number_of_recoils,
-                "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
-                "minimum_main_scattering_angle":
-                    elem_sim.minimum_main_scattering_angle,
-                "minimum_energy_of_ions": elem_sim.minimum_energy,
-                "simulation_mode": elem_sim.simulation_mode,
+            settings.update({
                 "seed_number": seed_number,
                 "beam": run.beam,
                 "target": target,
                 "detector": detector,
                 "recoil_element": recoil,
                 "sim_dir": self.directory
-            }
-            # Delete corresponding erd file
+            })
+
             optimize_fluence = False
 
             # TODO create an optimization_mode enum {None, "rec", "flu"} instead
             #      of using three different booleans
             if not optimize_recoil:
                 if not optimize:
-                    new_erd_file = fp.get_erd_file_name(recoil, seed_number)
-                    # TODO check if erdfilehandler should have optim files too
+                    new_erd_file = fp.get_erd_file_name(recoil,
+                                                        seed_number)
                     self.__erd_filehandler.add_active_file(
                         Path(self.directory, new_erd_file))
                 else:
                     optimize_fluence = True
                     self.optimized_fluence = 0
-                    new_erd_file = fp.get_erd_file_name(recoil, seed_number,
+                    new_erd_file = fp.get_erd_file_name(recoil,
+                                                        seed_number,
                                                         optim_mode="fluence")
 
             else:
-                new_erd_file = fp.get_erd_file_name(recoil, seed_number,
+                new_erd_file = fp.get_erd_file_name(recoil,
+                                                    seed_number,
                                                     optim_mode="recoil")
 
             new_erd_file = Path(self.directory, new_erd_file)
@@ -689,14 +676,6 @@ class ElementSimulation(Observable):
             # the spectra have been calculated)
             self.check_spectra_change(stop_p, check_t, optimize_recoil,
                                       check_max, check_min)
-
-    def get_element_simulation(self):
-        """Returns current element simulation to be used. Depending on the
-        settings, it is either a default simulation or self.
-        """
-        if self.use_default_settings:
-            return self.request.default_element_simulation
-        return self
 
     def get_simulation_settings(self):
         """Returns simulation parameters as a dict.
@@ -1026,7 +1005,7 @@ class ElementSimulation(Observable):
         else:
             channel_width = self.channel_width
 
-        target, run, detector = self.get_simulation_parameters()
+        _, target, run, detector = self.get_mcerd_params()
 
         if fluence is not None:
             used_fluence = fluence
@@ -1050,8 +1029,16 @@ class ElementSimulation(Observable):
         self.get_espe = GetEspe(espe_settings)
         self.get_espe.run_get_espe()
 
-    def get_simulation_parameters(self):
-        if self.simulation is None or self.simulation.use_request_settings:
+    def get_mcerd_params(self):
+        """Returns the parameters for MCERD simulations.
+        """
+        if self.use_default_settings:
+            settings = self.request.default_element_simulation. \
+                get_simulation_settings()
+        else:
+            settings = self.get_simulation_settings()
+
+        if self.simulation.use_request_settings:
             target = self.request.default_target
             run = self.request.default_run
             detector = self.request.default_detector
@@ -1060,7 +1047,7 @@ class ElementSimulation(Observable):
             run = self.run
             detector = self.detector
 
-        return target, run, detector
+        return settings, target, run, detector
 
     def reset(self, remove_files=True):
         """Function that resets the state of ElementSimulation.

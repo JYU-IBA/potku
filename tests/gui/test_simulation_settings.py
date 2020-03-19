@@ -100,7 +100,7 @@ class TestSimulationSettingsWidget(unittest.TestCase):
         sim_widget.simulation_mode = "wide"
         sim_widget.number_of_ions = 11
         sim_widget.minimum_scattering_angle = 12.5
-        sim_widget.seed = 45
+        sim_widget.seed_number = 45
 
         # ElementSimulation is only updated after update_settings is called
         self.assertEqual("foo", self.elem_sim.name)
