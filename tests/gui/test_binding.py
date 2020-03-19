@@ -131,7 +131,15 @@ class TestBinding(unittest.TestCase):
             "lab": "bar"
         }, self.widget.get_properties())
 
-    def test_track_change(self):
+
+class TestTrackingProperties(unittest.TestCase):
+    """For simplicity, these tests always use getattr and setattr as getter
+    and setter.
+    """
+    def test_track_change_with_two_objects(self):
+        """Tests that two instances of PropertyTrackingWidget track their own
+        properties.
+        """
         class Foo(bnd.PropertyTrackingWidget):
             bar = bnd.bind("_bar", getattr, setattr, track_change=True)
 
@@ -157,6 +165,140 @@ class TestBinding(unittest.TestCase):
         self.assertFalse(f2.are_values_changed())
         f2.bar = 4
         self.assertTrue(f2.are_values_changed())
+
+    def test_tracking_and_nontracking_properties(self):
+        """Tests for object that has both tracking and normal
+        properties.
+        """
+        class Foo(bnd.PropertyTrackingWidget):
+            @property
+            def foo(self):
+                return self._foo
+
+            @foo.setter
+            def foo(self, value):
+                self._foo = value
+
+            bar = bnd.bind("_bar", getattr, setattr, track_change=True)
+            baz = bnd.bind("_baz", getattr, setattr, track_change=False)
+
+            def __init__(self):
+                self.orig_props = {}
+                self.set_properties(foo=1, bar=2, baz=3)
+
+            def get_original_property_values(self):
+                return self.orig_props
+
+        f = Foo()
+        # Assert that the attributes got created when f was initialized
+        self.assertTrue(all((hasattr(f, "_foo"),
+                             hasattr(f, "_bar"),
+                             hasattr(f, "_baz"))))
+        self.assertFalse(f.are_values_changed())
+
+        # These properties are not tracked so changing them does not affect
+        # are_values_changed
+        f.foo = 4
+        f.baz = 5
+        self.assertFalse(f.are_values_changed())
+
+        f.bar = 6
+        self.assertTrue(f.are_values_changed())
+
+        # Test individual properties
+        self.assertRaises(AttributeError, lambda: Foo.foo.is_value_changed(f))
+        self.assertFalse(Foo.baz.is_value_changed(f))
+        self.assertTrue(Foo.bar.is_value_changed(f))
+
+        self.assertEqual({"_bar": 2}, f.get_original_property_values())
+
+    def test_setting_attribute_directly(self):
+        """Tracking only works when property is set. If the attribute is set
+        directly, changes are not detected.
+        """
+        class Foo(bnd.PropertyTrackingWidget):
+            foo = bnd.bind("_foo", getattr, setattr, track_change=True)
+
+            def __init__(self):
+                self._foo = 1
+                self.orig = {}
+
+            def get_original_property_values(self):
+                return self.orig
+
+        f = Foo()
+        f._foo = 2
+        self.assertEqual({}, f.get_original_property_values())
+        self.assertEqual(2, f.foo)
+        self.assertFalse(f.are_values_changed())
+
+        f.foo = 3
+        f.foo = 4
+        self.assertTrue(f.are_values_changed())
+
+    def test_unset_property(self):
+        """If the property is bound to a nonexisting attribute,
+        AttributeErrors will be raised.
+        """
+        class Foo(bnd.PropertyTrackingWidget):
+            bar = bnd.bind("_bar", getattr, setattr, track_change=True)
+
+            def get_original_property_values(self):
+                return {}
+
+        f = Foo()
+        self.assertRaises(AttributeError, lambda: f.bar)
+        self.assertRaises(AttributeError, lambda: f.are_values_changed())
+        self.assertRaises(AttributeError, lambda: f.get_properties())
+
+    def test_const_original_properties(self):
+        """It is possible for the PropertyTrackingWidget to return an
+        arbitrary dictionary when original values are requested.
+        """
+        class Foo(bnd.PropertyTrackingWidget):
+            foo = bnd.bind("_foo", getattr, setattr, track_change=True)
+
+            def __init__(self):
+                self.foo = 1
+
+            def get_original_property_values(self):
+                return {"_foo": 2}
+
+        f = Foo()
+        self.assertTrue(f.are_values_changed())
+
+        f.foo = 2
+        self.assertFalse(f.are_values_changed())
+
+    def test_bad_values(self):
+        """Tests property tracking when setting the property raises
+        an exception."""
+        def setter(instance, attr, value):
+            setattr(instance, attr, 10 / value)
+
+        class Foo(bnd.PropertyTrackingWidget):
+            foo = bnd.bind("_foo", getattr, setter, track_change=True)
+
+            def __init__(self):
+                self.orig = {}
+                self.foo = 1
+
+            def get_original_property_values(self):
+                return self.orig
+
+        f = Foo()
+        self.assertFalse(f.are_values_changed())
+
+        def set_to_zero():
+            f.foo = 0
+        self.assertRaises(ZeroDivisionError, set_to_zero)
+        self.assertFalse(f.are_values_changed())
+
+        f.foo = 2
+        self.assertTrue(f.are_values_changed())
+
+        self.assertRaises(ZeroDivisionError, set_to_zero)
+        self.assertTrue(f.are_values_changed())
 
 
 class TestTimeConversion(unittest.TestCase):

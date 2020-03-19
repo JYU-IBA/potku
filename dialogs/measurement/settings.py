@@ -179,7 +179,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.measurement.target = None
 
             # Revert all profile parameters to default.
-            self.measurement.copy_settings_from(def_mesu)
+            self.measurement.set_simulation_settings(def_mesu)
 
             det_folder_path = os.path.join(self.measurement.directory,
                                            "Detector")

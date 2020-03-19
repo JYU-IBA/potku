@@ -102,14 +102,24 @@ def _fset(instance, qobj_name, value):
 class PropertyBindingWidget(abc.ABC):
     """Base class for a widget that contains bindable properties.
     """
-    def _get_properties(self):
+    def _get_properties(self, only_tracking_properties=False):
         """Returns a generator of the names of all the properties the widget
         has.
+
+        Args:
+            only_tracking_properties: whether only TrackingProperties are
+                yielded.
         """
+        if only_tracking_properties:
+            def cond(prop):
+                return isinstance(getattr(type(self), prop), TrackingProperty)
+        else:
+            def cond(prop):
+                return isinstance(getattr(type(self), prop), property)
         return (
             d for d in dir(self)
             if hasattr(type(self), d) and
-            isinstance(getattr(type(self), d), property)
+            cond(d)
         )
 
     def set_properties(self, **kwargs):
@@ -141,9 +151,15 @@ class PropertyTrackingWidget(PropertyBindingWidget, abc.ABC):
     """Widget that stores the original values of its properties, and is
     able to check if the values have changed.
     """
+    # TODO possibly add methods for resetting and clearing original property
+    #  values.
+
     @abc.abstractmethod
     def get_original_property_values(self):
         """Returns a dictionary of property names and their values.
+
+        The purpose of this function is to provide a dictionary for a
+        TrackingProperty to store values.
         """
         pass
 
@@ -154,7 +170,7 @@ class PropertyTrackingWidget(PropertyBindingWidget, abc.ABC):
             boolean.
         """
         return any(getattr(type(self), p).is_value_changed(self)
-                   for p in self.get_properties())
+                   for p in self._get_properties(only_tracking_properties=True))
 
 
 class PropertySavingWidget(PropertyBindingWidget, abc.ABC):
@@ -220,17 +236,30 @@ class PropertySavingWidget(PropertyBindingWidget, abc.ABC):
 
 
 class TrackingProperty(property):
-    def __init__(self, *args, prop_name=None, **kwargs):
+    """TrackingProperty can be used in a PropertyTrackingWidget to detect
+    if the property value has changed from the first time the property was set.
+
+    If TrackingProperty is used in another kind of object, it behaves like
+    a normal property.
+    """
+    # Note: the reason why original value is stored in the widget instead of
+    # the property, is because the property is a class attribute and therefore
+    # common for all instances of that class.
+    # Alternatively, the property could store the original values and a weak
+    # reference to every instance in a dictionary.
+
+    def __init__(self, *args, attr_name=None, **kwargs):
         """Initializes a TrackingProperty.
 
         Args:
             args: arguments passed down to property constructor.
             kwargs: keyword arguments passed down to property constructor.
-            prop_name: name of the property. Must not be None if the value
-                of the property is to be tracked.
+            attr_name: name of the attribute that the property is bound to. If
+                value is None, the value of the property is not tracked and
+                TrackingProperty behaves like a normal property.
         """
         super().__init__(*args, **kwargs)
-        self.__prop_name = prop_name
+        self.__prop_name = attr_name
 
     def __set__(self, instance, value):
         """Sets the value of the property.
@@ -239,18 +268,17 @@ class TrackingProperty(property):
             instance: object that holds a reference to the property.
             value: new value of the property.
         """
+        # TODO consider using a pyQtSignal when setting values of QObjects
+        #   to ensure that GUI is updated in the main thread.
         self.fset(instance, value)
         if self.__prop_name is not None and \
                 isinstance(instance, PropertyTrackingWidget):
             # Only PropertyTrackingWidget can store original values.
-            set_val = self.fget(instance)
-            if set_val is None:
-                return
 
             orig_props = instance.get_original_property_values()
             if self.__prop_name not in orig_props:
                 # If the property has not yet been stored, store it now.
-                orig_props[self.__prop_name] = set_val
+                orig_props[self.__prop_name] = self.fget(instance)
 
     def is_value_changed(self, instance):
         """Checks if the current value of the property differs from the original
@@ -266,30 +294,42 @@ class TrackingProperty(property):
         """
         if self.__prop_name is not None and \
                 isinstance(instance, PropertyTrackingWidget):
+            cur_value = self.fget(instance)
             orig_props = instance.get_original_property_values()
-            orig_value = orig_props.get(self.__prop_name, None)
-            return self.fget(instance) != orig_value
+            orig_value = orig_props.get(self.__prop_name, cur_value)
+            return cur_value != orig_value
         return False
 
 
-def bind(prop_name, fget=None, fset=None, twoway=True,
+def bind(attr_name, fget=None, fset=None, twoway=True,
          track_change=False):
     """Returns a property that is bound to an attribute.
 
+    Mostly used to bind a QObject value to a property, but other attributes
+    can be used as well if custom getter and setter are defined.
+
     Args:
-        prop_name: name of an attribute that the property will be bound to
-        fget: function that takes the QObject as parameter and returns the
-            value of the property
-        fset: function that takes the QObject and a value as parameters and
-            sets the value of the QObject to the given value
+        attr_name: name of an attribute that the property will be bound to
+        fget: getter function for the property. If None, a default getter
+            function is used depending on the type of QObject that the attr_name
+            references. Functions should have the signature:
+                f(instance, attr_name)
+        fset: setter function for the property. If None, a default setter
+            function is used depending on the type of QObject that the attr_name
+            references. Functions should have the signature:
+                f(instance, attr_name, value)
         twoway: whether binding is two-way (setting the property also sets
-                the QObject value) or one-way.
+            the QObject value) or one-way (only getter is defined for the
+            property).
         track_change: whether the property tracks changes in its value or not.
+
+    Return:
+        TrackingProperty.
     """
     def getter(instance):
         if fget is None:
-            return _fget(instance, prop_name)
-        return fget(instance, prop_name)
+            return _fget(instance, attr_name)
+        return fget(instance, attr_name)
 
     if not twoway:
         return TrackingProperty(getter)
@@ -297,9 +337,9 @@ def bind(prop_name, fget=None, fset=None, twoway=True,
     def setter(instance, value):
         try:
             if fset is None:
-                _fset(instance, prop_name, value)
+                _fset(instance, attr_name, value)
             else:
-                fset(instance, prop_name, value)
+                fset(instance, attr_name, value)
         except TypeError:
             # value is wrong type, nothing to do
             pass
@@ -309,9 +349,9 @@ def bind(prop_name, fget=None, fset=None, twoway=True,
         # name as None for the TrackingProperty
         prop_name_ = None
     else:
-        prop_name_ = prop_name
+        prop_name_ = attr_name
 
-    return TrackingProperty(getter, setter, prop_name=prop_name_)
+    return TrackingProperty(getter, setter, attr_name=prop_name_)
 
 
 def multi_bind(qobjs, funcs, twoway=True):

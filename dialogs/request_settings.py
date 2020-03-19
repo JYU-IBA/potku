@@ -164,7 +164,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             return True
         if self.detector_settings_widget.values_changed():
             return True
-        if self.simulation_settings_widget.values_changed():
+        if self.simulation_settings_widget.are_values_changed():
             return True
         return False
 

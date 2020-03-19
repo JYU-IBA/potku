@@ -249,7 +249,7 @@ class TestElementSimulation(unittest.TestCase):
         self.elem_sim.name_prefix = "bar"
         self.assertEqual("bar-foo", self.elem_sim.get_full_name())
 
-    def test_to_dict(self):
+    def test_json_contents(self):
         self.elem_sim.use_default_settings = False
         expected = {
             "name": "Default",
@@ -265,7 +265,7 @@ class TestElementSimulation(unittest.TestCase):
             "main_recoil": self.main_rec.name
         }
         expected.update(self.kwargs)
-        result = self.elem_sim.to_dict()
+        result = self.elem_sim.get_json_content()
 
         # Remove time from result and test it separately
         timestamp = time.time()
@@ -278,36 +278,24 @@ class TestElementSimulation(unittest.TestCase):
         self.assertEqual("False", result.pop("use_default_settings"))
         self.assertEqual(expected, result)
 
-    def test_copy_from_another(self):
-        another = ElementSimulation(
-            tempfile.gettempdir(),
-            mo.get_request(),
-            [RecoilElement(Element.from_string("16O"),
-                           [], "red")],
-            save_on_creation=False,
-            description="foo",
-            simulation_mode="RBS",
-            detector=mo.get_detector(),
-            number_of_ions=15,
-            number_of_recoils=14,
-            seed_number=16,
-            channel_width=2,
-            __opt_seed=4
-        )
-
-        another.copy_settings_from(self.elem_sim)
-
-        self.assertEqual(another.name, self.elem_sim.name)
-        self.assertEqual(another.description, self.elem_sim.description)
-        self.assertEqual(another.seed_number, self.elem_sim.seed_number)
-        self.assertEqual(another.number_of_recoils,
-                         self.elem_sim.number_of_recoils)
-        self.assertEqual(another.simulation_mode,
-                         self.elem_sim.simulation_mode)
-        self.assertEqual(another.number_of_preions,
-                         self.elem_sim.number_of_preions)
-
-        self.assertNotEqual(another.channel_width, self.elem_sim.channel_width)
+    def test_simulation_settings(self):
+        new_settings = {
+            "simulation_type": "RBS",
+            "simulation_mode": "narrow",
+            "number_of_ions": 1,
+            "number_of_ions_in_presimu": 2,
+            "number_of_scaling_ions": 3,
+            "number_of_recoils": 4,
+            "minimum_scattering_angle": 5,
+            "minimum_main_scattering_angle": 6,
+            "minimum_energy_of_ions": 7,
+            "seed": 8
+        }
+        self.assertNotEqual(new_settings,
+                            self.elem_sim.get_simulation_settings())
+        self.elem_sim.set_simulation_settings(**new_settings)
+        self.assertEqual(new_settings,
+                         self.elem_sim.get_simulation_settings())
 
 
 def write_line(file):

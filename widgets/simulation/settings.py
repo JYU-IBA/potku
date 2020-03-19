@@ -75,6 +75,8 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
                                metaclass=QtABCMeta):
     """Class for creating a simulation settings tab.
     """
+    # TODO name, desc, number_of_ions and number_of_ions_in_presimu should
+    #   perhaps not be tracked
     name = bnd.bind("nameLineEdit", track_change=True)
     description = bnd.bind("descriptionPlainTextEdit", track_change=True)
     simulation_type = bnd.bind("typeOfSimulationComboBox",
@@ -183,12 +185,12 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
         """
         Update simulation settings.
         """
-        self.element_simulation.name = self.name
-        self.element_simulation.description = self.description
+        params = self.get_properties()
+        self.element_simulation.name = params.pop("name")
+        self.element_simulation.description = params.pop("description")
+        params.pop("date")
 
         if self.simulation_type != self.element_simulation.simulation_type:
-            self.element_simulation.simulation_type = self.simulation_type
-
             if self.simulation_type == "ERD":
                 new_type = "rec"
                 old_type = ".sct"
@@ -206,56 +208,4 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
                     pass
                 recoil.to_file(self.element_simulation.directory)
 
-        self.element_simulation.simulation_mode = self.simulation_mode
-        self.element_simulation.number_of_ions = self.number_of_ions
-        self.element_simulation.number_of_preions = \
-            self.number_of_ions_in_presimu
-        self.element_simulation.seed_number = self.seed
-        self.element_simulation.number_of_recoils = self.number_of_recoils
-        self.element_simulation.number_of_scaling_ions = \
-            self.number_of_scaling_ions
-        self.element_simulation.minimum_scattering_angle = \
-            self.minimum_scattering_angle
-        self.element_simulation.minimum_main_scattering_angle = \
-            self.minimum_main_scattering_angle
-        self.element_simulation.minimum_energy = \
-            self.minimum_energy_of_ions
-
-    def values_changed(self):
-        """
-        Check if simulation settings have been changed. Seed number change is
-        not registered as value change.
-
-        Return:
-            True or False.
-        """
-        if self.element_simulation.name != self.name:
-            return True
-        if self.element_simulation.description != self.description:
-            return True
-        if self.element_simulation.simulation_type != self.simulation_type:
-            return True
-        if self.element_simulation.simulation_mode.lower() != \
-                self.simulation_mode:
-            return True
-        if self.element_simulation.number_of_ions != self.number_of_ions:
-            return True
-        if self.element_simulation.number_of_preions != \
-                self.number_of_ions_in_presimu:
-            return True
-        if self.element_simulation.number_of_recoils != \
-                self.number_of_recoils:
-            return True
-        if self.element_simulation.number_of_scaling_ions != \
-                self.number_of_scaling_ions:
-            return True
-        if self.element_simulation.minimum_scattering_angle != \
-            self.minimum_scattering_angle:
-            return True
-        if self.element_simulation.minimum_main_scattering_angle != \
-            self.minimum_main_scattering_angle:
-            return True
-        if self.element_simulation.minimum_energy != \
-                self.minimum_energy_of_ions:
-            return True
-        return False
+        self.element_simulation.set_simulation_settings(**params)

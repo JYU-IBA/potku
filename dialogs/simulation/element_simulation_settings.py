@@ -29,6 +29,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 
 import os
 
+import widgets.gui_utils as gutils
 import widgets.binding as bnd
 import dialogs.dialog_functions as df
 
@@ -40,10 +41,13 @@ from PyQt5.QtWidgets import QDesktopWidget
 from PyQt5.QtWidgets import QApplication
 
 
-class ElementSimulationSettingsDialog(QtWidgets.QDialog):
+class ElementSimulationSettingsDialog(QtWidgets.QDialog,
+                                      bnd.PropertyTrackingWidget,
+                                      metaclass=gutils.QtABCMeta):
     """Class for creating an element simulation settings tab.
     """
-    use_default_settings = bnd.bind("defaultSettingsCheckBox")
+    use_default_settings = bnd.bind("defaultSettingsCheckBox",
+                                    track_change=True)
 
     def __init__(self, element_simulation, tab):
         """
@@ -74,19 +78,21 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         self.OKButton.clicked.connect(self.update_settings_and_close)
         self.applyButton.clicked.connect(self.update_settings)
         self.cancelButton.clicked.connect(self.close)
-
         self.defaultSettingsCheckBox.stateChanged.connect(
             self.toggle_settings)
+
+        self.__original_property_values = {}
         self.use_default_settings = self.element_simulation.use_default_settings
 
         self.set_spinbox_maximums()
 
-        self.original_use_default_settings = \
-            self.element_simulation.use_default_settings
-        self.original_simulation_type = self.element_simulation.simulation_type
-
         self.__close = True
         self.exec_()
+
+    def get_original_property_values(self):
+        """Returns the original values of the properties that this widget
+        has."""
+        return self.__original_property_values
 
     def set_spinbox_maximums(self):
         """Set maximum values to spinbox components."""
@@ -129,18 +135,6 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
         If default settings are not used, read settings from dialog,
         put them to element simulation and save them to file.
         """
-        # TODO this is for tmp testing
-        if self.sim_widget.values_changed() != \
-                self.sim_widget.are_values_changed():
-            raise Exception("this should not happen")
-
-        if self.defaultSettingsCheckBox.isChecked():
-            self.use_default_settings = True
-            self.element_simulation.use_default_settings = True
-        else:
-            self.use_default_settings = False
-            self.element_simulation.use_default_settings = False
-
         if not self.sim_widget.fields_are_valid:
             QtWidgets.QMessageBox.critical(self, "Warning",
                                            "Some of the setting values have"
@@ -152,114 +146,70 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog):
             self.__close = False
             return
 
-        if self.sim_widget.values_changed():
+        # TODO could compare default element simulation and this element
+        #  simulation to see if reset is actually needed
+        if self.sim_widget.are_values_changed() or self.are_values_changed():
             simulation = self.element_simulation.simulation
 
-            if self.original_use_default_settings:
-                settings = "request settings"
+            if self.use_default_settings:
+                msg = "request settings"
             else:
-                settings = "element specific settings"
+                msg = "element specific settings"
 
             if not df.delete_element_simulations(
                 self, self.tab, simulation,
                 element_simulation=self.element_simulation,
-                msg_str=settings
+                msg_str=msg
             ):
                 self.__close = False
                 return
 
         # If there are running simulation that use the same seed as the
         # new one, stop them
-        seed = self.sim_widget.seedSpinBox.value()
-        if self.is_seed_used(seed):
-            reply = QtWidgets.QMessageBox.question(
-                self, "Running simulations",
-                "There is a simulation process that has the same seed "
-                "number as the new one.\nIf you save changes, this "
-                "simulation process will be stopped (but its results will "
-                "not be deleted).\n\nDo you want save changes anyway?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel,
-                QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                self.__close = False
-                return
-            else:
-                # Stop the running simulation's mcerd process
-                # that corresponds to seed
-                self.element_simulation.mcerd_objects[seed].stop_process()
-                del self.element_simulation.mcerd_objects[seed]
+        # TODO this seems unnecessary. The seed is automatically incremented
+        #   to a unique value when a new simulation is run, so why should this
+        #   require stopping?
+        # seed = self.sim_widget.seedSpinBox.value()
+        # if self.is_seed_used(seed):
+        #     reply = QtWidgets.QMessageBox.question(
+        #         self, "Running simulations",
+        #         "There is a simulation process that has the same seed "
+        #         "number as the new one.\nIf you save changes, this "
+        #         "simulation process will be stopped (but its results will "
+        #         "not be deleted).\n\nDo you want save changes anyway?",
+        #         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+        #         QtWidgets.QMessageBox.Cancel,
+        #         QtWidgets.QMessageBox.Cancel)
+        #     if reply == QtWidgets.QMessageBox.No or reply == \
+        #             QtWidgets.QMessageBox.Cancel:
+        #         self.__close = False
+        #         return
+        #     else:
+        #         # Stop the running simulation's mcerd process
+        #         # that corresponds to seed
+        #         self.element_simulation.mcerd_objects[seed].stop_process()
+        #         del self.element_simulation.mcerd_objects[seed]
 
-        self.element_simulation.name = \
-            self.sim_widget.nameLineEdit.text()
-        self.element_simulation.description = \
-            self.sim_widget.descriptionPlainTextEdit.toPlainText()
-        self.element_simulation.simulation_mode = \
-            self.sim_widget.modeComboBox.currentText()
-        if self.sim_widget.typeOfSimulationComboBox.currentText() == "REC":
-            self.element_simulation.simulation_type = "ERD"
-        else:
-            self.element_simulation.simulation_type = "RBS"
-        self.element_simulation.number_of_ions = \
-            self.sim_widget.numberOfIonsSpinBox.value()
-        self.element_simulation.number_of_preions = \
-            self.sim_widget.numberOfPreIonsSpinBox\
-            .value()
-        self.element_simulation.seed_number = \
-            self.sim_widget.seedSpinBox.value()
-        self.element_simulation.number_of_recoils = \
-            self.sim_widget.numberOfRecoilsSpinBox.value()
-        self.element_simulation.number_of_scaling_ions = \
-            self.sim_widget.numberOfScalingIonsSpinBox.value()
-        self.element_simulation.minimum_scattering_angle = \
-            self.sim_widget.minimumScatterAngleDoubleSpinBox.value()
-        self.element_simulation.minimum_main_scattering_angle = \
-            self.sim_widget.minimumMainScatterAngleDoubleSpinBox.value()
-        self.element_simulation.minimum_energy = \
-            self.sim_widget.minimumEnergyDoubleSpinBox.value()
-
+        self.sim_widget.update_settings()
+        self.element_simulation.use_default_settings = self.use_default_settings
         self.element_simulation.to_file(
                 os.path.join(self.element_simulation.directory,
                              self.element_simulation.get_full_name()
                              + ".mcsimu"))
 
-        # Update recoil type
-        if self.original_simulation_type != \
-                self.element_simulation.simulation_type:
-            for recoil in self.element_simulation.recoil_elements:
-                if self.element_simulation.simulation_type == "ERD":
-                    recoil.type = "rec"
-                    try:
-                        path_to_rec = os.path.join(
-                            self.element_simulation.directory,
-                            recoil.get_full_name() + ".sct")
-                        os.remove(path_to_rec)
-                    except OSError:
-                        pass
-
-                else:
-                    recoil.type = "sct"
-                    try:
-                        path_to_sct = os.path.join(
-                            self.element_simulation.directory,
-                            recoil.get_full_name() + ".rec")
-                        os.remove(path_to_sct)
-                    except OSError:
-                        pass
-                recoil.to_file(self.element_simulation.directory)
+        # TODO remove files with old name, if name has changed
 
         self.__close = True
 
-    def is_seed_used(self, seed):
-        """
-        Check if element simulation has man mcerd process with the given seed.
-
-        Args:
-            seed: Seed number.
-
-        Return:
-            Whether seed is being used
-        """
-        # TODO function of element simulation
-        return seed in self.element_simulation.mcerd_objects
+    # def is_seed_used(self, seed):
+    #     """
+    #     Check if element simulation has man mcerd process with the given seed.
+    #
+    #     Args:
+    #         seed: Seed number.
+    #
+    #     Return:
+    #         Whether seed is being used
+    #     """
+    #     # TODO function of element simulation
+    #     return seed in self.element_simulation.mcerd_objects

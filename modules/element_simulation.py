@@ -81,6 +81,22 @@ class SimulationState(Enum):
         return "Done"
 
 
+# Mappings between the names of the MCERD parameters (keys) and
+# ElementSimulation attributes (values)
+_SETTINGS_MAP = {
+    "simulation_type": "simulation_type",
+    "simulation_mode": "simulation_mode",
+    "number_of_ions": "number_of_ions",
+    "number_of_ions_in_presimu": "number_of_preions",
+    "number_of_scaling_ions": "number_of_scaling_ions",
+    "number_of_recoils": "number_of_recoils",
+    "minimum_scattering_angle": "minimum_scattering_angle",
+    "minimum_main_scattering_angle": "minimum_main_scattering_angle",
+    "minimum_energy_of_ions": "minimum_energy",
+    "seed": "seed_number"
+}
+
+
 class ElementSimulation(Observable):
     """
     Class for handling the element specific simulation. Can have multiple
@@ -457,19 +473,18 @@ class ElementSimulation(Observable):
             return f"{self.name_prefix}-{self.name}"
         return self.name
 
-    def to_dict(self):
-        """Returns a dictionary representation of the element simulation
-        object.
+    def get_json_content(self):
+        """Returns a dictionary that represents the values of the
+        ElementSimulation in json format.
         """
-        # TODO maybe declare __dict__ in __slots__ so we get to use vars
-        # d = vars(elem_sim)
+        timestamp = time.time()
 
         return {
             "name": self.get_full_name(),
             "description": self.description,
             "modification_time": time.strftime("%c %z %Z", time.localtime(
-                time.time())),
-            "modification_time_unix": time.time(),
+                timestamp)),
+            "modification_time_unix": timestamp,
             "simulation_type": self.simulation_type,
             "simulation_mode": self.simulation_mode,
             "number_of_ions": self.number_of_ions,
@@ -485,32 +500,6 @@ class ElementSimulation(Observable):
             "main_recoil": self.main_recoil.name
         }
 
-    def copy_settings_from(self, other):
-        """Copies settings from another ElementSimulation object.
-
-        Args:
-            other: ElementSimulation object
-        """
-        # TODO change this to a function that updates the element simulation
-        #   based on kwargs
-        if not isinstance(other, ElementSimulation):
-            raise TypeError("ElementSimulation can only copy settings from "
-                            "another ElementSimulation object.")
-
-        self.name = other.name  # TODO not prefix also?
-        self.description = other.description
-        self.simulation_mode = other.simulation_mode
-        self.simulation_type = other.simulation_type
-        self.number_of_ions = other.number_of_ions
-        self.number_of_preions = other.number_of_preions
-        self.seed_number = other.seed_number
-        self.number_of_recoils = other.number_of_recoils
-        self.number_of_scaling_ions = other.number_of_scaling_ions
-        self.minimum_scattering_angle = other.minimum_scattering_angle
-        self.minimum_main_scattering_angle = \
-            other.minimum_main_scattering_angle
-        self.minimum_energy = other.minimum_energy
-
     def to_file(self, file_path):
         """Save mcsimu settings to file.
 
@@ -520,7 +509,7 @@ class ElementSimulation(Observable):
         # TODO maybe it is not necessary to call this every time a request
         #      is opened
         with open(file_path, "w") as file:
-            json.dump(self.to_dict(), file, indent=4)
+            json.dump(self.get_json_content(), file, indent=4)
 
     def profile_to_file(self, file_path):
         """Save profile settings (only channel width) to file.
@@ -713,18 +702,16 @@ class ElementSimulation(Observable):
         """Returns simulation parameters as a dict.
         """
         return {
-            "simulation_type": self.simulation_type,
-            "simulation_mode": self.simulation_mode,
-            "number_of_ions": self.number_of_ions,
-            "number_of_ions_in_presimu": self.number_of_preions,
-            "number_of_scaling_ions": self.number_of_scaling_ions,
-            "number_of_recoils": self.number_of_recoils,
-            "minimum_scattering_angle": self.minimum_scattering_angle,
-            "minimum_main_scattering_angle":
-                self.minimum_main_scattering_angle,
-            "minimum_energy_of_ions": self.minimum_energy,
-            "seed": self.seed_number
+            key: getattr(self, value)
+            for key, value in _SETTINGS_MAP.items()
         }
+
+    def set_simulation_settings(self, **kwargs):
+        """Sets simulation settings based on the keyword arguments.
+        """
+        for key, value in kwargs.items():
+            # TODO error handling
+            setattr(self, _SETTINGS_MAP[key], value)
 
     def get_current_status(self, starting=False):
         """Returns the number of atoms counted, number of running processes and
@@ -1074,7 +1061,6 @@ class ElementSimulation(Observable):
             detector = self.detector
 
         return target, run, detector
-
 
     def reset(self, remove_files=True):
         """Function that resets the state of ElementSimulation.

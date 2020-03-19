@@ -123,27 +123,18 @@ class TestSimulationSettingsWidget(unittest.TestCase):
     @utils.change_wd_to_root
     def test_value_changed(self):
         sim_widget = SimulationSettingsWidget(self.elem_sim)
-
-        self.assertFalse(sim_widget.values_changed())
-        self.assertEqual(sim_widget.values_changed(),
-                         sim_widget.are_values_changed())
+        self.assertFalse(sim_widget.are_values_changed())
 
         # Seed is not taken into account
         sim_widget.seed = 45
-        self.assertFalse(sim_widget.values_changed())
-        self.assertEqual(sim_widget.values_changed(),
-                         sim_widget.are_values_changed())
+        self.assertFalse(sim_widget.are_values_changed())
 
         sim_widget.name = "bar"
-        self.assertTrue(sim_widget.values_changed())
-        self.assertEqual(sim_widget.values_changed(),
-                         sim_widget.are_values_changed())
+        self.assertTrue(sim_widget.are_values_changed())
 
         # Changing the name back also resets value_changed
         sim_widget.name = "foo"
-        self.assertFalse(sim_widget.values_changed())
-        self.assertEqual(sim_widget.values_changed(),
-                         sim_widget.are_values_changed())
+        self.assertFalse(sim_widget.are_values_changed())
 
 
 if __name__ == '__main__':
