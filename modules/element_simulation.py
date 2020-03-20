@@ -132,7 +132,7 @@ class ElementSimulation(Observable):
                  seed_number=101, minimum_energy=1.0, channel_width=0.025,
                  use_default_settings=True, main_recoil=None,
                  optimization_recoils=None, __opt_seed=None,
-                 optimized_fluence=None, save_on_creation=True, **kwargs):
+                 optimized_fluence=None, save_on_creation=True):
         """ Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
@@ -500,7 +500,12 @@ class ElementSimulation(Observable):
             "main_recoil": self.main_recoil.name
         }
 
-    def to_file(self, file_path):
+    def get_default_file_path(self):
+        """Returns a default file path that to_file uses.
+        """
+        return Path(self.directory, f"{self.get_full_name()}.mcsimu")
+
+    def to_file(self, file_path=None):
         """Save mcsimu settings to file.
 
         Args:
@@ -508,8 +513,23 @@ class ElementSimulation(Observable):
         """
         # TODO maybe it is not necessary to call this every time a request
         #      is opened
+        if file_path is None:
+            file_path = self.get_default_file_path()
         with open(file_path, "w") as file:
             json.dump(self.get_json_content(), file, indent=4)
+
+    def remove_file(self, file_path=None):
+        """Removes the .mcsimu file.
+
+        Args:
+            file_path: path to the .mcsimu file
+        """
+        try:
+            if file_path is None:
+                file_path = self.get_default_file_path()
+            os.remove(file_path)
+        except (OSError, IsADirectoryError, PermissionError):
+            pass
 
     def profile_to_file(self, file_path):
         """Save profile settings (only channel width) to file.
@@ -678,7 +698,7 @@ class ElementSimulation(Observable):
                                       check_max, check_min)
 
     def get_simulation_settings(self):
-        """Returns simulation parameters as a dict.
+        """Returns simulation settings as a dict.
         """
         return {
             key: getattr(self, value)
@@ -687,10 +707,16 @@ class ElementSimulation(Observable):
 
     def set_simulation_settings(self, **kwargs):
         """Sets simulation settings based on the keyword arguments.
+
+        Note that the keywords must be the ones used by MCERD, rather than
+        the attribute names of the ElementSimulation object.
         """
         for key, value in kwargs.items():
-            # TODO error handling
-            setattr(self, _SETTINGS_MAP[key], value)
+            try:
+                setattr(self, _SETTINGS_MAP[key], value)
+            except KeyError:
+                # keyword does not have a known mapping, nothing to do
+                pass
 
     def get_current_status(self, starting=False):
         """Returns the number of atoms counted, number of running processes and

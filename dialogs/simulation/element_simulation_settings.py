@@ -34,6 +34,7 @@ import widgets.binding as bnd
 import dialogs.dialog_functions as df
 
 from widgets.simulation.settings import SimulationSettingsWidget
+from pathlib import Path
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -145,12 +146,14 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
                 self.__close = False
                 return
 
+        if self.element_simulation.name != self.sim_widget.name:
+            # Remove current simu file if name has been changed
+            self.element_simulation.remove_file()
+
         self.sim_widget.update_settings()
+
         self.element_simulation.use_default_settings = self.use_default_settings
-        self.element_simulation.to_file(
-                os.path.join(self.element_simulation.directory,
-                             self.element_simulation.get_full_name()
-                             + ".mcsimu"))
+        self.element_simulation.to_file()
 
         # TODO remove files with old name, if name has changed
 
