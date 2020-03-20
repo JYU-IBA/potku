@@ -46,7 +46,7 @@ class TestRecoilElement(unittest.TestCase):
             mo.get_element(),
             [Point((0, 4)),
              Point((1, 5)),
-             Point((2, 6))],
+             Point((2, 10))],
             color="black",
             description="foo",
             name="bar",
@@ -102,12 +102,15 @@ class TestRecoilElement(unittest.TestCase):
         self.assertEqual(fst, snd)
 
     def test_calculate_area(self):
-        self.assertEqual(10, self.rec_elem.calculate_area_for_interval())
+        self.assertEqual(12, self.rec_elem.calculate_area_for_interval())
         self.assertEqual(4.5, self.rec_elem.calculate_area_for_interval(
             start=0, end=1))
 
         self.assertEqual(4.25 * 0.5, self.rec_elem.calculate_area_for_interval(
             start=0, end=0.5))
+
+        self.assertEqual(5.5, self.rec_elem.calculate_area_for_interval(
+            start=0.5, end=1.5))
 
         # If the interval is outside the point range, 0 is returned
         self.assertEqual(0, self.rec_elem.calculate_area_for_interval(

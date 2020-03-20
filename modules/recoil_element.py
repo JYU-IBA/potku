@@ -97,11 +97,9 @@ class RecoilElement:
         self.zero_values_on_x = []
 
         # Area of certain limits
-        # self.area = None
-        # self.area_limits = []
-
-        # self.__common_area_points = []
-        # self.__individual_area_points = []
+        # TODO these may be removed
+        self.area = None
+        self.area_limits = []
 
         # Color of the recoil
         self.color = color

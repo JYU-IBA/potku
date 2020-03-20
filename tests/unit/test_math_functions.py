@@ -54,7 +54,8 @@ class TestListIntegration(unittest.TestCase):
         # with step size parameter
         self.assertEqual(30, mf.integrate_bins([0, 1], [1, 2], step_size=10))
         self.assertEqual(0, mf.integrate_bins([0, 10], [1, 2], step_size=0))
-        self.assertEqual(-7, mf.integrate_bins([0, 10, 20], [1, 2, 4], step_size=-1))
+        self.assertEqual(-7, mf.integrate_bins([0, 10, 20], [1, 2, 4],
+                                               step_size=-1))
 
     def test_uneven_axes(self):
         """Tests integrate_bins with uneven x and y axis sizes."""
@@ -93,7 +94,9 @@ class TestListIntegration(unittest.TestCase):
         # Note that this will still work as strings are not in the integral
         # range
         self.assertEqual(
-            20, mf.integrate_bins([0, 1, 2, "foo"], ["foo", 10, 10, 10], a=1, b=1))
+            20, mf.integrate_bins([0, 1, 2, "foo"],
+                                  ["foo", 10, 10, 10],
+                                  a=1, b=1))
 
     def test_integrating_with_limits(self):
         """Tests integrate_bins function with set limit values
@@ -288,6 +291,8 @@ class TestListIntegration(unittest.TestCase):
             list(mf.get_elements_in_range(x_axis, y_axis, b=2))
         )
 
+
+class TestPercentage(unittest.TestCase):
     def test_calculate_percentages(self):
         self.assertEqual([], mf.calculate_percentages([]))
         self.assertEqual([0], mf.calculate_percentages([0]))
@@ -304,6 +309,14 @@ class TestListIntegration(unittest.TestCase):
         self.assertEqual([33.33333, 66.66667],
                          mf.calculate_percentages([1, 2], rounding=5))
 
+    def test_negative_values(self):
+        # Calculating percentages with negative values is somewhat
+        # counter-intuitive. Someone could take a look at it.
+        self.assertEqual([100], mf.calculate_percentages([-1]))
+        self.assertEqual([100, 0], mf.calculate_percentages([-1, 0]))
+        self.assertEqual([0, 0], mf.calculate_percentages([-1, 1]))
+        self.assertEqual([-100, 200], mf.calculate_percentages([-1, 2]))
+
     def test_calculate_percentages_prop_based(self):
         # property based testing
         max_count = 100
@@ -313,6 +326,8 @@ class TestListIntegration(unittest.TestCase):
             values = [random.random() for _ in range(count)]
             results = mf.calculate_percentages(values)
             self.assertEqual(count, len(results))
+            for r in results:
+                self.assertTrue(0 <= r <= 100)
 
 
 if __name__ == "__main__":

@@ -315,6 +315,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     # Signal that is emitted when recoil distribution changes
     recoil_dist_changed = pyqtSignal(RecoilElement, ElementSimulation)
 
+    # TODO signal for changes in limit ranges
+    # TODO add limit ranges for individual recoil elements
+
     def __init__(self, parent, simulation, target, tab, icon_manager,
                  statusbar=None):
         """Inits recoil atom distribution widget.
@@ -335,8 +338,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.tab = tab
         self.simulation = simulation
 
-        self.current_element_simulation = None
-        self.current_recoil_element = None
+        self.current_element_simulation: ElementSimulation = None
+        self.current_recoil_element: RecoilElement = None
         self.element_manager = ElementManager(self.tab, self,
                                               self.__icon_manager,
                                               self.simulation,
