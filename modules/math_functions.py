@@ -165,3 +165,25 @@ def get_rounding_decimals(floater):
     # At the index i the value is above 15 so return i - 1
     # for correct decimal count.
     return i - 1
+
+
+def calculate_percentages(values, rounding=2):
+    """Takes a collection of values and returns the percentage of total
+    sum for each value with the given rounding precision.
+
+    Args:
+        values: collection of values (must not be a generator)
+        rounding: rounding precision (2 by default)
+
+    Return:
+        list of percentages
+    """
+    total = sum(values)
+
+    if not total:
+        return [0 for _ in values]
+
+    return [
+        round(value / total * 100, rounding)
+        for value in values
+    ]

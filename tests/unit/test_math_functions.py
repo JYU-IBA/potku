@@ -27,6 +27,8 @@ __author__ = "Juhani Sundell"
 __version__ = ""  # TODO
 
 import unittest
+import random
+
 from modules import math_functions as mf
 
 
@@ -285,6 +287,32 @@ class TestListIntegration(unittest.TestCase):
             [(0, 10), (1, "foo"), (2, "bar"), (3, 13)],
             list(mf.get_elements_in_range(x_axis, y_axis, b=2))
         )
+
+    def test_calculate_percentages(self):
+        self.assertEqual([], mf.calculate_percentages([]))
+        self.assertEqual([0], mf.calculate_percentages([0]))
+        self.assertEqual([100], mf.calculate_percentages([1]))
+        self.assertEqual([50, 50], mf.calculate_percentages([1, 1]))
+        self.assertEqual([33.33, 66.67], mf.calculate_percentages([1, 2]))
+        self.assertEqual([25, 25, 25, 25],
+                         mf.calculate_percentages([1, 1, 1, 1]))
+
+    def test_rounding_percentages(self):
+        self.assertEqual([33, 67], mf.calculate_percentages([1, 2], rounding=0))
+        self.assertEqual([33.3, 66.7],
+                         mf.calculate_percentages([1, 2], rounding=1))
+        self.assertEqual([33.33333, 66.66667],
+                         mf.calculate_percentages([1, 2], rounding=5))
+
+    def test_calculate_percentages_prop_based(self):
+        # property based testing
+        max_count = 100
+        iterations = 100
+        for _ in range(iterations):
+            count = random.randint(0, max_count)
+            values = [random.random() for _ in range(count)]
+            results = mf.calculate_percentages(values)
+            self.assertEqual(count, len(results))
 
 
 if __name__ == "__main__":

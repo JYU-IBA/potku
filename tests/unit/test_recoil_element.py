@@ -101,6 +101,26 @@ class TestRecoilElement(unittest.TestCase):
 
         self.assertEqual(fst, snd)
 
+    def test_calculate_area(self):
+        self.assertEqual(10, self.rec_elem.calculate_area_for_interval())
+        self.assertEqual(4.5, self.rec_elem.calculate_area_for_interval(
+            start=0, end=1))
+
+        self.assertEqual(4.25 * 0.5, self.rec_elem.calculate_area_for_interval(
+            start=0, end=0.5))
+
+        # If the interval is outside the point range, 0 is returned
+        self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
+            start=2, end=3))
+        self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
+            start=-2, end=0))
+
+        # If the length of the interval is non-positive, 0 is returned
+        self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
+            start=1, end=1))
+        self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
+            start=1, end=0))
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -28,6 +28,8 @@ __version__ = "2.0"
 import os
 import platform
 
+import modules.math_functions as mf
+
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
@@ -74,50 +76,32 @@ class PercentageWidget(QtWidgets.QWidget):
             "Toggle between relative and absolute values")
         self.ui.absRelButton.clicked.connect(self.__show_abs_or_rel_values)
 
-        self.__common_percentages = {}
-        self.__common_areas = {}
+        self.__common_areas, self.__common_percentages = \
+            self.__calculate_percents(start=self.common_interval[0],
+                                      end=self.common_interval[1])
 
-        self.__individual_percentages = {}
-        self.__individual_areas = {}
+        self.__individual_areas, self.__individual_percentages = \
+            self.__calculate_percents()
 
-        self.__calculate_percents()
         self.__show_percents_and_areas()
 
-    def __calculate_percents(self):
+    def __calculate_percents(self, start=None, end=None, rounding=2):
         """
         Calculate percents for recoil elements.
         """
-        # Calculate the areas of the recoils
-        # Calculate percentages for same interval (if is used)
-        # Calculate percentage for individual intervals (if all have none,
-        # don't count, if some don't have, use all area)
-        if self.use_same_interval:
-            start = self.common_interval[0]
-            end = self.common_interval[1]
-            for recoil in self.recoil_elements:
-                area = recoil.calculate_area_for_interval(start, end)
-                self.__common_areas[recoil] = area
+        areas = {}
+        percentages = {}
+        for recoil in self.recoil_elements:
+            area = recoil.calculate_area_for_interval(start, end)
+            areas[recoil] = area
 
-            total_area = 0
-            for area in self.__common_areas.values():
-                total_area += area
+        for recoil, percentage in zip(
+                areas,
+                mf.calculate_percentages(areas.values(),
+                                         rounding=rounding)):
+            percentages[recoil] = percentage
 
-            for recoil, area in self.__common_areas.items():
-                self.__common_percentages[recoil] = round(
-                    ((area / total_area) * 100), 2)
-
-        if self.use_individual_intervals:
-            for recoil in self.recoil_elements:
-                area = recoil.calculate_area_for_interval()
-                self.__individual_areas[recoil] = area
-
-            total_area = 0
-            for area in self.__individual_areas.values():
-                total_area += area
-
-            for recoil, area in self.__individual_areas.items():
-                self.__individual_percentages[recoil] = round(
-                    ((area / total_area) * 100), 2)
+        return areas, percentages
 
     def __show_abs_or_rel_values(self):
         """
