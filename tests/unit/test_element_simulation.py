@@ -249,7 +249,7 @@ class TestElementSimulation(unittest.TestCase):
         self.elem_sim.name_prefix = "bar"
         self.assertEqual("bar-foo", self.elem_sim.get_full_name())
 
-    def test_to_dict(self):
+    def test_json_contents(self):
         self.elem_sim.use_default_settings = False
         expected = {
             "name": "Default",
@@ -264,10 +264,8 @@ class TestElementSimulation(unittest.TestCase):
             "number_of_scaling_ions": 5,
             "main_recoil": self.main_rec.name
         }
-        # Update expected with kwargs
-        original_keys = set(expected.keys())
         expected.update(self.kwargs)
-        result = self.elem_sim.to_dict()
+        result = self.elem_sim.get_json_content()
 
         # Remove time from result and test it separately
         timestamp = time.time()
@@ -280,57 +278,41 @@ class TestElementSimulation(unittest.TestCase):
         self.assertEqual("False", result.pop("use_default_settings"))
         self.assertEqual(expected, result)
 
-        # Test default settings
-        self.elem_sim.use_default_settings = True
-        result_default = self.elem_sim.to_dict()
-        timestamp = time.time()
-        self.assertAlmostEqual(timestamp, result_default.pop(
-            "modification_time_unix"), places=2,
-                               msg="This assertion may fail if the test "
-                                   "is running particularly slow. Run the "
-                                   "test again to confirm results.")
-        self.assertEqual("True", result_default.pop("use_default_settings"))
-        self.assertCountEqual(expected, result_default)
+    def test_simulation_settings(self):
+        new_settings = {
+            "simulation_type": "RBS",
+            "simulation_mode": "narrow",
+            "number_of_ions": 1,
+            "number_of_ions_in_presimu": 2,
+            "number_of_scaling_ions": 3,
+            "number_of_recoils": 4,
+            "minimum_scattering_angle": 5,
+            "minimum_main_scattering_angle": 6,
+            "minimum_energy_of_ions": 7,
+            "seed_number": 8
+        }
+        self.assertNotEqual(new_settings,
+                            self.elem_sim.get_simulation_settings())
+        self.elem_sim.set_simulation_settings(**new_settings)
+        self.assertEqual(new_settings,
+                         self.elem_sim.get_simulation_settings())
 
-        # Assert that default keys contain expected values:
-        for k in original_keys:
-            self.assertEqual(expected[k], result_default[k])
+    def test_bad_simulation_settings(self):
+        orig_settings = dict(self.elem_sim.get_simulation_settings())
 
-        # Assert that other values differ from nondefault dict
-        set_dif = set(result.keys()) - original_keys
-        for k in set_dif:
-            self.assertNotEqual(result[k], result_default[k])
+        # Using some unknown value does not change the settings
+        self.elem_sim.set_simulation_settings(foo=2)
+        self.assertEqual(orig_settings, self.elem_sim.get_simulation_settings())
 
-    def test_copy_from_another(self):
-        another = ElementSimulation(
-            tempfile.gettempdir(),
-            mo.get_request(),
-            [RecoilElement(Element.from_string("16O"),
-                           [], "red")],
-            save_on_creation=False,
-            description="foo",
-            simulation_mode="RBS",
-            detector=mo.get_detector(),
-            number_of_ions=15,
-            number_of_recoils=14,
-            seed_number=16,
-            channel_width=2,
-            __opt_seed=4
-        )
+        # Other values can still be set if some values are unknown.
+        self.elem_sim.set_simulation_settings(foo=2,
+                                              number_of_ions_in_presimu=1234)
+        self.assertEqual(1234, self.elem_sim.number_of_preions)
 
-        another.copy_settings_from(self.elem_sim)
-
-        self.assertEqual(another.name, self.elem_sim.name)
-        self.assertEqual(another.description, self.elem_sim.description)
-        self.assertEqual(another.seed_number, self.elem_sim.seed_number)
-        self.assertEqual(another.number_of_recoils,
-                         self.elem_sim.number_of_recoils)
-        self.assertEqual(another.simulation_mode,
-                         self.elem_sim.simulation_mode)
-        self.assertEqual(another.number_of_preions,
-                         self.elem_sim.number_of_preions)
-
-        self.assertNotEqual(another.channel_width, self.elem_sim.channel_width)
+        # Values are not validated (yet)
+        self.elem_sim.set_simulation_settings(
+            number_of_ions_in_presimu="i dunno, two maybe?")
+        self.assertEqual("i dunno, two maybe?", self.elem_sim.number_of_preions)
 
 
 def write_line(file):

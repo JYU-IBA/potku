@@ -81,6 +81,22 @@ class SimulationState(Enum):
         return "Done"
 
 
+# Mappings between the names of the MCERD parameters (keys) and
+# ElementSimulation attributes (values)
+_SETTINGS_MAP = {
+    "simulation_type": "simulation_type",
+    "simulation_mode": "simulation_mode",
+    "number_of_ions": "number_of_ions",
+    "number_of_ions_in_presimu": "number_of_preions",
+    "number_of_scaling_ions": "number_of_scaling_ions",
+    "number_of_recoils": "number_of_recoils",
+    "minimum_scattering_angle": "minimum_scattering_angle",
+    "minimum_main_scattering_angle": "minimum_main_scattering_angle",
+    "minimum_energy_of_ions": "minimum_energy",
+    "seed_number": "seed_number"
+}
+
+
 class ElementSimulation(Observable):
     """
     Class for handling the element specific simulation. Can have multiple
@@ -116,7 +132,7 @@ class ElementSimulation(Observable):
                  seed_number=101, minimum_energy=1.0, channel_width=0.025,
                  use_default_settings=True, main_recoil=None,
                  optimization_recoils=None, __opt_seed=None,
-                 optimized_fluence=None, save_on_creation=True, **kwargs):
+                 optimized_fluence=None, save_on_creation=True):
         """ Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
@@ -180,9 +196,11 @@ class ElementSimulation(Observable):
 
         self.run = run
         self.sample = sample
-        self.simulation_type = simulation_type
 
+        # TODO raise errors if the type and mode are wrong
+        self.simulation_type = simulation_type
         self.simulation_mode = simulation_mode
+
         self.number_of_ions = number_of_ions
         self.number_of_preions = number_of_preions
         self.number_of_scaling_ions = number_of_scaling_ions
@@ -455,62 +473,39 @@ class ElementSimulation(Observable):
             return f"{self.name_prefix}-{self.name}"
         return self.name
 
-    def to_dict(self):
-        """Returns a dictionary representation of the element simulation
-        object.
+    def get_json_content(self):
+        """Returns a dictionary that represents the values of the
+        ElementSimulation in json format.
         """
-        elem_sim = self.get_element_simulation()
-
-        # TODO maybe declare __dict__ in __slots__ so we get to use vars
-        # d = vars(elem_sim)
+        timestamp = time.time()
 
         return {
-            # TODO should this have the name of the elem_sim instead?
             "name": self.get_full_name(),
-            "description": elem_sim.description,
+            "description": self.description,
             "modification_time": time.strftime("%c %z %Z", time.localtime(
-                time.time())),
-            "modification_time_unix": time.time(),
-            "simulation_type": elem_sim.simulation_type,
-            "simulation_mode": elem_sim.simulation_mode,
-            "number_of_ions": elem_sim.number_of_ions,
-            "number_of_preions": elem_sim.number_of_preions,
-            "seed_number": elem_sim.seed_number,
-            "number_of_recoils": elem_sim.number_of_recoils,
-            "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
-            "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
+                timestamp)),
+            "modification_time_unix": timestamp,
+            "simulation_type": self.simulation_type,
+            "simulation_mode": self.simulation_mode,
+            "number_of_ions": self.number_of_ions,
+            "number_of_preions": self.number_of_preions,
+            "seed_number": self.seed_number,
+            "number_of_recoils": self.number_of_recoils,
+            "number_of_scaling_ions": self.number_of_scaling_ions,
+            "minimum_scattering_angle": self.minimum_scattering_angle,
             "minimum_main_scattering_angle":
-                elem_sim.minimum_main_scattering_angle,
-            "minimum_energy": elem_sim.minimum_energy,
+                self.minimum_main_scattering_angle,
+            "minimum_energy": self.minimum_energy,
             "use_default_settings": str(self.use_default_settings),
             "main_recoil": self.main_recoil.name
         }
 
-    def copy_settings_from(self, other):
-        """Copies settings from another ElementSimulation object.
-
-        Args:
-            other: ElementSimulation object
+    def get_default_file_path(self):
+        """Returns a default file path that to_file uses.
         """
-        if not isinstance(other, ElementSimulation):
-            raise TypeError("ElementSimulation can only copy settings from "
-                            "another ElementSimulation object.")
+        return Path(self.directory, f"{self.get_full_name()}.mcsimu")
 
-        self.name = other.name  # TODO not prefix also?
-        self.description = other.description
-        self.simulation_mode = other.simulation_mode
-        self.simulation_type = other.simulation_type
-        self.number_of_ions = other.number_of_ions
-        self.number_of_preions = other.number_of_preions
-        self.seed_number = other.seed_number
-        self.number_of_recoils = other.number_of_recoils
-        self.number_of_scaling_ions = other.number_of_scaling_ions
-        self.minimum_scattering_angle = other.minimum_scattering_angle
-        self.minimum_main_scattering_angle = \
-            other.minimum_main_scattering_angle
-        self.minimum_energy = other.minimum_energy
-
-    def to_file(self, file_path):
+    def to_file(self, file_path=None):
         """Save mcsimu settings to file.
 
         Args:
@@ -518,8 +513,23 @@ class ElementSimulation(Observable):
         """
         # TODO maybe it is not necessary to call this every time a request
         #      is opened
+        if file_path is None:
+            file_path = self.get_default_file_path()
         with open(file_path, "w") as file:
-            json.dump(self.to_dict(), file, indent=4)
+            json.dump(self.get_json_content(), file, indent=4)
+
+    def remove_file(self, file_path=None):
+        """Removes the .mcsimu file.
+
+        Args:
+            file_path: path to the .mcsimu file
+        """
+        try:
+            if file_path is None:
+                file_path = self.get_default_file_path()
+            os.remove(file_path)
+        except (OSError, IsADirectoryError, PermissionError):
+            pass
 
     def profile_to_file(self, file_path):
         """Save profile settings (only channel width) to file.
@@ -548,7 +558,8 @@ class ElementSimulation(Observable):
         with open(file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
 
-    def start(self, number_of_processes, start_value, use_old_erd_files=True,
+    def start(self, number_of_processes, start_value=None,
+              use_old_erd_files=True,
               optimize=False, stop_p=False, check_t=False,
               optimize_recoil=False, check_max=False, check_min=False,
               shared_ions=False, cancellation_token=None):
@@ -573,41 +584,35 @@ class ElementSimulation(Observable):
         """
         self.simulations_done = False
 
-        elem_sim = self.get_element_simulation()
-
-        target, run, detector = self.get_simulation_parameters()
-
         if not use_old_erd_files:
             self.__erd_filehandler.clear()
 
+        settings, target, run, detector = self.get_mcerd_params()
+
         # Set seed to either the value provided as parameter or use the one
         # stored in current element simulation.
-        # TODO should this also accept 0? It does not now. Is there an
-        #      acceptable range of values that should be checked for?
-        if start_value:
+        max_seed = self.get_max_seed()
+        seed_number = settings.pop("seed_number")
+        if start_value is not None:
             seed_number = start_value
-        else:
-            seed_number = elem_sim.seed_number
+        if max_seed is not None and seed_number <= max_seed:
+            seed_number = max_seed + 1
 
         if not optimize_recoil:
             recoil = self.recoil_elements[0]
         else:
             recoil = self.optimization_recoils[0]
+
         self.__opt_seed = seed_number
 
-        if shared_ions:
-            # ATM user can also enter value 0 to process count
-            # so lets make a quick check first
-            if number_of_processes < 1:
-                number_of_processes = 1
-            number_of_ions = elem_sim.number_of_ions // number_of_processes
-            number_of_preions = \
-                elem_sim.number_of_preions // number_of_processes
-        else:
-            number_of_ions = elem_sim.number_of_ions
-            number_of_preions = elem_sim.number_of_preions
+        if number_of_processes < 1:
+            number_of_processes = 1
 
         self.last_process_count = number_of_processes
+
+        if shared_ions:
+            settings["number_of_ions"] //= number_of_processes
+            settings["number_of_ions_in_presimu"] //= number_of_processes
 
         # Notify observers that we are about to go
         self.on_next(self.get_current_status(starting=True))
@@ -619,43 +624,35 @@ class ElementSimulation(Observable):
             if self.__cancellation_token is not None:
                 self.__cancellation_token.raise_if_cancelled()
 
-            settings = {
-                "simulation_type": elem_sim.simulation_type,
-                "number_of_ions": number_of_ions,
-                "number_of_ions_in_presimu": number_of_preions,
-                "number_of_scaling_ions": elem_sim.number_of_scaling_ions,
-                "number_of_recoils": elem_sim.number_of_recoils,
-                "minimum_scattering_angle": elem_sim.minimum_scattering_angle,
-                "minimum_main_scattering_angle":
-                    elem_sim.minimum_main_scattering_angle,
-                "minimum_energy_of_ions": elem_sim.minimum_energy,
-                "simulation_mode": elem_sim.simulation_mode,
+            settings.update({
                 "seed_number": seed_number,
                 "beam": run.beam,
                 "target": target,
                 "detector": detector,
                 "recoil_element": recoil,
                 "sim_dir": self.directory
-            }
-            # Delete corresponding erd file
+            })
+
             optimize_fluence = False
 
             # TODO create an optimization_mode enum {None, "rec", "flu"} instead
             #      of using three different booleans
             if not optimize_recoil:
                 if not optimize:
-                    new_erd_file = fp.get_erd_file_name(recoil, seed_number)
-                    # TODO check if erdfilehandler should have optim files too
+                    new_erd_file = fp.get_erd_file_name(recoil,
+                                                        seed_number)
                     self.__erd_filehandler.add_active_file(
                         Path(self.directory, new_erd_file))
                 else:
                     optimize_fluence = True
                     self.optimized_fluence = 0
-                    new_erd_file = fp.get_erd_file_name(recoil, seed_number,
+                    new_erd_file = fp.get_erd_file_name(recoil,
+                                                        seed_number,
                                                         optim_mode="fluence")
 
             else:
-                new_erd_file = fp.get_erd_file_name(recoil, seed_number,
+                new_erd_file = fp.get_erd_file_name(recoil,
+                                                    seed_number,
                                                     optim_mode="recoil")
 
             new_erd_file = Path(self.directory, new_erd_file)
@@ -700,13 +697,26 @@ class ElementSimulation(Observable):
             self.check_spectra_change(stop_p, check_t, optimize_recoil,
                                       check_max, check_min)
 
-    def get_element_simulation(self):
-        """Returns current element simulation to be used. Depending on the
-        settings, it is either a default simulation or self.
+    def get_simulation_settings(self):
+        """Returns simulation settings as a dict.
         """
-        if self.use_default_settings:
-            return self.request.default_element_simulation
-        return self
+        return {
+            key: getattr(self, value)
+            for key, value in _SETTINGS_MAP.items()
+        }
+
+    def set_simulation_settings(self, **kwargs):
+        """Sets simulation settings based on the keyword arguments.
+
+        Note that the keywords must be the ones used by MCERD, rather than
+        the attribute names of the ElementSimulation object.
+        """
+        for key, value in kwargs.items():
+            try:
+                setattr(self, _SETTINGS_MAP[key], value)
+            except KeyError:
+                # keyword does not have a known mapping, nothing to do
+                pass
 
     def get_current_status(self, starting=False):
         """Returns the number of atoms counted, number of running processes and
@@ -1021,7 +1031,7 @@ class ElementSimulation(Observable):
         else:
             channel_width = self.channel_width
 
-        target, run, detector = self.get_simulation_parameters()
+        _, target, run, detector = self.get_mcerd_params()
 
         if fluence is not None:
             used_fluence = fluence
@@ -1045,8 +1055,16 @@ class ElementSimulation(Observable):
         self.get_espe = GetEspe(espe_settings)
         self.get_espe.run_get_espe()
 
-    def get_simulation_parameters(self):
-        if self.simulation is None or self.simulation.use_request_settings:
+    def get_mcerd_params(self):
+        """Returns the parameters for MCERD simulations.
+        """
+        if self.use_default_settings:
+            settings = self.request.default_element_simulation. \
+                get_simulation_settings()
+        else:
+            settings = self.get_simulation_settings()
+
+        if self.simulation.use_request_settings:
             target = self.request.default_target
             run = self.request.default_run
             detector = self.request.default_detector
@@ -1055,8 +1073,7 @@ class ElementSimulation(Observable):
             run = self.run
             detector = self.detector
 
-        return target, run, detector
-
+        return settings, target, run, detector
 
     def reset(self, remove_files=True):
         """Function that resets the state of ElementSimulation.

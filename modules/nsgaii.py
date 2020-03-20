@@ -242,7 +242,8 @@ class Nsgaii:
             # Run mcerd for first solution
             self.element_simulation.optimization_recoils.append(current_recoil)
             if not self.mcerd_run:
-                self.element_simulation.start(self.number_of_processes, 201,
+                self.element_simulation.start(self.number_of_processes,
+                                              start_value=201,
                                               optimize=True,
                                               stop_p=self.stop_percent,
                                               check_t=self.check_time,
