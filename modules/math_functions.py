@@ -265,25 +265,24 @@ def get_linear_function(p1, p2):
     return lambda x: k * x + intercept
 
 
-def calculate_area(points):
-    """Calculates the area between the given points and x-axis.
+def calculate_area(line1, line2=None):
+    """Calculates the area between the two lines or first line and
+    x-axis if second line is None.
+
+    Args:
+        line1: collection of (x, y) values
+        line2: collection of (x, y) values
+
+    Return:
+        area as a float.
     """
     # If points are empty, return 0
-    if not points:
+    if not line1:
         return 0.0
+    if line2 is None:
+        line2 = [(line1[0][0], 0), (line1[-1][0], 0)]
 
-    polygon_points = list(points)
-
-    # Add two points that have zero y coordinate to make a rectangle
-    if not polygon_points[-1][1] == 0.0:
-        point1_x = polygon_points[-1][0]
-        point1 = (point1_x, 0.0)
-        polygon_points.append(point1)
-
-    point2_x = polygon_points[0][0]
-    point2 = (point2_x, 0.0)
-
-    polygon_points.append(point2)
+    polygon_points = line1 + list(reversed(line2))
 
     # Add the first point again to close the rectangle
     polygon_points.append(polygon_points[0])

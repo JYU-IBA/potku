@@ -33,6 +33,7 @@ import collections
 import modules.optimization as opt
 import modules.general_functions as gf
 import modules.file_paths as fp
+import modules.math_functions as mf
 
 from pathlib import Path
 
@@ -324,18 +325,8 @@ class Nsgaii:
 
             # Find the area between simulated and measured energy
             # spectra
-            polygon_points = []
-            for value in optim_espe:
-                polygon_points.append(value)
+            area = mf.calculate_area(optim_espe, measured_espe)
 
-            for value in measured_espe[::-1]:
-                polygon_points.append(value)
-
-            # Add the first point again to close the rectangle
-            polygon_points.append(polygon_points[0])
-
-            polygon = Polygon(polygon_points)
-            area = polygon.area
             # Find the summed distance between thw points of these two
             # spectra
             sum_diff = sum(abs(opt_p[1] - mesu_p[1])

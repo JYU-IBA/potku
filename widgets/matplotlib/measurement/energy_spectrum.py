@@ -189,24 +189,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                                                           a=start,
                                                           b=end)))
 
-        # https://stackoverflow.com/questions/25439243/find-the-area-between-
-        # two-curves-plotted-in-matplotlib-fill-between-area
-        # Create a polygon points list from limited points
-        # TODO use mf.calculate_area here
-        polygon_points = []
-        for value in all_areas[0]:
-            polygon_points.append((value[0], value[1]))
-
-        for value in all_areas[1][::-1]:
-            polygon_points.append((value[0], value[1]))
-
-        if not polygon_points:
-            return None, None
-        # Add the first point again to close the rectangle
-        polygon_points.append(polygon_points[0])
-
-        polygon = Polygon(polygon_points)
-        area = polygon.area
+        area = mf.calculate_area(all_areas[0], all_areas[1])
 
         # Calculate also the ratio of the two curve's areas
         try:

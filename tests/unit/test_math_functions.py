@@ -373,6 +373,24 @@ class TestPercentage(unittest.TestCase):
             [(2.3, 2.3), (3, 3)],
             list(mf.get_continuous_range(xs, ys, a=2.3, b=3.5)))
 
+    def test_calculate_area(self):
+        # Test with single line
+        self.assertEqual(0, mf.calculate_area([]))
+        self.assertEqual(0, mf.calculate_area([(1, 1)]))
+        self.assertEqual(1, mf.calculate_area([(0, 1), (1, 1)]))
+        self.assertEqual(2, mf.calculate_area([(0, 1), (1, 1), (2, 1)]))
+        self.assertEqual(2.5, mf.calculate_area([(0, 1), (1, 1), (2, 2)]))
+        self.assertEqual(0.5, mf.calculate_area([(0, -1), (1, 2)]))
+
+        # Test with two lines
+        self.assertEqual(0, mf.calculate_area([], []))
+        self.assertEqual(0, mf.calculate_area([(1, 1)],
+                                              [(0, 0)]))
+        self.assertEqual(0, mf.calculate_area([(0, 1), (1, 1)],
+                                              [(0, 1), (1, 1)]))
+        self.assertEqual(2, mf.calculate_area([(0, 1), (1, 1)],
+                                              [(-1, -1), (0, -1)]))
+
 
 if __name__ == "__main__":
     unittest.main()
