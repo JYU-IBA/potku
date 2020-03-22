@@ -32,12 +32,15 @@ import time
 import json
 
 import dialogs.dialog_functions as df
-import widgets.gui_utils as gutils
+import widgets.binding as bnd
 
 from pathlib import Path
 
 from modules.energy_spectrum import EnergySpectrum
 from modules.nsgaii import Nsgaii
+
+from widgets.binding import PropertySavingWidget
+from widgets.gui_utils import QtABCMeta
 
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
@@ -49,12 +52,12 @@ from widgets.simulation.optimization_parameters import \
     OptimizationRecoilParameterWidget
 
 
-class OptimizationDialog(QtWidgets.QDialog, gutils.PropertySavingWidget,
-                         metaclass=gutils.QtABCMeta):
+class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
+                         metaclass=QtABCMeta):
     """
     TODO
     """
-    ch = gutils.bind("histogramTicksDoubleSpinBox")
+    ch = bnd.bind("histogramTicksDoubleSpinBox")
 
     @property
     def fluence_parameters(self):

@@ -28,8 +28,12 @@ import unittest
 import sys
 
 from tests.utils import change_wd_to_root
+
 from widgets.simulation.optimization_parameters import \
     OptimizationRecoilParameterWidget
+from widgets.simulation.optimization_parameters import \
+    OptimizationFluenceParameterWidget
+
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTime
 
@@ -61,10 +65,13 @@ class TestRecoilParameters(unittest.TestCase):
         self.assertEqual("8-point two-peak",
                          widget.recoilTypeComboBox.currentText())
 
-        # Note that recoil_type is not two-way bound, so setting it does not
-        # change anything
-        widget.recoil_type = "box"
+        # recoil_type is not two-way bound, so setting it raises an error
+        def set_val():
+            widget.recoil_type = "box"
+        self.assertRaises(TypeError,
+                          lambda: set_val())
 
+        # Previously set values remain the same
         self.assertEqual(9, widget.sol_size)
         self.assertEqual("two-peak", widget.recoil_type)
         self.assertEqual("8-point two-peak",
@@ -104,6 +111,53 @@ class TestRecoilParameters(unittest.TestCase):
         # handled in the set_properties method
         widget = OptimizationRecoilParameterWidget(optimize_recoil=False)
         self.assertTrue(widget.optimize_recoil)
+
+    @change_wd_to_root
+    def test_get_properties(self):
+        """Test that get_properties returns the default values of each type
+        of optimization widget after initialization.
+        """
+        common = {
+            "pop_size": 100,
+            "number_of_processes": 1,
+            "cross_p": 0.9,
+            "mut_p": 1.0,
+            "check_time": 20
+        }
+        fluence_expected = {
+            "stop_percent": 0.7,
+            "gen": 5,
+            "lower_limits": 0.0,
+            "sol_size": 1,
+            "optimize_recoil": False,
+            "upper_limits": 10000000000.0,
+            "dis_c": 20,
+            "dis_m": 20,
+            "check_max": 900,
+            "check_min": 600
+        }
+        fluence_expected.update(common)
+
+        recoil_expected = {
+            "stop_percent": 0.3,
+            "gen": 50,
+            "upper_limits": (120.0, 1.0),
+            "lower_limits": (0.01, 0.0001),
+            "sol_size": 5,
+            "recoil_type": "box",
+            "optimize_recoil": True,
+            "check_max": 600,
+            "check_min": 0
+        }
+        recoil_expected.update(common)
+
+        fluence_widget = OptimizationFluenceParameterWidget()
+        self.assertEqual(fluence_expected,
+                         fluence_widget.get_properties())
+
+        recoil_widget = OptimizationRecoilParameterWidget()
+        self.assertEqual(recoil_expected,
+                         recoil_widget.get_properties())
 
 
 if __name__ == '__main__':

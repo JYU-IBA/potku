@@ -70,7 +70,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         main_layout = QtWidgets.QHBoxLayout()
         recoil_element = self.element_simulation.recoil_elements[0]
         self.controls_group_box = QtWidgets.QGroupBox(
-            recoil_element.prefix + "-" + recoil_element.name)
+            recoil_element.get_full_name())
         self.controls_group_box.setSizePolicy(QtWidgets.QSizePolicy.Preferred,
                                               QtWidgets.QSizePolicy.Preferred)
 
@@ -202,15 +202,10 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
                 for recoil in self.element_simulation.recoil_elements:
                     delete_simulation_results(self.element_simulation, recoil)
 
-                # This is the seed value set in the request settings
-                start_value = self.element_simulation.seed_number
                 use_old_erd_files = False
             else:
-                # These are the old files. Seed is set to 'last seed' + 1
-                start_value = self.element_simulation.get_max_seed() + 1
                 use_old_erd_files = True
         elif status["state"] == SimulationState.NOTRUN:
-            start_value = self.element_simulation.seed_number
             use_old_erd_files = False
         else:
             # TODO we should handle these kinds of situation more gracefully
@@ -237,7 +232,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
 
         starter_thread = threading.Thread(
             target=lambda: self.element_simulation.start(
-                number_of_processes, start_value,
+                number_of_processes,
                 use_old_erd_files=use_old_erd_files,
                 shared_ions=True,
                 cancellation_token=CancellationToken()))
@@ -298,10 +293,10 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         #      to console
         # TODO either bind the value of ions to some variable or only show
         #      this when the simulation starts
-        elem_sim = self.element_simulation.get_element_simulation()
+        settings, _, _, _ = self.element_simulation.get_mcerd_params()
         try:
-            preions = elem_sim.number_of_preions // process_count
-            ions = elem_sim.number_of_ions // process_count
+            preions = settings["number_of_ions_in_presimu"] // process_count
+            ions = settings["number_of_ions"] // process_count
             print("Number of ions per process (pre/full):",
                   preions, ions)
         except ZeroDivisionError:
