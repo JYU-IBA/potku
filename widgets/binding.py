@@ -132,7 +132,7 @@ class PropertyBindingWidget(abc.ABC):
             if p in kwargs:
                 try:
                     setattr(self, p, kwargs[p])
-                except AttributeError:
+                except (AttributeError, TypeError):
                     pass
 
     def get_properties(self):
