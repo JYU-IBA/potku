@@ -1019,7 +1019,7 @@ class ElementSimulation(Observable):
 
         recoil_file = os.path.join(self.directory, recoil_element.prefix +
                                    "-" + recoil_name + suffix)
-        with open(recoil_file) as rec_file:
+        with open(recoil_file, "w") as rec_file:
             rec_file.write("\n".join(recoil_element.get_mcerd_params()))
 
         erd_file = os.path.join(self.directory, recoil_elements[0].prefix +
