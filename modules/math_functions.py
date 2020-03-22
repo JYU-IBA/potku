@@ -22,10 +22,12 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 
-__author__ = ""     # TODO
+__author__ = "Juhani Sundell"
 __version__ = ""    # TODO
 
 import math
+
+from shapely.geometry import Polygon
 
 
 def integrate_bins(x_axis, y_axis, a=-math.inf, b=math.inf,
@@ -58,7 +60,7 @@ def integrate_bins(x_axis, y_axis, a=-math.inf, b=math.inf,
         step_size = x_axis[1] - x_axis[0]
 
     # Return y values multiplied by step size
-    return sum_y_values(x_axis, y_axis, a, b) * step_size
+    return sum_y_values(x_axis, y_axis, a=a, b=b) * step_size
 
 
 def sum_running_avgs(x_axis, y_axis, a=-math.inf, b=math.inf):
@@ -74,7 +76,7 @@ def sum_running_avgs(x_axis, y_axis, a=-math.inf, b=math.inf):
     Return:
         sum of running averages on the y axis
     """
-    return sum(y for (_, y) in calculate_running_avgs(x_axis, y_axis, a, b))
+    return sum(y for (_, y) in calculate_running_avgs(x_axis, y_axis, a=a, b=b))
 
 
 def sum_y_values(x_axis, y_axis, a=-math.inf, b=math.inf):
@@ -89,7 +91,7 @@ def sum_y_values(x_axis, y_axis, a=-math.inf, b=math.inf):
     Return:
         sum of y values within range
     """
-    return sum(y for (_, y) in get_elements_in_range(x_axis, y_axis, a, b))
+    return sum(y for (_, y) in get_elements_in_range(x_axis, y_axis, a=a, b=b))
 
 
 def calculate_running_avgs(x_axis, y_axis, a=-math.inf, b=math.inf):
@@ -106,49 +108,57 @@ def calculate_running_avgs(x_axis, y_axis, a=-math.inf, b=math.inf):
         (x, y) tuples where y is the running average of current
         and previous y value
     """
-    # TODO currently prev_y is always 0 for the first element in range,
-    #      even though data can contain y values before it. This may need
-    #      to be fixed
     prev_y = 0
-    for x, y in get_elements_in_range(x_axis, y_axis, a, b):
+    for x, y in get_elements_in_range(x_axis, y_axis, a=a, b=b):
         yield x, (prev_y + y) / 2
         prev_y = y
 
 
-def get_elements_in_range(x_axis, y_axis, a=-math.inf, b=math.inf):
+def get_elements_in_range(*args, a=-math.inf, b=math.inf,
+                          include_before=False, include_after=True):
     """Generates (x, y) tuples from the given x and y values where the
     x value is in within the range defined by a and b.
 
     It is assumed that x axis is sorted in ascending order.
 
     Args:
-        x_axis: values on the x axis
-        y_axis: values on the y axis
+        args: either a single collection of (x, y) values or x values and
+            y values as two collections.
         a: minimum x value in the range
         b: maximum x value in the range
+        include_before: whether first (x, y) value before a is yielded.
+        include_after: whether first (x, y) value after b is yielded.
+
 
     Yield:
         (x, y) tuple where x is within the range and y is the corresponding
         value on the y axis
     """
-    # TODO maybe add parameters such as inclusive/exclusive range
-    # TODO instead of separate x and y axis, values could be provided
-    #      as a single tuple
+    if len(args) == 1:
+        x_axis, y_axis = zip(*args[0])
+    else:
+        x_axis, y_axis = args[0], args[1]
+
     if a > b:
         # If a is bigger than b, there are no values to yield
         return
 
+    prev_point = None
     for x, y in zip(x_axis, y_axis):
+        if x < a:
+            prev_point = (x, y)
+            continue
+        elif x >= a and include_before and prev_point is not None:
+            yield prev_point
+            include_before = False
+
         if a <= x <= b:
             # Yield (x, y) when x is between a and b
             yield x, y
+
         elif x > b:
-            # Also yield the first (x, y) where x is bigger
-            # than b. Then stop.
-            # TODO this follows the original logic that was used
-            #      in depth profile calculations. Check if this
-            #      needs to be revised
-            yield x, y
+            if include_after:
+                yield x, y
             return
 
 
@@ -187,3 +197,97 @@ def calculate_percentages(values, rounding=2):
         round(value / total * 100, rounding)
         for value in values
     ]
+
+
+def get_continuous_range(*args, a=-math.inf, b=math.inf):
+    """Yields (x, y) pairs that are between a and b.
+
+    If a is between two points, the first pair in the range will be
+    (a, f(a)) where f is a linear function given by the two points.
+
+    Args:
+        args: either a single collection of (x, y) values or x values and
+            y values as two collections.
+        a: lower limit of the range.
+        b: upper limit of the range.
+
+    Yield:
+        (x, y) pairs.
+    """
+    range_points = get_elements_in_range(*args, a=a, b=b,
+                                         include_before=True,
+                                         include_after=True)
+
+    p_first, p_last = None, None
+    for p in range_points:
+        if p[0] < a:
+            p_first = p
+            p = next(range_points)
+            if p[0] > a:
+                p_last = calculate_new_point(p_first, p, a)
+                yield p_last
+
+        if p[0] <= b:
+            p_last = p
+            yield p
+
+        elif p[0] > b and p_last is not None:
+            if p_last[0] < b:
+                yield calculate_new_point(p, p_last, b)
+            return
+
+
+def calculate_new_point(p1, p2, x):
+    """Calculates a new point at position x given the other two points.
+
+    Args:
+        p1: point (tuple, list or a Point object)
+        p2: point (tuple, list or a Point object)
+        x: TODO
+
+    Return:
+        tuple consisting of x and the calculated value of y
+    """
+    f = get_linear_function(p1, p2)
+    return x, f(x)
+
+
+def get_linear_function(p1, p2):
+    """Returns a linear function from the given points p1 and p2.
+    """
+    try:
+        k = (p2[1] - p1[1]) / (p2[0] - p1[0])
+    except ZeroDivisionError:
+        k = math.inf
+
+    intercept = - k * p1[0] + p1[1]
+
+    return lambda x: k * x + intercept
+
+
+def calculate_area(points):
+    """Calculates the area between the given points and x-axis.
+    """
+    # If points are empty, return 0
+    if not points:
+        return 0.0
+
+    polygon_points = list(points)
+
+    # Add two points that have zero y coordinate to make a rectangle
+    if not polygon_points[-1][1] == 0.0:
+        point1_x = polygon_points[-1][0]
+        point1 = (point1_x, 0.0)
+        polygon_points.append(point1)
+
+    point2_x = polygon_points[0][0]
+    point2 = (point2_x, 0.0)
+
+    polygon_points.append(point2)
+
+    # Add the first point again to close the rectangle
+    polygon_points.append(polygon_points[0])
+
+    polygon = Polygon(polygon_points)
+    area = polygon.area
+    return area

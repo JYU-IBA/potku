@@ -34,6 +34,7 @@ import copy
 import os
 
 import modules.general_functions as gf
+import modules.math_functions as mf
 
 from dialogs.graph_ignore_elements import GraphIgnoreElements
 
@@ -42,7 +43,6 @@ from matplotlib import offsetbox
 from matplotlib.widgets import SpanSelector
 
 from modules.element import Element
-from modules.general_functions import calculate_new_point
 from modules.measurement import Measurement
 
 from PyQt5 import QtWidgets
@@ -184,35 +184,15 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         # TODO move at least parts of this function to math_functions module
         all_areas = []
         for line_points in self.lines_of_area:
-            area_points = []
             points = list(line_points.values())[0]
-            for i, point in enumerate(points):
-                x = point[0]
-                y = point[1]
-                if x < start:
-                    continue
-                if start <= x:
-                    if i > 0:
-                        previous_point = points[i - 1]
-                        if previous_point[0] < start < x:
-                            # Calculate new point to be added
-                            calculate_new_point(previous_point, start,
-                                                       point, area_points)
-                    if x <= end:
-                        area_points.append((x, y))
-                    else:
-                        if i > 0:
-                            previous_point = points[i - 1]
-                            if previous_point[0] < end < x:
-                                calculate_new_point(previous_point, end,
-                                                           point, area_points)
-                        break
-
-            all_areas.append(area_points)
+            all_areas.append(list(mf.get_continuous_range(points,
+                                                          a=start,
+                                                          b=end)))
 
         # https://stackoverflow.com/questions/25439243/find-the-area-between-
         # two-curves-plotted-in-matplotlib-fill-between-area
         # Create a polygon points list from limited points
+        # TODO use mf.calculate_area here
         polygon_points = []
         for value in all_areas[0]:
             polygon_points.append((value[0], value[1]))

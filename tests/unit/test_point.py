@@ -25,6 +25,7 @@ __author__ = "Juhani Sundell"
 __version__ = ""  # TODO
 
 import unittest
+import random
 
 from modules.point import Point
 
@@ -53,6 +54,27 @@ class TestPoint(unittest.TestCase):
     def test_str(self):
         self.assertEqual("1 4.0", str(Point((1, 4.0))))
         self.assertEqual("1.23 4.5624", str(Point((1.2332236, 4.562389))))
+
+    def test_interpolate(self):
+        p1 = Point(0, 1)
+        p2 = Point(1, 2)
+
+        self.assertEqual(Point(0.5, 1.5), p1.calculate_new_point(p2, 0.5))
+        self.assertEqual(Point(2, 3), p1.calculate_new_point(p2, 2))
+        self.assertEqual(Point(-1, 0), p1.calculate_new_point(p2, -1))
+
+        def rand():
+            return random.uniform(-100, 100)
+
+        for i in range(100):
+            x = rand()
+            p1 = Point((rand(), rand()))
+            p2 = Point((rand(), rand()))
+
+            # To avoid dealing with floating point precision while testing,
+            # turn the points into strings.
+            self.assertEqual(str(p1.calculate_new_point(p2, x)),
+                             str(p2.calculate_new_point(p1, x)))
 
 
 if __name__ == '__main__':

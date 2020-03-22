@@ -106,8 +106,10 @@ class TestRecoilElement(unittest.TestCase):
         self.assertEqual(4.5, self.rec_elem.calculate_area_for_interval(
             start=0, end=1))
 
-        self.assertEqual(4.25 * 0.5, self.rec_elem.calculate_area_for_interval(
-            start=0, end=0.5))
+        self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
+            start=0.5, end=0.5))
+        self.assertEqual(2.25, self.rec_elem.calculate_area_for_interval(
+            start=0.25, end=0.75))
 
         self.assertEqual(5.5, self.rec_elem.calculate_area_for_interval(
             start=0.5, end=1.5))

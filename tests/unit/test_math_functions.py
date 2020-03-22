@@ -329,6 +329,50 @@ class TestPercentage(unittest.TestCase):
             for r in results:
                 self.assertTrue(0 <= r <= 100)
 
+    def test_continuous_ragne(self):
+        xs = [i for i in range(4)]
+        ys = list(xs)
+
+        self.assertEqual(
+            list(zip(xs, ys)),
+            list(mf.get_continuous_range(xs, ys)))
+
+        self.assertEqual(
+            [],
+            list(mf.get_continuous_range(xs, ys, a=5, b=12)))
+
+        self.assertEqual(
+            [],
+            list(mf.get_continuous_range(xs, ys, a=2, b=1)))
+
+        self.assertEqual(
+            [(0, 0)],
+            list(mf.get_continuous_range(xs, ys, a=0, b=0)))
+
+        self.assertEqual(
+            [(0, 0)],
+            list(mf.get_continuous_range(xs, ys, a=-1, b=0)))
+
+        self.assertEqual(
+            [(0, 0), (0.25, 0.25)],
+            list(mf.get_continuous_range(xs, ys, a=-1, b=0.25)))
+
+        self.assertEqual(
+            [(3, 3)],
+            list(mf.get_continuous_range(xs, ys, a=3, b=4)))
+
+        self.assertEqual(
+            [(2.3, 2.3)],
+            list(mf.get_continuous_range(xs, ys, a=2.3, b=2.3)))
+
+        self.assertEqual(
+            [(2.3, 2.3), (2.5, 2.5)],
+            list(mf.get_continuous_range(xs, ys, a=2.3, b=2.5)))
+
+        self.assertEqual(
+            [(2.3, 2.3), (3, 3)],
+            list(mf.get_continuous_range(xs, ys, a=2.3, b=3.5)))
+
 
 if __name__ == "__main__":
     unittest.main()

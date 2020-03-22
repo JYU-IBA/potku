@@ -34,13 +34,11 @@ import itertools
 import time
 
 import modules.file_paths as fp
-import modules.general_functions as gf
+import modules.math_functions as mf
 
 from modules.element import Element
 from modules.point import Point
 from modules.parsing import CSVParser
-
-from shapely.geometry import Polygon
 
 
 class RecoilElement:
@@ -304,6 +302,12 @@ class RecoilElement:
         """Returns a list of the y coordinates of the points."""
         return [point.get_y() for point in self._points]
 
+    def get_xs_and_ys(self):
+        """Returns a tuple where first one contains the values on the
+        x axis and second one contains the values on the y axis."""
+        xs, ys = zip(*(p.get_coordinates() for p in self._points))
+        return xs, ys
+
     def get_point_by_i(self, i):
         """Returns the i:th point."""
         return self._points[i]
@@ -494,61 +498,11 @@ class RecoilElement:
         Return:
             Area between intervals and recoil points and x axis.
         """
-        # TODO maybe break this function down to couple of smaller functions
         if start is None:
             start = self._points[0].get_x()
         if end is None:
             end = self._points[-1].get_x()
 
-        area_points = []
-
-        for i, point in enumerate(self._points):
-            x = point.get_x()
-            y = point.get_y()
-            if x < start:
-                continue
-            if start <= x:
-                if i > 0:
-                    previous_point = self._points[i - 1]
-                    if previous_point.get_x() < start < x:
-                        # Calculate new point to be added
-                        gf.calculate_new_point(previous_point, start,
-                                               point, area_points)
-                if x <= end:
-                    area_points.append((x, y))
-                else:
-                    if i > 0:
-                        previous_point = self._points[i - 1]
-                        if previous_point.get_x() < end < x:
-                            gf.calculate_new_point(previous_point, end,
-                                                   point, area_points)
-                    break
-
-        # If common points are empty, no recoil inside area
-        if not area_points:
-            return 0.0
-
-        if area_points[-1][0] < end <= self._points[-1].get_x():
-            area_points.append((end, 0))
-
-        polygon_points = []
-        for value in area_points:
-            polygon_points.append(value)
-
-        # Add two points that have zero y coordinate to make a rectangle
-        if not polygon_points[-1][1] == 0.0:
-            point1_x = polygon_points[-1][0]
-            point1 = (point1_x, 0.0)
-            polygon_points.append(point1)
-
-        point2_x = polygon_points[0][0]
-        point2 = (point2_x, 0.0)
-
-        polygon_points.append(point2)
-
-        # Add the first point again to close the rectangle
-        polygon_points.append(polygon_points[0])
-
-        polygon = Polygon(polygon_points)
-        area = polygon.area
-        return area
+        area_points = list(mf.get_continuous_range(*self.get_xs_and_ys(),
+                                                   a=start, b=end))
+        return mf.calculate_area(area_points)
