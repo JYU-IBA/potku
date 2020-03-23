@@ -63,44 +63,46 @@ def integrate_bins(x_axis, y_axis, a=-math.inf, b=math.inf,
     return sum_y_values(x_axis, y_axis, a=a, b=b) * step_size
 
 
-def sum_running_avgs(x_axis, y_axis, a=-math.inf, b=math.inf):
+def sum_running_avgs(*args, a=-math.inf, b=math.inf, **kwargs):
     """Sums together 2-step running averages for y axis values over
     the range [a, b] on the x axis.
 
     Args:
-        x_axis: values on the x axis
-        y_axis: values on the y axis
+        args: either a single collection of (x, y) values or x values and
+            y values as separate collections.
         a: minimum x value in the range
         b: maximum x value in the range
 
     Return:
         sum of running averages on the y axis
     """
-    return sum(y for (_, y) in calculate_running_avgs(x_axis, y_axis, a=a, b=b))
+    return sum(y for (_, y) in calculate_running_avgs(*args, a=a, b=b,
+                                                      **kwargs))
 
 
-def sum_y_values(x_axis, y_axis, a=-math.inf, b=math.inf):
+def sum_y_values(*args, a=-math.inf, b=math.inf, **kwargs):
     """Sums the values on y axis over the range [a, b] on the x axis.
 
     Args:
-        x_axis: values on the x axis
-        y_axis: values on the y axis
+        args: either a single collection of (x, y) values or x values and
+            y values as separate collections.
         a: minimum x value in the range
         b: maximum x value in the range
 
     Return:
         sum of y values within range
     """
-    return sum(y for (_, y) in get_elements_in_range(x_axis, y_axis, a=a, b=b))
+    return sum(y for (_, y) in get_elements_in_range(*args, a=a, b=b,
+                                                     **kwargs))
 
 
-def calculate_running_avgs(x_axis, y_axis, a=-math.inf, b=math.inf):
+def calculate_running_avgs(*args, a=-math.inf, b=math.inf, **kwargs):
     """Generates 2-step running averages of y axis value over the
     range [a, b] on the x axis.
 
     Args:
-        x_axis: values on the x axis
-        y_axis: values on the y axis
+        args: either a single collection of (x, y) values or x values and
+            y values as separate collections.
         a: minimum x value in the range
         b: maximum x value in the range
 
@@ -109,7 +111,7 @@ def calculate_running_avgs(x_axis, y_axis, a=-math.inf, b=math.inf):
         and previous y value
     """
     prev_y = 0
-    for x, y in get_elements_in_range(x_axis, y_axis, a=a, b=b):
+    for x, y in get_elements_in_range(*args, a=a, b=b, **kwargs):
         yield x, (prev_y + y) / 2
         prev_y = y
 
@@ -123,7 +125,7 @@ def get_elements_in_range(*args, a=-math.inf, b=math.inf,
 
     Args:
         args: either a single collection of (x, y) values or x values and
-            y values as two collections.
+            y values as separate collections.
         a: minimum x value in the range
         b: maximum x value in the range
         include_before: whether first (x, y) value before a is yielded.
@@ -207,7 +209,7 @@ def get_continuous_range(*args, a=-math.inf, b=math.inf):
 
     Args:
         args: either a single collection of (x, y) values or x values and
-            y values as two collections.
+            y values as separate collections.
         a: lower limit of the range.
         b: upper limit of the range.
 
@@ -243,7 +245,7 @@ def calculate_new_point(p1, p2, x):
     Args:
         p1: point (tuple, list or a Point object)
         p2: point (tuple, list or a Point object)
-        x: TODO
+        x: x value of the new point
 
     Return:
         tuple consisting of x and the calculated value of y
@@ -282,11 +284,8 @@ def calculate_area(line1, line2=None):
     if line2 is None:
         line2 = [(line1[0][0], 0), (line1[-1][0], 0)]
 
-    polygon_points = line1 + list(reversed(line2))
-
     # Add the first point again to close the rectangle
-    polygon_points.append(polygon_points[0])
+    polygon_points = [*line1, *reversed(line2), line1[0]]
 
     polygon = Polygon(polygon_points)
-    area = polygon.area
-    return area
+    return polygon.area

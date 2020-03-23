@@ -28,6 +28,7 @@ __version__ = ""  # TODO
 
 import unittest
 import random
+import numpy as np
 
 from modules import math_functions as mf
 
@@ -70,17 +71,16 @@ class TestListIntegration(unittest.TestCase):
 
         # Currently step size is assumed to be constant, so variations are
         # not taken into account. This may change in the future
-        self.assertEqual(
-            120, mf.integrate_bins([0, 10, 300, 600], [1, 2, 4, 5]))
+        self.assertEqual(120,
+                         mf.integrate_bins([0, 10, 300, 600], [1, 2, 4, 5]))
 
         # Negative first step negates all other bins. X axis is assumed
         # to be in ascending order, no checks are performed.
-        self.assertEqual(
-            -120, mf.integrate_bins([0, -10, -300, 600], [1, 2, 4, 5]))
+        self.assertEqual(-120,
+                         mf.integrate_bins([0, -10, -300, 600], [1, 2, 4, 5]))
 
         # In similar vein, zero step size nullifies all other bins
-        self.assertEqual(
-            0, mf.integrate_bins([0, 0, -300, 600], [1, 2, 4, 5]))
+        self.assertEqual(0, mf.integrate_bins([0, 0, -300, 600], [1, 2, 4, 5]))
 
     def test_bad_inputs(self):
         """Tests integrate_bins function with bad input values for x
@@ -93,10 +93,9 @@ class TestListIntegration(unittest.TestCase):
 
         # Note that this will still work as strings are not in the integral
         # range
-        self.assertEqual(
-            20, mf.integrate_bins([0, 1, 2, "foo"],
-                                  ["foo", 10, 10, 10],
-                                  a=1, b=1))
+        self.assertEqual(20, mf.integrate_bins([0, 1, 2, "foo"],
+                                               ["foo", 10, 10, 10],
+                                               a=1, b=1))
 
     def test_integrating_with_limits(self):
         """Tests integrate_bins function with set limit values
@@ -104,49 +103,21 @@ class TestListIntegration(unittest.TestCase):
         x_axis = [0, 1, 2, 3, 4, 5]
         y_axis = [10, 10, 10, 10, 10]
 
-        self.assertEqual(
-            50, mf.integrate_bins(x_axis,
-                                  y_axis,
-                                  a=0, b=4.5))
+        self.assertEqual(50, mf.integrate_bins(x_axis, y_axis, a=0, b=4.5))
+        self.assertEqual(20, mf.integrate_bins(x_axis, y_axis, a=3, b=3))
         # Values before a are not included in the integral, but first
         # value after b is
-        self.assertEqual(
-            30, mf.integrate_bins(x_axis,
-                                  y_axis,
-                                  a=1.5, b=3.5))
-        self.assertEqual(
-            30, mf.integrate_bins(x_axis,
-                                  y_axis,
-                                  a=2, b=3))
-        self.assertEqual(
-            30, mf.integrate_bins(x_axis,
-                                  y_axis,
-                                  a=1.5, b=3))
-        self.assertEqual(
-            30, mf.integrate_bins(x_axis,
-                                  y_axis,
-                                  a=2, b=3.5))
+        self.assertEqual(30, mf.integrate_bins(x_axis, y_axis, a=1.5, b=3.5))
+        self.assertEqual(30, mf.integrate_bins(x_axis, y_axis, a=2, b=3))
+        self.assertEqual(30, mf.integrate_bins(x_axis, y_axis, a=1.5, b=3))
+        self.assertEqual(30, mf.integrate_bins(x_axis, y_axis, a=2, b=3.5))
 
-        # Turning limits around returns 0
-        self.assertEqual(
-            0, mf.integrate_bins(x_axis,
-                                 y_axis,
-                                 a=3, b=2))
+        # Turning limits around returns 0,
+        self.assertEqual(0, mf.integrate_bins(x_axis, y_axis, a=3, b=2))
 
-        self.assertEqual(
-            20, mf.integrate_bins(x_axis,
-                                  y_axis,
-                                  a=3, b=3))
-
-        self.assertEqual(
-            0, mf.integrate_bins(x_axis,
-                                 y_axis,
-                                 a=10, b=15))
-
-        self.assertEqual(
-            0, mf.integrate_bins(x_axis,
-                                 y_axis,
-                                 a=-10, b=-15))
+        # as well as integrating outside the range
+        self.assertEqual(0, mf.integrate_bins(x_axis, y_axis, a=10, b=15))
+        self.assertEqual(0, mf.integrate_bins(x_axis, y_axis, a=-10, b=-15))
 
     def test_sum_y_values(self):
         """Tests sum_y_values function"""
@@ -154,23 +125,14 @@ class TestListIntegration(unittest.TestCase):
         y_axis = [10, 11, 12, 13, 14, 15]
 
         # Without limits, sum_y_values is same as sum
-        self.assertEqual(sum(y_axis),
-                         mf.sum_y_values(x_axis, y_axis))
+        self.assertEqual(sum(y_axis), mf.sum_y_values(x_axis, y_axis))
 
-        self.assertEqual(29,
-                         mf.sum_y_values(x_axis, y_axis, a=4))
+        self.assertEqual(29, mf.sum_y_values(x_axis, y_axis, a=4))
+        self.assertEqual(21, mf.sum_y_values(x_axis, y_axis, b=0))
+        self.assertEqual(50, mf.sum_y_values(x_axis, y_axis, a=1, b=3))
 
-        self.assertEqual(21,
-                         mf.sum_y_values(x_axis, y_axis, b=0))
-
-        self.assertEqual(11 + 12 + 13 + 14,
-                         mf.sum_y_values(x_axis, y_axis, a=1, b=3))
-
-        self.assertEqual(12,
-                         mf.sum_y_values(x_axis, y_axis, a=1.5, b=1.5))
-
-        self.assertEqual(0,
-                         mf.sum_y_values(x_axis, y_axis, a=2, b=1))
+        self.assertEqual(12, mf.sum_y_values(x_axis, y_axis, a=1.5, b=1.5))
+        self.assertEqual(0, mf.sum_y_values(x_axis, y_axis, a=2, b=1))
 
     def test_sum_running_avgs(self):
         """Tests sum_running_avgs function"""
@@ -211,62 +173,82 @@ class TestListIntegration(unittest.TestCase):
 
         # If a > b, nothing is returned
         self.assertEqual([],
-                         list(mf.get_elements_in_range(x_axis,
-                                                       y_axis,
-                                                       a=2,
-                                                       b=1)))
+                         list(mf.get_elements_in_range(x_axis, y_axis,
+                                                       a=2, b=1)))
 
-        # First element after b is also returned,
-        # TODO this behaviour is quite weird and should be checked if this is
-        #      actually what is needed
-        self.assertEqual([(1, 11), (2, 12)],
-                         list(mf.get_elements_in_range(x_axis,
-                                                       y_axis,
-                                                       a=1,
-                                                       b=1)))
-
+        # First element after b is also returned by default,
         self.assertEqual([(0, 10)],
-                         list(mf.get_elements_in_range(x_axis,
-                                                       y_axis,
+                         list(mf.get_elements_in_range(x_axis, y_axis,
                                                        b=-100)))
 
         # whereas first before a is not
-        self.assertEqual([(2, 12)],
-                         list(mf.get_elements_in_range(x_axis,
-                                                       y_axis,
-                                                       a=1.5,
-                                                       b=1.5)))
-
         self.assertEqual([],
-                         list(mf.get_elements_in_range(x_axis,
-                                                       y_axis,
+                         list(mf.get_elements_in_range(x_axis, y_axis,
                                                        a=100)))
-
-        self.assertEqual([(1, 11), (2, 12), (3, 13)],
-                         list(mf.get_elements_in_range(x_axis,
-                                                       y_axis,
-                                                       a=1,
-                                                       b=2)))
 
         # Limits can be set for only a or b
         self.assertEqual([(0, 10), (1, 11), (2, 12), (3, 13)],
-                         list(mf.get_elements_in_range(x_axis,
-                                                       y_axis,
+                         list(mf.get_elements_in_range(x_axis, y_axis,
                                                        b=2)))
 
         self.assertEqual([(3, 13), (4, 14), (5, 15)],
-                         list(mf.get_elements_in_range(x_axis,
-                                                       y_axis,
+                         list(mf.get_elements_in_range(x_axis, y_axis,
                                                        a=3)))
 
+    def test_inclusion(self):
+        x_axis = [0, 1, 2]
+        y_axis = [1, 1, 1]
+        # Tests for a = b = 0.5
+        self.assertEqual([],
+                         list(mf.get_elements_in_range(x_axis, y_axis,
+                                                       a=0.5, b=0.5,
+                                                       include_after=False,
+                                                       include_before=False)))
+
+        self.assertEqual([(0, 1)],
+                         list(mf.get_elements_in_range(x_axis, y_axis,
+                                                       a=0.5, b=0.5,
+                                                       include_after=False,
+                                                       include_before=True)))
+
+        self.assertEqual([(1, 1)],
+                         list(mf.get_elements_in_range(x_axis, y_axis,
+                                                       a=0.5, b=0.5,
+                                                       include_after=True,
+                                                       include_before=False)))
+
+        self.assertEqual([(0, 1), (1, 1)],
+                         list(mf.get_elements_in_range(x_axis, y_axis,
+                                                       a=0.5, b=0.5,
+                                                       include_after=True,
+                                                       include_before=True)))
+
+        # Tests for a = b = 1
+        self.assertEqual([(1, 1)],
+                         list(mf.get_elements_in_range(x_axis, y_axis,
+                                                       a=1, b=1,
+                                                       include_after=False,
+                                                       include_before=False)))
+
+        self.assertEqual([(0, 1), (1, 1)],
+                         list(mf.get_elements_in_range(x_axis, y_axis,
+                                                       a=1, b=1,
+                                                       include_after=False,
+                                                       include_before=True)))
+
+        self.assertEqual([(1, 1), (2, 1)],
+                         list(mf.get_elements_in_range(x_axis, y_axis,
+                                                       a=1, b=1,
+                                                       include_after=True,
+                                                       include_before=False)))
+
+    def test_nonnumerical(self):
         # Function works for any x values that can be compared
         x_axis_str = ["a", "b", "c"]
         y_axis_str = [True, False, None]
         self.assertEqual([("a", True), ("b", False)],
-                         list(mf.get_elements_in_range(x_axis_str,
-                                                       y_axis_str,
-                                                       a="a",
-                                                       b="a")))
+                         list(mf.get_elements_in_range(x_axis_str, y_axis_str,
+                                                       a="a", b="a")))
 
     def test_incomparable_element_ranges(self):
         # TypeError is raised if the range generator has to compare
@@ -329,7 +311,12 @@ class TestPercentage(unittest.TestCase):
             for r in results:
                 self.assertTrue(0 <= r <= 100)
 
-    def test_continuous_ragne(self):
+
+class TestContinuousRange(unittest.TestCase):
+    """Tests for continuous range and the area calculation that uses
+    continuous range.
+    """
+    def test_continuous_range(self):
         xs = [i for i in range(4)]
         ys = list(xs)
 
@@ -390,6 +377,33 @@ class TestPercentage(unittest.TestCase):
                                               [(0, 1), (1, 1)]))
         self.assertEqual(2, mf.calculate_area([(0, 1), (1, 1)],
                                               [(-1, -1), (0, -1)]))
+
+
+class TestPropertyBased(unittest.TestCase):
+    """Various property based tests.
+    """
+
+    def test_get_elements_in_range(self):
+        """Tests that providing the x and y values as a single list is the
+        same as providing them as separate lists when getting elements from
+        range."""
+        iterations = 10
+        n = 100
+        for _ in range(iterations):
+            kwargs = {
+                "a": np.random.random(),
+                "b": np.random.random(),
+                "include_before": np.random.random() > 0.5,
+                "include_after": np.random.random() > 0.5
+            }
+            x_axis = sorted(np.random.random_sample(n))
+            y_axis = np.random.random_sample(n)
+
+            zipped = list(zip(x_axis, y_axis))
+
+            self.assertEqual(
+                list(mf.get_elements_in_range(x_axis, y_axis, **kwargs)),
+                list(mf.get_elements_in_range(zipped, **kwargs)))
 
 
 if __name__ == "__main__":

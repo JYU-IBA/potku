@@ -41,8 +41,6 @@ from modules.recoil_element import RecoilElement
 from modules.point import Point
 from modules.parsing import CSVParser
 
-from shapely.geometry import Polygon
-
 
 class Nsgaii:
     """

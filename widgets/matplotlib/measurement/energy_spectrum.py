@@ -49,7 +49,6 @@ from PyQt5 import QtWidgets
 from PyQt5.QtGui import QGuiApplication
 
 from scipy import integrate
-from shapely.geometry import Polygon
 
 from widgets.matplotlib.base import MatplotlibWidget
 
