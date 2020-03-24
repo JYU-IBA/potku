@@ -28,6 +28,7 @@ import unittest
 import tempfile
 import time
 import os
+import random
 
 import tests.mock_objects as mo
 import modules.file_paths as fp
@@ -125,6 +126,23 @@ class TestRecoilElement(unittest.TestCase):
             start=1, end=1))
         self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
             start=1, end=0))
+
+    def test_sorting(self):
+        # Checks that recoil elements are sorted in the same way as elements
+        n = 10
+        iterations = 10
+        for _ in range(iterations):
+            elems = [mo.get_element(randomize=True) for _ in range(n)]
+            rec_elems = [RecoilElement(elem, []) for elem in elems]
+            random.shuffle(elems)
+            random.shuffle(rec_elems)
+
+            elems.sort()
+            rec_elems.sort()
+            for e, r in zip(elems, rec_elems):
+                self.assertEqual(e, r.element)
+
+
 
 
 if __name__ == '__main__':

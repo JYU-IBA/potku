@@ -131,6 +131,9 @@ class Element:
 
         return str(self) < str(other)
 
+    def __repr__(self):
+        return str(self)
+
     def get_prefix(self):
         """Returns a string representation of an element without amount.
 

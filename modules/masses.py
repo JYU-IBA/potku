@@ -41,20 +41,20 @@ __FILE_PATH = os.path.join(__path_to_this_dir,
                            "Potku-data",
                            "masses.dat")
 
-__isotopes = {}
+_isotopes = {}
 
 with open(__FILE_PATH) as file:
     for line in csv.reader(file, delimiter=" ", skipinitialspace=True):
         if line:  # skips empty lines
-            if line[3] not in __isotopes:
-                __isotopes[line[3]] = []
-            __isotopes[line[3]].append((int(line[2]), float(line[5]),
-                                        float(line[4])))
+            if line[3] not in _isotopes:
+                _isotopes[line[3]] = []
+            _isotopes[line[3]].append((int(line[2]), float(line[5]),
+                                       float(line[4])))
             # line[2] isotope number, line[5] natural abundance, line[4]
             # exact mass
 
 
-def __get_isotopes(element):
+def _get_isotopes(element):
     """Get isotopes of given element.
 
     Args:
@@ -63,8 +63,8 @@ def __get_isotopes(element):
         Returns a list of element's isotopes.
     """
     try:
-        isotopes = __isotopes[element]
-    except:
+        isotopes = _isotopes[element]
+    except KeyError:
         isotopes = []
     return isotopes
 
@@ -77,7 +77,7 @@ def find_mass_of_isotope(element):
     Return:
          Returns the mass of the wanted element.
     """
-    isotopes = __get_isotopes(element.symbol)
+    isotopes = _get_isotopes(element.symbol)
     element_isotope = int(round(element.isotope))
     for isotope in isotopes:
         if element_isotope == isotope[0]:
@@ -98,7 +98,7 @@ def load_isotopes(element, combobox, current_isotope=None):
         return
     combobox.clear()
     # Sort isotopes based on their natural abundance
-    isotopes = sorted(__get_isotopes(element),
+    isotopes = sorted(_get_isotopes(element),
                       key=lambda isotope: isotope[1],
                       reverse=True)
     dirtyinteger = 0
@@ -121,7 +121,7 @@ def get_standard_isotope(element):
         Returns standard weight of given element (float).
     """
     standard = 0.0
-    for isotope in __get_isotopes(element):
+    for isotope in _get_isotopes(element):
         # Has to have float() on both, else we crash.
         standard += float(isotope[0]) * float(isotope[1])
     return standard / 100.0
@@ -138,7 +138,7 @@ def get_most_common_isotope(element):
         and the probability (commonness) of the isotope (float)
         as a tuple(int, float).
     """
-    isotopes = sorted(__get_isotopes(element),
+    isotopes = sorted(_get_isotopes(element),
                       key=lambda isotope: isotope[1],
                       reverse=True)
     return int(isotopes[0][0]), float(isotopes[0][1])

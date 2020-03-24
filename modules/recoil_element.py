@@ -104,6 +104,14 @@ class RecoilElement:
 
         self.update_zero_values()
 
+    def __lt__(self, other):
+        """Comparison is delegated to Element object.
+        """
+        if not isinstance(other, RecoilElement):
+            return NotImplemented
+
+        return self.element < other.element
+
     def get_full_name(self):
         """Returns the prefixed name of the RecoilElement.
         """
