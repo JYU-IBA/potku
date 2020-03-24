@@ -271,6 +271,8 @@ def calculate_area(line1, line2=None):
     """Calculates the area between the two lines or first line and
     x-axis if second line is None.
 
+    It is assumed that both lines are arranged by x axis.
+
     Args:
         line1: collection of (x, y) values
         line2: collection of (x, y) values
@@ -284,7 +286,7 @@ def calculate_area(line1, line2=None):
     if line2 is None:
         line2 = [(line1[0][0], 0), (line1[-1][0], 0)]
 
-    # Add the first point again to close the rectangle
+    # Add the first point again to close the polygon
     polygon_points = [*line1, *reversed(line2), line1[0]]
 
     polygon = Polygon(polygon_points)

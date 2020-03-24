@@ -80,6 +80,11 @@ class Point:
         """
         return f"{round(self.get_x(), 2)} {round(self.get_y(), 4)}"
 
+    def __iter__(self):
+        """Iterable interface for Point.
+        """
+        return iter(self.get_coordinates())
+
     def __getitem__(self, item):
         """Makes the Point object subscriptable, meaning that x and y values can
         be looked up in similar way as values in a list or dict (i.e. p[0]
@@ -133,7 +138,7 @@ class Point:
         Set point's y coordinate.
 
         Args:
-             x: Y coordinate.
+             y: Y coordinate.
         """
         self._y = y
 

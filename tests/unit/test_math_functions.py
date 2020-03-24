@@ -31,6 +31,7 @@ import random
 import numpy as np
 
 from modules import math_functions as mf
+from modules.point import Point
 
 
 class TestListIntegration(unittest.TestCase):
@@ -369,14 +370,20 @@ class TestContinuousRange(unittest.TestCase):
         self.assertEqual(2.5, mf.calculate_area([(0, 1), (1, 1), (2, 2)]))
         self.assertEqual(0.5, mf.calculate_area([(0, -1), (1, 2)]))
 
-        # Test with two lines
+        # Test with two lines.
         self.assertEqual(0, mf.calculate_area([], []))
-        self.assertEqual(0, mf.calculate_area([(1, 1)],
-                                              [(0, 0)]))
-        self.assertEqual(0, mf.calculate_area([(0, 1), (1, 1)],
-                                              [(0, 1), (1, 1)]))
+
+        # Area of a line (= 0)
+        self.assertEqual(0, mf.calculate_area([(0, 1), (1, 1)], []))
+        self.assertEqual(0, mf.calculate_area([(1, 1)], [(0, 0)]))
+
+        # Area of a rectangle
         self.assertEqual(2, mf.calculate_area([(0, 1), (1, 1)],
                                               [(-1, -1), (0, -1)]))
+
+        # Area of a triangle
+        self.assertEqual(0.5, mf.calculate_area([(0, 1), (1, 1)], [(0.5, 0)]))
+        self.assertEqual(0.5, mf.calculate_area([(0, 1), (1, 1), (1, 0)], []))
 
 
 class TestPropertyBased(unittest.TestCase):
@@ -387,23 +394,39 @@ class TestPropertyBased(unittest.TestCase):
         """Tests that providing the x and y values as a single list is the
         same as providing them as separate lists when getting elements from
         range."""
+        self.assert_range_function_equal(mf.get_elements_in_range,
+                                         add_inclusions=True)
+        self.assert_range_function_equal(mf.get_continuous_range)
+
+    def assert_range_function_equal(self, range_function, add_inclusions=False):
+        """Asserts that the given range_function returns the same values
+        when arguments are either separate lists of x and y values, a single
+        list of tuples or a single list of Points.
+        """
         iterations = 10
         n = 100
         for _ in range(iterations):
             kwargs = {
                 "a": np.random.random(),
-                "b": np.random.random(),
-                "include_before": np.random.random() > 0.5,
-                "include_after": np.random.random() > 0.5
+                "b": np.random.random()
             }
+            if add_inclusions:
+                kwargs.update({
+                    "include_before": np.random.random() > 0.5,
+                    "include_after": np.random.random() > 0.5
+                })
+
             x_axis = sorted(np.random.random_sample(n))
             y_axis = np.random.random_sample(n)
-
             zipped = list(zip(x_axis, y_axis))
+            points = [Point(x, y) for x, y in zipped]
 
-            self.assertEqual(
-                list(mf.get_elements_in_range(x_axis, y_axis, **kwargs)),
-                list(mf.get_elements_in_range(zipped, **kwargs)))
+            points_in_range = list(range_function(points, **kwargs))
+            self.assertEqual(points_in_range,
+                             list(range_function(x_axis, y_axis, **kwargs)))
+
+            self.assertEqual(points_in_range,
+                             list(range_function(zipped, **kwargs)))
 
 
 if __name__ == "__main__":
