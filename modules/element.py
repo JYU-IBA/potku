@@ -112,15 +112,17 @@ class Element:
 
     def __lt__(self, other):
         """Comparison function for Elements. Elements are compared first by
-        symbols, and if those match, then by isotopes and amounts.
+        standard isotopes, and if those match (i.e. they are the same element),
+        then by isotopes and amounts.
         """
-        # TODO could also use atomic number for comparison
-        # TODO could use standard isotope to sort when no isotope is defined
         if not isinstance(other, Element):
             return NotImplemented
 
         if self.symbol != other.symbol:
-            return self.symbol < other.symbol
+            m1 = masses.get_standard_isotope(self.symbol)
+            m2 = masses.get_standard_isotope(other.symbol)
+            if m1 != m2:
+                return m1 < m2
 
         # Elements that have no isotopes come before elements that do
         if self.isotope is None and other.isotope is not None:
@@ -132,6 +134,8 @@ class Element:
         return str(self) < str(other)
 
     def __repr__(self):
+        """Returns a human readable representation of the Element object.
+        """
         return str(self)
 
     def get_prefix(self):

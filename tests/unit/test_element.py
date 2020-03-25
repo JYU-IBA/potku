@@ -25,6 +25,7 @@ __author__ = ""  # TODO
 __version__ = ""  # TODO
 
 import unittest
+import random
 
 from modules.element import Element
 
@@ -60,27 +61,21 @@ class TestElement(unittest.TestCase):
 
     def test_lt(self):
         elems = [
-            Element.from_string("16Mn"),
-            Element.from_string("Mn"),
-            Element.from_string("Mn 2"),
-            Element.from_string("15Si"),
-            Element.from_string("C 2"),
-            Element.from_string("5C"),
-            Element.from_string("4C"),
-            Element.from_string("C")
-        ]
-        expected = [
+            Element.from_string("H"),
+            Element.from_string("He"),
             Element.from_string("C"),
             Element.from_string("C 2"),
             Element.from_string("4C"),
             Element.from_string("5C"),
+            Element.from_string("15Si"),
             Element.from_string("Mn"),
             Element.from_string("Mn 2"),
-            Element.from_string("16Mn"),
-            Element.from_string("15Si")
+            Element.from_string("16Mn")
         ]
 
-        self.assertEqual(expected, sorted(elems))
+        orig_elems = list(elems)
+        random.shuffle(elems)
+        self.assertEqual(orig_elems, sorted(elems))
 
     def test_eq(self):
         self.assertEqual(Element.from_string("He"),

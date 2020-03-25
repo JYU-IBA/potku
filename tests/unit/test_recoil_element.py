@@ -143,7 +143,5 @@ class TestRecoilElement(unittest.TestCase):
                 self.assertEqual(e, r.element)
 
 
-
-
 if __name__ == '__main__':
     unittest.main()
