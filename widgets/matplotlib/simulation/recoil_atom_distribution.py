@@ -314,9 +314,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                   }
     # Signal that is emitted when recoil distribution changes
     recoil_dist_changed = pyqtSignal(RecoilElement, ElementSimulation)
-
-    # TODO signal for changes in limit ranges
-    # TODO add limit ranges for individual recoil elements
+    # Signal that is emitted when limit values are changed
+    limit_changed = pyqtSignal(float, float)
 
     def __init__(self, parent, simulation, target, tab, icon_manager,
                  statusbar=None):
@@ -536,10 +535,14 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         limits = [x.get_xdata()[0] for x in self.area_limits_for_all]
 
-        percentage_widget = PercentageWidget(recoils, limits,
-                                             self.area_limits_for_all_on,
-                                             self.area_limits_individual_on,
-                                             self.__icon_manager)
+        percentage_widget = PercentageWidget(
+            recoils, limits,
+            self.area_limits_for_all_on,
+            self.area_limits_individual_on,
+            self.__icon_manager,
+            distribution_changed=self.recoil_dist_changed,
+            interval_changed=self.limit_changed
+        )
         self.tab.add_widget(percentage_widget)
 
     def open_element_simulation_settings(self):
@@ -2403,6 +2406,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             x=low_x, linestyle="--"))
         self.area_limits_for_all.append(self.axes.axvline(
             x=high_x, linestyle="--", color='red'))
+
+        self.limit_changed.emit(low_x, high_x)
 
         self.axes.set_ybound(ylim[0], ylim[1])
         self.canvas.draw_idle()
