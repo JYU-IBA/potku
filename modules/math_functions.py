@@ -137,16 +137,16 @@ def get_elements_in_range(*args, a=-math.inf, b=math.inf,
         value on the y axis
     """
     if len(args) == 1:
-        x_axis, y_axis = zip(*args[0])
+        coords = args[0]
     else:
-        x_axis, y_axis = args[0], args[1]
+        coords = zip(args[0], args[1])
 
     if a > b:
         # If a is bigger than b, there are no values to yield
         return
 
     prev_point = None
-    for x, y in zip(x_axis, y_axis):
+    for x, y in coords:
         if x < a:
             prev_point = (x, y)
             continue
