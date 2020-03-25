@@ -28,6 +28,7 @@ import unittest
 import tempfile
 import time
 import os
+import random
 
 import tests.mock_objects as mo
 import modules.file_paths as fp
@@ -46,7 +47,7 @@ class TestRecoilElement(unittest.TestCase):
             mo.get_element(),
             [Point((0, 4)),
              Point((1, 5)),
-             Point((2, 6))],
+             Point((2, 10))],
             color="black",
             description="foo",
             name="bar",
@@ -100,6 +101,48 @@ class TestRecoilElement(unittest.TestCase):
             self.assertAlmostEqual(times[0], times[1], places=2)
 
         self.assertEqual(fst, snd)
+
+    def test_calculate_area(self):
+        self.assertEqual(12, self.rec_elem.calculate_area_for_interval())
+        self.assertEqual(4.5, self.rec_elem.calculate_area_for_interval(
+            start=0, end=1))
+
+        self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
+            start=0.5, end=0.5))
+        self.assertEqual(2.25, self.rec_elem.calculate_area_for_interval(
+            start=0.25, end=0.75))
+
+        self.assertEqual(5.5, self.rec_elem.calculate_area_for_interval(
+            start=0.5, end=1.5))
+
+        # If the interval is outside the point range, 0 is returned
+        self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
+            start=2, end=3))
+        self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
+            start=-2, end=0))
+
+        # If the length of the interval is non-positive, 0 is returned
+        self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
+            start=1, end=1))
+        self.assertEqual(0, self.rec_elem.calculate_area_for_interval(
+            start=1, end=0))
+
+    def test_sorting(self):
+        # Checks that recoil elements are sorted in the same way as elements
+        n = 10
+        iterations = 10
+        for _ in range(iterations):
+            elems = [mo.get_element(randomize=True) for _ in range(n)]
+            rec_elems = [RecoilElement(elem, []) for elem in elems]
+            random.shuffle(elems)
+            random.shuffle(rec_elems)
+
+            elems.sort()
+            rec_elems.sort()
+            for e, r in zip(elems, rec_elems):
+                self.assertEqual(e, r.element)
+
+
 
 
 if __name__ == '__main__':

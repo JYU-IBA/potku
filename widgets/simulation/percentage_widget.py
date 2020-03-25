@@ -22,16 +22,21 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = "Heta Rekilä"
+__author__ = "Heta Rekilä \n Juhani Sundell"
 __version__ = "2.0"
 
 import os
 import platform
 
+import widgets.binding as bnd
+import modules.math_functions as mf
+
 from PyQt5 import QtWidgets
 from PyQt5 import uic
+from PyQt5.QtCore import Qt
 
 from widgets.simulation.circle import Circle
+from widgets.gui_utils import QtABCMeta
 
 
 class PercentageWidget(QtWidgets.QWidget):
@@ -39,206 +44,241 @@ class PercentageWidget(QtWidgets.QWidget):
     Class for a widget that calculates the percentages for given recoils and
     intervals.
     """
+    # Interval is either same interval for all elements or individual interval
+    # for each element.
+    interval_type = bnd.bind("comboBox")
 
-    def __init__(self, recoil_elements, same_interval, use_same_interval,
-                 use_individual_intervals, icon_manager):
+    def __init__(self, recoil_elements, common_interval, icon_manager,
+                 distribution_changed=None, interval_changed=None):
         """
         Initialize the widget.
 
         Args:
             recoil_elements: List of recoil elements.
-            same_interval: Interval that used for all the recoils.
-            use_same_interval: Whether to use the same interval for all
-            recoils or not.
-            use_individual_intervals: Whether to use individual intervals or
-            not.
+            common_interval: Interval that used for all the recoils.
             icon_manager: Icon manager.
         """
         super().__init__()
-        self.recoil_elements = recoil_elements
-        self.common_interval = same_interval
-        self.use_same_interval = use_same_interval
-        self.use_individual_intervals = use_individual_intervals
+        # Stores the PercentageRow objects for each recoil
+        self._percentage_rows = {
+            recoil: None
+            for recoil in recoil_elements
+        }
+        self.common_interval = common_interval
         self.icon_manager = icon_manager
 
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_percentage_widget.ui"), self)
-
+        uic.loadUi(os.path.join("ui_files",
+                                "ui_percentage_widget.ui"), self)
         self.setWindowTitle("Percentages")
-        self.ui.comboBox.currentIndexChanged.connect(
-            lambda: self.__show_percents_and_areas())
-        self.icon_manager.set_icon(self.ui.absRelButton,
+
+        self.comboBox.currentIndexChanged.connect(
+            self.__show_percents_and_areas)
+
+        self.icon_manager.set_icon(self.absRelButton,
                                    "depth_profile_rel.svg")
         self.__relative_values = True
-        self.ui.absRelButton.setToolTip(
-            "Toggle between relative and absolute values")
-        self.ui.absRelButton.clicked.connect(self.__show_abs_or_rel_values)
+        self.absRelButton.setToolTip("Toggle between relative and absolute "
+                                     "values.")
+        self.absRelButton.clicked.connect(self.__show_abs_or_rel_values)
 
-        self.__common_percentages = {}
-        self.__common_areas = {}
+        self.__dist_changed_sig = distribution_changed
+        self.__interval_changed_sig = interval_changed
+        if distribution_changed is not None:
+            distribution_changed.connect(self._dist_changed)
 
-        self.__individual_percentages = {}
-        self.__individual_areas = {}
+        if interval_changed is not None:
+            interval_changed.connect(self._limits_changed)
 
-        self.__calculate_percents()
         self.__show_percents_and_areas()
 
-    def __calculate_percents(self):
+    def closeEvent(self, event):
+        """Overrides QWidget's closeEvent. Disconnects slots from signals.
         """
-        Calculate percents for recoil elements.
+        if self.__dist_changed_sig is not None:
+            self.__dist_changed_sig.disconnect(self._dist_changed)
+        if self.__interval_changed_sig is not None:
+            self.__interval_changed_sig.disconnect(self._limits_changed)
+        event.accept()
+
+    def _calculate_areas_and_percentages(self, start=None, end=None,
+                                         rounding=2):
+        """Calculate areas and percents for recoil elements within the given
+        interval.
+
+        Args:
+            start: first point of the interval.
+            end: last point of the interval.
+            rounding: rounding accuracy of percentage calculation
+        Return:
+
         """
-        # Calculate the areas of the recoils
-        # Calculate percentages for same interval (if is used)
-        # Calculate percentage for individual intervals (if all have none,
-        # don't count, if some don't have, use all area)
-        if self.use_same_interval:
-            start = self.common_interval[0]
-            end = self.common_interval[1]
-            for recoil in self.recoil_elements:
+        areas = {}
+        percentages = {}
+        for recoil in self._percentage_rows:
+            try:
+                if not self._percentage_rows[recoil].selected:
+                    area = 0
+                else:
+                    area = recoil.calculate_area_for_interval(start, end)
+            except (KeyError, AttributeError):
                 area = recoil.calculate_area_for_interval(start, end)
-                self.__common_areas[recoil] = area
 
-            total_area = 0
-            for area in self.__common_areas.values():
-                total_area += area
+            if not self.__relative_values:
+                # TODO label text needs to reformatted when using absolute
+                #  values. See previous version of Potku for reference.
+                area *= recoil.reference_density
 
-            for recoil, area in self.__common_areas.items():
-                self.__common_percentages[recoil] = round(
-                    ((area / total_area) * 100), 2)
+            areas[recoil] = area
 
-        if self.use_individual_intervals:
-            for recoil in self.recoil_elements:
-                area = recoil.calculate_area_for_interval()
-                self.__individual_areas[recoil] = area
+        for recoil, percentage in zip(
+                areas,
+                mf.calculate_percentages(areas.values(),
+                                         rounding=rounding)):
+            percentages[recoil] = percentage
 
-            total_area = 0
-            for area in self.__individual_areas.values():
-                total_area += area
-
-            for recoil, area in self.__individual_areas.items():
-                self.__individual_percentages[recoil] = round(
-                    ((area / total_area) * 100), 2)
+        return areas, percentages
 
     def __show_abs_or_rel_values(self):
         """
         Show recoil area in absolute or relative format.
         """
-        for i in range(self.ui.gridLayout.rowCount()):
-            layout = self.ui.gridLayout.itemAtPosition(i, 3)
-            if layout:
-                layout.widget().deleteLater()
-
-        new_row = 0
         if self.__relative_values:
-            self.icon_manager.set_icon(self.ui.absRelButton,
+            self.icon_manager.set_icon(self.absRelButton,
                                        "depth_profile_abs.svg")
-            if self.ui.comboBox.currentText().startswith("Same"):
-                areas = self.__common_areas
-            else:
-                areas = self.__individual_areas
-            for recoil in self.recoil_elements:
-                area = round(areas[recoil] * \
-                       recoil.reference_density, 4)
-                if 'e' in str(recoil.multiplier):
-                    power = int(str(recoil.multiplier)[2:])
-                    new_power = power - 7
-                    label = QtWidgets.QLabel(str(area) + 'e' + str(new_power))
-                else:
-                    label = QtWidgets.QLabel(str(round(area * 10**-7, 4)))
-                self.ui.gridLayout.addWidget(label, new_row, 3)
-                new_row += 1
-            self.__relative_values = False
         else:
-            self.icon_manager.set_icon(self.ui.absRelButton,
+            self.icon_manager.set_icon(self.absRelButton,
                                        "depth_profile_rel.svg")
-            if self.ui.comboBox.currentText().startswith("Same"):
-                areas = self.__common_areas
-            else:
-                areas = self.__individual_areas
-            for recoil in self.recoil_elements:
-                area = areas[recoil]
-                label = QtWidgets.QLabel(str(round(area, 4)))
-                self.ui.gridLayout.addWidget(label, new_row, 3)
-                new_row += 1
-            self.__relative_values = True
+
+        self.__relative_values = not self.__relative_values
+        self.__show_percents_and_areas()
 
     def __show_percents_and_areas(self):
         """
         Show the percentages of the recoil elements.
         """
-        # Show percentages in widget with element information and color (also
-        #  interval which was used?)
-        for i in range(self.ui.gridLayout.rowCount()):
-            for j in range(self.ui.gridLayout.columnCount()):
-                layout = self.ui.gridLayout.itemAtPosition(i, j)
-                if layout:
-                    layout.widget().deleteLater()
-
-        new_row = 0
-        if self.ui.comboBox.currentText().startswith("Same"):
-            if not self.__common_percentages:
-                self.ui.absRelButton.setEnabled(False)
-            else:
-                self.ui.absRelButton.setEnabled(True)
-            for recoil, percentage in self.__common_percentages.items():
-                dimension = (1, 4, 4, 4)
-
-                if platform.system() == "Linux":
-                    dimension = None
-
-                circle = Circle(recoil.color, dimension)
-                if recoil.element.isotope:
-                    text = "Element: " + "<sup>" + str(recoil.element.isotope)\
-                           + "</sup>" + recoil.element.symbol + " "
-                else:
-                    text = "Element: " + recoil.element.symbol + " "
-                percentage = str(percentage) + "%"
-                if self.__relative_values:
-                    area = self.__common_areas[recoil]
-                    label = QtWidgets.QLabel(str(round(area, 4)))
-                else:
-                    area = round(self.__common_areas[recoil] * \
-                           recoil.reference_density, 4)
-                    label = QtWidgets.QLabel(str(area) + str(
-                        recoil.multiplier)[1:])
-
-                self.ui.gridLayout.addWidget(QtWidgets.QLabel(text),
-                                             new_row, 0)
-                self.ui.gridLayout.addWidget(circle, new_row, 1)
-                self.ui.gridLayout.addWidget(QtWidgets.QLabel(percentage),
-                                             new_row, 2)
-                self.ui.gridLayout.addWidget(label, new_row, 3)
-                new_row += 1
+        if self.interval_type == "Common interval":
+            areas, percentages = self._calculate_areas_and_percentages(
+                start=self.common_interval[0],
+                end=self.common_interval[1]
+            )
         else:
-            if not self.__individual_percentages:
-                self.ui.absRelButton.setEnabled(False)
-            else:
-                self.ui.absRelButton.setEnabled(True)
-            for recoil, percentage in self.__individual_percentages.items():
-                dimension = (1, 4, 4, 4)
+            areas, percentages = self._calculate_areas_and_percentages()
 
-                if platform.system() == "Linux":
-                    dimension = None
+        for row_idx, recoil in enumerate(sorted(percentages)):
+            try:
+                self._percentage_rows[recoil].percentage = \
+                    percentages[recoil]
+                self._percentage_rows[recoil].area = \
+                    areas[recoil]
+            except (KeyError, AttributeError):
+                row = PercentageRow(recoil.get_full_name(),
+                                    recoil.color,
+                                    percentage=percentages[recoil],
+                                    area=areas[recoil])
+                self._percentage_rows[recoil] = row
+                row.selectedCheckbox.stateChanged.connect(
+                    self.__show_percents_and_areas)
+                self.gridLayout.addWidget(row, row_idx, 0)
 
-                circle = Circle(recoil.color, dimension)
-                if recoil.element.isotope:
-                    text = "Element: " + "<sup>" + str(recoil.element.isotope)\
-                           + "</sup>" + recoil.element.symbol + " "
-                else:
-                    text = "Element: " + recoil.element.symbol + " "
-                percentage = str(percentage) + "%"
-                if self.__relative_values:
-                    area = self.__individual_areas[recoil]
-                    label = QtWidgets.QLabel(str(round(area, 4)))
-                else:
-                    area = round(self.__individual_areas[recoil] * \
-                           recoil.reference_density, 4)
-                    label = QtWidgets.QLabel(str(area) + str(
-                        recoil.multiplier)[1:])
+    def _dist_changed(self, recoil, _):
+        """Callback that is executed when RecoilElement distribution is changed.
+        Checks that the recoil is being displayed in the Widget and then calls
+        _show_percents_and_areas.
 
-                self.ui.gridLayout.addWidget(QtWidgets.QLabel(text), new_row, 0)
-                self.ui.gridLayout.addWidget(circle, new_row, 1)
-                self.ui.gridLayout.addWidget(QtWidgets.QLabel(percentage),
-                                             new_row, 2)
-                self.ui.gridLayout.addWidget(label, new_row, 3)
-                new_row += 1
+        Args:
+            recoil: RecoilElement which distribution has changed.
+            _: unused ElementSimulation object.
+        """
+        if recoil in self._percentage_rows:
+            self.__show_percents_and_areas()
+
+    def _limits_changed(self, low_x, high_x):
+        """Updates the common_interval with given x values and calls
+        __show_percents_and_areas.
+        """
+        self.common_interval[0] = low_x
+        self.common_interval[1] = high_x
+        self.__show_percents_and_areas()
+
+
+# Helper functions that turn areas and percentages into label texts
+def percentage_to_label(instance, attr, value):
+    label = getattr(instance, attr)
+    label.setText(f"{round(value, 2)}%")
+
+
+def label_to_percentage(instance, attr):
+    label = getattr(instance, attr)
+    try:
+        return float(label.text()[:-1])
+    except ValueError:
+        return 0.0
+
+
+def area_to_label(instance, attr, value):
+    label = getattr(instance, attr)
+    label.setText(str(round(value, 4)))
+
+
+def label_to_area(instance, attr):
+    label = getattr(instance, attr)
+    return float(label.text())
+
+
+class PercentageRow(QtWidgets.QWidget, bnd.PropertyBindingWidget,
+                    metaclass=QtABCMeta):
+    """PercentageRow is used to display percentage and area for each
+    RecoilElement in the PercentageWidget.
+    """
+    percentage = bnd.bind("percentageLabel", fget=label_to_percentage,
+                          fset=percentage_to_label)
+    area = bnd.bind("areaLabel", fget=label_to_area, fset=area_to_label)
+    selected = bnd.bind("selectedCheckbox")
+
+    def __init__(self, label_text, color="red", **kwargs):
+        """Initializes a PercentageRow.
+
+        Args:
+            label_text: text to be shown in the main label
+            color: color of the Circle that is shown next to label
+            kwargs: percentage and area.
+        """
+        super().__init__()
+        layout = QtWidgets.QHBoxLayout()
+        layout.setAlignment(Qt.AlignBottom)
+
+        text_label = QtWidgets.QLabel(label_text)
+        text_label.setMaximumWidth(100)
+        text_label.setMinimumWidth(100)
+
+        if platform.system() == "Linux":
+            circle = Circle(color, None)
+        else:
+            circle = Circle(color, (1, 4, 4, 4))
+
+        circle.setMinimumWidth(25)
+        circle.setMaximumWidth(25)
+
+        self.percentageLabel = QtWidgets.QLabel()
+        self.percentageLabel.setMinimumWidth(80)
+        self.percentageLabel.setMaximumWidth(80)
+
+        self.areaLabel = QtWidgets.QLabel()
+        self.areaLabel.setMinimumWidth(40)
+        self.areaLabel.setMaximumWidth(40)
+
+        self.selectedCheckbox = QtWidgets.QCheckBox()
+        self.selectedCheckbox.setToolTip(f"Deselect to ignore the element "
+                                         "from percentage and area "
+                                         "calculations.")
+        self.selectedCheckbox.setChecked(True)
+
+        layout.addWidget(text_label)
+        layout.addWidget(circle)
+        layout.addWidget(self.percentageLabel)
+        layout.addWidget(self.areaLabel)
+        layout.addWidget(self.selectedCheckbox)
+
+        self.set_properties(**kwargs)
+
+        self.setLayout(layout)

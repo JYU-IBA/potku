@@ -27,6 +27,9 @@ __version__ = ""  # TODO
 
 import os
 import tempfile
+import random
+
+import modules.masses as masses
 
 from pathlib import Path
 
@@ -54,8 +57,12 @@ def get_detector() -> Detector:
     return Detector(path, mesu, save_in_creation=False)
 
 
-def get_element() -> Element:
-    """Returns a Helium element"""
+def get_element(randomize=False) -> Element:
+    """Returns either a random Element or a Helium element"""
+    if randomize:
+        symbol = random.choice(list(masses._isotopes.keys()))
+        isotope = random.choice(masses._get_isotopes(symbol))[0]
+        return Element(symbol, isotope=isotope, amount=random.randint(0, 100))
     return Element.from_string("He")
 
 

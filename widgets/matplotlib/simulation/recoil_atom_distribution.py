@@ -314,6 +314,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                   }
     # Signal that is emitted when recoil distribution changes
     recoil_dist_changed = pyqtSignal(RecoilElement, ElementSimulation)
+    # Signal that is emitted when limit values are changed
+    limit_changed = pyqtSignal(float, float)
 
     def __init__(self, parent, simulation, target, tab, icon_manager,
                  statusbar=None):
@@ -335,8 +337,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.tab = tab
         self.simulation = simulation
 
-        self.current_element_simulation = None
-        self.current_recoil_element = None
+        self.current_element_simulation: ElementSimulation = None
+        self.current_recoil_element: RecoilElement = None
         self.element_manager = ElementManager(self.tab, self,
                                               self.__icon_manager,
                                               self.simulation,
@@ -533,10 +535,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         limits = [x.get_xdata()[0] for x in self.area_limits_for_all]
 
-        percentage_widget = PercentageWidget(recoils, limits,
-                                             self.area_limits_for_all_on,
-                                             self.area_limits_individual_on,
-                                             self.__icon_manager)
+        percentage_widget = PercentageWidget(
+            recoils, limits,
+            self.__icon_manager,
+            distribution_changed=self.recoil_dist_changed,
+            interval_changed=self.limit_changed
+        )
         self.tab.add_widget(percentage_widget)
 
     def open_element_simulation_settings(self):
@@ -617,7 +621,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Unlock or lock full edit.
         """
         if self.edit_lock_push_button.text() == "Unlock full edit":
-            stop_simulation = False
             # Check if current element simulation is running
             if self.current_element_simulation.mcerd_objects and not\
                     self.current_element_simulation.optimization_running:
@@ -625,54 +628,26 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                       " running element simulation?\nIt will be stopped and " \
                       "all its simulation results will be deleted.\n\nUnlock " \
                       "full edit anyway?"
-                stop_simulation = True
             elif self.current_element_simulation.simulations_done and not \
                     self.current_element_simulation.optimization_done and not\
                     self.current_element_simulation.optimization_running:
                 add = "Are you sure you want to unlock full edit for this " \
                       "element simulation?\nAll its simulation results will " \
                       "be deleted.\n\nUnlock full edit anyway?"
-                reply = QtWidgets.QMessageBox.warning(
-                    self.parent, "Confirm", add,
-                    QtWidgets.QMessageBox.Yes |
-                    QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel,
-                    QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    return
-
-            # Stop possible running processes
-            if stop_simulation:
-                # Stop simulation
-                self.current_element_simulation.stop()
-                self.current_element_simulation.controls.state_label.setText(
-                    "Stopped")
-                self.current_element_simulation.controls.run_button.setEnabled(
-                    True)
-                self.current_element_simulation.controls.stop_button.setEnabled(
-                    False)
+            reply = QtWidgets.QMessageBox.warning(
+                self.parent, "Confirm", add,
+                QtWidgets.QMessageBox.Yes |
+                QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel,
+                QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                return
 
             self.current_element_simulation.unlock_edit()
 
-            # Delete result files (erds, recoil, simu) for element simulation's
-            # all recoils
-            for recoil in self.current_element_simulation.recoil_elements:
-                # Delete files
-                gf.delete_simulation_results(
-                    self.current_element_simulation, recoil)
-
-                # Delete energy spectra that use recoil
-                df.delete_recoil_espe(self.tab, recoil.get_full_name())
-
-            # Reset controls
-            if self.current_element_simulation.controls:
-                self.current_element_simulation.controls.reset_controls()
-            self.current_element_simulation.simulations_done = False
-
             self.full_edit_on = True
             self.edit_lock_push_button.setText("Full edit unlocked")
-            self.current_element_simulation.y_min = 0.0
 
             if self.clicked_point is \
                     self.current_recoil_element.get_points()[-1]:
@@ -682,7 +657,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.current_element_simulation.lock_edit()
             self.full_edit_on = False
             self.edit_lock_push_button.setText("Unlock full edit")
-            self.current_element_simulation.y_min = 0.0001
         self.update_plot()
 
     def update_colors(self):
@@ -2400,6 +2374,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             x=low_x, linestyle="--"))
         self.area_limits_for_all.append(self.axes.axvline(
             x=high_x, linestyle="--", color='red'))
+
+        self.limit_changed.emit(low_x, high_x)
 
         self.axes.set_ybound(ylim[0], ylim[1])
         self.canvas.draw_idle()

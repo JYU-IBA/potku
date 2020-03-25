@@ -27,18 +27,22 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
+import modules.math_functions as mf
+
 
 class Point:
     """A 2D point with x and y coordinates."""
-    def __init__(self, xy):
+    def __init__(self, *xy):
         """Inits point.
 
         Args:
             xy: The x and y coordinates of the point. An ordered data structure
              whose first element is the x coordinate and second element
-             the y coordinate.
+             the y coordinate. Or x and y as separate parameters.
         """
         # TODO: Precision
+        if len(xy) == 1:
+            xy = xy[0]
         self._x = xy[0]
         self._y = xy[1]
 
@@ -66,9 +70,32 @@ class Point:
 
         return vars(self) == vars(other)
 
+    def __repr__(self):
+        """Returns a string representation of the Point object.
+        """
+        return f"Point{repr(self.get_coordinates())}"
+
     def __str__(self):
-        """Returns a string representation of a point."""
+        """Returns a string representation of a point with rounded decimals.
+        """
         return f"{round(self.get_x(), 2)} {round(self.get_y(), 4)}"
+
+    def __iter__(self):
+        """Iterable interface for Point.
+        """
+        return iter(self.get_coordinates())
+
+    def __getitem__(self, item):
+        """Makes the Point object subscriptable, meaning that x and y values can
+        be looked up in similar way as values in a list or dict (i.e. p[0]
+        or p["x"]).
+        """
+        if item == 0 or item == "x":
+            return self.get_x()
+        if item == 1 or item == "y":
+            return self.get_y()
+
+        raise ValueError("Unknown key or index")
 
     def get_coordinates(self):
         """
@@ -111,7 +138,7 @@ class Point:
         Set point's y coordinate.
 
         Args:
-             x: Y coordinate.
+             y: Y coordinate.
         """
         self._y = y
 
@@ -124,6 +151,13 @@ class Point:
         """
         self._x = xy[0]
         self._y = xy[1]
+
+    def calculate_new_point(self, other, x):
+        """Calculates a new point """
+        if not isinstance(other, Point):
+            return NotImplemented
+
+        return Point(mf.calculate_new_point(self, other, x))
 
     def get_mcerd_params(self):
         """Returns a string representation of the point as used in MCERD

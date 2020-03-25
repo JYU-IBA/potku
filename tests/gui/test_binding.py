@@ -50,6 +50,7 @@ class BWidget(QtWidgets.QWidget, bnd.PropertyBindingWidget,
     che = bnd.bind("checkBox")
     lab = bnd.bind("label")
     pla = bnd.bind("plaintext")
+    not2way = bnd.bind("not2waySpinBox", twoway=False)
 
     def __init__(self):
         super().__init__()
@@ -60,6 +61,7 @@ class BWidget(QtWidgets.QWidget, bnd.PropertyBindingWidget,
         self.checkBox = QtWidgets.QCheckBox()
         self.label = QtWidgets.QLabel()
         self.plaintext = QtWidgets.QPlainTextEdit()
+        self.not2waySpinBox = QtWidgets.QSpinBox()
 
 
 class TestBinding(unittest.TestCase):
@@ -75,7 +77,8 @@ class TestBinding(unittest.TestCase):
                 "tim": 0,
                 "che": False,
                 "pla": "",
-                "lab": ""
+                "lab": "",
+                "not2way": 0
             }, self.widget.get_properties()
         )
 
@@ -105,7 +108,8 @@ class TestBinding(unittest.TestCase):
                 "tim": 0,
                 "che": False,
                 "pla": "",
-                "lab": ""
+                "lab": "",
+                "not2way": 0
             }, self.widget.get_properties()
         )
 
@@ -117,10 +121,13 @@ class TestBinding(unittest.TestCase):
             "tim": 100,
             "che": True,
             "pla": "",
-            "lab": ""
+            "lab": "",
+            "not2way": 0
         }, self.widget.get_properties())
 
-        self.widget.set_properties(pla="foo", lab="bar")
+        # Setting the not2way changes nothing as well as setting tim to
+        # unsuitable type
+        self.widget.set_properties(pla="foo", lab="bar", not2way=7, tim="foo")
         self.assertEqual({
             "foo": 3,
             "bar": 4.5,
@@ -128,7 +135,8 @@ class TestBinding(unittest.TestCase):
             "tim": 100,
             "che": True,
             "pla": "foo",
-            "lab": "bar"
+            "lab": "bar",
+            "not2way": 0
         }, self.widget.get_properties())
 
 
