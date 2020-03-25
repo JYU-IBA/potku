@@ -284,13 +284,18 @@ class ElementSimulation(Observable):
     def unlock_edit(self):
         """
         Unlock full edit.
+
+        Also resets ElementSimulation
         """
+        self.reset()
+        self.y_min = 0.0
         self.__full_edit_on = True
 
     def lock_edit(self):
         """
         Lock full edit.
         """
+        self.y_min = 0.0001
         self.__full_edit_on = False
 
     def get_full_edit_on(self):

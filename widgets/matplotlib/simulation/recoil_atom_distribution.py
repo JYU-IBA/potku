@@ -621,7 +621,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Unlock or lock full edit.
         """
         if self.edit_lock_push_button.text() == "Unlock full edit":
-            stop_simulation = False
             # Check if current element simulation is running
             if self.current_element_simulation.mcerd_objects and not\
                     self.current_element_simulation.optimization_running:
@@ -629,49 +628,26 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                       " running element simulation?\nIt will be stopped and " \
                       "all its simulation results will be deleted.\n\nUnlock " \
                       "full edit anyway?"
-                stop_simulation = True
             elif self.current_element_simulation.simulations_done and not \
                     self.current_element_simulation.optimization_done and not\
                     self.current_element_simulation.optimization_running:
                 add = "Are you sure you want to unlock full edit for this " \
                       "element simulation?\nAll its simulation results will " \
                       "be deleted.\n\nUnlock full edit anyway?"
-                reply = QtWidgets.QMessageBox.warning(
-                    self.parent, "Confirm", add,
-                    QtWidgets.QMessageBox.Yes |
-                    QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel,
-                    QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    return
+            reply = QtWidgets.QMessageBox.warning(
+                self.parent, "Confirm", add,
+                QtWidgets.QMessageBox.Yes |
+                QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel,
+                QtWidgets.QMessageBox.Cancel)
+            if reply == QtWidgets.QMessageBox.No or reply == \
+                    QtWidgets.QMessageBox.Cancel:
+                return
 
-            # Stop possible running processes
-            if stop_simulation:
-                # Stop simulation
-                self.current_element_simulation.stop()
-
-            # TODO stop could be called in unlock_edit
             self.current_element_simulation.unlock_edit()
-
-            # Delete result files (erds, recoil, simu) for element simulation's
-            # all recoils
-            for recoil in self.current_element_simulation.recoil_elements:
-                # Delete files
-                gf.delete_simulation_results(
-                    self.current_element_simulation, recoil)
-
-                # Delete energy spectra that use recoil
-                df.delete_recoil_espe(self.tab, recoil.get_full_name())
-
-            # Reset controls
-            if self.current_element_simulation.controls:
-                self.current_element_simulation.controls.reset_controls()
-            self.current_element_simulation.simulations_done = False
 
             self.full_edit_on = True
             self.edit_lock_push_button.setText("Full edit unlocked")
-            self.current_element_simulation.y_min = 0.0
 
             if self.clicked_point is \
                     self.current_recoil_element.get_points()[-1]:
@@ -681,7 +657,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.current_element_simulation.lock_edit()
             self.full_edit_on = False
             self.edit_lock_push_button.setText("Unlock full edit")
-            self.current_element_simulation.y_min = 0.0001
         self.update_plot()
 
     def update_colors(self):
