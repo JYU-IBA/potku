@@ -537,8 +537,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         percentage_widget = PercentageWidget(
             recoils, limits,
-            self.area_limits_for_all_on,
-            self.area_limits_individual_on,
             self.__icon_manager,
             distribution_changed=self.recoil_dist_changed,
             interval_changed=self.limit_changed
@@ -652,13 +650,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             if stop_simulation:
                 # Stop simulation
                 self.current_element_simulation.stop()
-                self.current_element_simulation.controls.state_label.setText(
-                    "Stopped")
-                self.current_element_simulation.controls.run_button.setEnabled(
-                    True)
-                self.current_element_simulation.controls.stop_button.setEnabled(
-                    False)
 
+            # TODO stop could be called in unlock_edit
             self.current_element_simulation.unlock_edit()
 
             # Delete result files (erds, recoil, simu) for element simulation's
