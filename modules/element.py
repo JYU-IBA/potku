@@ -121,8 +121,14 @@ class Element:
         if self.symbol != other.symbol:
             m1 = masses.get_standard_isotope(self.symbol)
             m2 = masses.get_standard_isotope(other.symbol)
-            if m1 != m2:
+            if m1 and m2:
+                # If both standard masses have been defined, compare which one
+                # is smaller
                 return m1 < m2
+            elif m1 != m2:
+                # If one of the standard masses is not defined, compare which
+                # one is bigger
+                return m1 > m2
 
         # Elements that have no isotopes come before elements that do
         if self.isotope is None and other.isotope is not None:

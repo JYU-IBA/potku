@@ -70,7 +70,9 @@ class TestElement(unittest.TestCase):
             Element.from_string("15Si"),
             Element.from_string("Mn"),
             Element.from_string("Mn 2"),
-            Element.from_string("16Mn")
+            Element.from_string("16Mn"),
+            Element.from_string("243Bk"),
+            Element.from_string("250Cf")
         ]
 
         orig_elems = list(elems)
