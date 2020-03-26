@@ -34,6 +34,8 @@ import os
 import modules.general_functions as gf
 import dialogs.dialog_functions as df
 
+from pathlib import Path
+
 from dialogs.simulation.element_simulation_settings import \
     ElementSimulationSettingsDialog
 from dialogs.simulation.multiply_area import MultiplyAreaDialog
@@ -277,7 +279,7 @@ class ElementManager:
             if file.startswith(element_simulation.name_prefix) and \
                     (file.endswith(".mcsimu") or file.endswith(".rec") or
                      file.endswith(".profile") or file.endswith(".sct")):
-                file_path = os.path.join(element_simulation.directory, file)
+                file_path = Path(element_simulation.directory, file)
                 files_to_be_removed.append(file_path)
 
         for file_path in files_to_be_removed:
@@ -588,33 +590,30 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 error_box.setWindowTitle("Error")
                 error_box.exec()
 
-    def save_mcsimu_rec_profile(self, directory, progress_bar):
+    def save_mcsimu_rec_profile(self, directory, reporter):
         """
         Save information to .mcsimu and .profile files.
 
         Args:
             directory: Directory where to save to.
-            progress_bar: Progress bar.
+            reporter: ProgressReporter.
         """
         length = len(self.element_manager.element_simulations)
         for i, element_simulation in enumerate(
                 self.element_manager.element_simulations):
 
             element_simulation.to_file(
-                os.path.join(directory, element_simulation.name_prefix + "-" +
-                             element_simulation.name +
-                             ".mcsimu"))
+                Path(directory, f"{element_simulation.get_full_name()}.mcsimu")
+            )
             for recoil_element in element_simulation.recoil_elements:
                 recoil_element.to_file(directory)
+
             element_simulation.profile_to_file(
-                os.path.join(directory, element_simulation.name_prefix +
-                             ".profile"))
-            if progress_bar:
-                progress_bar.setValue((i / length) * 100)
-                QtCore.QCoreApplication.processEvents(
-                    QtCore.QEventLoop.AllEvents)
-                # Mac requires event processing to show progress bar and its
-                # process
+                Path(directory,
+                     f"{element_simulation.name_prefix}.profile"))
+
+            if reporter is not None:
+                reporter.report((i / length) * 100)
 
     def unlock_or_lock_edit(self):
         """
@@ -1093,20 +1092,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             else:
                 rec_suffix = ".sct"
                 recoil_suffix = ".scatter"
-            rec_file = os.path.join(element_simulation.directory,
-                                    recoil_to_delete.prefix + "-" +
-                                    recoil_to_delete.name + rec_suffix)
-            if os.path.exists(rec_file):
+            rec_file = Path(element_simulation.directory,
+                            f"{recoil_to_delete.get_full_name()}{rec_suffix}")
+            if rec_file.exists():
                 os.remove(rec_file)
-            recoil_file = os.path.join(element_simulation.directory,
-                                       recoil_to_delete.prefix + "-" +
-                                       recoil_to_delete.name + recoil_suffix)
-            if os.path.exists(recoil_file):
+
+            recoil_file = Path(element_simulation.directory,
+                               f"{recoil_to_delete.get_full_name()}"
+                               f"{recoil_suffix}")
+            if recoil_file.exists():
                 os.remove(recoil_file)
-            simu_file = os.path.join(element_simulation.directory,
-                                     recoil_to_delete.prefix + "-" +
-                                     recoil_to_delete.name + ".simu")
-            if os.path.exists(simu_file):
+
+            simu_file = Path(element_simulation.directory,
+                             f"{recoil_to_delete.get_full_name()}.simu")
+            if simu_file.exists():
                 os.remove(simu_file)
 
     def remove_current_element(self):
@@ -1124,7 +1123,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             add = "\nAlso its simulation will be stopped."
         else:
             add = ""
-
+        # TODO use the function from dialog_functions in here
         reply = QtWidgets.QMessageBox.question(self.parent, "Confirmation",
                                                "If you delete selected "
                                                "element simulation, "

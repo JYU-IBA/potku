@@ -27,15 +27,17 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
 import platform
 import threading
 import time
+
+from pathlib import Path
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
+from widgets.gui_utils import StatusBarHandler
 from widgets.matplotlib.simulation.composition import TargetCompositionWidget
 from widgets.matplotlib.simulation.recoil_atom_distribution import \
     RecoilAtomDistributionWidget
@@ -60,7 +62,7 @@ class TargetWidget(QtWidgets.QWidget):
             progress_bar: A progress bar used when opening a simulation.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_target_widget.ui"),
+        self.ui = uic.loadUi(Path("ui_files", "ui_target_widget.ui"),
                              self)
 
         if progress_bar:
@@ -195,36 +197,26 @@ class TargetWidget(QtWidgets.QWidget):
             button.
         """
         if not thread and self.statusbar is not None:
-            # Add progress bar
-            progress_bar = QtWidgets.QProgressBar()
-            self.statusbar.addWidget(progress_bar, 1)
-            progress_bar.show()
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process.
+            sbh = StatusBarHandler(self.statusbar)
         else:
-            progress_bar = None
+            sbh = None
 
-        target_name = "temp"
-        if self.target.name is not "":
+        if self.target.name:
             target_name = self.target.name
-        target_path = os.path.join(self.simulation.directory, target_name +
-                                   ".target")
+        else:
+            target_name = "temp"
+
+        target_path = Path(self.simulation.directory, f"{target_name}.target")
         self.target.to_file(target_path, None)
 
-        if not thread and progress_bar is not None:
-            progress_bar.setValue(50)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process
+        if not thread and sbh is not None:
+            sbh.reporter.report(50)
 
         self.recoil_distribution_widget.save_mcsimu_rec_profile(
-            self.simulation.directory, progress_bar)
+            self.simulation.directory, sbh.reporter)
 
-        if not thread and progress_bar is not None:
-            self.statusbar.removeWidget(progress_bar)
-            progress_bar.hide()
+        if not thread and sbh is not None:
+            sbh.remove_progress_bar()
 
     def set_shortcuts(self):
         """
