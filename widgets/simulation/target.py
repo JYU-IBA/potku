@@ -198,8 +198,9 @@ class TargetWidget(QtWidgets.QWidget):
         """
         if not thread and self.statusbar is not None:
             sbh = StatusBarHandler(self.statusbar)
+            reporter = sbh.reporter
         else:
-            sbh = None
+            reporter = None
 
         if self.target.name:
             target_name = self.target.name
@@ -209,14 +210,11 @@ class TargetWidget(QtWidgets.QWidget):
         target_path = Path(self.simulation.directory, f"{target_name}.target")
         self.target.to_file(target_path, None)
 
-        if not thread and sbh is not None:
-            sbh.reporter.report(50)
+        if not thread and reporter is not None:
+            reporter.report(50)
 
         self.recoil_distribution_widget.save_mcsimu_rec_profile(
-            self.simulation.directory, sbh.reporter)
-
-        if not thread and sbh is not None:
-            sbh.remove_progress_bar()
+            self.simulation.directory, reporter)
 
     def set_shortcuts(self):
         """

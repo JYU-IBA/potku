@@ -47,6 +47,8 @@ class RecoilElementWidget(QtWidgets.QWidget):
     """
     Class that shows a recoil element that is connected to an ElementSimulation.
     """
+    # TODO this class should be refactored together with simulation/element.py
+    #   module
     def __init__(self, parent, element, parent_tab, parent_element_widget,
                  element_simulation, color, recoil_element, statusbar=None,
                  spectra_changed=None):
@@ -76,14 +78,17 @@ class RecoilElementWidget(QtWidgets.QWidget):
 
         self.radio_button = QtWidgets.QRadioButton()
 
-        if element.isotope:
-            isotope_superscript = to_superscript(
-                str(element.isotope))
-            button_text = isotope_superscript + " " + element.symbol
-        else:
-            button_text = element.symbol
-
-        self.radio_button.setText(button_text)
+        #if element.isotope:
+        #    isotope_superscript = to_superscript(
+        #        str(element.isotope))
+        #    button_text = isotope_superscript + " " + element.symbol
+        #else:
+        #    button_text = element.symbol
+        #
+        #self.radio_button.setText(button_text)
+        # TODO full name takes a bit too much room. They layout could use
+        #   some fixing.
+        self.radio_button.setText(self.recoil_element.get_full_name())
 
         # Circle for showing the recoil color
         self.circle = Circle(color)

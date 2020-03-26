@@ -27,6 +27,8 @@ __version__ = "2.0"
 
 import os
 
+from pathlib import Path
+
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
@@ -44,17 +46,19 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         """
         super().__init__()
         self.element_simulation = element_simulation
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_optimization_results_widget.ui"),
-                             self)
+        # TODO should get rid of these self.ui references
+        self.ui = uic.loadUi(Path("ui_files",
+                                  "ui_optimization_results_widget.ui"), self)
+
         if self.element_simulation.run is None:
             run = self.element_simulation.request.default_run
         else:
             run = self.element_simulation.run
-        self.ui.setWindowTitle(
-            "Optimization Results: " +
-            element_simulation.recoil_elements[0].element.__str__() +
-            " - " + measured_element + " - fluence: " + str(run.fluence))
+
+        self.setWindowTitle(f"Optimization Results: "
+                            f"{element_simulation.recoil_elements[0].element}"
+                            f" - {measured_element} - fluence: {run.fluence}")
+
         self.recoil_atoms = RecoilAtomOptimizationWidget(self,
                                                          element_simulation,
                                                          target)
@@ -64,8 +68,6 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         """
         self.recoil_atoms.delete()
         self.recoil_atoms = None
-        self.ui.close()
-        self.ui = None
         self.close()
 
     def closeEvent(self, evnt):
@@ -98,15 +100,14 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         """
         Show calculated solutions in the widget.
         """
-        text = str(evaluations) + " evaluations done. Running."
+        text = f"{evaluations} evaluations done. Running."
         if self.element_simulation.optimization_mcerd_running:
             text += " Simulating."
-        self.ui.progressLabel.setText(text)
+        self.progressLabel.setText(text)
 
     def show_results(self, evaluations):
         """
         Shjow optimized recoils and finished amount of evaluations.
         """
-        self.ui.progressLabel.setText(str(evaluations) +
-                                      " evaluations done. Finished.")
+        self.progressLabel.setText(f"{evaluations} evaluations done. Finished.")
         self.recoil_atoms.show_recoils()
