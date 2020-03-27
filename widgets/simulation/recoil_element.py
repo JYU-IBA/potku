@@ -126,8 +126,10 @@ class RecoilElementWidget(QtWidgets.QWidget):
         """
         previous = None
         dialog = EnergySpectrumParamsDialog(
-            self.tab, spectrum_type="simulation",
-            element_simulation=self.element_simulation, recoil_widget=self,
+            self.tab,
+            spectrum_type="simulation",
+            element_simulation=self.element_simulation,
+            recoil_widget=self,
             statusbar=self.statusbar)
         if dialog.result_files:
             energy_spectrum_widget = EnergySpectrumWidget(

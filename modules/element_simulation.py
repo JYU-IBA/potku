@@ -307,6 +307,31 @@ class ElementSimulation(Observable):
         """
         return self.__full_edit_on
 
+    def move_optimized_recoil_to_regular_recoils(self):
+        """Moves optimized recoils to the collection that holds regular
+        recoils.
+        """
+        for recoil in self.optimization_recoils:
+            # Ensure that the name is unique
+            new_name = recoil.name.replace("opt", "", 1)
+            full_name = new_name
+            recoil_names = {r.name for r in self.recoil_elements}
+            suffix = 1
+            while full_name in recoil_names:
+                full_name = f"{new_name}-{suffix}"
+                suffix += 1
+
+            values = {
+                "name": full_name,
+                "description": recoil.description,
+                "reference_density": recoil.reference_density,
+                "color": recoil.color,
+                "multiplier": recoil.multiplier
+            }
+            self.update_recoil_element(recoil, values)
+        self.recoil_elements.extend(self.optimization_recoils)
+        self.optimization_recoils.clear()
+
     def update_recoil_element(self, recoil_element, new_values):
         """Updates RecoilElement object with new values.
 
@@ -314,34 +339,30 @@ class ElementSimulation(Observable):
             recoil_element: RecoilElement object to update.
             new_values: New values as a dictionary.
         """
-        # TODO this should affect erd file handler too
-        # TODO make this a function of RecoilElement
-        old_name = recoil_element.name
+        old_name = recoil_element.get_full_name()
 
         recoil_element.update(new_values)
 
         # Delete possible extra rec files.
-        filename_to_delete = ""
+        filename_to_delete = None
         for file in os.listdir(self.directory):
-            if file.startswith(recoil_element.prefix + "-" + old_name) and \
+            if file.startswith(old_name) and \
                     (file.endswith(".rec") or file.endswith(".sct")):
                 filename_to_delete = file
                 break
-        if filename_to_delete:
-            os.remove(os.path.join(self.directory, filename_to_delete))
+        if filename_to_delete is not None:
+            os.remove(Path(self.directory, filename_to_delete))
 
         recoil_element.to_file(self.directory)
 
-        if old_name != recoil_element.name:
+        if old_name != recoil_element.get_full_name():
             if recoil_element.type == "rec":
                 recoil_suffix = ".recoil"
             else:
                 recoil_suffix = ".scatter"
-            recoil_file = os.path.join(self.directory, recoil_element.prefix
-                                       + "-" + old_name + recoil_suffix)
-            if os.path.exists(recoil_file):
-                new_name = recoil_element.prefix + "-" + recoil_element.name \
-                           + recoil_suffix
+            recoil_file = Path(self.directory, old_name + recoil_suffix)
+            if recoil_file.exists():
+                new_name = recoil_element.get_full_name() + recoil_suffix
                 gf.rename_file(recoil_file, new_name)
 
             if recoil_element is self.main_recoil:  # Only main recoil
@@ -349,21 +370,18 @@ class ElementSimulation(Observable):
                 for file in os.listdir(self.directory):
                     if file.startswith(recoil_element.prefix) and file.endswith(
                             ".erd"):
-                        erd_file = os.path.join(self.directory, file)
+                        erd_file = Path(self.directory, file)
                         seed = file.split('.')[1]
-                        new_name = recoil_element.prefix + "-" + \
-                            recoil_element.name + "." + seed + ".erd"
+                        new_name = f"{recoil_element.get_full_name()}." \
+                                   f"{seed}.erd"
                         gf.rename_file(erd_file, new_name)
                 # Write mcsimu file
-                self.to_file(os.path.join(
-                    self.directory,
-                    self.name_prefix + "-" + self.name + ".mcsimu"))
+                self.to_file()
+                self.__erd_filehandler.update()
 
-            simu_file = os.path.join(self.directory, recoil_element.prefix +
-                                     "-" + old_name + ".simu")
-            if os.path.exists(simu_file):
-                new_name = recoil_element.prefix + "-" + recoil_element.name \
-                           + ".simu"
+            simu_file = Path(self.directory, old_name + ".simu")
+            if simu_file.exists():
+                new_name = recoil_element.get_full_name() + ".simu"
                 gf.rename_file(simu_file, new_name)
 
     @classmethod
@@ -662,7 +680,7 @@ class ElementSimulation(Observable):
 
             new_erd_file = Path(self.directory, new_erd_file)
 
-            if os.path.exists(new_erd_file):
+            if new_erd_file.exists():
                 os.remove(new_erd_file)
 
             self.optimization_mcerd_running = optimize
@@ -770,7 +788,8 @@ class ElementSimulation(Observable):
             "name": "{0}-{1}".format(self.name_prefix, self.name),
             "atom_count": total_count,
             "running":  process_count,
-            "state": state
+            "state": state,
+            "optimizing": self.optimization_running
         }
 
     def get_max_seed(self):
@@ -1022,15 +1041,15 @@ class ElementSimulation(Observable):
             recoil_name = recoil_element.name
             erd_recoil_name = "opt"
 
-        recoil_file = os.path.join(self.directory, recoil_element.prefix +
-                                   "-" + recoil_name + suffix)
+        recoil_file = Path(self.directory, recoil_element.prefix +
+                           "-" + recoil_name + suffix)
         with open(recoil_file, "w") as rec_file:
             rec_file.write("\n".join(recoil_element.get_mcerd_params()))
 
-        erd_file = os.path.join(self.directory, recoil_elements[0].prefix +
-                                "-" + erd_recoil_name + ".*.erd")
-        spectrum_file = os.path.join(self.directory, recoil_element.prefix +
-                                     "-" + recoil_name + ".simu")
+        erd_file = Path(self.directory, recoil_elements[0].prefix +
+                        "-" + erd_recoil_name + ".*.erd")
+        spectrum_file = Path(self.directory, recoil_element.prefix +
+                             "-" + recoil_name + ".simu")
         if ch:
             channel_width = ch
         else:
@@ -1126,7 +1145,7 @@ class ERDFileHandler:
         }
 
     @classmethod
-    def from_directory(cls, directory, recoil_element, optim=None):
+    def from_directory(cls, directory, recoil_element):
         """Initializes a new ERDFileHandler by reading ERD files
         from a directory.
 
@@ -1216,6 +1235,8 @@ class ERDFileHandler:
         """Moves all files from active file collection to already simulated
         files.
         """
+        # TODO check if the name of the RecoilElement has changed and update
+        #   file references if necessary
         self.__old_files.update(self.__active_files)
         self.__active_files.clear()
 

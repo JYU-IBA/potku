@@ -29,8 +29,11 @@ import os
 
 from pathlib import Path
 
+from modules.element_simulation import ElementSimulation
+
 from PyQt5 import QtWidgets
 from PyQt5 import uic
+from PyQt5.QtCore import pyqtSignal
 
 from widgets.matplotlib.simulation.recoil_atom_optimization import \
     RecoilAtomOptimizationWidget
@@ -40,6 +43,8 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
     """
     Class to show the results of optimization. Also shows the progress.
     """
+    results_accepted = pyqtSignal(ElementSimulation)
+
     def __init__(self, element_simulation, measured_element, target):
         """
         Initialize the widget.
@@ -62,6 +67,8 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         self.recoil_atoms = RecoilAtomOptimizationWidget(self,
                                                          element_simulation,
                                                          target)
+        self.recoil_atoms.results_accepted.connect(
+            self.results_accepted.emit)
 
     def delete(self):
         """Delete variables and do clean up.

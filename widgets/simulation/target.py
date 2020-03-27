@@ -32,10 +32,12 @@ import threading
 import time
 
 from pathlib import Path
+from modules.element_simulation import ElementSimulation
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
+from PyQt5.QtCore import pyqtSignal
 
 from widgets.gui_utils import StatusBarHandler
 from widgets.matplotlib.simulation.composition import TargetCompositionWidget
@@ -47,6 +49,7 @@ class TargetWidget(QtWidgets.QWidget):
     """ Widget that can be used to define target composition and
         recoil atom distribution.
     """
+    results_accepted = pyqtSignal(ElementSimulation)
 
     def __init__(self, tab, simulation, target, icon_manager,
                  progress_bar=None, statusbar=None):
@@ -88,6 +91,8 @@ class TargetWidget(QtWidgets.QWidget):
         self.recoil_distribution_widget = RecoilAtomDistributionWidget(
             self, self.simulation, self.target, tab, icon_manager,
             statusbar=self.statusbar)
+        self.results_accepted.connect(
+            self.recoil_distribution_widget.update_element_simulation.emit)
         self.spectra_changed = self.recoil_distribution_widget. \
             recoil_dist_changed
 

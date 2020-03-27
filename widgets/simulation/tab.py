@@ -140,6 +140,9 @@ class SimulationTabWidget(QtWidgets.QWidget):
         if mode_recoil:
             self.optimization_result_widget = OptimizedRecoilsWidget(
                 elem_sim, measurement_elem, self.obj.target)
+            self.optimization_result_widget.results_accepted.connect(
+                self.simulation_target.results_accepted.emit
+            )
         else:
             self.optimization_result_widget = OptimizedFluenceWidget(elem_sim)
         elem_sim.optimization_widget = self.optimization_result_widget
@@ -204,6 +207,9 @@ class SimulationTabWidget(QtWidgets.QWidget):
                         break
                 self.optimization_result_widget = OptimizedRecoilsWidget(
                     element_simulation, used_measured_element, self.obj.target)
+                self.optimization_result_widget.results_accepted.connect(
+                    self.simulation_target.results_accepted.emit
+                )
                 element_simulation.optimization_done = True
                 element_simulation.optimization_widget = \
                     self.optimization_result_widget

@@ -263,6 +263,34 @@ class ElementManager:
                 main_element_widget.running_int_recoil = integer + 1
             except ValueError:
                 pass
+        return recoil_element_widget
+
+    def update_element_simulation(self, element_simulation: ElementSimulation,
+                                  spectra_changed=None):
+        # TODO refactor and clean this up
+        main_element_widget = next((w for w in
+                                   element_simulation.recoil_elements[0].widgets
+                                   if isinstance(w, ElementWidget)), None)
+        for recoil in element_simulation.recoil_elements:
+            # Check that the recoil does not already have a widget.
+            secondary = next((w for w in
+                              recoil.widgets
+                              if isinstance(w, RecoilElementWidget) or
+                              isinstance(w, ElementWidget)), None)
+            if secondary is None:
+                rw = self.add_secondary_recoil(recoil,
+                                               element_simulation,
+                                               main_element_widget,
+                                               spectra_changed=spectra_changed)
+
+                self.parent.radios.addButton(rw.radio_button)
+                for i in range(self.parent.recoil_vertical_layout.count()):
+                    if self.parent.recoil_vertical_layout.itemAt(i).widget() \
+                            == main_element_widget:
+                        self.parent.recoil_vertical_layout.insertWidget(
+                            i + 1, rw)
+                    break
+        rw.radio_button.setChecked(True)
 
     def remove_element_simulation(self, element_simulation):
         """
@@ -322,6 +350,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     recoil_dist_changed = pyqtSignal(RecoilElement, ElementSimulation)
     # Signal that is emitted when limit values are changed
     limit_changed = pyqtSignal(float, float)
+
+    update_element_simulation = pyqtSignal(ElementSimulation)
 
     def __init__(self, parent, simulation, target, tab, icon_manager,
                  statusbar=None):
@@ -501,6 +531,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         for button in self.radios.buttons():
             button.setChecked(True)
             break
+
+        self.update_element_simulation.connect(lambda elem_sim:
+            self.element_manager.update_element_simulation(
+                elem_sim, self.recoil_dist_changed))
 
     def format_coord(self, x, y):
         """
@@ -909,7 +943,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         neighbor, add a new point between them.
         """
         right_n = self.current_recoil_element.get_right_neighbor(point)
-        if right_n is not None:
+        if right_n is None:
             return
         right_n_y = right_n.get_y()
 

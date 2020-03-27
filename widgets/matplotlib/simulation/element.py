@@ -96,7 +96,8 @@ class ElementWidget(QtWidgets.QWidget):
         draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                            QtWidgets.QSizePolicy.Fixed)
 
-        draw_spectrum_button.clicked.connect(self.plot_spectrum)
+        draw_spectrum_button.clicked.connect(lambda: self.plot_spectrum(
+            spectra_changed=spectra_changed))
         draw_spectrum_button.setToolTip("Draw energy spectra")
 
         settings_button = QtWidgets.QPushButton()
@@ -112,7 +113,8 @@ class ElementWidget(QtWidgets.QWidget):
             "ui_icons/reinhardt/edit_add.svg"))
         add_recoil_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                         QtWidgets.QSizePolicy.Fixed)
-        add_recoil_button.clicked.connect(self.add_new_recoil)
+        add_recoil_button.clicked.connect(lambda: self.add_new_recoil(
+            spectra_changed=spectra_changed))
         add_recoil_button.setToolTip("Add a new recoil to element")
 
         if platform.system() == "Darwin":
@@ -131,9 +133,9 @@ class ElementWidget(QtWidgets.QWidget):
 
         self.running_int_recoil = 1
 
-        self.spectra_changed = spectra_changed
+        # self.spectra_changed = spectra_changed
 
-    def add_new_recoil(self):
+    def add_new_recoil(self, spectra_changed=None):
         """
         Add new recoil to element simulation.
         """
@@ -159,7 +161,7 @@ class ElementWidget(QtWidgets.QWidget):
             self.element_simulation,
             color, recoil_element,
             statusbar=self.statusbar,
-            spectra_changed=self.spectra_changed
+            spectra_changed=spectra_changed
         )
         recoil_element.widgets.append(recoil_widget)
         self.element_simulation.recoil_elements.append(recoil_element)
@@ -183,7 +185,7 @@ class ElementWidget(QtWidgets.QWidget):
         ElementSimulationSettingsDialog(self.element_simulation,
                                         self.tab)
 
-    def plot_spectrum(self):
+    def plot_spectrum(self, spectra_changed=None):
         """
         Plot an energy spectrum and show it in a widget.
         """
@@ -200,7 +202,7 @@ class ElementWidget(QtWidgets.QWidget):
                 use_cuts=dialog.result_files,
                 bin_width=dialog.bin_width,
                 spectrum_type="simulation",
-                spectra_changed=self.spectra_changed)
+                spectra_changed=spectra_changed)
 
             # Check all energy spectrum widgets, if one has the same
             # elements, delete it
