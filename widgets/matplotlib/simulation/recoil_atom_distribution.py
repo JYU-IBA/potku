@@ -33,6 +33,7 @@ import os
 
 import modules.general_functions as gf
 import dialogs.dialog_functions as df
+import widgets.binding as bnd
 
 from pathlib import Path
 
@@ -333,6 +334,20 @@ class ElementManager:
         return radio_buttons
 
 
+# setter and getter for full_edit_on property
+def _full_edit_to_btn(instance, attr, value):
+    btn = getattr(instance, attr)
+    if value:
+        btn.setText("Full edit unlocked")
+    else:
+        btn.setText("Unlock full edit")
+
+
+def _full_edit_from_btn(instance, attr):
+    btn = getattr(instance, attr)
+    return btn.text() == "Full edit unlocked"
+
+
 class RecoilAtomDistributionWidget(MatplotlibWidget):
     """Matplotlib simulation recoil atom distribution widget.
     Using this widget, the user can edit the recoil atom distribution
@@ -352,6 +367,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     limit_changed = pyqtSignal(float, float)
 
     update_element_simulation = pyqtSignal(ElementSimulation)
+
+    full_edit_on = bnd.bind("edit_lock_push_button", fget=_full_edit_from_btn,
+                            fset=_full_edit_to_btn)
 
     def __init__(self, parent, simulation, target, tab, icon_manager,
                  statusbar=None):
@@ -657,8 +675,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Unlock or lock full edit.
         """
-        if self.edit_lock_push_button.text() == "Unlock full edit":
+        if not self.full_edit_on:
             # Check if current element simulation is running
+            add = None
             if self.current_element_simulation.mcerd_objects and not\
                     self.current_element_simulation.optimization_running:
                 add = "Are you sure you want to unlock full edit for this" \
@@ -671,20 +690,21 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 add = "Are you sure you want to unlock full edit for this " \
                       "element simulation?\nAll its simulation results will " \
                       "be deleted.\n\nUnlock full edit anyway?"
-            reply = QtWidgets.QMessageBox.warning(
-                self.parent, "Confirm", add,
-                QtWidgets.QMessageBox.Yes |
-                QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel,
-                QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                return
+            if add is not None:
+                reply = QtWidgets.QMessageBox.warning(
+                    self.parent, "Confirm", add,
+                    QtWidgets.QMessageBox.Yes |
+                    QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel,
+                    QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    return
 
             self.current_element_simulation.unlock_edit()
+            self.current_element_simulation.reset()
 
             self.full_edit_on = True
-            self.edit_lock_push_button.setText("Full edit unlocked")
 
             if self.clicked_point is \
                     self.current_recoil_element.get_points()[-1]:
@@ -693,7 +713,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         else:
             self.current_element_simulation.lock_edit()
             self.full_edit_on = False
-            self.edit_lock_push_button.setText("Unlock full edit")
         self.update_plot()
 
     def update_colors(self):
@@ -761,12 +780,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.edit_lock_push_button.setEnabled(True)
             self.parent_ui.elementInfoWidget.show()
             # Put full edit on if element simulation allows it
-            if self.current_element_simulation.get_full_edit_on():
-                self.full_edit_on = True
-                self.edit_lock_push_button.setText("Full edit unlocked")
-            else:
-                self.full_edit_on = False
-                self.edit_lock_push_button.setText("Unlock full edit")
+            self.full_edit_on = \
+                self.current_element_simulation.get_full_edit_on()
 
             self.update_recoil_element_info_labels()
             self.dragged_points.clear()

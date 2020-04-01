@@ -287,7 +287,6 @@ class ElementSimulation(Observable):
 
         Also resets ElementSimulation
         """
-        self.reset()
         self.y_min = 0.0
         self.__full_edit_on = True
 
@@ -1166,7 +1165,7 @@ class ElementSimulation(Observable):
                 gf.delete_simulation_results(self, recoil)
 
         self.__erd_filehandler.clear()
-
+        self.unlock_edit()
         self.on_complete(self.get_current_status())
 
 

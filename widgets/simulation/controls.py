@@ -221,8 +221,6 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         if self.recoil_dist_widget.current_element_simulation is \
            self.element_simulation:
             self.recoil_dist_widget.full_edit_on = False
-            self.recoil_dist_widget.edit_lock_push_button.setText(
-                "Unlock full edit")
             self.recoil_dist_widget.update_plot()
         self.element_simulation.y_min = 0.0001
 

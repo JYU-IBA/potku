@@ -307,9 +307,8 @@ def update_inner_recoils(qdialog, elem_sim):
         gf.delete_simulation_results(elem_sim, recoil)
     # Change full edit unlocked
     if elem_sim.recoil_elements[0].widgets:
-        elem_sim.recoil_elements[0].widgets[0].parent. \
-            edit_lock_push_button.setText("Full edit "
-                                          "unlocked")
+        elem_sim.recoil_elements[0].widgets[0].parent.full_edit_on = True
+
     elem_sim.simulations_done = False
 
     # Find element simulation's tab
@@ -460,8 +459,7 @@ def delete_element_simulations(qdialog, tab, simulation,
 
         # Change full edit unlocked
         # TODO remove reference to GUI element from RecoilElement
-        elem_sim.recoil_elements[0].widgets[0].parent. \
-            edit_lock_push_button.setText("Full edit unlocked")
+        elem_sim.recoil_elements[0].widgets[0].parent.full_edit_on = True
 
         tab.del_widget(elem_sim.optimization_widget)
 
