@@ -1099,6 +1099,55 @@ class ElementSimulation(Observable):
 
         return settings, target, run, detector
 
+    def _get_optimization_files(self, optim_mode="recoil"):
+        """Returns all files related to given optimization mode from the
+        ElementSimulation's directory.
+
+        Args:
+            optim_mode: either "recoil" or "fluence"
+
+        Return:
+            list of file names.
+        """
+        if optim_mode == "recoil":
+            cond = lambda f: f.startswith(f"{self.name_prefix}-opt") and \
+                             not f.startswith(f"{self.name_prefix}-optfl")
+        elif optim_mode == "fluence":
+            cond = lambda f: f.startswith(f"{self.name_prefix}-optfl")
+        else:
+            raise ValueError(f"Unknown optimization mode '{optim_mode}' given"
+                             f"to _get_optimization_files.")
+        files = []
+        for file in os.listdir(self.directory):
+            if cond(file):
+                files.append(file)
+        return files
+
+    def delete_optimization_results(self, optim_mode="recoil"):
+        """Deletes optimization results. Also stops the optimization if
+        it is running.
+
+        Args:
+            optim_mode: either 'recoil' or 'fluence'
+        """
+        if self.optimization_running:
+            self.stop()
+
+        # Delete existing files from previous optimization
+        removed_files = self._get_optimization_files(optim_mode=optim_mode)
+        for rf in removed_files:
+            # FIXME removing these files while optimization is running
+            #  will cause an exception in NSGAII.
+            path = Path(self.directory, rf)
+            try:
+                os.remove(path)
+            except (OSError, FileNotFoundError):
+                pass
+        self.optimization_recoils.clear()
+        self.optimization_widget = None
+        self.optimization_running = False
+        self.optimization_stopped = True
+
     def reset(self, remove_files=True):
         """Function that resets the state of ElementSimulation.
 

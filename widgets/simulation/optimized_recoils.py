@@ -45,7 +45,8 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
     """
     results_accepted = pyqtSignal(ElementSimulation)
 
-    def __init__(self, element_simulation, measured_element, target):
+    def __init__(self, element_simulation: ElementSimulation, measured_element,
+                 target):
         """
         Initialize the widget.
         """
@@ -79,28 +80,11 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
 
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget. Remove existing
-        optimization files. Stop optimization if necessary.
+        optimization files. Stop optimization if necessary. Disconnect
+        results_accepted signal.
         """
-        if self.element_simulation.mcerd_objects and \
-                self.element_simulation.optimization_running:
-            self.element_simulation.stop()
-            self.element_simulation.optimization_running = False
-        self.element_simulation.optimization_stopped = True
-        self.element_simulation.optimization_widget = None
-
-        # Delete existing files from previous optimization
-        removed_files = []
-        for file in os.listdir(self.element_simulation.directory):
-            if "opt" in file and "optfl" not in file:
-                removed_files.append(file)
-        for rf in removed_files:
-            path = os.path.join(self.element_simulation.directory, rf)
-            if os.path.exists(path):
-                try:
-                    os.remove(path)
-                except PermissionError:
-                    pass
-
+        self.element_simulation.delete_optimization_results(optim_mode="recoil")
+        self.results_accepted.disconnect()
         super().closeEvent(evnt)
 
     def update_progress(self, evaluations):

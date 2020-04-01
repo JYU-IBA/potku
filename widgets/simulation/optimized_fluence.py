@@ -27,7 +27,9 @@ __version__ = "2.0"
 
 import os
 
-from modules.general_functions import round_value_by_four_biggest
+import modules.general_functions as gf
+
+from modules.element_simulation import ElementSimulation
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -37,7 +39,7 @@ class OptimizedFluenceWidget(QtWidgets.QWidget):
     """
     Class that handles showing optimized fluence in a widget.
     """
-    def __init__(self, element_simulation):
+    def __init__(self, element_simulation: ElementSimulation):
         super().__init__()
         self.ui = uic.loadUi(os.path.join("ui_files",
                                           "ui_optimized_fluence_widget.ui"),
@@ -57,25 +59,8 @@ class OptimizedFluenceWidget(QtWidgets.QWidget):
         """Reimplemented method when closing widget. Remove existing
         optimization files. Stop optimization if necessary.
         """
-        if self.element_simulation.mcerd_objects and \
-                self.element_simulation.optimization_running:
-            self.element_simulation.stop()
-            self.element_simulation.optimization_running = False
-        self.element_simulation.optimization_stopped = True
-        self.element_simulation.optimization_widget = None
-
-        # Delete existing files from previous optimization
-        removed_files = []
-        for file in os.listdir(self.element_simulation.directory):
-            if "optfl" in file:
-                removed_files.append(file)
-        for rf in removed_files:
-            path = os.path.join(self.element_simulation.directory, rf)
-            if os.path.exists(path):
-                try:
-                    os.remove(path)
-                except PermissionError:
-                    pass
+        self.element_simulation.delete_optimization_results(
+            optim_mode="fluence")
 
         super().closeEvent(evnt)
 
@@ -92,7 +77,7 @@ class OptimizedFluenceWidget(QtWidgets.QWidget):
         """
         Show optimized fluence in widget.
         """
-        rounded_fluence = round_value_by_four_biggest(
+        rounded_fluence = gf.round_value_by_four_biggest(
             self.element_simulation.optimized_fluence)
         self.ui.fluenceLineEdit.setText(str(int(
             self.element_simulation.optimized_fluence)))
