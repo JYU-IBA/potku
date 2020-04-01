@@ -103,7 +103,7 @@ class GetEspe:
                         + " -dose " + str(self.__fluence) \
                         + " -avemass" \
                         + " -density " + str(self.__density) \
-                        + " -dist " + self.__recoil_file \
+                        + " -dist " + str(self.__recoil_file) \
                         + " -ch " + str(self.__channel_width)
 
     def run_get_espe(self):

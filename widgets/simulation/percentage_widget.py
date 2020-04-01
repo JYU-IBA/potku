@@ -64,7 +64,15 @@ class PercentageWidget(QtWidgets.QWidget):
             recoil: None
             for recoil in recoil_elements
         }
-        self.common_interval = common_interval
+        if not common_interval:
+            try:
+                self.common_interval = list(
+                    recoil_elements[0].get_individual_interval())
+            except IndexError:
+                self.common_interval = [0, 0]
+        else:
+            self.common_interval = common_interval
+
         self.icon_manager = icon_manager
 
         uic.loadUi(os.path.join("ui_files",
@@ -119,8 +127,17 @@ class PercentageWidget(QtWidgets.QWidget):
                 if not self._percentage_rows[recoil].selected:
                     area = 0
                 else:
-                    area = recoil.calculate_area_for_interval(start, end)
-            except (KeyError, AttributeError):
+                    if start is None:
+                        start_ = recoil.area_limits[0].get_xdata()[0]
+                    else:
+                        start_ = start
+
+                    if end is None:
+                        end_ = recoil.area_limits[-1].get_xdata()[0]
+                    else:
+                        end_ = end
+                    area = recoil.calculate_area_for_interval(start_, end_)
+            except (KeyError, AttributeError, IndexError):
                 area = recoil.calculate_area_for_interval(start, end)
 
             if not self.__relative_values:

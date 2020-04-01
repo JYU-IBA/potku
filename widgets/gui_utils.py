@@ -122,7 +122,7 @@ class GUIReporter(ProgressReporter):
         self.signaller.sig.connect(__update_func)
 
 
-class StatusBarHandler(ProgressReporter):
+class StatusBarHandler:
     """Helper class to show, hide and update a progress bar in the
     given statusbar.
     """

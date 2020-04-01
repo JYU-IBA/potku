@@ -112,6 +112,13 @@ class RecoilElement:
 
         return self.element < other.element
 
+    def get_individual_interval(self):
+        try:
+            return self.area_limits[0].get_xdata()[0], \
+                   self.area_limits[-1].get_xdata()[0]
+        except IndexError:
+            return None, None
+
     def get_full_name(self):
         """Returns the prefixed name of the RecoilElement.
         """

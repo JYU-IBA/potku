@@ -153,7 +153,16 @@ class Point:
         self._y = xy[1]
 
     def calculate_new_point(self, other, x):
-        """Calculates a new point """
+        """Returns a new point at position x on a line that goes trough
+        self and other point.
+
+        Args:
+            other: Point object.
+            x: position on x axis
+
+        Return:
+            Point object.
+        """
         if not isinstance(other, Point):
             return NotImplemented
 

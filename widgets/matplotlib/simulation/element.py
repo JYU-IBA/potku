@@ -70,8 +70,7 @@ class ElementWidget(QtWidgets.QWidget):
         super().__init__()
 
         self.parent = parent
-        # TODO rename parent_tab to tab
-        self.parent_tab = parent_tab
+        self.tab = parent_tab
         self.element_simulation = element_simulation
         self.statusbar = statusbar
 
@@ -97,7 +96,8 @@ class ElementWidget(QtWidgets.QWidget):
         draw_spectrum_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                            QtWidgets.QSizePolicy.Fixed)
 
-        draw_spectrum_button.clicked.connect(self.plot_spectrum)
+        draw_spectrum_button.clicked.connect(lambda: self.plot_spectrum(
+            spectra_changed=spectra_changed))
         draw_spectrum_button.setToolTip("Draw energy spectra")
 
         settings_button = QtWidgets.QPushButton()
@@ -113,7 +113,8 @@ class ElementWidget(QtWidgets.QWidget):
             "ui_icons/reinhardt/edit_add.svg"))
         add_recoil_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                         QtWidgets.QSizePolicy.Fixed)
-        add_recoil_button.clicked.connect(self.add_new_recoil)
+        add_recoil_button.clicked.connect(lambda: self.add_new_recoil(
+            spectra_changed=spectra_changed))
         add_recoil_button.setToolTip("Add a new recoil to element")
 
         if platform.system() == "Darwin":
@@ -132,9 +133,9 @@ class ElementWidget(QtWidgets.QWidget):
 
         self.running_int_recoil = 1
 
-        self.spectra_changed = spectra_changed
+        # self.spectra_changed = spectra_changed
 
-    def add_new_recoil(self):
+    def add_new_recoil(self, spectra_changed=None):
         """
         Add new recoil to element simulation.
         """
@@ -156,11 +157,11 @@ class ElementWidget(QtWidgets.QWidget):
         self.running_int_recoil += 1
         recoil_widget = RecoilElementWidget(
             self.parent, element,
-            self.parent_tab, self,
+            self.tab, self,
             self.element_simulation,
             color, recoil_element,
             statusbar=self.statusbar,
-            spectra_changed=self.spectra_changed
+            spectra_changed=spectra_changed
         )
         recoil_element.widgets.append(recoil_widget)
         self.element_simulation.recoil_elements.append(recoil_element)
@@ -182,43 +183,43 @@ class ElementWidget(QtWidgets.QWidget):
         Open element simulation settings.
         """
         ElementSimulationSettingsDialog(self.element_simulation,
-                                        self.parent_tab)
+                                        self.tab)
 
-    def plot_spectrum(self):
+    def plot_spectrum(self, spectra_changed=None):
         """
         Plot an energy spectrum and show it in a widget.
         """
         previous = None
         dialog = EnergySpectrumParamsDialog(
-            self.parent_tab,
+            self.tab,
             spectrum_type="simulation",
             element_simulation=self.element_simulation,
             recoil_widget=self,
             statusbar=self.statusbar)
         if dialog.result_files:
             energy_spectrum_widget = EnergySpectrumWidget(
-                parent=self.parent_tab,
+                parent=self.tab,
                 use_cuts=dialog.result_files,
                 bin_width=dialog.bin_width,
                 spectrum_type="simulation",
-                spectra_changed=self.spectra_changed)
+                spectra_changed=spectra_changed)
 
             # Check all energy spectrum widgets, if one has the same
             # elements, delete it
-            for e_widget in self.parent_tab.energy_spectrum_widgets:
+            for e_widget in self.tab.energy_spectrum_widgets:
                 keys = e_widget.energy_spectrum_data.keys()
                 if Counter(keys) == Counter(
                         energy_spectrum_widget.energy_spectrum_data.keys()):
                     previous = e_widget
-                    self.parent_tab.energy_spectrum_widgets.remove(e_widget)
-                    self.parent_tab.del_widget(e_widget)
+                    self.tab.energy_spectrum_widgets.remove(e_widget)
+                    self.tab.del_widget(e_widget)
                     break
 
-            self.parent_tab.energy_spectrum_widgets.append(
+            self.tab.energy_spectrum_widgets.append(
                 energy_spectrum_widget)
             icon = self.parent.element_manager.icon_manager.get_icon(
                 "energy_spectrum_icon_16.png")
-            self.parent_tab.add_widget(energy_spectrum_widget, icon=icon)
+            self.tab.add_widget(energy_spectrum_widget, icon=icon)
 
             if previous and energy_spectrum_widget is not None:
                 energy_spectrum_widget.save_file_int = previous.save_file_int

@@ -27,8 +27,11 @@ __version__ = "2.0"
 
 import matplotlib
 
+from modules.element_simulation import ElementSimulation
+
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QLocale
+from PyQt5.QtCore import pyqtSignal
 
 from widgets.matplotlib.base import MatplotlibWidget
 from widgets.simulation.point_coordinates import PointCoordinatesWidget
@@ -45,6 +48,8 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
                   1: "pan/zoom",  # Matplotlib's drag
                   2: "zoom rect"  # Matplotlib's zoom
                   }
+
+    results_accepted = pyqtSignal(ElementSimulation)
 
     def __init__(self, parent, element_simulation, target):
         super().__init__(parent)
@@ -77,6 +82,13 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
             radio_btn.setEnabled(False)
             self.radios.addButton(radio_btn)
             self.recoil_vertical_layout.addWidget(radio_btn)
+
+        self.move_results_btn = QtWidgets.QPushButton("Accept results")
+        self.move_results_btn.setToolTip("Moves optimization results to recoil "
+                                         "atom distribution view")
+        self.move_results_btn.setEnabled(False)
+        self.move_results_btn.clicked.connect(self._move_results)
+        self.recoil_vertical_layout.addWidget(self.move_results_btn)
 
         spacer = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum,
                                        QtWidgets.QSizePolicy.Expanding)
@@ -240,6 +252,9 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
                                    color=recoil.color)
             self.lines[recoil] = line
 
+        if self.element_simulation.optimization_recoils:
+            self.move_results_btn.setEnabled(True)
+
         self.selected_line, = self.axes.plot(0, 0,
                                              marker="o",
                                              markersize=10,
@@ -312,3 +327,11 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
 
         self.canvas.draw()
         self.canvas.flush_events()
+
+    def _move_results(self, *args):
+        """Moves the optimized results to regular recoils and closes the
+        widget.
+        """
+        self.element_simulation.move_optimized_recoil_to_regular_recoils()
+        self.move_results_btn.setEnabled(False)
+        self.results_accepted.emit(self.element_simulation)
