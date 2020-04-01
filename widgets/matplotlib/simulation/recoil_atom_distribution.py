@@ -891,11 +891,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             interval_end = interval[1]
             points = self.current_recoil_element.get_points()
             for point in points:
-                x = point.get_x()
-                y = point.get_y()
-                if x == interval_start or x == interval_end:
-                    point.set_y(0.0)
-                elif interval_start < x < interval_end and y != 0.0:
+                if interval_start <= point.get_x() <= interval_end:
                     point.set_y(0.0)
             if interval_start not in self.current_recoil_element.get_xs():
                 new_point = self.add_zero_point(interval_start)
@@ -2160,6 +2156,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                             lim.set_color('orange')
                         self.__move_lower = True
 
+                    # TODO signal that individual limit has changed
                     self.__calculate_selected_area()
 
     def undo_recoil_changes(self):
