@@ -272,6 +272,7 @@ class ElementManager:
         main_element_widget = next((w for w in
                                    element_simulation.recoil_elements[0].widgets
                                    if isinstance(w, ElementWidget)), None)
+
         for recoil in element_simulation.recoil_elements:
             # Check that the recoil does not already have a widget.
             secondary = next((w for w in
@@ -285,6 +286,7 @@ class ElementManager:
                                                spectra_changed=spectra_changed)
 
                 self.parent.radios.addButton(rw.radio_button)
+                self.parent.other_recoils.append(recoil)
                 for i in range(self.parent.recoil_vertical_layout.count()):
                     if self.parent.recoil_vertical_layout.itemAt(i).widget() \
                             == main_element_widget:
