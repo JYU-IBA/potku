@@ -30,16 +30,16 @@ __version__ = "2.0"
 import matplotlib
 import os
 import widgets
-import itertools
 
 import dialogs.dialog_functions as df
+
+from pathlib import Path
 
 from dialogs.simulation.layer_properties import LayerPropertiesDialog
 from dialogs.simulation.target_info_dialog import TargetInfoDialog
 
-from modules.general_functions import delete_simulation_results
-
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import pyqtSignal
 
 from widgets.matplotlib.base import MatplotlibWidget
 
@@ -50,6 +50,9 @@ class _CompositionWidget(MatplotlibWidget):
     the layers of the target or the foil. This class should not be used
     as such.
     """
+    # Signal that is emitted when layers are modified
+    layers_changed = pyqtSignal()
+
     def __init__(self, parent, layers, icon_manager, foil_behaviour=False):
         """Initialize a CompositionWidget.
 
@@ -447,6 +450,8 @@ class _CompositionWidget(MatplotlibWidget):
         self.canvas.draw_idle()
         self.mpl_toolbar.update()
 
+        self.layers_changed.emit()
+
     def change_annotation_place(self, event):
         """
         If ylim has changed, replace the annotations
@@ -488,7 +493,7 @@ class TargetCompositionWidget(_CompositionWidget):
         _CompositionWidget.__init__(self, parent, target.layers,
                                     icon_manager)
 
-        self.layers = target.layers
+        self.target = target
         self.simulation = simulation
         self.canvas.manager.set_title("Target composition")
 
@@ -496,24 +501,30 @@ class TargetCompositionWidget(_CompositionWidget):
             "Name: " + target.name)
 
         self.parent.ui.editTargetInfoButton.clicked.connect(
-            lambda: self.edit_target_info(target))
+            self.edit_target_info)
+        self.layers_changed.connect(self._save_target)
 
-    def edit_target_info(self, target):
+    def edit_target_info(self):
         """
         Open a dialog to edit Target information.
         """
-        dialog = TargetInfoDialog(target)
+        dialog = TargetInfoDialog(self.target)
 
         if dialog.isOk:
-            old_target = os.path.join(self.simulation.directory, target.name
-                                      + ".target")
+            old_target = Path(self.simulation.directory,
+                              f"{self.target.name}.target")
             os.remove(old_target)
-            target.name = dialog.name
-            target.description = dialog.description
-            target_path = os.path.join(self.simulation.directory, target.name
-                                       + ".target")
-            target.to_file(target_path, None)
-            self.parent.ui.targetNameLabel.setText(target.name)
+            self.target.name = dialog.name
+            self.target.description = dialog.description
+            self.parent.ui.targetNameLabel.setText(self.target.name)
+            self._save_target()
+
+    def _save_target(self):
+        """Saves the Target object to a file.
+        """
+        target_path = Path(self.simulation.directory,
+                           f"{self.target.name}.target")
+        self.target.to_file(target_path, None)
 
 
 class FoilCompositionWidget(_CompositionWidget):
@@ -536,5 +547,4 @@ class FoilCompositionWidget(_CompositionWidget):
         _CompositionWidget.__init__(self, parent, foil.layers,
                                     icon_manager, foil_behaviour=True)
 
-        self.layers = foil.layers
         self.canvas.manager.set_title("Foil composition")

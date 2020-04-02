@@ -125,8 +125,7 @@ class TargetWidget(QtWidgets.QWidget):
         self.ui.targetRadioButton.setChecked(True)
         self.ui.stackedWidget.setCurrentIndex(0)
 
-        self.ui.saveButton.clicked.connect(lambda:
-                                           self.__save_target_and_recoils())
+        self.ui.saveButton.clicked.connect(self.__save_target_and_recoils)
 
         self.del_points = None
 
@@ -187,6 +186,10 @@ class TargetWidget(QtWidgets.QWidget):
         Save target and recoils every 1 minute.
         """
         while True:
+            # TODO it might be better to just save when something changes
+            #  instead of automatically doing it every 60 seconds. This might
+            #  cause a situation where files are being written or read at the
+            #  same time by different threads.
             if self.stop_saving:
                 break
             if self.target:

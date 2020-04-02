@@ -119,6 +119,10 @@ class MCERD:
         self.__create_mcerd_files()
 
         cmd = self.get_command()
+
+        # TODO if target has no layers, mcerd's current random number generator
+        #   might generate a NaN value, causing MCERD to stop immediately. This
+        #   could be handled better either by Potku or mcerd.
         self.__process = subprocess.Popen(cmd,
                                           shell=True)
 
