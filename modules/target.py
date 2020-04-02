@@ -47,8 +47,8 @@ class Target:
 
     def __init__(self, name="Default", modification_time=None,
                  description="", target_type="AFM", image_size=(1024, 1024),
-                 image_file="", scattering_element=Element.from_string(
-                "4He 3.0"), target_theta=20.5, layers=None):
+                 image_file="", scattering_element=None, target_theta=20.5,
+                 layers=None):
         """Initialize a target.
 
         Args:
@@ -71,7 +71,10 @@ class Target:
         self.target_type = target_type
         self.image_size = image_size
         self.image_file = image_file
-        self.scattering_element = scattering_element
+        if scattering_element is None:
+            self.scattering_element = Element.from_string("4He 3.0")
+        else:
+            self.scattering_element = scattering_element
         self.target_theta = target_theta
         if layers is None:
             layers = []

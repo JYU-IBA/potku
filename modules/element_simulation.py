@@ -609,7 +609,7 @@ class ElementSimulation(Observable):
         if not use_old_erd_files:
             self.__erd_filehandler.clear()
 
-        settings, target, run, detector = self.get_mcerd_params()
+        settings, run, detector = self.get_mcerd_params()
 
         # Set seed to either the value provided as parameter or use the one
         # stored in current element simulation.
@@ -649,7 +649,7 @@ class ElementSimulation(Observable):
             settings.update({
                 "seed_number": seed_number,
                 "beam": run.beam,
-                "target": target,
+                "target": self.target,
                 "detector": detector,
                 "recoil_element": recoil,
                 "sim_dir": self.directory
@@ -1054,7 +1054,7 @@ class ElementSimulation(Observable):
         else:
             channel_width = self.channel_width
 
-        _, target, run, detector = self.get_mcerd_params()
+        _, run, detector = self.get_mcerd_params()
 
         if fluence is not None:
             used_fluence = fluence
@@ -1064,7 +1064,7 @@ class ElementSimulation(Observable):
         espe_settings = {
             "beam": run.beam,
             "detector": detector,
-            "target": target,
+            "target": self.target,
             "ch": channel_width,
             "reference_density": recoil_element.reference_density,
             "multiplier": recoil_element.multiplier,
@@ -1088,15 +1088,13 @@ class ElementSimulation(Observable):
             settings = self.get_simulation_settings()
 
         if self.simulation.use_request_settings:
-            target = self.request.default_target
             run = self.request.default_run
             detector = self.request.default_detector
         else:
-            target = self.target
             run = self.run
             detector = self.detector
 
-        return settings, target, run, detector
+        return settings, run, detector
 
     def _get_optimization_files(self, optim_mode="recoil"):
         """Returns all files related to given optimization mode from the

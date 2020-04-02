@@ -291,7 +291,7 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
         #      to console
         # TODO either bind the value of ions to some variable or only show
         #      this when the simulation starts
-        settings, _, _, _ = self.element_simulation.get_mcerd_params()
+        settings, _, _ = self.element_simulation.get_mcerd_params()
         try:
             preions = settings["number_of_ions_in_presimu"] // process_count
             ions = settings["number_of_ions"] // process_count
