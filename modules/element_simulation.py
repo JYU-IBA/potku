@@ -109,7 +109,7 @@ class ElementSimulation(Observable):
                 "minimum_scattering_angle", "minimum_main_scattering_angle", \
                 "minimum_energy", "simulation_mode", "seed_number", \
                 "recoil_elements", "recoil_atoms", "mcerd_objects", \
-                "get_espe", "channel_width", "target", "detector", \
+                "get_espe", "channel_width", "detector", \
                 "settings", "espe_settings", "__erd_filehandler", \
                 "description", "run", "spectra", "name", \
                 "use_default_settings", "controls", "simulation", \
@@ -123,7 +123,7 @@ class ElementSimulation(Observable):
 
     def __init__(self, directory, request, recoil_elements,
                  simulation=None, name_prefix="", sample=None,
-                 target=None, detector=None, run=None, name="Default",
+                 detector=None, run=None, name="Default",
                  description="", modification_time=None,
                  simulation_type="ERD", number_of_ions=1000000,
                  number_of_preions=100000, number_of_scaling_ions=5,
@@ -140,7 +140,6 @@ class ElementSimulation(Observable):
             recoil_elements: List of RecoilElement objects.
             simulation: Simulation object.
             name_prefix: Prefix of the name, e.g. 55Mn
-            target: Target object reference.
             detector: Detector object reference.
             run: Run object reference.
             name: Name of the element simulation.
@@ -158,14 +157,13 @@ class ElementSimulation(Observable):
             minimum_energy: Minimum energy.
             channel_width: Channel width.
             sample: Sample object under which Element Simualtion belongs.
-            simulations_done: Whether any simulations have been run for this
             element simulation.
             main_recoil: Main recoil element.
             optimization_recoils: List or recoils that are used for
             optimization.
             optimized_fluence: Optimized fluence value.
             save_on_creation: Determines if the element simulation is saved to
-                              a file when initialized
+                    a file when initialized
         """
         # Call Observable's initialization to set up observer list
         super().__init__()
@@ -188,7 +186,6 @@ class ElementSimulation(Observable):
         else:
             self.main_recoil = main_recoil
 
-        self.target = target
         if detector:
             self.detector = detector
         else:
@@ -649,7 +646,7 @@ class ElementSimulation(Observable):
             settings.update({
                 "seed_number": seed_number,
                 "beam": run.beam,
-                "target": self.target,
+                "target": self.simulation.target,
                 "detector": detector,
                 "recoil_element": recoil,
                 "sim_dir": self.directory
@@ -1064,7 +1061,7 @@ class ElementSimulation(Observable):
         espe_settings = {
             "beam": run.beam,
             "detector": detector,
-            "target": self.target,
+            "target": self.simulation.target,
             "ch": channel_width,
             "reference_density": recoil_element.reference_density,
             "multiplier": recoil_element.multiplier,

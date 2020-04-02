@@ -162,17 +162,9 @@ class Simulations:
                     element_str_with_name = file.split(".")[0]
 
                     prefix, name = element_str_with_name.split("-")
-                    target_file_path = None
-                    measurement_file_path = None
                     profile_file_path = ""
 
                     for f in os.listdir(simulation.directory):
-                        if f.endswith(".target"):
-                            target_file_path = os.path.join(
-                                simulation.directory, f)
-                        if f.endswith(measurement_extension):
-                            measurement_file_path = os.path.join(
-                                simulation.directory, f)
                         if f.endswith(profile_extension) and f.startswith(
                                 prefix):
                             profile_file_path = os.path.join(
@@ -189,9 +181,6 @@ class Simulations:
                         simulation.element_simulations.append(
                             element_simulation)
                         element_simulation.run = simulation.run
-                        element_simulation.target = Target.from_file(
-                            target_file_path, measurement_file_path,
-                            self.request)
                         element_simulation.simulation = simulation
 
         # Create a new simulation
@@ -374,7 +363,6 @@ class Simulation(Logger):
                                                simulation=self,
                                                name_prefix=element_str,
                                                name=name,
-                                               target=self.target,
                                                detector=self.detector,
                                                recoil_elements=[recoil_element],
                                                run=self.run,
