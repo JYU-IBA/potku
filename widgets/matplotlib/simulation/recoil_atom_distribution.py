@@ -1026,12 +1026,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.current_recoil_element.reference_density) +
             str(self.current_recoil_element.multiplier)[1:] + " at./cm\xb3"
         )
+
         # Ypdate controls widget text
         if self.current_recoil_element is \
                 self.current_element_simulation.main_recoil:
             # TODO remove reference to controls from elem_sim
             self.current_element_simulation.controls.controls_group_box \
                 .setTitle(self.current_recoil_element.get_full_name())
+        else:
+            self.current_recoil_element.widgets[0].radio_button.setText(
+                self.current_recoil_element.get_full_name())
 
     def recoil_element_info_on_switch(self):
         """

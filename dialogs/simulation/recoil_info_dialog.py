@@ -109,7 +109,6 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         self.recoil_element = recoil_element
         self.element_simulation = element_simulation
 
-        self.__close = True
         self.tmp_color = QColor(self.recoil_element.color)
         self.colormap = colormap
 
@@ -140,38 +139,44 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
                                            "indicated in red.",
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
-            self.__close = False
-        else:
-            # If current recoil is used in a running simulation
-            if self.recoil_element is \
-                    self.element_simulation.recoil_elements[0]:
-                if self.element_simulation.mcerd_objects and self.name != \
-                        self.recoil_element.name:
-                    reply = QtWidgets.QMessageBox.question(
-                        self, "Recoil used in simulation",
-                        "This recoil is used in a simulation that is "
-                        "currently running.\nIf you change the name of "
-                        "the recoil, the running simulation will be "
-                        "stopped.\n\n"
-                        "Do you want to save changes anyway?",
-                        QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                        QtWidgets.QMessageBox.Cancel,
-                        QtWidgets.QMessageBox.Cancel)
-                    if reply == QtWidgets.QMessageBox.No or reply == \
-                            QtWidgets.QMessageBox.Cancel:
-                        self.__close = False
-                    else:
-                        self.element_simulation.stop()
-                        self.isOk = True
-                        self.__close = True
+            return
+
+        if self.name != self.recoil_element.name:
+            # Check that the new name is not already in use
+            if self.name in (r.name for r in
+                             self.element_simulation.recoil_elements):
+                QtWidgets.QMessageBox.critical(
+                    self, "Warning",
+                    "Name of the recoil element is "
+                    "already in use. Please use a "
+                    "different name",
+                    QtWidgets.QMessageBox.Ok,
+                    QtWidgets.QMessageBox.Ok)
+                return
+
+        # If current recoil is used in a running simulation
+        if self.recoil_element is \
+                self.element_simulation.recoil_elements[0]:
+            if self.element_simulation.mcerd_objects and self.name != \
+                    self.recoil_element.name:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Recoil used in simulation",
+                    "This recoil is used in a simulation that is "
+                    "currently running.\nIf you change the name of "
+                    "the recoil, the running simulation will be "
+                    "stopped.\n\n"
+                    "Do you want to save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel,
+                    QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    return
                 else:
-                    self.isOk = True
-                    self.__close = True
-            else:
-                self.isOk = True
-                self.__close = True
-        if self.__close:
-            self.close()
+                    self.element_simulation.stop()
+
+        self.isOk = True
+        self.close()
 
     def __change_color(self):
         """

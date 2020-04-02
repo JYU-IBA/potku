@@ -89,6 +89,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
         # TODO full name takes a bit too much room. They layout could use
         #   some fixing.
         self.radio_button.setText(self.recoil_element.get_full_name())
+        self.radio_button.setMaximumWidth(85)
 
         # Circle for showing the recoil color
         self.circle = Circle(color)
