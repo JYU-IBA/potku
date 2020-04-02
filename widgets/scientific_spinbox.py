@@ -121,10 +121,11 @@ class ScientificSpinBox(QtWidgets.QWidget):
         """
         value_str = self.ui.scientificLineEdit.text()
         try:
-            float(value_str)
+            value = float(value_str)
             if value_str.endswith('.'):
                 raise ValueError
             iv.set_input_field_white(self.ui.scientificLineEdit)
+            self.value = value
             return True
         except ValueError:
             iv.set_input_field_red(self.ui.scientificLineEdit)

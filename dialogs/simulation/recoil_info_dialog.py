@@ -31,7 +31,10 @@ __version__ = "2.0"
 import os
 import time
 
+import widgets.binding as bnd
 import widgets.input_validation as iv
+
+from widgets.gui_utils import QtABCMeta
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -40,10 +43,23 @@ from PyQt5.QtGui import QColor
 from widgets.scientific_spinbox import ScientificSpinBox
 
 
-class RecoilInfoDialog(QtWidgets.QDialog):
+class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
+                       metaclass=QtABCMeta):
     """Dialog for editing the name, description and reference density
     of a recoil element.
     """
+    # TODO possibly track name changes
+    name = bnd.bind("nameLineEdit")
+    description = bnd.bind("descriptionLineEdit")
+    reference_density = bnd.bind("scientific_spinbox")
+
+    @property
+    def multiplier(self):
+        return self.scientific_spinbox.multiplier
+
+    @property
+    def color(self):
+        return self.tmp_color.name()
 
     def __init__(self, recoil_element, colormap, element_simulation):
         """Inits a recoil info dialog.
@@ -54,53 +70,46 @@ class RecoilInfoDialog(QtWidgets.QDialog):
             element_simulation: Element simulation that has the recoil element.
         """
         super().__init__()
-        self.__ui = uic.loadUi(os.path.join("ui_files",
-                                            "ui_recoil_info_dialog.ui"),
-                               self)
+        uic.loadUi(os.path.join("ui_files", "ui_recoil_info_dialog.ui"), self)
 
-        self.__ui.okPushButton.clicked.connect(self.__accept_settings)
-        self.__ui.cancelPushButton.clicked.connect(self.close)
-        self.__ui.colorPushButton.clicked.connect(self.__change_color)
+        self.okPushButton.clicked.connect(self.__accept_settings)
+        self.cancelPushButton.clicked.connect(self.close)
+        self.colorPushButton.clicked.connect(self.__change_color)
 
-        iv.set_input_field_red(self.__ui.nameLineEdit)
+        iv.set_input_field_red(self.nameLineEdit)
         self.text_is_valid = True
-        self.__ui.nameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.__ui.nameLineEdit, self))
+        self.nameLineEdit.textChanged.connect(
+            lambda: self.__check_text(self.nameLineEdit, self))
 
         self.name = recoil_element.name
-        self.__ui.nameLineEdit.setText(recoil_element.name)
-        self.__ui.descriptionLineEdit.setPlainText(
-            recoil_element.description)
-
+        self.description = recoil_element.description
         value = recoil_element.reference_density
         multiplier = recoil_element.multiplier
-        self.__scientific_spinbox = ScientificSpinBox(value, multiplier,
-                                                            0.01, 99.99e22)
-        self.__ui.formLayout.insertRow(4, QtWidgets.QLabel(r"Reference "
-                                                           "density "
-                                                           "[at./cm"
-                                                           "<sup>3</sup>]:"),
-                                       self.__scientific_spinbox)
-        self.__ui.formLayout.removeRow(self.__ui.widget)
+        self.scientific_spinbox = ScientificSpinBox(value, multiplier,
+                                                    0.01, 99.99e22)
+        self.formLayout.insertRow(
+            4,
+            QtWidgets.QLabel(r"Reference density [at./cm<sup>3</sup>]:"),
+            self.scientific_spinbox)
+        self.formLayout.removeRow(self.widget)
 
         self.description = recoil_element.description
         self.isOk = False
 
-        self.__ui.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+        self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             recoil_element.modification_time)))
 
-        self.__ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+        self.nameLineEdit.textEdited.connect(lambda: self.__validate())
 
         title = f"Recoil element: " \
                 f"{recoil_element.element.get_prefix()}"
 
-        self.__ui.infoGroupBox.setTitle(title)
+        self.infoGroupBox.setTitle(title)
 
         self.recoil_element = recoil_element
         self.element_simulation = element_simulation
 
         self.__close = True
-        self.color = None
         self.tmp_color = QColor(self.recoil_element.color)
         self.colormap = colormap
 
@@ -115,7 +124,7 @@ class RecoilInfoDialog(QtWidgets.QDialog):
         Return:
             True or False.
         """
-        if self.__scientific_spinbox.check_min_and_max():
+        if self.scientific_spinbox.check_min_and_max():
             return True
         return False
 
@@ -137,7 +146,7 @@ class RecoilInfoDialog(QtWidgets.QDialog):
             if self.recoil_element is \
                     self.element_simulation.recoil_elements[0]:
                 if self.element_simulation.mcerd_objects and self.name != \
-                        self.__ui.nameLineEdit.text():
+                        self.recoil_element.name:
                     reply = QtWidgets.QMessageBox.question(
                         self, "Recoil used in simulation",
                         "This recoil is used in a simulation that is "
@@ -152,26 +161,17 @@ class RecoilInfoDialog(QtWidgets.QDialog):
                             QtWidgets.QMessageBox.Cancel:
                         self.__close = False
                     else:
-                        self.element_simulation.controls.stop_simulation()
-                        self.__update_values()
+                        self.element_simulation.stop()
+                        self.isOk = True
+                        self.__close = True
                 else:
-                    self.__update_values()
+                    self.isOk = True
+                    self.__close = True
             else:
-                self.__update_values()
+                self.isOk = True
+                self.__close = True
         if self.__close:
             self.close()
-
-    def __update_values(self):
-        """
-        Update values in the dialog to be accessed outside of the dialog.
-        """
-        self.name = self.__ui.nameLineEdit.text()
-        self.description = self.__ui.descriptionLineEdit.toPlainText()
-        self.reference_density = self.__scientific_spinbox.value
-        self.multiplier = self.__scientific_spinbox.multiplier
-        self.color = self.tmp_color.name()
-        self.isOk = True
-        self.__close = True
 
     def __change_color(self):
         """
@@ -198,12 +198,12 @@ class RecoilInfoDialog(QtWidgets.QDialog):
             text_color = "white"
         style = "background-color: {0}; color: {1};".format(
             self.tmp_color.name(), text_color)
-        self.__ui.colorPushButton.setStyleSheet(style)
+        self.colorPushButton.setStyleSheet(style)
 
         if self.tmp_color.name() == self.colormap[element]:
-            self.__ui.colorPushButton.setText("Automatic [{0}]".format(element))
+            self.colorPushButton.setText("Automatic [{0}]".format(element))
         else:
-            self.__ui.colorPushButton.setText("")
+            self.colorPushButton.setText("")
 
     @staticmethod
     def __check_text(input_field, settings):
@@ -221,7 +221,7 @@ class RecoilInfoDialog(QtWidgets.QDialog):
         Args:
             element: String representing element.
         """
-        self.__ui.colorPushButton.setEnabled(True)
+        self.colorPushButton.setEnabled(True)
         self.tmp_color = QColor(self.recoil_element.color)
         self.__change_color_button_color(element)
 
@@ -229,8 +229,8 @@ class RecoilInfoDialog(QtWidgets.QDialog):
         """
         Validate the recoil name.
         """
-        text = self.__ui.nameLineEdit.text()
+        text = self.name
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
         valid_text = iv.validate_text_input(text, regex)
 
-        self.__ui.nameLineEdit.setText(valid_text)
+        self.name = valid_text

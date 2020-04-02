@@ -28,6 +28,8 @@ import os
 import abc
 import json
 
+from widgets.scientific_spinbox import ScientificSpinBox
+
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
 from PyQt5.QtCore import QTime
@@ -55,7 +57,8 @@ _DEFAULT_GETTERS = {
     QtWidgets.QTextEdit: lambda qobj: qobj.toPlainText(),
     QtWidgets.QCheckBox: lambda qobj: qobj.isChecked(),
     QtWidgets.QLabel: lambda qobj: qobj.text(),
-    QtWidgets.QPlainTextEdit: lambda qobj: qobj.toPlainText()
+    QtWidgets.QPlainTextEdit: lambda qobj: qobj.toPlainText(),
+    ScientificSpinBox: lambda qobj: qobj.value
 }
 
 _DEFAULT_SETTERS = {
@@ -66,7 +69,9 @@ _DEFAULT_SETTERS = {
     QtWidgets.QTextEdit: lambda qobj, txt: qobj.setText(txt),
     QtWidgets.QCheckBox: lambda qobj, b: qobj.setChecked(b),
     QtWidgets.QLabel: lambda qobj, txt: qobj.setText(txt),
-    QtWidgets.QPlainTextEdit: lambda qobj, txt: qobj.setPlainText(txt)
+    QtWidgets.QPlainTextEdit: lambda qobj, txt: qobj.setPlainText(txt),
+    ScientificSpinBox: lambda qobj, value:
+        qobj.ui.scientificLineEdit.setText(str(value))
 }
 
 

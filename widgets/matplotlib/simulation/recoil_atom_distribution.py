@@ -619,11 +619,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         dialog = RecoilInfoDialog(self.current_recoil_element, self.colormap,
                                   self.current_element_simulation)
         if dialog.isOk:
-            new_values = {"name": dialog.name,
-                          "description": dialog.description,
-                          "reference_density": dialog.reference_density,
-                          "color": dialog.color,
-                          "multiplier": dialog.multiplier}
+            new_values = dialog.get_properties()
             try:
                 old_recoil_name = self.current_recoil_element.name
                 self.current_element_simulation.update_recoil_element(

@@ -26,13 +26,15 @@ __version__ = ""  # TODO
 
 import unittest
 import sys
+import warnings
 
+import tests.utils as utils
 import numpy as np
 
 import widgets.binding as bnd
 import widgets.gui_utils as gutils
 
-from widgets.binding import PropertyBindingWidget
+from widgets.scientific_spinbox import ScientificSpinBox
 
 from PyQt5.QtWidgets import QApplication
 from PyQt5.QtCore import QTime
@@ -51,6 +53,7 @@ class BWidget(QtWidgets.QWidget, bnd.PropertyBindingWidget,
     lab = bnd.bind("label")
     pla = bnd.bind("plaintext")
     not2way = bnd.bind("not2waySpinBox", twoway=False)
+    sci = bnd.bind("scibox")
 
     def __init__(self):
         super().__init__()
@@ -62,11 +65,18 @@ class BWidget(QtWidgets.QWidget, bnd.PropertyBindingWidget,
         self.label = QtWidgets.QLabel()
         self.plaintext = QtWidgets.QPlainTextEdit()
         self.not2waySpinBox = QtWidgets.QSpinBox()
+        self.scibox = ScientificSpinBox(0, 1, 0, 10)
 
 
 class TestBinding(unittest.TestCase):
+    @utils.change_wd_to_root
     def setUp(self):
-        self.widget = BWidget()
+        with warnings.catch_warnings():
+            # PyQt triggers a DeprecationWarning when loading an ui file.
+            # Suppress the it so the test output does not get cluttered by
+            # unnecessary warnings.
+            warnings.simplefilter("ignore")
+            self.widget = BWidget()
 
     def test_getproperties(self):
         self.assertEqual(
@@ -78,7 +88,8 @@ class TestBinding(unittest.TestCase):
                 "che": False,
                 "pla": "",
                 "lab": "",
-                "not2way": 0
+                "not2way": 0,
+                "sci": 0
             }, self.widget.get_properties()
         )
 
@@ -109,7 +120,8 @@ class TestBinding(unittest.TestCase):
                 "che": False,
                 "pla": "",
                 "lab": "",
-                "not2way": 0
+                "not2way": 0,
+                "sci": 0
             }, self.widget.get_properties()
         )
 
@@ -122,12 +134,14 @@ class TestBinding(unittest.TestCase):
             "che": True,
             "pla": "",
             "lab": "",
-            "not2way": 0
+            "not2way": 0,
+            "sci": 0
         }, self.widget.get_properties())
 
         # Setting the not2way changes nothing as well as setting tim to
         # unsuitable type
-        self.widget.set_properties(pla="foo", lab="bar", not2way=7, tim="foo")
+        self.widget.set_properties(pla="foo", lab="bar", not2way=7,
+                                   tim="foo", sci=1)
         self.assertEqual({
             "foo": 3,
             "bar": 4.5,
@@ -136,7 +150,8 @@ class TestBinding(unittest.TestCase):
             "che": True,
             "pla": "foo",
             "lab": "bar",
-            "not2way": 0
+            "not2way": 0,
+            "sci": 1
         }, self.widget.get_properties())
 
 
