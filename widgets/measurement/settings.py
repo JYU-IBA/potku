@@ -29,12 +29,12 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import copy
-import modules.masses as masses
-import os
 import time
 
 import widgets.input_validation as iv
+import modules.masses as masses
 
+from pathlib import Path
 from modules.element import Element
 
 from PyQt5 import QtWidgets
@@ -53,18 +53,17 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         Initializes the widget.
 
         Args:
-            obj: Object that uses these settings.
+            obj: object that uses these settings, either a Measurement or a
+                Simulation.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_measurement_settings_tab.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_measurement_settings_tab.ui"), self)
         self.obj = obj
 
-        iv.set_input_field_red(self.ui.nameLineEdit)
+        iv.set_input_field_red(self.nameLineEdit)
         self.fields_are_valid = False
-        self.ui.nameLineEdit.textChanged.connect(lambda: self.check_text(
-            self.ui.nameLineEdit, self))
+        self.nameLineEdit.textChanged.connect(lambda: self.check_text(
+            self.nameLineEdit, self))
 
         locale = QLocale.c()
 
@@ -83,18 +82,18 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.detectorFiiDoubleSpinBox.setLocale(locale)
         self.targetFiiDoubleSpinBox.setLocale(locale)
 
-        run_object = self.obj.run
-        if not run_object:
-            run_object = self.obj.request.default_run
+        # Copy of measurement's/simulation's run or default run
+        # TODO should default run also be copied?
+        if not self.obj.run:
+            self.tmp_run = self.obj.request.default_run
+        else:
+            self.tmp_run = copy.deepcopy(self.obj.run)
 
-        self.tmp_run = copy.deepcopy(run_object)  # Copy of measurement's run
-        #  or default run
-
-        self.ui.isotopeInfoLabel.setVisible(False)
+        self.isotopeInfoLabel.setVisible(False)
 
         self.show_settings()
 
-        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+        self.nameLineEdit.textEdited.connect(lambda: self.__validate())
 
         self.clipboard = QGuiApplication.clipboard()
         self.ratio_str = self.clipboard.text()
@@ -123,13 +122,13 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         Show measurement settings.
         """
         if self.tmp_run.beam.ion:
-            self.ui.beamIonButton.setText(
+            self.beamIonButton.setText(
                 self.tmp_run.beam.ion.symbol)
             # TODO Check that the isotope is also set.
             self.isotopeComboBox.setEnabled(True)
 
             masses.load_isotopes(self.tmp_run.beam.ion.symbol,
-                                 self.ui.isotopeComboBox,
+                                 self.isotopeComboBox,
                                  str(self.tmp_run.beam.ion.isotope))
         else:
             self.beamIonButton.setText("Select")
@@ -348,11 +347,11 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         """
         Validate the measurement settings file name.
         """
-        text = self.ui.nameLineEdit.text()
+        text = self.nameLineEdit.text()
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
         valid_text = iv.validate_text_input(text, regex)
 
-        self.ui.nameLineEdit.setText(valid_text)
+        self.nameLineEdit.setText(valid_text)
 
     def __multiply_fluence(self):
         """

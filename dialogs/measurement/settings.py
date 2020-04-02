@@ -83,16 +83,16 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.measurement)
         self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
-        self.measurement_settings_widget.ui.picture.setScaledContents(True)
+        self.measurement_settings_widget.picture.setScaledContents(True)
         pixmap = QtGui.QPixmap(os.path.join("images",
                                             "measurement_setup_angles.png"))
-        self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
+        self.measurement_settings_widget.picture.setPixmap(pixmap)
 
-        self.measurement_settings_widget.ui.beamIonButton.clicked.connect(
+        self.measurement_settings_widget.beamIonButton.clicked.connect(
             lambda: df.change_element(
                 self,
-                self.measurement_settings_widget.ui.beamIonButton,
-                self.measurement_settings_widget.ui.isotopeComboBox))
+                self.measurement_settings_widget.beamIonButton,
+                self.measurement_settings_widget.isotopeComboBox))
 
         # Add detector settings view to the settings view
         if self.measurement.detector:
@@ -107,12 +107,12 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
 
         if self.measurement.detector is not None:
             self.ui.defaultSettingsCheckBox.setCheckState(0)
-            self.measurement_settings_widget.ui.nameLineEdit.setText(
+            self.measurement_settings_widget.nameLineEdit.setText(
                 self.measurement.measurement_setting_file_name)
-            self.measurement_settings_widget.ui.descriptionPlainTextEdit \
+            self.measurement_settings_widget.descriptionPlainTextEdit \
                 .setPlainText(
                     self.measurement.measurement_setting_file_description)
-            self.measurement_settings_widget.ui.dateLabel.setText(time.strftime(
+            self.measurement_settings_widget.dateLabel.setText(time.strftime(
                 "%c %z %Z", time.localtime(self.measurement.modification_time)))
 
         # Add profile settings view to the settings view
@@ -142,15 +142,15 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
     def enabled_element_information(self):
         """ Change the UI accordingly when an element is selected.
         """
-        self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(True)
-        self.measurement_settings_widget.ui.isotopeLabel.setEnabled(True)
+        self.measurement_settings_widget.isotopeComboBox.setEnabled(True)
+        self.measurement_settings_widget.isotopeLabel.setEnabled(True)
         self.ui.OKButton.setEnabled(True)
 
     def __update_parameters(self):
         """ Update Measurement's Run, Detector and Target objects. If measurement
          specific parameters are in use, save them into a file.
         """
-        if self.measurement_settings_widget.ui.isotopeComboBox.currentIndex()\
+        if self.measurement_settings_widget.isotopeComboBox.currentIndex()\
                 == -1:
             QtWidgets.QMessageBox.critical(self, "Warning",
                                            "No isotope selected.\n\nPlease "

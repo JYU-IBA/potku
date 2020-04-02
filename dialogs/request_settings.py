@@ -84,16 +84,16 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_measurement)
         self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
-        self.measurement_settings_widget.ui.beamIonButton.clicked.connect(
+        self.measurement_settings_widget.beamIonButton.clicked.connect(
             lambda: df.change_element(
                 self,
-                self.measurement_settings_widget.ui.beamIonButton,
-                self.measurement_settings_widget.ui.isotopeComboBox))
+                self.measurement_settings_widget.beamIonButton,
+                self.measurement_settings_widget.isotopeComboBox))
 
-        self.measurement_settings_widget.ui.picture.setScaledContents(True)
+        self.measurement_settings_widget.picture.setScaledContents(True)
         pixmap = QtGui.QPixmap(os.path.join("images",
                                             "measurement_setup_angles.png"))
-        self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
+        self.measurement_settings_widget.picture.setPixmap(pixmap)
 
         # Add detector settings view to the settings view
         self.detector_settings_widget = DetectorSettingsWidget(
@@ -172,7 +172,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         """Reads values from Request Settings dialog and updates them in
         default objects.
         """
-        if self.measurement_settings_widget.ui.isotopeComboBox.currentIndex()\
+        if self.measurement_settings_widget.isotopeComboBox.currentIndex()\
                 == -1:
             QtWidgets.QMessageBox.critical(self, "Warning",
                                            "No isotope selected.\n\nPlease "
@@ -486,6 +486,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         """
         Change the UI accordingly when an element is selected.
         """
-        self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(True)
-        self.measurement_settings_widget.ui.isotopeLabel.setEnabled(True)
+        self.measurement_settings_widget.isotopeComboBox.setEnabled(True)
+        self.measurement_settings_widget.isotopeLabel.setEnabled(True)
         self.ui.OKButton.setEnabled(True)

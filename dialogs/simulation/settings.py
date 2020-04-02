@@ -86,16 +86,16 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.simulation)
         self.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
-        self.measurement_settings_widget.ui.picture.setScaledContents(True)
+        self.measurement_settings_widget.picture.setScaledContents(True)
         pixmap = QtGui.QPixmap(os.path.join("images",
                                             "measurement_setup_angles.png"))
-        self.measurement_settings_widget.ui.picture.setPixmap(pixmap)
+        self.measurement_settings_widget.picture.setPixmap(pixmap)
 
-        self.measurement_settings_widget.ui.beamIonButton.clicked.connect(
+        self.measurement_settings_widget.beamIonButton.clicked.connect(
             lambda: df.change_element(
                 self,
-                self.measurement_settings_widget.ui.beamIonButton,
-                self.measurement_settings_widget.ui.isotopeComboBox))
+                self.measurement_settings_widget.beamIonButton,
+                self.measurement_settings_widget.isotopeComboBox))
 
         # Add detector settings view to the settings view
         detector_object = self.simulation.detector
@@ -114,9 +114,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
         self.use_request_settings = self.simulation.use_request_settings
 
-        self.measurement_settings_widget.ui.nameLineEdit.setText(
+        self.measurement_settings_widget.nameLineEdit.setText(
             self.simulation.measurement_setting_file_name)
-        self.measurement_settings_widget.ui.descriptionPlainTextEdit \
+        self.measurement_settings_widget.descriptionPlainTextEdit \
             .setPlainText(
                 self.simulation.measurement_setting_file_description)
         self.measurement_settings_widget.dateLabel.setText(time.strftime(
@@ -147,8 +147,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         """
         Change the UI accordingly when an element is selected.
         """
-        self.measurement_settings_widget.ui.isotopeComboBox.setEnabled(True)
-        self.measurement_settings_widget.ui.isotopeLabel.setEnabled(True)
+        self.measurement_settings_widget.isotopeComboBox.setEnabled(True)
+        self.measurement_settings_widget.isotopeLabel.setEnabled(True)
         self.OKButton.setEnabled(True)
 
     def __update_parameters(self):
@@ -156,7 +156,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
          Update Simulation's Run, Detector and Target objects. If simulation
          specific parameters are in use, save them into a file.
         """
-        if self.measurement_settings_widget.ui.isotopeComboBox.currentIndex()\
+        if self.measurement_settings_widget.isotopeComboBox.currentIndex()\
                 == -1:
             QtWidgets.QMessageBox.critical(self, "Warning",
                                            "No isotope selected.\n\nPlease "
