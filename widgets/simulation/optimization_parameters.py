@@ -120,12 +120,10 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
 
     # Recoil specific properties
     upper_limits = bnd.multi_bind(
-        ("upperXDoubleSpinBox", "upperYDoubleSpinBox"),
-        (float, float)
+        ("upperXDoubleSpinBox", "upperYDoubleSpinBox")
     )
     lower_limits = bnd.multi_bind(
-        ("lowerXDoubleSpinBox", "lowerYDoubleSpinBox"),
-        (float, float)
+        ("lowerXDoubleSpinBox", "lowerYDoubleSpinBox")
     )
     # sol_size values are unique (5, 7, 9 or 11) so they can be used in
     # two-way binding

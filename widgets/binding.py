@@ -359,23 +359,29 @@ def bind(attr_name, fget=None, fset=None, twoway=True,
     return TrackingProperty(getter, setter, attr_name=prop_name_)
 
 
-def multi_bind(qobjs, funcs, twoway=True):
+def multi_bind(attrs, fget=None, fset=None, twoway=True):
     # TODO refactor this with bind
     # TODO enable twoway binding with combobox
     def getter(instance):
-        return tuple(
-            conv(_fget(instance, qobj))
-            for qobj, conv in zip(qobjs, funcs)
-        )
+        if fget is None:
+            return tuple(
+                _fget(instance, attr)
+                for attr in attrs
+            )
+        else:
+            return fget(instance, attrs)
 
     if not twoway:
         return TrackingProperty(getter)
 
     def setter(instance, values):
-        for qobj, value in zip(qobjs, values):
-            try:
-                _fset(instance, qobj, value)
-            except TypeError:
-                pass
+        if fset is None:
+            for attr, value in zip(attrs, values):
+                try:
+                    _fset(instance, attr, value)
+                except TypeError:
+                    pass
+        else:
+            fset(instance, attrs, values)
 
     return TrackingProperty(getter, setter)

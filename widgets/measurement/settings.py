@@ -31,11 +31,13 @@ __version__ = "2.0"
 import copy
 import time
 
+import widgets.binding as bnd
 import widgets.input_validation as iv
 import modules.masses as masses
 
 from pathlib import Path
 from modules.element import Element
+from widgets.gui_utils import QtABCMeta
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -44,9 +46,24 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QGuiApplication
 
 
-class MeasurementSettingsWidget(QtWidgets.QWidget):
+class MeasurementSettingsWidget(QtWidgets.QWidget,
+                                bnd.PropertyTrackingWidget,
+                                metaclass=QtABCMeta):
     """Class for creating a measurement settings tab.
     """
+    run_energy = bnd.bind("energyDoubleSpinBox")
+    run_energy_distribution = bnd.bind("energyDistDoubleSpinBox")
+
+    beam_charge = bnd.bind("beamChargeSpinBox")
+    beam_spot_size = bnd.multi_bind(["spotSizeXdoubleSpinBox",
+                                    "spotSizeYdoubleSpinBox"])
+    beam_divergence = bnd.bind("divergenceDoubleSpinBox")
+    beam_profile = bnd.bind("profileComboBox")
+
+    run_fluence = bnd.bind("fluenceDoubleSpinBox")
+    run_current = bnd.bind("currentDoubleSpinBox")
+    run_time = bnd.bind("timeDoubleSpinBox")
+    run_charge = bnd.bind("runChargeDoubleSpinBox")
 
     def __init__(self, obj):
         """
@@ -93,7 +110,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
 
         self.show_settings()
 
-        self.nameLineEdit.textEdited.connect(lambda: self.__validate())
+        self.nameLineEdit.textEdited.connect(self.__validate)
 
         self.clipboard = QGuiApplication.clipboard()
         self.ratio_str = self.clipboard.text()
@@ -107,7 +124,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.fluenceDoubleSpinBox.addAction(self.actionMultiply)
 
         self.actionUndo = QtWidgets.QAction(self.fluenceDoubleSpinBox)
-        self.actionUndo.setText("Undo multipy")
+        self.actionUndo.setText("Undo multiply")
         self.actionUndo.triggered.connect(self.__undo_fluence)
         if self.tmp_run.previous_fluence:
             self.actionUndo.setEnabled(True)
@@ -116,6 +133,10 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
         self.fluenceDoubleSpinBox.addAction(self.actionUndo)
 
         self.energyDoubleSpinBox.setToolTip("Energy set in MeV with .")
+
+    def get_original_property_values(self):
+        # TODO
+        return {}
 
     def show_settings(self):
         """
@@ -141,33 +162,22 @@ class MeasurementSettingsWidget(QtWidgets.QWidget):
             self.obj.measurement_setting_file_description)
         self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             self.obj.modification_time)))
-        self.energyDoubleSpinBox.setValue(
-            self.tmp_run.beam.energy)
-        self.energyDistDoubleSpinBox.setValue(
-            self.tmp_run.beam.energy_distribution)
-        self.beamChargeSpinBox.setValue(
-            self.tmp_run.beam.charge)
-        self.spotSizeXdoubleSpinBox.setValue(
-            self.tmp_run.beam.spot_size[0])
-        self.spotSizeYdoubleSpinBox.setValue(
-            self.tmp_run.beam.spot_size[1])
-        self.divergenceDoubleSpinBox.setValue(
-            self.tmp_run.beam.divergence)
-        self.profileComboBox.setCurrentIndex(
-            self.profileComboBox.findText(
-                self.tmp_run.beam.profile))
-        self.fluenceDoubleSpinBox.setValue(
-            self.tmp_run.fluence)
-        self.currentDoubleSpinBox.setValue(
-            self.tmp_run.current)
-        self.timeDoubleSpinBox.setValue(
-            self.tmp_run.time)
-        self.runChargeDoubleSpinBox.setValue(self.tmp_run.charge)
+
+        run_params = {
+            f"run_{key}": value
+            for key, value in self.tmp_run.get_setting_parameters().items()
+        }
+        bean_params = {
+            f"beam_{key}": value
+            for key, value in self.tmp_run.beam.get_setting_parameters().items()
+        }
+        self.set_properties(**run_params, **bean_params)
 
         detector_object = self.obj.detector
         target_object = self.obj.target
         if not detector_object:  # Detector is an indicator whether default
             # settings should be used.
+            # TODO not anymore
             detector_object = self.obj.request.default_detector
             target_object = self.obj.request.default_target
         self.targetThetaDoubleSpinBox.setValue(

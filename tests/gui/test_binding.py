@@ -155,6 +155,36 @@ class TestBinding(unittest.TestCase):
         }, self.widget.get_properties())
 
 
+class Multibinder:
+    foo = bnd.multi_bind(["xbox", "ybox", "zbox"])
+
+    def __init__(self):
+        self.xbox = QtWidgets.QSpinBox()
+        self.ybox = QtWidgets.QLabel()
+        self.zbox = QtWidgets.QPlainTextEdit()
+
+
+class TestMultibinding(unittest.TestCase):
+    def setUp(self):
+        self.mb = Multibinder()
+
+    def test_multibinding(self):
+        self.mb.foo = 1, "bar", "baz"
+        self.assertEqual(self.mb.xbox.value(), 1)
+        self.assertEqual(self.mb.ybox.text(), "bar")
+        self.assertEqual(self.mb.zbox.toPlainText(), "baz")
+
+        self.mb.xbox.setValue(2)
+        self.assertEqual((2, "bar", "baz"), self.mb.foo)
+
+    def test_bad_inputs(self):
+        self.mb.foo = "test", "test", "test"
+        self.assertEqual((0, "test", "test"), self.mb.foo)
+
+        self.mb.foo = 2, "test", True
+        self.assertEqual((2, "test", "test"), self.mb.foo)
+
+
 class TestTrackingProperties(unittest.TestCase):
     """For simplicity, these tests always use getattr and setattr as getter
     and setter.

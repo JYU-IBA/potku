@@ -69,3 +69,9 @@ class Beam:
             f"Beam ion: {self.ion.get_prefix()}",
             f"Beam energy: {self.energy} MeV"
         ]
+
+    def get_setting_parameters(self):
+        d = dict(vars(self))
+        d.pop("ion")
+        return d
+

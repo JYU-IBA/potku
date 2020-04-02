@@ -78,7 +78,7 @@ class Run:
             "time": self.time
         }
         beam_obj = {
-            "ion": self.beam.ion.__str__(),
+            "ion": str(self.beam.ion),
             "energy": self.beam.energy,
             "charge": self.beam.charge,
             "energy_distribution": self.beam.energy_distribution,
@@ -116,23 +116,21 @@ class Run:
         with open(measurement_file_path) as mesu:
             obj = json.load(mesu)
         run = obj["run"]
+        run.pop("time")
+
         beam = obj["beam"]
 
-        fluence = float(run["fluence"])
-        current = float(run["current"])
-        charge = float(run["charge"])
-        time = int(run["time"])
+        ion = Element.from_string(beam.pop("ion"))
+        spot_size = tuple(beam.pop("spot_size"))
 
-        ion = Element.from_string(beam["ion"])
-        energy = beam["energy"]
-        b_charge = beam["charge"]
-        energy_distribution = beam["energy_distribution"]
-        spot_size = tuple(beam["spot_size"])
-        divergence = beam["divergence"]
-        profile = beam["profile"]
+        beam_object = Beam(ion=ion, spot_size=spot_size, **beam)
 
-        beam_object = Beam(ion, energy, b_charge, energy_distribution,
-                           spot_size, divergence, profile)
+        return cls(beam=beam_object, **run)
 
-        return cls(beam=beam_object, fluence=fluence, current=current,
-                   charge=charge, run_time=time)
+    def get_setting_parameters(self):
+        d = dict(vars(self))
+        d.pop("previous_fluence")
+        d.pop("beam")
+        return d
+
+
