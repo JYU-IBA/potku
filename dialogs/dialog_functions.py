@@ -203,15 +203,15 @@ def change_element(qdialog, button, combo_box):
 
         # Check if no isotopes
         if combo_box.count() == 0:
-            qdialog.measurement_settings_widget.ui.isotopeInfoLabel \
+            qdialog.measurement_settings_widget.isotopeInfoLabel \
                 .setVisible(True)
             qdialog.measurement_settings_widget.fields_are_valid = False
             gf.set_input_field_red(combo_box)
         else:
-            qdialog.measurement_settings_widget.ui.isotopeInfoLabel \
+            qdialog.measurement_settings_widget.isotopeInfoLabel \
                 .setVisible(False)
             qdialog.measurement_settings_widget.check_text(
-                qdialog.measurement_settings_widget.ui.nameLineEdit,
+                qdialog.measurement_settings_widget.nameLineEdit,
                 qdialog.measurement_settings_widget)
             combo_box.setStyleSheet("background-color: %s" % "None")
 

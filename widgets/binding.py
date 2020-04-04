@@ -166,6 +166,7 @@ class PropertyTrackingWidget(PropertyBindingWidget, abc.ABC):
         The purpose of this function is to provide a dictionary for a
         TrackingProperty to store values.
         """
+        # TODO make this an underscore method
         pass
 
     def are_values_changed(self):
@@ -359,7 +360,7 @@ def bind(attr_name, fget=None, fset=None, twoway=True,
     return TrackingProperty(getter, setter, attr_name=prop_name_)
 
 
-def multi_bind(attrs, fget=None, fset=None, twoway=True):
+def multi_bind(attrs, fget=None, fset=None, twoway=True, track_change=False):
     # TODO refactor this with bind
     # TODO enable twoway binding with combobox
     def getter(instance):
@@ -384,4 +385,11 @@ def multi_bind(attrs, fget=None, fset=None, twoway=True):
         else:
             fset(instance, attrs, values)
 
-    return TrackingProperty(getter, setter)
+    if track_change:
+        attrs_ = tuple(attrs)
+    else:
+        attrs_ = None
+
+    return TrackingProperty(getter, setter, attr_name=attrs_)
+
+

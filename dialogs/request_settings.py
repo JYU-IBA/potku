@@ -157,9 +157,13 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         changed in regards to running simulations again.
 
         Return:
-
             True or False.
         """
+        # TODO tmp testing print
+        print("TEST",
+              self.measurement_settings_widget.are_values_changed(),
+              self.measurement_settings_widget.values_changed() ==
+              self.measurement_settings_widget.are_values_changed())
         if self.measurement_settings_widget.values_changed():
             return True
         if self.detector_settings_widget.values_changed():

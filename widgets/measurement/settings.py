@@ -51,19 +51,26 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
                                 metaclass=QtABCMeta):
     """Class for creating a measurement settings tab.
     """
-    run_energy = bnd.bind("energyDoubleSpinBox")
-    run_energy_distribution = bnd.bind("energyDistDoubleSpinBox")
+    measurement_setting_file_name = bnd.bind("nameLineEdit")
+    measurement_setting_file_description = bnd.bind("descriptionPlainTextEdit")
 
+    beam_energy = bnd.bind("energyDoubleSpinBox", track_change=True)
+    beam_energy_distribution = bnd.bind("energyDistDoubleSpinBox",
+                                        track_change=True)
     beam_charge = bnd.bind("beamChargeSpinBox")
     beam_spot_size = bnd.multi_bind(["spotSizeXdoubleSpinBox",
-                                    "spotSizeYdoubleSpinBox"])
-    beam_divergence = bnd.bind("divergenceDoubleSpinBox")
-    beam_profile = bnd.bind("profileComboBox")
+                                    "spotSizeYdoubleSpinBox"],
+                                    track_change=True)
+    beam_divergence = bnd.bind("divergenceDoubleSpinBox", track_change=True)
+    beam_profile = bnd.bind("profileComboBox", track_change=True)
 
     run_fluence = bnd.bind("fluenceDoubleSpinBox")
     run_current = bnd.bind("currentDoubleSpinBox")
     run_time = bnd.bind("timeDoubleSpinBox")
     run_charge = bnd.bind("runChargeDoubleSpinBox")
+
+    target_theta = bnd.bind("targetThetaDoubleSpinBox", track_change=True)
+    detector_theta = bnd.bind("detectorThetaDoubleSpinBox", track_change=True)
 
     def __init__(self, obj):
         """
@@ -76,6 +83,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         super().__init__()
         uic.loadUi(Path("ui_files", "ui_measurement_settings_tab.ui"), self)
         self.obj = obj
+        self.__original_property_values = {}
 
         iv.set_input_field_red(self.nameLineEdit)
         self.fields_are_valid = False
@@ -135,14 +143,13 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         self.energyDoubleSpinBox.setToolTip("Energy set in MeV with .")
 
     def get_original_property_values(self):
-        # TODO
-        return {}
+        return self.__original_property_values
 
     def show_settings(self):
         """
         Show measurement settings.
         """
-        if self.tmp_run.beam.ion:
+        if self.tmp_run.beam.ion is not None:
             self.beamIonButton.setText(
                 self.tmp_run.beam.ion.symbol)
             # TODO Check that the isotope is also set.
@@ -156,10 +163,10 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
             self.isotopeComboBox.setEnabled(
                 False)
 
-        self.nameLineEdit.setText(
-            self.obj.measurement_setting_file_name)
-        self.descriptionPlainTextEdit.setPlainText(
-            self.obj.measurement_setting_file_description)
+        self.measurement_setting_file_name = \
+            self.obj.measurement_setting_file_name
+        self.measurement_setting_file_description = \
+            self.obj.measurement_setting_file_description
         self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             self.obj.modification_time)))
 
@@ -173,17 +180,14 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         }
         self.set_properties(**run_params, **bean_params)
 
-        detector_object = self.obj.detector
-        target_object = self.obj.target
-        if not detector_object:  # Detector is an indicator whether default
-            # settings should be used.
-            # TODO not anymore
-            detector_object = self.obj.request.default_detector
-            target_object = self.obj.request.default_target
-        self.targetThetaDoubleSpinBox.setValue(
-                target_object.target_theta)
-        self.detectorThetaDoubleSpinBox.setValue(
-            detector_object.detector_theta)
+        if self.obj.detector is None:
+            self.detector_theta = \
+                self.obj.request.default_detector.detector_theta
+            # TODO should there be a none check for target too?
+            self.target_theta = self.obj.request.default_target.target_theta
+        else:
+            self.detector_theta = self.obj.detector.detector_theta
+            self.target_theta = self.obj.target.target_theta
 
     def check_angles(self):
         """
@@ -194,10 +198,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         Return:
             Whether it is ok to use current angle settings.
         """
-        det_theta = self.detectorThetaDoubleSpinBox.value()
-        target_theta = self.targetThetaDoubleSpinBox.value()
-
-        if target_theta > det_theta:
+        if self.target_theta > self.detector_theta:
             reply = QtWidgets.QMessageBox.question(self, "Warning",
                                                    "Measurement cannot use a "
                                                    "target angle that is "
@@ -259,9 +260,9 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         Return:
              True or False.
         """
-        isotope_index = self.isotopeComboBox. \
-            currentIndex()
+        isotope_index = self.isotopeComboBox.currentIndex()
         if isotope_index != -1:
+            # TODO check when the index is -1
             isotope_data = self.isotopeComboBox.itemData(isotope_index)
             if self.obj.run.beam.ion != Element(self.beamIonButton.text(),
                                                 isotope_data[0]):
@@ -269,22 +270,22 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
             if self.obj.run.beam.energy != self.energyDoubleSpinBox.value():
                 return True
             if self.obj.run.beam.energy_distribution != \
-                self.energyDistDoubleSpinBox.value():
+                    self.energyDistDoubleSpinBox.value():
                 return True
             if self.obj.run.beam.spot_size != (
-                self.spotSizeXdoubleSpinBox.value(),
-                                           self.spotSizeYdoubleSpinBox.value()):
+                    self.spotSizeXdoubleSpinBox.value(),
+                    self.spotSizeYdoubleSpinBox.value()):
                 return True
             if self.obj.run.beam.divergence != \
-                self.divergenceDoubleSpinBox.value():
+                    self.divergenceDoubleSpinBox.value():
                 return True
             if self.obj.run.beam.profile != self.profileComboBox.currentText():
                 return True
-            if self.obj.detector.detector_theta != self \
-                .detectorThetaDoubleSpinBox.value():
+            if self.obj.detector.detector_theta != \
+                    self.detectorThetaDoubleSpinBox.value():
                 return True
-            if self.obj.target.target_theta != self \
-                .targetThetaDoubleSpinBox.value():
+            if self.obj.target.target_theta != \
+                    self.targetThetaDoubleSpinBox.value():
                 return True
             return False
 
@@ -387,12 +388,15 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         """
         Undo latest change to fluence.
         """
-        old_value = self.tmp_run.previous_fluence.pop()
-        self.fluenceDoubleSpinBox.setValue(old_value)
-        if not self.tmp_run.previous_fluence:
+        try:
+            old_value = self.tmp_run.previous_fluence.pop()
+        except IndexError:
+            # cannot undo as the previous fluence list was empty.
             self.actionUndo.setEnabled(False)
-        else:
-            self.actionUndo.setEnabled(True)
+            return
+
+        self.fluenceDoubleSpinBox.setValue(old_value)
+        self.actionUndo.setEnabled(bool(self.tmp_run.previous_fluence))
 
     def __update_multiply_action(self):
         """
