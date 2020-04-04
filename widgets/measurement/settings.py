@@ -106,6 +106,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         self.detectorThetaDoubleSpinBox.setLocale(locale)
         self.detectorFiiDoubleSpinBox.setLocale(locale)
         self.targetFiiDoubleSpinBox.setLocale(locale)
+        self.detectorFiiDoubleSpinBox.setEnabled(False)
+        self.targetFiiDoubleSpinBox.setEnabled(False)
 
         # Copy of measurement's/simulation's run or default run
         # TODO should default run also be copied?

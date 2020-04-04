@@ -51,8 +51,7 @@ class Detector:
                 "efficiencies_to_remove", "save_in_creation"
 
     def __init__(self, path, measurement_settings_file_path, name="Default",
-                 description="", modification_time=None,
-                 detector_type="TOF",
+                 description="", modification_time=None, detector_type="TOF",
                  foils=None, tof_foils=None, virtual_size=(2.0, 5.0),
                  tof_slope=5.8e-11, tof_offset=-1.0e-9, angle_slope=0,
                  angle_offset=0, timeres=250.0, detector_theta=41,
@@ -83,13 +82,13 @@ class Detector:
         self.name = name
         self.__measurement_settings_file_path = measurement_settings_file_path
         self.description = description
-        if not modification_time:
-            modification_time = time.time()
-        self.modification_time = modification_time
+        if modification_time is None:
+            self.modification_time = time.time()
+        else:
+            self.modification_time = modification_time
         self.type = detector_type
         self.foils = foils
 
-        # TODO should an empty collection of foils be allowed?
         if not self.foils:
             # Create default foils
             self.foils = [CircularFoil("Foil1", 7.0, 256.0,
@@ -269,50 +268,33 @@ class Detector:
             Detector object.
         """
         with open(detector_file_path) as dfp:
-            obj = json.load(dfp)
+            detector = json.load(dfp)
 
-        name = obj["name"]
-        description = obj["description"]
-        modification_time = obj["modification_time_unix"]
-        detector_type = obj["detector_type"]
-        timeres = obj["timeres"]
-        virtual_size = tuple(obj["virtual_size"])
-        tof_slope = obj["tof_slope"]
-        tof_offset = obj["tof_offset"]
-        angle_slope = obj["angle_slope"]
-        angle_offset = obj["angle_offset"]
-        tof_foils = obj["tof_foils"]
+        detector["modification_time"] = detector.pop("modification_time_unix")
+        detector["virtual_size"] = tuple(detector["virtual_size"])
+
         foils = []
 
-        # Read foils        # TODO foil from_file function
-        for foil in obj["foils"]:
-
-            distance = foil["distance"]
+        # Read foils
+        for foil in detector.pop("foils"):
             layers = []
 
             # Read layers of the foil
-            for layer in foil["layers"]:
+            for layer in foil.pop("layers"):
                 elements = []
-                elements_str = layer["elements"]
+                elements_str = layer.pop("elements")
                 # Read elements of the layer
                 for element_str in elements_str:
                     elements.append(Element.from_string(element_str))
 
-                layers.append(Layer(layer["name"],
-                                    elements,
-                                    float(layer["thickness"]),
-                                    float(layer["density"]),
-                                    float(layer["start_depth"])))
+                layers.append(Layer(**layer, elements=elements))
 
-            if foil["type"] == "circular":
-                foils.append(
-                    CircularFoil(foil["name"], foil["diameter"], distance,
-                                 layers, foil["transmission"]))
+            if foil.pop("type") == "circular":
+                foils.append(CircularFoil(**foil, layers=layers))
             else:
-                foils.append(
-                    RectangularFoil(foil["name"], (foil["size"])[0],
-                                    (foil["size"])[1],
-                                    distance, layers, foil["transmission"]))
+                x, y = foil.pop("size")
+                foils.append(RectangularFoil(**foil, size_x=x, size_y=y,
+                                             layers=layers))
 
         try:
             # Read .measurement file and update detector angle
@@ -325,14 +307,8 @@ class Detector:
 
         return cls(path=detector_file_path,
                    measurement_settings_file_path=measurement_file_path,
-                   name=name, description=description,
-                   modification_time=modification_time,
-                   detector_type=detector_type,
-                   foils=foils, tof_foils=tof_foils, virtual_size=virtual_size,
-                   tof_slope=tof_slope, tof_offset=tof_offset,
-                   angle_slope=angle_slope, angle_offset=angle_offset,
-                   timeres=timeres, detector_theta=detector_theta,
-                   save_in_creation=save)
+                   foils=foils, detector_theta=detector_theta,
+                   save_in_creation=save, **detector)
 
     def to_file(self, detector_file_path, measurement_file_path):
         """Save detector settings to a file.
@@ -353,13 +329,15 @@ class Detector:
         if filename_to_remove:
             os.remove(os.path.join(det_folder, filename_to_remove))
 
+        timestamp = time.time()
+
         # Read Detector parameters to dictionary
         obj = {
             "name": self.name,
             "description": self.description,
             "modification_time": time.strftime("%c %z %Z", time.localtime(
-                time.time())),
-            "modification_time_unix": time.time(),
+                timestamp)),
+            "modification_time_unix": timestamp,
             "detector_type": self.type,
             "foils": [],
             "tof_foils": self.tof_foils,
@@ -388,7 +366,7 @@ class Detector:
             for layer in foil.layers:
                 layer_obj = {
                     "name": layer.name,
-                    "elements": [element.__str__() for element in
+                    "elements": [str(element) for element in
                                  layer.elements],
                     "thickness": layer.thickness,
                     "density": layer.density,

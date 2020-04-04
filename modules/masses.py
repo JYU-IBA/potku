@@ -108,7 +108,7 @@ def load_isotopes(element, combobox, current_isotope=None):
             combobox.addItem("{0} ({1}%)".format(isotope,
                                                  round(float(tn), 3)),
                              userData=(isotope, tn))
-            if isotope == str(current_isotope):
+            if str(isotope) == str(current_isotope):
                 combobox.setCurrentIndex(dirtyinteger)
         dirtyinteger += 1
 
