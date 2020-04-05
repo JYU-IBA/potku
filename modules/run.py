@@ -114,11 +114,11 @@ class Run:
             Returns the created Run object.
         """
         with open(measurement_file_path) as mesu:
-            obj = json.load(mesu)
-        run = obj["run"]
-        run.pop("time")
+            mesu = json.load(mesu)
 
-        beam = obj["beam"]
+        run = mesu["run"]
+        run["run_time"] = run.pop("time")
+        beam = mesu["beam"]
 
         ion = Element.from_string(beam.pop("ion"))
         spot_size = tuple(beam.pop("spot_size"))

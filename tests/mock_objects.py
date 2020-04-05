@@ -42,6 +42,7 @@ from modules.target import Target
 from modules.simulation import Simulation
 from modules.run import Run
 from modules.point import Point
+from modules.layer import Layer
 
 
 # This module can be used to generate various helper objects for testing
@@ -105,6 +106,10 @@ def get_simulation(request=None) -> Simulation:
 
     return Simulation(Path(tempfile.gettempdir(), "foo.simulation"),
                       request)
+
+
+def get_layer() -> Layer:
+    return Layer("layer1", [get_element()], 1, 2)
 
 
 def get_request():

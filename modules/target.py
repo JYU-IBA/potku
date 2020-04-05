@@ -104,7 +104,7 @@ class Target:
         modification_time_unix = obj["modification_time_unix"]
         target_type = obj["target_type"]
         scattering_element = Element.from_string(obj["scattering_element"])
-        image_size = obj["image_size"]
+        image_size = tuple(obj["image_size"])
         image_file = obj["image_file"]
         layers = []
 
@@ -144,12 +144,13 @@ class Target:
             target_file_path: File in which the target params will be saved.
             measurement_file_path: File in which target angles will be saved.
         """
+        timestamp = time.time()
         obj = {
             "name": self.name,
             "description": self.description,
             "modification_time": time.strftime("%c %z %Z", time.localtime(
-                time.time())),
-            "modification_time_unix": time.time(),
+                timestamp)),
+            "modification_time_unix": timestamp,
             "target_type": self.target_type,
             "scattering_element": str(self.scattering_element),
             "image_size": self.image_size,

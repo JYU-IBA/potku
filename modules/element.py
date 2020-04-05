@@ -108,7 +108,11 @@ class Element:
         """
         if not isinstance(other, Element):
             return NotImplemented
-        return str(self) == str(other)
+        return all((
+            self.isotope == other.isotope,
+            self.symbol == other.symbol,
+            self.amount == other.amount
+        ))
 
     def __lt__(self, other):
         """Comparison function for Elements. Elements are compared first by
@@ -142,7 +146,7 @@ class Element:
     def __repr__(self):
         """Returns a human readable representation of the Element object.
         """
-        return str(self)
+        return f"Element({str(self)})"
 
     def get_prefix(self):
         """Returns a string representation of an element without amount.

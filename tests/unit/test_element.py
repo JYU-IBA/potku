@@ -87,7 +87,10 @@ class TestElement(unittest.TestCase):
                          Element.from_string("4He"))
 
         self.assertEqual(Element.from_string("4He 2"),
-                         Element.from_string("4He 2"))
+                         Element.from_string("4He 2.00"))
+
+        self.assertEqual(Element("He", 4, 2),
+                         Element("He", 4, 2.00))
 
         self.assertNotEqual(Element.from_string("4He 2"),
                             Element.from_string("4He 1"))
