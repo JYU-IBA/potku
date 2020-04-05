@@ -45,13 +45,12 @@ class TestElement(unittest.TestCase):
 
         self.assertEqual("He", e.symbol)
         self.assertIsNone(e.isotope)
-        self.assertIsNone(e.amount)
+        self.assertEqual(0, e.amount)
 
         e = Element.from_string("4He")
 
         self.assertEqual("He", e.symbol)
         self.assertEqual(4, e.isotope)
-        self.assertIsNone(e.amount)
 
         e = Element.from_string("3H 2")
 
@@ -91,6 +90,12 @@ class TestElement(unittest.TestCase):
 
         self.assertEqual(Element("He", 4, 2),
                          Element("He", 4, 2.00))
+
+        self.assertEqual(Element("He", 4, 0),
+                         Element("He", 4))
+
+        self.assertEqual(Element("He"),
+                         Element("He", None))
 
         self.assertNotEqual(Element.from_string("4He 2"),
                             Element.from_string("4He 1"))

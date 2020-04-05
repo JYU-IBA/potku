@@ -69,10 +69,6 @@ def beam_ion_to(instance, attrs, value: Element):
     else:
         s.setText(value.symbol)
         masses.load_isotopes(value.symbol, i, str(value.isotope))
-        for idx in range(len(i)):
-            if i.itemData(idx)[0] == value.isotope:
-                i.setCurrentIndex(idx)
-                break
 
 
 class MeasurementSettingsWidget(QtWidgets.QWidget,

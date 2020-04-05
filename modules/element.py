@@ -39,7 +39,7 @@ class Element:
     """
     Element class that handles information about one element.
     """
-    def __init__(self, symbol, isotope=None, amount=None):
+    def __init__(self, symbol, isotope=None, amount=0):
         """Initializes an element object.
         Args:
               symbol: Two letter symbol of the element. E.g. 'He' for Helium.
@@ -146,7 +146,8 @@ class Element:
     def __repr__(self):
         """Returns a human readable representation of the Element object.
         """
-        return f"Element({str(self)})"
+        return f"Element(symbol={self.symbol}, isotope={self.isotope}), " \
+               f"amound={self.amount})"
 
     def get_prefix(self):
         """Returns a string representation of an element without amount.
