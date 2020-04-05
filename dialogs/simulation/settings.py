@@ -38,7 +38,6 @@ import widgets.binding as bnd
 from modules.run import Run
 
 from PyQt5 import QtCore
-from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
@@ -298,10 +297,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
 
             True or False.
         """
-        # TODO tmp testing print
-        print("TEST", self.measurement_settings_widget.values_changed() ==
-              self.measurement_settings_widget.are_values_changed())
-        if self.measurement_settings_widget.values_changed():
+        if self.measurement_settings_widget.are_values_changed():
             return True
         if self.detector_settings_widget.values_changed():
             return True

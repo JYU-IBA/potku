@@ -25,7 +25,7 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen"
+             "\n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import copy
@@ -50,25 +50,33 @@ from PyQt5.QtCore import pyqtSignal
 from PyQt5.QtGui import QGuiApplication
 
 
-def beam_ion_from(instance, attrs):
-    i: QtWidgets.QComboBox = None
-    s, i = getattr(instance, attrs[0]), getattr(instance, attrs[1])
-    symbol = s.text()
+# Getters and setter for binding an Element object to GUI
+def element_from_gui(instance, attrs):
+    """Returns Element object from GUI.
+    """
+    symbol_btn = getattr(instance, attrs[0])
+    isotope_box = getattr(instance, attrs[1])
+    symbol = symbol_btn.text()
     if symbol == "Select":
         return None
-    isotope = i.itemData(i.currentIndex())[0]
-    return Element(s.text(), isotope)
-
-
-def beam_ion_to(instance, attrs, value: Element):
-    i: QtWidgets.QComboBox = None
-    s, i = getattr(instance, attrs[0]), getattr(instance, attrs[1])
-    if value is None:
-        s.setText("Select")
-        i.setEnabled(False)
+    if isotope_box.currentIndex() == -1:
+        isotope = None
     else:
-        s.setText(value.symbol)
-        masses.load_isotopes(value.symbol, i, str(value.isotope))
+        isotope = isotope_box.itemData(isotope_box.currentIndex())[0]
+    return Element(symbol, isotope)
+
+
+def element_to_gui(instance, attrs, value: Element):
+    """Shows Element object in GUI.
+    """
+    symbol_btn = getattr(instance, attrs[0])
+    isotope_box = getattr(instance, attrs[1])
+    if value is None:
+        symbol_btn.setText("Select")
+        isotope_box.setEnabled(False)
+    else:
+        symbol_btn.setText(value.symbol)
+        masses.load_isotopes(value.symbol, isotope_box, str(value.isotope))
 
 
 class MeasurementSettingsWidget(QtWidgets.QWidget,
@@ -76,13 +84,18 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
                                 metaclass=QtABCMeta):
     """Class for creating a measurement settings tab.
     """
+    # TODO fix floating point precision when checking changes in values
+
+    # Signal that indicates whether the beam selection was ok or not (i.e. can
+    # the selected element be used in measurements or simulations)
     beam_selection_ok = pyqtSignal(bool)
+
     measurement_setting_file_name = bnd.bind("nameLineEdit")
     measurement_setting_file_description = bnd.bind("descriptionPlainTextEdit")
 
     beam_ion = bnd.multi_bind(
-        ["beamIonButton", "isotopeComboBox"], fget=beam_ion_from,
-        fset=beam_ion_to, track_change=True
+        ["beamIonButton", "isotopeComboBox"], fget=element_from_gui,
+        fset=element_to_gui, track_change=True
     )
     beam_energy = bnd.bind("energyDoubleSpinBox", track_change=True)
     beam_energy_distribution = bnd.bind("energyDistDoubleSpinBox",
@@ -142,6 +155,10 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         self.detectorThetaDoubleSpinBox.setLocale(locale)
         self.detectorFiiDoubleSpinBox.setLocale(locale)
         self.targetFiiDoubleSpinBox.setLocale(locale)
+
+        # Fii angles are currently not used so disable their spin boxes
+        # TODO find out how fii angles should be used in MCERD so these
+        #   can be enabled
         self.detectorFiiDoubleSpinBox.setEnabled(False)
         self.targetFiiDoubleSpinBox.setEnabled(False)
 
@@ -183,6 +200,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         self.energyDoubleSpinBox.setToolTip("Energy set in MeV with .")
 
     def get_original_property_values(self):
+        """Returns the values of the properties when they were first set.
+        """
         return self.__original_property_values
 
     def show_settings(self):
@@ -225,22 +244,23 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
             Whether it is ok to use current angle settings.
         """
         if self.target_theta > self.detector_theta:
-            reply = QtWidgets.QMessageBox.question(self, "Warning",
-                                                   "Measurement cannot use a "
-                                                   "target angle that is "
-                                                   "bigger than the detector "
-                                                   "angle (for simulation "
-                                                   "this is possible).\n\n Do "
-                                                   "you want to use these "
-                                                   "settings anyway?",
-                                           QtWidgets.QMessageBox.Ok |
-                                           QtWidgets.QMessageBox.Cancel,
-                                           QtWidgets.QMessageBox.Cancel)
+            reply = QtWidgets.QMessageBox.question(
+                self, "Warning",
+                "Measurement cannot use a target angle that is "
+                "bigger than the detector angle (for simulation "
+                "this is possible).\n\n"
+                "Do you want to use these settings anyway?",
+                QtWidgets.QMessageBox.Ok |
+                QtWidgets.QMessageBox.Cancel,
+                QtWidgets.QMessageBox.Cancel)
             if reply == QtWidgets.QMessageBox.Cancel:
                 return False
         return True
 
     def get_run_and_beam_parameters(self):
+        """Returns run and beam related properties as separate dictionaries with
+        prefixes removed from each key.
+        """
         run_params, beam_params = {}, {}
         for k, v in self.get_properties().items():
             if k.startswith("run_"):
@@ -274,42 +294,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
 
-    def values_changed(self):
-        """
-        Check whether measurement settings values that trigger possible
-        rerunning of simulations have changed.
-
-        Return:
-             True or False.
-        """
-        isotope_index = self.isotopeComboBox.currentIndex()
-        if isotope_index != -1:
-            isotope_data = self.isotopeComboBox.itemData(isotope_index)
-            if self.obj.run.beam.ion != Element(self.beamIonButton.text(),
-                                                isotope_data[0]):
-                return True
-            if self.obj.run.beam.energy != self.energyDoubleSpinBox.value():
-                return True
-            if self.obj.run.beam.energy_distribution != \
-                    self.energyDistDoubleSpinBox.value():
-                return True
-            if self.obj.run.beam.spot_size != (
-                    self.spotSizeXdoubleSpinBox.value(),
-                    self.spotSizeYdoubleSpinBox.value()):
-                return True
-            if self.obj.run.beam.divergence != \
-                    self.divergenceDoubleSpinBox.value():
-                return True
-            if self.obj.run.beam.profile != self.profileComboBox.currentText():
-                return True
-            if self.obj.detector.detector_theta != \
-                    self.detectorThetaDoubleSpinBox.value():
-                return True
-            if self.obj.target.target_theta != \
-                    self.targetThetaDoubleSpinBox.value():
-                return True
-            return False
-
     def other_values_changed(self):
         """
         Check whether measurement values that don't require running a
@@ -318,21 +302,23 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         Return:
              True or False.
         """
+        # TODO make it possible to group TrackingProperties (for example into
+        #  'critical' and 'noncritical' properties)
         if self.obj.measurement_setting_file_name != \
-                self.nameLineEdit.text():
+                self.measurement_setting_file_name:
             return True
-        if self.obj.measurement_setting_file_description != self \
-                .descriptionPlainTextEdit.toPlainText():
+        if self.obj.measurement_setting_file_description != \
+                self.measurement_setting_file_description:
             return True
-        if self.obj.run.beam.charge != self.beamChargeSpinBox.value():
+        if self.obj.run.beam.charge != self.beam_charge:
             return True
-        if self.obj.run.current != self.currentDoubleSpinBox.value():
+        if self.obj.run.current != self.run_current:
             return True
-        if self.obj.run.time != self.timeDoubleSpinBox.value():
+        if self.obj.run.time != self.run_time:
             return True
-        if self.obj.run.charge != self.runChargeDoubleSpinBox.value():
+        if self.obj.run.charge != self.run_charge:
             return True
-        if self.obj.run.fluence != self.fluenceDoubleSpinBox.value():
+        if self.obj.run.fluence != self.run_fluence:
             return True
         return False
 
@@ -343,9 +329,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         isotope_index = self.isotopeComboBox.currentIndex()
         # TODO: Show a message box, don't just quietly do nothing
         if isotope_index != -1:
-            isotope_data = self.isotopeComboBox.itemData(isotope_index)
-            self.tmp_run.beam.ion = Element(self.beamIonButton.text(),
-                                            isotope_data[0])
             run_params, beam_params = self.get_run_and_beam_parameters()
             self.tmp_run.set_setting_parameters(**run_params)
             self.tmp_run.beam.set_setting_parameters(**beam_params)

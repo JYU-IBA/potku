@@ -37,7 +37,6 @@ import os
 import dialogs.dialog_functions as df
 
 from PyQt5 import QtCore
-from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtWidgets import QDesktopWidget
@@ -152,12 +151,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         Return:
             True or False.
         """
-        # TODO tmp testing print
-        print("TEST",
-              self.measurement_settings_widget.are_values_changed(),
-              self.measurement_settings_widget.values_changed() ==
-              self.measurement_settings_widget.are_values_changed())
-        if self.measurement_settings_widget.values_changed():
+        if self.measurement_settings_widget.are_values_changed():
             return True
         if self.detector_settings_widget.values_changed():
             return True

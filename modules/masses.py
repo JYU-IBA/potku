@@ -112,6 +112,8 @@ def load_isotopes(element, combobox, current_isotope=None):
                 combobox.setCurrentIndex(dirtyinteger)
         dirtyinteger += 1
 
+    combobox.setEnabled(combobox.count() > 0)
+
 
 def get_standard_isotope(element):
     """Calculate standard element weight.
