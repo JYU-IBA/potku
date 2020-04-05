@@ -184,38 +184,6 @@ def delete_recoil_espe(tab, recoil_name):
 # TODO common base class for settings dialogs
 
 
-def change_element(qdialog, button, combo_box):
-    """ Opens element selection dialog and loads selected element's isotopes
-    to a combobox.
-
-    Args:
-        qdialog: settings dialog that calls this function
-        button: button whose text is changed accordingly to the made
-        selection.
-        combo_box: combo box to be filled
-    """
-    dialog = ElementSelectionDialog()
-    if dialog.element:
-        button.setText(dialog.element)
-        # Enabled settings once element is selected
-        qdialog.enabled_element_information()
-        masses.load_isotopes(dialog.element, combo_box)
-
-        # Check if no isotopes
-        if combo_box.count() == 0:
-            qdialog.measurement_settings_widget.isotopeInfoLabel \
-                .setVisible(True)
-            qdialog.measurement_settings_widget.fields_are_valid = False
-            gf.set_input_field_red(combo_box)
-        else:
-            qdialog.measurement_settings_widget.isotopeInfoLabel \
-                .setVisible(False)
-            qdialog.measurement_settings_widget.check_text(
-                qdialog.measurement_settings_widget.nameLineEdit,
-                qdialog.measurement_settings_widget)
-            combo_box.setStyleSheet("background-color: %s" % "None")
-
-
 def update_detector_settings(entity, det_folder_path,
                              measurement_settings_file_path):
     """

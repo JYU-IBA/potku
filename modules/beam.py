@@ -72,6 +72,12 @@ class Beam:
 
     def get_setting_parameters(self):
         d = dict(vars(self))
-        d.pop("ion")
         return d
+
+    def set_setting_parameters(self, **kwargs):
+        # TODO make a base class for objects that have settings parameters
+        allowed_params = self.get_setting_parameters()
+        for k, v in kwargs.items():
+            if k in allowed_params:
+                setattr(self, k, v)
 

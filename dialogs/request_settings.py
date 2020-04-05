@@ -67,7 +67,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         screen_geometry = QDesktopWidget \
             .availableGeometry(QApplication.desktop())
-        self.resize(self.geometry().width(),
+        self.resize(self.geometry().width() * 1.2,
                     screen_geometry.size().height() * 0.8)
 
         self.main_window = main_window
@@ -84,16 +84,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             self.request.default_measurement)
         self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
-        self.measurement_settings_widget.beamIonButton.clicked.connect(
-            lambda: df.change_element(
-                self,
-                self.measurement_settings_widget.beamIonButton,
-                self.measurement_settings_widget.isotopeComboBox))
-
-        self.measurement_settings_widget.picture.setScaledContents(True)
-        pixmap = QtGui.QPixmap(os.path.join("images",
-                                            "measurement_setup_angles.png"))
-        self.measurement_settings_widget.picture.setPixmap(pixmap)
+        self.measurement_settings_widget.beam_selection_ok.connect(
+            lambda b: self.ui.OKButton.setEnabled(b)
+        )
 
         # Add detector settings view to the settings view
         self.detector_settings_widget = DetectorSettingsWidget(
@@ -485,11 +478,3 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                        elem_sim.use_default_settings:
                         simulations_run.append(elem_sim)
         return simulations_run
-
-    def enabled_element_information(self):
-        """
-        Change the UI accordingly when an element is selected.
-        """
-        self.measurement_settings_widget.isotopeComboBox.setEnabled(True)
-        self.measurement_settings_widget.isotopeLabel.setEnabled(True)
-        self.ui.OKButton.setEnabled(True)

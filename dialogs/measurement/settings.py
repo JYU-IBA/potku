@@ -70,7 +70,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         screen_geometry = QtWidgets.QDesktopWidget.availableGeometry(
             QtWidgets.QApplication.desktop())
-        self.resize(self.geometry().width() * 1.1,
+        self.resize(self.geometry().width() * 1.2,
                     screen_geometry.size().height() * 0.8)
         self.ui.defaultSettingsCheckBox.stateChanged.connect(
             self.__change_used_settings)
@@ -83,16 +83,9 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.measurement)
         self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
-        self.measurement_settings_widget.picture.setScaledContents(True)
-        pixmap = QtGui.QPixmap(os.path.join("images",
-                                            "measurement_setup_angles.png"))
-        self.measurement_settings_widget.picture.setPixmap(pixmap)
-
-        self.measurement_settings_widget.beamIonButton.clicked.connect(
-            lambda: df.change_element(
-                self,
-                self.measurement_settings_widget.beamIonButton,
-                self.measurement_settings_widget.isotopeComboBox))
+        self.measurement_settings_widget.beam_selection_ok.connect(
+            lambda b: self.ui.OKButton.setEnabled(b)
+        )
 
         # Add detector settings view to the settings view
         if self.measurement.detector:
@@ -138,13 +131,6 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         Check whether there are any invalid field in the tabs.
         """
         df.check_for_red(self)
-
-    def enabled_element_information(self):
-        """ Change the UI accordingly when an element is selected.
-        """
-        self.measurement_settings_widget.isotopeComboBox.setEnabled(True)
-        self.measurement_settings_widget.isotopeLabel.setEnabled(True)
-        self.ui.OKButton.setEnabled(True)
 
     def __update_parameters(self):
         """ Update Measurement's Run, Detector and Target objects. If measurement
