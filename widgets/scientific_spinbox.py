@@ -323,3 +323,8 @@ class ScientificSpinBox(QtWidgets.QWidget):
         self.ui.scientificLineEdit.setCursorPosition(pos)
         iv.set_input_field_white(self.ui.scientificLineEdit)
         self.check_valid()
+
+    def get_value(self):
+        """Returns the value of the spinbox as a float.
+        """
+        return float(self.value_str)

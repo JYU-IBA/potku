@@ -323,8 +323,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.obj.type = self.typeComboBox.currentText()
         self.obj.angle_offset = self.angleOffsetLineEdit.text()
         self.obj.angle_slope = self.angleSlopeLineEdit.text()
-        self.obj.tof_slope = self.scientific_tof_slope.value_str
-        self.obj.tof_offset = self.scientific_tof_offset.value_str
+        self.obj.tof_slope = self.scientific_tof_slope.get_value()
+        self.obj.tof_offset = self.scientific_tof_offset.get_value()
 
         self.obj.virtual_size = self.virtualSizeXSpinBox.value(), \
                                 self.virtualSizeYSpinBox.value()

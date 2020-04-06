@@ -105,8 +105,10 @@ class CalibrationDialog(QtWidgets.QDialog):
         # Get old parameters from the parent dialog
         if parent_settings_widget:
             try:
-                f1 = float(self.parent_settings_widget.scientific_tof_offset.value_str)
-                f2 = float(self.parent_settings_widget.scientific_tof_slope.value_str)
+                f1 = self.parent_settings_widget.scientific_tof_offset \
+                    .get_value()
+                f2 = self.parent_settings_widget.scientific_tof_slope \
+                    .get_value()
                 old_params = f1, f2
             except ValueError as e:
                 m = "Can't get old calibration parameters from the settings " \
