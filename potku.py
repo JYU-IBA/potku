@@ -445,7 +445,7 @@ class Potku(QtWidgets.QMainWindow):
         """
         widget = self.ui.tabs.currentWidget()
         if isinstance(widget, MeasurementTabWidget):
-            widget.open_depth_profile(widget)
+            widget.open_depth_profile()
         else:
             QtWidgets.QMessageBox.question(self, "Notification",
                                            "An open measurement is required to "
@@ -459,7 +459,7 @@ class Potku(QtWidgets.QMainWindow):
         """
         widget = self.ui.tabs.currentWidget()
         if isinstance(widget, MeasurementTabWidget):
-            widget.open_element_losses(widget)
+            widget.open_element_losses()
         else:
             QtWidgets.QMessageBox.question(self, "Notification",
                                            "An open measurement is required to"
@@ -473,7 +473,7 @@ class Potku(QtWidgets.QMainWindow):
         """
         widget = self.ui.tabs.currentWidget()
         if isinstance(widget, MeasurementTabWidget):
-            widget.open_energy_spectrum(widget)
+            widget.open_energy_spectrum()
         else:
             QtWidgets.QMessageBox.question(self, "Notification",
                                            "An open measurement is required to"
@@ -502,7 +502,7 @@ class Potku(QtWidgets.QMainWindow):
         """
         widget = self.ui.tabs.currentWidget()
         if isinstance(widget, MeasurementTabWidget):
-            widget.open_energy_spectrum(widget)
+            widget.open_energy_spectrum()
         else:
             QtWidgets.QMessageBox.question(self, "Notification",
                                            "An open simulation is required to "

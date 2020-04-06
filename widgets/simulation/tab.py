@@ -27,7 +27,6 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import logging
 import os
 
 import dialogs.dialog_functions as df
@@ -70,6 +69,7 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
         self.simulation = simulation
         self.obj = simulation
 
+        # TODO remove ui reference
         self.ui = uic.loadUi(Path("ui_files", "ui_simulation_tab.ui"), self)
         self.icon_manager = icon_manager
 
@@ -81,8 +81,8 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
 
         df.set_up_side_panel(self, "simu_panel_shown", "right")
 
-        self.ui.openSettingsButton.clicked.connect(self.__open_settings)
-        self.ui.optimizeButton.clicked.connect(self.__open_optimization_dialog)
+        self.openSettingsButton.clicked.connect(self.__open_settings)
+        self.optimizeButton.clicked.connect(self.__open_optimization_dialog)
 
         self.optimization_result_widget = None
 

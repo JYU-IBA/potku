@@ -29,7 +29,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import logging
 import os
 import sys
 
@@ -46,14 +45,12 @@ from dialogs.measurement.element_losses import ElementLossesWidget
 from dialogs.measurement.settings import MeasurementSettingsDialog
 
 from modules.element import Element
-from modules.ui_log_handlers import CustomLogHandler
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
 from widgets.base_tab import BaseTab
-from widgets.log import LogWidget
 from widgets.measurement.tofe_histogram import TofeHistogramWidget
 from widgets.gui_utils import StatusBarHandler
 
@@ -74,6 +71,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         """
         super().__init__()
         self.tab_id = tab_id
+        # TODO remove ui reference
         self.ui = uic.loadUi(Path("ui_files", "ui_measurement_tab.ui"), self)
         self.obj = measurement
         self.icon_manager = icon_manager
@@ -86,18 +84,14 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         # self.check_previous_state_files()  # For above three.
         self.log = None
 
-        self.ui.saveCutsButton.clicked.connect(self.measurement_save_cuts)
+        self.saveCutsButton.clicked.connect(self.measurement_save_cuts)
 
-        # TODO
-        self.ui.analyzeElementLossesButton.clicked.connect(
-            lambda: self.open_element_losses(self))
-        self.ui.energySpectrumButton.clicked.connect(
-            lambda: self.open_energy_spectrum(self))
-        self.ui.createDepthProfileButton.clicked.connect(
-            lambda: self.open_depth_profile(self))
-        self.ui.command_master.clicked.connect(self.__master_issue_commands)
-        self.ui.openSettingsButton.clicked.connect(lambda:
-                                                   self.__open_settings())
+        self.analyzeElementLossesButton.clicked.connect(
+            self.open_element_losses)
+        self.energySpectrumButton.clicked.connect(self.open_energy_spectrum)
+        self.createDepthProfileButton.clicked.connect(self.open_depth_profile)
+        self.command_master.clicked.connect(self.__master_issue_commands)
+        self.openSettingsButton.clicked.connect(self.__open_settings)
 
         self.data_loaded = False
 
@@ -128,7 +122,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         self.obj.set_axes(self.histogram.matplotlib.axes, progress,
                           start, add)
 
-        self.ui.makeSelectionsButton.clicked.connect(
+        self.makeSelectionsButton.clicked.connect(
             lambda: self.histogram.matplotlib.elementSelectionButton.setChecked(
                 True))
         self.histogram.matplotlib.selectionsChanged.connect(
@@ -337,41 +331,35 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         """
         MeasurementSettingsDialog(self.obj, self.icon_manager)
 
-    def open_depth_profile(self, parent):
+    def open_depth_profile(self):
         """Opens depth profile dialog.
-
-        Args:
-            parent: MeasurementTabWidget
         """
         previous = self.depth_profile_widget
-        DepthProfileDialog(parent, statusbar=self.statusbar)
+        DepthProfileDialog(self, statusbar=self.statusbar)
         if self.depth_profile_widget != previous and \
                 type(self.depth_profile_widget) is not None:
+            # TODO type(x) is not None???
             self.depth_profile_widget.save_to_file()
 
-    def open_energy_spectrum(self, parent):
+    def open_energy_spectrum(self):
         """Opens energy spectrum dialog.
-        
-        Args:
-            parent: MeasurementTabWidget
         """
         previous = self.energy_spectrum_widget
-        EnergySpectrumParamsDialog(parent, spectrum_type="measurement",
+        EnergySpectrumParamsDialog(self, spectrum_type="measurement",
                                    statusbar=self.statusbar)
         if self.energy_spectrum_widget != previous and \
                 type(self.energy_spectrum_widget) is not None:
+            # TODO type(x) is not None???
             self.energy_spectrum_widget.save_to_file()
 
-    def open_element_losses(self, parent):
+    def open_element_losses(self):
         """Opens element losses dialog.
-        
-        Args:
-            parent: MeasurementTabWidget
         """
         previous = self.elemental_losses_widget
-        ElementLossesDialog(parent, self.statusbar)
+        ElementLossesDialog(self, self.statusbar)
         if self.elemental_losses_widget != previous and \
                 type(self.elemental_losses_widget) is not None:
+            # TODO type(x) is not None???
             self.elemental_losses_widget.save_to_file()
 
     def toggle_master_button(self):
@@ -384,7 +372,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             master_name = master.name
         else:
             master_name = None
-        self.ui.command_master.setEnabled(measurement_name == master_name)
+        self.command_master.setEnabled(measurement_name == master_name)
 
     def __confirm_filepath(self, filepath, name, m_name, old_folder_prefix,
                            new_folder_prefix, old_sample_name, new_sample_name):
@@ -510,20 +498,20 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         Args:
             selections: list of Selection objects
         """
-        self.ui.saveCutsButton.setEnabled(len(selections))
+        self.saveCutsButton.setEnabled(len(selections))
 
     def set_icons(self):
         """Adds icons to UI elements.
         """
-        self.icon_manager.set_icon(self.ui.makeSelectionsButton,
+        self.icon_manager.set_icon(self.makeSelectionsButton,
                                    "amarok_edit.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.saveCutsButton,
+        self.icon_manager.set_icon(self.saveCutsButton,
                                    "save_all.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.analyzeElementLossesButton,
+        self.icon_manager.set_icon(self.analyzeElementLossesButton,
                                    "elemental_losses_icon.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.energySpectrumButton,
+        self.icon_manager.set_icon(self.energySpectrumButton,
                                    "energy_spectrum_icon.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.createDepthProfileButton,
+        self.icon_manager.set_icon(self.createDepthProfileButton,
                                    "depth_profile.svg", size=(30, 30))
-        self.icon_manager.set_icon(self.ui.command_master,
+        self.icon_manager.set_icon(self.command_master,
                                    "editcut.svg", size=(30, 30))
