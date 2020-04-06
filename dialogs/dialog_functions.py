@@ -31,6 +31,8 @@ import copy
 import itertools
 import collections
 
+import widgets.gui_utils as gutils
+
 import modules.masses as masses
 import modules.general_functions as gf
 
@@ -38,7 +40,6 @@ from pathlib import Path
 
 from modules.element import Element
 from modules.detector import Detector
-from dialogs.element_selection import ElementSelectionDialog
 
 from PyQt5 import QtWidgets
 
@@ -434,3 +435,39 @@ def delete_element_simulations(qdialog, tab, simulation,
     update_tab(tab)
 
     return True
+
+
+def set_up_side_panel(qwidget, key, side):
+    """Sets up the side panel of a QWidget by either hiding it or showing it
+    and connecting callbacks to change the visibility of the panel.
+
+    Args:
+        qwidget: QWidget that has a reference to a side panel and a button that
+            shows or hides the panel.
+        key: key used to store the visibility of the panel in QSettings object.
+        side: which side of the QWidget the side panel is ('left' or 'right')
+    """
+    show_panel = gutils.get_potku_settings().value(key, True, bool)
+
+    # Show or hide panel depending on previous settings
+    gutils.change_visibility(qwidget.frame,
+                             visibility=show_panel)
+    qwidget.hidePanelButton.clicked.connect(
+        lambda: gutils.change_visibility(qwidget.frame, key=key)
+    )
+    if side == "left":
+        open_arr = ">"
+        close_arr = "<"
+    elif side == "right":
+        open_arr = "<"
+        close_arr = ">"
+    else:
+        raise ValueError(f"Side should either be 'left' or 'right', '{side}' "
+                         "given")
+
+    # Change the arrow icon accordingly
+    gutils.change_arrow(qwidget.hidePanelButton,
+                        arrow=close_arr if show_panel else open_arr)
+    qwidget.hidePanelButton.clicked.connect(
+        lambda: gutils.change_arrow(qwidget.hidePanelButton)
+    )

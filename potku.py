@@ -37,10 +37,12 @@ import shutil
 import subprocess
 import sys
 
+import dialogs.dialog_functions as df
 import widgets.input_validation as iv
 
 from datetime import datetime
 from datetime import timedelta
+from pathlib import Path
 
 from dialogs.about import AboutDialog
 from dialogs.global_settings import GlobalSettingsDialog
@@ -82,8 +84,9 @@ class Potku(QtWidgets.QMainWindow):
         """Init main window for Potku.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_main_window.ui"),
-                             self)
+        # TODO remove ui reference
+        self.ui = uic.loadUi(Path("ui_files", "ui_main_window.ui"), self)
+
         self.title = self.ui.windowTitle()
         self.ui.treeWidget.setHeaderLabel("")
 
@@ -138,8 +141,9 @@ class Potku(QtWidgets.QMainWindow):
         # save changes
 
         self.ui.menuImport.setEnabled(False)
-        self.panel_shown = True
-        self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
+
+        # Show or hide left panel depending on the previous usage
+        df.set_up_side_panel(self, "left_panel_shown", "left")
 
         # Set up simulation connections within UI
         self.ui.actionNew_Simulation.triggered.connect(
@@ -659,26 +663,6 @@ class Potku(QtWidgets.QMainWindow):
         except AttributeError:
             pass
         self.tree_widget.blockSignals(False)
-
-    def hide_panel(self, enable_hide=None):
-        """Sets the frame (including measurement navigation view, global
-        settings and request settings buttons) visible.
-
-        Args:
-            enable_hide: If True, sets the frame visible and vice versa.
-            If not given, sets the frame visible or hidden depending its
-            previous state.
-        """
-        if enable_hide is not None:
-            self.panel_shown = enable_hide
-        else:
-            self.panel_shown = not self.panel_shown
-        if self.panel_shown:
-            self.ui.hidePanelButton.setText("<")
-        else:
-            self.ui.hidePanelButton.setText(">")
-
-        self.ui.frame.setVisible(self.panel_shown)
 
     def import_pelletron(self):
         """Import Pelletron's measurements into request.

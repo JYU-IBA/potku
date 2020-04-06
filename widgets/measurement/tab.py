@@ -33,6 +33,8 @@ import logging
 import os
 import sys
 
+import dialogs.dialog_functions as df
+
 from pathlib import Path
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
@@ -71,8 +73,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         """
         super().__init__()
         self.tab_id = tab_id
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_measurement_tab.ui"), self)
+        self.ui = uic.loadUi(Path("ui_files", "ui_measurement_tab.ui"), self)
         self.obj = measurement
         self.icon_manager = icon_manager
 
@@ -85,6 +86,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         self.log = None
 
         self.ui.saveCutsButton.clicked.connect(self.measurement_save_cuts)
+
+        # TODO
         self.ui.analyzeElementLossesButton.clicked.connect(
             lambda: self.open_element_losses(self))
         self.ui.energySpectrumButton.clicked.connect(
@@ -96,8 +99,8 @@ class MeasurementTabWidget(QtWidgets.QWidget):
                                                    self.__open_settings())
 
         self.data_loaded = False
-        self.panel_shown = True
-        self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
+
+        df.set_up_side_panel(self, "mesu_panel_shown", "right")
 
         # Enable master button
         self.toggle_master_button()
@@ -253,25 +256,6 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         except:
             # If window was manually closed, do nothing.
             pass
-
-    def hide_panel(self, enable_hide=None):
-        """Sets the frame (including all the tool buttons) visible.
-        
-        Args:
-            enable_hide: If True, sets the frame visible and vice versa. 
-                         If not given, sets the frame visible or hidden 
-                         depending its previous state.
-        """
-        if enable_hide is not None:
-            self.panel_shown = enable_hide
-        else:
-            self.panel_shown = not self.panel_shown
-        if self.panel_shown:
-            self.ui.hidePanelButton.setText('>')
-        else:
-            self.ui.hidePanelButton.setText('<')
-
-        self.ui.frame.setVisible(self.panel_shown)
 
     def make_depth_profile(self, directory, name, serial_number_m,
                            sample_folder_name):

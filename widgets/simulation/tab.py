@@ -30,6 +30,8 @@ __version__ = "2.0"
 import logging
 import os
 
+import dialogs.dialog_functions as df
+
 from collections import Counter
 from pathlib import Path
 
@@ -67,8 +69,7 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.request = request
         self.tab_id = tab_id
         self.simulation = simulation
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_simulation_tab.ui"),
-                             self)
+        self.ui = uic.loadUi(Path("ui_files", "ui_simulation_tab.ui"), self)
         self.obj = simulation
         self.icon_manager = icon_manager
 
@@ -77,12 +78,11 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.log = None
 
         self.data_loaded = False
-        self.panel_shown = True
-        self.ui.hidePanelButton.clicked.connect(lambda: self.hide_panel())
-        self.ui.openSettingsButton.clicked.connect(lambda:
-                                                   self.__open_settings())
-        self.ui.optimizeButton.clicked.connect(lambda:
-                                               self.__open_optimization_dialog())
+
+        df.set_up_side_panel(self, "simu_panel_shown", "right")
+
+        self.ui.openSettingsButton.clicked.connect(self.__open_settings)
+        self.ui.optimizeButton.clicked.connect(self.__open_optimization_dialog)
 
         self.optimization_result_widget = None
 
@@ -283,25 +283,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
         except:
             # If window was manually closed, do nothing.
             pass
-    
-    def hide_panel(self, enable_hide=None):
-        """Sets the frame (including all the tool buttons) visible.
-        
-        Args:
-            enable_hide: If True, sets the frame visible and vice versa. 
-                         If not given, sets the frame visible or hidden 
-                         depending its previous state.
-        """
-        if enable_hide is not None:
-            self.panel_shown = enable_hide
-        else:
-            self.panel_shown = not self.panel_shown    
-        if self.panel_shown:
-            self.ui.hidePanelButton.setText('>')
-        else:
-            self.ui.hidePanelButton.setText('<')
-
-        self.ui.frame.setVisible(self.panel_shown)
 
     def __open_settings(self):
         SimulationSettingsDialog(self, self.simulation, self.icon_manager)
@@ -322,6 +303,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
             with open(file) as log_file:
                 for line in log_file:
                     if state == 0:
-                        self.log.add_error(line.strip())                          
+                        self.log.add_error(line.strip())
                     else:
                         self.log.add_text(line.strip())

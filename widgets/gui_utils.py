@@ -26,15 +26,21 @@ __version__ = "2.0"
 
 import abc
 import platform
-import os
-import json
 
 from modules.observing import ProgressReporter
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
+from PyQt5.QtCore import QSettings
 
-from PyQt5.QtCore import QTime
+_SETTINGS_KEY = ("JYU/IBA", f"Potku ({__version__})")
+
+
+def get_potku_settings() -> QSettings:
+    """Returns a QSettings object that can be used to store Potku's
+    settings.
+    """
+    return QSettings(*_SETTINGS_KEY)
 
 
 if platform.system() == "Darwin":
@@ -167,3 +173,37 @@ class StatusBarHandler:
             self.statusbar.removeWidget(self.progress_bar)
         if self.progress_bar is not None:
             self.progress_bar.hide()
+
+
+def change_visibility(qwidget: QtWidgets.QWidget, visibility=None, key=None):
+    """Changes the visibility of given QWidget. Visibility is stored
+    to QSettings object if a key is given.
+
+    Args:
+        qwidget: QWidget whose visibility will be set
+        visibility: boolean or None. If None, current visibility will be set
+            to opposite of current visibility.
+        key: key that is used to store the visibility in a QSettings object.
+    """
+    if visibility is None:
+        visibility = not qwidget.isVisible()
+    qwidget.setVisible(visibility)
+    if key is not None:
+        settings = get_potku_settings()
+        settings.setValue(key, visibility)
+
+
+def change_arrow(qbutton: QtWidgets.QPushButton, arrow=None):
+    """Changes the arrow icon on a QPushButton.
+
+    Args:
+        qbutton: QPushButton
+        arrow: either '<', '>' or None. If value is None, current arrow icon
+            is switched.
+    """
+    if arrow is None:
+        arrow = "<" if qbutton.text() == ">" else ">"
+    elif arrow not in "><":
+        raise ValueError(f"change_arrow function expected either a '<', "
+                         f"'>' or None, '{arrow}' given.")
+    qbutton.setText(arrow)
