@@ -52,12 +52,13 @@ from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
+from widgets.base_tab import BaseTab
 from widgets.log import LogWidget
 from widgets.measurement.tofe_histogram import TofeHistogramWidget
 from widgets.gui_utils import StatusBarHandler
 
 
-class MeasurementTabWidget(QtWidgets.QWidget):
+class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
     """Tab widget where measurement stuff is added.
     """
 
@@ -105,36 +106,9 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         # Enable master button
         self.toggle_master_button()
 
+        self.set_icons()
+
         self.statusbar = statusbar
-
-    def add_widget(self, widget, minimized=None, has_close_button=True,
-                   icon=None):
-        """Adds a new widget to current (measurement) tab.
-
-        Args:
-            widget: QWidget to be added into measurement tab widget.
-            minimized: Boolean representing if widget should be minimized.
-            has_close_button: Whether widget has close button or not.
-            icon: QtGui.QIcon for the subwindow.
-        """
-        # QtGui.QMdiArea.addSubWindow(QWidget, flags=0)
-        if has_close_button:
-            subwindow = self.ui.mdiArea.addSubWindow(widget)
-        else:
-            subwindow = self.ui.mdiArea.addSubWindow(
-                widget, QtCore.Qt.CustomizeWindowHint |
-                QtCore.Qt.WindowTitleHint |
-                QtCore.Qt.WindowMinMaxButtonsHint)
-        if icon:
-            subwindow.setWindowIcon(icon)
-        subwindow.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        widget.subwindow = subwindow
-
-        if minimized:
-            widget.showMinimized()
-        else:
-            widget.show()
-        self.__set_icons()
 
     def add_histogram(self, progress=None, start=0.0, add=0.0):
         """Adds ToF-E histogram into tab if it doesn't have one already.
@@ -176,38 +150,6 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         # button. 
         self.__set_cut_button_enabled(self.obj.selector.selections)
 
-    def add_log(self):
-        """Add the measurement log to measurement tab widget.
-
-        Checks also if there's already some logging for this measurement and
-        appends the text field of the user interface with this log.
-        """
-        self.log = LogWidget()
-        self.add_widget(self.log, minimized=True, has_close_button=False)
-        self.add_ui_logger(self.log)
-
-        # Checks for log file and appends it to the field.
-        log_default = os.path.join(self.obj.directory, 'default.log')
-        log_error = os.path.join(self.obj.directory, 'errors.log')
-        self.__read_log_file(log_default, 1)
-        self.__read_log_file(log_error, 0)
-
-    def add_ui_logger(self, log_widget):
-        """Adds handlers to measurement logger so the logger can log the events
-        to the user interface too.
-
-        log_widget specifies which ui element will handle the logging. That
-        should be the one which is added to this MeasurementTabWidget.
-        """
-        logger = logging.getLogger(self.obj.name)
-        defaultformat = logging.Formatter(
-            '%(asctime)s - %(levelname)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S')
-        widgetlogger_default = CustomLogHandler(logging.INFO,
-                                                defaultformat,
-                                                log_widget)
-        logger.addHandler(widgetlogger_default)
-
     def check_previous_state_files(self, progress_bar=None):
         """Check if saved state for Elemental Losses, Energy Spectrum or Depth
         Profile exists. If yes, load them also.
@@ -243,19 +185,6 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
         # Mac requires event processing to show progress bar and its
         # process.
-
-    def del_widget(self, widget):
-        """Delete a widget from current (measurement) tab.
-
-        Args:
-            widget: QWidget to be removed.
-        """
-        try:
-            self.ui.mdiArea.removeSubWindow(widget.subwindow)
-            widget.delete()
-        except:
-            # If window was manually closed, do nothing.
-            pass
 
     def make_depth_profile(self, directory, name, serial_number_m,
                            sample_folder_name):
@@ -535,23 +464,6 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         if meas_name == master_name:
             self.issueMaster.emit()
 
-    def __read_log_file(self, file, state=1):
-        """Read the log file into the log window.
-
-        Args:
-            file: A string representing log file.
-            state: An integer (0, 1) representing what sort of log we read.
-                   0 = error
-                   1 = text (default)
-        """
-        if os.path.exists(file):
-            with open(file) as log_file:
-                for line in log_file:
-                    if state == 0:
-                        self.log.add_error(line.strip())
-                    else:
-                        self.log.add_text(line.strip())
-
     def __rreplace(self, s, old, new, old_folder_prefix, new_folder_prefix,
                    old_sample_name, new_sample_name):
         """Replace from last occurrence.
@@ -600,7 +512,7 @@ class MeasurementTabWidget(QtWidgets.QWidget):
         """
         self.ui.saveCutsButton.setEnabled(len(selections))
 
-    def __set_icons(self):
+    def set_icons(self):
         """Adds icons to UI elements.
         """
         self.icon_manager.set_icon(self.ui.makeSelectionsButton,

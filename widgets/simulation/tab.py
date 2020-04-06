@@ -39,19 +39,17 @@ from dialogs.energy_spectrum import EnergySpectrumWidget
 from dialogs.simulation.optimization import OptimizationDialog
 from dialogs.simulation.settings import SimulationSettingsDialog
 
-from modules.ui_log_handlers import CustomLogHandler
-
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
-from widgets.log import LogWidget
 from widgets.simulation.optimized_fluence import OptimizedFluenceWidget
 from widgets.simulation.optimized_recoils import OptimizedRecoilsWidget
 from widgets.simulation.target import TargetWidget
+from widgets.base_tab import BaseTab
 
 
-class SimulationTabWidget(QtWidgets.QWidget):
+class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
     """Tab widget where simulation stuff is added.
     """
     def __init__(self, request, tab_id, simulation, icon_manager,
@@ -68,9 +66,11 @@ class SimulationTabWidget(QtWidgets.QWidget):
         super().__init__()
         self.request = request
         self.tab_id = tab_id
+        # TODO why 2 references to simulation?
         self.simulation = simulation
-        self.ui = uic.loadUi(Path("ui_files", "ui_simulation_tab.ui"), self)
         self.obj = simulation
+
+        self.ui = uic.loadUi(Path("ui_files", "ui_simulation_tab.ui"), self)
         self.icon_manager = icon_manager
 
         self.simulation_target = None
@@ -87,33 +87,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
         self.optimization_result_widget = None
 
         self.statusbar = statusbar
-
-    def add_widget(self, widget, minimized=None, has_close_button=True,
-                   icon=None):
-        """ Adds a new widget to current simulation tab.
-        
-        Args:
-            widget: QWidget to be added into simulation tab widget.
-            minimized: Boolean representing if widget should be minimized.
-            has_close_button: Will the widget have a close button or not.
-            icon: QtGui.QIcon for the sub window.
-        """
-        if has_close_button:
-            subwindow = self.ui.mdiArea.addSubWindow(widget)
-        else:
-            subwindow = self.ui.mdiArea.addSubWindow(
-                widget, QtCore.Qt.CustomizeWindowHint |
-                QtCore.Qt.WindowTitleHint |
-                QtCore.Qt.WindowMinMaxButtonsHint)
-        if icon:
-            subwindow.setWindowIcon(icon)
-        subwindow.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        widget.subwindow = subwindow
-
-        if minimized:
-            widget.showMinimized()
-        else:
-            widget.show()
 
     def add_simulation_target_and_recoil(self, progress_bar=None):
         """ Add target widget for modifying the target and recoils into tab.
@@ -149,38 +122,6 @@ class SimulationTabWidget(QtWidgets.QWidget):
         icon = self.icon_manager.get_icon("potku_icon.ico")
         self.add_widget(self.optimization_result_widget)
         return self.optimization_result_widget
-
-    def add_log(self):        
-        """ Add the simulation log to simulation tab widget.
-        
-        Checks also if there's already some logging for this simulation
-        and appends the text field of the user interface with this log.
-        """
-        self.log = LogWidget()
-        self.add_widget(self.log, minimized=True, has_close_button=False)
-        self.add_ui_logger(self.log)
-        
-        # Checks for log file and appends it to the field.
-        log_default = os.path.join(self.obj.directory, 'default.log')
-        log_error = os.path.join(self.obj.directory, 'errors.log')
-        self.__read_log_file(log_default, 1)
-        self.__read_log_file(log_error, 0)
-    
-    def add_ui_logger(self, log_widget):
-        """ Adds handlers to simulation logger so the logger can log the events
-        to the user interface too.
-        
-        log_widget specifies which ui element will handle the logging. That
-        should be the one which is added to this SimulationTabWidget.
-        """
-        logger = logging.getLogger(self.obj.name)
-        defaultformat = logging.Formatter(
-                                  '%(asctime)s - %(levelname)s - %(message)s',
-                                  datefmt='%Y-%m-%d %H:%M:%S')
-        widgetlogger_default = CustomLogHandler(logging.INFO,
-                                                defaultformat,
-                                                log_widget)
-        logger.addHandler(widgetlogger_default)
     
     def check_previous_state_files(self, progress_bar):
         """Check if saved state for Energy Spectra exist.
@@ -270,39 +211,9 @@ class SimulationTabWidget(QtWidgets.QWidget):
                 if save_energy_spectrum:
                     energy_spectrum_widget.save_to_file(measurement=False,
                                                         update=True)
-            
-    def del_widget(self, widget):
-        """Delete a widget from current tab.
-
-        Args:
-            widget: QWidget to be removed.
-        """
-        try:
-            self.ui.mdiArea.removeSubWindow(widget.subwindow)
-            widget.delete()
-        except:
-            # If window was manually closed, do nothing.
-            pass
 
     def __open_settings(self):
         SimulationSettingsDialog(self, self.simulation, self.icon_manager)
 
     def __open_optimization_dialog(self):
         OptimizationDialog(self.simulation, self)
-
-    def __read_log_file(self, file, state=1):
-        """Read the log file into the log window.
-        
-        Args:
-            file: A string representing log file.
-            state: An integer (0, 1) representing what sort of log we read.
-                   0 = error
-                   1 = text (default)
-        """
-        if os.path.exists(file):
-            with open(file) as log_file:
-                for line in log_file:
-                    if state == 0:
-                        self.log.add_error(line.strip())
-                    else:
-                        self.log.add_text(line.strip())
