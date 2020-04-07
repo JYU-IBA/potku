@@ -76,7 +76,7 @@ def element_to_gui(instance, attrs, value: Element):
         isotope_box.setEnabled(False)
     else:
         symbol_btn.setText(value.symbol)
-        masses.load_isotopes(value.symbol, isotope_box, str(value.isotope))
+        masses.load_isotopes(value.symbol, isotope_box, value.isotope)
 
 
 class MeasurementSettingsWidget(QtWidgets.QWidget,
