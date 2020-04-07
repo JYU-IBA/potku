@@ -30,7 +30,7 @@ import time
 
 import widgets.input_validation as iv
 
-from os import path
+from pathlib import Path
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -48,16 +48,15 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
             measurement: Measurement object.
         """
         super().__init__()
-        self.ui = uic.loadUi(path.join("ui_files",
-                                       "ui_profile_settings_tab.ui"), self)
+        uic.loadUi(Path("ui_files", "ui_profile_settings_tab.ui"), self)
         self.measurement = measurement
 
-        iv.set_input_field_red(self.ui.nameLineEdit)
+        iv.set_input_field_red(self.nameLineEdit)
         self.fields_are_valid = False
-        self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
-            self.ui.nameLineEdit, self))
+        self.nameLineEdit.textChanged.connect(lambda: self.__check_text(
+            self.nameLineEdit, self))
 
-        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+        self.nameLineEdit.textEdited.connect(self.__validate)
 
         locale = QLocale.c()
         self.referenceDensityDoubleSpinBox.setLocale(locale)
@@ -86,12 +85,12 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
         to_value = self.depthForConcentrationToDoubleSpinBox.value()
         if spinbox is self.depthForConcentrationFromDoubleSpinBox:
             if from_value > to_value:
-                self.depthForConcentrationFromDoubleSpinBox.setValue(to_value -
-                                                                     0.01)
+                self.depthForConcentrationFromDoubleSpinBox.setValue(
+                    to_value - 0.01)
         else:
             if to_value < from_value:
-                self.depthForConcentrationToDoubleSpinBox.setValue(from_value +
-                                                                   0.01)
+                self.depthForConcentrationToDoubleSpinBox.setValue(
+                    from_value + 0.01)
 
     def show_settings(self):
         """
@@ -237,8 +236,8 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
         """
         Validate the mcsimu settings file name.
         """
-        text = self.ui.nameLineEdit.text()
+        text = self.nameLineEdit.text()
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
         valid_text = iv.validate_text_input(text, regex)
 
-        self.ui.nameLineEdit.setText(valid_text)
+        self.nameLineEdit.setText(valid_text)

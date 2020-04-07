@@ -98,8 +98,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             detector_object, self.simulation.request, self.icon_manager)
 
         # 2 is calibration tab that is not needed
-        calib_tab_widget = self.detector_settings_widget.ui.tabs.widget(2)
-        self.detector_settings_widget.ui.tabs.removeTab(2)
+        calib_tab_widget = self.detector_settings_widget.tabs.widget(2)
+        self.detector_settings_widget.tabs.removeTab(2)
         calib_tab_widget.deleteLater()
 
         self.tabs.addTab(self.detector_settings_widget, "Detector")

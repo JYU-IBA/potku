@@ -33,6 +33,8 @@ import time
 import widgets.input_validation as iv
 import widgets.binding as bnd
 
+from pathlib import Path
+
 from modules.element_simulation import ElementSimulation
 
 from widgets.binding import PropertyTrackingWidget
@@ -115,8 +117,7 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
             element_simulation: Element simulation object.
         """
         super().__init__()
-        uic.loadUi(os.path.join("ui_files",
-                                "ui_request_simulation_settings.ui"),
+        uic.loadUi(Path("ui_files", "ui_request_simulation_settings.ui"),
                    self)
         # By default, disable the widget, so caller has to enable it. Without
         # this, name and description fields would always be enabled when the
@@ -129,7 +130,7 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
         self.fields_are_valid = False
         self.nameLineEdit.textChanged.connect(lambda: self.__check_text(
             self.nameLineEdit, self))
-        self.nameLineEdit.textEdited.connect(lambda: self.__validate())
+        self.nameLineEdit.textEdited.connect(self.__validate)
 
         locale = QLocale.c()
         self.minimumScatterAngleDoubleSpinBox.setLocale(locale)
@@ -214,9 +215,8 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
             for recoil in self.element_simulation.recoil_elements:
                 recoil.type = new_type
                 try:
-                    path_to_rec = os.path.join(
-                        self.element_simulation.directory,
-                        recoil.get_full_name() + old_type)
+                    path_to_rec = Path(self.element_simulation.directory,
+                                       f"{recoil.get_full_name()}{old_type}")
                     os.remove(path_to_rec)
                 except OSError:
                     pass

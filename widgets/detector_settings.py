@@ -35,6 +35,8 @@ import time
 
 import widgets.input_validation as iv
 
+from pathlib import Path
+
 from dialogs.measurement.calibration import CalibrationDialog
 from dialogs.simulation.foil import FoilDialog
 from dialogs.file_dialogs import open_file_dialog
@@ -66,9 +68,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
               run: Run object. None if detector is default detector.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_request_detector_settings.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_request_detector_settings.ui"),
+                   self)
 
         self.obj = obj
         self.request = request
@@ -87,35 +88,33 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         # Add foil widgets and foil objects
         self.detector_structure_widgets = []
         self.foils_layout = self._add_default_foils()
-        self.ui.detectorScrollAreaContents.layout() \
-            .addLayout(self.foils_layout)
-        self.ui.newFoilButton.clicked.connect(
+        self.detectorScrollAreaContents.layout().addLayout(self.foils_layout)
+        self.newFoilButton.clicked.connect(
             lambda: self._add_new_foil(self.foils_layout))
 
         # Efficiency files
         efficiency_files = self.obj.get_efficiency_files()
-        self.ui.efficiencyListWidget.addItems(efficiency_files)
+        self.efficiencyListWidget.addItems(efficiency_files)
         self.obj.efficiencies = []
         for f in efficiency_files:
+            # TODO change to Path
             self.obj.efficiencies.append(os.path.join(
                 self.obj.efficiency_directory, f))
-        self.ui.addEfficiencyButton.clicked.connect(
-            lambda: self.__add_efficiency())
-        self.ui.removeEfficiencyButton.clicked.connect(
-            lambda: self.__remove_efficiency())
+        self.addEfficiencyButton.clicked.connect(self.__add_efficiency)
+        self.removeEfficiencyButton.clicked.connect(self.__remove_efficiency)
 
         # Calibration settings
-        self.ui.executeCalibrationButton.clicked. \
-            connect(self.__open_calibration_dialog)
-        self.ui.executeCalibrationButton.setEnabled(
+        self.executeCalibrationButton.clicked.connect(
+            self.__open_calibration_dialog)
+        self.executeCalibrationButton.setEnabled(
             not self.request.samples.measurements.is_empty())
 
-        iv.set_input_field_red(self.ui.nameLineEdit)
+        iv.set_input_field_red(self.nameLineEdit)
         self.fields_are_valid = False
-        self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
-            self.ui.nameLineEdit, self))
+        self.nameLineEdit.textChanged.connect(lambda: self.__check_text(
+            self.nameLineEdit, self))
 
-        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+        self.nameLineEdit.textEdited.connect(self.__validate)
 
         locale = QLocale.c()
         self.timeResSpinBox.setLocale(locale)
@@ -123,8 +122,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.virtualSizeYSpinBox.setLocale(locale)
 
         # Create scientific spinboxes for tof slope and tof offset
-        self.ui.formLayout_2.removeRow(self.ui.slopeLineEdit)
-        self.ui.formLayout_2.removeRow(self.ui.offsetLineEdit)
+        self.formLayout_2.removeRow(self.slopeLineEdit)
+        self.formLayout_2.removeRow(self.offsetLineEdit)
 
         # Parse the value and multiplier
         slope_value_and_mult = str(self.obj.tof_slope)
@@ -154,18 +153,18 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
                                                        -math.inf, math.inf,
                                                        show_btns=False)
 
-        self.ui.formLayout_2.insertRow(0, "ToF slope [s/channel]:",
-                                       self.scientific_tof_slope)
-        self.ui.formLayout_2.insertRow(1, "ToF offset[s]:",
-                                       self.scientific_tof_offset)
+        self.formLayout_2.insertRow(0, "ToF slope [s/channel]:",
+                                    self.scientific_tof_slope)
+        self.formLayout_2.insertRow(1, "ToF offset[s]:",
+                                    self.scientific_tof_offset)
 
         if platform.system() == "Darwin":
             self.scientific_tof_offset.scientificLineEdit.setFixedWidth(170)
             self.scientific_tof_slope.scientificLineEdit.setFixedWidth(170)
 
         # Save as and load
-        self.ui.saveButton.clicked.connect( self.__save_file)
-        self.ui.loadButton.clicked.connect(self.__load_file)
+        self.saveButton.clicked.connect(self.__save_file)
+        self.loadButton.clicked.connect(self.__load_file)
 
         self.show_settings()
 
@@ -173,13 +172,13 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         """
         Load settings from file.
         """
-        file = open_file_dialog(self,
-                                self.request.default_folder,
+        file = open_file_dialog(self, self.request.default_folder,
                                 "Select detector file",
                                 "Detector File (*.detector)")
         if not file:
             return
         # Read the file into a temp detector object
+        # TODO file file??
         temp_detector = Detector.from_file(file, file, self.request, False)
 
         original_obj = self.obj
@@ -191,33 +190,32 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.tof_foils = []
         self.detector_structure_widgets = []
         # Remove old widgets
-        for i in range(self.ui.detectorScrollAreaContents.layout().count()):
-            layout_item = self.ui.detectorScrollAreaContents.layout().itemAt(i)
+        for i in range(self.detectorScrollAreaContents.layout().count()):
+            layout_item = self.detectorScrollAreaContents.layout().itemAt(i)
             if layout_item == self.foils_layout:
-                self.ui.detectorScrollAreaContents.layout().removeItem(
+                self.detectorScrollAreaContents.layout().removeItem(
                     layout_item)
                 for j in reversed(range(layout_item.count())):
                     layout_item.itemAt(j).widget().deleteLater()
 
         # Add foil widgets and foil objects
         self.foils_layout = self._add_default_foils()
-        self.ui.detectorScrollAreaContents.layout() \
-            .addLayout(self.foils_layout)
+        self.detectorScrollAreaContents.layout().addLayout(self.foils_layout)
 
         # Efficiency files
         efficiency_files = self.obj.get_efficiency_files()
         # Remove old efficiency items
         all_items = []
-        for i in range(self.ui.efficiencyListWidget.count()):
-            all_items.append(self.ui.efficiencyListWidget.item(i))
+        for i in range(self.efficiencyListWidget.count()):
+            all_items.append(self.efficiencyListWidget.item(i))
         for item in all_items:
-            self.ui.efficiencyListWidget.takeItem(
-                self.ui.efficiencyListWidget.row(item))
+            self.efficiencyListWidget.takeItem(
+                self.efficiencyListWidget.row(item))
         for orig_eff in original_obj.get_efficiency_files():
             path = os.path.join(original_obj.efficiency_directory, orig_eff)
             original_obj.remove_efficiency_file_path(path)
 
-        self.ui.efficiencyListWidget.addItems(efficiency_files)
+        self.efficiencyListWidget.addItems(efficiency_files)
         self.obj.efficiencies = []
         for f in efficiency_files:
             self.obj.efficiencies.append(os.path.join(
@@ -229,6 +227,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
 
         # Calibration spinboxes
         # Parse the value and multiplier
+        # TODO refactor duplicate code
         slope_value_and_mult = str(self.obj.tof_slope)
         try:
             e_index = slope_value_and_mult.index('e')
@@ -270,8 +269,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         """Opens file dialog and sets and saves the settings to a file.
         """
         file = save_file_dialog(self, self.request.default_folder,
-                                "Save detector file", "Detector File "
-                                                      "(*.detector)")
+                                "Save detector file",
+                                "Detector File (*.detector)")
         if not file:
             return
         if not self.some_values_changed():
@@ -633,15 +632,15 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
                                                QtWidgets.QMessageBox.Ok)
                 return
         self.obj.save_efficiency_file_path(new_efficiency_file)
-        self.ui.efficiencyListWidget.clear()
-        self.ui.efficiencyListWidget.addItems(
+        self.efficiencyListWidget.clear()
+        self.efficiencyListWidget.addItems(
             self.obj.get_efficiency_files_from_list())
 
     def __remove_efficiency(self):
         """Removes efficiency file from detector's efficiency directory and
         updates settings view.
         """
-        if self.ui.efficiencyListWidget.currentItem():
+        if self.efficiencyListWidget.currentItem():
             reply = QtWidgets.QMessageBox.question(self, "Confirmation",
                                                    "Are you sure you want to "
                                                    "delete selected efficiency"
@@ -654,13 +653,13 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
                     QtWidgets.QMessageBox.Cancel:
                 return  # If clicked Yes, then continue normally
 
-            selected_efficiency_file = self.ui. \
-                efficiencyListWidget.currentItem().text()
+            selected_efficiency_file = \
+                self.efficiencyListWidget.currentItem().text()
             # self.obj.remove_efficiency_file(
             #     selected_efficiency_file)
             self.obj.remove_efficiency_file_path(selected_efficiency_file)
-            self.ui.efficiencyListWidget.clear()
-            self.ui.efficiencyListWidget.addItems(
+            self.efficiencyListWidget.clear()
+            self.efficiencyListWidget.addItems(
                 self.obj.get_efficiency_files_from_list())
 
     def __open_calibration_dialog(self):
@@ -724,9 +723,9 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         """
         Validate the sample name.
         """
-        text = self.ui.nameLineEdit.text()
+        text = self.nameLineEdit.text()
         regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
         valid_text = iv.validate_text_input(text, regex)
 
-        self.ui.nameLineEdit.setText(valid_text)
+        self.nameLineEdit.setText(valid_text)
 

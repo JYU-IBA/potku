@@ -36,6 +36,8 @@ import os
 
 import dialogs.dialog_functions as df
 
+from pathlib import Path
+
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -62,10 +64,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             icon_manager: IconManager object.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_settings.ui"), self)
+        uic.loadUi(Path("ui_files", "ui_settings.ui"), self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        screen_geometry = QDesktopWidget \
-            .availableGeometry(QApplication.desktop())
+        screen_geometry = \
+            QDesktopWidget.availableGeometry(QApplication.desktop())
         self.resize(self.geometry().width() * 1.2,
                     screen_geometry.size().height() * 0.8)
 
@@ -74,40 +76,41 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.icon_manager = icon_manager
 
         # Connect buttons.
-        self.ui.OKButton.clicked.connect(self.update_and_close_settings)
-        self.ui.applyButton.clicked.connect(self.update_settings)
-        self.ui.cancelButton.clicked.connect(self.close)
+        self.OKButton.clicked.connect(self.update_and_close_settings)
+        self.applyButton.clicked.connect(self.update_settings)
+        self.cancelButton.clicked.connect(self.close)
 
         # Add measurement settings view to the settings view
         self.measurement_settings_widget = MeasurementSettingsWidget(
             self.request.default_measurement)
-        self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
+        self.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
+        # Connect the enabling of the OKButton to a signal that indicates
+        # whether beam selection is ok
         self.measurement_settings_widget.beam_selection_ok.connect(
-            lambda b: self.ui.OKButton.setEnabled(b)
-        )
+            self.OKButton.setEnabled)
 
         # Add detector settings view to the settings view
         self.detector_settings_widget = DetectorSettingsWidget(
             self.request.default_detector, self.request, self.icon_manager,
             run=self.measurement_settings_widget.tmp_run)
 
-        self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
+        self.tabs.addTab(self.detector_settings_widget, "Detector")
 
         # Add simulation settings view to the settings view
         self.simulation_settings_widget = SimulationSettingsWidget(
             self.request.default_element_simulation)
-        self.ui.tabs.addTab(self.simulation_settings_widget, "Simulation")
+        self.tabs.addTab(self.simulation_settings_widget, "Simulation")
 
         self.simulation_settings_widget.setEnabled(True)
 
         # Add profile settings view to the settings view
         self.profile_settings_widget = ProfileSettingsWidget(
             self.request.default_measurement)
-        self.ui.tabs.addTab(self.profile_settings_widget, "Profile")
+        self.tabs.addTab(self.profile_settings_widget, "Profile")
         self.__close = True
 
-        self.ui.tabs.currentChanged.connect(lambda: self.__check_for_red())
+        self.tabs.currentChanged.connect(self.__check_for_red)
 
         self.original_simulation_type = \
             self.request.default_element_simulation.simulation_type
@@ -198,7 +201,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         # Check the target and detector angles
         ok_pressed = self.measurement_settings_widget.check_angles()
         if ok_pressed:
-            if not self.ui.tabs.currentWidget().fields_are_valid:
+            if not self.tabs.currentWidget().fields_are_valid:
                 QtWidgets.QMessageBox.critical(self, "Warning",
                                                "Some of the setting values have"
                                                " not been set.\n" +
@@ -435,7 +438,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         Args:
              tab_id: Tab id. Doesn't correspond to places in tab.
         """
-        for i in range(self.ui.tabs.count()):
+        for i in range(self.tabs.count()):
             tab_widget = self.main_window.ui.tabs.widget(i)
             if tab_widget == self.main_window.tab_widgets[tab_id]:
                 return tab_widget
