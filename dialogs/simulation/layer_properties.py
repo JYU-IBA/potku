@@ -472,9 +472,3 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         """
         masses.load_isotopes(self.element_button.text(), self.isotope_combobox,
                              current_isotope)
-        standard_isotope = masses.get_standard_isotope(
-            self.element_button.text())
-        self.isotope_combobox.insertItem(0,
-                                         "{0} (st. mass)".format(
-                                             round(standard_isotope, 3)))
-        self.isotope_combobox.setCurrentIndex(0)

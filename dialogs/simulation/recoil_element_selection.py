@@ -50,6 +50,7 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
     def __init__(self, recoil_atom_distribution):
         """Inits simulation element selection dialog.
         """
+        # TODO this dialog needs to be wider
         super().__init__()
         self.ui = uic.loadUi(
             os.path.join("ui_files", "ui_recoil_element_selection_dialog.ui"),
@@ -172,13 +173,15 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
             current_isotope: String representing current isotope.
         """
         standard_mass = masses.get_standard_isotope(element)
-        self.ui.standard_mass_label.setText(str(round(standard_mass, 3)))
-        masses.load_isotopes(element, self.ui.isotope_combobox, current_isotope)
+        self.standard_mass_label.setText(str(round(standard_mass, 3)))
+        masses.load_isotopes(element, self.isotope_combobox, current_isotope)
+        self.isotope_combobox.setEnabled(False)
+        self.standard_mass_radio.setChecked(True)
 
     def __toggle_isotope(self):
         """Toggle Sample isotope radio button.
         """
-        self.ui.isotope_combobox.setEnabled(self.ui.isotope_radio.isChecked())
+        self.isotope_combobox.setEnabled(self.ui.isotope_radio.isChecked())
 
     def __check_if_settings_ok(self):
         """Check if sample settings are ok, and enable ok button.
