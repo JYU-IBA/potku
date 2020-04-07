@@ -171,7 +171,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         self.fields_are_valid = False
         iv.set_input_field_red(self.nameLineEdit)
         self.nameLineEdit.textChanged.connect(
-            iv.check_text(self.nameLineEdit, qwidget=self))
+            lambda: iv.check_text(self.nameLineEdit, qwidget=self))
         self.nameLineEdit.textEdited.connect(self.__validate)
 
         self.fluenceDoubleSpinBox.setContextMenuPolicy(Qt.ActionsContextMenu)
