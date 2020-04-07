@@ -872,7 +872,7 @@ class Potku(QtWidgets.QMainWindow):
 
             self.add_new_tab("simulation", os.path.join(
                 self.request.directory, sample_item.obj.directory,
-                Simulation.directory_prefix + "%02d" % serial_number + "-" +
+                Simulation.DIRECTORY_PREFIX + "%02d" % serial_number + "-" +
                 dialog.name,
                 dialog.name + ".simulation"), sample_item.obj, progress_bar,
                                load_data=True)
