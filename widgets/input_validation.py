@@ -34,6 +34,7 @@ __version__ = "2.0"
 
 import re
 
+from PyQt5.QtWidgets import QLineEdit
 from PyQt5.QtGui import QValidator
 
 
@@ -160,3 +161,17 @@ def validate_text_input(text, regex):
         return valid_text
     else:
         return text
+
+
+def sanitize_file_name(line_edit: QLineEdit):
+    """Sanitizes the text in the given input so that it is okay to use in a
+    file name.
+
+    Args:
+        input: QLineEdit object.
+    """
+    text = line_edit.text()
+    regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
+    valid_text = validate_text_input(text, regex)
+
+    line_edit.setText(valid_text)

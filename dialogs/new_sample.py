@@ -50,8 +50,6 @@ class NewSampleDialog(QtWidgets.QDialog):
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_new_sample.ui"), self)
 
         iv.set_input_field_red(self.ui.nameLineEdit)
-        self.ui.nameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.ui.nameLineEdit))
 
         self.ui.createButton.clicked.connect(self.__create_sample)
         self.ui.cancelButton.clicked.connect(self.close)
@@ -60,7 +58,11 @@ class NewSampleDialog(QtWidgets.QDialog):
         self.samples = samples
         self.__close = True
 
-        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+        self.ui.nameLineEdit.textChanged.connect(
+            lambda: self.__check_text(self.ui.nameLineEdit))
+
+        self.nameLineEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.nameLineEdit))
 
         self.exec_()
 
@@ -95,13 +97,3 @@ class NewSampleDialog(QtWidgets.QDialog):
             input_field: Input field the contents of which are checked.
         """
         iv.check_text(input_field)
-
-    def __validate(self):
-        """
-        Validate the sample name.
-        """
-        text = self.ui.nameLineEdit.text()
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = iv.validate_text_input(text, regex)
-
-        self.ui.nameLineEdit.setText(valid_text)

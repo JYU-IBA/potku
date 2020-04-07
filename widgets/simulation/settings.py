@@ -128,9 +128,10 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
 
         iv.set_input_field_red(self.nameLineEdit)
         self.fields_are_valid = False
-        self.nameLineEdit.textChanged.connect(lambda: self.__check_text(
-            self.nameLineEdit, self))
-        self.nameLineEdit.textEdited.connect(self.__validate)
+        self.nameLineEdit.textChanged.connect(
+            lambda: self.__check_text(self.nameLineEdit, self))
+        self.nameLineEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.nameLineEdit))
 
         locale = QLocale.c()
         self.minimumScatterAngleDoubleSpinBox.setLocale(locale)
@@ -185,16 +186,6 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
             settings: Settings widget.
         """
         settings.fields_are_valid = iv.check_text(input_field)
-
-    def __validate(self):
-        """
-        Validate the mcsimu settings file name.
-        """
-        text = self.nameLineEdit.text()
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = iv.validate_text_input(text, regex)
-
-        self.nameLineEdit.setText(valid_text)
 
     def update_settings(self):
         """

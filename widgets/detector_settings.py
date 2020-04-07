@@ -111,10 +111,11 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
 
         iv.set_input_field_red(self.nameLineEdit)
         self.fields_are_valid = False
-        self.nameLineEdit.textChanged.connect(lambda: self.__check_text(
-            self.nameLineEdit, self))
+        self.nameLineEdit.textChanged.connect(
+            lambda: self.__check_text(self.nameLineEdit, self))
 
-        self.nameLineEdit.textEdited.connect(self.__validate)
+        self.nameLineEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.nameLineEdit))
 
         locale = QLocale.c()
         self.timeResSpinBox.setLocale(locale)
@@ -718,14 +719,3 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             settings: Settings widget.
         """
         settings.fields_are_valid = iv.check_text(input_field)
-
-    def __validate(self):
-        """
-        Validate the sample name.
-        """
-        text = self.nameLineEdit.text()
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = iv.validate_text_input(text, regex)
-
-        self.nameLineEdit.setText(valid_text)
-

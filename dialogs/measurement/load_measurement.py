@@ -80,8 +80,8 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
         self.ui.pathLineEdit.textChanged.connect(lambda: self.__check_text(
             self.ui.pathLineEdit))
 
-        self.ui.nameLineEdit.textEdited.connect(
-            lambda: self.__validate())
+        self.nameLineEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.nameLineEdit))
 
         self.exec_()
 
@@ -151,13 +151,3 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
                     == self.sample:
                 return sample
         return None
-
-    def __validate(self):
-        """
-        Validate measurement's name.
-        """
-        text = self.ui.nameLineEdit.text()
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = iv.validate_text_input(text, regex)
-
-        self.ui.nameLineEdit.setText(valid_text)

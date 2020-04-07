@@ -67,7 +67,8 @@ class TargetInfoDialog(QtWidgets.QDialog):
         self.ui.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             target.modification_time)))
 
-        self.ui.nameLineEdit.textEdited.connect(lambda: self.__validate())
+        self.nameLineEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.nameLineEdit))
 
         self.__close = True
 
@@ -102,13 +103,3 @@ class TargetInfoDialog(QtWidgets.QDialog):
             settings: Settings dialog.
         """
         settings.fields_are_valid = iv.check_text(input_field)
-
-    def __validate(self):
-        """
-        Validate the recoil name.
-        """
-        text = self.ui.nameLineEdit.text()
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = iv.validate_text_input(text, regex)
-
-        self.ui.nameLineEdit.setText(valid_text)
