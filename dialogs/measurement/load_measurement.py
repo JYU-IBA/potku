@@ -72,14 +72,13 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
         if not samples:
             iv.set_input_field_red(self.ui.samplesComboBox)
 
-        iv.set_input_field_red(self.ui.nameLineEdit)
-        self.ui.nameLineEdit.textChanged.connect(lambda: self.__check_text(
-            self.ui.nameLineEdit))
-
         iv.set_input_field_red(self.ui.pathLineEdit)
         self.ui.pathLineEdit.textChanged.connect(lambda: self.__check_text(
             self.ui.pathLineEdit))
 
+        iv.set_input_field_red(self.nameLineEdit)
+        self.nameLineEdit.textChanged.connect(
+            lambda: self.__check_text(self.ui.nameLineEdit))
         self.nameLineEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.nameLineEdit))
 

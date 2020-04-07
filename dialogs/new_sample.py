@@ -49,8 +49,6 @@ class NewSampleDialog(QtWidgets.QDialog):
 
         self.ui = uic.loadUi(os.path.join("ui_files", "ui_new_sample.ui"), self)
 
-        iv.set_input_field_red(self.ui.nameLineEdit)
-
         self.ui.createButton.clicked.connect(self.__create_sample)
         self.ui.cancelButton.clicked.connect(self.close)
         self.name = ""
@@ -58,9 +56,9 @@ class NewSampleDialog(QtWidgets.QDialog):
         self.samples = samples
         self.__close = True
 
-        self.ui.nameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.ui.nameLineEdit))
-
+        iv.set_input_field_red(self.nameLineEdit)
+        self.nameLineEdit.textChanged.connect(
+            lambda: self.__check_text(self.nameLineEdit))
         self.nameLineEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.nameLineEdit))
 

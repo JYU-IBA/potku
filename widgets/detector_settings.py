@@ -109,11 +109,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.executeCalibrationButton.setEnabled(
             not self.request.samples.measurements.is_empty())
 
-        iv.set_input_field_red(self.nameLineEdit)
         self.fields_are_valid = False
+        iv.set_input_field_red(self.nameLineEdit)
         self.nameLineEdit.textChanged.connect(
             lambda: self.__check_text(self.nameLineEdit, self))
-
         self.nameLineEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.nameLineEdit))
 

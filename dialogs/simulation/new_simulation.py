@@ -63,10 +63,6 @@ class SimulationNewDialog(QtWidgets.QDialog):
         if not samples:
             iv.set_input_field_red(self.ui.samplesComboBox)
 
-        iv.set_input_field_red(self.ui.simulationNameLineEdit)
-        self.ui.simulationNameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.ui.simulationNameLineEdit))
-
         self.ui.addSampleButton.clicked.connect(self.__add_sample)
         self.ui.pushCreate.clicked.connect(self.__create_simulation)
         self.ui.pushCancel.clicked.connect(self.close)
@@ -74,8 +70,11 @@ class SimulationNewDialog(QtWidgets.QDialog):
         self.sample = None
         self.__close = True
 
-        self.ui.simulationNameLineEdit.textEdited.connect(
-            lambda: self.__validate())
+        iv.set_input_field_red(self.simulationNameLineEdit)
+        self.simulationNameLineEdit.textChanged.connect(
+            lambda: self.__check_text(self.simulationNameLineEdit))
+        self.simulationNameLineEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.simulationNameLineEdit))
 
         if platform.system() == "Darwin":
             self.ui.samplesComboBox.setMinimumWidth(157)
@@ -147,13 +146,3 @@ class SimulationNewDialog(QtWidgets.QDialog):
                     == self.sample:
                 return sample
         return None
-
-    def __validate(self):
-        """
-        Validate the simulation name.
-        """
-        text = self.ui.simulationNameLineEdit.text()
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = iv.validate_text_input(text, regex)
-
-        self.ui.simulationNameLineEdit.setText(valid_text)

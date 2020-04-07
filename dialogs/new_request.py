@@ -64,11 +64,11 @@ class RequestNewDialog(QtWidgets.QDialog):
         self.ui.pushCancel.clicked.connect(self.close)
         self.ui.browseFolderButton.clicked.connect(self.__browser_folder)
 
-        self.ui.requestNameLineEdit.textEdited.connect(lambda:
-                                                         self.__validate())
         iv.set_input_field_red(self.ui.requestNameLineEdit)
-        self.ui.requestNameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.ui.requestNameLineEdit))
+        self.requestNameLineEdit.textChanged.connect(
+            lambda: self.__check_text(self.requestNameLineEdit))
+        self.requestNameLineEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.requestNameLineEdit))
 
         self.ui.requestDirectoryLineEdit.textChanged.connect(
             lambda: self.__check_text(self.ui.requestDirectoryLineEdit))
@@ -89,16 +89,6 @@ class RequestNewDialog(QtWidgets.QDialog):
         if folder:
             self.folder = folder
             self.ui.requestDirectoryLineEdit.setText(folder)
-
-    def __validate(self):
-        """
-        Validate the request name.
-        """
-        text = self.ui.requestNameLineEdit.text()
-        regex = "^[A-Za-z0-9_ÖöÄäÅå-]*"
-        valid_text = iv.validate_text_input(text, regex)
-
-        self.ui.requestNameLineEdit.setText(valid_text)
 
     @staticmethod
     def __check_text(input_field):

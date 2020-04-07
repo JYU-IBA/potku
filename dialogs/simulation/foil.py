@@ -83,10 +83,12 @@ class FoilDialog(QtWidgets.QDialog):
         self.ui.dimensionLayout.addWidget(self.dimension_label)
         self.ui.dimensionLayout.addWidget(self.dimension_edits[0])
 
-        iv.set_input_field_red(self.ui.nameEdit)
         self.fields_are_valid = False
-        self.ui.nameEdit.textChanged.connect(lambda: self.__check_text(
-            self.ui.nameEdit, self))
+        iv.set_input_field_red(self.nameEdit)
+        self.nameEdit.textChanged.connect(
+            lambda: self.__check_text(self.nameEdit, self))
+        self.nameEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.nameEdit))
 
         self.show_parameters()
 
@@ -101,7 +103,6 @@ class FoilDialog(QtWidgets.QDialog):
         self.ui.okButton.clicked.connect(lambda:
                                          self._save_foil_info_and_close())
 
-        self.ui.nameEdit.textEdited.connect(lambda: self.__validate())
         self.__close = True
 
         self.exec_()
@@ -207,13 +208,3 @@ class FoilDialog(QtWidgets.QDialog):
 
         if self.__close:
             self.close()
-
-    def __validate(self):
-        """
-        Validate the layer name.
-        """
-        text = self.ui.nameEdit.text()
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = iv.validate_text_input(text, regex)
-
-        self.ui.nameEdit.setText(valid_text)

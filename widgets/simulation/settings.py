@@ -126,8 +126,8 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
         self.element_simulation = element_simulation
         self.set_spinbox_maximums()
 
-        iv.set_input_field_red(self.nameLineEdit)
         self.fields_are_valid = False
+        iv.set_input_field_red(self.nameLineEdit)
         self.nameLineEdit.textChanged.connect(
             lambda: self.__check_text(self.nameLineEdit, self))
         self.nameLineEdit.textEdited.connect(

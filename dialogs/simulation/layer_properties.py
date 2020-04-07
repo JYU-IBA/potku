@@ -71,13 +71,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.ok_pressed = False
         self.simulation = simulation
 
-        iv.set_input_field_red(self.ui.nameEdit)
         iv.set_input_field_red(self.ui.thicknessEdit)
         iv.set_input_field_red(self.ui.densityEdit)
-        self.fields_are_valid = True
         self.amount_mismatch = False
-        self.ui.nameEdit.textChanged.connect(
-            lambda: self.check_text(self.ui.nameEdit, self))
 
         # Connect buttons to events
         self.ui.addElementButton.clicked.connect(self.__add_element_layout)
@@ -99,7 +95,13 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         if first_layer:
             self.ui.groupBox_2.hide()
 
-        self.ui.nameEdit.textEdited.connect(lambda: self.__validate())
+        self.fields_are_valid = True
+        iv.set_input_field_red(self.nameEdit)
+        self.nameEdit.textChanged.connect(
+            lambda: self.check_text(self.ui.nameEdit, self))
+        self.nameEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.nameEdit))
+
         self.__close = True
 
         self.ui.thicknessEdit.setLocale(QLocale.c())
@@ -352,16 +354,6 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.ui.scrollArea.setStyleSheet("")
         self.__element_layouts.append(ElementLayout(
             self.ui.scrollAreaWidgetContents, element, self))
-
-    def __validate(self):
-        """
-        Validate the layer name.
-        """
-        text = self.ui.nameEdit.text()
-        regex = "^[A-Za-z0-9-ÖöÄäÅå]*"
-        valid_text = iv.validate_text_input(text, regex)
-
-        self.ui.nameEdit.setText(valid_text)
 
 
 class ElementLayout(QtWidgets.QVBoxLayout):

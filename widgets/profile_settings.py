@@ -51,11 +51,10 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
         uic.loadUi(Path("ui_files", "ui_profile_settings_tab.ui"), self)
         self.measurement = measurement
 
-        iv.set_input_field_red(self.nameLineEdit)
         self.fields_are_valid = False
+        iv.set_input_field_red(self.nameLineEdit)
         self.nameLineEdit.textChanged.connect(
             lambda: self.__check_text(self.nameLineEdit, self))
-
         self.nameLineEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.nameLineEdit))
 

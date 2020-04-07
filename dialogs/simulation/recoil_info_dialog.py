@@ -76,10 +76,7 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         self.cancelPushButton.clicked.connect(self.close)
         self.colorPushButton.clicked.connect(self.__change_color)
 
-        iv.set_input_field_red(self.nameLineEdit)
         self.text_is_valid = True
-        self.nameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.nameLineEdit, self))
 
         self.name = recoil_element.name
         self.description = recoil_element.description
@@ -99,7 +96,10 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             recoil_element.modification_time)))
 
-        self.nameLineEdit.textEdited.connect(lambda: self.__validate())
+        iv.set_input_field_red(self.nameLineEdit)
+        self.nameLineEdit.textChanged.connect(
+            lambda: self.__check_text(self.nameLineEdit, self))
+        self.nameLineEdit.textEdited.connect(self.__validate)
 
         title = f"Recoil element: " \
                 f"{recoil_element.element.get_prefix()}"
