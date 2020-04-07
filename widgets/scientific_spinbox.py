@@ -25,13 +25,12 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-import os
-
 import widgets.input_validation as iv
 
 from widgets.input_validation import InputValidator
 
 from decimal import Decimal
+from pathlib import Path
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -57,9 +56,7 @@ class ScientificSpinBox(QtWidgets.QWidget):
                        are shown.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_scientific_spinbox_widget.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_scientific_spinbox_widget.ui"), self)
 
         self.validator = InputValidator(double)
         self.minimum = minimum
@@ -72,35 +69,35 @@ class ScientificSpinBox(QtWidgets.QWidget):
         self.value = value
         self.multiplier = multiplier
         self.value_str = str(self.value) + str(self.multiplier)[1:]
-        self.ui.scientificLineEdit.setText(str(self.value)
-                                           + str(self.multiplier)[1:])
+        self.scientificLineEdit.setText(str(self.value) + str(
+            self.multiplier)[1:])
 
-        self.ui.scientificLineEdit.textChanged.connect(lambda: self.validate(
-            self.ui.scientificLineEdit.cursorPosition()
+        self.scientificLineEdit.textChanged.connect(lambda: self.validate(
+            self.scientificLineEdit.cursorPosition()
         ))
 
         if show_btns:
-            self.ui.upButton.clicked.connect(self.increase_value)
-            self.ui.downButton.clicked.connect(self.decrease_value)
+            self.upButton.clicked.connect(self.increase_value)
+            self.downButton.clicked.connect(self.decrease_value)
         else:
-            self.ui.upButton.hide()
-            self.ui.downButton.hide()
+            self.upButton.hide()
+            self.downButton.hide()
 
-        self.ui.scientificLineEdit.installEventFilter(self)
+        self.scientificLineEdit.installEventFilter(self)
 
     def check_min_and_max(self):
         """
         Check that value inside line edit is inside the minimum and maximum.
         Also check that value is floatable.
         """
-        value_str = self.ui.scientificLineEdit.text()
+        value_str = self.scientificLineEdit.text()
         if self.check_valid():
             value = float(value_str)
             if value < self.minimum:
-                self.ui.scientificLineEdit.setText(str(self.minimum))
+                self.scientificLineEdit.setText(str(self.minimum))
             elif value > self.maximum:
-                self.ui.scientificLineEdit.setText(str(self.maximum))
-            iv.set_input_field_white(self.ui.scientificLineEdit)
+                self.scientificLineEdit.setText(str(self.maximum))
+            iv.set_input_field_white(self.scientificLineEdit)
             if 'e' in value_str:
                 index = value_str.index('e')
                 self.value = float(Decimal(value_str[:index]))
@@ -119,16 +116,16 @@ class ScientificSpinBox(QtWidgets.QWidget):
         Return:
             True or False.
         """
-        value_str = self.ui.scientificLineEdit.text()
+        value_str = self.scientificLineEdit.text()
         try:
             value = float(value_str)
             if value_str.endswith('.'):
                 raise ValueError
-            iv.set_input_field_white(self.ui.scientificLineEdit)
+            iv.set_input_field_white(self.scientificLineEdit)
             self.value = value
             return True
         except ValueError:
-            iv.set_input_field_red(self.ui.scientificLineEdit)
+            iv.set_input_field_red(self.scientificLineEdit)
             self.value = None
             self.multiplier = None
             return False
@@ -138,9 +135,9 @@ class ScientificSpinBox(QtWidgets.QWidget):
         Decrease the value of the spinbox. If scientific notation is used,
         decrease before the 'e'. If not, decrease the smallest decimal.
         """
-        if not self.ui.scientificLineEdit.hasFocus():
-            self.ui.scientificLineEdit.setFocus()
-        value_str = self.ui.scientificLineEdit.text()
+        if not self.scientificLineEdit.hasFocus():
+            self.scientificLineEdit.setFocus()
+        value_str = self.scientificLineEdit.text()
         try:
             float(value_str)
         except ValueError:
@@ -173,7 +170,7 @@ class ScientificSpinBox(QtWidgets.QWidget):
                 else:
                     new_text = str(final_value) + multiply_part
 
-            self.ui.scientificLineEdit.setText(new_text)
+            self.scientificLineEdit.setText(new_text)
         except ValueError:
             pass
             # Not scientific notation
@@ -199,7 +196,7 @@ class ScientificSpinBox(QtWidgets.QWidget):
                 else:
                     new_text = str(final_value)
 
-            self.ui.scientificLineEdit.setText(new_text)
+            self.scientificLineEdit.setText(new_text)
 
         self.validate(len(new_text))
 
@@ -217,9 +214,9 @@ class ScientificSpinBox(QtWidgets.QWidget):
         Increase the value of the spinbox. If scientific notation is used,
        increase before the 'e'. If not, increase the smallest decimal.
         """
-        if not self.ui.scientificLineEdit.hasFocus():
-            self.ui.scientificLineEdit.setFocus()
-        value_str = self.ui.scientificLineEdit.text()
+        if not self.scientificLineEdit.hasFocus():
+            self.scientificLineEdit.setFocus()
+        value_str = self.scientificLineEdit.text()
         try:
             float(value_str)
         except ValueError:
@@ -257,7 +254,7 @@ class ScientificSpinBox(QtWidgets.QWidget):
                 if final_value * float("1" + multiply_part) > self.maximum:
                     new_text = str(self.maximum)
 
-            self.ui.scientificLineEdit.setText(new_text)
+            self.scientificLineEdit.setText(new_text)
         except ValueError:
             pass
             # Not scientific notation
@@ -283,7 +280,7 @@ class ScientificSpinBox(QtWidgets.QWidget):
                 else:
                     new_text = str(final_value)
 
-            self.ui.scientificLineEdit.setText(new_text)
+            self.scientificLineEdit.setText(new_text)
 
         self.validate(len(new_text))
 
@@ -294,15 +291,15 @@ class ScientificSpinBox(QtWidgets.QWidget):
         Args:
             pos: Position of the cursor on the string of text.
         """
-        string = self.ui.scientificLineEdit.text()
+        string = self.scientificLineEdit.text()
         match = self.validator.validate(string, pos)
         try:
-            if not float(match) <= self.maximum:
-                match = match[:len(match) - 1]
+            #if not float(match) <= self.maximum:
+            #    match = match[:len(match) - 1]
             if not float(match) <= self.maximum:
                 match = str(self.maximum)
             if not self.minimum <= float(match):
-                pass
+                match = str(self.minimum)
         except ValueError:
             pass
         # Find out if number part is longer than 17
@@ -319,12 +316,20 @@ class ScientificSpinBox(QtWidgets.QWidget):
                 while len(match) > 17:
                     match = match[:len(match) - 1]
 
-        self.ui.scientificLineEdit.setText(match)
-        self.ui.scientificLineEdit.setCursorPosition(pos)
-        iv.set_input_field_white(self.ui.scientificLineEdit)
+        self.scientificLineEdit.setText(match)
+        self.scientificLineEdit.setCursorPosition(pos)
+        iv.set_input_field_white(self.scientificLineEdit)
         self.check_valid()
+
+    def set_value(self, value):
+        """Sets the value of the Spin box, provided that the given value is
+        valid.
+        """
+        # TODO treat the value internally as a float/decimal instead of a
+        #  string
+        self.scientificLineEdit.setText(str(value))
 
     def get_value(self):
         """Returns the value of the spinbox as a float.
         """
-        return float(self.value_str)
+        return float(self.scientificLineEdit.text())

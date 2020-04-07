@@ -52,30 +52,51 @@ class TestSciSpinbox(unittest.TestCase):
             self.sbox = ScientificSpinBox(10.0, 1e+22, 5.0e+20, 10.0e+23)
 
     def test_decrease(self):
-        down_btn = self.sbox.ui.downButton
+        down_btn = self.sbox.downButton
         QTest.mouseClick(down_btn, Qt.LeftButton)
         self.assertEqual(
             "9.9e+22",
-            self.sbox.ui.scientificLineEdit.text()
+            self.sbox.scientificLineEdit.text()
         )
         QTest.mouseClick(down_btn, Qt.LeftButton)
         self.assertEqual(
             "9.8e+22",
-            self.sbox.ui.scientificLineEdit.text()
+            self.sbox.scientificLineEdit.text()
         )
 
     def test_increase(self):
-        up_btn = self.sbox.ui.upButton
+        up_btn = self.sbox.upButton
         QTest.mouseClick(up_btn, Qt.LeftButton)
         self.assertEqual(
             "10.1e+22",
-            self.sbox.ui.scientificLineEdit.text()
+            self.sbox.scientificLineEdit.text()
         )
         QTest.mouseClick(up_btn, Qt.LeftButton)
         self.assertEqual(
             "10.2e+22",
-            self.sbox.ui.scientificLineEdit.text()
+            self.sbox.scientificLineEdit.text()
         )
+
+    def test_set_value(self):
+        # Value below min
+        self.sbox.set_value(1.234e-6)
+        self.assertEqual(5e+20, self.sbox.get_value())
+
+        # Value over max
+        self.sbox.set_value(5e25)
+        self.assertEqual(10e23, self.sbox.get_value())
+
+        # Try setting a string
+        self.sbox.set_value("5e21")
+        self.assertEqual(5e21, self.sbox.get_value())
+
+        # Try setting a float
+        self.sbox.set_value(5e22)
+        self.assertEqual(5e22, self.sbox.get_value())
+
+        # Try setting a roman numeral
+        self.assertRaises(ValueError, self.sbox.set_value("XVII"))
+        self.assertEqual(5e22, self.sbox.get_value())
 
 
 if __name__ == '__main__':

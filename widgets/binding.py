@@ -58,7 +58,7 @@ _DEFAULT_GETTERS = {
     QtWidgets.QCheckBox: lambda qobj: qobj.isChecked(),
     QtWidgets.QLabel: lambda qobj: qobj.text(),
     QtWidgets.QPlainTextEdit: lambda qobj: qobj.toPlainText(),
-    ScientificSpinBox: lambda qobj: qobj.value
+    ScientificSpinBox: lambda qobj: qobj.get_value()
 }
 
 _DEFAULT_SETTERS = {
@@ -70,8 +70,7 @@ _DEFAULT_SETTERS = {
     QtWidgets.QCheckBox: lambda qobj, b: qobj.setChecked(b),
     QtWidgets.QLabel: lambda qobj, txt: qobj.setText(txt),
     QtWidgets.QPlainTextEdit: lambda qobj, txt: qobj.setPlainText(txt),
-    ScientificSpinBox: lambda qobj, value:
-        qobj.ui.scientificLineEdit.setText(str(value))
+    ScientificSpinBox: lambda qobj, value: qobj.set_value.setText(value)
 }
 
 

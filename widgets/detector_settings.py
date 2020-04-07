@@ -160,8 +160,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
                                        self.scientific_tof_offset)
 
         if platform.system() == "Darwin":
-            self.scientific_tof_offset.ui.scientificLineEdit.setFixedWidth(170)
-            self.scientific_tof_slope.ui.scientificLineEdit.setFixedWidth(170)
+            self.scientific_tof_offset.scientificLineEdit.setFixedWidth(170)
+            self.scientific_tof_slope.scientificLineEdit.setFixedWidth(170)
 
         # Save as and load
         self.ui.saveButton.clicked.connect( self.__save_file)
@@ -242,7 +242,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.scientific_tof_slope.multiplier = multiply_part
         self.scientific_tof_slope.value_str = str(number_part) + str(
             multiply_part)[1:]
-        self.scientific_tof_slope.ui.scientificLineEdit.setText(
+        self.scientific_tof_slope.scientificLineEdit.setText(
             str(number_part) + str(multiply_part)[1:])
 
         # Parse the value and multiplier
@@ -258,7 +258,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.scientific_tof_offset.multiplier = multiply_part
         self.scientific_tof_offset.value_str = str(number_part) + str(
             multiply_part)[1:]
-        self.scientific_tof_offset.ui.scientificLineEdit.setText(
+        self.scientific_tof_offset.scientificLineEdit.setText(
             str(number_part) + str(multiply_part)[1:])
 
         # Transfer efficiency files

@@ -141,7 +141,7 @@ class TestBinding(unittest.TestCase):
         # Setting the not2way changes nothing as well as setting tim to
         # unsuitable type
         self.widget.set_properties(pla="foo", lab="bar", not2way=7,
-                                   tim="foo", sci=1)
+                                   tim="foo", sci=1.234e-6)
         self.assertEqual({
             "foo": 3,
             "bar": 4.5,
@@ -151,7 +151,7 @@ class TestBinding(unittest.TestCase):
             "pla": "foo",
             "lab": "bar",
             "not2way": 0,
-            "sci": 1
+            "sci": 1.234e-6
         }, self.widget.get_properties())
 
 
