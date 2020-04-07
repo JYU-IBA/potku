@@ -98,7 +98,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.fields_are_valid = True
         iv.set_input_field_red(self.nameEdit)
         self.nameEdit.textChanged.connect(
-            lambda: self.check_text(self.ui.nameEdit, self))
+            lambda: iv.check_text(self.nameEdit, self))
         self.nameEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.nameEdit))
 
@@ -188,16 +188,6 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             for sb in spinboxes:
                 iv.set_input_field_white(sb)
             self.amount_mismatch = False
-
-    @staticmethod
-    def check_text(input_field, dialog):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-            dialog: Layer dialog.
-        """
-        dialog.fields_are_valid = iv.check_text(input_field)
 
     def validate_spinbox(self, spinbox):
         """
@@ -454,7 +444,7 @@ class ElementLayout(QtWidgets.QVBoxLayout):
                     "file\nand change the natural abundance to 100 % on your\n"
                     "preferred isotope and restart the application.")
             else:
-                self.dialog.check_text(self.dialog.ui.nameEdit, self.dialog)
+                iv.check_text(self.dialog.nameEdit, qwidget=self.dialog)
                 self.isotope_combobox.setStyleSheet(
                     "background-color: %s" % "None")
                 self.isotope_info_label.setText("")

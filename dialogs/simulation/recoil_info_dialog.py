@@ -76,8 +76,6 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         self.cancelPushButton.clicked.connect(self.close)
         self.colorPushButton.clicked.connect(self.__change_color)
 
-        self.text_is_valid = True
-
         self.name = recoil_element.name
         self.description = recoil_element.description
         value = recoil_element.reference_density
@@ -96,9 +94,10 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             recoil_element.modification_time)))
 
+        self.fields_are_valid = True
         iv.set_input_field_red(self.nameLineEdit)
         self.nameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.nameLineEdit, self))
+            lambda: iv.check_text(self.nameLineEdit, qwidget=self))
         self.nameLineEdit.textEdited.connect(self.__validate)
 
         title = f"Recoil element: " \
@@ -209,16 +208,6 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
             self.colorPushButton.setText("Automatic [{0}]".format(element))
         else:
             self.colorPushButton.setText("")
-
-    @staticmethod
-    def __check_text(input_field, settings):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-            settings: Settings dialog.
-        """
-        settings.fields_are_valid = iv.check_text(input_field)
 
     def __set_color_button_color(self, element):
         """Set default color of element to color button.

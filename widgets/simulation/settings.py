@@ -129,7 +129,7 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
         self.fields_are_valid = False
         iv.set_input_field_red(self.nameLineEdit)
         self.nameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.nameLineEdit, self))
+            lambda: iv.check_text(self.nameLineEdit, qwidget=self))
         self.nameLineEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.nameLineEdit))
 
@@ -176,16 +176,6 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
         self.minimumScatterAngleDoubleSpinBox.setMaximum(float_max)
         self.minimumMainScatterAngleDoubleSpinBox.setMaximum(float_max)
         self.minimumEnergyDoubleSpinBox.setMaximum(float_max)
-
-    @staticmethod
-    def __check_text(input_field, settings):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-            settings: Settings widget.
-        """
-        settings.fields_are_valid = iv.check_text(input_field)
 
     def update_settings(self):
         """

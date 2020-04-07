@@ -64,14 +64,14 @@ class RequestNewDialog(QtWidgets.QDialog):
         self.ui.pushCancel.clicked.connect(self.close)
         self.ui.browseFolderButton.clicked.connect(self.__browser_folder)
 
-        iv.set_input_field_red(self.ui.requestNameLineEdit)
+        iv.set_input_field_red(self.requestNameLineEdit)
         self.requestNameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.requestNameLineEdit))
+            lambda: iv.check_text(self.requestNameLineEdit))
         self.requestNameLineEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.requestNameLineEdit))
 
-        self.ui.requestDirectoryLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.ui.requestDirectoryLineEdit))
+        self.requestDirectoryLineEdit.textChanged.connect(
+            lambda: iv.check_text(self.requestDirectoryLineEdit))
 
         self.__close = True
 
@@ -89,15 +89,6 @@ class RequestNewDialog(QtWidgets.QDialog):
         if folder:
             self.folder = folder
             self.ui.requestDirectoryLineEdit.setText(folder)
-
-    @staticmethod
-    def __check_text(input_field):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-        """
-        iv.check_text(input_field)
 
     def __create_request(self):
         """Create new request.

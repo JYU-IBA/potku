@@ -134,11 +134,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         self.obj = obj
         self.__original_property_values = {}
 
-        iv.set_input_field_red(self.nameLineEdit)
-        self.fields_are_valid = False
-        self.nameLineEdit.textChanged.connect(lambda: self.check_text(
-            self.nameLineEdit, self))
-
         locale = QLocale.c()
 
         self.energyDoubleSpinBox.setLocale(locale)
@@ -171,10 +166,12 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
 
         self.isotopeInfoLabel.setVisible(False)
 
-        self.show_settings()
-
         self.beamIonButton.clicked.connect(self.change_element)
 
+        self.fields_are_valid = False
+        iv.set_input_field_red(self.nameLineEdit)
+        self.nameLineEdit.textChanged.connect(
+            iv.check_text(self.nameLineEdit, qwidget=self))
         self.nameLineEdit.textEdited.connect(self.__validate)
 
         self.fluenceDoubleSpinBox.setContextMenuPolicy(Qt.ActionsContextMenu)
@@ -198,6 +195,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         self.__update_multiply_action()
 
         self.energyDoubleSpinBox.setToolTip("Energy set in MeV with.")
+
+        self.show_settings()
 
     def get_original_property_values(self):
         """Returns the values of the properties when they were first set.
@@ -340,15 +339,6 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
 
-    @staticmethod
-    def check_text(input_field, settings):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-        """
-        settings.fields_are_valid = iv.check_text(input_field)
-
     def __validate(self):
         """
         Validate the measurement settings file name.
@@ -414,7 +404,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
                 self.beam_selection_ok.emit(False)
             else:
                 self.isotopeInfoLabel.setVisible(False)
-                self.check_text(self.nameLineEdit, self)
+                iv.check_text(self.nameLineEdit, qwidget=self)
                 self.isotopeComboBox.setStyleSheet(
                     "background-color: %s" % "None")
                 self.beam_selection_ok.emit(True)

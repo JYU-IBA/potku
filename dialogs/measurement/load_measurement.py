@@ -72,13 +72,13 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
         if not samples:
             iv.set_input_field_red(self.ui.samplesComboBox)
 
-        iv.set_input_field_red(self.ui.pathLineEdit)
-        self.ui.pathLineEdit.textChanged.connect(lambda: self.__check_text(
-            self.ui.pathLineEdit))
+        iv.set_input_field_red(self.pathLineEdit)
+        self.pathLineEdit.textChanged.connect(
+            lambda: iv.check_text(self.pathLineEdit))
 
         iv.set_input_field_red(self.nameLineEdit)
         self.nameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.ui.nameLineEdit))
+            lambda: iv.check_text(self.nameLineEdit))
         self.nameLineEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.nameLineEdit))
 
@@ -133,10 +133,6 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
                                          "Select a measurement to load",
                                          "Raw Measurement (*.asc)")
         self.ui.pathLineEdit.setText(self.filename)
-
-    @staticmethod
-    def __check_text(input_field):
-        iv.check_text(input_field)
 
     def __find_existing_sample(self):
         """

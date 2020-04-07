@@ -65,7 +65,7 @@ class TargetInfoDialog(QtWidgets.QDialog):
         self.fields_are_valid = False
         iv.set_input_field_red(self.nameLineEdit)
         self.nameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.nameLineEdit, self))
+            lambda: iv.check_text(self.nameLineEdit, qwidget=self))
         self.nameLineEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.nameLineEdit))
 
@@ -92,13 +92,3 @@ class TargetInfoDialog(QtWidgets.QDialog):
             self.__close = True
         if self.__close:
             self.close()
-
-    @staticmethod
-    def __check_text(input_field, settings):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-            settings: Settings dialog.
-        """
-        settings.fields_are_valid = iv.check_text(input_field)

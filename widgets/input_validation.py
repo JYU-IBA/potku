@@ -104,7 +104,7 @@ class InputValidator(QValidator):
                 return ""
 
 
-def check_text(input_field):
+def check_text(input_field: QLineEdit, qwidget=None):
     """Checks if the given QLineEdit input field contains text. If not,
     field's background is set red.
 
@@ -116,9 +116,13 @@ def check_text(input_field):
     """
     if not input_field.text():
         set_input_field_red(input_field)
+        if qwidget is not None:
+            qwidget.fields_are_valid = False
         return False
     else:
         set_input_field_white(input_field)
+        if qwidget is not None:
+            qwidget.fields_are_valid = True
         return True
 
 
@@ -168,7 +172,7 @@ def sanitize_file_name(line_edit: QLineEdit):
     file name.
 
     Args:
-        input: QLineEdit object.
+        line_edit: QLineEdit object.
     """
     text = line_edit.text()
     regex = "^[A-Za-z0-9-ÖöÄäÅå]*"

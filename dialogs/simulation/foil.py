@@ -86,7 +86,7 @@ class FoilDialog(QtWidgets.QDialog):
         self.fields_are_valid = False
         iv.set_input_field_red(self.nameEdit)
         self.nameEdit.textChanged.connect(
-            lambda: self.__check_text(self.nameEdit, self))
+            lambda: iv.check_text(self.nameEdit, qwidget=self))
         self.nameEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.nameEdit))
 
@@ -157,16 +157,6 @@ class FoilDialog(QtWidgets.QDialog):
                 self.foil_type_changed = True
             else:
                 self.foil_type_changed = False
-
-    @staticmethod
-    def __check_text(input_field, dialog):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-            dialog: Foil dialog.
-        """
-        dialog.fields_are_valid = iv.check_text(input_field)
 
     def _save_foil_info_and_close(self):
         """Saves foil information and closes dialog."""

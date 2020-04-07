@@ -72,7 +72,7 @@ class SimulationNewDialog(QtWidgets.QDialog):
 
         iv.set_input_field_red(self.simulationNameLineEdit)
         self.simulationNameLineEdit.textChanged.connect(
-            lambda: self.__check_text(self.simulationNameLineEdit))
+            lambda: iv.check_text(self.simulationNameLineEdit))
         self.simulationNameLineEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.simulationNameLineEdit))
 
@@ -124,15 +124,6 @@ class SimulationNewDialog(QtWidgets.QDialog):
             self.close()
         if self.__close:
             self.close()
-
-    @staticmethod
-    def __check_text(input_field):
-        """Checks if there is text in given input field.
-
-        Args:
-            input_field: Input field the contents of which are checked.
-        """
-        iv.check_text(input_field)
 
     def __find_existing_sample(self):
         """
