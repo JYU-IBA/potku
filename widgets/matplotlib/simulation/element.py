@@ -133,8 +133,6 @@ class ElementWidget(QtWidgets.QWidget):
 
         self.running_int_recoil = 1
 
-        # self.spectra_changed = spectra_changed
-
     def add_new_recoil(self, spectra_changed=None):
         """
         Add new recoil to element simulation.

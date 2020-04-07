@@ -127,7 +127,7 @@ def get_updated_efficiency_files(qdialog, efficiency_files):
         efficiency_files:
     """
     eff_files_used = []
-    root = qdialog.ui.treeWidget.invisibleRootItem()
+    root = qdialog.treeWidget.invisibleRootItem()
     child_count = root.childCount()
     for eff in efficiency_files:
         str_element, _ = eff.split(".")

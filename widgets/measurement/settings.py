@@ -197,7 +197,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         self.clipboard.changed.connect(self.__update_multiply_action)
         self.__update_multiply_action()
 
-        self.energyDoubleSpinBox.setToolTip("Energy set in MeV with .")
+        self.energyDoubleSpinBox.setToolTip("Energy set in MeV with.")
 
     def get_original_property_values(self):
         """Returns the values of the properties when they were first set.
