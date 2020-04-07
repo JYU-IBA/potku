@@ -84,33 +84,36 @@ def find_mass_of_isotope(element):
             return isotope[2]/1000000
 
 
-def load_isotopes(element, combobox, current_isotope=None):
+def load_isotopes(element, combobox, current_isotope=None, show_std_mass=False):
     """Load isotopes into given combobox.
 
     Args:
         element: A two letter symbol representing selected element of which
-                    isotopes are loaded, e.g. 'He'.
+            isotopes are loaded, e.g. 'He'.
         combobox: QComboBox to which items are added.
-        current_isotope: Current isotope to select it on combobox by default
-                         (string).
+        current_isotope: Current isotope to select it on combobox by default.
+        show_std_mass: if True, std mass is shown for the most common isotope
     """
+    # TODO this function could be moved to gui_utils
     if not element:
         return
     combobox.clear()
     # Sort isotopes based on their natural abundance
     isotopes = sorted(_get_isotopes(element),
-                      key=lambda isotope: isotope[1],
+                      key=lambda i: i[1],
                       reverse=True)
-    dirtyinteger = 0
-    for isotope, tn, mass in isotopes:
+    for idx, (isotope, tn, mass) in enumerate(isotopes):
         # We don't need rare isotopes to be shown
         if float(tn) > 0.0:
-            combobox.addItem("{0} ({1}%)".format(isotope,
-                                                 round(float(tn), 3)),
+            if idx == 0 and show_std_mass:
+                st_iso = get_standard_isotope(element)
+                stmass = f" (st. mass {round(st_iso, 3)})"
+            else:
+                stmass = ""
+            combobox.addItem(f"{isotope} ({round(float(tn), 3)}%){stmass}",
                              userData=(isotope, tn))
-            if str(isotope) == str(current_isotope):
-                combobox.setCurrentIndex(dirtyinteger)
-        dirtyinteger += 1
+            if isotope == current_isotope:
+                combobox.setCurrentIndex(idx)
 
     combobox.setEnabled(combobox.count() > 0)
 
