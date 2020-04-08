@@ -84,11 +84,10 @@ class Potku(QtWidgets.QMainWindow):
         """Init main window for Potku.
         """
         super().__init__()
-        # TODO remove ui reference
-        self.ui = uic.loadUi(Path("ui_files", "ui_main_window.ui"), self)
+        uic.loadUi(Path("ui_files", "ui_main_window.ui"), self)
 
-        self.title = self.ui.windowTitle()
-        self.ui.treeWidget.setHeaderLabel("")
+        self.title = self.windowTitle()
+        self.treeWidget.setHeaderLabel("")
 
         self.icon_manager = IconManager()
         self.settings = GlobalSettings()
@@ -101,62 +100,59 @@ class Potku(QtWidgets.QMainWindow):
         self.tab_id = 0  # identification for each tab
 
         # Set up connections within UI
-        self.ui.actionNew_Measurement.triggered.connect(
-            self.open_new_measurement)
-        self.ui.requestSettingsButton.clicked.connect(
-            self.open_request_settings)
-        self.ui.globalSettingsButton.clicked.connect(self.open_global_settings)
-        self.ui.tabs.tabCloseRequested.connect(self.remove_tab)
-        self.ui.treeWidget.itemDoubleClicked.connect(self.focus_selected_tab)
+        self.actionNew_Measurement.triggered.connect(self.open_new_measurement)
+        self.requestSettingsButton.clicked.connect(self.open_request_settings)
+        self.globalSettingsButton.clicked.connect(self.open_global_settings)
+        self.tabs.tabCloseRequested.connect(self.remove_tab)
+        self.treeWidget.itemDoubleClicked.connect(self.focus_selected_tab)
 
-        self.ui.requestNewButton.clicked.connect(self.make_new_request)
-        self.ui.requestOpenButton.clicked.connect(self.open_request)
-        self.ui.actionNew_Request.triggered.connect(self.make_new_request)
-        self.ui.actionOpen_Request.triggered.connect(self.open_request)
-        self.ui.addNewMeasurementButton.clicked.connect(
+        self.requestNewButton.clicked.connect(self.make_new_request)
+        self.requestOpenButton.clicked.connect(self.open_request)
+        self.actionNew_Request.triggered.connect(self.make_new_request)
+        self.actionOpen_Request.triggered.connect(self.open_request)
+        self.addNewMeasurementButton.clicked.connect(self.open_new_measurement)
+        self.actionNew_measurement_2.triggered.connect(
             self.open_new_measurement)
-        self.ui.actionNew_measurement_2.triggered.connect(
-            self.open_new_measurement)
-        self.ui.actionImport_pelletron.triggered.connect(self.import_pelletron)
-        self.ui.actionBinary_data_lst.triggered.connect(self.import_binary)
-        self.ui.action_manual.triggered.connect(self.__open_manual)
+        self.actionImport_pelletron.triggered.connect(self.import_pelletron)
+        self.actionBinary_data_lst.triggered.connect(self.import_binary)
+        self.action_manual.triggered.connect(self.__open_manual)
 
-        self.ui.actionSave_cuts.triggered.connect(
+        self.actionSave_cuts.triggered.connect(
             self.current_measurement_save_cuts)
-        self.ui.actionAnalyze_elemental_losses.triggered.connect(
+        self.actionAnalyze_elemental_losses.triggered.connect(
             self.current_measurement_analyze_elemental_losses)
-        self.ui.actionCreate_energy_spectrum.triggered.connect(
+        self.actionCreate_energy_spectrum.triggered.connect(
             self.current_measurement_create_energy_spectrum)
-        self.ui.actionCreate_depth_profile.triggered.connect(
+        self.actionCreate_depth_profile.triggered.connect(
             self.current_measurement_create_depth_profile)
-        self.ui.actionGlobal_Settings.triggered.connect(
-            self.open_global_settings)
-        self.ui.actionRequest_Settings.triggered.connect(
+        self.actionGlobal_Settings.triggered.connect(self.open_global_settings)
+        self.actionRequest_Settings.triggered.connect(
             self.open_request_settings)
-        self.ui.actionAbout.triggered.connect(self.open_about_dialog)
+        self.actionAbout.triggered.connect(self.open_about_dialog)
 
-        self.ui.actionNew_Request_2.triggered.connect(self.make_new_request)
-        self.ui.actionOpen_Request_2.triggered.connect(self.open_request)
-        self.ui.actionExit.triggered.connect(self.closeEvent)  # Should
-        # save changes
+        self.actionNew_Request_2.triggered.connect(self.make_new_request)
+        self.actionOpen_Request_2.triggered.connect(self.open_request)
 
-        self.ui.menuImport.setEnabled(False)
+        # Should save changes
+        self.actionExit.triggered.connect(self.closeEvent)
+
+        self.menuImport.setEnabled(False)
 
         # Show or hide left panel depending on the previous usage
         df.set_up_side_panel(self, "left_panel_shown", "left")
 
         # Set up simulation connections within UI
-        self.ui.actionNew_Simulation.triggered.connect(
+        self.actionNew_Simulation.triggered.connect(
             self.create_new_simulation)
-        self.ui.actionNew_Simulation_2.triggered.connect(
+        self.actionNew_Simulation_2.triggered.connect(
             self.create_new_simulation)
-        self.ui.actionCreate_energy_spectrum_sim.triggered.connect(
+        self.actionCreate_energy_spectrum_sim.triggered.connect(
             self.current_simulation_create_energy_spectrum)
-        self.ui.addNewSimulationButton.clicked.connect(
+        self.addNewSimulationButton.clicked.connect(
             self.create_new_simulation)
 
         # Set up report tool connection in UI
-        self.ui.actionCreate_report.triggered.connect(self.create_report)
+        self.actionCreate_report.triggered.connect(self.create_report)
 
         # Set up styles for main window
         # Cannot use os.path.join (PyQT+css)
@@ -166,36 +162,35 @@ class Potku(QtWidgets.QMainWindow):
                       + bg_blue + ");}"
         style_mesinfo = ("QWidget#infoTab {border-image: url(" +
                          bg_green + ");}")
-        self.ui.introduceTab.setStyleSheet(style_intro)
-        self.ui.infoTab.setStyleSheet(style_mesinfo)
+        self.introduceTab.setStyleSheet(style_intro)
+        self.infoTab.setStyleSheet(style_mesinfo)
         self.__remove_info_tab()
 
-        self.ui.setWindowIcon(self.icon_manager.get_icon("potku_icon.ico"))
+        self.setWindowIcon(self.icon_manager.get_icon("potku_icon.ico"))
 
         # Set main window's icons to place
         self.__set_icons()
-        self.ui.showMaximized()
+        self.showMaximized()
 
     def __initialize_tree_view(self):
         """Inits the tree view and creates the top level items.
         """
-        self.tree_widget = self.ui.treeWidget
-        self.tree_widget.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.tree_widget.customContextMenuRequested.connect(self.__open_menu)
-        self.tree_widget.setDropIndicatorShown(True)
-        self.tree_widget.setDragDropMode(QAbstractItemView.InternalMove)
+        self.treeWidget.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.treeWidget.customContextMenuRequested.connect(self.__open_menu)
+        self.treeWidget.setDropIndicatorShown(True)
+        self.treeWidget.setDragDropMode(QAbstractItemView.InternalMove)
         # Disable dragging since it doesn't do anything yet
         # TODO: Dragging changes the order of the items in tree and directory
-        self.tree_widget.setDragEnabled(False)
-        self.tree_widget.setSelectionMode(QAbstractItemView.SingleSelection)
-        self.tree_widget.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.tree_widget.itemChanged[QTreeWidgetItem, int].connect(
+        self.treeWidget.setDragEnabled(False)
+        self.treeWidget.setSelectionMode(QAbstractItemView.SingleSelection)
+        self.treeWidget.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.treeWidget.itemChanged[QTreeWidgetItem, int].connect(
             self.__rename_dir)
 
     def __open_menu(self, position):
         """Opens the right click menu in tree view.
         """
-        indexes = self.tree_widget.selectedIndexes()
+        indexes = self.treeWidget.selectedIndexes()
         level = 0
         if len(indexes) > 0:
             level = 0
@@ -209,26 +204,26 @@ class Potku(QtWidgets.QMainWindow):
             menu.addAction("Rename", self.__rename_tree_item)
             menu.addAction("Remove", self.__remove_tree_item)
 
-        if isinstance(self.tree_widget.currentItem().obj, Measurement):
+        if isinstance(self.treeWidget.currentItem().obj, Measurement):
             menu.addAction("Make master", self.__make_master_measurement)
             menu.addAction("Remove master", self.__remove_master_measurement)
             menu.addAction("Exclude from slaves",
                            self.__make_nonslave_measurement)
             menu.addAction("Include as slave", self.__make_slave_measurement)
 
-        menu.exec_(self.tree_widget.viewport().mapToGlobal(position))
+        menu.exec_(self.treeWidget.viewport().mapToGlobal(position))
 
     def __rename_tree_item(self):
         """Renames selected tree item in tree view and in folder structure.
         """
-        clicked_item = self.tree_widget.currentItem()
-        self.tree_widget.editItem(clicked_item)
+        clicked_item = self.treeWidget.currentItem()
+        self.treeWidget.editItem(clicked_item)
 
     def __rename_dir(self):
         """Renames object based on selected tree item. This method is called
         when tree item is changed.
         """
-        clicked_item = self.tree_widget.currentItem()
+        clicked_item = self.treeWidget.currentItem()
 
         if clicked_item:
             regex = "^[A-Za-z0-9-ÖöÄäÅå]+"
@@ -243,9 +238,9 @@ class Potku(QtWidgets.QMainWindow):
                 return
 
             if valid_text == "":
-                self.tree_widget.blockSignals(True)
+                self.treeWidget.blockSignals(True)
                 clicked_item.setText(0, clicked_item.obj.name)
-                self.tree_widget.blockSignals(False)
+                self.treeWidget.blockSignals(False)
                 return
 
             if valid_text == clicked_item.obj.name:
@@ -272,11 +267,11 @@ class Potku(QtWidgets.QMainWindow):
                                                QtWidgets.QMessageBox.Ok)
                 # Block edit event from tree view when changing the name back
                 # to original.
-                self.tree_widget.blockSignals(True)
+                self.treeWidget.blockSignals(True)
                 clicked_item.setText(0, clicked_item.obj.name)
-                self.tree_widget.blockSignals(False)
+                self.treeWidget.blockSignals(False)
                 return
-            self.tree_widget.blockSignals(True)
+            self.treeWidget.blockSignals(True)
             clicked_item.obj.name = new_name
             clicked_item.setText(0, clicked_item.obj.name)
 
@@ -319,8 +314,8 @@ class Potku(QtWidgets.QMainWindow):
 
                 # Update Energy spectrum, Composition changes and Depth profile
                 # save files.
-                for i in range(self.ui.tabs.count()):
-                    tab_widget = self.ui.tabs.widget(i)
+                for i in range(self.tabs.count()):
+                    tab_widget = self.tabs.widget(i)
                     if tab_widget.obj is clicked_item.obj:
                         if tab_widget.energy_spectrum_widget:
                             tab_widget.energy_spectrum_widget.update_use_cuts()
@@ -335,17 +330,16 @@ class Potku(QtWidgets.QMainWindow):
                             tab_widget.depth_profile_widget.save_to_file()
 
                         self.remove_tab(i)
-                        self.ui.tabs.insertTab(i, tab_widget,
-                                               clicked_item.obj.name)
-                        self.ui.tabs.setCurrentWidget(tab_widget)
+                        self.tabs.insertTab(i, tab_widget,
+                                            clicked_item.obj.name)
+                        self.tabs.setCurrentWidget(tab_widget)
                         break
 
             elif type(clicked_item.obj) is Simulation:
                 try:
                     clicked_item.obj.rename_simulation_file()
                     clicked_item.obj.to_file(
-                        os.path.join(new_dir, clicked_item.obj.name
-                                     + ".simulation"))
+                        Path(new_dir, f"{clicked_item.obj.name}.simulation"))
                 except OSError:
                     QtWidgets.QMessageBox.critical(self, "Error",
                                                    "Something went wrong while "
@@ -354,21 +348,21 @@ class Potku(QtWidgets.QMainWindow):
                                                    QtWidgets.QMessageBox.Ok)
 
                 # Update Tab name
-                for i in range(self.ui.tabs.count()):
-                    tab_widget = self.ui.tabs.widget(i)
+                for i in range(self.tabs.count()):
+                    tab_widget = self.tabs.widget(i)
                     if tab_widget.obj is clicked_item.obj:
                         self.remove_tab(i)
-                        self.ui.tabs.insertTab(i, tab_widget,
+                        self.tabs.insertTab(i, tab_widget,
                                                clicked_item.obj.name)
-                        self.ui.tabs.setCurrentWidget(tab_widget)
+                        self.tabs.setCurrentWidget(tab_widget)
                         break
 
-            self.tree_widget.blockSignals(False)
+            self.treeWidget.blockSignals(False)
 
     def __remove_tree_item(self):
         """Removes selected tree item in tree view and in folder structure.
         """
-        clicked_item = self.tree_widget.currentItem()
+        clicked_item = self.treeWidget.currentItem()
 
         if clicked_item:
             if type(clicked_item.obj) is Measurement:
@@ -403,14 +397,14 @@ class Potku(QtWidgets.QMainWindow):
             remove_file(clicked_item.obj.directory)
 
             # Remove object from tree
-            self.tree_widget.blockSignals(True)
+            self.treeWidget.blockSignals(True)
             clicked_item.parent().removeChild(clicked_item)
-            self.tree_widget.blockSignals(False)
+            self.treeWidget.blockSignals(False)
 
             # Remove object tab
-            for i in range(self.ui.tabs.count()):
-                if self.ui.tabs.widget(i).obj is clicked_item.obj:
-                    self.ui.tabs.removeTab(i)
+            for i in range(self.tabs.count()):
+                if self.tabs.widget(i).obj is clicked_item.obj:
+                    self.tabs.removeTab(i)
                     break
             self.tab_widgets.pop(clicked_item.obj.tab_id)
 
@@ -443,7 +437,7 @@ class Potku(QtWidgets.QMainWindow):
         """Opens the depth profile analyzation tool for the current open
         measurement tab widget.
         """
-        widget = self.ui.tabs.currentWidget()
+        widget = self.tabs.currentWidget()
         if isinstance(widget, MeasurementTabWidget):
             widget.open_depth_profile()
         else:
@@ -457,7 +451,7 @@ class Potku(QtWidgets.QMainWindow):
         """Opens the element losses analyzation tool for the current open
         measurement tab widget.
         """
-        widget = self.ui.tabs.currentWidget()
+        widget = self.tabs.currentWidget()
         if isinstance(widget, MeasurementTabWidget):
             widget.open_element_losses()
         else:
@@ -471,7 +465,7 @@ class Potku(QtWidgets.QMainWindow):
         """Opens the energy spectrum analyzation tool for the current open
         measurement tab widget.
         """
-        widget = self.ui.tabs.currentWidget()
+        widget = self.tabs.currentWidget()
         if isinstance(widget, MeasurementTabWidget):
             widget.open_energy_spectrum()
         else:
@@ -485,7 +479,7 @@ class Potku(QtWidgets.QMainWindow):
         """Saves the current open measurement tab widget's selected cuts
         to cut files.
         """
-        widget = self.ui.tabs.currentWidget()
+        widget = self.tabs.currentWidget()
         if isinstance(widget, MeasurementTabWidget):
             widget.measurement_save_cuts()
         else:
@@ -500,7 +494,7 @@ class Potku(QtWidgets.QMainWindow):
         Opens the energy spectrum analyzation tool for the current open
         simulation tab widget.
         """
-        widget = self.ui.tabs.currentWidget()
+        widget = self.tabs.currentWidget()
         if isinstance(widget, MeasurementTabWidget):
             widget.open_energy_spectrum()
         else:
@@ -515,7 +509,7 @@ class Potku(QtWidgets.QMainWindow):
         """
         # TODO: Memory isn't released correctly. Maybe because of matplotlib.
         selected_tabs = [self.tab_widgets[item.tab_id] for
-                         item in self.ui.treeWidget.selectedItems()]
+                         item in self.treeWidget.selectedItems()]
         if selected_tabs:  # Ask user a confirmation.
             reply = QtWidgets.QMessageBox.question(self, "Confirmation",
                                                    "Deleting selected "
@@ -559,7 +553,7 @@ class Potku(QtWidgets.QMainWindow):
                 return
 
             self.request.samples.measurements.remove_by_tab_id(tab.tab_id)
-            remove_index = self.ui.tabs.indexOf(tab)
+            remove_index = self.tabs.indexOf(tab)
             self.remove_tab(remove_index)  # Remove measurement from open tabs
 
             tab.histogram.matplotlib.delete()
@@ -573,8 +567,8 @@ class Potku(QtWidgets.QMainWindow):
             tab.deleteLater()
 
         # Remove selected from tree widget
-        root = self.ui.treeWidget.invisibleRootItem()
-        for item in self.ui.treeWidget.selectedItems():
+        root = self.treeWidget.invisibleRootItem()
+        for item in self.treeWidget.selectedItems():
             (item.parent() or root).removeChild(item)
         gc.collect()  # Suggest garbage collector to clean.
 
@@ -587,7 +581,7 @@ class Potku(QtWidgets.QMainWindow):
         """
 
         # Blocking signals from tree view to prevent edit event
-        self.tree_widget.blockSignals(True)
+        self.treeWidget.blockSignals(True)
 
         try:
             tab_id = clicked_item.tab_id
@@ -657,12 +651,12 @@ class Potku(QtWidgets.QMainWindow):
 
             # Check that the tab to be focused exists.
             if not self.__tab_exists(tab_id):
-                self.ui.tabs.addTab(tab, name)
-            self.ui.tabs.setCurrentWidget(tab)
+                self.tabs.addTab(tab, name)
+            self.tabs.setCurrentWidget(tab)
 
         except AttributeError:
             pass
-        self.tree_widget.blockSignals(False)
+        self.treeWidget.blockSignals(False)
 
     def import_pelletron(self):
         """Import Pelletron's measurements into request.
@@ -779,10 +773,9 @@ class Potku(QtWidgets.QMainWindow):
         if dialog.directory:
             self.__close_request()
             title = "{0} - Request: {1}".format(self.title, dialog.name)
-            self.ui.setWindowTitle(title)
+            self.setWindowTitle(title)
 
-            self.ui.treeWidget.setHeaderLabel(
-                "Request: {0}".format(dialog.name))
+            self.treeWidget.setHeaderLabel("Request: {0}".format(dialog.name))
             self.__initialize_tree_view()
 
             self.request = Request(dialog.directory, dialog.name, self.settings,
@@ -816,7 +809,7 @@ class Potku(QtWidgets.QMainWindow):
 
         if dialog.filename:
             try:
-                self.ui.tabs.removeTab(self.ui.tabs.indexOf(
+                self.tabs.removeTab(self.tabs.indexOf(
                     self.measurement_info_tab))
             except:
                 pass  # If there is no info tab, no need to worry about.
@@ -825,14 +818,14 @@ class Potku(QtWidgets.QMainWindow):
             progress_bar.show()
 
             try:
-                sample_item = (self.tree_widget.findItems(sample_name,
+                sample_item = (self.treeWidget.findItems(sample_name,
                                                           Qt.MatchEndsWith,
                                                           0))[0]
             except Exception as e:
                 # Sample is not yet in the tree, so add it
                 self.__add_sample(sample_name)
 
-            sample_item = (self.tree_widget.findItems(sample_name,
+            sample_item = (self.treeWidget.findItems(sample_name,
                                                       Qt.MatchEndsWith, 0))[0]
 
             self.add_new_tab("measurement", dialog.filename,
@@ -857,15 +850,14 @@ class Potku(QtWidgets.QMainWindow):
             progress_bar.show()
 
             try:
-                sample_item = (self.tree_widget.findItems(sample_name,
-                                                          Qt.MatchEndsWith,
-                                                          0))[0]
+                sample_item = self.treeWidget.findItems(sample_name,
+                                                        Qt.MatchEndsWith, 0)[0]
             except Exception as e:
                 # Sample is not yet in the tree, so add it
                 self.__add_sample(sample_name)
 
-            sample_item = (self.tree_widget.findItems(sample_name,
-                                                      Qt.MatchEndsWith, 0))[0]
+            sample_item = self.treeWidget.findItems(sample_name,
+                                                    Qt.MatchEndsWith, 0)[0]
 
             serial_number = sample_item.obj.get_running_int_simulation()
             sample_item.obj.increase_running_int_simulation_by_1()
@@ -904,10 +896,10 @@ class Potku(QtWidgets.QMainWindow):
             tmp_name = os.path.splitext(os.path.basename(file))[0]
             self.request = Request(fd_with_correct_sep, tmp_name,
                                    self.settings, self.tab_widgets)
-            self.ui.setWindowTitle("{0} - Request: {1}".format(
+            self.setWindowTitle("{0} - Request: {1}".format(
                 self.title,
                 self.request.get_name()))
-            self.ui.treeWidget.setHeaderLabel(
+            self.treeWidget.setHeaderLabel(
                 "Request: {0}".format(self.request.get_name()))
             self.__initialize_tree_view()
             self.settings.set_request_directory_last_open(folder)
@@ -929,10 +921,10 @@ class Potku(QtWidgets.QMainWindow):
             for sample in self.request.samples.samples:
                 # Get Sample item from tree
                 try:
-                    sample_item = (self.tree_widget.findItems(
+                    sample_item = self.treeWidget.findItems(
                         "%02d" % sample.serial_number + " " + sample.name,
                         Qt.MatchEndsWith,
-                        0))[0]
+                        0)[0]
                     for i in range(sample_item.childCount()):
                         item = sample_item.child(i)
                         tab_widget = self.tab_widgets[item.tab_id]
@@ -969,7 +961,7 @@ class Potku(QtWidgets.QMainWindow):
         Args:
             tab_index: Integer representing index of the current tab
         """
-        self.ui.tabs.removeTab(tab_index)
+        self.tabs.removeTab(tab_index)
 
     def add_root_item_to_tree(self, obj):
         """Adds a root item to tree.
@@ -984,7 +976,7 @@ class Potku(QtWidgets.QMainWindow):
         tree_item.setFlags(tree_item.flags() ^ Qt.ItemIsDragEnabled)
         tree_item.obj = obj
 
-        self.tree_widget.addTopLevelItem(tree_item)
+        self.treeWidget.addTopLevelItem(tree_item)
 
     def __add_item_to_tree(self, parent_item, obj, load_data):
         """Add item to tree where it can be opened.
@@ -1006,7 +998,7 @@ class Potku(QtWidgets.QMainWindow):
             self.__change_tab_icon(tree_item, "folder_open.svg")
         else:
             self.__change_tab_icon(tree_item, "folder_locked.svg")
-        # self.ui.treeWidget.addTopLevelItem(tree_item)
+        # self.treeWidget.addTopLevelItem(tree_item)
         parent_item.addChild(tree_item)
         parent_item.setExpanded(True)
 
@@ -1060,17 +1052,17 @@ class Potku(QtWidgets.QMainWindow):
                     measurement.load_data()
 
                     tab.add_histogram(GUIReporter(progress_bar))    # TODO
-                    self.ui.tabs.addTab(tab, measurement.name)
-                    self.ui.tabs.setCurrentWidget(tab)
+                    self.tabs.addTab(tab, measurement.name)
+                    self.tabs.setCurrentWidget(tab)
 
                     if progress_bar:
                         progress_bar.setValue(100)
                         QtCore.QCoreApplication.processEvents(
                             QtCore.QEventLoop.AllEvents)
 
-                sample_item = (self.tree_widget.findItems(
+                sample_item = self.treeWidget.findItems(
                     "%02d" % sample.serial_number + " " + sample.name,
-                    Qt.MatchEndsWith, 0))[0]
+                    Qt.MatchEndsWith, 0)[0]
                 self.__add_item_to_tree(sample_item, measurement, load_data)
                 self.tab_id += 1
                 return measurement
@@ -1096,12 +1088,12 @@ class Potku(QtWidgets.QMainWindow):
                     QtCore.QCoreApplication.processEvents(
                         QtCore.QEventLoop.AllEvents)
 
-                    self.ui.tabs.addTab(tab, simulation.name)
-                    self.ui.tabs.setCurrentWidget(tab)
+                    self.tabs.addTab(tab, simulation.name)
+                    self.tabs.setCurrentWidget(tab)
 
-                sample_item = (self.tree_widget.findItems(
+                sample_item = self.treeWidget.findItems(
                     "%02d" % sample.serial_number + " " + sample.name,
-                    Qt.MatchEndsWith, 0))[0]
+                    Qt.MatchEndsWith, 0)[0]
                 self.__add_item_to_tree(sample_item, simulation, load_data)
                 self.tab_id += 1
 
@@ -1120,8 +1112,8 @@ class Potku(QtWidgets.QMainWindow):
         if self.request:
             # TODO: Doesn't release memory
             # Clear the treewidget
-            self.ui.treeWidget.clear()
-            self.ui.tabs.clear()
+            self.treeWidget.clear()
+            self.tabs.clear()
             self.request = None
             self.tab_widgets = {}
             self.tab_id = 0
@@ -1129,16 +1121,16 @@ class Potku(QtWidgets.QMainWindow):
     def __make_nonslave_measurement(self):
         """Exclude selected measurement from slave category.
         """
-        self.tree_widget.blockSignals(True)
-        items = self.ui.treeWidget.selectedItems()
+        self.treeWidget.blockSignals(True)
+        items = self.treeWidget.selectedItems()
         if not items:
             return
-        clicked_item = self.tree_widget.currentItem()
+        clicked_item = self.treeWidget.currentItem()
 
         self.request.exclude_slave(clicked_item.obj)
         clicked_item.setText(0, clicked_item.obj.name)
 
-        # tree_root = self.tree_widget.invisibleRootItem()
+        # tree_root = self.treeWidget.invisibleRootItem()
         # for i in range(tree_root.childCount()):
         #     sample_item = tree_root.child(i)
         #     for j in range(sample_item.childCount()):
@@ -1148,20 +1140,20 @@ class Potku(QtWidgets.QMainWindow):
         #             if master and tab_widget.obj.directory != master.directory:
         #                 self.request.exclude_slave(tab_widget.obj)
         #                 tree_item.setText(0, tab_widget.obj.name)
-        self.tree_widget.blockSignals(False)
+        self.treeWidget.blockSignals(False)
 
     def __make_slave_measurement(self):
         """Include selected measurements in slave category.
         """
-        self.tree_widget.blockSignals(True)
-        items = self.ui.treeWidget.selectedItems()
+        self.treeWidget.blockSignals(True)
+        items = self.treeWidget.selectedItems()
         if not items:
             return
-        clicked_item = self.tree_widget.currentItem()
+        clicked_item = self.treeWidget.currentItem()
         self.request.include_slave(clicked_item.obj)
         clicked_item.setText(0, clicked_item.obj.name + " (slave)")
 
-        # tree_root = self.tree_widget.invisibleRootItem()
+        # tree_root = self.treeWidget.invisibleRootItem()
         # for i in range(tree_root.childCount()):
         #     sample_item = tree_root.child(i)
         #     for j in range(sample_item.childCount()):
@@ -1172,15 +1164,15 @@ class Potku(QtWidgets.QMainWindow):
         #                 self.request.include_slave(tab_widget.obj)
         #                 tree_item.setText(0, "{0} (slave)".format(
         #                     tab_widget.obj.name))
-        self.tree_widget.blockSignals(False)
+        self.treeWidget.blockSignals(False)
 
     def __make_master_measurement(self):
         """Make selected or first of the selected measurements
         a master measurement.
         """
-        self.tree_widget.blockSignals(True)
+        self.treeWidget.blockSignals(True)
 
-        items = self.ui.treeWidget.selectedItems()
+        items = self.treeWidget.selectedItems()
         if not items:
             return
         master_tree = items[0]
@@ -1189,7 +1181,7 @@ class Potku(QtWidgets.QMainWindow):
         # old_master = self.request.get_master()
         nonslaves = self.request.get_nonslaves()
 
-        tree_root = self.tree_widget.invisibleRootItem()
+        tree_root = self.treeWidget.invisibleRootItem()
         for i in range(tree_root.childCount()):
             sample_item = tree_root.child(i)
             for j in range(sample_item.childCount()):
@@ -1205,16 +1197,16 @@ class Potku(QtWidgets.QMainWindow):
                         tree_item.setText(0, "{0} (slave)".format(tab_name))
                     tab_widget.toggle_master_button()
 
-                for k in range(self.ui.tabs.count()):
-                    tab = self.ui.tabs.widget(k)
+                for k in range(self.tabs.count()):
+                    tab = self.tabs.widget(k)
                     tab_name = tab.obj.name
                     if tab.tab_id == master_tab.tab_id:
                         tab_name = "{0} (master)".format(tab_name)
-                        self.ui.tabs.setTabText(tab.tab_id, tab_name)
+                        self.tabs.setTabText(tab.tab_id, tab_name)
                     else:
-                        self.ui.tabs.setTabText(tab.tab_id, tab_name)
+                        self.tabs.setTabText(tab.tab_id, tab_name)
 
-        self.tree_widget.blockSignals(False)
+        self.treeWidget.blockSignals(False)
 
     def __master_issue_commands(self):
         """Issue commands from master measurement to all slave measurements in
@@ -1259,7 +1251,7 @@ class Potku(QtWidgets.QMainWindow):
         progress_bar.setValue(33)
         QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
 
-        tree_root = self.tree_widget.invisibleRootItem()
+        tree_root = self.treeWidget.invisibleRootItem()
         tree_child_count = tree_root.childCount()
         start = 33
         sample_percentage = 67 / tree_child_count
@@ -1310,9 +1302,9 @@ class Potku(QtWidgets.QMainWindow):
                                           0.1 * item_percentage)
 
                         # Update tree item icon to open folder
-                        self.tree_widget.blockSignals(True)
+                        self.treeWidget.blockSignals(True)
                         self.__change_tab_icon(tree_item)
-                        self.tree_widget.blockSignals(False)
+                        self.treeWidget.blockSignals(False)
 
                     sample_folder_name = "Sample_" + "%02d" % \
                                          master.sample.serial_number + "-" \
@@ -1373,25 +1365,25 @@ class Potku(QtWidgets.QMainWindow):
         """Opens an info tab to the QTabWidget 'tab_measurements' that guides
         the user to add a new measurement to the request.
         """
-        self.ui.tabs.addTab(self.ui.infoTab, "Info")
+        self.tabs.addTab(self.infoTab, "Info")
 
     def __remove_introduction_tab(self):
         """Removes an info tab from the QTabWidget 'tab_measurements' that
         guides the user to create a new request.
         """
-        index = self.ui.tabs.indexOf(self.ui.introduceTab)
+        index = self.tabs.indexOf(self.introduceTab)
         if index >= 0:
-            self.ui.tabs.removeTab(index)
+            self.tabs.removeTab(index)
 
     def __remove_master_measurement(self):
         """Remove master measurement
         """
-        self.tree_widget.blockSignals(True)
+        self.treeWidget.blockSignals(True)
 
         old_master = self.request.get_master()
         self.request.set_master()  # No master measurement
 
-        tree_root = self.tree_widget.invisibleRootItem()
+        tree_root = self.treeWidget.invisibleRootItem()
         for i in range(tree_root.childCount()):
             sample_item = tree_root.child(i)
             for j in range(sample_item.childCount()):
@@ -1404,33 +1396,31 @@ class Potku(QtWidgets.QMainWindow):
 
         if old_master:
             measurement_name = old_master.name
-            self.ui.tabs.setTabText(old_master.tab_id, measurement_name)
+            self.tabs.setTabText(old_master.tab_id, measurement_name)
             old_master_tab = self.tab_widgets[old_master.tab_id]
             old_master_tab.toggle_master_button()
         self.request.set_master()  # No master measurement
 
-        self.tree_widget.blockSignals(False)
+        self.treeWidget.blockSignals(False)
 
     def __remove_info_tab(self):
         """Removes an info tab from the QTabWidget 'tab_measurements' that
         guides the user to add a new measurement to the request.
         """
-        index = self.ui.tabs.indexOf(self.ui.infoTab)
+        index = self.tabs.indexOf(self.infoTab)
         if index >= 0:
-            self.ui.tabs.removeTab(index)
+            self.tabs.removeTab(index)
 
     def __set_icons(self):
         """Adds icons to the main window.
         """
-        self.icon_manager.set_icon(self.ui.requestSettingsButton, "gear.svg")
-        self.icon_manager.set_icon(self.ui.globalSettingsButton, "gear.svg")
-        self.icon_manager.set_icon(self.ui.actionNew_Request, "file.svg")
-        self.icon_manager.set_icon(self.ui.actionOpen_Request,
-                                   "folder_open.svg")
-        self.icon_manager.set_icon(self.ui.actionSave_Request,
-                                   "amarok_save.svg")
-        self.icon_manager.set_icon(self.ui.actionNew_Measurement, "log.svg")
-        self.icon_manager.set_icon(self.ui.actionNew_Simulation,
+        self.icon_manager.set_icon(self.requestSettingsButton, "gear.svg")
+        self.icon_manager.set_icon(self.globalSettingsButton, "gear.svg")
+        self.icon_manager.set_icon(self.actionNew_Request, "file.svg")
+        self.icon_manager.set_icon(self.actionOpen_Request, "folder_open.svg")
+        self.icon_manager.set_icon(self.actionSave_Request, "amarok_save.svg")
+        self.icon_manager.set_icon(self.actionNew_Measurement, "log.svg")
+        self.icon_manager.set_icon(self.actionNew_Simulation,
                                    "new_simulation.png")
 
     def __set_request_buttons_enabled(self, state=False):
@@ -1440,23 +1430,23 @@ class Potku(QtWidgets.QMainWindow):
         Args:
             state: True/False enables or disables buttons
         """
-        self.ui.requestSettingsButton.setEnabled(state)
-        self.ui.actionSave_Request.setEnabled(state)
-        self.ui.actionNew_Measurement.setEnabled(state)
-        self.ui.actionNew_measurement_2.setEnabled(state)
-        self.ui.menuImport.setEnabled(state)
-        self.ui.actionRequest_Settings.setEnabled(state)
+        self.requestSettingsButton.setEnabled(state)
+        self.actionSave_Request.setEnabled(state)
+        self.actionNew_Measurement.setEnabled(state)
+        self.actionNew_measurement_2.setEnabled(state)
+        self.menuImport.setEnabled(state)
+        self.actionRequest_Settings.setEnabled(state)
         # TODO: Should these only be enabled when there is measurement open?
-        self.ui.actionAnalyze_elemental_losses.setEnabled(state)
-        self.ui.actionCreate_energy_spectrum.setEnabled(state)
-        self.ui.actionCreate_depth_profile.setEnabled(state)
+        self.actionAnalyze_elemental_losses.setEnabled(state)
+        self.actionCreate_energy_spectrum.setEnabled(state)
+        self.actionCreate_depth_profile.setEnabled(state)
 
         # enable simulation buttons
-        self.ui.actionNew_Simulation.setEnabled(state)
-        self.ui.actionNew_Simulation_2.setEnabled(state)
+        self.actionNew_Simulation.setEnabled(state)
+        self.actionNew_Simulation_2.setEnabled(state)
 
         # enable simulation energy spectra button
-        self.ui.actionCreate_energy_spectrum_sim.setEnabled(state)
+        self.actionCreate_energy_spectrum_sim.setEnabled(state)
 
     def __tab_exists(self, tab_id):
         """Check if there is an open tab with the tab_id (identifier).
@@ -1468,8 +1458,8 @@ class Potku(QtWidgets.QMainWindow):
             True if tab is found, False if not
         """
         # Try to find the clicked item from QTabWidget.
-        for i in range(0, self.ui.tabs.count()):
-            if self.ui.tabs.widget(i).tab_id == tab_id:
+        for i in range(0, self.tabs.count()):
+            if self.tabs.widget(i).tab_id == tab_id:
                 return True
         return False
 
