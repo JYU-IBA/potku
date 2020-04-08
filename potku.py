@@ -250,7 +250,7 @@ class Potku(QtWidgets.QMainWindow):
             new_name = valid_text
             try:
                 # TODO function that returns full name of Simu/Mesu
-                new_path = clicked_item.obj.name_prefix + "%02d" % \
+                new_path = clicked_item.obj.DIRECTORY_PREFIX + "%02d" % \
                     clicked_item.obj.serial_number + "-" + new_name
 
                 # Close and remove logs
@@ -394,7 +394,7 @@ class Potku(QtWidgets.QMainWindow):
             clicked_item.obj.errorlog.close()
 
             # Remove object directory
-            remove_file(clicked_item.obj.directory)
+            shutil.rmtree(clicked_item.obj.directory)
 
             # Remove object from tree
             self.treeWidget.blockSignals(True)
