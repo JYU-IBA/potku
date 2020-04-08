@@ -73,12 +73,45 @@ class Foil:
         """
         raise NotImplementedError
 
+    def to_dict(self):
+        """Returns the foil as a dict.
+        """
+        return {
+            "name": self.name,
+            "type": self.TYPE,
+            "distance": self.distance,
+            "layers": [layer.to_dict() for layer in self.layers],
+            "transmission": self.transmission
+        }
+
+    @staticmethod
+    def generate_foil(type, **kwargs):
+        """Factory method for initializing Foil objects.
+
+        Args:
+            type: type of the foil (either 'circular' or 'rectangular'
+            kwargs: keyword arguments passed down to foil
+
+        Return:
+            either a CircularFoil or RectangularFoil
+        """
+        if type == RectangularFoil.TYPE:
+            if "size" in kwargs:
+                x, y = kwargs.pop("size")
+                kwargs["size_x"] = x
+                kwargs["size_y"] = y
+            return RectangularFoil(**kwargs)
+        if type == CircularFoil.TYPE:
+            return CircularFoil(**kwargs)
+        raise ValueError(f"Unknown foil type: {type}")
+
 
 class CircularFoil(Foil):
     """ Class for circular detector foil.
     """
 
     __slots__ = "diameter"
+    TYPE = "circular"
 
     def __init__(self, name="Default", diameter=0.0, distance=0.0, layers=None,
                  transmission=1.0):
@@ -116,12 +149,18 @@ class CircularFoil(Foil):
             f"Foil distance: {self.distance}"
         ]
 
+    def to_dict(self):
+        d = super().to_dict()
+        d["diameter"] = self.diameter
+        return d
+
 
 class RectangularFoil(Foil):
     """ Class for rectangular detector foil.
     """
 
     __slots__ = "size"
+    TYPE = "rectangular"
 
     def __init__(self, name="", size_x=0.0, size_y=0.0, distance=0.0,
                  layers=None, transmission=1.0):
@@ -151,7 +190,12 @@ class RectangularFoil(Foil):
         """Returns a list of strings that are passed as parameters for MCERD.
         """
         return [
-            "Foil type: rectangular",
+            f"Foil type: {self.TYPE}",
             f"Foil size: {'%0.1f %0.1f' % self.size}",
             f"Foil distance: {self.distance}"
         ]
+
+    def to_dict(self):
+        d = super().to_dict()
+        d["size"] = self.size
+        return d

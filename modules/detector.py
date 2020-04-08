@@ -35,6 +35,7 @@ import time
 from pathlib import Path
 
 from modules.element import Element
+from modules.foil import Foil
 from modules.foil import CircularFoil
 from modules.foil import RectangularFoil
 from modules.layer import Layer
@@ -286,12 +287,7 @@ class Detector:
 
                 layers.append(Layer(**layer, elements=elements))
 
-            if foil.pop("type") == "circular":
-                foils.append(CircularFoil(**foil, layers=layers))
-            else:
-                x, y = foil.pop("size")
-                foils.append(RectangularFoil(**foil, size_x=x, size_y=y,
-                                             layers=layers))
+            foils.append(Foil.generate_foil(**foil, layers=layers))
 
         try:
             # Read .measurement file and update detector angle
@@ -338,42 +334,17 @@ class Detector:
                 timestamp)),
             "modification_time_unix": timestamp,
             "detector_type": self.type,
-            "foils": [],
+            "foils": [
+                foil.to_dict() for foil in self.foils
+            ],
             "tof_foils": self.tof_foils,
             "timeres": self.timeres,
             "virtual_size": self.virtual_size,
             "tof_slope": self.tof_slope,
             "tof_offset": self.tof_offset,
             "angle_slope": self.angle_slope,
-            "angle_offset": self.angle_offset
+            "angle_offset": self.angle_offset,
         }
-
-        for foil in self.foils:
-            foil_obj = {
-                "name": foil.name,
-                "distance": foil.distance,
-                "layers": [],
-                "transmission": foil.transmission,
-            }
-            if isinstance(foil, CircularFoil):
-                foil_obj["type"] = "circular"
-                foil_obj["diameter"] = foil.diameter
-            else:
-                foil_obj["type"] = "rectangular"
-                foil_obj["size"] = foil.size
-
-            for layer in foil.layers:
-                layer_obj = {
-                    "name": layer.name,
-                    "elements": [str(element) for element in
-                                 layer.elements],
-                    "thickness": layer.thickness,
-                    "density": layer.density,
-                    "start_depth": layer.start_depth
-                }
-                foil_obj["layers"].append(layer_obj)
-
-            obj["foils"].append(foil_obj)
 
         with open(detector_file_path, "w") as file:
             json.dump(obj, file, indent=4)

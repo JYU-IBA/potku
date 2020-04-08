@@ -26,6 +26,8 @@ __author__ = "Juhani Sundell"
 __version__ = ""  # TODO
 
 import unittest
+
+from modules.foil import Foil
 from modules.foil import CircularFoil
 from modules.foil import RectangularFoil
 
@@ -124,6 +126,55 @@ class TestFoil(unittest.TestCase):
             "Foil diameter: 1.0",
             "Foil distance: 1.0"
         ], unit_rec.get_mcerd_params())
+
+    def test_to_dict(self):
+        self.assertEqual({
+            "type": "circular",
+            "distance": 0,
+            "transmission": 1.0,
+            "diameter": 0,
+            "layers": [],
+            "name": "Default"
+        }, CircularFoil().to_dict())
+        self.assertEqual("rectangular", RectangularFoil().to_dict()["type"])
+
+    def test_foil_factory_default_args(self):
+        self.assertIsInstance(Foil.generate_foil("circular"),
+                              CircularFoil)
+        self.assertIsInstance(Foil.generate_foil("rectangular"),
+                              RectangularFoil)
+
+    def test_foil_factory_kwargs(self):
+        kwargs = {
+            "type": "circular",
+            "transmission": 1,
+            "diameter": 5.5,
+            "distance": 0.2
+        }
+        f = Foil.generate_foil(**kwargs)
+        self.assertEqual(1, f.transmission)
+        self.assertEqual(5.5, f.diameter)
+        self.assertEqual(0.2, f.distance)
+
+        kwargs = {
+            "type": "rectangular",
+            "transmission": 0.5,
+            "size_x": 2,
+            "size_y": 3,
+            "distance": 4
+        }
+        f = Foil.generate_foil(**kwargs)
+        self.assertEqual(0.5, f.transmission)
+        self.assertEqual((2, 3), f.size)
+        self.assertEqual(4, f.distance)
+
+    def test_bad_foil_factory_args(self):
+        self.assertRaises(TypeError, lambda: Foil.generate_foil())
+        self.assertRaises(ValueError, lambda: Foil.generate_foil(None))
+        self.assertRaises(TypeError, lambda: Foil.generate_foil(
+            type="rectangular", diameter=3))
+        self.assertRaises(TypeError, lambda: Foil.generate_foil(
+            type="circular", size_x=3))
 
 
 if __name__ == "__main__":

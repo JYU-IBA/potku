@@ -75,6 +75,17 @@ class Layer:
             f"{self.density} g/cm3"
         ]
 
+    def to_dict(self):
+        """Returns a dictionary representation of the Layer.
+        """
+        return {
+            "name": self.name,
+            "elements": [str(element) for element in self.elements],
+            "thickness": self.thickness,
+            "density": self.density,
+            "start_depth": self.start_depth
+        }
+
     @classmethod
     def get_default_mcerd_params(cls):
         """Returns a list of strings that are passed as parameters for MCERD.
