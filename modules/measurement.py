@@ -66,7 +66,6 @@ class Measurements:
         self.measurements = {}  # Dictionary<Measurement>
         self.measuring_unit_settings = None
         self.default_settings = None
-        self.name_prefix = "Measurement_"
 
     def is_empty(self):
         """Check if there are any measurements.
@@ -269,6 +268,7 @@ class Measurement(Logger):
     #             "depth_step_for_output", "depth_for_concentration_from", \
     #             "depth_for_concentration_to", "channel_width", \
     #             "reference_cut", "number_of_splits", "normalization"
+    DIRECTORY_PREFIX = "Measurement_"
 
     def __init__(self, request, path, tab_id=-1, name="Default",
                  description="", modification_time=None, run=None,
@@ -339,7 +339,6 @@ class Measurement(Logger):
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
 
-        self.name_prefix = "Measurement_"
         self.serial_number = 0
         self.directory = os.path.split(self.path)[0]
         self.measurement_file = None
