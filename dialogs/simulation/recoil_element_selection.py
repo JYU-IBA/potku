@@ -28,11 +28,13 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import modules.masses as masses
-import os
 import platform
 
+import modules.masses as masses
+
 import widgets.input_validation as iv
+
+from pathlib import Path
 
 from dialogs.element_selection import ElementSelectionDialog
 
@@ -52,9 +54,8 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         """
         # TODO this dialog needs to be wider
         super().__init__()
-        self.ui = uic.loadUi(
-            os.path.join("ui_files", "ui_recoil_element_selection_dialog.ui"),
-            self)
+        uic.loadUi(Path("ui_files", "ui_recoil_element_selection_dialog.ui"),
+                   self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.recoil_atom_distribution = recoil_atom_distribution
 
@@ -65,19 +66,19 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         self.colormap = self.recoil_atom_distribution.colormap
 
         # Setup connections
-        self.ui.element_button.clicked.connect(self.__change_element)
-        self.ui.isotope_radio.toggled.connect(self.__toggle_isotope)
+        self.element_button.clicked.connect(self.__change_element)
+        self.isotope_radio.toggled.connect(self.__toggle_isotope)
 
-        self.ui.OKButton.clicked.connect(self.__accept_settings)
-        self.ui.cancelButton.clicked.connect(self.close)
-        self.ui.colorPushButton.clicked.connect(self.__change_color)
+        self.OKButton.clicked.connect(self.__accept_settings)
+        self.cancelButton.clicked.connect(self.close)
+        self.colorPushButton.clicked.connect(self.__change_color)
 
-        self.ui.isotopeInfoLabel.setVisible(False)
+        self.isotopeInfoLabel.setVisible(False)
 
         self.isOk = False
 
         if platform.system() == "Darwin":
-            self.ui.isotope_combobox.setFixedHeight(23)
+            self.isotope_combobox.setFixedHeight(23)
 
         if platform.system() == "Linux":
             self.setMinimumWidth(350)
@@ -89,7 +90,7 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         Args:
             element: String representing element.
         """
-        self.ui.colorPushButton.setEnabled(True)
+        self.colorPushButton.setEnabled(True)
         if element and element != "Select":
             self.color = QtGui.QColor(self.colormap[element])
             self.__change_color_button_color(element)
@@ -118,36 +119,36 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
             text_color = "white"
         style = "background-color: {0}; color: {1};".format(self.color.name(),
                                                             text_color)
-        self.ui.colorPushButton.setStyleSheet(style)
+        self.colorPushButton.setStyleSheet(style)
 
         if self.color.name() == self.colormap[element]:
-            self.ui.colorPushButton.setText("Automatic [{0}]".format(element))
+            self.colorPushButton.setText("Automatic [{0}]".format(element))
         else:
-            self.ui.colorPushButton.setText("")
+            self.colorPushButton.setText("")
 
     def __change_element(self):
         """Shows dialog to change selection element.
         """
         dialog = ElementSelectionDialog()
         # Only disable these once, not if you cancel after selecting once.
-        if self.ui.element_button.text() == "Select":
-            self.ui.isotope_radio.setEnabled(False)
-            self.ui.standard_mass_radio.setEnabled(False)
-            self.ui.standard_mass_label.setEnabled(False)
+        if self.element_button.text() == "Select":
+            self.isotope_radio.setEnabled(False)
+            self.standard_mass_radio.setEnabled(False)
+            self.standard_mass_label.setEnabled(False)
         # If element was selected, proceed to enable appropriate fields.
         if dialog.element:
-            self.ui.element_button.setText(dialog.element)
+            self.element_button.setText(dialog.element)
             self.__enable_element_fields(dialog.element)
             self.__set_color_button_color(dialog.element)
             self.tmp_element = dialog.element
 
-            if self.ui.isotope_combobox.count() == 0:
-                self.ui.isotopeInfoLabel.setVisible(True)
-                iv.set_input_field_red(self.ui.isotope_combobox)
+            if self.isotope_combobox.count() == 0:
+                self.isotopeInfoLabel.setVisible(True)
+                iv.set_input_field_red(self.isotope_combobox)
                 self.setMinimumHeight(243)
             else:
-                self.ui.isotopeInfoLabel.setVisible(False)
-                self.ui.isotope_combobox.setStyleSheet(
+                self.isotopeInfoLabel.setVisible(False)
+                self.isotope_combobox.setStyleSheet(
                     "background-color: %s" % "None")
                 self.setMinimumHeight(200)
 
@@ -160,9 +161,9 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
             element: String representing element.
         """
         if element:
-            self.ui.isotope_radio.setEnabled(True)
-            self.ui.standard_mass_radio.setEnabled(True)
-            self.ui.standard_mass_label.setEnabled(True)
+            self.isotope_radio.setEnabled(True)
+            self.standard_mass_radio.setEnabled(True)
+            self.standard_mass_label.setEnabled(True)
             self.__load_isotopes(element)
 
     def __load_isotopes(self, element, current_isotope=None):
@@ -181,31 +182,31 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
     def __toggle_isotope(self):
         """Toggle Sample isotope radio button.
         """
-        self.isotope_combobox.setEnabled(self.ui.isotope_radio.isChecked())
+        self.isotope_combobox.setEnabled(self.isotope_radio.isChecked())
 
     def __check_if_settings_ok(self):
         """Check if sample settings are ok, and enable ok button.
         """
-        element = self.ui.element_button.text()
+        element = self.element_button.text()
         if element:
-            self.ui.OKButton.setEnabled(True)
+            self.OKButton.setEnabled(True)
         else:
-            self.ui.OKButton.setEnabled(False)
-        if self.ui.isotopeInfoLabel.isVisible():
-            self.ui.OKButton.setEnabled(False)
+            self.OKButton.setEnabled(False)
+        if self.isotopeInfoLabel.isVisible():
+            self.OKButton.setEnabled(False)
 
     def __accept_settings(self):
         """Accept settings given in the selection dialog and save these to
         parent.
         """
-        self.element = self.ui.element_button.text()
+        self.element = self.element_button.text()
 
         # For standard isotopes:
 
         # Check if specific isotope was chosen and use that instead.
-        if self.ui.isotope_radio.isChecked():
-            isotope_index = self.ui.isotope_combobox.currentIndex()
-            isotope_data = self.ui.isotope_combobox.itemData(isotope_index)
+        if self.isotope_radio.isChecked():
+            isotope_index = self.isotope_combobox.currentIndex()
+            isotope_data = self.isotope_combobox.itemData(isotope_index)
             self.isotope = isotope_data[0]
 
         self.isOk = True

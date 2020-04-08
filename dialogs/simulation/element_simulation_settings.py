@@ -27,8 +27,6 @@ along with this program (file named 'LICENCE').
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 
-import os
-
 import widgets.gui_utils as gutils
 import widgets.binding as bnd
 import dialogs.dialog_functions as df
@@ -59,8 +57,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
             tab: A SimulationTabWidget.
         """
         super().__init__()
-
-        uic.loadUi(os.path.join("ui_files", "ui_specific_settings.ui"), self)
+        uic.loadUi(Path("ui_files", "ui_specific_settings.ui"), self)
         self.setWindowTitle("Element Settings")
 
         self.element_simulation = element_simulation

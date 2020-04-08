@@ -28,9 +28,12 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen" \
              " \n Samuli Rahkonen \n Miika Raunio \n Severi Jääskelänen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
-import os
 
-from PyQt5 import QtCore, uic, QtWidgets
+from pathlib import Path
+
+from PyQt5 import QtCore
+from PyQt5 import uic
+from PyQt5 import QtWidgets
 
 
 class TofeGraphSettingsWidget(QtWidgets.QDialog):
@@ -44,42 +47,41 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
             parent: MatplotlibHistogramWidget which settings are being changed.
         """
         super().__init__()
-        self.parent = parent
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_tofe_graph_settings.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_tofe_graph_settings.ui"), self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
-        self.parent.show_yourself(self.ui)
+        self.parent = parent
+
+        self.parent.show_yourself(self)
 
         # Connect and show
-        self.ui.OKButton.clicked.connect(self.accept_settings)
-        self.ui.cancelButton.clicked.connect(self.close)
+        self.OKButton.clicked.connect(self.accept_settings)
+        self.cancelButton.clicked.connect(self.close)
 
         self.exec_()
 
     def accept_settings(self):
         """Accept changed settings and save them.
         """
-        self.parent.compression_x = self.ui.bin_x.value()
-        self.parent.compression_y = self.ui.bin_y.value()
+        self.parent.compression_x = self.bin_x.value()
+        self.parent.compression_y = self.bin_y.value()
         self.parent.invert_X = \
-            self.ui.invert_x.checkState() == QtCore.Qt.Checked
+            self.invert_x.checkState() == QtCore.Qt.Checked
         self.parent.invert_Y = \
-            self.ui.invert_y.checkState() == QtCore.Qt.Checked
+            self.invert_y.checkState() == QtCore.Qt.Checked
         self.parent.show_axis_ticks = \
-            self.ui.axes_ticks.checkState() == QtCore.Qt.Checked
+            self.axes_ticks.checkState() == QtCore.Qt.Checked
         self.parent.transpose_axes = \
-            self.ui.transposeAxesCheckBox.checkState() == QtCore.Qt.Checked
-        self.parent.measurement.color_scheme = self.ui.colorbox.currentText()
-        if self.ui.radio_range_auto.isChecked():
+            self.transposeAxesCheckBox.checkState() == QtCore.Qt.Checked
+        self.parent.measurement.color_scheme = self.colorbox.currentText()
+        if self.radio_range_auto.isChecked():
             self.parent.axes_range_mode = 0
-        elif self.ui.radio_range_manual.isChecked():
+        elif self.radio_range_manual.isChecked():
             self.parent.axes_range_mode = 1
-        x_range_min = self.ui.spin_range_x_min.value()
-        x_range_max = self.ui.spin_range_x_max.value()
-        y_range_min = self.ui.spin_range_y_min.value()
-        y_range_max = self.ui.spin_range_y_max.value()
+        x_range_min = self.spin_range_x_min.value()
+        x_range_max = self.spin_range_x_max.value()
+        y_range_min = self.spin_range_y_min.value()
+        y_range_max = self.spin_range_y_max.value()
 
         self.parent.axes_range = [(x_range_min, x_range_max),
                                   (y_range_min, y_range_max)]

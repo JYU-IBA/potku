@@ -34,11 +34,12 @@ import os
 import sys
 
 import dialogs.dialog_functions as df
+import modules.cut_file as cut_file
+
+from pathlib import Path
 
 from widgets.gui_utils import GUIReporter
 
-from modules.cut_file import get_scatter_element
-from modules.cut_file import is_rbs
 from modules.element_losses import ElementLosses
 
 from PyQt5 import QtCore
@@ -64,15 +65,15 @@ class ElementLossesDialog(QtWidgets.QDialog):
             parent: A MeasurementTabWidget.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_element_losses_params.ui"), self)
+
         self.parent = parent
         self.statusbar = statusbar
         self.cuts = []
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_element_losses_params.ui"), self)
 
-        self.ui.OKButton.clicked.connect(self.__accept_params)
-        self.ui.cancelButton.clicked.connect(self.close)
-        # self.ui.referenceCut.currentIndexChanged.connect(self.__load_targets)
+        self.OKButton.clicked.connect(self.__accept_params)
+        self.cancelButton.clicked.connect(self.close)
+        # self.referenceCut.currentIndexChanged.connect(self.__load_targets)
 
         # TODO: Reads cut files twice. Requires Refactor.
         m_name = self.parent.obj.name
@@ -84,21 +85,21 @@ class ElementLossesDialog(QtWidgets.QDialog):
             if ".potku" in cut:
                 cut = os.path.basename()
             self.cuts.append(cut)
-            self.ui.referenceCut.addItem(cut)
+            self.referenceCut.addItem(cut)
             if cut == ElementLossesDialog.reference_cut[m_name]:
-                self.ui.referenceCut.setCurrentIndex(dirtyinteger)
+                self.referenceCut.setCurrentIndex(dirtyinteger)
             dirtyinteger += 1
 
         if m_name not in ElementLossesDialog.checked_cuts.keys():
             ElementLossesDialog.checked_cuts[m_name] = []
         parent.obj.fill_cuts_treewidget(
-            self.ui.targetCutTree,
+            self.targetCutTree,
             True,
             ElementLossesDialog.checked_cuts[m_name])
 
-        self.ui.partitionCount.setValue(ElementLossesDialog.split_count)
-        self.ui.radioButton_0max.setChecked(ElementLossesDialog.y_scale == 0)
-        self.ui.radioButton_minmax.setChecked(ElementLossesDialog.y_scale == 1)
+        self.partitionCount.setValue(ElementLossesDialog.split_count)
+        self.radioButton_0max.setChecked(ElementLossesDialog.y_scale == 0)
+        self.radioButton_minmax.setChecked(ElementLossesDialog.y_scale == 1)
 
         self.exec_()
 
@@ -107,29 +108,26 @@ class ElementLossesDialog(QtWidgets.QDialog):
         adds it to the parent (mdiArea).
         """
         cut_dir = self.parent.obj.directory_cuts
-        cut_elo = os.path.join(self.parent.obj.directory_composition_changes,
-                               "Changes")
-        y_axis_0_scale = self.ui.radioButton_0max.isChecked()
-        reference_cut = os.path.join(cut_dir,
-                                     self.ui.referenceCut.currentText())
-        split_count = self.ui.partitionCount.value()
+        cut_elo = Path(self.parent.obj.directory_composition_changes, "Changes")
+        y_axis_0_scale = self.radioButton_0max.isChecked()
+        reference_cut = Path(cut_dir, self.referenceCut.currentText())
+        split_count = self.partitionCount.value()
         checked_cuts = []
-        root = self.ui.targetCutTree.invisibleRootItem()
+        root = self.targetCutTree.invisibleRootItem()
         root_child_count = root.childCount()
         m_name = self.parent.obj.name
         ElementLossesDialog.checked_cuts[m_name].clear()
         for i in range(root_child_count):
             item = root.child(i)
             if item.checkState(0):
-                checked_cuts.append(os.path.join(cut_dir, item.file_name))
+                checked_cuts.append(Path(cut_dir, item.file_name))
                 ElementLossesDialog.checked_cuts[m_name].append(item.file_name)
             child_count = item.childCount()
             if child_count > 0:  # Elemental Losses
                 for j in range(child_count):
                     item_child = item.child(j)
                     if item_child.checkState(0):
-                        checked_cuts.append(os.path.join(cut_elo,
-                                                         item_child.file_name))
+                        checked_cuts.append(Path(cut_elo, item_child.file_name))
                         ElementLossesDialog.checked_cuts[m_name].append(
                             item_child.file_name)
         if y_axis_0_scale:
@@ -138,7 +136,7 @@ class ElementLossesDialog(QtWidgets.QDialog):
             y_scale = 1
 
         ElementLossesDialog.reference_cut[m_name] = \
-            self.ui.referenceCut.currentText()
+            self.referenceCut.currentText()
         ElementLossesDialog.split_count = split_count
         ElementLossesDialog.y_scale = y_scale
 
@@ -198,6 +196,8 @@ class ElementLossesWidget(QtWidgets.QWidget):
         """
         try:
             super().__init__()
+            uic.loadUi(Path("ui_files", "ui_element_losses.ui"), self)
+
             self.parent = parent
             self.icon_manager = parent.icon_manager
             self.measurement = self.parent.obj
@@ -220,13 +220,10 @@ class ElementLossesWidget(QtWidgets.QWidget):
             else:
                 self.progress_bar = None
 
-            self.ui = uic.loadUi(os.path.join("ui_files",
-                                              "ui_element_losses.ui"),
-                                 self)
             title = "{0} - Reference cut: {1}".format(
-                self.ui.windowTitle(),
+                self.windowTitle(),
                 os.path.basename(self.reference_cut_file))
-            self.ui.setWindowTitle(title)
+            self.setWindowTitle(title)
             # Calculate elemental losses
             self.losses = ElementLosses(self.measurement.directory_cuts,
                                         self.measurement.
@@ -243,14 +240,14 @@ class ElementLossesWidget(QtWidgets.QWidget):
             for cut in self.checked_cuts:
                 filename = os.path.basename(cut)
                 split = filename.split(".")
-                if is_rbs(cut):
+                if cut_file.is_rbs(cut):
                     # This should work for regular cut and split.
                     key = "{0}.{1}.{2}.{3}".format(split[1], split[2],
                                                    split[3], split[4])
-                    rbs_list[key] = get_scatter_element(cut)
+                    rbs_list[key] = cut_file.get_scatter_element(cut)
 
             # Connect buttons
-            self.ui.splitSaveButton.clicked.connect(self.__save_splits)
+            self.splitSaveButton.clicked.connect(self.__save_splits)
 
             self.matplotlib = MatplotlibElementLossesWidget(
                 self, self.split_counts, legend=True, y_scale=y_scale,
@@ -279,8 +276,6 @@ class ElementLossesWidget(QtWidgets.QWidget):
         self.progress_bar = None
         self.matplotlib.delete()
         self.matplotlib = None
-        self.ui.close()
-        self.ui = None
         self.close()
 
     def __save_splits(self):
@@ -303,10 +298,10 @@ class ElementLossesWidget(QtWidgets.QWidget):
         """Reimplemented method when closing widget.
         """
         self.parent.elemental_losses_widget = None
-        file = os.path.join(self.parent.obj.directory, self.save_file)
+        file = Path(self.parent.obj.directory, self.save_file)
         try:
-            if os.path.isfile(file):
-                os.unlink(file)
+            if file.exists():
+                os.remove(file)
         except:
             pass
         super().closeEvent(evnt)
@@ -315,8 +310,8 @@ class ElementLossesWidget(QtWidgets.QWidget):
         """
         Update checked cuts and reference cut with Measurement cuts.
         """
-        changes_dir = os.path.join(
-            self.parent.obj.directory_composition_changes, "Changes")
+        changes_dir = Path(self.parent.obj.directory_composition_changes,
+                           "Changes")
 
         df.update_cuts(self.checked_cuts,
                        self.parent.obj.directory_cuts,
@@ -325,14 +320,15 @@ class ElementLossesWidget(QtWidgets.QWidget):
         self.losses.checked_cuts = self.checked_cuts
 
         # Update reference cut
+        # FIXME crashes here
         reference_split = self.reference_cut_file.split('.')
         new_reference = self.parent.obj.name
         i = 2
         while i in range(len(reference_split)):
             new_reference = new_reference + "." + reference_split[i]
             i += 1
-        self.reference_cut_file = os.path.join(
-            self.parent.obj.directory_cuts, new_reference)
+        self.reference_cut_file = Path(self.parent.obj.directory_cuts,
+                                       new_reference)
         self.losses.reference_cut_file = self.reference_cut_file
 
         self.losses.directory_composition_changes = changes_dir
@@ -341,7 +337,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
         title = "{0} - Reference cut: {1}".format(
             "Composition changes",
             os.path.basename(self.reference_cut_file))
-        self.ui.setWindowTitle(title)
+        self.setWindowTitle(title)
 
     def save_to_file(self):
         """Save object information to file.
@@ -352,8 +348,8 @@ class ElementLossesWidget(QtWidgets.QWidget):
         files = "\t".join([os.path.relpath(tmp, self.parent.obj.directory)
                            for tmp in self.checked_cuts])
 
-        file = os.path.join(self.parent.obj.directory_composition_changes,
-                            self.save_file)
+        file = Path(self.parent.obj.directory_composition_changes,
+                    self.save_file)
 
         with open(file, "wt") as fh:
             fh.write("{0}\n".format(reference))

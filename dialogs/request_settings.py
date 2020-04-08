@@ -439,7 +439,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
              tab_id: Tab id. Doesn't correspond to places in tab.
         """
         for i in range(self.tabs.count()):
-            tab_widget = self.main_window.ui.tabs.widget(i)
+            tab_widget = self.main_window.tabs.widget(i)
             if tab_widget == self.main_window.tab_widgets[tab_id]:
                 return tab_widget
         return None

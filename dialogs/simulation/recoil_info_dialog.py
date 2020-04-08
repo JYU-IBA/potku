@@ -28,11 +28,12 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import os
 import time
 
 import widgets.binding as bnd
 import widgets.input_validation as iv
+
+from pathlib import Path
 
 from widgets.gui_utils import QtABCMeta
 
@@ -70,7 +71,7 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
             element_simulation: Element simulation that has the recoil element.
         """
         super().__init__()
-        uic.loadUi(os.path.join("ui_files", "ui_recoil_info_dialog.ui"), self)
+        uic.loadUi(Path("ui_files", "ui_recoil_info_dialog.ui"), self)
 
         self.okPushButton.clicked.connect(self.__accept_settings)
         self.cancelPushButton.clicked.connect(self.close)

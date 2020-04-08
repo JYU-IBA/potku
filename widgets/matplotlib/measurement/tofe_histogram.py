@@ -823,34 +823,34 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.measurement.undo_point()
         self.canvas.draw_idle()
 
-    def show_yourself(self, ui):
-        """Show ToF-E histogram settings in ui.
+    def show_yourself(self, dialog):
+        """Show current ToF-E histogram settings in dialog.
 
         Args:
-            ui: A TofeGraphSettingsWidget's .ui file variable.
+            dialog: A TofeGraphSettingsWidget.
         """
         # Populate colorbox
         dirtyinteger = 0
         colors = sorted(MatplotlibHistogramWidget.color_scheme.items())
         for k, unused_v in colors:  # Get keys from color scheme
-            ui.colorbox.addItem(k)
+            dialog.colorbox.addItem(k)
             if k == self.measurement.color_scheme:
-                ui.colorbox.setCurrentIndex(dirtyinteger)
+                dialog.colorbox.setCurrentIndex(dirtyinteger)
             dirtyinteger += 1
 
         # Get values
-        ui.bin_x.setValue(self.compression_x)
-        ui.bin_y.setValue(self.compression_y)
-        ui.invert_x.setChecked(self.invert_X)
-        ui.invert_y.setChecked(self.invert_Y)
-        ui.axes_ticks.setChecked(self.show_axis_ticks)
-        ui.transposeAxesCheckBox.setChecked(self.transpose_axes)
-        ui.radio_range_auto.setChecked(self.axes_range_mode == 0)
-        ui.radio_range_manual.setChecked(self.axes_range_mode == 1)
-        ui.spin_range_x_min.setValue(self.axes_range[0][0])
-        ui.spin_range_x_max.setValue(self.axes_range[0][1])
-        ui.spin_range_y_min.setValue(self.axes_range[1][0])
-        ui.spin_range_y_max.setValue(self.axes_range[1][1])
+        dialog.bin_x.setValue(self.compression_x)
+        dialog.bin_y.setValue(self.compression_y)
+        dialog.invert_x.setChecked(self.invert_X)
+        dialog.invert_y.setChecked(self.invert_Y)
+        dialog.axes_ticks.setChecked(self.show_axis_ticks)
+        dialog.transposeAxesCheckBox.setChecked(self.transpose_axes)
+        dialog.radio_range_auto.setChecked(self.axes_range_mode == 0)
+        dialog.radio_range_manual.setChecked(self.axes_range_mode == 1)
+        dialog.spin_range_x_min.setValue(self.axes_range[0][0])
+        dialog.spin_range_x_max.setValue(self.axes_range[0][1])
+        dialog.spin_range_y_min.setValue(self.axes_range[1][0])
+        dialog.spin_range_y_max.setValue(self.axes_range[1][1])
 
     def __on_motion(self, event):
         """Function to handle hovering over matplotlib's graph.

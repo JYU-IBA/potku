@@ -35,6 +35,7 @@ import struct
 import dialogs.dialog_functions as df
 import widgets.input_validation as iv
 
+from pathlib import Path
 from dialogs.file_dialogs import open_files_dialog
 
 from PyQt5 import QtCore
@@ -49,12 +50,13 @@ class ImportDialogBinary(QtWidgets.QDialog):
         """Init binary measurement import dialog.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_import_dialog_binary.ui"), self)
+
         self.request = request
         self.__icon_manager = icon_manager
         self.__statusbar = statusbar
         self.parent = parent
         self.__global_settings = self.parent.settings
-        uic.loadUi(os.path.join("ui_files", "ui_import_dialog_binary.ui"), self)
         self.imported = False
         self.files_added = {}  # Dictionary of files to be imported.
         

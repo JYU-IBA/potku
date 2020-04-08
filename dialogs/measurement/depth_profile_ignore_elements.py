@@ -31,8 +31,11 @@ __author__ = "Timo Konu \n Severi Jääskeläinen \n Samuel Kaiponen \n Heta " \
              "Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
-from PyQt5 import QtCore, uic, QtWidgets
+from pathlib import Path
+
+from PyQt5 import QtCore
+from PyQt5 import uic
+from PyQt5 import QtWidgets
 
 
 class DepthProfileIgnoreElements(QtWidgets.QDialog):
@@ -49,11 +52,11 @@ class DepthProfileIgnoreElements(QtWidgets.QDialog):
                            calculation.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_depth_profile_ignored.ui"), self)
+
         self.__elements = elements
         self.ignore_from_graph = ignored_graph
         self.ignore_from_ratio = ignored_ratio
-        uic.loadUi(os.path.join("ui_files", "ui_depth_profile_ignored.ui"),
-                   self)
         self.button_ok.clicked.connect(self.__ok_button)
         self.button_cancel.clicked.connect(self.close)
         self.tree_elements.itemChanged.connect(self.__element_toggle_graph)
