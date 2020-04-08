@@ -555,7 +555,8 @@ class DepthProfileWidget(QtWidgets.QWidget):
             fh.write("{0}\n".format(output_dir))
             fh.write("{0}\n".format("\t".join([str(element)
                                                for element in self.elements])))
-            fh.write("{0}\n".format("\t".join([cut for cut in self.use_cuts])))
+            fh.write("{0}\n".format("\t".join([str(cut) for cut in
+                                               self.use_cuts])))
             fh.write("{0}\n".format(self.x_units))
             fh.write("{0}\n".format(self.__line_zero))
             fh.write("{0}\n".format(self.__line_scale))

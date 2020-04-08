@@ -70,13 +70,13 @@ class DepthFileGenerator(object):
         self.bin_dir = '%s%s%s' % ('external', os.sep, 'Potku-bin')
         self.command_win = 'cd ' + self.bin_dir + ' && tof_list.exe ' \
                            + file_paths_str + ' | erd_depth.exe ' \
-                           + output_path + ' tof.in'
+                           + str(output_path) + ' tof.in'
         self.command_linux = 'cd ' + self.bin_dir + ' && ./tof_list ' \
                              + file_paths_str + ' | ./erd_depth ' \
-                             + output_path + ' tof.in'
+                             + str(output_path) + ' tof.in'
         self.command_mac = 'cd ' + self.bin_dir + ' && ./tof_list ' \
                            + file_paths_str + ' | ./erd_depth ' \
-                           + output_path + ' tof.in'
+                           + str(output_path) + ' tof.in'
 
     def create_depth_files(self):
         """Generate the files necessary for drawing the depth profile.
