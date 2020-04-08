@@ -264,7 +264,9 @@ class GlobalSettings:
         Args:
             directory: String representing request folder.
         """
-        folders = directory.split("/")
+        # TODO use the directory as Path object instead of converting it to
+        #  string
+        folders = str(directory).split("/")
         os_dir = os.sep.join(folders)
         self.__config["default"]["request_directory_last_open"] = os_dir
         self.save_config()

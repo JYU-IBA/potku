@@ -36,6 +36,8 @@ import os
 import re
 import time
 
+from pathlib import Path
+
 from modules.detector import Detector
 from modules.element import Element
 from modules.element_simulation import ElementSimulation
@@ -51,8 +53,7 @@ class Request:
     """Request class to handle all measurements.
     """
 
-    def __init__(self, directory, name, global_settings,
-                 tabs):
+    def __init__(self, directory, name, global_settings, tabs):
         """ Initializes Request class.
         
         Args:
@@ -141,6 +142,27 @@ class Request:
             self.save()
         else:
             self.load()
+
+    @classmethod
+    def from_file(cls, file, settings, tab_widgets):
+        """Returns a new Request from an existing .request file and folder
+        structure.
+
+        Args:
+        """
+        # TODO better error checking
+        file_path = Path(file)
+        if not file_path.exists():
+            raise ValueError("Request file does not exist.")
+        if not file_path.is_file():
+            raise ValueError("Expected file, got a directory")
+        if file_path.suffix != ".request":
+            raise ValueError("Expected request file")
+        folder = os.path.split(file)[0]
+        folders = folder.split("/")
+        fd_with_correct_sep = os.sep.join(folders)
+        tmp_name = os.path.splitext(os.path.basename(file))[0]
+        return cls(fd_with_correct_sep, tmp_name, settings, tab_widgets)
 
     def create_default_detector(self):
         """

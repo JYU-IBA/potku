@@ -36,10 +36,12 @@ import platform
 import shutil
 import subprocess
 import sys
+import functools
 
 import modules.general_functions as gf
 import dialogs.dialog_functions as df
 import widgets.input_validation as iv
+import widgets.gui_utils as gutils
 
 from datetime import datetime
 from datetime import timedelta
@@ -70,6 +72,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QAbstractItemView
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QTreeWidgetItem
+from PyQt5.QtWidgets import QAction
 
 from widgets.measurement.tab import MeasurementTabWidget
 from widgets.simulation.tab import SimulationTabWidget
@@ -78,6 +81,9 @@ from widgets.simulation.tab import SimulationTabWidget
 class Potku(QtWidgets.QMainWindow):
     """Potku is main window class.
     """
+    # Maximum number of recently opened .request files to store and show in
+    # the menu.
+    MAX_RECENT_FILES = 20
 
     def __init__(self):
         """Init main window for Potku.
@@ -166,6 +172,7 @@ class Potku(QtWidgets.QMainWindow):
         self.__remove_info_tab()
 
         self.setWindowIcon(self.icon_manager.get_icon("potku_icon.ico"))
+        self.update_recent_file_menu()
 
         # Set main window's icons to place
         self.__set_icons()
@@ -784,6 +791,7 @@ class Potku(QtWidgets.QMainWindow):
             self.__remove_introduction_tab()
             self.__open_info_tab()
             self.__set_request_buttons_enabled(True)
+            self.add_to_recent_files(Path(self.request.request_file))
 
     def open_about_dialog(self):
         """Show Potku program about dialog.
@@ -880,6 +888,70 @@ class Potku(QtWidgets.QMainWindow):
         sample = self.request.samples.add_sample(name=sample_name)
         self.add_root_item_to_tree(sample)
 
+    def update_recent_file_menu(self, files=None):
+        """Updates the recently opened file menu. Previous files are removed.
+
+        Args:
+            files: list of files to be shown in the menu
+        """
+        self.menuOpen_recent.clear()
+
+        if files is None:
+            files = self.get_recent_files()
+
+        for f in files[:Potku.MAX_RECENT_FILES]:
+            act = QAction(str(f), self)
+            act.triggered.connect(functools.partial(self.__open_request, f))
+            self.menuOpen_recent.addAction(act)
+
+    @staticmethod
+    def get_recent_files():
+        """Returns a list of recently opened .request files. Files are sorted
+        so that the most recent is first.
+        """
+        settings = gutils.get_potku_settings()
+        return settings.value("recently_opened", [], list)
+
+    @staticmethod
+    def set_recent_files(files):
+        """Stores the list of files as the most recently opened files.
+        """
+        settings = gutils.get_potku_settings()
+        settings.setValue("recently_opened", files[:Potku.MAX_RECENT_FILES])
+
+    def add_to_recent_files(self, file):
+        """Inserts the given file as the first element in the recently
+        opened file list and updates the menu.
+
+        Args:
+            file: file to be added to the list
+        """
+        files = Potku.get_recent_files()
+        file_str = str(file)
+        try:
+            files.remove(file_str)
+        except ValueError:
+            # File was not in list, nothing to do
+            pass
+        files.insert(0, file_str)
+        Potku.set_recent_files(files)
+        self.update_recent_file_menu(files=files)
+
+    def remove_from_recent_files(self, file):
+        """Removes a file from recently added file list.
+
+        Args:
+            file: file to be removed
+        """
+        files = Potku.get_recent_files()
+        try:
+            files.remove(str(file))
+            Potku.set_recent_files(files)
+            self.update_recent_file_menu(files=files)
+        except ValueError:
+            # File was not in list, nothing to do
+            pass
+
     def open_request(self):
         """Shows a dialog to open a request.
         """
@@ -888,66 +960,77 @@ class Potku(QtWidgets.QMainWindow):
                                 "Open an existing request",
                                 "Request file (*.request)")
         if file:
-            self.__close_request()
-            folder = os.path.split(file)[0]
-            folders = folder.split("/")
-            fd_with_correct_sep = os.sep.join(folders)
-            tmp_name = os.path.splitext(os.path.basename(file))[0]
-            self.request = Request(fd_with_correct_sep, tmp_name,
-                                   self.settings, self.tab_widgets)
-            self.setWindowTitle("{0} - Request: {1}".format(
-                self.title,
-                self.request.get_name()))
-            self.treeWidget.setHeaderLabel(
-                "Request: {0}".format(self.request.get_name()))
-            self.__initialize_tree_view()
-            self.settings.set_request_directory_last_open(folder)
+            self.__open_request(file)
 
-            self.load_request_samples()
-            self.load_request_measurements()
-            self.load_request_simulations()
-            self.__remove_introduction_tab()
-            self.__set_request_buttons_enabled(True)
+    def __open_request(self, file):
+        """Opens a request in the main"""
+        try:
+            request = Request.from_file(file, self.settings, self.tab_widgets)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Error", f"Could not open the request: {e}",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok
+            )
+            self.remove_from_recent_files(file)
+            return
+        self.__close_request()
+        self.add_to_recent_files(Path(file))
+        self.request = request
+        self.setWindowTitle("{0} - Request: {1}".format(
+            self.title,
+            self.request.get_name()))
+        self.treeWidget.setHeaderLabel(
+            "Request: {0}".format(self.request.get_name()))
+        self.__initialize_tree_view()
 
-            master_measurement = self.request.has_master()
-            nonslaves = self.request.get_nonslaves()
-            if master_measurement != "":
-                self.request.set_master(master_measurement)
-                master_measurement_name = master_measurement.name
-            else:
-                master_measurement_name = None
+        folder = os.path.split(file)[0]
+        self.settings.set_request_directory_last_open(folder)
 
-            for sample in self.request.samples.samples:
-                # Get Sample item from tree
-                try:
-                    sample_item = self.treeWidget.findItems(
-                        "%02d" % sample.serial_number + " " + sample.name,
-                        Qt.MatchEndsWith,
-                        0)[0]
-                    for i in range(sample_item.childCount()):
-                        item = sample_item.child(i)
-                        tab_widget = self.tab_widgets[item.tab_id]
-                        tab_name = tab_widget.obj.name
-                        if master_measurement_name and \
-                                item.tab_id == master_measurement.tab_id:
-                            item.setText(0,
-                                         "{0} (master)".format(
-                                             master_measurement_name))
-                        elif tab_widget.obj in nonslaves or \
-                                not master_measurement_name or type(
-                            tab_widget.obj) == Simulation:
-                            item.setText(0, tab_name)
-                        else:
-                            item.setText(0, "{0} (slave)".format(tab_name))
+        self.load_request_samples()
+        self.load_request_measurements()
+        self.load_request_simulations()
+        self.__remove_introduction_tab()
+        self.__set_request_buttons_enabled(True)
 
-                    for i in range(sample_item.childCount()):
-                        item = sample_item.child(i)
-                        tab_widget = self.tab_widgets[item.tab_id]
-                        tab_name = tab_widget.simulation.name
+        master_measurement = self.request.has_master()
+        nonslaves = self.request.get_nonslaves()
+        if master_measurement != "":
+            self.request.set_master(master_measurement)
+            master_measurement_name = master_measurement.name
+        else:
+            master_measurement_name = None
+
+        for sample in self.request.samples.samples:
+            # Get Sample item from tree
+            try:
+                sample_item = self.treeWidget.findItems(
+                    "%02d" % sample.serial_number + " " + sample.name,
+                    Qt.MatchEndsWith,
+                    0)[0]
+                for i in range(sample_item.childCount()):
+                    item = sample_item.child(i)
+                    tab_widget = self.tab_widgets[item.tab_id]
+                    tab_name = tab_widget.obj.name
+                    if master_measurement_name and \
+                            item.tab_id == master_measurement.tab_id:
+                        item.setText(0,
+                                     "{0} (master)".format(
+                                         master_measurement_name))
+                    elif tab_widget.obj in nonslaves or \
+                            not master_measurement_name or type(
+                        tab_widget.obj) == Simulation:
                         item.setText(0, tab_name)
-                except:
-                    # TODO Sample was not found in tree.
-                    pass
+                    else:
+                        item.setText(0, "{0} (slave)".format(tab_name))
+
+                for i in range(sample_item.childCount()):
+                    item = sample_item.child(i)
+                    tab_widget = self.tab_widgets[item.tab_id]
+                    tab_name = tab_widget.simulation.name
+                    item.setText(0, tab_name)
+            except:
+                # TODO Sample was not found in tree.
+                pass
 
     def open_request_settings(self):
         """Opens request settings dialog.
