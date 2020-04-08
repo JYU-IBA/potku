@@ -63,14 +63,13 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
             statusbar: A QtGui.QMainWindow's QStatusBar.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_simulation_tab.ui"), self)
+
         self.request = request
         self.tab_id = tab_id
         # TODO why 2 references to simulation?
         self.simulation = simulation
         self.obj = simulation
-
-        # TODO remove ui reference
-        self.ui = uic.loadUi(Path("ui_files", "ui_simulation_tab.ui"), self)
         self.icon_manager = icon_manager
 
         self.simulation_target = None

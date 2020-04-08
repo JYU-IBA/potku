@@ -35,11 +35,12 @@ import time
 
 import dialogs.dialog_functions as df
 
+from pathlib import Path
+
 from modules.run import Run
 from modules.target import Target
 
 from PyQt5 import QtCore
-from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
@@ -62,29 +63,29 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             icon_manager: An icon manager.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_specific_settings.ui"), self)
+
         self.measurement = measurement
         self.icon_manager = icon_manager
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_specific_settings.ui"), self)
-        self.ui.setWindowTitle("Measurement Settings")
+        self.setWindowTitle("Measurement Settings")
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         screen_geometry = QtWidgets.QDesktopWidget.availableGeometry(
             QtWidgets.QApplication.desktop())
         self.resize(self.geometry().width() * 1.2,
                     screen_geometry.size().height() * 0.8)
-        self.ui.defaultSettingsCheckBox.stateChanged.connect(
+        self.defaultSettingsCheckBox.stateChanged.connect(
             self.__change_used_settings)
-        self.ui.OKButton.clicked.connect(self.__save_settings_and_close)
-        self.ui.applyButton.clicked.connect(self.__update_parameters)
-        self.ui.cancelButton.clicked.connect(self.close)
+        self.OKButton.clicked.connect(self.__save_settings_and_close)
+        self.applyButton.clicked.connect(self.__update_parameters)
+        self.cancelButton.clicked.connect(self.close)
 
         # Add measurement settings view to the settings view
         self.measurement_settings_widget = MeasurementSettingsWidget(
             self.measurement)
-        self.ui.tabs.addTab(self.measurement_settings_widget, "Measurement")
+        self.tabs.addTab(self.measurement_settings_widget, "Measurement")
 
         self.measurement_settings_widget.beam_selection_ok.connect(
-            lambda b: self.ui.OKButton.setEnabled(b)
+            self.OKButton.setEnabled
         )
 
         # Add detector settings view to the settings view
@@ -96,10 +97,10 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             detector_object, self.measurement.request, self.icon_manager,
             self.measurement_settings_widget.tmp_run)
 
-        self.ui.tabs.addTab(self.detector_settings_widget, "Detector")
+        self.tabs.addTab(self.detector_settings_widget, "Detector")
 
         if self.measurement.detector is not None:
-            self.ui.defaultSettingsCheckBox.setCheckState(0)
+            self.defaultSettingsCheckBox.setCheckState(0)
             self.measurement_settings_widget.nameLineEdit.setText(
                 self.measurement.measurement_setting_file_name)
             self.measurement_settings_widget.descriptionPlainTextEdit \
@@ -109,11 +110,10 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                 "%c %z %Z", time.localtime(self.measurement.modification_time)))
 
         # Add profile settings view to the settings view
-        self.profile_settings_widget = ProfileSettingsWidget(
-            self.measurement)
-        self.ui.tabs.addTab(self.profile_settings_widget, "Profile")
+        self.profile_settings_widget = ProfileSettingsWidget(self.measurement)
+        self.tabs.addTab(self.profile_settings_widget, "Profile")
 
-        self.ui.tabs.currentChanged.connect(lambda: self.__check_for_red())
+        self.tabs.currentChanged.connect(self.__check_for_red)
 
         self.__close = True
 
@@ -122,9 +122,9 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
     def __change_used_settings(self):
         check_box = self.sender()
         if check_box.isChecked():
-            self.ui.tabs.setEnabled(False)
+            self.tabs.setEnabled(False)
         else:
-            self.ui.tabs.setEnabled(True)
+            self.tabs.setEnabled(True)
 
     def __check_for_red(self):
         """
@@ -153,7 +153,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         if not self.measurement.profile_name:
             self.measurement.profile_name = self.measurement.name
 
-        check_box = self.ui.defaultSettingsCheckBox
+        check_box = self.defaultSettingsCheckBox
         if check_box.isChecked():
             # Use request settings
             def_mesu = self.measurement.request.default_measurement
@@ -167,9 +167,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             # Revert all profile parameters to default.
             self.measurement.copy_settings_from(def_mesu)
 
-            det_folder_path = os.path.join(self.measurement.directory,
-                                           "Detector")
-            if os.path.exists(det_folder_path):
+            det_folder_path = Path(self.measurement.directory, "Detector")
+            if det_folder_path.exists():
                 # Remove Measurement specific Detector files
                 shutil.rmtree(det_folder_path)
 
@@ -180,13 +179,13 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                     filenames_to_remove.append(file)
             for file in filenames_to_remove:
                 # Remove Measurement specific .measurement and .profile files
-                os.remove(os.path.join(self.measurement.directory, file))
+                os.remove(Path(self.measurement.directory, file))
             self.__close = True
         else:
             # Check the target and detector angles
             ok_pressed = self.measurement_settings_widget.check_angles()
             if ok_pressed:
-                if not self.ui.tabs.currentWidget().fields_are_valid:
+                if not self.tabs.currentWidget().fields_are_valid:
                     QtWidgets.QMessageBox.critical(self, "Warning",
                                                    "Some of the setting values "
                                                    "have not been set.\n" +
@@ -212,11 +211,11 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                         # Create default Run object for Measurement
                         self.measurement.run = Run()
 
-                    det_folder_path = \
-                        os.path.join(self.measurement.directory, "Detector")
+                    det_folder_path = Path(self.measurement.directory,
+                                           "Detector")
                     measurement_settings_file_path = \
-                        os.path.join(self.measurement.directory,
-                                     file_name + ".measurement")
+                        Path(self.measurement.directory,
+                             f"{file_name}.measurement")
 
                     if self.measurement.detector is None:
                         df.update_detector_settings(
@@ -225,8 +224,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                             measurement_settings_file_path)
 
                     # Set Detector object to settings widget
-                    self.detector_settings_widget.obj = self.measurement. \
-                        detector
+                    self.detector_settings_widget.obj = \
+                        self.measurement.detector
 
                     # Update settings
                     self.measurement_settings_widget.update_settings()
@@ -236,9 +235,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
 
                     self.profile_settings_widget.update_settings()
                     self.measurement.detector.path = \
-                        os.path.join(det_folder_path,
-                                     self.measurement.detector.name +
-                                     ".detector")
+                        Path(det_folder_path,
+                             f"{self.measurement.detector.name}.detector")
 
                     # Delete possible extra .measurement and .profile files
                     filenames_to_remove = []
@@ -247,16 +245,15 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                                 ".profile"):
                             filenames_to_remove.append(file)
                     for filename in filenames_to_remove:
-                        os.remove(os.path.join(self.measurement.directory,
-                                               filename))
+                        os.remove(Path(self.measurement.directory, filename))
 
                     # Save general measurement settings parameters.
-                    new_measurement_settings_file_path = os.path.join(
+                    new_measurement_settings_file_path = Path(
                         self.measurement.directory,
                         self.measurement.measurement_setting_file_name +
                         ".measurement")
-                    self.measurement\
-                        .measurement_to_file(new_measurement_settings_file_path)
+                    self.measurement.measurement_to_file(
+                        new_measurement_settings_file_path)
 
                     # Save run parameters
                     self.measurement.run.to_file(
@@ -267,18 +264,17 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                         new_measurement_settings_file_path)
 
                     # Save profile parameters
-                    profile_file_path = \
-                        os.path.join(self.measurement.directory,
-                                     self.measurement.profile_name + ".profile")
+                    profile_file_path = Path(
+                        self.measurement.directory,
+                        f"{self.measurement.profile_name}.profile")
                     self.measurement.profile_to_file(profile_file_path)
 
                     # Save target parameters
-                    target_file_path = \
-                        os.path.join(self.measurement.directory,
-                                     self.measurement.target.name + ".target")
-                    self.measurement.target\
-                        .to_file(target_file_path,
-                                 new_measurement_settings_file_path)
+                    target_file_path = Path(
+                        self.measurement.directory,
+                        f"{self.measurement.target.name}.target")
+                    self.measurement.target.to_file(
+                        target_file_path, new_measurement_settings_file_path)
 
                     self.__close = True
 

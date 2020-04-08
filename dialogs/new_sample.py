@@ -28,9 +28,9 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import os
-
 import widgets.input_validation as iv
+
+from pathlib import Path
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -46,11 +46,10 @@ class NewSampleDialog(QtWidgets.QDialog):
             samples: List of samples.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_new_sample.ui"), self)
 
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_new_sample.ui"), self)
-
-        self.ui.createButton.clicked.connect(self.__create_sample)
-        self.ui.cancelButton.clicked.connect(self.close)
+        self.createButton.clicked.connect(self.__create_sample)
+        self.cancelButton.clicked.connect(self.close)
         self.name = ""
         self.description = ""
         self.samples = samples
@@ -67,9 +66,9 @@ class NewSampleDialog(QtWidgets.QDialog):
     def __create_sample(self):
         """Read sample name from view and if it is accepted, close dialog.
         """
-        self.name = self.ui.nameLineEdit.text().replace(" ", "_")
+        self.name = self.nameLineEdit.text().replace(" ", "_")
         if not self.name:
-            self.ui.nameLineEdit.setFocus()
+            self.nameLineEdit.setFocus()
             return
         for sample in self.samples:
             if sample.name == self.name:

@@ -24,10 +24,11 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-import os
 import time
 
 import widgets.input_validation as iv
+
+from pathlib import Path
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
@@ -46,20 +47,20 @@ class TargetInfoDialog(QtWidgets.QDialog):
             target: Target object.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_target_info.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_target_info.ui"), self)
+
         self.target = target
 
-        self.ui.okPushButton.clicked.connect(self.__accept_settings)
-        self.ui.cancelPushButton.clicked.connect(self.close)
+        self.okPushButton.clicked.connect(self.__accept_settings)
+        self.cancelPushButton.clicked.connect(self.close)
 
         self.name = ""
-        self.ui.nameLineEdit.setText(target.name)
-        self.ui.descriptionLineEdit.setPlainText(target.description)
+        self.nameLineEdit.setText(target.name)
+        self.descriptionLineEdit.setPlainText(target.description)
         self.description = ""
         self.isOk = False
 
-        self.ui.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+        self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             target.modification_time)))
 
         self.fields_are_valid = False
@@ -86,8 +87,8 @@ class TargetInfoDialog(QtWidgets.QDialog):
                                            QtWidgets.QMessageBox.Ok)
             self.__close = False
         else:
-            self.name = self.ui.nameLineEdit.text()
-            self.description = self.ui.descriptionLineEdit.toPlainText()
+            self.name = self.nameLineEdit.text()
+            self.description = self.descriptionLineEdit.toPlainText()
             self.isOk = True
             self.__close = True
         if self.__close:

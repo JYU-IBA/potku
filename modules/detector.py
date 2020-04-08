@@ -32,6 +32,8 @@ import os
 import shutil
 import time
 
+from pathlib import Path
+
 from modules.element import Element
 from modules.foil import CircularFoil
 from modules.foil import RectangularFoil
@@ -126,8 +128,7 @@ class Detector:
         self.efficiency_directory = None
 
         if save_in_creation:
-            self.to_file(os.path.join(self.path),
-                         self.__measurement_settings_file_path)
+            self.to_file(self.path, self.__measurement_settings_file_path)
 
     def update_directories(self, directory):
         """Creates directories if they do not exist and updates paths.
@@ -135,13 +136,10 @@ class Detector:
             directory: Path to where all the detector information goes.
         """
         self.path = directory
+        os.makedirs(self.path, exist_ok=True)
 
-        if not os.path.exists(self.path):
-            os.makedirs(self.path)
-
-        self.efficiency_directory = os.path.join(self.path, "Efficiency_files")
-        if not os.path.exists(self.efficiency_directory):
-            os.makedirs(self.efficiency_directory)
+        self.efficiency_directory = Path(self.path, "Efficiency_files")
+        os.makedirs(self.efficiency_directory, exist_ok=True)
 
     def update_directory_references(self, obj):
         """
@@ -150,11 +148,11 @@ class Detector:
         """
         old_path_to_det, det_file = os.path.split(self.path)
         old_path_to_obj, det_folder = os.path.split(old_path_to_det)
-        new_path = os.path.join(obj.directory, det_folder)
+        new_path = Path(obj.directory, det_folder)
 
-        self.path = os.path.join(new_path, det_file)
+        self.path = Path(new_path, det_file)
 
-        self.efficiency_directory = os.path.join(new_path, "Efficiency_files")
+        self.efficiency_directory = Path(new_path, "Efficiency_files")
 
     def get_efficiency_files(self):
         """Get efficiency files that are in detector's efficiency file folder
@@ -209,7 +207,7 @@ class Detector:
         # TODO maybe the widget could keep a list of files to remove instead of
         #      the detector? Detector should just delete given files
         file_path = ""
-        folder_and_file = os.path.join("Efficiency_files", file_name)
+        folder_and_file = Path("Efficiency_files", file_name)
         for f in self.efficiencies:
             if f.endswith(folder_and_file):
                 file_path = f
@@ -226,7 +224,7 @@ class Detector:
             file_name: Name of the efficiency file.
         """
         try:
-            os.remove(os.path.join(self.efficiency_directory, file_name))
+            os.remove(Path(self.efficiency_directory, file_name))
             # Remove file from used efficiencies if it exists
             element_split = file_name.split('-')
             if len(element_split) <= 2:
@@ -239,13 +237,12 @@ class Detector:
             if os.sep in element:
                 element = os.path.split(element)[1]
             if element.endswith(".eff"):
-                file_to_remove = os.path.join(self.efficiency_directory,
-                                              "Used_efficiencies", element)
+                file_to_remove = Path(self.efficiency_directory,
+                                      "Used_efficiencies", element)
             else:
-                file_to_remove = os.path.join(self.efficiency_directory,
-                                              "Used_efficiencies", element +
-                                              ".eff")
-            if os.path.exists(file_to_remove):
+                file_to_remove = Path(self.efficiency_directory,
+                                      "Used_efficiencies", f"{element}.eff")
+            if file_to_remove.exists():
                 os.remove(file_to_remove)
         except OSError:
             # File was not found in efficiency file folder.
@@ -320,14 +317,16 @@ class Detector:
                                    saved.
         """
         # Delete possible extra .detector files
-        det_folder = os.path.split(detector_file_path)[0]
-        filename_to_remove = ""
+        det_folder = Path(detector_file_path).parent
+        os.makedirs(det_folder, exist_ok=True)
+        filename_to_remove = None
         for file in os.listdir(det_folder):
             if file.endswith(".detector"):
+                # TODO this only removes one file, what about others?
                 filename_to_remove = file
                 break
-        if filename_to_remove:
-            os.remove(os.path.join(det_folder, filename_to_remove))
+        if filename_to_remove is not None:
+            os.remove(Path(det_folder, filename_to_remove))
 
         timestamp = time.time()
 

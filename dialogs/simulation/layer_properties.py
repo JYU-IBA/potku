@@ -28,18 +28,17 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import copy
 import modules.masses as masses
-import os
 import platform
 
 import dialogs.dialog_functions as df
 import widgets.input_validation as iv
 
+from pathlib import Path
+
 from dialogs.element_selection import ElementSelectionDialog
 
 from modules.element import Element
-from modules.general_functions import delete_simulation_results
 from modules.layer import Layer
 
 from PyQt5 import QtGui
@@ -64,36 +63,16 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             first_layer: Whether the dialog is used to add the first layer.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_layer_dialog.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_layer_dialog.ui"), self)
+
         self.tab = tab
         self.layer = layer
         self.ok_pressed = False
         self.simulation = simulation
 
-        iv.set_input_field_red(self.ui.thicknessEdit)
-        iv.set_input_field_red(self.ui.densityEdit)
+        iv.set_input_field_red(self.thicknessEdit)
+        iv.set_input_field_red(self.densityEdit)
         self.amount_mismatch = False
-
-        # Connect buttons to events
-        self.ui.addElementButton.clicked.connect(self.__add_element_layout)
-        self.ui.okButton.clicked.connect(self.__save_layer)
-        self.ui.cancelButton.clicked.connect(self.close)
-
-        self.ui.thicknessEdit.valueChanged.connect(
-            lambda: self.validate_spinbox(self.ui.thicknessEdit))
-        self.ui.densityEdit.valueChanged.connect(lambda:
-                                                   self.validate_spinbox(
-                                                       self.ui.densityEdit))
-
-        self.__element_layouts = []
-        if self.layer:
-            self.__show_layer_info()
-        else:
-            self.__add_element_layout()
-
-        if first_layer:
-            self.ui.groupBox_2.hide()
 
         self.fields_are_valid = True
         iv.set_input_field_red(self.nameEdit)
@@ -102,13 +81,32 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.nameEdit.textEdited.connect(
             lambda: iv.sanitize_file_name(self.nameEdit))
 
+        # Connect buttons to events
+        self.addElementButton.clicked.connect(self.__add_element_layout)
+        self.okButton.clicked.connect(self.__save_layer)
+        self.cancelButton.clicked.connect(self.close)
+
+        self.thicknessEdit.valueChanged.connect(
+            lambda: self.validate_spinbox(self.thicknessEdit))
+        self.densityEdit.valueChanged.connect(
+            lambda: self.validate_spinbox(self.densityEdit))
+
+        self.__element_layouts = []
+        if self.layer:
+            self.__show_layer_info()
+        else:
+            self.__add_element_layout()
+
+        if first_layer:
+            self.groupBox_2.hide()
+
         self.__close = True
 
-        self.ui.thicknessEdit.setLocale(QLocale.c())
-        self.ui.densityEdit.setLocale(QLocale.c())
+        self.thicknessEdit.setLocale(QLocale.c())
+        self.densityEdit.setLocale(QLocale.c())
 
         if modify:
-            self.ui.groupBox_2.hide()
+            self.groupBox_2.hide()
 
         self.placement_under = True
 
@@ -132,9 +130,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         """
         Show information of the current layer.
         """
-        self.ui.nameEdit.setText(self.layer.name)
-        self.ui.thicknessEdit.setValue(self.layer.thickness)
-        self.ui.densityEdit.setValue(self.layer.density)
+        self.nameEdit.setText(self.layer.name)
+        self.thicknessEdit.setValue(self.layer.thickness)
+        self.densityEdit.setValue(self.layer.density)
 
         for elem in self.layer.elements:
             self.__add_element_layout(elem)
@@ -150,22 +148,22 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         spinboxes = []
 
         # Check if 'scrollArea' is empty (no elements).
-        if self.ui.scrollAreaWidgetContents.layout().isEmpty():
-            iv.set_input_field_red(self.ui.scrollArea)
+        if self.scrollAreaWidgetContents.layout().isEmpty():
+            iv.set_input_field_red(self.scrollArea)
             self.fields_are_valid = False
 
         # Check if 'thicknessEdit' is empty.
-        if not self.ui.thicknessEdit.value():
-            iv.set_input_field_red(self.ui.thicknessEdit)
+        if not self.thicknessEdit.value():
+            iv.set_input_field_red(self.thicknessEdit)
             self.fields_are_valid = False
 
         # Check if 'densityEdit' is empty.
-        if not self.ui.densityEdit.value():
-            iv.set_input_field_red(self.ui.densityEdit)
+        if not self.densityEdit.value():
+            iv.set_input_field_red(self.densityEdit)
             self.fields_are_valid = False
 
         # Check that the element specific settings are okay.
-        for child in self.ui.scrollAreaWidgetContents.children():
+        for child in self.scrollAreaWidgetContents.children():
             if type(child) is QtWidgets.QPushButton:
                 if child.text() == "Select":
                     iv.set_input_field_red(child)
@@ -210,11 +208,11 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         Return:
             True or False.
         """
-        if self.layer.name != self.ui.nameEdit.text():
+        if self.layer.name != self.nameEdit.text():
             return True
-        if self.layer.thickness != self.ui.thicknessEdit.value():
+        if self.layer.thickness != self.thicknessEdit.value():
             return True
-        if self.layer.density != self.ui.densityEdit.value():
+        if self.layer.density != self.densityEdit.value():
             return True
         if self.elements_changed():
             return True
@@ -242,7 +240,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         Args:
             lst: List to append the elements to.
         """
-        children = self.ui.scrollAreaWidgetContents.children()
+        children = self.scrollAreaWidgetContents.children()
 
         # TODO: Explain the following. Maybe better implementation?
         # TODO this could be a bit shaky. Got an AttributeError once
@@ -302,9 +300,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 self.__close = False
                 return
 
-        name = self.ui.nameEdit.text()
-        thickness = self.ui.thicknessEdit.value()
-        density = self.ui.densityEdit.value()
+        name = self.nameEdit.text()
+        thickness = self.thicknessEdit.value()
+        density = self.densityEdit.value()
         elements = []
         self.find_elements(elements)
 
@@ -315,7 +313,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.layer.density = density
         else:
             self.layer = Layer(name, elements, thickness, density)
-        if self.ui.comboBox.currentText().startswith("Under"):
+        if self.comboBox.currentText().startswith("Under"):
             self.placement_under = True
         else:
             self.placement_under = False
@@ -341,9 +339,9 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
     def __add_element_layout(self, element=None):
         """Add element widget into view.
         """
-        self.ui.scrollArea.setStyleSheet("")
+        self.scrollArea.setStyleSheet("")
         self.__element_layouts.append(ElementLayout(
-            self.ui.scrollAreaWidgetContents, element, self))
+            self.scrollAreaWidgetContents, element, self))
 
 
 class ElementLayout(QtWidgets.QVBoxLayout):
@@ -383,8 +381,8 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.amount_spinbox.setMaximum(9999.00)
         self.amount_spinbox.setDecimals(3)
         self.amount_spinbox.setEnabled(enabled)
-        self.amount_spinbox.valueChanged\
-            .connect(lambda: dialog.validate_spinbox(self.amount_spinbox))
+        self.amount_spinbox.valueChanged.connect(
+            lambda: dialog.validate_spinbox(self.amount_spinbox))
         self.amount_spinbox.setLocale(QLocale.c())
 
         if enabled:

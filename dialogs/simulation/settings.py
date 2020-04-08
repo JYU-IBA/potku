@@ -35,6 +35,8 @@ import time
 import dialogs.dialog_functions as df
 import widgets.binding as bnd
 
+from pathlib import Path
+
 from modules.run import Run
 
 from PyQt5 import QtCore
@@ -61,12 +63,11 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             icon_manager: An icon manager.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_specific_settings.ui"), self)
+
         self.tab = tab
         self.simulation = simulation
         self.icon_manager = icon_manager
-
-        uic.loadUi(os.path.join("ui_files",
-                                "ui_specific_settings.ui"), self)
 
         self.setWindowTitle("Simulation Settings")
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
@@ -184,49 +185,42 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             # Update simulation settings
             self.simulation.use_request_settings = \
                 self.use_request_settings
-            measurement_settings_file_path = os.path.join(
+            measurement_settings_file_path = Path(
                 self.simulation.directory,
-                self.simulation.measurement_setting_file_name
-                + ".measurement")
-            target_file_path = os.path.join(self.simulation.directory,
-                                            self.simulation.target.name
-                                            + ".target")
-            det_folder_path = os.path.join(self.simulation.directory,
-                                           "Detector")
+                f"{self.simulation.measurement_setting_file_name}.measurement")
+            target_file_path = Path(self.simulation.directory,
+                                    f"{self.simulation.target.name}.target")
+            det_folder_path = Path(self.simulation.directory, "Detector")
 
             if self.simulation.run is None:
                 # Create a default Run for simulation
                 self.simulation.run = Run()
             if self.simulation.detector is None:
-                df.update_detector_settings(
-                    self.simulation,
-                    det_folder_path,
-                    measurement_settings_file_path)
+                df.update_detector_settings(self.simulation,
+                                            det_folder_path,
+                                            measurement_settings_file_path)
 
             # Set Detector object to settings widget
-            self.detector_settings_widget.obj = self.simulation. \
-                detector
+            self.detector_settings_widget.obj = self.simulation.detector
 
             # Update settings
             self.measurement_settings_widget.update_settings()
             self.detector_settings_widget.update_settings()
             self.simulation.detector.path = \
-                os.path.join(det_folder_path,
-                             self.simulation.detector.name +
-                             ".detector")
+                Path(det_folder_path,
+                     f"{self.simulation.detector.name}.detector")
 
             df.update_efficiency_files(self.simulation.detector)
 
             # Save measurement settings parameters.
-            new_measurement_settings_file_path = os.path.join(
+            new_measurement_settings_file_path = Path(
                 self.simulation.directory,
                 self.simulation.measurement_setting_file_name +
                 ".measurement")
             general_obj = {
                 "name": self.simulation.measurement_setting_file_name,
                 "description":
-                    self.simulation.
-                        measurement_setting_file_description,
+                    self.simulation.measurement_setting_file_description,
                 "modification_time":
                     time.strftime("%c %z %Z", time.localtime(
                         time.time())),
@@ -234,9 +228,9 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                 "use_request_settings": self.simulation.use_request_settings
             }
 
-            if os.path.exists(new_measurement_settings_file_path):
-                obj = json.load(open(
-                    new_measurement_settings_file_path))
+            if new_measurement_settings_file_path.exists():
+                with open(new_measurement_settings_file_path) as mesu:
+                    obj = json.load(mesu)
                 obj["general"] = general_obj
             else:
                 obj = {
@@ -250,8 +244,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                     filename_to_remove = file
                     break
             if filename_to_remove:
-                os.remove(os.path.join(self.simulation.directory,
-                                       filename_to_remove))
+                os.remove(Path(self.simulation.directory, filename_to_remove))
 
             # Write measurement settings to file
             with open(new_measurement_settings_file_path, "w") as file:
@@ -260,16 +253,14 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.simulation.to_file(self.simulation.path)
 
             # Save Run object to file
-            self.simulation.run.to_file(
-                new_measurement_settings_file_path)
+            self.simulation.run.to_file(new_measurement_settings_file_path)
             # Save Detector object to file
-            self.simulation.detector.to_file(
-                self.simulation.detector.path,
-                new_measurement_settings_file_path)
+            self.simulation.detector.to_file(self.simulation.detector.path,
+                                             new_measurement_settings_file_path)
 
             # Save Target object to file
-            self.simulation.target.to_file(
-                target_file_path, new_measurement_settings_file_path)
+            self.simulation.target.to_file(target_file_path,
+                                           new_measurement_settings_file_path)
             self.__close = True
 
         except TypeError:

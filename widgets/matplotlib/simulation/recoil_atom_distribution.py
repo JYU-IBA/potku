@@ -199,7 +199,7 @@ class ElementManager:
         simulation_controls_widget = SimulationControlsWidget(
             element_simulation, self.parent)
         simulation_controls_widget.element_simulation = element_simulation
-        self.parent_tab.ui.contentsLayout.addWidget(simulation_controls_widget)
+        self.parent_tab.contentsLayout.addWidget(simulation_controls_widget)
         element_simulation.recoil_elements[0] \
             .widgets.append(simulation_controls_widget)
 
@@ -228,7 +228,7 @@ class ElementManager:
         simulation_controls_widget = SimulationControlsWidget(
             element_simulation, self.parent)
         simulation_controls_widget.element_simulation = element_simulation
-        self.parent_tab.ui.contentsLayout.addWidget(simulation_controls_widget)
+        self.parent_tab.contentsLayout.addWidget(simulation_controls_widget)
         element_simulation.recoil_elements[0] \
             .widgets.append(simulation_controls_widget)
 
@@ -402,7 +402,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.target = target
         self.layer_colors = [(0.9, 0.9, 0.9), (0.85, 0.85, 0.85)]
 
-        self.parent_ui = parent.ui
         # Setting up the element scroll area
         widget = QtWidgets.QWidget()
         self.recoil_vertical_layout = QtWidgets.QVBoxLayout()
@@ -410,29 +409,26 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         widget.setLayout(self.recoil_vertical_layout)
 
         scroll_vertical_layout = QtWidgets.QVBoxLayout()
-        self.parent_ui.recoilScrollAreaContents.setLayout(
-            scroll_vertical_layout)
+        self.parent.recoilScrollAreaContents.setLayout(scroll_vertical_layout)
 
         scroll_vertical_layout.addWidget(widget)
         scroll_vertical_layout.addItem(
             QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum,
                                   QtWidgets.QSizePolicy.Expanding))
 
-        self.parent_ui.addPushButton.clicked.connect(
+        self.parent.addPushButton.clicked.connect(
             self.add_element_with_dialog)
-        self.parent_ui.removePushButton.clicked.connect(
+        self.parent.removePushButton.clicked.connect(
             self.remove_current_element)
-        # self.parent_ui.settingsPushButton.clicked.connect(
-        #     self.open_element_simulation_settings)
 
         self.radios = QtWidgets.QButtonGroup(self)
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
             self.choose_element)
 
-        self.parent_ui.editPushButton.clicked.connect(
+        self.parent.editPushButton.clicked.connect(
             self.open_recoil_element_info)
 
-        self.edit_lock_push_button = self.parent_ui.editLockPushButton
+        self.edit_lock_push_button = self.parent.editLockPushButton
         self.edit_lock_push_button.clicked.connect(self.unlock_or_lock_edit)
         self.full_edit_on = True
 
@@ -540,8 +536,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.colormap = self.simulation.request.global_settings. \
             get_element_colors()
 
-        self.parent.ui.percentButton.clicked.connect(
-            self.__create_percent_widget)
+        self.parent.percentButton.clicked.connect(self.__create_percent_widget)
 
         self.on_draw()
 
@@ -757,7 +752,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             # other than main recoil element
             if self.current_recoil_element is not \
                     self.current_element_simulation.recoil_elements[0]:
-                self.parent_ui.removePushButton.setEnabled(False)
+                self.parent.removePushButton.setEnabled(False)
                 self.edit_lock_push_button.setEnabled(False)
                 # Update zero values and intervals for main recoil element
                 self.current_element_simulation.recoil_elements[0]. \
@@ -774,9 +769,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.update_current_recoils_zeros()
                     self.delete_and_add_possible_extra_points()
             else:
-                self.parent_ui.removePushButton.setEnabled(True)
+                self.parent.removePushButton.setEnabled(True)
                 self.edit_lock_push_button.setEnabled(True)
-            self.parent_ui.elementInfoWidget.show()
+            self.parent.elementInfoWidget.show()
             # Put full edit on if element simulation allows it
             self.full_edit_on = \
                 self.current_element_simulation.get_full_edit_on()
@@ -1019,9 +1014,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         """
         Update recoil element info labels.
         """
-        self.parent_ui.nameLabel.setText(
+        self.parent.nameLabel.setText(
             "Name: " + self.current_recoil_element.name)
-        self.parent_ui.referenceDensityLabel.setText(
+        self.parent.referenceDensityLabel.setText(
             "Reference density: " + "{0:1.2f}".format(
                 self.current_recoil_element.reference_density) +
             str(self.current_recoil_element.multiplier)[1:] + " at./cm\xb3"
@@ -1042,9 +1037,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Show recoil element info on switch.
         """
         if self.current_element_simulation is None:
-            self.parent_ui.elementInfoWidget.hide()
+            self.parent.elementInfoWidget.hide()
         else:
-            self.parent_ui.elementInfoWidget.show()
+            self.parent.elementInfoWidget.show()
 
     def add_element_with_dialog(self):
         """
@@ -1233,7 +1228,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         self.show_other_recoils()
         self.current_element_simulation = None
-        self.parent_ui.elementInfoWidget.hide()
+        self.parent.elementInfoWidget.hide()
         self.update_plot()
 
     def export_elements(self):
@@ -1414,7 +1409,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     self.axes.axvline(x=low_x, linestyle="--", color='green'))
                 self.current_recoil_element.area_limits.append(
                     self.axes.axvline(x=high_x, linestyle="--", color='orange'))
-            self.parent.ui.percentButton.setEnabled(True)
+            self.parent.percentButton.setEnabled(True)
             self.area_limits_individual_on = True
             self.__calculate_selected_area()
             if self.anchored_box:
@@ -1444,7 +1439,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                     x=low_x, linestyle="--"))
                 self.area_limits_for_all.append(self.axes.axvline(
                     x=high_x, linestyle="--", color='red'))
-                self.parent.ui.percentButton.setEnabled(True)
+                self.parent.percentButton.setEnabled(True)
             self.area_limits_for_all_on = True
             self.span_selector.set_active(True)
 

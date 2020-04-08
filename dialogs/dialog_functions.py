@@ -185,8 +185,8 @@ def delete_recoil_espe(tab, recoil_name):
 # TODO common base class for settings dialogs
 
 
-def update_detector_settings(entity, det_folder_path,
-                             measurement_settings_file_path):
+def update_detector_settings(entity, det_folder_path: Path,
+                             measurement_settings_file_path: Path):
     """
 
     Args:
@@ -196,14 +196,12 @@ def update_detector_settings(entity, det_folder_path,
     """
     # TODO this could be a function of Measurement and Simulation
     # Create default Detector for Measurement
-    detector_file_path = os.path.join(det_folder_path,
-                                      "Default.detector")
-    if not os.path.exists(det_folder_path):
+    detector_file_path = Path(det_folder_path, "Default.detector")
+    if not det_folder_path.exists:
         os.makedirs(det_folder_path)
-    entity.detector = Detector(
-        detector_file_path, measurement_settings_file_path)
-    entity.detector.update_directories(
-        det_folder_path)
+    entity.detector = Detector(detector_file_path,
+                               measurement_settings_file_path)
+    entity.detector.update_directories(det_folder_path)
 
     # Transfer the default detector efficiencies to new
     # Detector
@@ -213,8 +211,7 @@ def update_detector_settings(entity, det_folder_path,
     # added in measurement specific dialog go by default in
     # the list. The list is only used for this transferring,
     # so emptying it does no harm.
-    entity.request.default_detector. \
-        efficiencies = []
+    entity.request.default_detector.efficiencies = []
 
 
 def update_tab(tab):

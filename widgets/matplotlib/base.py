@@ -63,16 +63,16 @@ class MatplotlibWidget(QtWidgets.QWidget):
         self.mpl_toolbar = NavigationToolBar(
             self.canvas, self.main_frame)
 
-        if hasattr(self.main_frame.ui, "matplotlib_layout"):
-            self.main_frame.ui.matplotlib_layout.addWidget(self.canvas)
-            self.main_frame.ui.matplotlib_layout.addWidget(self.mpl_toolbar)
-        if hasattr(self.main_frame.ui, "stackedWidget"):
+        if hasattr(self.main_frame, "matplotlib_layout"):
+            self.main_frame.matplotlib_layout.addWidget(self.canvas)
+            self.main_frame.matplotlib_layout.addWidget(self.mpl_toolbar)
+        if hasattr(self.main_frame, "stackedWidget"):
             frame = QtWidgets.QWidget()
             layout = QtWidgets.QVBoxLayout()
             layout.addWidget(self.canvas)
             layout.addWidget(self.mpl_toolbar)
             frame.setLayout(layout)
-            self.main_frame.ui.stackedWidget.addWidget(frame)
+            self.main_frame.stackedWidget.addWidget(frame)
 
     def remove_axes_ticks(self):
         """Remove ticks from axes.
