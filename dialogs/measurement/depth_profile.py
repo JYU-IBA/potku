@@ -29,13 +29,14 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import logging
-import modules.masses as masses
 import os
 import sys
 import time
+import logging
 
 import dialogs.dialog_functions as df
+
+from pathlib import Path
 
 from modules.beam import Beam
 from modules.cut_file import get_scatter_element
@@ -72,34 +73,33 @@ class DepthProfileDialog(QtWidgets.QDialog):
             parent: A MeasurementTabWidget.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_depth_profile_params.ui"), self)
+
         self.parent = parent
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_depth_profile_params.ui"), self)
         self.measurement = parent.obj
         self.statusbar = statusbar
         self.__global_settings = self.measurement.request.global_settings
         
         # Connect buttons
-        self.ui.OKButton.clicked.connect(self.__accept_params)
-        self.ui.cancelButton.clicked.connect(self.close)
+        self.OKButton.clicked.connect(self.__accept_params)
+        self.cancelButton.clicked.connect(self.close)
 
         self.__reference_density_label = None
         self.__reference_density_spinbox = None
 
         self.locale = QLocale.c()
 
-        self.ui.spin_systerr.setLocale(self.locale)
+        self.spin_systerr.setLocale(self.locale)
 
-        self.ui.radioButtonNm.clicked.connect(self.__add_reference_density)
-        self.ui.radioButtonAtPerCm2.clicked.connect(
+        self.radioButtonNm.clicked.connect(self.__add_reference_density)
+        self.radioButtonAtPerCm2.clicked.connect(
             self.__remove_reference_density)
 
         m_name = self.parent.obj.name
         if m_name not in DepthProfileDialog.checked_cuts.keys():
             DepthProfileDialog.checked_cuts[m_name] = []
         self.measurement.fill_cuts_treewidget(
-            self.ui.treeWidget,
-            True,
+            self.treeWidget, True,
             DepthProfileDialog.checked_cuts[m_name])
         
         x_unit = DepthProfileDialog.x_unit
@@ -110,12 +110,12 @@ class DepthProfileDialog(QtWidgets.QDialog):
         if x_unit == "nm":
             self.__add_reference_density()
         
-        self.ui.check_0line.setChecked(DepthProfileDialog.line_zero)
-        self.ui.check_scaleline.setChecked(DepthProfileDialog.line_scale)
+        self.check_0line.setChecked(DepthProfileDialog.line_zero)
+        self.check_scaleline.setChecked(DepthProfileDialog.line_scale)
         
         str_cross = self.__global_settings.get_cross_sections_text()
-        self.ui.label_cross.setText(str_cross)
-        self.ui.spin_systerr.setValue(DepthProfileDialog.systerr)
+        self.label_cross.setText(str_cross)
+        self.spin_systerr.setValue(DepthProfileDialog.systerr)
 
         self.__show_important_settings()
         self.exec_()
@@ -138,19 +138,20 @@ class DepthProfileDialog(QtWidgets.QDialog):
 
             if progress_bar is not None:
                 progress_bar.setValue(10)
-                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+                QtCore.QCoreApplication.processEvents(
+                    QtCore.QEventLoop.AllEvents)
                 # Mac requires event processing to show progress bar and its
                 # process.
             
             # Get the filepaths of the selected items
-            root = self.ui.treeWidget.invisibleRootItem()
+            root = self.treeWidget.invisibleRootItem()
             child_count = root.childCount()
             m_name = self.parent.obj.name
             DepthProfileDialog.checked_cuts[m_name].clear()
             for i in range(child_count): 
                 item = root.child(i)
                 if item.checkState(0):
-                    use_cut.append(os.path.join(item.directory, item.file_name))
+                    use_cut.append(Path(item.directory, item.file_name))
                     element = Element.from_string(item.file_name.split(".")[1])
                     elements.append(element)
                     DepthProfileDialog.checked_cuts[m_name].append(
@@ -161,10 +162,10 @@ class DepthProfileDialog(QtWidgets.QDialog):
                         item_child = item.child(j)
                         if item_child.checkState(0):
                             name = item_child.file_name
-                            dir_e = os.path.join(
-                                self.parent.obj
-                                    .directory_composition_changes, "Changes")
-                            use_cut.append(os.path.join(dir_e, name))
+                            dir_e = Path(
+                                self.parent.obj.directory_composition_changes,
+                                "Changes")
+                            use_cut.append(Path(dir_e, name))
                             element = Element.from_string(item_child.file_name.
                                                           split(".")[1])
                             elements.append(element)
@@ -191,14 +192,14 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 # Mac requires event processing to show progress bar and its
                 # process.
             
-            DepthProfileDialog.line_zero = self.ui.check_0line.isChecked()
-            DepthProfileDialog.line_scale = self.ui.check_scaleline.isChecked() 
-            DepthProfileDialog.systerr = self.ui.spin_systerr.value()
+            DepthProfileDialog.line_zero = self.check_0line.isChecked()
+            DepthProfileDialog.line_scale = self.check_scaleline.isChecked()
+            DepthProfileDialog.systerr = self.spin_systerr.value()
             
             # If items are selected, proceed to generating the depth profile
             if use_cut:
-                self.ui.label_status.setText("Please wait. "
-                                             "Creating depth profile.")
+                self.label_status.setText("Please wait. "
+                                          "Creating depth profile.")
                 QtCore.QCoreApplication.processEvents(
                     QtCore.QEventLoop.AllEvents)
                 if self.parent.depth_profile_widget:
@@ -213,13 +214,13 @@ class DepthProfileDialog(QtWidgets.QDialog):
                             self.parent.obj.request.default_measurement\
                             .reference_density:
                         self.parent.obj.use_default_profile_settings = False
-                        measurement_file_path = os.path.join(
+                        measurement_file_path = Path(
                             self.parent.obj.directory,
                             self.parent.obj.measurement_setting_file_name +
                             ".measurement")
                         self.parent.obj.measurement_to_file(
                             measurement_file_path)
-                        profile_file_path = os.path.join(
+                        profile_file_path = Path(
                             self.parent.obj.directory,
                             self.parent.obj.profile_name + ".profile")
                         self.parent.obj.profile_to_file(profile_file_path)
@@ -227,13 +228,10 @@ class DepthProfileDialog(QtWidgets.QDialog):
                         if self.parent.obj.detector is None:
                             default_det = self.parent.obj.\
                                 request.default_detector
-                            path = os.path.join(self.parent.obj.directory,
-                                                "Detector")
-                            if not os.path.exists(path):
-                                os.makedirs(path)
-                            path_to_det_file = os.path.join(path,
-                                                            default_det.name
-                                                            + ".detector")
+                            path = Path(self.parent.obj.directory, "Detector")
+                            os.makedirs(path, exist_ok=True)
+                            path_to_det_file = Path(
+                                path, f"{default_det.name}.detector")
                             self.parent.obj.detector = Detector(
                                 path_to_det_file, measurement_file_path,
                                 default_det.name, default_det.description,
@@ -250,9 +248,8 @@ class DepthProfileDialog(QtWidgets.QDialog):
                             effs = default_det.get_efficiency_files()
                             for eff in effs:
                                 self.parent.obj.detector.add_efficiency_file(
-                                    os.path.join(default_det.
-                                                 efficiency_directory, eff))
-                            self.parent.obj.detector.to_file(os.path.join(
+                                    Path(default_det.efficiency_directory, eff))
+                            self.parent.obj.detector.to_file(Path(
                                 self.parent.obj.detector.path,
                                 self.parent.obj.detector.name + ".detector"),
                                 measurement_file_path)
@@ -286,7 +283,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                                 default_target.image_file,
                                 default_target.scattering_element,
                                 default_target.target_theta)
-                            self.parent.obj.target.to_file(os.path.join(
+                            self.parent.obj.target.to_file(Path(
                                 self.parent.obj.directory,
                                 self.parent.obj.name + ".target"),
                                 measurement_file_path)
@@ -327,7 +324,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         """
         Add a filed for modifying the reference density.
         """
-        layout = self.ui.horizontalAxisUnitsLayout
+        layout = self.horizontalAxisUnitsLayout
 
         ref_density_label = QtWidgets.QLabel(
             '<html><head/><body><p>Reference density [g/cm<span '
@@ -352,7 +349,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         Remove reference density form dialog if it is there.
         """
         if self.__reference_density_spinbox and self.__reference_density_label:
-            layout = self.ui.horizontalAxisUnitsLayout
+            layout = self.horizontalAxisUnitsLayout
 
             layout.removeWidget(self.__reference_density_label)
             self.__reference_density_label.deleteLater()
@@ -375,11 +372,11 @@ class DepthProfileDialog(QtWidgets.QDialog):
         eff_files_used = df.get_updated_efficiency_files(self, eff_files)
 
         if eff_files_used:
-            self.ui.label_efficiency_files.setText(
+            self.label_efficiency_files.setText(
                "Efficiency files used: \t\n{0}".format("\t\n".join(
                    eff_files_used)))
         else:
-            self.ui.label_efficiency_files.setText("No efficiency files.")
+            self.label_efficiency_files.setText("No efficiency files.")
 
     def __show_important_settings(self):
         """Show some important setting values in the depth profile parameter
@@ -411,15 +408,12 @@ class DepthProfileDialog(QtWidgets.QDialog):
                 .depth_for_concentration_from
             depth_for_concentration_to = self.measurement\
                 .depth_for_concentration_to
-        self.ui.label_calibslope.setText(str(detector.tof_slope))
-        self.ui.label_caliboffset.setText(str(detector.tof_offset))
-        self.ui.label_depthstop.setText(
-            str(depth_step_for_stopping))
-        self.ui.label_depthnumber.setText(
-            str(number_of_depth_steps))
-        self.ui.label_depthbin.setText(
-            str(depth_step_for_output))
-        self.ui.label_depthscale.setText("{0} - {1}".format(
+        self.label_calibslope.setText(str(detector.tof_slope))
+        self.label_caliboffset.setText(str(detector.tof_offset))
+        self.label_depthstop.setText(str(depth_step_for_stopping))
+        self.label_depthnumber.setText(str(number_of_depth_steps))
+        self.label_depthbin.setText(str(depth_step_for_output))
+        self.label_depthscale.setText("{0} - {1}".format(
             depth_for_concentration_from,
             depth_for_concentration_to))
 
@@ -449,6 +443,8 @@ class DepthProfileWidget(QtWidgets.QWidget):
         """
         try:
             super().__init__()
+            uic.loadUi(Path("ui_files", "ui_depth_profile.ui"), self)
+
             self.parent = parent
             self.icon_manager = parent.icon_manager
             self.measurement = parent.obj
@@ -459,14 +455,11 @@ class DepthProfileWidget(QtWidgets.QWidget):
             self.__line_zero = line_zero
             self.__line_scale = line_scale
             self.__systerr = systematic_error
-            self.ui = uic.loadUi(os.path.join("ui_files",
-                                              "ui_depth_profile.ui"),
-                                 self)
             
             # Make the directory for depth files
             if not os.path.exists(self.output_dir):
                 os.makedirs(self.output_dir)
-            output_files = os.path.join(self.output_dir, "depth")
+            output_files = Path(self.output_dir, "depth")
             dp = DepthFileGenerator(self.use_cuts, output_files)
             # This has to be before create_depth_files()
             self.measurement.generate_tof_in()
@@ -475,7 +468,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
             removed_files = []
             for file in os.listdir(self.output_dir):
                 if file.startswith("depth."):
-                    removed_files.append(os.path.join(self.output_dir, file))
+                    removed_files.append(Path(self.output_dir, file))
             for f in removed_files:
                 os.remove(f)
             dp.create_depth_files()
@@ -483,7 +476,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
             # Check for RBS selections.
             rbs_list = {}
             for cut in self.use_cuts:
-                filename = os.path.basename(cut)
+                filename = Path(cut).name
                 split = filename.split(".")
                 element = Element.from_string(split[1])
                 if is_rbs(cut):
@@ -536,15 +529,13 @@ class DepthProfileWidget(QtWidgets.QWidget):
         """
         self.matplotlib.delete()
         self.matplotlib = None
-        self.ui.close()
-        self.ui = None
         self.close()
 
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
         """
         self.parent.depth_profile_widget = None
-        file = os.path.join(self.parent.obj.directory, self.save_file)
+        file = Path(self.parent.obj.directory, self.save_file)
         try:
             if os.path.isfile(file):
                 os.unlink(file)
@@ -558,8 +549,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
         output_dir = os.path.relpath(self.output_dir,
                                      self.parent.obj.directory)
 
-        file = os.path.join(self.parent.obj.directory_depth_profiles,
-                            self.save_file)
+        file = Path(self.parent.obj.directory_depth_profiles, self.save_file)
 
         with open(file, "wt") as fh:
             fh.write("{0}\n".format(output_dir))
@@ -575,8 +565,8 @@ class DepthProfileWidget(QtWidgets.QWidget):
         """
         Update used cuts list with new Measurement cuts.
         """
-        changes_dir = os.path.join(
-            self.parent.obj.directory_composition_changes, "Changes")
+        changes_dir = Path(self.parent.obj.directory_composition_changes,
+                           "Changes")
         df.update_cuts(self.use_cuts,
                        self.parent.obj.directory_cuts,
                        changes_dir)

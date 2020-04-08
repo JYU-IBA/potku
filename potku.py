@@ -37,6 +37,7 @@ import shutil
 import subprocess
 import sys
 
+import modules.general_functions as gf
 import dialogs.dialog_functions as df
 import widgets.input_validation as iv
 
@@ -57,8 +58,6 @@ from dialogs.file_dialogs import open_file_dialog
 from widgets.gui_utils import GUIReporter
 from widgets.icon_manager import IconManager
 
-from modules.general_functions import remove_file
-from modules.general_functions import rename_file
 from modules.global_settings import GlobalSettings
 from modules.measurement import Measurement
 from modules.request import Request
@@ -258,7 +257,7 @@ class Potku(QtWidgets.QMainWindow):
                     clicked_item.obj.defaultlog)
                 clicked_item.obj.remove_and_close_log(clicked_item.obj.errorlog)
 
-                new_dir = rename_file(clicked_item.obj.directory, new_path)
+                new_dir = gf.rename_file(clicked_item.obj.directory, new_path)
             except OSError:
                 QtWidgets.QMessageBox.critical(self, "Error",
                                                "A file or folder already exists"

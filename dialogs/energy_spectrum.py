@@ -73,19 +73,18 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             recoil_widget: RecoilElement widget.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_energy_spectrum_params.ui"), self)
+
         self.parent = parent
         self.element_simulation = element_simulation
         self.spectrum_type = spectrum_type
         self.statusbar = statusbar
 
-        self.ui = uic.loadUi(
-            os.path.join("ui_files", "ui_energy_spectrum_params.ui"), self)
-
         locale = QLocale.c()
-        self.ui.histogramTicksDoubleSpinBox.setLocale(locale)
+        self.histogramTicksDoubleSpinBox.setLocale(locale)
 
         # Connect buttons
-        self.ui.pushButton_Cancel.clicked.connect(self.close)
+        self.pushButton_Cancel.clicked.connect(self.close)
 
         if not self.parent.obj.detector:  # Request settings are used.
             EnergySpectrumParamsDialog.bin_width = \
@@ -97,31 +96,30 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             else:
                 EnergySpectrumParamsDialog.bin_width = \
                     self.element_simulation.channel_width
-        self.ui.histogramTicksDoubleSpinBox.setValue(
+        self.histogramTicksDoubleSpinBox.setValue(
             EnergySpectrumParamsDialog.bin_width)
 
         if isinstance(self.parent.obj, Measurement):
             self.measurement = self.parent.obj
-            self.ui.pushButton_OK.clicked.connect(
+            self.pushButton_OK.clicked.connect(
                 lambda: self.__accept_params(spectra_changed=spectra_changed))
 
             m_name = self.measurement.name
             if m_name not in EnergySpectrumParamsDialog.checked_cuts.keys():
                 EnergySpectrumParamsDialog.checked_cuts[m_name] = []
             self.measurement.fill_cuts_treewidget(
-                self.ui.treeWidget,
-                True,
+                self.treeWidget, True,
                 EnergySpectrumParamsDialog.checked_cuts[m_name])
 
             self.__update_eff_files()
 
-            self.ui.importPushButton.setVisible(False)
+            self.importPushButton.setVisible(False)
             self.exec_()
 
         else:
             header_item = QtWidgets.QTreeWidgetItem()
             header_item.setText(0, "Simulated elements")
-            self.ui.treeWidget.setHeaderItem(header_item)
+            self.treeWidget.setHeaderItem(header_item)
 
             self.tof_list_tree_widget = QtWidgets.QTreeWidget()
             self.tof_list_tree_widget.setSizePolicy(
@@ -131,11 +129,11 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             header = QtWidgets.QTreeWidgetItem()
             header.setText(0, "Pre-calculated elements")
 
-            self.ui.gridLayout_2.addWidget(self.tof_list_tree_widget, 0, 1)
+            self.gridLayout_2.addWidget(self.tof_list_tree_widget, 0, 1)
 
             self.tof_list_tree_widget.setHeaderItem(header)
 
-            self.ui.pushButton_OK.clicked.connect(
+            self.pushButton_OK.clicked.connect(
                 self.__calculate_selected_spectra)
 
             # Find the corresponding recoil element to recoil widget
@@ -164,7 +162,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                                     item.setCheckState(0, QtCore.Qt.Checked)
                                 else:
                                     item.setCheckState(0, QtCore.Qt.Unchecked)
-                                self.ui.treeWidget.addTopLevelItem(item)
+                                self.treeWidget.addTopLevelItem(item)
                                 break
 
             # Add calculated tof_list files to tof_list_tree_widget by
@@ -216,7 +214,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             header = QtWidgets.QTreeWidgetItem()
             header.setText(0, "External files")
 
-            self.ui.gridLayout_2.addWidget(self.external_tree_widget, 0, 2)
+            self.gridLayout_2.addWidget(self.external_tree_widget, 0, 2)
 
             self.external_tree_widget.setHeaderItem(header)
 
@@ -234,11 +232,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 self.external_tree_widget.addTopLevelItem(item)
 
             # Change the bin width label text
-            self.ui.histogramTicksLabel.setText("Simulation and measurement "
+            self.histogramTicksLabel.setText("Simulation and measurement "
                                                 "histogram bin width:")
 
-            self.ui.importPushButton.clicked.connect(
-                self.__import_external_file)
+            self.importPushButton.clicked.connect(self.__import_external_file)
             self.exec_()
 
     def get_selected_measurements(self):
@@ -279,7 +276,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         """Returns a dictionary that contains selected simulations and list
         of recoil elements and corresponding result files.
         """
-        root = self.ui.treeWidget.invisibleRootItem()
+        root = self.treeWidget.invisibleRootItem()
         child_count = root.childCount()
 
         used_simulations = {}
@@ -335,7 +332,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         """Calculate selected spectra.
         """
         self.close()
-        self.bin_width = self.ui.histogramTicksDoubleSpinBox.value()
+        self.bin_width = self.histogramTicksDoubleSpinBox.value()
 
         sbh = StatusBarHandler(self.statusbar)
 
@@ -383,9 +380,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
     def __accept_params(self, spectra_changed=None):
         """Accept given parameters and cut files.
         """
-        width = self.ui.histogramTicksDoubleSpinBox.value()
+        width = self.histogramTicksDoubleSpinBox.value()
         use_cuts = []
-        root = self.ui.treeWidget.invisibleRootItem()
+        root = self.treeWidget.invisibleRootItem()
         child_count = root.childCount()
         m_name = self.measurement.name
         EnergySpectrumParamsDialog.checked_cuts[m_name].clear()
@@ -408,8 +405,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                             item_child.file_name)
                 EnergySpectrumParamsDialog.bin_width = width
         if use_cuts:
-            self.ui.label_status.setText(
-                "Please wait. Creating energy spectrum.")
+            self.label_status.setText("Please wait. Creating energy spectrum.")
             QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
             if self.parent.energy_spectrum_widget:
                 self.parent.del_widget(self.parent.energy_spectrum_widget)
@@ -507,10 +503,10 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         eff_files_used = df.get_updated_efficiency_files(self, eff_files)
 
         if eff_files_used:
-            self.ui.label_efficiency_files.setText(
+            self.label_efficiency_files.setText(
                 "Efficiency files used: {0}".format(", ".join(eff_files_used)))
         else:
-            self.ui.label_efficiency_files.setText("No efficiency files.")
+            self.label_efficiency_files.setText("No efficiency files.")
 
 
 class EnergySpectrumWidget(QtWidgets.QWidget):
@@ -534,6 +530,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
         """
         try:
             super().__init__()
+            uic.loadUi(Path("ui_files", "ui_energy_spectrum.ui"), self)
+
             self.parent = parent
             self.icon_manager = parent.icon_manager
             self.progress_bar = None
@@ -545,12 +543,9 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             self.spectrum_type = spectrum_type
             rbs_list = {}
 
-            self.ui = uic.loadUi(os.path.join("ui_files",
-                                              "ui_energy_spectrum.ui"),
-                                 self)
-            title = "{0} - Bin Width: {1}".format(self.ui.windowTitle(),
+            title = "{0} - Bin Width: {1}".format(self.windowTitle(),
                                                   bin_width)
-            self.ui.setWindowTitle(title)
+            self.setWindowTitle(title)
             sbh = None
 
             if isinstance(self.parent.obj, Measurement):
@@ -629,18 +624,13 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
         if self.matplotlib is not None:
             self.matplotlib.delete()
         self.matplotlib = None
-
-        if self.ui is not None:
-            self.ui.close()
-
-        self.ui = None
         self.close()
 
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.
         """
         if self.spectrum_type == "simulation":
-            file = os.path.join(self.parent.obj.directory, self.save_file)
+            file = Path(self.parent.obj.directory, self.save_file)
             try:
                 if os.path.isfile(file):
                     os.unlink(file)
@@ -679,7 +669,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                     i += 1
                 self.save_file_int = i
             self.save_file = file_name
-            file = os.path.join(self.simulation.directory, file_name)
+            file = Path(self.simulation.directory, file_name)
 
         with open(file, "wt") as fh:
             fh.write("{0}\n".format(files))

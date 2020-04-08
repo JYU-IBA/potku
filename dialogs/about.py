@@ -31,6 +31,8 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import os
+
+from pathlib import Path
 from math import sin
 
 from PyQt5 import QtWidgets
@@ -48,15 +50,15 @@ class AboutDialog(QtWidgets.QDialog):
         """
 
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_about.ui"), self)
 
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_about.ui"), self)
-        self.ui.OKButton.clicked.connect(self.close)
-        self.ui.DiscoButton.clicked.connect(self.__disco)
+        self.OKButton.clicked.connect(self.close)
+        self.DiscoButton.clicked.connect(self.__disco)
 
         pixmap = QtGui.QPixmap(os.path.join("images", "potku_logo_icon.svg"))
-        scaled_pixmap = pixmap.scaled(self.ui.picture.size(),
+        scaled_pixmap = pixmap.scaled(self.picture.size(),
                                       QtCore.Qt.KeepAspectRatio)
-        self.ui.picture.setPixmap(scaled_pixmap)
+        self.picture.setPixmap(scaled_pixmap)
 
         self.x = 0
         self.y = 2
@@ -87,4 +89,4 @@ class AboutDialog(QtWidgets.QDialog):
         bg = "background-color: rgb({0},{1},{2});".format(self.color_R,
                                                           self.color_G,
                                                           self.color_B)
-        self.ui.setStyleSheet(bg)
+        self.setStyleSheet(bg)

@@ -31,7 +31,7 @@ __version__ = "2.0"
 
 import platform
 
-from os import path
+from pathlib import Path
 
 from PyQt5 import QtCore
 from PyQt5 import uic
@@ -51,22 +51,22 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         """Constructor for the program
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_global_settings.ui"), self)
+
         self.settings = settings
         self.__added_timings = {}  # Placeholder for timings
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
-        self.ui = uic.loadUi(path.join("ui_files", "ui_global_settings.ui"),
-                             self)
 
         # Connect UI buttons
-        self.ui.OKButton.clicked.connect(self.__accept_changes)
-        self.ui.cancelButton.clicked.connect(self.close)
-        buttons = self.ui.findChild(QtWidgets.QButtonGroup, "elementButtons")
+        self.OKButton.clicked.connect(self.__accept_changes)
+        self.cancelButton.clicked.connect(self.close)
+        buttons = self.findChild(QtWidgets.QButtonGroup, "elementButtons")
         buttons.buttonClicked.connect(self.__change_element_color)
         self.line_coinc_count.setValidator(QtGui.QIntValidator(0, 1000000))
 
         if platform.system() == "Darwin":
-            self.ui.gridLayout.setVerticalSpacing(15)
-            self.ui.gridLayout.setHorizontalSpacing(15)
+            self.gridLayout.setVerticalSpacing(15)
+            self.gridLayout.setHorizontalSpacing(15)
 
         self.__set_values()
         self.exec_()
@@ -74,7 +74,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     def __set_values(self):
         """Set settings values to dialog.
         """
-        for button in self.ui.groupBox_3.findChildren(QtWidgets.QPushButton):
+        for button in self.groupBox_3.findChildren(QtWidgets.QPushButton):
             self.__set_button_color(button,
                                     self.settings.get_element_color(
                                         button.text()))
@@ -82,50 +82,47 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         label_adc = QtWidgets.QLabel("ADC")
         label_low = QtWidgets.QLabel("Low")
         label_high = QtWidgets.QLabel("High")
-        self.ui.grid_timing.addWidget(label_adc, 0, 0)
-        self.ui.grid_timing.addWidget(label_low, 1, 0)
-        self.ui.grid_timing.addWidget(label_high, 2, 0)
+        self.grid_timing.addWidget(label_adc, 0, 0)
+        self.grid_timing.addWidget(label_low, 1, 0)
+        self.grid_timing.addWidget(label_high, 2, 0)
         for i in range(0, 3):
             timing = self.settings.get_import_timing(i)
             label = QtWidgets.QLabel("{0}".format(i))
             spin_low = self.__create_spinbox(timing[0])
             spin_high = self.__create_spinbox(timing[1])
             self.__added_timings[i] = CoincTiming(i, spin_low, spin_high)
-            self.ui.grid_timing.addWidget(label, 0, i + 1)
-            self.ui.grid_timing.addWidget(spin_low, 1, i + 1)
-            self.ui.grid_timing.addWidget(spin_high, 2, i + 1)
+            self.grid_timing.addWidget(label, 0, i + 1)
+            self.grid_timing.addWidget(spin_low, 1, i + 1)
+            self.grid_timing.addWidget(spin_high, 2, i + 1)
         self.line_coinc_count.setText(
             str(self.settings.get_import_coinc_count()))
         self.__set_cross_sections()
 
         # ToF-E graph settings
-        self.ui.check_tofe_invert_x.setChecked(
-            self.settings.get_tofe_invert_x())
-        self.ui.check_tofe_invert_y.setChecked(
-            self.settings.get_tofe_invert_y())
-        self.ui.check_tofe_transpose.setChecked(
+        self.check_tofe_invert_x.setChecked(self.settings.get_tofe_invert_x())
+        self.check_tofe_invert_y.setChecked(self.settings.get_tofe_invert_y())
+        self.check_tofe_transpose.setChecked(
             self.settings.get_tofe_transposed())
         tofe_bin_mode = self.settings.get_tofe_bin_range_mode()
-        self.ui.radio_tofe_bin_auto.setChecked(tofe_bin_mode == 0)
-        self.ui.radio_tofe_bin_manual.setChecked(tofe_bin_mode == 1)
+        self.radio_tofe_bin_auto.setChecked(tofe_bin_mode == 0)
+        self.radio_tofe_bin_manual.setChecked(tofe_bin_mode == 1)
         x_range_min, x_range_max = self.settings.get_tofe_bin_range_x()
         y_range_min, y_range_max = self.settings.get_tofe_bin_range_y()
-        self.ui.spin_tofe_bin_x_max.setValue(x_range_max)
-        self.ui.spin_tofe_bin_x_min.setValue(x_range_min)
-        self.ui.spin_tofe_bin_y_max.setValue(y_range_max)
-        self.ui.spin_tofe_bin_y_min.setValue(y_range_min)
-        self.ui.spin_tofe_compression_x.setValue(
+        self.spin_tofe_bin_x_max.setValue(x_range_max)
+        self.spin_tofe_bin_x_min.setValue(x_range_min)
+        self.spin_tofe_bin_y_max.setValue(y_range_max)
+        self.spin_tofe_bin_y_min.setValue(y_range_min)
+        self.spin_tofe_compression_x.setValue(
             self.settings.get_tofe_compression_x())
-        self.ui.spin_tofe_compression_y.setValue(
+        self.spin_tofe_compression_y.setValue(
             self.settings.get_tofe_compression_y())
-        self.ui.spin_depth_iterations.setValue(
-            self.settings.get_num_iterations())
+        self.spin_depth_iterations.setValue(self.settings.get_num_iterations())
 
         colors = sorted(MatplotlibHistogramWidget.color_scheme.items())
         for i, (key, _) in enumerate(colors):
-            self.ui.combo_tofe_colors.addItem(key)
+            self.combo_tofe_colors.addItem(key)
             if key == self.settings.get_tofe_color():
-                self.ui.combo_tofe_colors.setCurrentIndex(i)
+                self.combo_tofe_colors.setCurrentIndex(i)
 
     def __create_spinbox(self, default):
         """
@@ -141,7 +138,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     def __accept_changes(self):
         """Accept changed settings and save.
         """
-        for button in self.ui.groupBox_3.findChildren(QtWidgets.QPushButton):
+        for button in self.groupBox_3.findChildren(QtWidgets.QPushButton):
             self.settings.set_element_color(button.text(), button.color)
         for key in self.__added_timings.keys():
             coinc_timing = self.__added_timings[key]
@@ -151,39 +148,39 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.settings.set_import_coinc_count(self.line_coinc_count.text())
 
         # Save cross sections
-        if self.ui.radio_cross_1.isChecked():
+        if self.radio_cross_1.isChecked():
             flag_cross = 1
-        elif self.ui.radio_cross_2.isChecked():
+        elif self.radio_cross_2.isChecked():
             flag_cross = 2
-        elif self.ui.radio_cross_3.isChecked():
+        elif self.radio_cross_3.isChecked():
             flag_cross = 3
         self.settings.set_cross_sections(flag_cross)
 
         # ToF-E graph settings
-        self.settings.set_tofe_invert_x(self.ui.check_tofe_invert_x.isChecked())
-        self.settings.set_tofe_invert_y(self.ui.check_tofe_invert_y.isChecked())
+        self.settings.set_tofe_invert_x(self.check_tofe_invert_x.isChecked())
+        self.settings.set_tofe_invert_y(self.check_tofe_invert_y.isChecked())
         self.settings.set_tofe_transposed(
-            self.ui.check_tofe_transpose.isChecked())
-        self.settings.set_tofe_color(self.ui.combo_tofe_colors.currentText())
-        if self.ui.radio_tofe_bin_auto.isChecked():
+            self.check_tofe_transpose.isChecked())
+        self.settings.set_tofe_color(self.combo_tofe_colors.currentText())
+        if self.radio_tofe_bin_auto.isChecked():
             self.settings.set_tofe_bin_range_mode(0)
-        elif self.ui.radio_tofe_bin_manual.isChecked():
+        elif self.radio_tofe_bin_manual.isChecked():
             self.settings.set_tofe_bin_range_mode(1)
-        x_r_min = self.ui.spin_tofe_bin_x_min.value()
-        x_r_max = self.ui.spin_tofe_bin_x_max.value()
-        y_r_min = self.ui.spin_tofe_bin_y_min.value()
-        y_r_max = self.ui.spin_tofe_bin_y_max.value()
+        x_r_min = self.spin_tofe_bin_x_min.value()
+        x_r_max = self.spin_tofe_bin_x_max.value()
+        y_r_min = self.spin_tofe_bin_y_min.value()
+        y_r_max = self.spin_tofe_bin_y_max.value()
         if x_r_min > x_r_max:
             x_r_min = 0
         if y_r_min > y_r_max:
             y_r_min = 0
-        compression_x = self.ui.spin_tofe_compression_x.value()
-        compression_y = self.ui.spin_tofe_compression_y.value()
+        compression_x = self.spin_tofe_compression_x.value()
+        compression_y = self.spin_tofe_compression_y.value()
         self.settings.set_tofe_bin_range_x(x_r_min, x_r_max)
         self.settings.set_tofe_bin_range_y(y_r_min, y_r_max)
         self.settings.set_tofe_compression_x(compression_x)
         self.settings.set_tofe_compression_y(compression_y)
-        self.settings.set_num_iterations(self.ui.spin_depth_iterations.value())
+        self.settings.set_num_iterations(self.spin_depth_iterations.value())
 
         # Save config and close
         self.settings.save_config()
@@ -192,11 +189,11 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     def __change_request_directory(self):
         """Change default request directory.
         """
-        folder = QtWidgets.QFileDialog\
-            .getExistingDirectory(self, "Select default request directory",
-                                  directory=self.ui.requestPathLineEdit.text())
+        folder = QtWidgets.QFileDialog.getExistingDirectory(
+            self, "Select default request directory",
+            directory=self.requestPathLineEdit.text())
         if folder:
-            self.ui.requestPathLineEdit.setText(folder)
+            self.requestPathLineEdit.setText(folder)
 
     def __change_element_color(self, button):
         """Change color of element button.
@@ -235,6 +232,6 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         """Set cross sections to UI.
         """
         flag = self.settings.get_cross_sections()
-        self.ui.radio_cross_1.setChecked(flag == 1)
-        self.ui.radio_cross_2.setChecked(flag == 2)
-        self.ui.radio_cross_3.setChecked(flag == 3)
+        self.radio_cross_1.setChecked(flag == 1)
+        self.radio_cross_2.setChecked(flag == 2)
+        self.radio_cross_3.setChecked(flag == 3)
