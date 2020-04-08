@@ -25,11 +25,12 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä \n Juhani Sundell"
 __version__ = "2.0"
 
-import os
 import platform
 
 import widgets.binding as bnd
 import modules.math_functions as mf
+
+from pathlib import Path
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -59,6 +60,8 @@ class PercentageWidget(QtWidgets.QWidget):
             icon_manager: Icon manager.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_percentage_widget.ui"), self)
+
         # Stores the PercentageRow objects for each recoil
         self._percentage_rows = {
             recoil: None
@@ -74,9 +77,6 @@ class PercentageWidget(QtWidgets.QWidget):
             self.common_interval = common_interval
 
         self.icon_manager = icon_manager
-
-        uic.loadUi(os.path.join("ui_files",
-                                "ui_percentage_widget.ui"), self)
         self.setWindowTitle("Percentages")
 
         self.comboBox.currentIndexChanged.connect(

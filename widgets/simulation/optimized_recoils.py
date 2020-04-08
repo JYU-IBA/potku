@@ -51,10 +51,9 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         Initialize the widget.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_optimization_results_widget.ui"), self)
+
         self.element_simulation = element_simulation
-        # TODO should get rid of these self.ui references
-        self.ui = uic.loadUi(Path("ui_files",
-                                  "ui_optimization_results_widget.ui"), self)
 
         if self.element_simulation.run is None:
             run = self.element_simulation.request.default_run
@@ -68,8 +67,7 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         self.recoil_atoms = RecoilAtomOptimizationWidget(self,
                                                          element_simulation,
                                                          target)
-        self.recoil_atoms.results_accepted.connect(
-            self.results_accepted.emit)
+        self.recoil_atoms.results_accepted.connect(self.results_accepted.emit)
 
     def delete(self):
         """Delete variables and do clean up.

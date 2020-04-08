@@ -27,7 +27,8 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import os
+from pathlib import Path
+
 from PyQt5 import uic
 from PyQt5 import QtWidgets
 
@@ -40,5 +41,4 @@ class DistanceWidget(QtWidgets.QWidget):
         Initializes the widget.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_distance_widget.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_distance_widget.ui"), self)

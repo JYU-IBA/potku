@@ -70,9 +70,9 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             statusbar: A QtGui.QMainWindow's QStatusBar.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_measurement_tab.ui"), self)
+
         self.tab_id = tab_id
-        # TODO remove ui reference
-        self.ui = uic.loadUi(Path("ui_files", "ui_measurement_tab.ui"), self)
         self.obj = measurement
         self.icon_manager = icon_manager
 

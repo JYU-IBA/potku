@@ -74,7 +74,7 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.recoil_vertical_layout.setContentsMargins(0, 0, 0, 0)
         widget.setLayout(self.recoil_vertical_layout)
 
-        self.parent.ui.recoilListLayout.addWidget(widget)
+        self.parent.recoilListLayout.addWidget(widget)
 
         btn_txts = "First solution", "Median solution", "Last solution"
         for t in btn_txts:

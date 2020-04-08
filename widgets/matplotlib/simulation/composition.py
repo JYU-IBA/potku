@@ -173,7 +173,7 @@ class _CompositionWidget(MatplotlibWidget):
         self.__update_figure(zoom_to_bottom=True)
 
         if self.simulation and not self.layers:
-            self.parent.ui.recoilRadioButton.setEnabled(False)
+            self.parent.recoilRadioButton.setEnabled(False)
 
     def __modify_layer(self):
         """
@@ -370,7 +370,7 @@ class _CompositionWidget(MatplotlibWidget):
             self.__update_figure(zoom_to_bottom=True)
 
         if type(self.parent) is widgets.simulation.target.TargetWidget:
-            self.parent.ui.recoilRadioButton.setEnabled(True)
+            self.parent.recoilRadioButton.setEnabled(True)
 
     def __update_figure(self, init=False, zoom_to_bottom=False):
         """Updates the figure to match the information of the layers.
@@ -490,18 +490,15 @@ class TargetCompositionWidget(_CompositionWidget):
             icon_manager: An icon manager class object.
             simulation:   A Simulation that has the Target object.
         """
-        _CompositionWidget.__init__(self, parent, target.layers,
-                                    icon_manager)
+        _CompositionWidget.__init__(self, parent, target.layers, icon_manager)
 
         self.target = target
         self.simulation = simulation
         self.canvas.manager.set_title("Target composition")
 
-        self.parent.ui.targetNameLabel.setText(
-            "Name: " + target.name)
+        self.parent.targetNameLabel.setText(f"Name: {target.name}")
 
-        self.parent.ui.editTargetInfoButton.clicked.connect(
-            self.edit_target_info)
+        self.parent.editTargetInfoButton.clicked.connect(self.edit_target_info)
         self.layers_changed.connect(self._save_target)
 
     def edit_target_info(self):
@@ -516,7 +513,7 @@ class TargetCompositionWidget(_CompositionWidget):
             os.remove(old_target)
             self.target.name = dialog.name
             self.target.description = dialog.description
-            self.parent.ui.targetNameLabel.setText(self.target.name)
+            self.parent.targetNameLabel.setText(self.target.name)
             self._save_target()
 
     def _save_target(self):
@@ -543,7 +540,6 @@ class FoilCompositionWidget(_CompositionWidget):
                           current state of the foil layers.
             icon_manager: An icon manager class object.
         """
-
         _CompositionWidget.__init__(self, parent, foil.layers,
                                     icon_manager, foil_behaviour=True)
 

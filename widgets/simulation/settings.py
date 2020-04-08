@@ -117,8 +117,8 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
             element_simulation: Element simulation object.
         """
         super().__init__()
-        uic.loadUi(Path("ui_files", "ui_request_simulation_settings.ui"),
-                   self)
+        uic.loadUi(Path("ui_files", "ui_request_simulation_settings.ui"), self)
+
         # By default, disable the widget, so caller has to enable it. Without
         # this, name and description fields would always be enabled when the
         # widget loads.

@@ -61,11 +61,11 @@ class MatplotlibCalibrationLinearFittingWidget(MatplotlibWidget):
         offset = self.tof_calibration.offset
 
         if slope is not None and offset is not None:
-            self.dialog.ui.slopeLineEdit.setText(str(slope))
-            self.dialog.ui.offsetLineEdit.setText(str(offset))
+            self.dialog.slopeLineEdit.setText(str(slope))
+            self.dialog.offsetLineEdit.setText(str(offset))
         else:
-            self.dialog.ui.slopeLineEdit.setText("")
-            self.dialog.ui.offsetLineEdit.setText("")
+            self.dialog.slopeLineEdit.setText("")
+            self.dialog.offsetLineEdit.setText("")
 
     def on_draw(self):
         """Draw method for matplotlib.

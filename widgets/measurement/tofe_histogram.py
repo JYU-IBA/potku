@@ -31,11 +31,12 @@ __version__ = "2.0"
 
 import os
 
+from pathlib import Path
+
 from PyQt5 import QtCore
 from PyQt5 import uic
 from PyQt5 import QtWidgets
 
-from widgets.gui_utils import StatusBarHandler
 from widgets.matplotlib.measurement.tofe_histogram import \
     MatplotlibHistogramWidget
 
@@ -53,17 +54,16 @@ class TofeHistogramWidget(QtWidgets.QWidget):
             tab: A MeasurementTabWidget.
         """
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_histogram_widget.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_histogram_widget.ui"), self)
+
         self.measurement = measurement
         self.tab = tab
         self.statusbar = statusbar
         self.matplotlib = MatplotlibHistogramWidget(self, measurement,
                                                     icon_manager,
                                                     statusbar=statusbar)
-        self.ui.saveCutsButton.clicked.connect(self.matplotlib.save_cuts)
-        self.ui.loadSelectionsButton.clicked.connect(
+        self.saveCutsButton.clicked.connect(self.matplotlib.save_cuts)
+        self.loadSelectionsButton.clicked.connect(
             self.matplotlib.load_selections)
         self.matplotlib.selectionsChanged.connect(self.set_cut_button_enabled)
 
@@ -73,8 +73,7 @@ class TofeHistogramWidget(QtWidgets.QWidget):
         self.set_cut_button_enabled(measurement.selector.selections)
 
         count = len(self.measurement.data)
-        self.ui.setWindowTitle(
-            "ToF-E Histogram - Event count: {0}".format(count))
+        self.setWindowTitle(f"ToF-E Histogram - Event count: {count}")
 
     def set_cut_button_enabled(self, selections=None):
         """Enables save cuts button if the given selections list's length is
@@ -87,9 +86,9 @@ class TofeHistogramWidget(QtWidgets.QWidget):
         if not selections:
             selections = self.measurement.selector.selections
         if len(selections) == 0:
-            self.ui.saveCutsButton.setEnabled(False)
+            self.saveCutsButton.setEnabled(False)
         else:
-            self.ui.saveCutsButton.setEnabled(True)
+            self.saveCutsButton.setEnabled(True)
             # self.measurement.request.save_selection(self.measurement)
 
     def __save_cuts(self):

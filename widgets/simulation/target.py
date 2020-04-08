@@ -65,8 +65,7 @@ class TargetWidget(QtWidgets.QWidget):
             progress_bar: A progress bar used when opening a simulation.
         """
         super().__init__()
-        self.ui = uic.loadUi(Path("ui_files", "ui_target_widget.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_target_widget.ui"), self)
 
         if progress_bar:
             progress_bar.setValue(0)
@@ -96,36 +95,36 @@ class TargetWidget(QtWidgets.QWidget):
         self.spectra_changed = self.recoil_distribution_widget. \
             recoil_dist_changed
 
-        icon_manager.set_icon(self.ui.editPushButton, "edit.svg")
-        self.ui.editPushButton.setIconSize(QtCore.QSize(14, 14))
-        self.ui.editPushButton.setToolTip(
+        icon_manager.set_icon(self.editPushButton, "edit.svg")
+        self.editPushButton.setIconSize(QtCore.QSize(14, 14))
+        self.editPushButton.setToolTip(
             "Edit name, description and reference density "
             "of this recoil element")
-        self.ui.recoilListWidget.hide()
-        self.ui.editLockPushButton.hide()
-        self.ui.elementInfoWidget.hide()
+        self.recoilListWidget.hide()
+        self.editLockPushButton.hide()
+        self.elementInfoWidget.hide()
 
-        icon_manager.set_icon(self.ui.editTargetInfoButton, "edit.svg")
-        self.ui.editTargetInfoButton.setIconSize(QtCore.QSize(14, 14))
-        self.ui.editTargetInfoButton.setToolTip(
+        icon_manager.set_icon(self.editTargetInfoButton, "edit.svg")
+        self.editTargetInfoButton.setIconSize(QtCore.QSize(14, 14))
+        self.editTargetInfoButton.setToolTip(
             "Edit name and description of the target")
 
         if platform.system() == "Darwin":
-            self.ui.percentButton.setText("Calculate\npercents")
+            self.percentButton.setText("Calculate\npercents")
 
-        self.ui.exportElementsButton.clicked.connect(
+        self.exportElementsButton.clicked.connect(
             self.recoil_distribution_widget.export_elements)
 
-        self.ui.targetRadioButton.clicked.connect(self.switch_to_target)
-        self.ui.recoilRadioButton.clicked.connect(self.switch_to_recoil)
+        self.targetRadioButton.clicked.connect(self.switch_to_target)
+        self.recoilRadioButton.clicked.connect(self.switch_to_recoil)
 
         if not self.target.layers:
-            self.ui.recoilRadioButton.setEnabled(False)
+            self.recoilRadioButton.setEnabled(False)
 
-        self.ui.targetRadioButton.setChecked(True)
-        self.ui.stackedWidget.setCurrentIndex(0)
+        self.targetRadioButton.setChecked(True)
+        self.stackedWidget.setCurrentIndex(0)
 
-        self.ui.saveButton.clicked.connect(self.__save_target_and_recoils)
+        self.saveButton.clicked.connect(self.__save_target_and_recoils)
 
         self.del_points = None
 
@@ -153,24 +152,24 @@ class TargetWidget(QtWidgets.QWidget):
         """
         self.recoil_distribution_widget.original_x_limits = \
             self.recoil_distribution_widget.axes.get_xlim()
-        self.ui.stackedWidget.setCurrentIndex(0)
-        self.ui.recoilListWidget.hide()
-        self.ui.editLockPushButton.hide()
-        self.ui.exportElementsButton.show()
-        self.ui.elementInfoWidget.hide()
-        self.ui.instructionLabel.setText("")
-        self.ui.targetInfoWidget.show()
+        self.stackedWidget.setCurrentIndex(0)
+        self.recoilListWidget.hide()
+        self.editLockPushButton.hide()
+        self.exportElementsButton.show()
+        self.elementInfoWidget.hide()
+        self.instructionLabel.setText("")
+        self.targetInfoWidget.show()
 
     def switch_to_recoil(self):
         """
         Switch to recoil atom distribution view.
         """
-        self.ui.stackedWidget.setCurrentIndex(1)
+        self.stackedWidget.setCurrentIndex(1)
         self.recoil_distribution_widget.update_layer_borders()
-        self.ui.exportElementsButton.hide()
-        self.ui.recoilListWidget.show()
-        self.ui.editLockPushButton.show()
-        self.ui.targetInfoWidget.hide()
+        self.exportElementsButton.hide()
+        self.recoilListWidget.show()
+        self.editLockPushButton.show()
+        self.targetInfoWidget.hide()
         self.recoil_distribution_widget.recoil_element_info_on_switch()
 
         text = "You can add a new point to the distribution on a line between "\
@@ -179,7 +178,7 @@ class TargetWidget(QtWidgets.QWidget):
             text += "⌘+click."
         else:
             text += "Ctrl+click."
-        self.ui.instructionLabel.setText(text)
+        self.instructionLabel.setText(text)
 
     def timed_save(self):
         """

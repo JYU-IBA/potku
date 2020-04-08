@@ -27,7 +27,8 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
+from pathlib import Path
+
 from PyQt5 import uic
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QLocale
@@ -44,14 +45,14 @@ class FoilWidget(QtWidgets.QWidget):
             parent: Parent object.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_foil_widget.ui"), self)
+
         self.parent = parent
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_foil_widget.ui"),
-                             self)
         locale = QLocale.c()
-        self.ui.distanceDoubleSpinBox.setLocale(locale)
-        self.ui.deleteButton.clicked.connect(lambda: self._delete_foil())
-        self.ui.distanceDoubleSpinBox.valueChanged.connect(
-            lambda: self.__calculate_distance())
+        self.distanceDoubleSpinBox.setLocale(locale)
+        self.deleteButton.clicked.connect(self._delete_foil)
+        self.distanceDoubleSpinBox.valueChanged.connect(
+            self.__calculate_distance)
 
     def _delete_foil(self):
         """

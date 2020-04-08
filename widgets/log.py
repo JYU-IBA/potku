@@ -29,7 +29,8 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
+from pathlib import Path
+
 from PyQt5 import uic
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -44,10 +45,10 @@ class LogWidget(QtWidgets.QWidget):
         """Initializes the LogHandler widget.
         """
         super().__init__()
+        uic.loadUi(Path("ui_files", "ui_log_widget.ui"), self)
         # This is used to ensure that the window can't be closed.        
         self.want_to_close = False
-        self.ui = uic.loadUi(os.path.join("ui_files", "ui_log_widget.ui"), self)
-        self.ui.hideButton.clicked.connect(self.minimize_window)
+        self.hideButton.clicked.connect(self.minimize_window)
 
     def add_text(self, message):
         """Adds the specified message to the log field.
@@ -55,7 +56,7 @@ class LogWidget(QtWidgets.QWidget):
         Args:
             message: the message which will be displayed.
         """
-        self.ui.defaultLogText.append(message)
+        self.defaultLogText.append(message)
 
     def add_error(self, message):
         """Adds the specified message to the error field.
@@ -63,7 +64,7 @@ class LogWidget(QtWidgets.QWidget):
         Args:
             message: the message which will be displayed.
         """
-        self.ui.errorLogText.append(message)
+        self.errorLogText.append(message)
 
     def closeEvent(self, close_event):  # Inherited
         """Event which happens when the windows is closing.

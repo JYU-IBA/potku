@@ -25,9 +25,9 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-import os
-
 import modules.general_functions as gf
+
+from pathlib import Path
 
 from modules.element_simulation import ElementSimulation
 
@@ -41,9 +41,8 @@ class OptimizedFluenceWidget(QtWidgets.QWidget):
     """
     def __init__(self, element_simulation: ElementSimulation):
         super().__init__()
-        self.ui = uic.loadUi(os.path.join("ui_files",
-                                          "ui_optimized_fluence_widget.ui"),
-                             self)
+        uic.loadUi(Path("ui_files", "ui_optimized_fluence_widget.ui"), self)
+
         self.element_simulation = element_simulation
         if self.element_simulation.optimized_fluence:
             self.show_fluence()
@@ -51,8 +50,6 @@ class OptimizedFluenceWidget(QtWidgets.QWidget):
     def delete(self):
         """Delete variables and do clean up.
         """
-        self.ui.close()
-        self.ui = None
         self.close()
 
     def closeEvent(self, evnt):
@@ -68,10 +65,10 @@ class OptimizedFluenceWidget(QtWidgets.QWidget):
         """
         Show calculated solutions in the widget.
         """
-        text = str(evaluations) + " evaluations done. Running."
+        text = f"{evaluations} evaluations done. Running."
         if self.element_simulation.optimization_mcerd_running:
             text += " Simulating."
-        self.ui.progressLabel.setText(text)
+        self.progressLabel.setText(text)
 
     def show_fluence(self):
         """
@@ -79,15 +76,13 @@ class OptimizedFluenceWidget(QtWidgets.QWidget):
         """
         rounded_fluence = gf.round_value_by_four_biggest(
             self.element_simulation.optimized_fluence)
-        self.ui.fluenceLineEdit.setText(str(int(
+        self.fluenceLineEdit.setText(str(int(
             self.element_simulation.optimized_fluence)))
-        self.ui.roundedFluenceLineEdit.setText(str(rounded_fluence))
-
+        self.roundedFluenceLineEdit.setText(str(rounded_fluence))
 
     def show_results(self, evaluations):
         """
         Shjow optimized fluence and finished amount of evaluations.
         """
-        self.ui.progressLabel.setText(str(evaluations) +
-                                      " evaluations done. Finished.")
+        self.progressLabel.setText(f"{evaluations} evaluations done. Finished.")
         self.show_fluence()

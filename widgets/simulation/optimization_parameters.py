@@ -26,10 +26,11 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä \n Juhani Sundell"
 __version__ = "2.0"
 
-import os
 import abc
 
 import widgets.binding as bnd
+
+from pathlib import Path
 
 from widgets.binding import PropertyBindingWidget
 from widgets.gui_utils import QtABCMeta
@@ -142,7 +143,7 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
         Args:
             kwargs: property values to be shown in the widget.
         """
-        ui_file = os.path.join("ui_files", "ui_optimization_recoil_params.ui")
+        ui_file = Path("ui_files", "ui_optimization_recoil_params.ui")
         super().__init__(ui_file, **kwargs)
 
         locale = QLocale.c()
@@ -180,5 +181,5 @@ class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
         Args:
             kwargs: property values to be shown in the widget.
         """
-        ui_file = os.path.join("ui_files", "ui_optimization_fluence_params.ui")
+        ui_file = Path("ui_files", "ui_optimization_fluence_params.ui")
         super().__init__(ui_file, **kwargs)
