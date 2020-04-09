@@ -320,15 +320,10 @@ class ElementLossesWidget(QtWidgets.QWidget):
         self.losses.checked_cuts = self.checked_cuts
 
         # Update reference cut
-        # FIXME crashes here
-        reference_split = self.reference_cut_file.split('.')
-        new_reference = self.parent.obj.name
-        i = 2
-        while i in range(len(reference_split)):
-            new_reference = new_reference + "." + reference_split[i]
-            i += 1
-        self.reference_cut_file = Path(self.parent.obj.directory_cuts,
-                                       new_reference)
+        _, suffix = self.reference_cut_file.name.split(".", 1)
+        self.reference_cut_file = Path(
+            self.parent.obj.directory_cuts,
+            f"{self.parent.obj.name}.{suffix}")
         self.losses.reference_cut_file = self.reference_cut_file
 
         self.losses.directory_composition_changes = changes_dir

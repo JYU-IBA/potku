@@ -611,8 +611,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
         """
         Update used cuts list with new Measurement cuts.
         """
-        changes_dir = os.path.join(
-            self.parent.obj.directory_composition_changes, "Changes")
+        changes_dir = Path(self.parent.obj.directory_composition_changes,
+                           "Changes")
         df.update_cuts(self.use_cuts,
                        self.parent.obj.directory_cuts,
                        changes_dir)

@@ -916,7 +916,7 @@ class Potku(QtWidgets.QMainWindow):
     def clear_recent_files(self):
         """Clears the list of recently opened files.
         """
-        gutils.remove_potku_settings(key="recently_opened")
+        gutils.remove_potku_settings(key=Potku.RECENT_FILES_KEY)
         self.update_recent_file_menu(files=[])
 
     @staticmethod
