@@ -546,8 +546,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         """
         check_box = self.sender()
         for i in range(len(self.detector_structure_widgets)):
-            if self.detector_structure_widgets[i]. \
-                    ui.timingFoilCheckBox is self.sender():
+            if self.detector_structure_widgets[i].timingFoilCheckBox is \
+                    self.sender():
                 if check_box.isChecked():
                     if self.tof_foils:
                         if self.tof_foils[0] > i:
