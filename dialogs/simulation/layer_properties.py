@@ -91,7 +91,6 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.densityEdit.valueChanged.connect(
             lambda: self.validate_spinbox(self.densityEdit))
 
-        self.__element_layouts = []
         if self.layer:
             self.__show_layer_info()
         else:
@@ -222,8 +221,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         """
         Check if elements have been changed in the layer.
         """
-        new_elements = []
-        self.find_elements(new_elements)
+        new_elements = self.find_elements()
         if len(self.layer.elements) != len(new_elements):
             return True
         for i in range(len(self.layer.elements)):
@@ -233,38 +231,15 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 return True
         return False
 
-    def find_elements(self, lst):
+    def find_elements(self):
         """
         Find all the layer's element from the dialog.
-
-        Args:
-            lst: List to append the elements to.
         """
-        children = self.scrollAreaWidgetContents.children()
-
-        # TODO: Explain the following. Maybe better implementation?
-        # TODO this could be a bit shaky. Got an AttributeError once
-        #      as isotope was being read from a PushButton instead of
-        #      a combobox
-        i = 1
-        while i < len(children):
-            # Get symbol from PushButton
-            elem_symbol = children[i].text()
-            i += 1
-            try:
-                # Get isotope from Combobox
-                # The value is a string representation of a floating point
-                # number so we need to convert it to float before converting
-                # to int.
-                elem_isotope = int(float(
-                    children[i].currentText().split(" ")[0]))
-            except ValueError as e:
-                elem_isotope = None
-            i += 1
-            # Get amount from DoubleSpinBox
-            elem_amount = children[i].value()
-            lst.append(Element(elem_symbol, elem_isotope, elem_amount))
-            i += 3
+        return [
+            child.get_selected_element()
+            for child in self.scrollAreaWidgetContents.layout().children()
+            if isinstance(child, ElementLayout)
+        ]
 
     def __accept_settings(self):
         """Function for accepting the current settings and closing the dialog
@@ -284,7 +259,6 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
             self.__close = False
-            self.fields_are_valid = True
             return
 
         if self.layer and not self.values_changed():
@@ -303,8 +277,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         name = self.nameEdit.text()
         thickness = self.thicknessEdit.value()
         density = self.densityEdit.value()
-        elements = []
-        self.find_elements(elements)
+        elements = self.find_elements()
 
         if self.layer:
             self.layer.name = name
@@ -340,8 +313,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         """Add element widget into view.
         """
         self.scrollArea.setStyleSheet("")
-        self.__element_layouts.append(ElementLayout(
-            self.scrollAreaWidgetContents, element, self))
+        self.scrollAreaWidgetContents.layout().addLayout(
+            ElementLayout(self.scrollAreaWidgetContents, element, self))
 
 
 class ElementLayout(QtWidgets.QVBoxLayout):
@@ -371,7 +344,7 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.dialog = dialog
 
         self.isotope_combobox = QtWidgets.QComboBox()
-        self.isotope_combobox.setFixedWidth(120)
+        self.isotope_combobox.setFixedWidth(130)
         self.isotope_combobox.setEnabled(enabled)
 
         if platform.system() == "Darwin" or platform.system() == "Linux":
@@ -408,7 +381,6 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.addLayout(self.horizontal_layout)
         self.addWidget(self.isotope_info_label)
         self.insertStretch(-1, 0)
-        parent.layout().addLayout(self)
 
     def __delete_element_layout(self):
         """Deletes element layout.
@@ -427,15 +399,17 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         if dialog.element:
             self.element_button.setStyleSheet("")
             self.element_button.setText(dialog.element)
-            self.__load_isotopes()
             self.isotope_combobox.setEnabled(True)
             self.amount_spinbox.setEnabled(True)
+            self.__load_isotopes()
             if not self.amount_spinbox.value():
                 iv.set_input_field_red(self.amount_spinbox)
 
             # Check if no isotopes
-            if self.isotope_combobox.currentText().startswith("0.0"):
+            if not self.isotope_combobox.currentData():
+                # TODO add self.fields_are_valid attribute or method
                 iv.set_input_field_red(self.isotope_combobox)
+                self.amount_spinbox.setEnabled(False)
                 self.dialog.fields_are_valid = False
                 self.isotope_info_label.setText(
                     "If you wish to use this element, please modify masses.dat "
@@ -451,4 +425,15 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         """Loads isotopes of the element into the combobox.
         """
         masses.load_isotopes(self.element_button.text(), self.isotope_combobox,
-                             current_isotope)
+                             current_isotope, show_std_mass=True)
+
+    def get_selected_element(self) -> Element:
+        """Returns the selected element object.
+        """
+        try:
+            symbol = self.element_button.text()
+            isotope, _ = self.isotope_combobox.currentData()
+            amount = self.amount_spinbox.value()
+            return Element(symbol, isotope, amount)
+        except TypeError:
+            pass

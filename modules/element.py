@@ -146,7 +146,7 @@ class Element:
     def __repr__(self):
         """Returns a human readable representation of the Element object.
         """
-        return f"Element(symbol={self.symbol}, isotope={self.isotope}), " \
+        return f"Element(symbol={self.symbol}, isotope={self.isotope}, " \
                f"amound={self.amount})"
 
     def get_prefix(self):

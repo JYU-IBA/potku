@@ -34,12 +34,11 @@ __version__ = "2.0"
 import csv
 import os
 
+from pathlib import Path
+
 __path_to_this_dir = os.path.dirname(__file__)
-__FILE_PATH = os.path.join(__path_to_this_dir,
-                           os.pardir,
-                           "external",
-                           "Potku-data",
-                           "masses.dat")
+__FILE_PATH = Path(__path_to_this_dir, os.pardir, "external", "Potku-data",
+                   "masses.dat")
 
 _isotopes = {}
 
@@ -107,13 +106,14 @@ def load_isotopes(element, combobox, current_isotope=None, show_std_mass=False):
         if float(tn) > 0.0:
             if idx == 0 and show_std_mass:
                 st_iso = get_standard_isotope(element)
-                stmass = f" (st. mass {round(st_iso, 3)})"
-            else:
-                stmass = ""
-            combobox.addItem(f"{isotope} ({round(float(tn), 3)}%){stmass}",
+                combobox.addItem(f"{round(st_iso, 3)} (st. mass)",
+                                 userData=(None, None))
+                if current_isotope is None:
+                    combobox.setCurrentIndex(idx)
+            combobox.addItem(f"{isotope} ({round(float(tn), 3)}%)",
                              userData=(isotope, tn))
             if isotope == current_isotope:
-                combobox.setCurrentIndex(idx)
+                combobox.setCurrentIndex(idx + 1 if show_std_mass else 0)
 
     combobox.setEnabled(combobox.count() > 0)
 
