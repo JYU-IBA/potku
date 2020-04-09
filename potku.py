@@ -72,7 +72,6 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import QAbstractItemView
 from PyQt5.QtWidgets import QMenu
 from PyQt5.QtWidgets import QTreeWidgetItem
-from PyQt5.QtWidgets import QAction
 
 from widgets.measurement.tab import MeasurementTabWidget
 from widgets.simulation.tab import SimulationTabWidget
@@ -84,6 +83,7 @@ class Potku(QtWidgets.QMainWindow):
     # Maximum number of recently opened .request files to store and show in
     # the menu.
     MAX_RECENT_FILES = 20
+    RECENT_FILES_KEY = "recently_opened"
 
     def __init__(self):
         """Init main window for Potku.
@@ -359,7 +359,7 @@ class Potku(QtWidgets.QMainWindow):
                     if tab_widget.obj is clicked_item.obj:
                         self.remove_tab(i)
                         self.tabs.insertTab(i, tab_widget,
-                                               clicked_item.obj.name)
+                                            clicked_item.obj.name)
                         self.tabs.setCurrentWidget(tab_widget)
                         break
 
@@ -889,20 +889,35 @@ class Potku(QtWidgets.QMainWindow):
         self.add_root_item_to_tree(sample)
 
     def update_recent_file_menu(self, files=None):
-        """Updates the recently opened file menu. Previous files are removed.
+        """Updates the recently opened file menu. Previous actions are
+        replaced by new ones based on the given list of files.
 
         Args:
             files: list of files to be shown in the menu
         """
+        # FIXME on Mac, the list is inactive after new request is created
         self.menuOpen_recent.clear()
 
         if files is None:
-            files = self.get_recent_files()
+            files = Potku.get_recent_files()
 
         for f in files[:Potku.MAX_RECENT_FILES]:
-            act = QAction(str(f), self)
+            act = self.menuOpen_recent.addAction(str(f))
             act.triggered.connect(functools.partial(self.__open_request, f))
-            self.menuOpen_recent.addAction(act)
+
+        if not files:
+            act = self.menuOpen_recent.addAction("<empty>")
+            act.setEnabled(False)
+        else:
+            self.menuOpen_recent.addSeparator()
+            act = self.menuOpen_recent.addAction("Empty recently opened list")
+            act.triggered.connect(self.clear_recent_files)
+
+    def clear_recent_files(self):
+        """Clears the list of recently opened files.
+        """
+        gutils.remove_potku_settings(key="recently_opened")
+        self.update_recent_file_menu(files=[])
 
     @staticmethod
     def get_recent_files():
@@ -910,14 +925,18 @@ class Potku(QtWidgets.QMainWindow):
         so that the most recent is first.
         """
         settings = gutils.get_potku_settings()
-        return settings.value("recently_opened", [], list)
+        return settings.value(Potku.RECENT_FILES_KEY, [], list)
 
     @staticmethod
     def set_recent_files(files):
         """Stores the list of files as the most recently opened files.
+
+        Args:
+            files: list of file paths (as strings) to store
         """
         settings = gutils.get_potku_settings()
-        settings.setValue("recently_opened", files[:Potku.MAX_RECENT_FILES])
+        settings.setValue(Potku.RECENT_FILES_KEY,
+                          files[:Potku.MAX_RECENT_FILES])
 
     def add_to_recent_files(self, file):
         """Inserts the given file as the first element in the recently

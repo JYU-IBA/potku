@@ -33,14 +33,28 @@ from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5.QtCore import QSettings
 
-_SETTINGS_KEY = ("JYU/IBA", f"Potku ({__version__})")
+# TODO check the preferred name for the org
+_SETTINGS_KEY = ("JYU-IBA", f"Potku {__version__}")
 
 
 def get_potku_settings() -> QSettings:
     """Returns a QSettings object that can be used to store Potku's
     settings.
     """
+    # TODO decide on app name given. Either with or without the version number:
+    #   'Potku' => all versions of Potku use the same settings
+    #   'Potku 2' => all Potku versions 2.* use the same settings
+    #   'Potku 2.0' (currently in use) => Potku only uses the settings that
+    #       strictly match the version
     return QSettings(*_SETTINGS_KEY)
+
+
+def remove_potku_settings(key=None):
+    """Removes settings stored for the given key.
+    """
+    # TODO if key is 'None', this should remove all settings stored by Potku
+    settings = get_potku_settings()
+    settings.remove(key)
 
 
 if platform.system() == "Darwin":
