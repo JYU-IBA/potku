@@ -224,8 +224,7 @@ def change_arrow(qbutton: QtWidgets.QPushButton, arrow=None):
     qbutton.setText(arrow)
 
 
-def load_isotopes(symbol, combobox, current_isotope=None, show_std_mass=False,
-                  disable_if_empty=True):
+def load_isotopes(symbol, combobox, current_isotope=None, show_std_mass=False):
     """Load isotopes of given element into given combobox.
 
     Args:
@@ -250,6 +249,3 @@ def load_isotopes(symbol, combobox, current_isotope=None, show_std_mass=False,
         combobox.addItem(txt, userData=iso)
         if current_isotope == iso["element"].isotope:
             combobox.setCurrentIndex(idx)
-
-    if disable_if_empty:
-        combobox.setEnabled(combobox.count() > 0)

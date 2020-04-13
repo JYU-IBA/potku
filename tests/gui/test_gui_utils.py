@@ -85,7 +85,7 @@ class TestLoadCombobox(unittest.TestCase):
 
         gutils.load_isotopes("U", combo)
         self.assertIsNone(combo.currentData())
-        self.assertFalse(combo.isEnabled())
+        self.assertEqual(0, combo.count())
 
         gutils.load_isotopes("He", combo, show_std_mass=True)
         self.assertEqual(Element("He", None), combo.currentData()["element"])
