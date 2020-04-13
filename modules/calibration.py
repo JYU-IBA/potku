@@ -404,6 +404,7 @@ class TOFCalibrationPoint:
         # Recoiled atoms' parameters
         element = self.cut.element.symbol
         if cut.element.isotope:
+            # FIXME
             # TODO find_mass_of_isotope could handle checking if the element has
             #      an isotope
             mass = masses.find_mass_of_isotope(self.cut.element)

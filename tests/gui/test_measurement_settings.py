@@ -66,8 +66,9 @@ class MyTestCase(unittest.TestCase):
         self.assertIsNot(elem, self.mesu_widget.beam_ion)
         self.assertEqual(elem, self.mesu_widget.beam_ion)
         self.assertEqual("C", self.mesu_widget.beamIonButton.text())
-        idx = self.mesu_widget.isotopeComboBox.currentIndex()
-        self.assertEqual(13, self.mesu_widget.isotopeComboBox.itemData(idx)[0])
+        self.assertEqual(
+            13,
+            self.mesu_widget.isotopeComboBox.currentData()["element"].isotope)
 
         # Set ion to None
         self.mesu_widget.beam_ion = None

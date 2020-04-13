@@ -33,6 +33,7 @@ import platform
 import modules.masses as masses
 
 import widgets.input_validation as iv
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
@@ -175,7 +176,7 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         """
         standard_mass = masses.get_standard_isotope(element)
         self.standard_mass_label.setText(str(round(standard_mass, 3)))
-        masses.load_isotopes(element, self.isotope_combobox, current_isotope)
+        gutils.load_isotopes(element, self.isotope_combobox, current_isotope)
         self.isotope_combobox.setEnabled(False)
         self.standard_mass_radio.setChecked(True)
 

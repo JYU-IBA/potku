@@ -27,6 +27,8 @@ __version__ = ""  # TODO
 import unittest
 import random
 
+import tests.mock_objects as mo
+
 from modules.element import Element
 
 
@@ -110,6 +112,37 @@ class TestElement(unittest.TestCase):
                             Element.from_string("H"))
 
         self.assertNotEqual(Element.from_string("H"), "H")
+
+    def test_equals_prop_based(self):
+        n = 1000
+        for _ in range(n):
+            elem1 = mo.get_element(randomize=True)
+            elem1_str = str(elem1)
+            elem2 = Element.from_string(elem1_str)
+            self.assertIsNot(elem1, elem2)
+            self.assertEqual(elem1, elem2)
+
+
+    def test_get_isotopes(self):
+        self.assert_isotopes_match("H", (1, 2), include_st_mass=False)
+        self.assert_isotopes_match("H", (None, 1, 2), include_st_mass=True)
+        self.assertEqual([], Element.get_isotopes("U", include_st_mass=True,
+                                                  filter_unlikely=True))
+
+    def assert_isotopes_match(self, symbol, isotopes, include_st_mass):
+        isos = Element.get_isotopes(symbol, include_st_mass=include_st_mass)
+
+        self.assertEqual(len(isotopes), len(isos))
+
+        if include_st_mass and isos:
+            self.assertIsNone(isos[0]["abundance"])
+
+        for n, iso in zip(isotopes, isos):
+            self.assertEqual(
+                ["element", "abundance", "mass"],
+                list(iso.keys())
+            )
+            self.assertEqual(Element("H", n), iso["element"])
 
 
 if __name__ == '__main__':

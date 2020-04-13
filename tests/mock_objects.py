@@ -25,7 +25,6 @@ along with this program (file named 'LICENCE').
 __author__ = "Juhani Sundell"
 __version__ = ""  # TODO
 
-import os
 import tempfile
 import random
 
@@ -52,34 +51,58 @@ from modules.measurement import Measurement
 
 def get_detector() -> Detector:
     """Returns a Detector object that has the default foils (3 circular,
-    1 rectangular)."""
-    path = os.path.join(tempfile.gettempdir(), ".detector")
-    mesu = os.path.join(tempfile.gettempdir(), "mesu")
+    1 rectangular).
+    """
+    path = Path(tempfile.gettempdir(), ".detector")
+    mesu = Path(tempfile.gettempdir(), "mesu")
 
     return Detector(path, mesu, save_in_creation=False)
 
 
-def get_element(randomize=False) -> Element:
-    """Returns either a random Element or a Helium element"""
+def get_element(randomize=False, isotope_p=0.5, amount_p=0.5) -> Element:
+    """Returns either a random Element or a Helium element.
+
+    Args:
+        randomize: whether a random Element is returned
+        isotope_p: the likelihood of the random Element having an isotope
+        amount_p: likelihood that the Element is provided a random amount
+            argument.
+
+    Return:
+        Element object.
+    """
     if randomize:
-        symbol = random.choice(list(masses._isotopes.keys()))
-        isotope = random.choice(masses._get_isotopes(symbol))[0]
-        return Element(symbol, isotope=isotope, amount=random.randint(0, 100))
-    return Element.from_string("He")
+        symbol = random.choice(list(masses._ISOTOPES.keys()))
+        if random.random() < isotope_p:
+            isotope = random.choice(
+                masses.get_isotopes(symbol, filter_unlikely=False))["number"]
+        else:
+            isotope = None
+
+        if random.random() < amount_p:
+            amount = random.uniform(0, 100)
+        else:
+            amount = 0
+
+        return Element(symbol, isotope=isotope, amount=amount)
+    return Element("He")
 
 
 def get_beam() -> Beam:
-    """Returns a default Beam object."""
+    """Returns a default Beam object.
+    """
     return Beam()
 
 
 def get_target() -> Target:
-    """Returns a default Target object."""
+    """Returns a default Target object.
+    """
     return Target()
 
 
 def get_recoil_element() -> RecoilElement:
-    """Returns a RecoilElement object."""
+    """Returns a RecoilElement object.
+    """
     return RecoilElement(get_element(), [
         Point((1, 1)),
         Point((2, 2)),
@@ -87,12 +110,14 @@ def get_recoil_element() -> RecoilElement:
 
 
 def get_run() -> Run:
-    """Returns a Run object"""
+    """Returns a Run object.
+    """
     return Run(get_beam())
 
 
 def get_element_simulation(request=None) -> ElementSimulation:
-    """Returns an ElementSimulation object."""
+    """Returns an ElementSimulation object.
+    """
     if request is None:
         request = get_request()
 
@@ -101,7 +126,8 @@ def get_element_simulation(request=None) -> ElementSimulation:
 
 
 def get_simulation(request=None) -> Simulation:
-    """Returns a Simulation object."""
+    """Returns a Simulation object.
+    """
     if request is None:
         request = get_request()
 
@@ -110,6 +136,8 @@ def get_simulation(request=None) -> Simulation:
 
 
 def get_measurement(request=None) -> Measurement:
+    """Returns a Measurement object.
+    """
     if request is None:
         request = get_request()
 
@@ -118,8 +146,20 @@ def get_measurement(request=None) -> Measurement:
                        target=get_target())
 
 
-def get_layer() -> Layer:
-    return Layer("layer1", [get_element()], 1, 2)
+def get_layer(element_count=1, randomize=False) -> Layer:
+    """Returns a Layer object.
+
+    Args:
+        element_count: how many Elements will the layer contain
+        randomize: whether the Elements are randomized
+
+    Return:
+        Layer object
+    """
+    return Layer("layer1",
+                 [get_element(randomize=randomize, amount_p=1.0)
+                  for _ in range(element_count)],
+                 1, 2)
 
 
 def get_request():
@@ -133,8 +173,7 @@ def get_request():
             self.default_detector = get_detector()
             self.default_element_simulation = get_element_simulation(
                 request=self)
-            self.statusbar = None
-            self.directory = tempfile.gettempdir()
+            self.directory = Path(tempfile.gettempdir())
             self.running_simulations = []
             self.default_run = get_run()
             self.default_target = get_target()

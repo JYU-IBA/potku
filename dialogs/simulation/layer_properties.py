@@ -28,11 +28,11 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import modules.masses as masses
 import platform
 
 import dialogs.dialog_functions as df
 import widgets.input_validation as iv
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
@@ -424,7 +424,7 @@ class ElementLayout(QtWidgets.QVBoxLayout):
     def __load_isotopes(self, current_isotope=None):
         """Loads isotopes of the element into the combobox.
         """
-        masses.load_isotopes(self.element_button.text(), self.isotope_combobox,
+        gutils.load_isotopes(self.element_button.text(), self.isotope_combobox,
                              current_isotope, show_std_mass=True)
 
     def get_selected_element(self) -> Element:

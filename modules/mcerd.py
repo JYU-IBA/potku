@@ -28,7 +28,6 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
-import modules.masses as masses
 import os
 import platform
 import shutil

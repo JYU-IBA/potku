@@ -29,7 +29,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import modules.masses as masses
 import os
 
 from widgets.gui_utils import GUIReporter
@@ -343,8 +342,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 isotope_str = str(int(element.isotope))
                 add = r"$^{" + isotope_str + "}$"
             else:
-                isotope_str = str(
-                    int(masses.get_standard_isotope(element.symbol)))
+                isotope_str = str(round(element.get_st_mass()))
                 add = ""
 
             label = add + element.symbol + rbs_string

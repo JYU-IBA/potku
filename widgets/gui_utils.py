@@ -28,6 +28,7 @@ import abc
 import platform
 
 from modules.observing import ProgressReporter
+from modules.element import Element
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -221,3 +222,34 @@ def change_arrow(qbutton: QtWidgets.QPushButton, arrow=None):
         raise ValueError(f"change_arrow function expected either a '<', "
                          f"'>' or None, '{arrow}' given.")
     qbutton.setText(arrow)
+
+
+def load_isotopes(symbol, combobox, current_isotope=None, show_std_mass=False,
+                  disable_if_empty=True):
+    """Load isotopes of given element into given combobox.
+
+    Args:
+        symbol: string representation of an element, e.g. 'He'.
+        combobox: QComboBox to which items are added.
+        current_isotope: Current isotope to select it on combobox by default.
+        show_std_mass: if True, std mass is added as the first element
+    """
+    # TODO this function could be moved to gui_utils
+    combobox.clear()
+    # Sort isotopes based on their natural abundance
+    isotopes = Element.get_isotopes(symbol, include_st_mass=show_std_mass,
+                                    filter_unlikely=True)
+
+    for idx, iso in enumerate(isotopes):
+        if iso["element"].isotope is None:
+            # Standard mass option
+            txt = f"{round(iso['element'].get_mass())} (st. mass)"
+        else:
+            # Isotope specific options
+            txt = f"{iso['element'].isotope} ({round(iso['abundance'], 3)}%)"
+        combobox.addItem(txt, userData=iso)
+        if current_isotope == iso["element"].isotope:
+            combobox.setCurrentIndex(idx)
+
+    if disable_if_empty:
+        combobox.setEnabled(combobox.count() > 0)

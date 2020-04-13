@@ -34,6 +34,7 @@ import platform
 import modules.masses as masses
 
 import widgets.input_validation as iv
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
@@ -322,9 +323,10 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
             element: String representing element.
             current_isotope: String representing current isotope.
         """
+        # TODO move to gutils
         standard_mass = masses.get_standard_isotope(element)
         standard_mass_label.setText(str(round(standard_mass, 3)))
-        masses.load_isotopes(element, combobox, current_isotope)
+        gutils.load_isotopes(element, combobox, current_isotope)
 
     def __change_type(self):
         """Toggle ERD/RBS type change.

@@ -161,9 +161,12 @@ class Element:
 
     def get_mass(self):
         if self.isotope:
-            return masses.find_mass_of_isotope(self)
+            return masses.find_mass_of_isotope(self.symbol, self.isotope)
         else:
             return masses.get_standard_isotope(self.symbol)
+
+    def get_st_mass(self):
+        return masses.get_standard_isotope(self.symbol)
 
     def get_mcerd_params(self, return_amount=False):
         """Returns the element's mass or amount as a parameter for MCERD.
@@ -187,3 +190,27 @@ class Element:
             return f"%0.3f" % amount
 
         return "%0.2f %s" % (self.get_mass(), self.symbol)
+
+    @classmethod
+    def get_isotopes(cls, symbol, include_st_mass=True, filter_unlikely=True):
+        isotopes = []
+        if include_st_mass:
+            st_mass = masses.get_standard_isotope(symbol)
+            if st_mass:
+                isotopes.append({
+                    "element": cls(symbol),
+                    masses.ABUNDANCE_KEY: None,
+                    masses.MASS_KEY: st_mass
+                })
+
+        isotopes.extend(
+            {
+                "element": cls(symbol, iso.pop("number")),
+                **iso
+            }
+            for iso in masses.get_isotopes(symbol,
+                                           filter_unlikely=True,
+                                           sort_by_abundance=True)
+            )
+
+        return isotopes

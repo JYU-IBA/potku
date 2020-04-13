@@ -34,7 +34,7 @@ import os
 
 import widgets.binding as bnd
 import widgets.input_validation as iv
-import modules.masses as masses
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 from modules.element import Element
@@ -60,10 +60,8 @@ def element_from_gui(instance, attrs):
     if symbol == "Select":
         return None
     if isotope_box.currentIndex() == -1:
-        isotope = None
-    else:
-        isotope = isotope_box.itemData(isotope_box.currentIndex())[0]
-    return Element(symbol, isotope)
+        return Element(symbol, None)
+    return isotope_box.currentData()["element"]
 
 
 def element_to_gui(instance, attrs, value: Element):
@@ -76,7 +74,7 @@ def element_to_gui(instance, attrs, value: Element):
         isotope_box.setEnabled(False)
     else:
         symbol_btn.setText(value.symbol)
-        masses.load_isotopes(value.symbol, isotope_box, value.isotope)
+        gutils.load_isotopes(value.symbol, isotope_box, value.isotope)
 
 
 class MeasurementSettingsWidget(QtWidgets.QWidget,
@@ -394,7 +392,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         dialog = ElementSelectionDialog()
         if dialog.element:
             self.beamIonButton.setText(dialog.element)
-            masses.load_isotopes(dialog.element, self.isotopeComboBox)
+            gutils.load_isotopes(dialog.element, self.isotopeComboBox)
 
             # Check if no isotopes
             if self.isotopeComboBox.count() == 0:
