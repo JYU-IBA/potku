@@ -42,17 +42,28 @@ from PyQt5.QtCore import pyqtSignal
 
 
 class IsotopeSelectionWidget(QObject):
+    """IsotopeSelectionWidget is a helper class for selecting isotopes in
+    GUI.
+
+    Currently it has no corresponding 'ui' file nor does it dynamically add
+    any GUI elements to the screen. Instead, GUI elements are provided as
+    parameters when the IsotopeSelectionWidget is initialized.
+    """
     DEFAULT_BTN_TXT = "Select"
     MISSING_ISOTOPE_TXT = "If you wish to use this element, please modify " \
                           "masses.dat file\nand change the natural abundance " \
                           "to 100 % on your\npreferred isotope and restart " \
                           "the application."
+
+    # Signal that is emitted when isotope selection has changed
     selection_changed = pyqtSignal()
 
     def __init__(self, symbol_input: QPushButton,
                  isotope_input: QComboBox, amount_input: QDoubleSpinBox = None,
                  st_mass_input: QWidget = None, info_label: QLabel = None,
                  parent: QWidget = None):
+        """Initializes a new IsotopeSelectionWidget.
+        """
         super().__init__()
         self._symbol_input = symbol_input
         self._isotope_input = isotope_input
@@ -69,12 +80,17 @@ class IsotopeSelectionWidget(QObject):
         self._isotope_input.setEnabled(False)
 
     def show_element_dialog(self):
+        """Opens up the ElementSelectionDialog that allows user
+        to choose the element.
+        """
         dialog = ElementSelectionDialog()
 
         if dialog.element:
             self.set_element(dialog.element)
 
     def set_element(self, element: Element):
+        """Sets currently selected element.
+        """
         if not isinstance(element, Element):
             try:
                 element = Element.from_string(element)
@@ -98,6 +114,9 @@ class IsotopeSelectionWidget(QObject):
         self.selection_changed.emit()
 
     def validate(self):
+        """Validates the contents of the Widget, setting background colors
+        and error messages if necessary.
+        """
         valid_selection = bool(self.get_element())
         self._isotope_input.setEnabled(valid_selection)
 
@@ -116,6 +135,8 @@ class IsotopeSelectionWidget(QObject):
                 self._parent.fields_are_valid = False
 
     def get_element(self) -> Element:
+        """Returns the selected element.
+        """
         element: Element = None
         data = self._isotope_input.currentData()
         if data is not None:

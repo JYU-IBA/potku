@@ -72,9 +72,11 @@ def element_to_gui(instance, attrs, value: Element):
     if value is None:
         symbol_btn.setText("Select")
         isotope_box.setEnabled(False)
+        isotope_box.clear()
     else:
         symbol_btn.setText(value.symbol)
         gutils.load_isotopes(value.symbol, isotope_box, value.isotope)
+        isotope_box.setEnabled(isotope_box.count() > 0)
 
 
 class MeasurementSettingsWidget(QtWidgets.QWidget,
@@ -392,6 +394,7 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         dialog = ElementSelectionDialog()
         if dialog.element:
             self.beamIonButton.setText(dialog.element)
+            # TODO use IsotopeSelectionWidget
             gutils.load_isotopes(dialog.element, self.isotopeComboBox)
 
             # Check if no isotopes

@@ -53,13 +53,13 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
     def __init__(self, recoil_atom_distribution):
         """Inits simulation element selection dialog.
         """
-        # TODO this dialog needs to be wider
         super().__init__()
         uic.loadUi(Path("ui_files", "ui_recoil_element_selection_dialog.ui"),
                    self)
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         self.recoil_atom_distribution = recoil_atom_distribution
 
+        # TODO just use element, no isotope reference is needed
         self.element = None
         self.isotope = None
         self.color = None
@@ -78,11 +78,11 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
 
         self.isOk = False
 
+        self.setMinimumWidth(350)
+
         if platform.system() == "Darwin":
             self.isotope_combobox.setFixedHeight(23)
 
-        if platform.system() == "Linux":
-            self.setMinimumWidth(350)
         self.exec_()
 
     def __set_color_button_color(self, element):
@@ -174,6 +174,7 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
             element: String representing element.
             current_isotope: String representing current isotope.
         """
+        # TODO do this with IsotopeSelectionWidget
         standard_mass = masses.get_standard_isotope(element)
         self.standard_mass_label.setText(str(round(standard_mass, 3)))
         gutils.load_isotopes(element, self.isotope_combobox, current_isotope)
@@ -206,9 +207,8 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
 
         # Check if specific isotope was chosen and use that instead.
         if self.isotope_radio.isChecked():
-            isotope_index = self.isotope_combobox.currentIndex()
-            isotope_data = self.isotope_combobox.itemData(isotope_index)
-            self.isotope = isotope_data[0]
+            elem = self.isotope_combobox.currentData()["element"]
+            self.isotope = elem.isotope
 
         self.isOk = True
         self.close()

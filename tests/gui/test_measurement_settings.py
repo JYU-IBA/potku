@@ -35,15 +35,12 @@ from modules.element import Element
 from widgets.measurement.settings import MeasurementSettingsWidget
 
 from PyQt5.QtWidgets import QApplication
-from PyQt5.QtTest import QTest
-from PyQt5.QtCore import Qt
 
 
 app = QApplication(sys.argv)
 
 
 class MyTestCase(unittest.TestCase):
-
     @utils.change_wd_to_root
     def setUp(self):
         with warnings.catch_warnings():
@@ -76,7 +73,10 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual("Select", self.mesu_widget.beamIonButton.text())
         self.assertFalse(self.mesu_widget.isotopeComboBox.isEnabled())
 
+    def test_update_settings(self):
         # Assert that measurement's ion is changed to widget's ion after update
+        elem = Element("H", 2)
+        self.mesu_widget.beam_ion = elem
         self.assertNotEqual(self.mesu_widget.obj.run.beam.ion,
                             self.mesu_widget.beam_ion)
         self.mesu_widget.update_settings()

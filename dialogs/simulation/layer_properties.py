@@ -34,10 +34,10 @@ import itertools
 import dialogs.dialog_functions as df
 import widgets.input_validation as iv
 import widgets.gui_utils as gutils
+import widgets.binding as bnd
 
 from pathlib import Path
 
-from dialogs.element_selection import ElementSelectionDialog
 from widgets.isotope_selection import IsotopeSelectionWidget
 
 from modules.element import Element
@@ -49,9 +49,13 @@ from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 
 
-class LayerPropertiesDialog(QtWidgets.QDialog):
+class LayerPropertiesDialog(QtWidgets.QDialog, bnd.PropertyTrackingWidget,
+                            metaclass=gutils.QtABCMeta):
     """Dialog for adding a new layer or editing an existing one.
     """
+    name = bnd.bind("nameEdit", track_change=True)
+    thickness = bnd.bind("thicknessEdit", track_change=True)
+    density = bnd.bind("densityEdit", track_change=True)
 
     def __init__(self, tab, layer=None, modify=False, simulation=None,
                  first_layer=False):
@@ -88,6 +92,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.thicknessEdit.setMinimum(0.01)
         self.densityEdit.setMinimum(0.01)
 
+        self.__original_properties = {}
+
         if self.layer:
             self.__show_layer_info()
         else:
@@ -114,6 +120,11 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
         self.exec_()
 
+    def get_original_property_values(self):
+        """Returns the original values of the properties.
+        """
+        return self.__original_properties
+
     def __save_layer(self):
         """Function for adding a new layer with given settings.
         """
@@ -126,9 +137,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         """
         Show information of the current layer.
         """
-        self.nameEdit.setText(self.layer.name)
-        self.thicknessEdit.setValue(self.layer.thickness)
-        self.densityEdit.setValue(self.layer.density)
+        self.set_properties(name=self.layer.name, thickness=self.layer.thickness,
+                            density=self.layer.density)
 
         for elem in self.layer.elements:
             self.__add_element_layout(elem)
@@ -176,23 +186,6 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.amount_mismatch = False
         self.fields_are_valid = settings_ok
 
-    def values_changed(self):
-        """
-        Check if layer's values have been changed.
-
-        Return:
-            True or False.
-        """
-        if self.layer.name != self.nameEdit.text():
-            return True
-        if self.layer.thickness != self.thicknessEdit.value():
-            return True
-        if self.layer.density != self.densityEdit.value():
-            return True
-        if self.elements_changed():
-            return True
-        return False
-
     def elements_changed(self):
         """
         Check if elements have been changed in the layer.
@@ -230,7 +223,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.__close = False
             return
 
-        if self.layer and not self.values_changed():
+        if self.layer and not (self.are_values_changed() or
+                               self.elements_changed()):
             self.__close = True
             self.fields_are_valid = True
             self.ok_pressed = False  # No update needed
@@ -243,18 +237,16 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 self.__close = False
                 return
 
-        name = self.nameEdit.text()
-        thickness = self.thicknessEdit.value()
-        density = self.densityEdit.value()
         elements = self.find_elements()
 
         if self.layer:
-            self.layer.name = name
+            self.layer.name = self.name
             self.layer.elements = elements
-            self.layer.thickness = thickness
-            self.layer.density = density
+            self.layer.thickness = self.thickness
+            self.layer.density = self.density
         else:
-            self.layer = Layer(name, elements, thickness, density)
+            self.layer = Layer(self.name, elements, self.thickness,
+                               self.density)
         if self.comboBox.currentText().startswith("Under"):
             self.placement_under = True
         else:
@@ -339,8 +331,8 @@ class ElementLayout(QtWidgets.QVBoxLayout):
             amount_input=self.amount_spinbox,
             parent=self.dialog
         )
-        self.selection_changed = self.isotope_selection_widget.selection_changed
         self.isotope_selection_widget.set_element(element)
+        self.selection_changed = self.isotope_selection_widget.selection_changed
 
         self.addLayout(self.horizontal_layout)
         self.addWidget(self.isotope_info_label)
