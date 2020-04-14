@@ -77,6 +77,12 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         self.cancelPushButton.clicked.connect(self.close)
         self.colorPushButton.clicked.connect(self.__change_color)
 
+        self.fields_are_valid = True
+        iv.set_input_field_red(self.nameLineEdit)
+        self.nameLineEdit.textChanged.connect(
+            lambda: iv.check_text(self.nameLineEdit, qwidget=self))
+        self.nameLineEdit.textEdited.connect(self.__validate)
+
         self.name = recoil_element.name
         self.description = recoil_element.description
         value = recoil_element.reference_density
@@ -94,12 +100,6 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
 
         self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             recoil_element.modification_time)))
-
-        self.fields_are_valid = True
-        iv.set_input_field_red(self.nameLineEdit)
-        self.nameLineEdit.textChanged.connect(
-            lambda: iv.check_text(self.nameLineEdit, qwidget=self))
-        self.nameLineEdit.textEdited.connect(self.__validate)
 
         title = f"Recoil element: " \
                 f"{recoil_element.element.get_prefix()}"
@@ -131,7 +131,7 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         """Function for accepting the current settings and closing the dialog
         window.
         """
-        if not self.text_is_valid or not self.__density_valid():
+        if not self.fields_are_valid or not self.__density_valid():
             QtWidgets.QMessageBox.critical(self, "Warning",
                                            "Some of the setting values are "
                                            "invalid.\n" +

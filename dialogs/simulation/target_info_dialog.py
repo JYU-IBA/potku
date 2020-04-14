@@ -54,6 +54,13 @@ class TargetInfoDialog(QtWidgets.QDialog):
         self.okPushButton.clicked.connect(self.__accept_settings)
         self.cancelPushButton.clicked.connect(self.close)
 
+        self.fields_are_valid = False
+        iv.set_input_field_red(self.nameLineEdit)
+        self.nameLineEdit.textChanged.connect(
+            lambda: iv.check_text(self.nameLineEdit, qwidget=self))
+        self.nameLineEdit.textEdited.connect(
+            lambda: iv.sanitize_file_name(self.nameLineEdit))
+
         self.name = ""
         self.nameLineEdit.setText(target.name)
         self.descriptionLineEdit.setPlainText(target.description)
@@ -62,13 +69,6 @@ class TargetInfoDialog(QtWidgets.QDialog):
 
         self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
             target.modification_time)))
-
-        self.fields_are_valid = False
-        iv.set_input_field_red(self.nameLineEdit)
-        self.nameLineEdit.textChanged.connect(
-            lambda: iv.check_text(self.nameLineEdit, qwidget=self))
-        self.nameLineEdit.textEdited.connect(
-            lambda: iv.sanitize_file_name(self.nameLineEdit))
 
         self.__close = True
 

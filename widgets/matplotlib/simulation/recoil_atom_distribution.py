@@ -1017,9 +1017,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.parent.nameLabel.setText(
             "Name: " + self.current_recoil_element.name)
         self.parent.referenceDensityLabel.setText(
-            "Reference density: " + "{0:1.2f}".format(
-                self.current_recoil_element.reference_density) +
-            str(self.current_recoil_element.multiplier)[1:] + " at./cm\xb3"
+            "Reference density: " + "{0:1.2e}".format(
+                self.current_recoil_element.reference_density) + " at./cm\xb3"
         )
 
         # Ypdate controls widget text

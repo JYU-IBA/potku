@@ -68,9 +68,12 @@ class ScientificSpinBox(QtWidgets.QWidget):
             value = float(new_value)
         self.value = value
         self.multiplier = multiplier
-        self.value_str = str(self.value) + str(self.multiplier)[1:]
-        self.scientificLineEdit.setText(str(self.value) + str(
-            self.multiplier)[1:])
+
+        if "e" in str(self.value):
+            self.value_str = str(self.value)
+        else:
+            self.value_str = str(self.value) + str(self.multiplier)[1:]
+        self.scientificLineEdit.setText(self.value_str)
 
         self.scientificLineEdit.textChanged.connect(lambda: self.validate(
             self.scientificLineEdit.cursorPosition()
