@@ -95,8 +95,8 @@ class TestSciSpinbox(unittest.TestCase):
         self.assertEqual(5e22, self.sbox.get_value())
 
         # Try setting a roman numeral
-        self.assertRaises(ValueError, self.sbox.set_value("XVII"))
-        self.assertEqual(5e22, self.sbox.get_value())
+        self.sbox.set_value("XVII")
+        self.assertRaises(ValueError, lambda: self.sbox.get_value())
 
 
 if __name__ == '__main__':

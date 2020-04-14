@@ -29,6 +29,7 @@ import abc
 import json
 
 from widgets.scientific_spinbox import ScientificSpinBox
+from widgets.isotope_selection import IsotopeSelectionWidget
 
 from PyQt5 import QtWidgets
 from PyQt5 import QtCore
@@ -53,12 +54,14 @@ def to_qtime(seconds: int) -> QTime:
 _DEFAULT_GETTERS = {
     QtWidgets.QTimeEdit: lambda qobj: from_qtime(qobj.time()),
     QtWidgets.QLineEdit: lambda qobj: qobj.text(),
+    # TODO change the next one to currentData
     QtWidgets.QComboBox: lambda qobj: qobj.currentText(),
     QtWidgets.QTextEdit: lambda qobj: qobj.toPlainText(),
     QtWidgets.QCheckBox: lambda qobj: qobj.isChecked(),
     QtWidgets.QLabel: lambda qobj: qobj.text(),
     QtWidgets.QPlainTextEdit: lambda qobj: qobj.toPlainText(),
-    ScientificSpinBox: lambda qobj: qobj.get_value()
+    ScientificSpinBox: lambda qobj: qobj.get_value(),
+    IsotopeSelectionWidget: lambda qobj: qobj.get_element()
 }
 
 _DEFAULT_SETTERS = {
@@ -70,7 +73,8 @@ _DEFAULT_SETTERS = {
     QtWidgets.QCheckBox: lambda qobj, b: qobj.setChecked(b),
     QtWidgets.QLabel: lambda qobj, txt: qobj.setText(txt),
     QtWidgets.QPlainTextEdit: lambda qobj, txt: qobj.setPlainText(txt),
-    ScientificSpinBox: lambda qobj, value: qobj.set_value.setText(value)
+    ScientificSpinBox: lambda qobj, value: qobj.set_value(value),
+    IsotopeSelectionWidget: lambda qobj, elem: qobj.set_element(elem)
 }
 
 

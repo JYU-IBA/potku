@@ -33,7 +33,6 @@ import collections
 
 import widgets.gui_utils as gutils
 
-import modules.masses as masses
 import modules.general_functions as gf
 
 from pathlib import Path
@@ -144,8 +143,7 @@ def get_updated_efficiency_files(qdialog, efficiency_files):
             cut_element = Element.from_string(item.file_name.split(".")[1])
             mass = cut_element.isotope
             if not mass:
-                mass = round(
-                    masses.get_standard_isotope(cut_element.symbol), 0)
+                mass = round(cut_element.get_st_mass(), 0)
             if cut_element.symbol == element.symbol and \
                     mass == element.isotope:
                 eff_files_used.append(eff)

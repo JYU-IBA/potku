@@ -29,7 +29,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import modules.masses as masses
 import os
 
 from dialogs.graph_ignore_elements import GraphIgnoreElements
@@ -90,7 +89,7 @@ class MatplotlibElementLossesWidget(MatplotlibWidget):
         self.mpl_toolbar.addSeparator()
         self.__button_scale = QtWidgets.QToolButton(self)
         self.__button_scale.clicked.connect(self.__toggle_scaling)
-        self.__button_scale.setToolTip("Toggle scaling mode for the graph " + \
+        self.__button_scale.setToolTip("Toggle scaling mode for the graph "
                                        "default, log and 100%.")
         self.__icon_manager.set_icon(self.__button_scale,
                                      self.__icons[self.__scale_mode])

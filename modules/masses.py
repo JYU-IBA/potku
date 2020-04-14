@@ -28,122 +28,115 @@ Reads data of the elements isotopes from masses.dat
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
-             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n " \
+             "Juhani Sundell"
 __version__ = "2.0"
 
-import csv
 import os
 
+from modules.parsing import CSVParser
+
 from pathlib import Path
+from collections import defaultdict
 
-__path_to_this_dir = os.path.dirname(__file__)
-__FILE_PATH = Path(__path_to_this_dir, os.pardir, "external", "Potku-data",
-                   "masses.dat")
+_ISOTOPES = defaultdict(list)
+NUMBER_KEY = "number"
+ABUNDANCE_KEY = "abundance"
+MASS_KEY = "mass"
 
-_isotopes = {}
+this_dir = os.path.dirname(__file__)
+file_path = Path(this_dir, os.pardir, "external", "Potku-data", "masses.dat")
 
-with open(__FILE_PATH) as file:
-    for line in csv.reader(file, delimiter=" ", skipinitialspace=True):
-        if line:  # skips empty lines
-            if line[3] not in _isotopes:
-                _isotopes[line[3]] = []
-            _isotopes[line[3]].append((int(line[2]), float(line[5]),
-                                       float(line[4])))
-            # line[2] isotope number, line[5] natural abundance, line[4]
-            # exact mass
+# Parser to parse data from masses.dat. Empty rows are ignored, first line
+# is skipped.
+parser = CSVParser((3, str), (2, int), (5, float), (4, float))
+data = parser.parse_file(file_path, ignore="e", method="row", skip=1)
+
+for elem, n, a, m in data:
+    _ISOTOPES[elem].append({
+        NUMBER_KEY: n,
+        ABUNDANCE_KEY: a,
+        MASS_KEY: m
+    })
+
+# TODO maybe sort the isotopes by abundance already at this point. Most of the
+#  time we need them sorted anyway
+
+# Remove extra variables
+del elem, n, a, m
+del this_dir, file_path
+del parser, data
 
 
-def _get_isotopes(element):
+def get_isotopes(symbol, sort_by_abundance=True, filter_unlikely=True):
     """Get isotopes of given element.
 
     Args:
-        element: String representing element's symbol, e.g. "He".
+        symbol: string representing element's symbol, e.g. "He".
+        sort_by_abundance: whether isotopes are sorted by abundance.
+        filter_unlikely: whether isotopes that have an abundance of 0 will
+            be filtered out.
+
     Return:
-        Returns a list of element's isotopes.
+        Returns a list of element's isotopes as dictionaries. Keys are
+        'number', 'natural_abundance' and 'exact_mass'. Dictionaries are
+        copies of the original values so it is safe to mutate them.
     """
-    try:
-        isotopes = _isotopes[element]
-    except KeyError:
-        isotopes = []
-    return isotopes
+    # Note: as _ISOTOPES is a defaultdict, we could just use _ISOTOPES[symbol]
+    # without risking a KeyError. However this would also add the symbol as a
+    # key to the dictionary which we want to avoid. get method can be used to
+    # return a default value without adding new keys.
+    isos = (dict(iso) for iso in _ISOTOPES.get(symbol, []))
 
-
-def find_mass_of_isotope(element):
-    """
-    Find the mass of the Element object (isotope).
-    Args:
-         element: Element object.
-    Return:
-         Returns the mass of the wanted element.
-    """
-    isotopes = _get_isotopes(element.symbol)
-    element_isotope = int(round(element.isotope))
-    for isotope in isotopes:
-        if element_isotope == isotope[0]:
-            return isotope[2]/1000000
-
-
-def load_isotopes(element, combobox, current_isotope=None, show_std_mass=False):
-    """Load isotopes into given combobox.
-
-    Args:
-        element: A two letter symbol representing selected element of which
-            isotopes are loaded, e.g. 'He'.
-        combobox: QComboBox to which items are added.
-        current_isotope: Current isotope to select it on combobox by default.
-        show_std_mass: if True, std mass is shown for the most common isotope
-    """
-    # TODO this function could be moved to gui_utils
-    if not element:
-        return
-    combobox.clear()
-    # Sort isotopes based on their natural abundance
-    isotopes = sorted(_get_isotopes(element),
-                      key=lambda i: i[1],
+    if filter_unlikely:
+        isos = filter(lambda iso: iso[ABUNDANCE_KEY], isos)
+    if sort_by_abundance:
+        return sorted(isos, key=lambda iso: iso[ABUNDANCE_KEY],
                       reverse=True)
-    for idx, (isotope, tn, mass) in enumerate(isotopes):
-        # We don't need rare isotopes to be shown
-        if float(tn) > 0.0:
-            if idx == 0 and show_std_mass:
-                st_iso = get_standard_isotope(element)
-                combobox.addItem(f"{round(st_iso, 3)} (st. mass)",
-                                 userData=(None, None))
-                if current_isotope is None:
-                    combobox.setCurrentIndex(idx)
-            combobox.addItem(f"{isotope} ({round(float(tn), 3)}%)",
-                             userData=(isotope, tn))
-            if isotope == current_isotope:
-                combobox.setCurrentIndex(idx + 1 if show_std_mass else 0)
-
-    combobox.setEnabled(combobox.count() > 0)
+    return list(isos)
 
 
-def get_standard_isotope(element):
-    """Calculate standard element weight.
+def find_mass_of_isotope(symbol, isotope):
+    """Find the mass of the Element object (isotope).
+
     Args:
-        element: A two letter symbol representing an element, e.g. 'He'
+         symbol: string representation of the element
+         isotope: number representation of the isotope
+
     Return:
-        Returns standard weight of given element (float).
+         Returns the mass of the wanted isotope.
     """
-    standard = 0.0
-    for isotope in _get_isotopes(element):
-        # Has to have float() on both, else we crash.
-        standard += float(isotope[0]) * float(isotope[1])
-    return standard / 100.0
+    rounded_isotope = round(isotope)
+    for isotope in get_isotopes(symbol):
+        if rounded_isotope == isotope[NUMBER_KEY]:
+            return isotope[MASS_KEY] / 1_000_000
 
 
-def get_most_common_isotope(element):
+def get_standard_isotope(symbol):
+    """Calculate standard element weight.
+
+    Args:
+        symbol: a string symbol representing an element, e.g. 'He'
+
+    Return:
+        Returns standard weight of given element (float). If the symbol is
+        unknown, 0 is returned.
+    """
+    # TODO should this be called get_standard_mass?
+    return sum(iso[NUMBER_KEY] * iso[ABUNDANCE_KEY]
+               for iso in get_isotopes(symbol, sort_by_abundance=False)) / 100
+
+
+def get_most_common_isotope(symbol: str) -> dict:
     """Get the most common isotope for an element.
 
     Args:
-        element: String representing element.
+        symbol: String representing element.
 
     Return:
-        Returns the most common isotope for the element (int)
-        and the probability (commonness) of the isotope (float)
-        as a tuple(int, float).
+        dictionary representing the isotope or None if the symbol is unknown.
+        Keys are 'number', 'natural_abundance' and 'exact_mass.
     """
-    isotopes = sorted(_get_isotopes(element),
-                      key=lambda isotope: isotope[1],
-                      reverse=True)
-    return int(isotopes[0][0]), float(isotopes[0][1])
+    isotopes = get_isotopes(symbol, sort_by_abundance=True,
+                            filter_unlikely=True)
+    return isotopes[0] if isotopes else None

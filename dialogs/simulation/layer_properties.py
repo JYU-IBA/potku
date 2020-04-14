@@ -28,15 +28,17 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import modules.masses as masses
 import platform
+import itertools
 
 import dialogs.dialog_functions as df
 import widgets.input_validation as iv
+import widgets.gui_utils as gutils
+import widgets.binding as bnd
 
 from pathlib import Path
 
-from dialogs.element_selection import ElementSelectionDialog
+from widgets.isotope_selection import IsotopeSelectionWidget
 
 from modules.element import Element
 from modules.layer import Layer
@@ -47,9 +49,13 @@ from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 
 
-class LayerPropertiesDialog(QtWidgets.QDialog):
+class LayerPropertiesDialog(QtWidgets.QDialog, bnd.PropertyTrackingWidget,
+                            metaclass=gutils.QtABCMeta):
     """Dialog for adding a new layer or editing an existing one.
     """
+    name = bnd.bind("nameEdit", track_change=True)
+    thickness = bnd.bind("thicknessEdit", track_change=True)
+    density = bnd.bind("densityEdit", track_change=True)
 
     def __init__(self, tab, layer=None, modify=False, simulation=None,
                  first_layer=False):
@@ -69,10 +75,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.layer = layer
         self.ok_pressed = False
         self.simulation = simulation
-
-        iv.set_input_field_red(self.thicknessEdit)
-        iv.set_input_field_red(self.densityEdit)
-        self.amount_mismatch = False
+        self.amount_mismatch = True
 
         self.fields_are_valid = True
         iv.set_input_field_red(self.nameEdit)
@@ -86,10 +89,10 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         self.okButton.clicked.connect(self.__save_layer)
         self.cancelButton.clicked.connect(self.close)
 
-        self.thicknessEdit.valueChanged.connect(
-            lambda: self.validate_spinbox(self.thicknessEdit))
-        self.densityEdit.valueChanged.connect(
-            lambda: self.validate_spinbox(self.densityEdit))
+        self.thicknessEdit.setMinimum(0.01)
+        self.densityEdit.setMinimum(0.01)
+
+        self.__original_properties = {}
 
         if self.layer:
             self.__show_layer_info()
@@ -117,6 +120,11 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
 
         self.exec_()
 
+    def get_original_property_values(self):
+        """Returns the original values of the properties.
+        """
+        return self.__original_properties
+
     def __save_layer(self):
         """Function for adding a new layer with given settings.
         """
@@ -129,12 +137,19 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         """
         Show information of the current layer.
         """
-        self.nameEdit.setText(self.layer.name)
-        self.thicknessEdit.setValue(self.layer.thickness)
-        self.densityEdit.setValue(self.layer.density)
+        self.set_properties(name=self.layer.name, thickness=self.layer.thickness,
+                            density=self.layer.density)
 
         for elem in self.layer.elements:
             self.__add_element_layout(elem)
+
+    def get_element_widgets(self):
+        """Returns all ElementLayout child objects that the widget has."""
+        return [
+            child
+            for child in self.scrollAreaWidgetContents.layout().children()
+            if isinstance(child, ElementLayout)
+        ]
 
     def __check_if_settings_ok(self):
         """Check that all the settings are okay.
@@ -143,93 +158,41 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
              True if the settings are okay and false if some required fields
              are empty.
         """
+        settings_ok = True
         help_sum = 0
-        spinboxes = []
+        elem_widgets = self.get_element_widgets()
 
         # Check if 'scrollArea' is empty (no elements).
-        if self.scrollAreaWidgetContents.layout().isEmpty():
+        if not elem_widgets:
             iv.set_input_field_red(self.scrollArea)
-            self.fields_are_valid = False
-
-        # Check if 'thicknessEdit' is empty.
-        if not self.thicknessEdit.value():
-            iv.set_input_field_red(self.thicknessEdit)
-            self.fields_are_valid = False
-
-        # Check if 'densityEdit' is empty.
-        if not self.densityEdit.value():
-            iv.set_input_field_red(self.densityEdit)
-            self.fields_are_valid = False
+            settings_ok = False
 
         # Check that the element specific settings are okay.
-        for child in self.scrollAreaWidgetContents.children():
-            if type(child) is QtWidgets.QPushButton:
-                if child.text() == "Select":
-                    iv.set_input_field_red(child)
-                    self.fields_are_valid = False
-            if type(child) is QtWidgets.QDoubleSpinBox:
-                if child.isEnabled():
-                    if child.value():
-                        help_sum += child.value()
-                        spinboxes.append(child)
-                    else:
-                        iv.set_input_field_red(child)
-                        self.fields_are_valid = False
+        for widget in elem_widgets:
+            elem = widget.get_selected_element()
+            if elem is None:
+                settings_ok = False
+            else:
+                help_sum += elem.amount
 
         if help_sum != 1.0 and help_sum != 100.0:
-            for sb in spinboxes:
-                iv.set_input_field_red(sb)
-            self.fields_are_valid = False
+            for widget in elem_widgets:
+                iv.set_input_field_red(widget.amount_spinbox)
+            settings_ok = False
             self.amount_mismatch = True
         else:
-            for sb in spinboxes:
-                iv.set_input_field_white(sb)
+            for widget in elem_widgets:
+                iv.set_input_field_white(widget.amount_spinbox)
             self.amount_mismatch = False
-
-    def validate_spinbox(self, spinbox):
-        """
-        Check if given spinbox has a proper value.
-
-        Args:
-            spinbox: Spinbox to check.
-        """
-        if spinbox.value() == 0.0:
-            self.fields_are_valid = False
-            iv.set_input_field_red(spinbox)
-        else:
-            self.fields_are_valid = True
-            iv.set_input_field_white(spinbox)
-
-    def values_changed(self):
-        """
-        Check if layer's values have been changed.
-
-        Return:
-            True or False.
-        """
-        if self.layer.name != self.nameEdit.text():
-            return True
-        if self.layer.thickness != self.thicknessEdit.value():
-            return True
-        if self.layer.density != self.densityEdit.value():
-            return True
-        if self.elements_changed():
-            return True
-        return False
+        self.fields_are_valid = settings_ok
 
     def elements_changed(self):
         """
         Check if elements have been changed in the layer.
         """
-        new_elements = self.find_elements()
-        if len(self.layer.elements) != len(new_elements):
-            return True
-        for i in range(len(self.layer.elements)):
-            elem1 = self.layer.elements[i]
-            elem2 = new_elements[i]
-            if elem1 != elem2:
-                return True
-        return False
+        return not all(e1 == e2 for e1, e2 in itertools.zip_longest(
+            self.find_elements(), self.layer.elements
+        ))
 
     def find_elements(self):
         """
@@ -237,8 +200,7 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
         """
         return [
             child.get_selected_element()
-            for child in self.scrollAreaWidgetContents.layout().children()
-            if isinstance(child, ElementLayout)
+            for child in self.get_element_widgets()
         ]
 
     def __accept_settings(self):
@@ -261,7 +223,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
             self.__close = False
             return
 
-        if self.layer and not self.values_changed():
+        if self.layer and not (self.are_values_changed() or
+                               self.elements_changed()):
             self.__close = True
             self.fields_are_valid = True
             self.ok_pressed = False  # No update needed
@@ -274,18 +237,16 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
                 self.__close = False
                 return
 
-        name = self.nameEdit.text()
-        thickness = self.thicknessEdit.value()
-        density = self.densityEdit.value()
         elements = self.find_elements()
 
         if self.layer:
-            self.layer.name = name
+            self.layer.name = self.name
             self.layer.elements = elements
-            self.layer.thickness = thickness
-            self.layer.density = density
+            self.layer.thickness = self.thickness
+            self.layer.density = self.density
         else:
-            self.layer = Layer(name, elements, thickness, density)
+            self.layer = Layer(self.name, elements, self.thickness,
+                               self.density)
         if self.comboBox.currentText().startswith("Under"):
             self.placement_under = True
         else:
@@ -312,9 +273,10 @@ class LayerPropertiesDialog(QtWidgets.QDialog):
     def __add_element_layout(self, element=None):
         """Add element widget into view.
         """
+        el = ElementLayout(self.scrollAreaWidgetContents, element, self)
+        el.selection_changed.connect(self.__check_if_settings_ok)
         self.scrollArea.setStyleSheet("")
-        self.scrollAreaWidgetContents.layout().addLayout(
-            ElementLayout(self.scrollAreaWidgetContents, element, self))
+        self.scrollAreaWidgetContents.layout().addLayout(el)
 
 
 class ElementLayout(QtWidgets.QVBoxLayout):
@@ -331,43 +293,28 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         parent.parentWidget().setStyleSheet("")
 
         super().__init__()
-
-        if not element:
-            btn_txt = "Select"
-            enabled = False
-        else:
-            btn_txt = element.symbol
-            enabled = True
-        self.element_button = QtWidgets.QPushButton(btn_txt)
-        self.element_button.setFixedWidth(60)
-
         self.dialog = dialog
+
+        self.element_button = QtWidgets.QPushButton("")
+        self.element_button.setFixedWidth(60)
 
         self.isotope_combobox = QtWidgets.QComboBox()
         self.isotope_combobox.setFixedWidth(130)
-        self.isotope_combobox.setEnabled(enabled)
 
         if platform.system() == "Darwin" or platform.system() == "Linux":
             self.isotope_combobox.setFixedWidth(150)
 
         self.amount_spinbox = QtWidgets.QDoubleSpinBox()
+        self.amount_spinbox.setMinimum(0.001)
         self.amount_spinbox.setMaximum(9999.00)
         self.amount_spinbox.setDecimals(3)
-        self.amount_spinbox.setEnabled(enabled)
-        self.amount_spinbox.valueChanged.connect(
-            lambda: dialog.validate_spinbox(self.amount_spinbox))
         self.amount_spinbox.setLocale(QLocale.c())
-
-        if enabled:
-            self.__load_isotopes(element.isotope)
-            self.amount_spinbox.setValue(element.amount)
 
         self.delete_button = QtWidgets.QPushButton("")
         self.delete_button.setIcon(QtGui.QIcon("ui_icons/potku/del.png"))
         self.delete_button.setFixedWidth(28)
         self.delete_button.setFixedHeight(28)
 
-        self.element_button.clicked.connect(self.__select_element)
         self.delete_button.clicked.connect(self.__delete_element_layout)
 
         self.isotope_info_label = QtWidgets.QLabel()
@@ -377,6 +324,15 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.horizontal_layout.addWidget(self.isotope_combobox)
         self.horizontal_layout.addWidget(self.amount_spinbox)
         self.horizontal_layout.addWidget(self.delete_button)
+
+        self.isotope_selection_widget = IsotopeSelectionWidget(
+            self.element_button, self.isotope_combobox,
+            info_label=self.isotope_info_label,
+            amount_input=self.amount_spinbox,
+            parent=self.dialog
+        )
+        self.isotope_selection_widget.set_element(element)
+        self.selection_changed = self.isotope_selection_widget.selection_changed
 
         self.addLayout(self.horizontal_layout)
         self.addWidget(self.isotope_info_label)
@@ -391,49 +347,7 @@ class ElementLayout(QtWidgets.QVBoxLayout):
         self.delete_button.deleteLater()
         self.deleteLater()
 
-    def __select_element(self):
-        """Opens a dialog to select an element.
-        """
-        dialog = ElementSelectionDialog()
-
-        if dialog.element:
-            self.element_button.setStyleSheet("")
-            self.element_button.setText(dialog.element)
-            self.isotope_combobox.setEnabled(True)
-            self.amount_spinbox.setEnabled(True)
-            self.__load_isotopes()
-            if not self.amount_spinbox.value():
-                iv.set_input_field_red(self.amount_spinbox)
-
-            # Check if no isotopes
-            if not self.isotope_combobox.currentData():
-                # TODO add self.fields_are_valid attribute or method
-                iv.set_input_field_red(self.isotope_combobox)
-                self.amount_spinbox.setEnabled(False)
-                self.dialog.fields_are_valid = False
-                self.isotope_info_label.setText(
-                    "If you wish to use this element, please modify masses.dat "
-                    "file\nand change the natural abundance to 100 % on your\n"
-                    "preferred isotope and restart the application.")
-            else:
-                iv.check_text(self.dialog.nameEdit, qwidget=self.dialog)
-                self.isotope_combobox.setStyleSheet(
-                    "background-color: %s" % "None")
-                self.isotope_info_label.setText("")
-
-    def __load_isotopes(self, current_isotope=None):
-        """Loads isotopes of the element into the combobox.
-        """
-        masses.load_isotopes(self.element_button.text(), self.isotope_combobox,
-                             current_isotope, show_std_mass=True)
-
     def get_selected_element(self) -> Element:
         """Returns the selected element object.
         """
-        try:
-            symbol = self.element_button.text()
-            isotope, _ = self.isotope_combobox.currentData()
-            amount = self.amount_spinbox.value()
-            return Element(symbol, isotope, amount)
-        except TypeError:
-            pass
+        return self.isotope_selection_widget.get_element()

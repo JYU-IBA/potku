@@ -34,6 +34,7 @@ import platform
 import modules.masses as masses
 
 import widgets.input_validation as iv
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
@@ -269,10 +270,8 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         if not isotope_combobox or not isotope_combobox.isEnabled():
             self.isotope_specific_weight_factor_label.setText("")
         else:
-            isotope_index = isotope_combobox.currentIndex()
-            unused_isotope, propability = isotope_combobox.itemData(
-                isotope_index)
-            isotope_weightfactor = 100.0 / float(propability)
+            p = isotope_combobox.currentData()["abundance"]
+            isotope_weightfactor = 100.0 / p
             text = "%.3f for specific isotope" % isotope_weightfactor
             self.isotope_specific_weight_factor_label.setText(text)
 
@@ -322,9 +321,10 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
             element: String representing element.
             current_isotope: String representing current isotope.
         """
+        # TODO do this with IsotopeSelectionWidget
         standard_mass = masses.get_standard_isotope(element)
         standard_mass_label.setText(str(round(standard_mass, 3)))
-        masses.load_isotopes(element, combobox, current_isotope)
+        gutils.load_isotopes(element, combobox, current_isotope)
 
     def __change_type(self):
         """Toggle ERD/RBS type change.
@@ -350,10 +350,10 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
                 self.sample_standard_mass_radio.isChecked())
 
             if self.sample_isotope_radio.isChecked():
-                mass_index = self.sample_isotope_combobox.currentIndex()
-                isotope_data = self.sample_isotope_combobox.itemData(mass_index)
-                if isotope_data:
-                    current_isotope = isotope_data[0]
+                data = self.sample_isotope_combobox.currentData()
+
+                if data:
+                    current_isotope = data["element"].isotope
                     self.rbsIsotopeInfoLabel.setVisible(False)
                     self.rbs_isotope_combobox.setStyleSheet(
                         "background-color: %s" % "None")
@@ -438,10 +438,9 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         current_isotope = None
         if self.rbs_element_button.text() != "Select":
             if self.sample_isotope_radio.isChecked():
-                mass_index = self.rbs_isotope_combobox.currentIndex()
-                isotope_data = self.rbs_isotope_combobox.itemData(mass_index)
-                if isotope_data:
-                    current_isotope = isotope_data[0]
+                data = self.rbs_isotope_combobox.currentData()
+                if data:
+                    current_isotope = data["element"].isotope
                     self.sampleIsotopeInfoLabel.setVisible(False)
                     self.sample_isotope_combobox.setStyleSheet(
                         "background-color: %s" % "None")
@@ -538,10 +537,9 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         symbol = self.sample_element_button.text()
         if self.selection.type == "ERD":
             if self.sample_isotope_radio.isChecked():
-                isotope_index = self.sample_isotope_combobox.currentIndex()
-                isotope_data = self.sample_isotope_combobox.itemData(
-                    isotope_index)
-                isotope = int(isotope_data[0])
+                # TODO use IsotopeSelectionWidget here
+                elem = self.sample_isotope_combobox.currentData()["element"]
+                isotope = elem.isotope
 
             self.selection.element_scatter = Element("")
             self.selection.element = Element(symbol, isotope)
@@ -549,10 +547,8 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         else:
             rbs_element = self.rbs_element_button.text()
             if self.rbs_isotope_radio.isChecked():
-                isotope_index = self.rbs_isotope_combobox.currentIndex()
-                isotope_data = self.rbs_isotope_combobox.itemData(
-                    isotope_index)
-                rbs_isotope = int(isotope_data[0])
+                elem = self.rbs_isotope_combobox.currentData()["element"]
+                rbs_isotope = elem.isotope
 
             self.selection.element_scatter = Element(rbs_element,
                                                      rbs_isotope)

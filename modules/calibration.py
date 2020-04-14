@@ -29,13 +29,9 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import collections
-import modules.masses as masses
 import scipy.optimize as optimize
 
-from modules.general_functions import carbon_stopping
-from modules.general_functions import convert_mev_to_joule
-from modules.general_functions import convert_amu_to_kg
-from modules.general_functions import hist
+import modules.general_functions as gf
 
 from numpy import array
 from numpy import linspace
@@ -64,7 +60,7 @@ class TOFCalibrationHistogram:
         self.cut = cut
         self.bin_width = bin_width
         self.use_column = use_column
-        histed_file = hist(self.cut.data, self.bin_width, self.use_column)
+        histed_file = gf.hist(self.cut.data, self.bin_width, self.use_column)
 
         self.histogram_x = [float(pair[0]) for pair in histed_file]
         self.histogram_y = [float(pair[1]) for pair in histed_file]
@@ -402,32 +398,22 @@ class TOFCalibrationPoint:
         density_in_g_per_cm3 = layer.density
 
         # Recoiled atoms' parameters
-        element = self.cut.element.symbol
+        # element = self.cut.element.symbol
+
+        mass = self.cut.element.get_mass()
         if cut.element.isotope:
-            # TODO find_mass_of_isotope could handle checking if the element has
-            #      an isotope
-            mass = masses.find_mass_of_isotope(self.cut.element)
             isotope = cut.element.isotope
         else:
-            # If the cut doesn't have a isotope, calculate standard atomic mass.
-            mass = masses.get_standard_isotope(self.cut.element.symbol)
-            isotope = masses.get_most_common_isotope(self.cut.element.symbol)[0]
-        self.recoiled_mass = convert_amu_to_kg(mass)
+            isotope = self.cut.element.get_most_common_isotope()
+        self.recoiled_mass = gf.convert_amu_to_kg(mass)
 
         if self.type == "RBS":
-            element_scatter = self.cut.element_scatter
-            if element_scatter.isotope:
-                # TODO find_mass_of_isotope could handle checking if the element
-                #      has an isotope
-                mass_scatter = masses.find_mass_of_isotope(element_scatter)
-            else:
-                mass_scatter = masses.get_standard_isotope(
-                    self.cut.element_scatter.symbol)
-            self.scatter_element_mass = convert_amu_to_kg(mass_scatter)
+            mass_scatter = self.cut.element_scatter.get_mass()
+            self.scatter_element_mass = gf.convert_amu_to_kg(mass_scatter)
 
-        beam_mass = masses.find_mass_of_isotope(run.beam.ion)
-        self.beam_mass = convert_amu_to_kg(beam_mass)
-        self.beam_energy = convert_mev_to_joule(run.beam.energy)
+        beam_mass = run.beam.ion.get_mass()
+        self.beam_mass = gf.convert_amu_to_kg(beam_mass)
+        self.beam_energy = gf.convert_mev_to_joule(run.beam.energy)
         self.length = time_of_flight_length
         # Target angle, same with both recoiled and scattered atoms when
         # using same hardware.
@@ -437,9 +423,9 @@ class TOFCalibrationPoint:
         # Carbon stopping gives a list of different result values.
         # The last value is the stopping energy.
         try:
-            carbon_stopping_energy = carbon_stopping(element, isotope, energy,
-                                                     carbon_foil_thickness_in_nm,
-                                                     density_in_g_per_cm3)
+            carbon_stopping_energy = gf.carbon_stopping(
+                self.cut.element.symbol, isotope, energy,
+                carbon_foil_thickness_in_nm, density_in_g_per_cm3)
         except:
             error_msg = "Carbon stopping doesn't work. {0} {1}".format(
                 "Continuing without it.",

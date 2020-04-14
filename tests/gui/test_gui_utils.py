@@ -25,10 +25,19 @@ __author__ = "Juhani Sundell"
 __version__ = ""  # TODO
 
 import unittest
+import sys
+
+import widgets.gui_utils as gutils
 
 from unittest.mock import Mock
 
+from modules.element import Element
 from widgets.gui_utils import GUIReporter
+
+from PyQt5 import QtWidgets
+from PyQt5.Qt import QApplication
+
+app = QApplication(sys.argv)
 
 
 class TestGUIReporter(unittest.TestCase):
@@ -65,6 +74,24 @@ class TestGUIReporter(unittest.TestCase):
         # This test should test that the callback is always executed in the
         # main thread.
         self.assertTrue(False)
+
+
+class TestLoadCombobox(unittest.TestCase):
+    def test_load_combox(self):
+        combo = QtWidgets.QComboBox()
+        gutils.load_isotopes("He", combo)
+        self.assertEqual(Element("He", 4), combo.currentData()["element"])
+        self.assertTrue(combo.isEnabled())
+
+        gutils.load_isotopes("U", combo)
+        self.assertIsNone(combo.currentData())
+        self.assertEqual(0, combo.count())
+
+        gutils.load_isotopes("He", combo, show_std_mass=True)
+        self.assertEqual(Element("He", None), combo.currentData()["element"])
+
+        gutils.load_isotopes("He", combo, show_std_mass=True, current_isotope=4)
+        self.assertEqual(Element("He", 4), combo.currentData()["element"])
 
 
 if __name__ == '__main__':
