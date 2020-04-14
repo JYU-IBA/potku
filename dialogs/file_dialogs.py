@@ -41,8 +41,8 @@ def open_file_dialog(parent, default_folder, title, files):
 
     Args:
         parent: Parent object which opens the open file dialog.
-        default_folder: String representing which folder is shown when dialog
-            opens.
+        default_folder: String or Path representing which folder is shown when
+            dialog opens.
         title: String representing open file dialog title.
         files: String representing what type of file can be opened.
 
@@ -52,8 +52,10 @@ def open_file_dialog(parent, default_folder, title, files):
 
         "C:/Transfer/FinlandiaData/esimerkkidata.zip"
     """
+    # Convert the folder parameter to string to avoid TypeError when the
+    # default_folder is a Path object
     filename = QtWidgets.QFileDialog.getOpenFileName(parent, title,
-                                                     default_folder,
+                                                     str(default_folder),
                                                      parent.tr(files))
     return filename[0]
 
@@ -67,8 +69,8 @@ def open_files_dialog(parent, default_folder, title, files):
 
     Args:
         parent: Parent object which opens the open file dialog.
-        default_folder: String representing which folder is shown when dialog
-            opens.
+        default_folder: String or Path representing which folder is shown when
+            dialog opens.
         title: String representing open file dialog title.
         files: String representing what type of file can be opened.
 
@@ -79,7 +81,7 @@ def open_files_dialog(parent, default_folder, title, files):
         "C:/Transfer/FinlandiaData/esimerkkidata.zip"
     """
     filenames = QtWidgets.QFileDialog.getOpenFileNames(parent, title,
-                                                       default_folder,
+                                                       str(default_folder),
                                                        parent.tr(files))
     return filenames[0]     # TODO does this return just one?
 
@@ -92,8 +94,8 @@ def save_file_dialog(parent, default_folder, title, files):
 
     Args:
         parent: Parent object which opens the open file dialog.
-        default_folder: String representing which folder is shown when dialog
-            opens.
+        default_folder: String or Path representing which folder is shown when
+            dialog opens.
         title: String representing open file dialog title.
         files: String representing what type of file can be opened.
 
@@ -104,6 +106,6 @@ def save_file_dialog(parent, default_folder, title, files):
         "C:/Transfer/FinlandiaData/esimerkkidata.zip"
     """
     filename = QtWidgets.QFileDialog.getSaveFileName(parent, title,
-                                                     default_folder,
+                                                     str(default_folder),
                                                      parent.tr(files))[0]
     return filename

@@ -29,6 +29,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import widgets.input_validation as iv
+import dialogs.file_dialogs as fdialogs
 
 from pathlib import Path
 
@@ -36,7 +37,6 @@ from PyQt5 import uic
 from PyQt5 import QtWidgets
 
 from dialogs.new_sample import NewSampleDialog
-from dialogs.file_dialogs import open_file_dialog
 
 
 class LoadMeasurementDialog(QtWidgets.QDialog):
@@ -127,9 +127,9 @@ class LoadMeasurementDialog(QtWidgets.QDialog):
             self.close()
 
     def __browse_files(self):
-        self.filename = open_file_dialog(self, self.directory,
-                                         "Select a measurement to load",
-                                         "Raw Measurement (*.asc)")
+        self.filename = fdialogs.open_file_dialog(
+            self, self.directory, "Select a measurement to load",
+            "Raw Measurement (*.asc)")
         self.pathLineEdit.setText(self.filename)
 
     def __find_existing_sample(self):
