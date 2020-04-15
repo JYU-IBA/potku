@@ -288,7 +288,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                            "save them.",
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
-            raise TypeError
 
     def find_related_tab(self, tab_id):
         """
@@ -302,34 +301,3 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             if tab_widget == self.main_window.tab_widgets[tab_id]:
                 return tab_widget
         return None
-
-    def check_if_optimization_run(self):
-        """
-        Check whether optimization has been done.
-
-        Return:
-             List of optimized element simulations.
-        """
-        optimized = []
-        for sample in self.request.samples.samples:
-            for simulation in sample.simulations.simulations.values():
-                for elem_sim in simulation.element_simulations:
-                    if elem_sim.optimization_widget and not \
-                            elem_sim.optimization_running:
-                        optimized.append(elem_sim)
-        return optimized
-
-    def check_if_simulations_run(self):
-        """
-        Check if the re are any element simulations that have been simulated.
-
-        Return:
-             List of run element simulations.
-        """
-        simulations_run = []
-        for sample in self.request.samples.samples:
-            for simulation in sample.simulations.simulations.values():
-                if simulation.use_request_settings:
-                    simulations_run.extend(
-                        simulation.get_finished_simulations())
-        return simulations_run
