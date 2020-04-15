@@ -36,10 +36,10 @@ import os
 import sys
 import time
 import itertools
-import collections
 
 import modules.general_functions as gf
 
+from modules.base import ElementSimulationContainer
 from modules.detector import Detector
 from modules.element_simulation import ElementSimulation
 from modules.run import Run
@@ -230,7 +230,7 @@ class Simulations:
         self.simulations = remove_key(self.simulations, tab_id)
 
 
-class Simulation(Logger):
+class Simulation(Logger, ElementSimulationContainer):
     """
     A Simulation class that handles information about one Simulation.
     """
@@ -433,6 +433,7 @@ class Simulation(Logger):
         """Returns a shallow copy of ElementSimulations that are running on
         either simulation specific settings or request specific settings.
         """
+        # TODO only return simulations if this does not use request settings
         request_sims = (elem_sim for elem_sim in self.element_simulations
                         if elem_sim in self.request.running_simulations)
         return list(itertools.chain(request_sims, self.running_simulations))
@@ -464,20 +465,4 @@ class Simulation(Logger):
             #      reference to a widget
             if elem_sim.optimization_widget is not None and
             not elem_sim.optimization_running
-        )
-
-    def get_active_simulations(self):
-        """Returns a named tuple of all simulations that are either running
-        or have results.
-        """
-        simulations = collections.namedtuple(
-            "Simulations",
-            ("running_simulations", "finished_simulations",
-             "running_optimizations", "finished_optimizations"),
-        )
-        return simulations(
-            self.get_running_simulations(),
-            self.get_finished_simulations(),
-            self.get_running_optimizations(),
-            self.get_finished_optimizations()
         )

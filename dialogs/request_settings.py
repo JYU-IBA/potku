@@ -206,106 +206,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 return True
 
         else:
-            # TODO move this to dialog functions
-            # Lists of old and current simulations and optimizations
-            simulations_run = self.check_if_simulations_run()
-            simulations_running = self.request.simulations_running()
-            optimization_running = self.request.optimization_running()
-            optimization_run = self.check_if_optimization_run()
-
-            if simulations_run and simulations_running:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Simulated and running simulations",
-                    "There are simulations that use request settings, "
-                    "and either have been simulated or are currently running."
-                    "\nIf you save changes, the running simulations "
-                    "will be stopped, and the result files of the simulated "
-                    "and stopped simulations are deleted. This also "
-                    "affects possible optimization.\n\nDo you want to "
-                    "save changes anyway?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    return False
-                else:
-                    # Stop simulations
-                    df.req_settings_stop(self)
-                    df.req_settings_optim_update(self, optimization_running)
-
-                    df.reg_settings_del_sims(self, simulations_run)
-
-                    df.req_settings_optim_update(self, optimization_run)
-
-            elif simulations_running:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Simulations running",
-                    "There are simulations running that use request "
-                    "settings.\nIf you save changes, the running "
-                    "simulations will be stopped, and their result files "
-                    "deleted. This also affects possible running "
-                    "optimization.\n\nDo you want to save changes anyway?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    return False
-                else:
-                    # Stop simulations
-                    df.req_settings_stop(self)
-
-            elif simulations_run:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Simulated simulations",
-                    "There are simulations that use request settings, "
-                    "and have been simulated.\nIf you save changes,"
-                    " the result files of the simulated simulations are "
-                    "deleted. This also affects possible "
-                    "optimization.\n\nDo you want to save changes anyway?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    return False
-                else:
-                    df.reg_settings_del_sims(self, simulations_run)
-
-                    tmp_sims = copy.copy(optimization_running)
-                    df.req_settings_optim_update(self, tmp_sims)
-
-                    for elem_sim in optimization_run:
-                        df.tab_del(self, elem_sim)
-
-            elif optimization_running:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Optimization running",
-                    "There are optimizations running that use request "
-                    "settings.\nIf you save changes, the running "
-                    "optimizations will be stopped, and their result files "
-                    "deleted.\n\nDo you want to save changes anyway?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    return False
-                else:
-                    tmp_sims = copy.copy(optimization_running)
-                    df.req_settings_optim_update(self, tmp_sims)
-
-            elif optimization_run:
-                reply = QtWidgets.QMessageBox.question(
-                    self, "Optimized results",
-                    "There are optimizations done that use request "
-                    "settings.\nIf you save changes, their result files will be"
-                    " deleted.\n\nDo you want to save changes anyway?",
-                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-                if reply == QtWidgets.QMessageBox.No or reply == \
-                        QtWidgets.QMessageBox.Cancel:
-                    return False
-                else:
-                    tmp_sims = copy.copy(optimization_run)
-                    df.req_settings_optim_update(self, tmp_sims)
+            if not df.delete_element_simulations(self, None, self.request,
+                                                 msg_str="request settings"):
+                return False
 
         try:
             self.measurement_settings_widget.update_settings()
@@ -426,8 +329,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         simulations_run = []
         for sample in self.request.samples.samples:
             for simulation in sample.simulations.simulations.values():
-                for elem_sim in simulation.element_simulations:
-                    if elem_sim.simulations_done and \
-                       elem_sim.use_default_settings:
-                        simulations_run.append(elem_sim)
+                if simulation.use_request_settings:
+                    simulations_run.extend(
+                        simulation.get_finished_simulations())
         return simulations_run

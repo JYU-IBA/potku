@@ -38,6 +38,7 @@ import time
 
 from pathlib import Path
 
+from modules.base import ElementSimulationContainer
 from modules.detector import Detector
 from modules.element import Element
 from modules.element_simulation import ElementSimulation
@@ -49,7 +50,7 @@ from modules.target import Target
 from modules.recoil_element import RecoilElement
 
 
-class Request:
+class Request(ElementSimulationContainer):
     """Request class to handle all measurements.
     """
 
@@ -549,7 +550,14 @@ class Request:
 
         logger.addHandler(requestlog)
 
-    def simulations_running(self):
+    def _get_simulations_using_request_settings(self):
+        return list(
+            sim for sample in self.samples.samples
+            for sim in sample.simulations.simulations.values()
+            if sim.use_request_settings
+        )
+
+    def get_running_simulations(self):
         """
         Check whether there are any simulations running that use request
         settings.
@@ -557,33 +565,31 @@ class Request:
         Return:
             True or False.
         """
-        ret = False
-        if self.running_simulations:
-            ret = True
-        return ret
+        # Return a shallow copy
+        return list(self.running_simulations)
 
-    def optimization_running(self):
+    def get_running_optimizations(self):
         ret = []
-        for sample in self.samples.samples:
-            for simulation in sample.simulations.simulations.values():
-                for elem_sim in simulation.element_simulations:
-                    if elem_sim.optimization_running and \
-                            elem_sim.use_default_settings:
-                        ret.append(elem_sim)
+        for sim in self._get_simulations_using_request_settings():
+            for elem_sim in sim.element_simulations:
+                if elem_sim.optimization_running:
+                    ret.append(elem_sim)
         return ret
 
-    def running_simulations_by_seed(self, seed):
-        """
-        Find if there are any running simulations with the given seed number.
+    def get_finished_simulations(self):
+        return list(
+            elem_sim for sim in self._get_simulations_using_request_settings()
+            for elem_sim in sim.element_simulations
+            if elem_sim.simulations_done
+        )
 
-        Args:
-             seed: Seed number.
-
-        Return:
-            List of running element simulations.
-        """
-        running_simulations = []
-        for elem_sim in self.running_simulations:
-            if seed in elem_sim.mcerd_objects.keys():
-                running_simulations.append(elem_sim)
-        return running_simulations
+    def get_finished_optimizations(self):
+        return list(
+            elem_sim for sim in self._get_simulations_using_request_settings()
+            # TODO better way to determine if an optimization has been
+            #      done. ElementSimulation should not have a direct
+            #      reference to a widget
+            for elem_sim in sim.element_simulations
+            if elem_sim.optimization_widget is not None and
+            not elem_sim.optimization_running
+        )

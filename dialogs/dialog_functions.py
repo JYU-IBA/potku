@@ -37,6 +37,7 @@ import modules.general_functions as gf
 
 from pathlib import Path
 
+from modules.base import ElementSimulationContainer
 from modules.element import Element
 from modules.detector import Detector
 
@@ -398,7 +399,8 @@ def _get_confirmation(qdialog, **kwargs):
     return reply == QtWidgets.QMessageBox.Yes
 
 
-def delete_element_simulations(qdialog, tab, simulation,
+def delete_element_simulations(qdialog, tab,
+                               container: ElementSimulationContainer,
                                element_simulation=None, msg_str="settings"):
     """Deletes running and finished simulations if given confirmation by
     the user.
@@ -407,7 +409,7 @@ def delete_element_simulations(qdialog, tab, simulation,
         True if simulations were deleted, False otherwise.
     """
     # TODO add ability to start a new simulation instead of deleting old one
-    all_sims = simulation.get_active_simulations()
+    all_sims = container.get_active_simulations()
     if element_simulation is not None:
         for elem_sim_list in all_sims:
             elem_sim_list[:] = [elem_sim for elem_sim in elem_sim_list if
@@ -425,11 +427,20 @@ def delete_element_simulations(qdialog, tab, simulation,
         # TODO remove reference to GUI element from RecoilElement
         elem_sim.recoil_elements[0].widgets[0].parent.full_edit_on = True
 
+        if tab is None:
+            tab = get_related_tab(qdialog, elem_sim)
         tab.del_widget(elem_sim.optimization_widget)
 
-    update_tab(tab)
+    if tab is not None:
+        update_tab(tab)
 
     return True
+
+
+def get_related_tab(qdialog, elem_sim):
+    tab_id = elem_sim.simulation.tab_id
+    if tab_id != -1:
+        return qdialog.find_related_tab(tab_id)
 
 
 def set_up_side_panel(qwidget, key, side):

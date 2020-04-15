@@ -141,7 +141,7 @@ class Nsgaii:
             return False
 
         parser = CSVParser((0, float), (1, float))
-        self.measured_espe = list(
+        self.measured_espe = list(      # FIXME can raise OSERROR
             parser.parse_file(self.hist_file, method="row"))
 
         # Previous erd files are used as the starting point so combine them
