@@ -108,7 +108,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.profile_settings_widget = ProfileSettingsWidget(
             self.request.default_measurement)
         self.tabs.addTab(self.profile_settings_widget, "Profile")
-        self.__close = True
 
         self.tabs.currentChanged.connect(self.__check_for_red)
 
@@ -130,8 +129,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         saves them to default settings file.
         """
         try:
-            self.__update_settings()
-            if self.__close:
+            can_close = self.__update_settings()
+            if can_close:
                 self.close()
         except TypeError:
             # Message has already been shown in update_settings()
@@ -162,6 +161,16 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             return True
         return False
 
+    def other_values_changed(self):
+        """Checks whether values that do not require resetting simulations
+        have been changed.
+        """
+        return not all((
+            not self.measurement_settings_widget.other_values_changed(),
+            not self.detector_settings_widget.other_values_changed(),
+            not self.profile_settings_widget.values_changed()
+        ))
+
     def __update_settings(self):
         """Reads values from Request Settings dialog and updates them in
         default objects.
@@ -174,34 +183,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                            "element.",
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
-            self.__close = False
-            return
-        only_seed_changed = False
-        only_unnotified_changed = False  # If only values that can be changed
-        # without running simulations again are changed
-        # Check that values have been changed
-        if not self.values_changed():
-            # Check if only those values have been changed that don't require
-            #  rerunning simulations
-            if self.simulation_settings_widget.seedSpinBox.value() != \
-                    self.request.default_element_simulation.seed_number:
-                only_seed_changed = True
-            if self.measurement_settings_widget.other_values_changed():
-                only_unnotified_changed = True
-            elif self.detector_settings_widget.other_values_changed():
-                only_unnotified_changed = True
-            # Profile settings
-            elif self.profile_settings_widget.values_changed():
-                only_unnotified_changed = True
-
-            if not only_unnotified_changed and not only_seed_changed:
-                self.__close = True
-                return
+            return False
 
         # Check the target and detector angles
         if not self.measurement_settings_widget.check_angles():
-            self.__close = False
-            return
+            return False
 
         if not self.tabs.currentWidget().fields_are_valid:
             QtWidgets.QMessageBox.critical(self, "Warning",
@@ -211,125 +197,124 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                            "indicated in red.",
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
-            self.__close = False
-            return
+            return False
 
-        # Lists of old and current simulations and optimizations
-        simulations_run = self.check_if_simulations_run()
-        simulations_running = self.request.simulations_running()
-        optimization_running = self.request.optimization_running()
-        optimization_run = self.check_if_optimization_run()
+        if not self.values_changed():
+            # Check if only those values have been changed that don't require
+            #  rerunning simulations
+            if not self.other_values_changed():
+                return True
 
-        if simulations_run and simulations_running and \
-                not only_seed_changed and not only_unnotified_changed:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Simulated and running simulations",
-                "There are simulations that use request settings, "
-                "and either have been simulated or are currently running."
-                "\nIf you save changes, the running simulations "
-                "will be stopped, and the result files of the simulated "
-                "and stopped simulations are deleted. This also "
-                "affects possible optimization.\n\nDo you want to "
-                "save changes anyway?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                self.__close = False
-                return
-            else:
-                # Stop simulations
-                df.req_settings_stop(self)
-                df.req_settings_optim_update(self, optimization_running)
+        else:
+            # TODO move this to dialog functions
+            # Lists of old and current simulations and optimizations
+            simulations_run = self.check_if_simulations_run()
+            simulations_running = self.request.simulations_running()
+            optimization_running = self.request.optimization_running()
+            optimization_run = self.check_if_optimization_run()
 
-                df.reg_settings_del_sims(self, simulations_run)
+            if simulations_run and simulations_running:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Simulated and running simulations",
+                    "There are simulations that use request settings, "
+                    "and either have been simulated or are currently running."
+                    "\nIf you save changes, the running simulations "
+                    "will be stopped, and the result files of the simulated "
+                    "and stopped simulations are deleted. This also "
+                    "affects possible optimization.\n\nDo you want to "
+                    "save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    return False
+                else:
+                    # Stop simulations
+                    df.req_settings_stop(self)
+                    df.req_settings_optim_update(self, optimization_running)
 
-                df.req_settings_optim_update(self, optimization_run)
+                    df.reg_settings_del_sims(self, simulations_run)
 
-        elif simulations_running and not only_seed_changed and \
-                not only_unnotified_changed:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Simulations running",
-                "There are simulations running that use request "
-                "settings.\nIf you save changes, the running "
-                "simulations will be stopped, and their result files "
-                "deleted. This also affects possible running "
-                "optimization.\n\nDo you want to save changes anyway?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                self.__close = False
-                return
-            else:
-                # Stop simulations
-                df.req_settings_stop(self)
+                    df.req_settings_optim_update(self, optimization_run)
 
-        elif simulations_run and not only_seed_changed and \
-                not only_unnotified_changed:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Simulated simulations",
-                "There are simulations that use request settings, "
-                "and have been simulated.\nIf you save changes,"
-                " the result files of the simulated simulations are "
-                "deleted. This also affects possible "
-                "optimization.\n\nDo you want to save changes anyway?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                self.__close = False
-                return
-            else:
-                df.reg_settings_del_sims(self, simulations_run)
+            elif simulations_running:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Simulations running",
+                    "There are simulations running that use request "
+                    "settings.\nIf you save changes, the running "
+                    "simulations will be stopped, and their result files "
+                    "deleted. This also affects possible running "
+                    "optimization.\n\nDo you want to save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    return False
+                else:
+                    # Stop simulations
+                    df.req_settings_stop(self)
 
-                tmp_sims = copy.copy(optimization_running)
-                df.req_settings_optim_update(self, tmp_sims)
+            elif simulations_run:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Simulated simulations",
+                    "There are simulations that use request settings, "
+                    "and have been simulated.\nIf you save changes,"
+                    " the result files of the simulated simulations are "
+                    "deleted. This also affects possible "
+                    "optimization.\n\nDo you want to save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    return False
+                else:
+                    df.reg_settings_del_sims(self, simulations_run)
 
-                for elem_sim in optimization_run:
-                    df.tab_del(self, elem_sim)
+                    tmp_sims = copy.copy(optimization_running)
+                    df.req_settings_optim_update(self, tmp_sims)
 
-        elif optimization_running and not only_unnotified_changed:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Optimization running",
-                "There are optimizations running that use request "
-                "settings.\nIf you save changes, the running "
-                "optimizations will be stopped, and their result files "
-                "deleted.\n\nDo you want to save changes anyway?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                self.__close = False
-                return
-            else:
-                tmp_sims = copy.copy(optimization_running)
-                df.req_settings_optim_update(self, tmp_sims)
+                    for elem_sim in optimization_run:
+                        df.tab_del(self, elem_sim)
 
-        elif optimization_run and not only_unnotified_changed:
-            reply = QtWidgets.QMessageBox.question(
-                self, "Optimized results",
-                "There are optimizations done that use request "
-                "settings.\nIf you save changes, their result files will be"
-                " deleted.\n\nDo you want to save changes anyway?",
-                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
-            if reply == QtWidgets.QMessageBox.No or reply == \
-                    QtWidgets.QMessageBox.Cancel:
-                self.__close = False
-                return
-            else:
-                tmp_sims = copy.copy(optimization_run)
-                df.req_settings_optim_update(self, tmp_sims)
+            elif optimization_running:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Optimization running",
+                    "There are optimizations running that use request "
+                    "settings.\nIf you save changes, the running "
+                    "optimizations will be stopped, and their result files "
+                    "deleted.\n\nDo you want to save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    return False
+                else:
+                    tmp_sims = copy.copy(optimization_running)
+                    df.req_settings_optim_update(self, tmp_sims)
+
+            elif optimization_run:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Optimized results",
+                    "There are optimizations done that use request "
+                    "settings.\nIf you save changes, their result files will be"
+                    " deleted.\n\nDo you want to save changes anyway?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                    QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+                if reply == QtWidgets.QMessageBox.No or reply == \
+                        QtWidgets.QMessageBox.Cancel:
+                    return False
+                else:
+                    tmp_sims = copy.copy(optimization_run)
+                    df.req_settings_optim_update(self, tmp_sims)
 
         try:
             self.measurement_settings_widget.update_settings()
             self.profile_settings_widget.update_settings()
 
-            default_measurement_settings_file = os.path.join(
+            default_measurement_settings_file = Path(
                 self.request.default_measurement.directory,
                 "Default.measurement")
-            self.request.default_measurement.profile_to_file(os.path.join(
+            self.request.default_measurement.profile_to_file(Path(
                 self.request.default_measurement.directory,
                 "Default.profile"))
             self.request.default_measurement.run.to_file(
@@ -345,14 +330,14 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             # Simulation settings
             self.simulation_settings_widget.update_settings()
 
-            self.request.default_detector.to_file(os.path.join(
+            self.request.default_detector.to_file(Path(
                 self.request.default_detector_folder, "Default.detector"),
                 default_measurement_settings_file)
 
-            self.request.default_simulation.to_file(os.path.join(
+            self.request.default_simulation.to_file(Path(
                 self.request.default_folder, "Default.simulation"))
             self.request.default_element_simulation.to_file(
-                os.path.join(self.request.default_folder, "Default.mcsimu"))
+                Path(self.request.default_folder, "Default.mcsimu"))
 
             # Update all element simulations that use request settings to
             #  have the correct simulation type
@@ -375,7 +360,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                 for recoil in elem_sim.recoil_elements:
                                     try:
                                         recoil.type = rec_type
-                                        path_to_rec = os.path.join(
+                                        path_to_rec = Path(
                                             elem_sim.directory,
                                             recoil.prefix + "-" +
                                             recoil.name +
@@ -384,13 +369,13 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                     except OSError:
                                         pass
                                     recoil.to_file(elem_sim.directory)
-                                fp = os.path.join(elem_sim.directory,
-                                                  elem_sim.name_prefix +
-                                                  "-" + elem_sim.name +
-                                                  ".mcsimu")
+                                fp = Path(elem_sim.directory,
+                                          elem_sim.name_prefix +
+                                          "-" + elem_sim.name +
+                                          ".mcsimu")
                                 elem_sim.to_file(fp)
 
-            self.__close = True
+            return True
         except TypeError:
             # TODO: Make a better warning text.
             QtWidgets.QMessageBox.question(self, "Warning",
