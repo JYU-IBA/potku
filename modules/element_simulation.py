@@ -702,7 +702,7 @@ class ElementSimulation(Observable):
             thread.daemon = True
             thread.start()
 
-            if self.use_default_settings and not self.simulation.detector:
+            if self.simulation.use_request_settings:
                 # TODO instead of having these lists of running simulations
                 #      simulation object could just iterate over its element
                 #      simulations and check the boolean values to determine
