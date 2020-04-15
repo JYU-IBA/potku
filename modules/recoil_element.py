@@ -67,7 +67,11 @@ class RecoilElement:
         self.prefix = element.get_prefix()
         self.description = description
         self.type = rec_type
+
         # This is multiplied by 1e22
+        # Note: reference density should just be a single value, not two (i.e.
+        # reference_density and multiplier). Changing this would however cause
+        # issues with backwards compatibility so leave it as it is for now.
         self.reference_density = reference_density
         self.multiplier = multiplier
         self.channel_width = channel_width
@@ -417,12 +421,14 @@ class RecoilElement:
         #  of files when the simulation type is changed.
         recoil_file_path = fp.get_recoil_file_path(self, simulation_folder)
 
+        timestamp = time.time()
+
         obj = {
             "name": self.name,
             "description": self.description,
             "modification_time": time.strftime("%c %z %Z", time.localtime(
-                time.time())),
-            "modification_time_unix": time.time(),
+                timestamp)),
+            "modification_time_unix": timestamp,
             "simulation_type": self.type,
             "element":  self.element.get_prefix(),
             "reference_density": self.reference_density,

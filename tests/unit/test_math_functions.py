@@ -429,5 +429,19 @@ class TestPropertyBased(unittest.TestCase):
                              list(range_function(zipped, **kwargs)))
 
 
+class TestMisc(unittest.TestCase):
+    def test_split_scientific_notation(self):
+        self.assertEqual((2, 1e10), mf.split_scientific_notation(2e10))
+        self.assertEqual((3.123, 1e-11), mf.split_scientific_notation(
+            3.123e-11))
+        self.assertEqual((4.321, 1e14), mf.split_scientific_notation(432.1e+12))
+        self.assertEqual((5, 1e13), mf.split_scientific_notation(5E13))
+
+        self.assertEqual((2, 1e0), mf.split_scientific_notation(2))
+
+        self.assertRaises(ValueError,
+                          lambda: mf.split_scientific_notation("2e2e2"))
+
+
 if __name__ == "__main__":
     unittest.main()

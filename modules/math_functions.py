@@ -291,3 +291,13 @@ def calculate_area(line1, line2=None):
 
     polygon = Polygon(polygon_points)
     return polygon.area
+
+
+def split_scientific_notation(x):
+    """Formulates the given number x into scientific notation and returns
+    the value part and the multiplier part as separate floats.
+    """
+    d = float(x)
+    sn = "%e" % d
+    val, multi = sn.split("e")
+    return float(val), float(f"1e{multi}")

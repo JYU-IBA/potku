@@ -31,6 +31,7 @@ __version__ = "2.0"
 import matplotlib
 import os
 
+import modules.math_functions as mf
 import modules.general_functions as gf
 import dialogs.dialog_functions as df
 import widgets.binding as bnd
@@ -615,6 +616,12 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                                   self.current_element_simulation)
         if dialog.isOk:
             new_values = dialog.get_properties()
+            # reference density is split into value part and multiplier part
+            # to maintain backwards compatibility.
+            ref_dens, multi = mf.split_scientific_notation(
+                new_values["reference_density"])
+            new_values["reference_density"] = ref_dens
+            new_values["multiplier"] = multi
             try:
                 old_recoil_name = self.current_recoil_element.name
                 self.current_element_simulation.update_recoil_element(
@@ -1018,7 +1025,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             "Name: " + self.current_recoil_element.name)
         self.parent.referenceDensityLabel.setText(
             "Reference density: " + "{0:1.2e}".format(
-                self.current_recoil_element.reference_density) + " at./cm\xb3"
+                self.current_recoil_element.reference_density *
+                self.current_recoil_element.multiplier) + " at./cm\xb3"
         )
 
         # Ypdate controls widget text
