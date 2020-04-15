@@ -185,13 +185,13 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             #  rerunning simulations
             if self.measurement_settings_widget.other_values_changed():
                 only_unnotified_changed = True
-            if self.simulation_settings_widget.seedSpinBox.value() != \
+            elif self.simulation_settings_widget.seedSpinBox.value() != \
                     self.request.default_element_simulation.seed_number:
                 only_seed_changed = True
-            if self.detector_settings_widget.other_values_changed():
+            elif self.detector_settings_widget.other_values_changed():
                 only_unnotified_changed = True
             # Profile settings
-            if self.profile_settings_widget.values_changed():
+            elif self.profile_settings_widget.values_changed():
                 only_unnotified_changed = True
 
             if not only_unnotified_changed and not only_seed_changed:

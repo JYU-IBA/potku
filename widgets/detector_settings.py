@@ -360,12 +360,12 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             return True
         if self.obj.angle_slope != self.angleSlopeLineEdit.text():
             return True
-        if self.obj.tof_offset != self.scientific_tof_offset.value_str:
+        if self.obj.tof_offset != self.scientific_tof_offset.get_value():
             return True
-        if self.obj.tof_slope != self.scientific_tof_slope.value_str:
+        if self.obj.tof_slope != self.scientific_tof_slope.get_value():
             return True
         if self.obj.virtual_size != (self.virtualSizeXSpinBox.value(),
-                                self.virtualSizeYSpinBox.value()):
+                                     self.virtualSizeYSpinBox.value()):
             return True
         if self.obj.timeres != self.timeResSpinBox.value():
             return True
