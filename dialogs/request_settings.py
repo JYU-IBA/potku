@@ -28,10 +28,10 @@ Dialog for the request settings
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
-             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n " \
+             "Juhani Sundell"
 __version__ = "2.0"
 
-import copy
 import os
 
 import dialogs.dialog_functions as df
@@ -77,7 +77,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
         # Connect buttons.
         self.OKButton.clicked.connect(self.update_and_close_settings)
-        self.applyButton.clicked.connect(self.update_settings)
+        self.applyButton.clicked.connect(self.__update_settings)
         self.cancelButton.clicked.connect(self.close)
 
         # Add measurement settings view to the settings view
@@ -128,22 +128,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         """Updates measuring settings values with the dialog's values and
         saves them to default settings file.
         """
-        try:
-            can_close = self.__update_settings()
-            if can_close:
-                self.close()
-        except TypeError:
-            # Message has already been shown in update_settings()
-            pass
-
-    def update_settings(self):
-        """Update values from dialog to every setting object.
-        """
-        try:
-            self.__update_settings()
-        except TypeError:
-            # Message is already displayed within private method.
-            pass
+        can_close = self.__update_settings()
+        if can_close:
+            self.close()
 
     def values_changed(self):
         """
@@ -206,8 +193,13 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                 return True
 
         else:
-            if not df.delete_element_simulations(self, None, self.request,
-                                                 msg_str="request settings"):
+            if not self.simulation_settings_widget.are_values_changed():
+                filter_func = lambda e: e.simulation.use_request_settings
+            else:
+                filter_func = lambda e: e.use_default_settings
+            if not df.delete_element_simulations(self, self.request,
+                                                 msg="request settings",
+                                                 filter_func=filter_func):
                 return False
 
         try:
@@ -255,10 +247,10 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                     rec_suffix_to_delete = ".rec"
 
                 for sample in self.request.samples.samples:
-                    for simulation in sample.simulations.simulations.\
-                            values():
+                    for simulation in sample.simulations.simulations.values():
                         for elem_sim in simulation.element_simulations:
                             if elem_sim.use_default_settings:
+                                # TODO change to sim.use_req_settings?
                                 elem_sim.simulation_type = current_sim_type
                                 for recoil in elem_sim.recoil_elements:
                                     try:

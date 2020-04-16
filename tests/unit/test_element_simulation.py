@@ -292,27 +292,34 @@ class TestElementSimulation(unittest.TestCase):
             "seed_number": 8
         }
         self.assertNotEqual(new_settings,
-                            self.elem_sim.get_simulation_settings())
-        self.elem_sim.set_simulation_settings(**new_settings)
+                            self.elem_sim.get_settings())
+        self.elem_sim.set_settings(**new_settings)
         self.assertEqual(new_settings,
-                         self.elem_sim.get_simulation_settings())
+                         self.elem_sim.get_settings())
 
     def test_bad_simulation_settings(self):
-        orig_settings = dict(self.elem_sim.get_simulation_settings())
+        orig_settings = dict(self.elem_sim.get_settings())
 
         # Using some unknown value does not change the settings
-        self.elem_sim.set_simulation_settings(foo=2)
-        self.assertEqual(orig_settings, self.elem_sim.get_simulation_settings())
+        self.elem_sim.set_settings(foo=2)
+        self.assertEqual(orig_settings, self.elem_sim.get_settings())
 
         # Other values can still be set if some values are unknown.
-        self.elem_sim.set_simulation_settings(foo=2,
-                                              number_of_ions_in_presimu=1234)
+        self.elem_sim.set_settings(foo=2,
+                                   number_of_ions_in_presimu=1234)
         self.assertEqual(1234, self.elem_sim.number_of_preions)
 
         # Values are not validated (yet)
-        self.elem_sim.set_simulation_settings(
+        self.elem_sim.set_settings(
             number_of_ions_in_presimu="i dunno, two maybe?")
         self.assertEqual("i dunno, two maybe?", self.elem_sim.number_of_preions)
+
+    def test_slots(self):
+        """Tests that __slots__ declaration works."""
+        def set_xyz():
+            self.elem_sim.xyz = "foo"
+
+        self.assertRaises(AttributeError, set_xyz)
 
 
 def write_line(file):

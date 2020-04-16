@@ -107,8 +107,6 @@ class Request(ElementSimulationContainer):
         self.create_default_target()
         self.create_default_simulation()
 
-        self.running_simulations = []
-
         # Set default Run, Detector and Target objects to Measurement
         self.default_measurement.run = self.default_run
         self.default_measurement.detector = self.default_detector
@@ -550,46 +548,32 @@ class Request(ElementSimulationContainer):
 
         logger.addHandler(requestlog)
 
-    def _get_simulations_using_request_settings(self):
-        return list(
+    def _get_simulations(self):
+        return (
             sim for sample in self.samples.samples
             for sim in sample.simulations.simulations.values()
-            if sim.use_request_settings
         )
 
     def get_running_simulations(self):
-        """
-        Check whether there are any simulations running that use request
-        settings.
-
-        Return:
-            True or False.
-        """
-        # Return a shallow copy
-        return list(self.running_simulations)
+        return list(
+            elem_sim for sim in self._get_simulations()
+            for elem_sim in sim.get_running_simulations()
+        )
 
     def get_running_optimizations(self):
-        ret = []
-        for sim in self._get_simulations_using_request_settings():
-            for elem_sim in sim.element_simulations:
-                if elem_sim.optimization_running:
-                    ret.append(elem_sim)
-        return ret
+        return list(
+            elem_sim for sim in self._get_simulations()
+            for elem_sim in sim.get_running_optimizations()
+        )
 
     def get_finished_simulations(self):
         return list(
-            elem_sim for sim in self._get_simulations_using_request_settings()
-            for elem_sim in sim.element_simulations
-            if elem_sim.simulations_done
+            elem_sim for sim in self._get_simulations()
+            for elem_sim in sim.get_finished_simulations()
         )
 
     def get_finished_optimizations(self):
         return list(
-            elem_sim for sim in self._get_simulations_using_request_settings()
-            # TODO better way to determine if an optimization has been
-            #      done. ElementSimulation should not have a direct
-            #      reference to a widget
-            for elem_sim in sim.element_simulations
-            if elem_sim.optimization_widget is not None and
-            not elem_sim.optimization_running
+            elem_sim for sim in self._get_simulations()
+            for elem_sim in sim.get_finished_optimizations()
         )

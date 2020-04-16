@@ -144,7 +144,7 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
             name=self.element_simulation.name,
             description=self.element_simulation.description,
             date=self.element_simulation.modification_time,
-            **self.element_simulation.get_simulation_settings())
+            **self.element_simulation.get_settings())
 
     def get_original_property_values(self):
         """Returns a dictionary of original property values.
@@ -203,4 +203,4 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
                     pass
                 recoil.to_file(self.element_simulation.directory)
 
-        self.element_simulation.set_simulation_settings(**params)
+        self.element_simulation.set_settings(**params)

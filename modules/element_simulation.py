@@ -43,6 +43,8 @@ from enum import Enum
 from pathlib import Path
 from collections import deque
 
+from modules.base import Serializable, AdjustableSettings, \
+    MCERDParameterContainer
 from modules.get_espe import GetEspe
 from modules.mcerd import MCERD
 from modules.observing import Observable
@@ -97,7 +99,8 @@ _SETTINGS_MAP = {
 }
 
 
-class ElementSimulation(Observable):
+class ElementSimulation(Observable, Serializable, AdjustableSettings,
+                        MCERDParameterContainer):
     """
     Class for handling the element specific simulation. Can have multiple
     MCERD objects, but only one GetEspe object.
@@ -166,7 +169,7 @@ class ElementSimulation(Observable):
                     a file when initialized
         """
         # Call Observable's initialization to set up observer list
-        super().__init__()
+        Observable.__init__(self)
 
         self.directory = directory
         self.request = request
@@ -698,34 +701,26 @@ class ElementSimulation(Observable):
 
         if not optimize:
             # Start updating observers on current progress
-            thread = threading.Thread(target=self.check_status)
+            thread = threading.Thread(target=self._check_status)
             thread.daemon = True
             thread.start()
-
-            if self.simulation.use_request_settings:
-                # TODO instead of having these lists of running simulations
-                #      simulation object could just iterate over its element
-                #      simulations and check the boolean values to determine
-                #      which simulations are running when needed
-                self.request.running_simulations.append(self)
-            else:
-                self.simulation.running_simulations.append(self)
         else:
             # Check the change between current and previous energy spectra (if
             # the spectra have been calculated)
             self.check_spectra_change(stop_p, check_t, optimize_recoil,
                                       check_max, check_min)
 
-    def get_simulation_settings(self):
-        """Returns simulation settings as a dict.
+    def get_settings(self):
+        """Returns simulation settings as a dict. Overrides base class function.
         """
         return {
             key: getattr(self, value)
             for key, value in _SETTINGS_MAP.items()
         }
 
-    def set_simulation_settings(self, **kwargs):
-        """Sets simulation settings based on the keyword arguments.
+    def set_settings(self, **kwargs):
+        """Sets simulation settings based on the keyword arguments. Overrides
+        base class function.
 
         Note that the keywords must be the ones used by MCERD, rather than
         the attribute names of the ElementSimulation object.
@@ -788,6 +783,21 @@ class ElementSimulation(Observable):
             "optimizing": self.optimization_running
         }
 
+    def is_simulation_running(self):
+        # TODO better method for determining this
+        return bool(self.mcerd_objects) and not self.is_optimization_running()
+
+    def is_simulation_finished(self):
+        return self.simulations_done
+
+    def is_optimization_running(self):
+        return self.optimization_running
+
+    def is_optimization_finished(self):
+        # TODO better method for determining this
+        return self.optimization_widget is not None and \
+               not self.is_optimization_running()
+
     def get_max_seed(self):
         """Returns maximum seed that has been used in simulations.
 
@@ -801,7 +811,7 @@ class ElementSimulation(Observable):
         """
         return list(f for f, _, _ in self.__erd_filehandler)
 
-    def check_status(self):
+    def _check_status(self):
         """Periodically checks the status of simulation and reports the status
         to observers.
         """
@@ -906,22 +916,6 @@ class ElementSimulation(Observable):
                         previous_avg = avg
                     self.__previous_espe = espe
 
-    def __remove(self):
-        """Removes the simulation from running simulations."""
-        # We do not particularly care in which list the simulation is, just
-        # get it removed (from both if necessary)
-        try:
-            self.request.running_simulations.remove(self)
-        except ValueError:
-            # simulation was not here, nothing to do
-            # TODO what type of Error might happen in race condition?
-            pass
-        try:
-            self.simulation.running_simulations.remove(self)
-        except ValueError:
-            # simulation was not here, nothing to do
-            pass
-
     def notify(self, sim):
         """
         Remove MCERD object from list that has finished.
@@ -940,7 +934,6 @@ class ElementSimulation(Observable):
         status = self.get_current_status()
 
         if status["state"] == SimulationState.DONE:
-            self.__remove()
 
             # FIXME ATM, logging from another thread than main thread will
             #       cause an error:
@@ -985,8 +978,6 @@ class ElementSimulation(Observable):
             pass
         for sim in list(self.mcerd_objects.keys()):
             del self.mcerd_objects[sim]
-
-        self.__remove()
 
         self.optimization_mcerd_running = False
         self.simulations_done = True
@@ -1079,10 +1070,9 @@ class ElementSimulation(Observable):
         """Returns the parameters for MCERD simulations.
         """
         if self.use_default_settings:
-            settings = self.request.default_element_simulation. \
-                get_simulation_settings()
+            settings = self.request.default_element_simulation.get_settings()
         else:
-            settings = self.get_simulation_settings()
+            settings = self.get_settings()
 
         if self.simulation.use_request_settings:
             run = self.request.default_run

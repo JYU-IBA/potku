@@ -624,13 +624,12 @@ def delete_simulation_results(element_simulation, recoil_element):
     """
     files_to_delete = []
     for file in os.listdir(element_simulation.directory):
-        if file.startswith(recoil_element.prefix) and not "opt" in file:
+        if file.startswith(recoil_element.prefix) and "opt" not in file:
             if file.endswith(".recoil") or file.endswith("erd") or \
                     file.endswith(".simu") or file.endswith(".scatter"):
-                files_to_delete.append(os.path.join(
-                    element_simulation.directory, file))
+                files_to_delete.append(Path(element_simulation.directory, file))
     for f in files_to_delete:
-        os.remove(f)
+        os.remove(f)    # FIXME check for OSError
 
 
 def calculate_new_point(previous_point, new_x, next_point,
