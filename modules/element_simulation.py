@@ -329,7 +329,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             }
             self.update_recoil_element(recoil, values)
         self.recoil_elements.extend(self.optimization_recoils)
-        self.optimization_recoils.clear()
+        self.optimization_recoils = []
 
     def update_recoil_element(self, recoil_element, new_values):
         """Updates RecoilElement object with new values.
@@ -347,10 +347,11 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         for file in os.listdir(self.directory):
             if file.startswith(old_name) and \
                     (file.endswith(".rec") or file.endswith(".sct")):
-                filename_to_delete = file
+                try:
+                    os.remove(Path(self.directory, file))
+                except OSError:
+                    pass
                 break
-        if filename_to_delete is not None:
-            os.remove(Path(self.directory, filename_to_delete))
 
         recoil_element.to_file(self.directory)
 
@@ -1127,7 +1128,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 os.remove(path)
             except (OSError, FileNotFoundError):
                 pass
-        self.optimization_recoils.clear()
+        self.optimization_recoils = []
         self.optimization_widget = None
         self.optimization_running = False
         self.optimization_stopped = True
@@ -1248,7 +1249,8 @@ class ERDFileHandler:
         return sum(self.__get_atom_count_cached(file)
                    for file in self.__old_files)
 
-    def __get_atom_count(self, erd_file):
+    @staticmethod
+    def __get_atom_count(erd_file):
         """Returns the number of counted atoms in given ERD file.
         """
         return gf.count_lines_in_file(erd_file, check_file_exists=True)
@@ -1257,10 +1259,6 @@ class ERDFileHandler:
     def __get_atom_count_cached(self, erd_file):
         """Cached version of the atom counter. If the atoms in the
         ERD file have already been counted, a cached result is returned.
-
-        Cache is never cleared during the run time of the program so only
-        use this when you are sure that the atom count in a file does not
-        change anymore.
         """
         return self.__get_atom_count(erd_file)
 
@@ -1271,13 +1269,13 @@ class ERDFileHandler:
         # TODO check if the name of the RecoilElement has changed and update
         #   file references if necessary
         self.__old_files.update(self.__active_files)
-        self.__active_files.clear()
+        self.__active_files = {}
 
     def clear(self):
         """Removes existing ERD files from handler.
         """
-        self.__active_files.clear()
-        self.__old_files.clear()
+        self.__active_files = {}
+        self.__old_files = {}
         self.__get_atom_count_cached.cache_clear()
 
     def __len__(self):

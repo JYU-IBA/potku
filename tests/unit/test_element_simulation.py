@@ -24,13 +24,14 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Juhani Sundell"
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 import unittest
 import tempfile
 import os
 import time
 import platform
+import threading
 
 import modules.file_paths as fp
 import tests.mock_objects as mo
@@ -225,6 +226,54 @@ class TestErdFileHandler(unittest.TestCase):
 
         # Assert that tmp dir got deleted
         self.assertFalse(os.path.exists(tmp_dir))
+
+    def test_thread_safety(self):
+        """Tests that ErdFileHandler is thread safe."""
+        n = 10000
+        handler = ERDFileHandler([], self.elem_4he)
+
+        def adder():
+            for i in range(n):
+                handler.add_active_file(f"4He-Default.{i}.erd")
+
+        self.assert_runs_ok(adder, handler.get_active_atom_counts)
+        self.assertEqual(n, len(handler))
+
+        def updater():
+            time.sleep(0.01)
+            handler.update()
+
+        self.assert_runs_ok(handler.get_active_atom_counts, updater)
+        self.assertEqual(n, len(handler))
+
+        def clearer():
+            time.sleep(0.01)
+            handler.clear()
+
+        self.assert_runs_ok(handler.get_old_atom_counts, clearer)
+        self.assertEqual(0, len(handler))
+
+        # Add the files again and see if counting old atoms works when updating
+        adder()
+        self.assert_runs_ok(handler.get_old_atom_counts, updater)
+        self.assertEqual(n, len(handler))
+
+        clearer()
+        self.assertEqual(0, len(handler))
+
+        self.assert_runs_ok(adder, updater)
+        self.assertEqual(n, len(handler))
+
+    @staticmethod
+    def assert_runs_ok(func1, func2):
+        """Runs the func1 and func2 in different threads at the same time.
+        Raises RuntimeError if something goes wrong.
+        """
+        t = threading.Thread(target=func2)
+
+        t.start()
+        func1()
+        t.join()
 
 
 class TestElementSimulation(unittest.TestCase):

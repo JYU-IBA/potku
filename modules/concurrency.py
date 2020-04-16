@@ -25,11 +25,9 @@ Concurrency module provides helper functions and classes for asynchronous,
 multithreaded or multiprocessing operations.
 """
 __author__ = "Juhani Sundell"
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 import sys
-
-from threading import Lock
 
 
 class CancellationToken:
@@ -48,13 +46,11 @@ class CancellationToken:
         """Initializes a new CancellationToken.
         """
         self.__cancel = False
-        self.__lock = Lock()
 
     def request_cancellation(self):
-        """Requests cancellation."""
-        with self.__lock:
-            # Locking the flag might be a bit of an overkill due to GIL
-            self.__cancel = True
+        """Requests cancellation.
+        """
+        self.__cancel = True
 
     def is_cancellation_requested(self):
         """Whether cancellation has been requested.
