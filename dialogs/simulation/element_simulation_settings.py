@@ -135,10 +135,11 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
             else:
                 msg = "element specific settings"
 
+            filter_func = lambda e: e is self.element_simulation
+
             if not df.delete_element_simulations(
-                self, self.tab, simulation,
-                element_simulation=self.element_simulation,
-                msg_str=msg
+                self, simulation, msg=msg, tab=self.tab,
+                filter_func=filter_func
             ):
                 self.__close = False
                 return

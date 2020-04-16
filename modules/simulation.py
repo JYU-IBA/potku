@@ -35,11 +35,10 @@ import logging
 import os
 import sys
 import time
-import itertools
-import collections
 
 import modules.general_functions as gf
 
+from modules.base import ElementSimulationContainer
 from modules.detector import Detector
 from modules.element_simulation import ElementSimulation
 from modules.run import Run
@@ -230,7 +229,7 @@ class Simulations:
         self.simulations = remove_key(self.simulations, tab_id)
 
 
-class Simulation(Logger):
+class Simulation(Logger, ElementSimulationContainer):
     """
     A Simulation class that handles information about one Simulation.
     """
@@ -239,7 +238,7 @@ class Simulation(Logger):
                 "target", "element_simulations", \
                 "serial_number", "directory", "measurement_setting_file_name", \
                 "measurement_setting_file_description", \
-                "sample", "running_simulations", "use_request_settings"
+                "sample", "use_request_settings"
 
     DIRECTORY_PREFIX = "MC_simulation_"
 
@@ -308,7 +307,6 @@ class Simulation(Logger):
 
         self.directory, self.simulation_file = os.path.split(self.path)
         self.create_folder_structure()
-        self.running_simulations = []
 
         if save_on_creation:
             self.to_file(self.path)
@@ -430,54 +428,25 @@ class Simulation(Logger):
         self.set_loggers(self.directory, self.request.directory)
 
     def get_running_simulations(self):
-        """Returns a shallow copy of ElementSimulations that are running on
-        either simulation specific settings or request specific settings.
-        """
-        request_sims = (elem_sim for elem_sim in self.element_simulations
-                        if elem_sim in self.request.running_simulations)
-        return list(itertools.chain(request_sims, self.running_simulations))
-
-    def get_finished_simulations(self):
-        """Returns a list of ElementSimulations that have finished.
-        """
         return list(
             elem_sim for elem_sim in self.element_simulations
-            if elem_sim.simulations_done
+            if elem_sim.is_simulation_running()
+        )
+
+    def get_finished_simulations(self):
+        return list(
+            elem_sim for elem_sim in self.element_simulations
+            if elem_sim.is_simulation_finished()
         )
 
     def get_running_optimizations(self):
-        """Returns a list of ElementSimulations that have a running
-        optimization.
-        """
         return list(
             elem_sim for elem_sim in self.element_simulations
-            if elem_sim.optimization_running
+            if elem_sim.is_optimization_running()
         )
 
     def get_finished_optimizations(self):
-        """Returns a list of finished optimizations.
-        """
         return list(
             elem_sim for elem_sim in self.element_simulations
-            # TODO better way to determine if an optimization has been
-            #      done. ElementSimulation should not have a direct
-            #      reference to a widget
-            if elem_sim.optimization_widget is not None and
-            not elem_sim.optimization_running
-        )
-
-    def get_active_simulations(self):
-        """Returns a named tuple of all simulations that are either running
-        or have results.
-        """
-        simulations = collections.namedtuple(
-            "Simulations",
-            ("running_simulations", "finished_simulations",
-             "running_optimizations", "finished_optimizations"),
-        )
-        return simulations(
-            self.get_running_simulations(),
-            self.get_finished_simulations(),
-            self.get_running_optimizations(),
-            self.get_finished_optimizations()
+            if elem_sim.is_optimization_finished()
         )

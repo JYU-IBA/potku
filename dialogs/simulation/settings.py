@@ -176,8 +176,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             # delete previous or currently running simulation results (if those
             # exists)
             if not df.delete_element_simulations(
-                    self, self.tab, self.simulation,
-                    msg_str="simulation settings"):
+                    self, self.simulation, tab=self.tab,
+                    msg="simulation settings"):
                 self.__close = False
                 return
 

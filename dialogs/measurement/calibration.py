@@ -180,17 +180,13 @@ class CalibrationDialog(QtWidgets.QDialog):
         """Set calibration parameters to parent dialog's calibration parameters 
         fields.
         """
-        if self.parent_settings_widget:
-            self.parent_settings_widget.scientific_tof_slope\
-                .scientificLineEdit.\
-                setText(self.slopeLineEdit.text())
-            self.parent_settings_widget.scientific_tof_slope.value_str = \
-                self.slopeLineEdit.text()
-            self.parent_settings_widget.scientific_tof_offset\
-                .scientificLineEdit.\
-                setText(self.offsetLineEdit.text())
-            self.parent_settings_widget.scientific_tof_offset.value_str = \
-                self.offsetLineEdit.text()
+        if self.parent_settings_widget is not None:
+            self.parent_settings_widget.scientific_tof_slope.set_value(
+                float(self.slopeLineEdit.text())
+            )
+            self.parent_settings_widget.scientific_tof_offset.set_value(
+                float(self.offsetLineEdit.text())
+            )
             return True
         return False
 

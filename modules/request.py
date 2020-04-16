@@ -38,6 +38,7 @@ import time
 
 from pathlib import Path
 
+from modules.base import ElementSimulationContainer
 from modules.detector import Detector
 from modules.element import Element
 from modules.element_simulation import ElementSimulation
@@ -49,7 +50,7 @@ from modules.target import Target
 from modules.recoil_element import RecoilElement
 
 
-class Request:
+class Request(ElementSimulationContainer):
     """Request class to handle all measurements.
     """
 
@@ -105,8 +106,6 @@ class Request:
         self.create_default_measurement()
         self.create_default_target()
         self.create_default_simulation()
-
-        self.running_simulations = []
 
         # Set default Run, Detector and Target objects to Measurement
         self.default_measurement.run = self.default_run
@@ -549,41 +548,32 @@ class Request:
 
         logger.addHandler(requestlog)
 
-    def simulations_running(self):
-        """
-        Check whether there are any simulations running that use request
-        settings.
+    def _get_simulations(self):
+        return (
+            sim for sample in self.samples.samples
+            for sim in sample.simulations.simulations.values()
+        )
 
-        Return:
-            True or False.
-        """
-        ret = False
-        if self.running_simulations:
-            ret = True
-        return ret
+    def get_running_simulations(self):
+        return list(
+            elem_sim for sim in self._get_simulations()
+            for elem_sim in sim.get_running_simulations()
+        )
 
-    def optimization_running(self):
-        ret = []
-        for sample in self.samples.samples:
-            for simulation in sample.simulations.simulations.values():
-                for elem_sim in simulation.element_simulations:
-                    if elem_sim.optimization_running and \
-                            elem_sim.use_default_settings:
-                        ret.append(elem_sim)
-        return ret
+    def get_running_optimizations(self):
+        return list(
+            elem_sim for sim in self._get_simulations()
+            for elem_sim in sim.get_running_optimizations()
+        )
 
-    def running_simulations_by_seed(self, seed):
-        """
-        Find if there are any running simulations with the given seed number.
+    def get_finished_simulations(self):
+        return list(
+            elem_sim for sim in self._get_simulations()
+            for elem_sim in sim.get_finished_simulations()
+        )
 
-        Args:
-             seed: Seed number.
-
-        Return:
-            List of running element simulations.
-        """
-        running_simulations = []
-        for elem_sim in self.running_simulations:
-            if seed in elem_sim.mcerd_objects.keys():
-                running_simulations.append(elem_sim)
-        return running_simulations
+    def get_finished_optimizations(self):
+        return list(
+            elem_sim for sim in self._get_simulations()
+            for elem_sim in sim.get_finished_optimizations()
+        )

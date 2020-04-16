@@ -27,16 +27,14 @@ __author__ = "Juhani Sundell"
 __version__ = ""    # TODO
 
 import os
-import copy
 import itertools
 import collections
 
 import widgets.gui_utils as gutils
 
-import modules.general_functions as gf
-
 from pathlib import Path
 
+from modules.base import ElementSimulationContainer
 from modules.element import Element
 from modules.detector import Detector
 
@@ -222,75 +220,6 @@ def update_tab(tab):
     tab.energy_spectrum_widgets = []
 
 
-def req_settings_stop(qdialog):
-    tmp_sims = copy.copy(qdialog.request.running_simulations)
-    for elem_sim in tmp_sims:
-        if not elem_sim.optimization_running:
-            elem_sim.stop()
-
-            update_inner_recoils(qdialog, elem_sim)
-
-        else:
-            # Handle optimization
-            elem_sim.reset()
-
-            tab_del(qdialog, elem_sim)
-
-
-def req_settings_optim_update(qdialog, tmp_sims):
-    for elem_sim in tmp_sims:
-        elem_sim.optimization_stopped = True
-        elem_sim.optimization_running = False
-
-        tab_del(qdialog, elem_sim)
-
-
-def tab_del(qdialog, elem_sim):
-    tab_id = elem_sim.simulation.tab_id
-    if tab_id != -1:
-        tab = qdialog.find_related_tab(tab_id)
-        if tab:
-            tab.del_widget(elem_sim.optimization_widget)
-            elem_sim.simulations_done = False
-            # Handle optimization energy spectra
-
-            # TODO check that this is never None
-            # Delete energy spectra that use optimized recoils
-            for recoil in elem_sim.optimization_recoils:
-                delete_recoil_espe(tab, recoil.get_full_name())
-
-
-def reg_settings_del_sims(qdialog, simulations_run):
-    for elem_sim in simulations_run:
-        update_inner_recoils(qdialog, elem_sim)
-
-
-def update_inner_recoils(qdialog, elem_sim):
-    for recoil in elem_sim.recoil_elements:
-        # Delete files
-        gf.delete_simulation_results(elem_sim, recoil)
-    # Change full edit unlocked
-    if elem_sim.recoil_elements[0].widgets:
-        elem_sim.recoil_elements[0].widgets[0].parent.full_edit_on = True
-
-    elem_sim.simulations_done = False
-
-    # Find element simulation's tab
-    tab_id = elem_sim.simulation.tab_id
-    if tab_id != -1:
-        tab = qdialog.find_related_tab(tab_id)
-        if tab:
-            # Delete energy spectra that use recoil
-            for recoil in elem_sim.recoil_elements:
-                delete_recoil_espe(tab, recoil.get_full_name())
-
-    # Reset controls
-    if elem_sim.controls:
-        # TODO do not access controls via elem_sim. Use
-        #      observation.
-        elem_sim.controls.reset_controls()
-
-
 # TODO common base class for import dialogs
 
 
@@ -317,7 +246,7 @@ def add_imported_files_to_tree(qdialog, files):
         qdialog.treeWidget.addTopLevelItem(item)
 
 
-def _get_confirmation_msg(msg_str="settings",
+def _get_confirmation_msg(msg="settings",
                           finished_simulations=None,
                           running_simulations=None,
                           finished_optimizations=None,
@@ -332,11 +261,12 @@ def _get_confirmation_msg(msg_str="settings",
         namedtuple with message title and body if at least one of the keyword
         arguments is True. Otherwise returns None.
     """
-    msg = collections.namedtuple("Msg", ("title", "body"))
+    tpl = collections.namedtuple("MessageBoxText", ("title", "body"))
     if finished_simulations and running_simulations:
-        return msg("Simulated and running simulations",
-                   f"There are simulations that use the current {msg_str}, "
-                   "and either have been simulated or are currently running.\n"
+        return tpl("Simulated and running simulations",
+                   f"There are simulations that use the current {msg}, "
+                   "and either have been simulated or are currently "
+                   "running.\n"
                    "If you save changes, the running simulations "
                    "will be stopped, and the result files of the simulated "
                    "and stopped simulations are deleted. This also affects "
@@ -344,17 +274,17 @@ def _get_confirmation_msg(msg_str="settings",
                    "Do you want to save changes anyway?")
 
     if running_simulations:
-        return msg("Simulations running",
+        return tpl("Simulations running",
                    "There are simulations running that use the current "
-                   f"{msg_str}.\n"
+                   f"{msg}.\n"
                    "If you save changes, the running simulations will be "
                    "stopped, and their result files deleted. This also affects "
                    "possible optimization.\n\n"
                    "Do you want to save changes anyway?")
 
     if finished_simulations:
-        return msg("Finished simulations",
-                   f"There are simulations that use the current {msg_str}, "
+        return tpl("Finished simulations",
+                   f"There are simulations that use the current {msg}, "
                    "and have been simulated.\n"
                    "If you save changes, the result files of the simulated "
                    "simulations are deleted. This also affects possible "
@@ -362,17 +292,17 @@ def _get_confirmation_msg(msg_str="settings",
                    "Do you want to save changes anyway?")
 
     if running_optimizations:
-        return msg("Optimization running",
+        return tpl("Optimization running",
                    "There are optimizations running that use the current "
-                   f"{msg_str}.\n"
+                   f"{msg}.\n"
                    "If you save changes, the running optimizations will be "
                    "stopped, and their result files deleted.\n\n"
                    "Do you want to save changes anyway?")
 
     if finished_optimizations:
-        return msg("Optimization results",
+        return tpl("Optimization results",
                    "There are optimization results that use the current "
-                   f"{msg_str}.\n"
+                   f"{msg}.\n"
                    "If you save changes, result files will be deleted.\n\n"
                    "Do you want to save changes anyway?")
 
@@ -380,41 +310,63 @@ def _get_confirmation_msg(msg_str="settings",
     return None
 
 
-def _get_confirmation(qdialog, **kwargs):
+def _get_confirmation(qdialog, msg="settings", **kwargs):
     """Displays a MessageBox to user to get a confirmation on deleting
     existing simulations.
     """
-    msg = _get_confirmation_msg(**kwargs)
+    msg = _get_confirmation_msg(msg=msg, **kwargs)
     if msg is None:
         # No text to shown so there were no running or finished simulations.
         # Safe to return True.
         return True
 
-    reply = QtWidgets.QMessageBox.question(
-        qdialog, msg.title, msg.body,
+    msg_box = QtWidgets.QMessageBox(
+        QtWidgets.QMessageBox.Question, msg.title, msg.body,
         QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
-        QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+        QtWidgets.QMessageBox.Cancel, qdialog
+    )
+    msg_box.setDetailedText(_element_simulations_to_list(**kwargs))
 
-    return reply == QtWidgets.QMessageBox.Yes
+    return msg_box.exec_() == QtWidgets.QMessageBox.Yes
 
 
-def delete_element_simulations(qdialog, tab, simulation,
-                               element_simulation=None, msg_str="settings"):
+def _element_simulations_to_list(finished_simulations,
+                                 running_simulations,
+                                 finished_optimizations,
+                                 running_optimizations):
+    header = f"Affected simulations:"
+    # TODO sort these by sample and measurement and indicate which ones are
+    #  being used in optimizations
+    lst_items = "\n".join(
+        elem_sim.main_recoil.get_full_name() for elem_sim in itertools.chain(
+            finished_simulations, running_simulations, finished_optimizations,
+            running_optimizations))
+    return f"{header}\n{lst_items}"
+
+
+def delete_element_simulations(qdialog,
+                               container: ElementSimulationContainer,
+                               msg="settings", tab=None, filter_func=None):
     """Deletes running and finished simulations if given confirmation by
     the user.
+    
+    Args:
+        qdialog: TODO
+        container: TODO
+        msg: TODO
+        tab: TODO
+        filter_func: optional function to filter ElementSimulations
 
     Return:
         True if simulations were deleted, False otherwise.
     """
     # TODO add ability to start a new simulation instead of deleting old one
-    all_sims = simulation.get_active_simulations()
-    if element_simulation is not None:
+    all_sims = container.get_active_simulations()
+    if filter_func is not None:
         for elem_sim_list in all_sims:
-            elem_sim_list[:] = [elem_sim for elem_sim in elem_sim_list if
-                                elem_sim is element_simulation]
+            elem_sim_list[:] = list(filter(filter_func, elem_sim_list))
 
-    if not _get_confirmation(qdialog, msg_str=msg_str,
-                             **all_sims._asdict()):
+    if not _get_confirmation(qdialog, msg=msg, **all_sims._asdict()):
         return False
 
     # Reset simulations
@@ -425,11 +377,20 @@ def delete_element_simulations(qdialog, tab, simulation,
         # TODO remove reference to GUI element from RecoilElement
         elem_sim.recoil_elements[0].widgets[0].parent.full_edit_on = True
 
+        if tab is None:
+            tab = get_related_tab(qdialog, elem_sim)
         tab.del_widget(elem_sim.optimization_widget)
 
-    update_tab(tab)
+    if tab is not None:
+        update_tab(tab)
 
     return True
+
+
+def get_related_tab(qdialog, elem_sim):
+    tab_id = elem_sim.simulation.tab_id
+    if tab_id != -1:
+        return qdialog.find_related_tab(tab_id)
 
 
 def set_up_side_panel(qwidget, key, side):

@@ -231,9 +231,10 @@ class LayerPropertiesDialog(QtWidgets.QDialog, bnd.PropertyTrackingWidget,
             return
 
         if self.simulation is not None:
-            if not df.delete_element_simulations(self, self.tab,
+            if not df.delete_element_simulations(self,
                                                  self.simulation,
-                                                 msg_str="target"):
+                                                 tab=self.tab,
+                                                 msg="target"):
                 self.__close = False
                 return
 

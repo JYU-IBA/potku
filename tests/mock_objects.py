@@ -174,7 +174,6 @@ def get_request():
             self.default_element_simulation = get_element_simulation(
                 request=self)
             self.directory = Path(tempfile.gettempdir())
-            self.running_simulations = []
             self.default_run = get_run()
             self.default_target = get_target()
 
