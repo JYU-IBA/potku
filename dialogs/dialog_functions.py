@@ -24,11 +24,11 @@ along with this program (file named 'LICENCE').
 These functions mainly aim to remove code duplication in dialogs.
 """
 __author__ = "Juhani Sundell"
-__version__ = ""    # TODO
+__version__ = "2.0"
 
 import os
 import itertools
-import collections
+from collections import namedtuple, defaultdict
 
 import widgets.gui_utils as gutils
 
@@ -261,7 +261,7 @@ def _get_confirmation_msg(msg="settings",
         namedtuple with message title and body if at least one of the keyword
         arguments is True. Otherwise returns None.
     """
-    tpl = collections.namedtuple("MessageBoxText", ("title", "body"))
+    tpl = namedtuple("MessageBoxText", ("title", "body"))
     if finished_simulations and running_simulations:
         return tpl("Simulated and running simulations",
                    f"There are simulations that use the current {msg}, "
@@ -334,14 +334,32 @@ def _element_simulations_to_list(finished_simulations,
                                  running_simulations,
                                  finished_optimizations,
                                  running_optimizations):
+    """Formulates the given lists of ElementSimulations into a roughly csv
+    formatted string.
+    """
+    # Transform the lists into a nested dictionary to avoid duplicates
+    d = defaultdict(lambda: defaultdict(dict))
+    for elem_sim in itertools.chain(finished_simulations,
+                                    running_simulations,
+                                    finished_optimizations,
+                                    running_optimizations):
+        d[elem_sim.simulation.sample.name][elem_sim.simulation.name][
+            elem_sim.main_recoil.get_full_name()] = \
+            elem_sim.is_optimization_running() or \
+            elem_sim.is_optimization_finished()
+
+    # Transform the dictionary into CSV rows
+    lst = "SAMPLE\tSIMULATION\tRECOIL\n"
+    for sample, sims in d.items():
+        for sim, elem_sims in sims.items():
+            for elem_sim, b in elem_sims.items():
+                # Add * to indicate that the ElementSimulation is used in
+                # optimization
+                lst += f"{sample}\t{sim}\t\t{elem_sim}{'*' if b else ''}\n"
+
     header = f"Affected simulations:"
-    # TODO sort these by sample and measurement and indicate which ones are
-    #  being used in optimizations
-    lst_items = "\n".join(
-        elem_sim.main_recoil.get_full_name() for elem_sim in itertools.chain(
-            finished_simulations, running_simulations, finished_optimizations,
-            running_optimizations))
-    return f"{header}\n{lst_items}"
+    footer = f"Simulations marked with * are being used in optimization."
+    return f"{header}\n\n{lst}\n{footer}"
 
 
 def delete_element_simulations(qdialog,
