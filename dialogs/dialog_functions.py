@@ -393,11 +393,20 @@ def delete_element_simulations(qdialog,
 
         # Change full edit unlocked
         # TODO remove reference to GUI element from RecoilElement
-        elem_sim.recoil_elements[0].widgets[0].parent.full_edit_on = True
+        try:
+            elem_sim.recoil_elements[0].widgets[0].parent.full_edit_on = True
+        except IndexError:
+            # widget had not yet been created, nothing to do
+            pass
 
         if tab is None:
             tab = get_related_tab(qdialog, elem_sim)
-        tab.del_widget(elem_sim.optimization_widget)
+
+        try:
+            tab.del_widget(elem_sim.optimization_widget)
+        except AttributeError:
+            # tab is still None, nothing to do
+            pass
 
     if tab is not None:
         update_tab(tab)
