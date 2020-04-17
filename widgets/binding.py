@@ -22,7 +22,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Juhani Sundell"
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 import os
 import abc
@@ -60,6 +60,7 @@ _DEFAULT_GETTERS = {
     QtWidgets.QCheckBox: lambda qobj: qobj.isChecked(),
     QtWidgets.QLabel: lambda qobj: qobj.text(),
     QtWidgets.QPlainTextEdit: lambda qobj: qobj.toPlainText(),
+    QtWidgets.QPushButton: lambda qobj: qobj.text(),
     ScientificSpinBox: lambda qobj: qobj.get_value(),
     IsotopeSelectionWidget: lambda qobj: qobj.get_element()
 }
@@ -71,8 +72,9 @@ _DEFAULT_SETTERS = {
         txt, QtCore.Qt.MatchFixedString)),
     QtWidgets.QTextEdit: lambda qobj, txt: qobj.setText(txt),
     QtWidgets.QCheckBox: lambda qobj, b: qobj.setChecked(b),
-    QtWidgets.QLabel: lambda qobj, txt: qobj.setText(txt),
+    QtWidgets.QLabel: lambda qobj, txt: qobj.setText(str(txt)),
     QtWidgets.QPlainTextEdit: lambda qobj, txt: qobj.setPlainText(txt),
+    QtWidgets.QPushButton: lambda qobj, txt: qobj.setText(txt),
     ScientificSpinBox: lambda qobj, value: qobj.set_value(value),
     IsotopeSelectionWidget: lambda qobj, elem: qobj.set_element(elem)
 }

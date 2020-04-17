@@ -22,7 +22,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Juhani Sundell"
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 import unittest
 import sys
@@ -139,8 +139,8 @@ class TestBinding(unittest.TestCase):
         }, self.widget.get_properties())
 
         # Setting the not2way changes nothing as well as setting tim to
-        # unsuitable type
-        self.widget.set_properties(pla="foo", lab="bar", not2way=7,
+        # unsuitable type. Label does however convert values to string.
+        self.widget.set_properties(pla="foo", lab=4, not2way=7,
                                    tim="foo", sci=1.234e-6)
         self.assertEqual({
             "foo": 3,
@@ -149,7 +149,7 @@ class TestBinding(unittest.TestCase):
             "tim": 100,
             "che": True,
             "pla": "foo",
-            "lab": "bar",
+            "lab": "4",
             "not2way": 0,
             "sci": 1.234e-6
         }, self.widget.get_properties())

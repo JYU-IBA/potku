@@ -499,18 +499,26 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
               layout: Layout into which the foil widget is added.
               new_foil: New Foil object to be added.
         """
+        if self.tmp_foil_info:
+            prev_distance = self.tmp_foil_info[-1].distance
+        else:
+            prev_distance = 0.0
+
         if new_foil is None:
-            new_foil = CircularFoil()
-        foil_widget = FoilWidget(self)
-        self.tmp_foil_info.append(new_foil)
-        foil_widget.foilButton.setText(new_foil.name)
-        foil_widget.distanceDoubleSpinBox.setValue(0.0)
-        distance = new_foil.distance
-        foil_widget.distanceLabel.setText(str(distance))
+            new_foil = CircularFoil(distance=prev_distance)
+
+        foil_widget = FoilWidget(new_foil)
+        foil_widget.distance_from_previous = new_foil.distance - prev_distance
+
+        foil_widget.distanceDoubleSpinBox.valueChanged.connect(
+            self.calculate_distance)
+        foil_widget.foil_deletion.connect(self.delete_foil)
         foil_widget.foilButton.clicked.connect(self._open_foil_dialog)
         foil_widget.timingFoilCheckBox.stateChanged.connect(self._check_and_add)
-        self.detector_structure_widgets.append(foil_widget)
+
         layout.addWidget(foil_widget)
+        self.tmp_foil_info.append(new_foil)
+        self.detector_structure_widgets.append(foil_widget)
 
         if len(self.tof_foils) >= 2:
             foil_widget.timingFoilCheckBox.setEnabled(False)
@@ -531,12 +539,6 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             for index in self.obj.tof_foils:
                 if index == i:
                     foil_widget.timingFoilCheckBox.setChecked(True)
-            if i != 0:
-                distance = foils[i].distance - foils[i - 1].distance
-                foil_widget.distanceDoubleSpinBox.setValue(distance)
-            else:
-                foil_widget.distanceDoubleSpinBox.setValue(
-                    foils[i].distance)
         return layout
 
     def _check_and_add(self):
@@ -673,12 +675,11 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         Calculate the distances of the foils from the target.
         """
         distance = 0
-        for i in range(len(self.detector_structure_widgets)):
-            widget = self.detector_structure_widgets[i]
-            dist_to_add = widget.distanceDoubleSpinBox.value()
-            distance = distance + dist_to_add
-            widget.distanceLabel.setText(str(distance))
-            self.tmp_foil_info[i].distance = distance
+        for foil, widget in zip(self.tmp_foil_info,
+                                self.detector_structure_widgets):
+            distance += widget.distance_from_previous
+            widget.cumulative_distance = distance
+            foil.distance = distance
 
     def delete_foil(self, foil_widget):
         """
@@ -705,3 +706,4 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
 
         self.foils_layout.removeWidget(foil_widget)
         foil_widget.deleteLater()
+        self.calculate_distance()
