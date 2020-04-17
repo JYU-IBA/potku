@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>707</width>
+    <width>790</width>
     <height>190</height>
    </rect>
   </property>
@@ -300,7 +300,7 @@
          <item row="2" column="1">
           <widget class="QTimeEdit" name="minTimeEdit">
            <property name="currentSection">
-            <enum>QDateTimeEdit::MinuteSection</enum>
+            <enum>QDateTimeEdit::HourSection</enum>
            </property>
            <property name="displayFormat">
             <string>H.mm.ss</string>
@@ -310,7 +310,7 @@
          <item row="3" column="1">
           <widget class="QTimeEdit" name="maxTimeEdit">
            <property name="currentSection">
-            <enum>QDateTimeEdit::MinuteSection</enum>
+            <enum>QDateTimeEdit::HourSection</enum>
            </property>
            <property name="displayFormat">
             <string>H.mm.ss</string>
@@ -321,6 +321,20 @@
              <minute>10</minute>
              <second>0</second>
             </time>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="label_15">
+           <property name="text">
+            <string>Skip simulation</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <widget class="QCheckBox" name="skip_sim_chk_box">
+           <property name="text">
+            <string/>
            </property>
           </widget>
          </item>

@@ -56,7 +56,7 @@ class Nsgaii:
                  recoil_type="box", number_of_processes=1, cross_p=0.9, mut_p=1,
                  stop_percent=0.3, check_time=20, ch=0.025,
                  hist_file=None, dis_c=20,
-                 dis_m=20, check_max=900, check_min=0):
+                 dis_m=20, check_max=900, check_min=0, skip_simulation=False):
         """
         Initialize the NSGA-II algorithm with needed parameters and start
         running it.
@@ -87,6 +87,7 @@ class Nsgaii:
             dis_m: Distribution for mutation.
             check_max: Maximum time for running a simulation.
             check_min: Minimum time for running a simulation.
+            skip_simulation: whether simulation is skipped altogether
         """
         self.evaluations = gen * pop_size
         self.element_simulation = element_simulation  # Holds other needed
@@ -104,7 +105,7 @@ class Nsgaii:
 
         # MCERd specific parameters
         self.number_of_processes = number_of_processes
-        self.mcerd_run = False
+        self.mcerd_run = skip_simulation
         self.stop_percent = stop_percent
         self.check_time = check_time
         self.check_max = check_max
@@ -905,6 +906,9 @@ class Nsgaii:
             # Select group of parents (mating pool) by binary_tournament,
             # usually number of parents is half of population.
             pool_size = round(self.pop_size / 2)
+
+            # FIXME crashes here if skip_simulation has been selected and no
+            #   simulation results exist
             pool_ind = opt.tournament_allow_doubles(2, pool_size, fit)
             pop_sol, pop_obj = np.array(self.population[0]), \
                                np.array(self.population[1])

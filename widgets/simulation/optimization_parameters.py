@@ -85,6 +85,9 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
     """Abstract base class for recoil and fluence optimization parameter
     widgets.
     """
+    # TODO reorganize the input elements in the ui file (simulation,
+    #  nsga2 and problem parameters should be in their own categories)
+    # TODO disable simulation parameters when skip simulation is selected
     # Common properties
     gen = bnd.bind("generationSpinBox")
     pop_size = bnd.bind("populationSpinBox")
@@ -95,6 +98,7 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
     check_time = bnd.bind("timeSpinBox")
     check_max = bnd.bind("maxTimeEdit")
     check_min = bnd.bind("minTimeEdit")
+    skip_simulation = bnd.bind("skip_sim_chk_box")
 
     def __init__(self, ui_file, **kwargs):
         """Initializes a optimization parameter widget.
