@@ -85,9 +85,6 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
     """Abstract base class for recoil and fluence optimization parameter
     widgets.
     """
-    # TODO reorganize the input elements in the fluence widget
-    # TODO disable simulation parameters in fluence widget when skip simulation
-    #  is selected
     # TODO fix the layout so that the rows in different QLayoutForms match each
     #  other
     # Common properties
@@ -117,7 +114,17 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
         self.mutationProbDoubleSpinBox.setLocale(locale)
         self.percentDoubleSpinBox.setLocale(locale)
 
+        self.skip_sim_chk_box.stateChanged.connect(self.enable_sim_params)
         self.set_properties(**kwargs)
+
+    def enable_sim_params(self, *_):
+        """Either enables or disables simulation parameters depending on the
+        value of skip_simulation parameter.
+
+        Args:
+            *_: not used
+        """
+        self.simGroupBox.setEnabled(not self.skip_simulation)
 
 
 class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
@@ -157,19 +164,6 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
         self.lowerXDoubleSpinBox.setLocale(locale)
         self.upperYDoubleSpinBox.setLocale(locale)
         self.lowerYDoubleSpinBox.setLocale(locale)
-
-        self.skip_sim_chk_box: QtWidgets.QCheckBox
-        self.skip_sim_chk_box.stateChanged.connect(self.enable_sim_params)
-        self.enable_sim_params()
-
-    def enable_sim_params(self, *_):
-        """Either enables or disables simulation parameters depending on the
-        value of skip_simulation parameter.
-
-        Args:
-            *_: not used
-        """
-        self.simGroupBox.setEnabled(not self.skip_simulation)
 
 
 class OptimizationFluenceParameterWidget(OptimizationParameterWidget):

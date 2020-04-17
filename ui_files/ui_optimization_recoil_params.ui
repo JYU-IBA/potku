@@ -35,7 +35,7 @@
          <property name="title">
           <string>Recoil element</string>
          </property>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
             <x>10</x>
@@ -180,7 +180,7 @@
          <property name="title">
           <string>Optimization</string>
          </property>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
             <x>10</x>
@@ -287,7 +287,7 @@
            <property name="title">
             <string>Simulation</string>
            </property>
-           <widget class="QWidget" name="">
+           <widget class="QWidget" name="layoutWidget">
             <property name="geometry">
              <rect>
               <x>5</x>
@@ -300,7 +300,7 @@
              <item row="1" column="0">
               <widget class="QLabel" name="label_11">
                <property name="text">
-                <string>Simulation stopping percent</string>
+                <string>Stopping percent</string>
                </property>
               </widget>
              </item>
@@ -340,14 +340,14 @@
              <item row="3" column="0">
               <widget class="QLabel" name="label_13">
                <property name="text">
-                <string>Min. run time for simulation</string>
+                <string>Min. run time</string>
                </property>
               </widget>
              </item>
              <item row="4" column="0">
               <widget class="QLabel" name="label_14">
                <property name="text">
-                <string>Max. run time for simulation</string>
+                <string>Max. run time</string>
                </property>
               </widget>
              </item>
