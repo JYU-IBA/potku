@@ -26,9 +26,14 @@ along with this program (file named 'LICENCE').
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 
+import warnings
+
 from PyQt5 import QtWidgets
 
 from widgets.matplotlib.base import MatplotlibWidget
+
+warnings.warn("widgets.matplotlib.simulation.energy_spectrum module is "
+              "deprecated.", DeprecationWarning, stacklevel=2)
 
 
 class MatplotlibSimulationEnergySpectrumWidget(MatplotlibWidget):

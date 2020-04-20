@@ -236,8 +236,7 @@ def load_isotopes(symbol, combobox, current_isotope=None, show_std_mass=False):
     # TODO this function could be moved to gui_utils
     combobox.clear()
     # Sort isotopes based on their natural abundance
-    isotopes = Element.get_isotopes(symbol, include_st_mass=show_std_mass,
-                                    filter_unlikely=True)
+    isotopes = Element.get_isotopes(symbol, include_st_mass=show_std_mass)
 
     for idx, iso in enumerate(isotopes):
         if iso["element"].isotope is None:

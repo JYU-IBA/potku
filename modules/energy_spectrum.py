@@ -94,8 +94,8 @@ class EnergySpectrum:
         Return:
             Returns list of cut files' tof_list results.
         """
+        cut_dict = {}
         try:
-            cut_dict = {}
             save_output = self.__global_settings.is_es_output_saved()
             count = len(self.__cut_files)
             dirtyinteger = 0

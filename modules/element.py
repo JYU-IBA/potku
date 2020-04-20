@@ -39,7 +39,7 @@ class Element:
     """
     Element class that handles information about one element.
     """
-    def __init__(self, symbol, isotope=None, amount=0):
+    def __init__(self, symbol, isotope=None, amount=0.0):
         """Initializes an element object.
         Args:
               symbol: Two letter symbol of the element. E.g. 'He' for Helium.
@@ -160,12 +160,17 @@ class Element:
         return f"{round(self.isotope)}{self.symbol}"
 
     def get_mass(self):
+        """Returns the mass of the Element. If the element has no
+        defined isotope, standard mass is returned.
+        """
         if self.isotope:
             return masses.find_mass_of_isotope(self.symbol, self.isotope)
         else:
             return masses.get_standard_isotope(self.symbol)
 
     def get_st_mass(self):
+        """Returns the standard mass of the Element.
+        """
         return masses.get_standard_isotope(self.symbol)
 
     def get_most_common_isotope(self):
@@ -201,7 +206,22 @@ class Element:
         return "%0.2f %s" % (self.get_mass(), self.symbol)
 
     @classmethod
-    def get_isotopes(cls, symbol, include_st_mass=True, filter_unlikely=True):
+    def get_isotopes(cls, symbol, include_st_mass=True):
+        """Returns all isotopes of an element with given symbol. Isotopes are
+        returned as a list of dictionaries. Each dictionary contains an
+        Element object as well as natural abundance and mass values.
+
+        Args:
+            symbol: symbol of the element
+            include_st_mass: whether a standard mass option is included in
+                the returned list. If True, the first element in the list is
+                a dictionary that contains an Element with no isotope defined
+                and the mass value will be the same as standard mass for the
+                element.
+
+        Return:
+            list of dictionaries.
+        """
         isotopes = []
         if include_st_mass:
             st_mass = masses.get_standard_isotope(symbol)

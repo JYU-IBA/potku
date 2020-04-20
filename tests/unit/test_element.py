@@ -126,8 +126,7 @@ class TestElement(unittest.TestCase):
     def test_get_isotopes(self):
         self.assert_isotopes_match("H", (1, 2), include_st_mass=False)
         self.assert_isotopes_match("H", (None, 1, 2), include_st_mass=True)
-        self.assertEqual([], Element.get_isotopes("U", include_st_mass=True,
-                                                  filter_unlikely=True))
+        self.assertEqual([], Element.get_isotopes("U", include_st_mass=True))
 
     def assert_isotopes_match(self, symbol, isotopes, include_st_mass):
         isos = Element.get_isotopes(symbol, include_st_mass=include_st_mass)

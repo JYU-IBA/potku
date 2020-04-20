@@ -33,8 +33,6 @@ __version__ = "2.0"
 import logging
 import os
 import shutil
-import sys
-import itertools
 
 import dialogs.dialog_functions as df
 
@@ -528,6 +526,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             spectra_changed: pyqtSignal that indicates a change in energy
                 spectra.
         """
+        sbh = None
         try:
             super().__init__()
             uic.loadUi(Path("ui_files", "ui_energy_spectrum.ui"), self)
@@ -546,7 +545,6 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             title = "{0} - Bin Width: {1}".format(self.windowTitle(),
                                                   bin_width)
             self.setWindowTitle(title)
-            sbh = None
 
             if isinstance(self.parent.obj, Measurement):
                 self.measurement = self.parent.obj

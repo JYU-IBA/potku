@@ -25,8 +25,6 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-import os
-
 from pathlib import Path
 
 from modules.element_simulation import ElementSimulation

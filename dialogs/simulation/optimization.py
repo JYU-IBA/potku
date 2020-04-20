@@ -29,7 +29,6 @@ __version__ = "2.0"
 import os
 import threading
 import time
-import json
 
 import dialogs.dialog_functions as df
 import widgets.binding as bnd

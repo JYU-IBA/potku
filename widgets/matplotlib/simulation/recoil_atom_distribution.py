@@ -212,6 +212,8 @@ class ElementManager:
 
         Args:
             element_simulation: ElementSimulation to be added.
+            spectra_changed: pyqtSignal that is emitted when recoil element
+                distribution is changed, causing the spectra to change also.
         """
         main_element_widget = \
             ElementWidget(self.parent,
@@ -273,6 +275,7 @@ class ElementManager:
         main_element_widget = next((w for w in
                                    element_simulation.recoil_elements[0].widgets
                                    if isinstance(w, ElementWidget)), None)
+        rw = None
 
         for recoil in element_simulation.recoil_elements:
             # Check that the recoil does not already have a widget.
@@ -294,7 +297,8 @@ class ElementManager:
                         self.parent.recoil_vertical_layout.insertWidget(
                             i + 1, rw)
                     break
-        rw.radio_button.setChecked(True)
+        if rw is not None:
+            rw.radio_button.setChecked(True)
 
     def remove_element_simulation(self, element_simulation):
         """
@@ -1839,7 +1843,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         self.axes.set_xlim(start, end)
         self.fig.canvas.draw_idle()
 
-    def on_span_motion(self, xmin, xmax):
+    def on_span_motion(self):
         """
         Check if there are no dragged points before showing the span.
         """

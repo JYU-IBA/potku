@@ -46,6 +46,8 @@ class Foil:
 
     __slots__ = "name", "distance", "layers", "transmission"
 
+    TYPE = None
+
     def __init__(self, name, distance, layers, transmission):
         """ Initialize a detector foil.
 

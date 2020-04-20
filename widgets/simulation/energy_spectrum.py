@@ -29,6 +29,7 @@ __version__ = "2.0"
 
 import sys
 import logging
+import warnings
 
 from pathlib import Path
 from PyQt5 import QtWidgets
@@ -38,11 +39,15 @@ from widgets.matplotlib.simulation.energy_spectrum \
     import MatplotlibSimulationEnergySpectrumWidget
 
 
+warnings.warn("widget.simulation.energy_spectrum module is deprecated.",
+              DeprecationWarning, stacklevel=2)
+
+
 class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
     """ Simulation energy spectrum widget which is added to the simulation tab.
     """
 
-    def __init__(self, parent, data, statusbar=None):
+    def __init__(self, parent, data):
         """ Initialize the energy spectrum widget.
         Args:
             parent: Parent of the energy spectrum widget (SimulationTabWidget)
@@ -54,8 +59,6 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
             self.parent = parent
             self.icon_manager = parent.icon_manager
 
-            # TODO progress_bar is doing nothing in here
-            progress_bar = None
             title = str(self.windowTitle())
             self.setWindowTitle(title)
             self.simulation = parent.simulation
@@ -77,10 +80,6 @@ class SimulationEnergySpectrumWidget(QtWidgets.QWidget):
             logging.getLogger(self.simulation.name).error(msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
-        finally:
-            if progress_bar is not None:
-                statusbar.removeWidget(progress_bar)
-                progress_bar.hide()
 
     def save_spectra(self):
         """ Save the created energy spectra.
