@@ -168,6 +168,15 @@ class Element:
     def get_st_mass(self):
         return masses.get_standard_isotope(self.symbol)
 
+    def get_most_common_isotope(self):
+        """Returns the isotope number of the most common isotope of this type
+        of element.
+        """
+        isot = masses.get_most_common_isotope(self.symbol)
+        if isot is None:
+            return None
+        return isot[masses.NUMBER_KEY]
+
     def get_mcerd_params(self, return_amount=False):
         """Returns the element's mass or amount as a parameter for MCERD.
 
