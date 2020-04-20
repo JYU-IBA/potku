@@ -71,6 +71,17 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
             element_simulation: Element simulation that has the recoil element.
         """
         super().__init__()
+        self.recoil_element = recoil_element
+        self.element_simulation = element_simulation
+
+        self.tmp_color = QColor(self.recoil_element.color)
+        self.colormap = colormap
+
+        value = self.recoil_element.reference_density
+        multiplier = self.recoil_element.multiplier
+        self.scientific_spinbox = ScientificSpinBox(value, multiplier,
+                                                    0.01, 99.99e22)
+
         uic.loadUi(Path("ui_files", "ui_recoil_info_dialog.ui"), self)
 
         self.okPushButton.clicked.connect(self.__accept_settings)
@@ -85,10 +96,6 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
 
         self.name = recoil_element.name
         self.description = recoil_element.description
-        value = recoil_element.reference_density
-        multiplier = recoil_element.multiplier
-        self.scientific_spinbox = ScientificSpinBox(value, multiplier,
-                                                    0.01, 99.99e22)
         self.formLayout.insertRow(
             4,
             QtWidgets.QLabel(r"Reference density [at./cm<sup>3</sup>]:"),
@@ -99,20 +106,14 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         self.isOk = False
 
         self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
-            recoil_element.modification_time)))
+            self.recoil_element.modification_time)))
 
         title = f"Recoil element: " \
-                f"{recoil_element.element.get_prefix()}"
+                f"{self.recoil_element.element.get_prefix()}"
 
         self.infoGroupBox.setTitle(title)
 
-        self.recoil_element = recoil_element
-        self.element_simulation = element_simulation
-
-        self.tmp_color = QColor(self.recoil_element.color)
-        self.colormap = colormap
-
-        self.__set_color_button_color(recoil_element.element.symbol)
+        self.__set_color_button_color(self.recoil_element.element.symbol)
 
         self.exec_()
 
