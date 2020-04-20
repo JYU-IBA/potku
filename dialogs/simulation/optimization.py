@@ -91,10 +91,13 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
         self.simulation = simulation
         self.tab = parent
-        uic.loadUi(Path("ui_files", "ui_optimization_params.ui"), self)
 
         self._fluence_parameters = {}
         self._recoil_parameters = {}
+        self.current_mode = "recoil"
+
+        uic.loadUi(Path("ui_files", "ui_optimization_params.ui"), self)
+
         self.load_properties_from_file()
 
         self.parameters_widget = OptimizationRecoilParameterWidget(
@@ -113,7 +116,6 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         self.radios = QtWidgets.QButtonGroup(self)
         self.radios.buttonToggled[QtWidgets.QAbstractButton, bool].connect(
             self.choose_optimization_mode)
-        self.current_mode = "recoil"
         self.parametersLayout.addWidget(self.parameters_widget)
 
         self.radios.addButton(self.fluenceRadioButton)
