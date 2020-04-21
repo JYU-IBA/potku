@@ -43,9 +43,9 @@ import logging
 
 import modules.math_functions as mf
 import modules.comparison as comp
+import modules.general_functions as gf
 
 from functools import lru_cache
-from modules.general_functions import copy_cut_file_to_temp
 from modules.element import Element
 from modules.parsing import CSVParser
 
@@ -60,43 +60,30 @@ class DepthFileGenerator(object):
             file_paths: Full paths of cut files to be used.
             output_path: Full path of where depth files are to be created.
         """
-        self.__new_cut_files = []
-        for cut in file_paths:
-            new = copy_cut_file_to_temp(cut)
-            self.__new_cut_files.append(new)
+        self.__new_cut_files = [gf.copy_cut_file_to_temp(f) for f in file_paths]
+        self.__output_path = output_path
 
-        file_paths_str = ' '.join(self.__new_cut_files)
+    def get_command(self):
+        """Returns the command(s) used to run both tof_list and erd_depth.
+        """
+        if platform.system() == "Windows":
+            tof_bin = "tof_list.exe"
+            erd_bin = "erd_depth.exe"
+        else:
+            tof_bin = "./tof_list"
+            erd_bin = "./erd_depth"
 
-        self.bin_dir = '%s%s%s' % ('external', os.sep, 'Potku-bin')
-        self.command_win = 'cd ' + self.bin_dir + ' && tof_list.exe ' \
-                           + file_paths_str + ' | erd_depth.exe ' \
-                           + str(output_path) + ' tof.in'
-        self.command_linux = 'cd ' + self.bin_dir + ' && ./tof_list ' \
-                             + file_paths_str + ' | ./erd_depth ' \
-                             + str(output_path) + ' tof.in'
-        self.command_mac = 'cd ' + self.bin_dir + ' && ./tof_list ' \
-                           + file_paths_str + ' | ./erd_depth ' \
-                           + str(output_path) + ' tof.in'
+        return (tof_bin, *(str(f) for f in self.__new_cut_files)), \
+               (erd_bin, str(self.__output_path), "tof.in")
 
     def create_depth_files(self):
         """Generate the files necessary for drawing the depth profile.
         """
-        used_os = platform.system()
-
-        if used_os == 'Windows':
-            try:
-                # TODO tof_list may not always work properly. Log the error
-                #  instead of printing it.
-                res = subprocess.check_call(self.command_win, shell=True)
-                print("\n\n", res)
-            except Exception as e:
-                print("\n\n", e)
-        elif used_os == 'Linux':
-            subprocess.call(self.command_linux, shell=True)
-        elif used_os == 'Darwin':
-            subprocess.call(self.command_mac, shell=True)
-        else:
-            print('It appears we do no support your OS.')
+        bin_dir = gf.get_bin_dir()
+        tof, erd = self.get_command()
+        # Pipe the output from tof_list to erd_depth
+        tof_process = subprocess.Popen(tof, cwd=bin_dir, stdout=subprocess.PIPE)
+        subprocess.run(erd, cwd=bin_dir, stdin=tof_process.stdout)
 
 
 class DepthProfile:
