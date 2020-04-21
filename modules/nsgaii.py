@@ -40,6 +40,7 @@ from pathlib import Path
 from modules.recoil_element import RecoilElement
 from modules.point import Point
 from modules.parsing import CSVParser
+from modules.energy_spectrum import EnergySpectrum
 
 
 class Nsgaii:
@@ -51,11 +52,12 @@ class Nsgaii:
     2002), a paper by Seshadri (2006) and a Python implementation by Hust
     (https://github.com/ChengHust/NSGA-II).
     """
+
     def __init__(self, gen, element_simulation=None, pop_size=100, sol_size=5,
                  upper_limits=None, lower_limits=None, optimize_recoil=True,
                  recoil_type="box", number_of_processes=1, cross_p=0.9, mut_p=1,
                  stop_percent=0.3, check_time=20, ch=0.025,
-                 hist_file=None, dis_c=20,
+                 measurement=None, cut_file=None, dis_c=20,
                  dis_m=20, check_max=900, check_min=0, skip_simulation=False):
         """
         Initialize the NSGA-II algorithm with needed parameters and start
@@ -122,7 +124,8 @@ class Nsgaii:
         self.bit_length_x = 0
         self.bit_length_y = 0
 
-        self.hist_file = hist_file
+        self.measurement = measurement
+        self.cut_file = Path(cut_file)
 
         # Starting time of optimization
         self.__start = None
@@ -133,17 +136,33 @@ class Nsgaii:
         """Performs internal preparation before optimization begins. If this
         returns False, optimization should not begin.
         """
+        if self.measurement is None:
+            raise ValueError("Optimization could not be prepared, "
+                             "no measurement defined.")
+
+        self.element_simulation.optimized_fluence = None
+        self.element_simulation.calculated_solutions = 0
+        self.element_simulation.optimization_done = False
+        self.element_simulation.optimization_stopped = False
+        self.element_simulation.optimization_running = True
+
+        es = EnergySpectrum(self.measurement, [self.cut_file],
+                            self.channel_width, no_foil=True)
+
+        x = es.calculate_spectrum(no_foil=True)
+        # Add result files
+        hist_file = Path(self.measurement.directory_energy_spectra,
+                         f"{self.cut_file.stem}.no_foil.hist")
+
         # If mcerd run was stopped by closing the widget -> optimization
         # needs to stop
-        if self.element_simulation.optimization_stopped:
-            return False
-
-        if self.hist_file is None:
-            return False
+        # TODO
+        #if self.element_simulation.optimization_stopped:
+        #    return False
 
         parser = CSVParser((0, float), (1, float))
         self.measured_espe = list(      # FIXME can raise OSERROR
-            parser.parse_file(self.hist_file, method="row"))
+            parser.parse_file(hist_file, method="row"))
 
         # Previous erd files are used as the starting point so combine them
         # into a single file
@@ -168,8 +187,6 @@ class Nsgaii:
         # Find bit variable lengths if necessary
         if self.opt_recoil:
             self.find_bit_variable_lengths()
-
-        return True
 
     @classmethod
     def crowding_distance(cls, front_no, objective_values):
@@ -875,9 +892,7 @@ class Nsgaii:
             starting_solutions: First solutions used in optimization. If
                 None, initialize new solutions.
         """
-        if not self.__prepare_optimization():
-            # TODO could also raise error
-            return
+        self.__prepare_optimization()
 
         # TODO timer might be better choice as time.clock depends on the
         #  platform
@@ -1295,3 +1310,22 @@ def get_ys(y_lower, y_upper, pop_size, z=None, lower_limit_at_first=False):
             return np.array([low_limit, y_coords[0], y_coords[1],
                              y_coords[2], low_limit])
     return np.array([y_coords[0], y_coords[1], y_coords[2], low_limit])
+
+
+if __name__ == "__main__":
+    # for testing purposes
+    import tempfile
+    import tests.mock_objects as mo
+
+    cut_file = Path("..", "sample_data", "Ecaart-11-mini", "Tof-E_65-mini",
+                    "cuts", "Tof-E_65-mini.1H.0.cut")
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        m = mo.get_measurement()
+        e = mo.get_element_simulation()
+
+        # TODO crashes because of MockRequest
+        n = Nsgaii(10, cut_file=cut_file, measurement=m,
+                   element_simulation=e)
+
+        n.start_optimization()

@@ -289,12 +289,9 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             self.tab.del_widget(
                 self.tab.optimization_result_widget)
             self.tab.optimization_result_widget = None
-            self.element_simulation.optimized_fluence = None
-            self.element_simulation.calculated_solutions = 0
-            self.element_simulation.optimization_done = False
-            self.element_simulation.optimization_stopped = False
-            self.element_simulation.optimization_running = False
+
             # Delete previous energy spectra if there are any
+            # TODO remove if check
             if self.element_simulation.optimization_recoils:
                 # Delete energy spectra that use optimized recoils
                 df.delete_optim_espe(self, self.element_simulation)
@@ -318,29 +315,18 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
                     # Calculate energy spectra for cut
                     if len(item.text(0).split('.')) < 5:
                         # Normal cut
-                        cut_file = os.path.join(used_measurement.directory_cuts,
-                                                item.text(0)) + ".cut"
+                        cut_file = Path(used_measurement.directory_cuts,
+                                        item.text(0) + ".cut")
                     else:
-                        cut_file = os.path.join(
+                        cut_file = Path(
                             used_measurement.directory_composition_changes,
-                            "Changes", item.text(0)) + ".cut"
+                            "Changes", item.text(0) + ".cut")
                     cut_file_found = True
                     break
             i += 1
 
-        # Hist all selected cut files
-        # TODO this could also be done in the Nsga2 __prepare
-        es = EnergySpectrum(used_measurement, [cut_file],
-                            self.ch,
-                            progress=None,
-                            no_foil=True)
-        es.calculate_spectrum(no_foil=True)
-        # Add result files
-        hist_file = Path(used_measurement.directory_energy_spectra,
-                         f"{item_text}.no_foil.hist")
-
         nsgaii = Nsgaii(element_simulation=self.element_simulation,
-                        hist_file=hist_file,
+                        measurement=used_measurement, cut_file=cut_file,
                         ch=self.ch,
                         **self.parameters_widget.get_properties())
 
@@ -349,7 +335,6 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             target=self.check_progress_and_results)
 
         # Optimization running thread
-        # TODO multiprocessing could also be an option instead of a thread.
         self.optimization_thread = threading.Thread(
             target=nsgaii.start_optimization)
 
@@ -366,6 +351,3 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
 
         self.optimization_thread.daemon = True
         self.optimization_thread.start()
-
-        # TODO this should be set by the element_simulation itself
-        self.element_simulation.optimization_running = True
