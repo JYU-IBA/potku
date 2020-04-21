@@ -44,7 +44,6 @@ from modules.general_functions import md5_for_file
 from modules.general_functions import remove_file
 from modules.general_functions import rename_file
 from modules.run import Run
-from modules.selection import Selector
 from modules.target import Target
 from modules.ui_log_handlers import Logger
 
@@ -88,8 +87,9 @@ class Measurements:
         return self.measurements[key]
 
     def add_measurement_file(self, sample, file_path, tab_id, name,
-                             import_evnt_or_binary):
-        """ Add a new file to measurements.
+                             import_evnt_or_binary, selector_cls=None):
+        """Add a new file to measurements. If selector_cls is given,
+        selector will be initializaed as an object of that class..
 
         Args:
             sample: The sample under which the measurement is put.
@@ -98,7 +98,8 @@ class Measurements:
             tab_id: Integer representing identifier for measurement's tab.
             name: Name for the Measurement object.
             import_evnt_or_binary: Whether evnt or lst data is being imported
-            or not.
+                or not.
+            selector_cls: class of the selector.
 
         Return:
             Returns new measurement or None if it wasn't added
@@ -122,7 +123,8 @@ class Measurements:
             measurement.info_to_file(os.path.join(measurement_directory,
                                                   measurement.name +
                                                   ".info"))
-            measurement.create_folder_structure(measurement_directory, None)
+            measurement.create_folder_structure(measurement_directory, None,
+                                                selector_cls=selector_cls)
             serial_number = next_serial
             measurement.serial_number = serial_number
             self.request.samples.measurements.measurements[tab_id] = \
@@ -153,7 +155,8 @@ class Measurements:
                                         directory_prefix) + 2])
                 measurement.serial_number = serial_number
                 measurement.tab_id = tab_id
-                measurement.update_folders_and_selector()
+                measurement.update_folders_and_selector(
+                    selector_cls=selector_cls)
 
                 if measurement_file:
                     measurement.run = Run.from_file(os.path.join(
@@ -212,8 +215,9 @@ class Measurements:
                     new_measurement_file = os.path.join(measurement_directory,
                                                         "Data",
                                                         measurement_filename)
-                    measurement.create_folder_structure(measurement_directory,
-                                                        new_measurement_file)
+                    measurement.create_folder_structure(
+                        measurement_directory, new_measurement_file,
+                        selector_cls=selector_cls)
                     if file_directory != os.path.join(
                             measurement_directory, measurement.directory_data) \
                                 and file_directory:
@@ -361,9 +365,12 @@ class Measurement(Logger):
         else:
             return self.detector
 
-    def update_folders_and_selector(self):
-        """
-        Update folders and selector.
+    def update_folders_and_selector(self, selector_cls=None):
+        """Update folders and selector. Initializes a new selector if
+        selector_cls argument is given.
+
+        Args:
+            selector_cls: class of the selector.
         """
         for item in os.listdir(self.directory):
             # TODO if the directory we are looking for does not exist (for
@@ -390,7 +397,8 @@ class Measurement(Logger):
         self.set_loggers(self.directory, self.request.directory)
 
         element_colors = self.request.global_settings.get_element_colors()
-        self.selector = Selector(self, element_colors)
+        if selector_cls is not None:
+            self.selector = selector_cls(self, element_colors)
 
     def update_directory_references(self, new_dir):
         """
@@ -605,12 +613,15 @@ class Measurement(Logger):
         with open(profile_file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
 
-    def create_folder_structure(self, measurement_folder, measurement_file):
-        """ Creates folder structure for the measurement.
+    def create_folder_structure(self, measurement_folder, measurement_file,
+                                selector_cls=None):
+        """ Creates folder structure for the measurement. If selector_cls is
+        given, selector will be initialized as an object of that class.
 
         Args:
             measurement_folder: Path of the measurement folder.
             measurement_file: Path of the measurement file. (under Data)
+            selector_cls: class of the selector.
         """
         if measurement_file is None:
             measurement_data_folder = os.path.join(measurement_folder, "Data")
@@ -642,7 +653,8 @@ class Measurement(Logger):
         self.set_loggers(self.directory, self.request.directory)
 
         element_colors = self.request.global_settings.get_element_colors()
-        self.selector = Selector(self, element_colors)
+        if selector_cls is not None:
+            self.selector = selector_cls(self, element_colors)
 
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
