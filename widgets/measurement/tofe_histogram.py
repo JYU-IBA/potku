@@ -29,8 +29,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
-
 from pathlib import Path
 
 from PyQt5 import QtCore

@@ -25,7 +25,6 @@ along with this program (file named 'LICENCE').
 __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
-import os
 import platform
 
 import dialogs.dialog_functions as df
@@ -34,8 +33,6 @@ from collections import Counter
 
 from dialogs.energy_spectrum import EnergySpectrumParamsDialog
 from dialogs.energy_spectrum import EnergySpectrumWidget
-
-from modules.general_functions import to_superscript
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QIcon
@@ -49,7 +46,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
     """
     # TODO this class should be refactored together with simulation/element.py
     #   module
-    def __init__(self, parent, element, parent_tab, parent_element_widget,
+    def __init__(self, parent, parent_tab, parent_element_widget,
                  element_simulation, color, recoil_element, statusbar=None,
                  spectra_changed=None):
         """
@@ -57,7 +54,6 @@ class RecoilElementWidget(QtWidgets.QWidget):
 
         Args:
             parent: A RecoilAtomDistributionWidget.
-            element: An Element object.
             parent_tab: A SimulationTabWidget.
             parent_element_widget: An ElementWidget.
             element_simulation: ElementSimulation object.
@@ -78,14 +74,6 @@ class RecoilElementWidget(QtWidgets.QWidget):
 
         self.radio_button = QtWidgets.QRadioButton()
 
-        #if element.isotope:
-        #    isotope_superscript = to_superscript(
-        #        str(element.isotope))
-        #    button_text = isotope_superscript + " " + element.symbol
-        #else:
-        #    button_text = element.symbol
-        #
-        #self.radio_button.setText(button_text)
         # TODO full name takes a bit too much room. They layout could use
         #   some fixing.
         self.radio_button.setText(self.recoil_element.get_full_name())

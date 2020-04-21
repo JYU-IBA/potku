@@ -421,8 +421,7 @@ class Measurement(Logger):
 
     @classmethod
     def from_file(cls, measurement_info_path, measurement_file_path,
-                  profile_file_path,
-                  request):
+                  profile_file_path, request):
         """
         Read Measurement information from filea.
 
@@ -430,6 +429,7 @@ class Measurement(Logger):
             measurement_info_path: Path to .info file.
             measurement_file_path: Path to .measurement file.
             profile_file_path: Path to .profile file.
+            request: Request that the Measurement belongs to.
 
         Return:
             Measurement object.
@@ -713,8 +713,7 @@ class Measurement(Logger):
             logging.getLogger('request').error(error_log)
             logging.getLogger('request').error(error_log_2)
         except Exception as e:
-            error_log = "Unexpected error: [{0}] {1}".format(e.errno,
-                                                             e.strerror)
+            error_log = "Unexpected error: {0}".format(e)
             logging.getLogger('request').error(error_log)
         # pr.disable()
         # ps = pstats.Stats(pr)

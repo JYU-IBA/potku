@@ -311,7 +311,7 @@ class GlobalSettings:
         try:
             return self.__config["import_timing"][str(adc)].split(',')
         except:  # Default if doesn't exist.
-            return (-1000, 1000)
+            return -1000, 1000
 
     def set_import_timing(self, adc, low, high):
         """Set coincidence timings for specific ADC.
@@ -455,9 +455,6 @@ class GlobalSettings:
 
     def get_num_iterations(self):
         """Set the number of iterations erd_depth is to perform
-
-        Args:
-            value: An integer
         """
         try:
             return int(self.__config["depth_profile"]["num_iter"])

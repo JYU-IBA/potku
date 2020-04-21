@@ -122,7 +122,8 @@ class TestRecoilParameters(unittest.TestCase):
             "number_of_processes": 1,
             "cross_p": 0.9,
             "mut_p": 1.0,
-            "check_time": 20
+            "check_time": 20,
+            "skip_simulation": False
         }
         fluence_expected = {
             "stop_percent": 0.7,

@@ -50,7 +50,7 @@ class Run:
             fluence: Fluence.
             current: Current.
             charge: Charge.
-            time: Time of the run.
+            run_time: Time of the run.
         """
         self.beam = beam
         if not self.beam:
