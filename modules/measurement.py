@@ -48,9 +48,6 @@ from modules.selection import Selector
 from modules.target import Target
 from modules.ui_log_handlers import Logger
 
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
-
 
 class Measurements:
     """ Measurements class handles multiple measurements.
@@ -1003,44 +1000,6 @@ class Measurement(Logger):
                         "Changes",
                         f))]
         return cuts, elemloss
-
-    def fill_cuts_treewidget(self, treewidget, use_elemloss=False,
-                             checked_files=None):
-        """ Fill QTreeWidget with cut files.
-        
-        Args:
-            treewidget: A QtGui.QTreeWidget, where cut files are added to.
-            use_elemloss: A boolean representing whether to add elemental
-                          losses.
-            checked_files: A list of previously checked files.
-        """
-        if checked_files is None:
-            checked_files = []
-        treewidget.clear()
-        cuts, cuts_elemloss = self.get_cut_files()
-        for cut in cuts:
-            item = QtWidgets.QTreeWidgetItem([cut])
-            item.directory = os.path.join(self.directory, self.directory_cuts)
-            item.file_name = cut
-            if not checked_files or item.file_name in checked_files:
-                item.setCheckState(0, QtCore.Qt.Checked)
-            else:
-                item.setCheckState(0, QtCore.Qt.Unchecked)
-            treewidget.addTopLevelItem(item)
-        if use_elemloss and cuts_elemloss:
-            elem_root = QtWidgets.QTreeWidgetItem(["Elemental Losses"])
-            for elemloss in cuts_elemloss:
-                item = QtWidgets.QTreeWidgetItem([elemloss])
-                item.directory = os.path.join(
-                    self.directory, self.directory_composition_changes,
-                    "Changes")
-                item.file_name = elemloss
-                if item.file_name in checked_files:
-                    item.setCheckState(0, QtCore.Qt.Checked)
-                else:
-                    item.setCheckState(0, QtCore.Qt.Unchecked)
-                elem_root.addChild(item)
-            treewidget.addTopLevelItem(elem_root)
 
     def load_selection(self, filename, progress=None, percent_add=0.0,
                        start=40):

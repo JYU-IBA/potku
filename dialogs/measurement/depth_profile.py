@@ -35,6 +35,7 @@ import time
 import logging
 
 import dialogs.dialog_functions as df
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
@@ -98,7 +99,9 @@ class DepthProfileDialog(QtWidgets.QDialog):
         m_name = self.parent.obj.name
         if m_name not in DepthProfileDialog.checked_cuts.keys():
             DepthProfileDialog.checked_cuts[m_name] = []
-        self.measurement.fill_cuts_treewidget(
+
+        gutils.fill_cuts_treewidget(
+            self.measurement,
             self.treeWidget, True,
             DepthProfileDialog.checked_cuts[m_name])
         

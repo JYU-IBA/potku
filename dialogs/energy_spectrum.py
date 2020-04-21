@@ -35,6 +35,7 @@ import os
 import shutil
 
 import dialogs.dialog_functions as df
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
@@ -105,8 +106,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             m_name = self.measurement.name
             if m_name not in EnergySpectrumParamsDialog.checked_cuts.keys():
                 EnergySpectrumParamsDialog.checked_cuts[m_name] = []
-            self.measurement.fill_cuts_treewidget(
-                self.treeWidget, True,
+
+            gutils.fill_cuts_treewidget(
+                self.measurement, self.treeWidget, True,
                 EnergySpectrumParamsDialog.checked_cuts[m_name])
 
             self.__update_eff_files()
