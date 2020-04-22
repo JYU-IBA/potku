@@ -31,6 +31,8 @@ import os
 import platform
 import subprocess
 
+import modules.general_functions as gf
+
 
 class GetEspe:
     """
@@ -116,14 +118,14 @@ class GetEspe:
         """Returns the command to run get_espe executable"""
         if platform.system() == "Windows":
             first_cmd = "type"
-            executable = ".exe"
+            executable = "get_espe.exe"
         else:
             first_cmd = "cat"
-            executable = ""
+            executable = "get_espe"
 
-        espe_path = os.path.join("external", "Potku-bin", "get_espe{0}".format(
-            executable))
-
+        bin_dir = gf.get_bin_dir()
+        espe_path = bin_dir / executable
+        # TODO refactor the command into tuples
         return "{0} {1} | {2} {3} > {4}".format(first_cmd,
                                                 self.__erd_file,
                                                 espe_path,
