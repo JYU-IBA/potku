@@ -788,9 +788,14 @@ class Measurement(Logger):
                 if not start:
                     start = 40
                 self.load_selection(selection_file, progress, add, start)
-        except:
+        except OSError:
             # TODO: Is it necessary to inform user with this?
-            log_msg = "There was no old selection file to add to this request."
+            # FIXME crashes here when:
+            #       1. user deletes all measurements from a sample
+            #       2. user imports new .evnt file
+            #       3. user tries to open the imported data
+            log_msg = "There was no old selection file to add to this " \
+                      f"request."
             logging.getLogger(self.name).info(log_msg)
 
     def add_point(self, point, canvas):

@@ -40,6 +40,8 @@ class LogWidget(QtWidgets.QWidget):
     """Log widget which displays the log. This widget handles
     the loghandlers emits.
     """
+    on_log_message = QtCore.pyqtSignal(str)
+    on_error_message = QtCore.pyqtSignal(str)
 
     def __init__(self):
         """Initializes the LogHandler widget.
@@ -49,6 +51,8 @@ class LogWidget(QtWidgets.QWidget):
         # This is used to ensure that the window can't be closed.        
         self.want_to_close = False
         self.hideButton.clicked.connect(self.minimize_window)
+        self.on_log_message.connect(self.add_text)
+        self.on_error_message.connect(self.add_error)
 
     def add_text(self, message):
         """Adds the specified message to the log field.
