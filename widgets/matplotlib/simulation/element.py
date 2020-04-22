@@ -154,11 +154,8 @@ class ElementWidget(QtWidgets.QWidget):
                                        rec_type=rec_type)
         self.running_int_recoil += 1
         recoil_widget = RecoilElementWidget(
-            self.parent, element,
-            self.tab, self,
-            self.element_simulation,
-            color, recoil_element,
-            statusbar=self.statusbar,
+            self.parent, self.tab, self, self.element_simulation,
+            color, recoil_element, statusbar=self.statusbar,
             spectra_changed=spectra_changed
         )
         recoil_element.widgets.append(recoil_widget)

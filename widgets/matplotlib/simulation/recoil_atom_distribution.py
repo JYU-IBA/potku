@@ -247,12 +247,9 @@ class ElementManager:
         ElementSimulation object.
         """
         recoil_element_widget = RecoilElementWidget(
-            self.parent, recoil_element.element,
-            self.parent_tab, main_element_widget,
-            element_simulation, recoil_element.color,
-            recoil_element,
-            statusbar=self.statusbar,
-            spectra_changed=spectra_changed
+            self.parent, self.parent_tab, main_element_widget,
+            element_simulation, recoil_element.color, recoil_element,
+            statusbar=self.statusbar, spectra_changed=spectra_changed
         )
         recoil_element.widgets.append(recoil_element_widget)
         recoil_element_widget.element_simulation = element_simulation
