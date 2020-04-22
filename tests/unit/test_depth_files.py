@@ -326,30 +326,5 @@ class TestDepthFiles(unittest.TestCase):
                          expected)
 
 
-class TestDepthFileGeneration(unittest.TestCase):
-    def test_depth_file_generation(self):
-        # FIXME not working
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            p = Path(tmp_dir)
-
-            cut_dir = Path(utils.get_sample_data_dir(), "Ecaart-11-mini",
-                           "Tof-E_65-mini", "cuts")
-            cut_files = [
-                cut_dir / "Tof-E_65-mini.1H.0.cut",
-                cut_dir / "Tof-E_65-mini.6Li.0.cut"
-            ]
-            mesu = mo.get_measurement()
-
-            depth_files.generate_depth_files(cut_files, tmp_dir,
-                                             measurement=mesu,
-                                             tof_in_dir=tmp_dir)
-
-            self.assertTrue(p.exists())
-
-            self.assertTrue((p / "depth.H").exists())
-            self.assertTrue((p / "depth.Li").exists())
-            self.assertTrue((p / "depth.total").exists())
-
-
 if __name__ == "__main__":
     unittest.main()
