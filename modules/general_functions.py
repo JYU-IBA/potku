@@ -263,17 +263,13 @@ def tof_list(cut_file, directory, save_output=False, no_foil=False,
         if platform.system() == 'Windows':
             startupinfo = subprocess.STARTUPINFO()
             startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-            command = (Path(bin_dir, "tof_list.exe"), new_cut_file)
+            command = (str(bin_dir / "tof_list.exe"), str(new_cut_file))
             stdout = subprocess.check_output(command,
                                              cwd=bin_dir,
                                              shell=True,
                                              startupinfo=startupinfo)
         else:
-            if platform.system() == "Linux":
-                command = "{0} {1}".format("./tof_list", new_cut_file)
-
-            else:
-                command = "{0} {1}".format("./tof_list", new_cut_file)
+            command = "{0} {1}".format("./tof_list", str(new_cut_file))
             p = subprocess.Popen(command.split(' ', 1),
                                  cwd=bin_dir,
                                  stdin=subprocess.PIPE,
@@ -371,7 +367,7 @@ def carbon_stopping(element, isotope, energy, carbon_thickness, carbon_density):
             carbon_thickness is not None:
         if platform.system() == 'Windows':
             print("Running gsto_stop.exe on Windows.")
-            args = ["gsto_stop.exe",
+            args = [str(bin_dir / "gsto_stop.exe"),
                     "{0}-{1}".format(isotope, element), 'C', str(energy)]
             print(args)
             p = Popen(args, cwd=bin_dir, stdin=subprocess.PIPE,
@@ -445,6 +441,7 @@ def coinc(input_file, output_file, skip_lines, tablesize, trigger, adc_count,
         return
     bin_dir = get_bin_dir()
 
+    # TODO refactor the way the subprocess call arguments are made
     timediff_str = ""
     if timediff or temporary:
         timediff_str = "--timediff"

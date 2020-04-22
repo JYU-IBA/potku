@@ -426,11 +426,9 @@ class TOFCalibrationPoint:
             carbon_stopping_energy = gf.carbon_stopping(
                 self.cut.element.symbol, isotope, energy,
                 carbon_foil_thickness_in_nm, density_in_g_per_cm3)
-        except:
-            error_msg = "Carbon stopping doesn't work. {0} {1}".format(
-                "Continuing without it.",
-                "Carbon stopping energy set "
-                "to 0.")
+        except Exception as e:
+            error_msg = f"Carbon stopping doesn't work: {e}. Continuing " \
+                        f"without it. Carbon stopping energy set to 0."
             # logging.getLogger("").error(error_msg) # TODO: Add to error logger
             print(error_msg)
             carbon_stopping_energy = 0

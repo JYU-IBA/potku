@@ -55,7 +55,8 @@ from modules.parsing import CSVParser
 class DepthFileGenerator:
     """DepthFiles handles calling the external programs to create depth files.
     """
-    def __init__(self, file_paths, output_path, tof_in_dir=None):
+    def __init__(self, file_paths, output_directory, prefix="depth",
+                 tof_in_dir=None):
         """Inits DepthFiles.
 
         Args:
@@ -65,7 +66,7 @@ class DepthFileGenerator:
             tof_in_dir: path to directory where tof.in is located
         """
         self.__new_cut_files = [gf.copy_cut_file_to_temp(f) for f in file_paths]
-        self.__output_path = output_path
+        self.__output_path = Path(output_directory, prefix)
         if tof_in_dir is None:
             self.__tof_in_path = Path("tof.in")
         else:
@@ -75,14 +76,14 @@ class DepthFileGenerator:
         """Returns the command(s) used to run both tof_list and erd_depth.
         """
         if platform.system() == "Windows":
-            tof_bin = "tof_list.exe"
-            erd_bin = "erd_depth.exe"
+            tof_bin = gf.get_bin_dir() / "tof_list.exe"
+            erd_bin = gf.get_bin_dir() / "erd_depth.exe"
         else:
             tof_bin = "./tof_list"
             erd_bin = "./erd_depth"
 
-        return (tof_bin, *(str(f) for f in self.__new_cut_files)), \
-               (erd_bin, str(self.__output_path), str(self.__tof_in_path))
+        return (str(tof_bin), *(str(f) for f in self.__new_cut_files)), \
+               (str(erd_bin), str(self.__output_path), str(self.__tof_in_path))
 
     def run(self):
         """Generate the files necessary for drawing the depth profile.
@@ -91,7 +92,10 @@ class DepthFileGenerator:
         tof, erd = self.get_command()
         # Pipe the output from tof_list to erd_depth
         tof_process = subprocess.Popen(tof, cwd=bin_dir, stdout=subprocess.PIPE)
-        subprocess.check_call(erd, cwd=bin_dir, stdin=tof_process.stdout)
+        ret = subprocess.run(
+            erd, cwd=bin_dir, stdin=tof_process.stdout).returncode
+        if ret != 0:
+            print(f"tof_list|erd_depth pipeline returned an error code: {ret}")
 
 
 def generate_depth_files(cut_files, output_directory, measurement=None,

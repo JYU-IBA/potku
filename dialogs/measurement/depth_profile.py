@@ -458,10 +458,8 @@ class DepthProfileWidget(QtWidgets.QWidget):
             self.__line_scale = line_scale
             self.__systerr = systematic_error
 
-            depth_dir = Path(self.output_dir, "depth")
-
             depth_files.generate_depth_files(self.use_cuts,
-                                             depth_dir,
+                                             self.output_dir,
                                              measurement=self.measurement)
             
             # Check for RBS selections.
