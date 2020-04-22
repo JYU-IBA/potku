@@ -1041,11 +1041,9 @@ class Measurement(Logger):
         """
         # TODO refactor this into smaller functions
         if directory is None:
-            tof_in_directory = os.path.join(os.path.realpath(os.path.curdir),
-                                            "external", "Potku-bin")
-            tof_in_file = Path(tof_in_directory, "tof.in")
+            tof_in_file = gf.get_bin_dir() / "tof.in"
         else:
-            tof_in_file = Path(directory, "tof.in")
+            tof_in_file = Path(directory) / "tof.in"
 
         # Get settings 
         # use_settings = self.measurement_settings.get_measurement_settings()
@@ -1155,12 +1153,11 @@ class Measurement(Logger):
 
         # Add folder that has all the efficiency files in tof_list binary
         # appropriate format
-        eff_directory_final = os.path.join(eff_directory, "Used_efficiencies")
-        if not os.path.exists(eff_directory_final):
-            os.makedirs(eff_directory_final)
+        eff_directory_final = Path(eff_directory, "Used_efficiencies")
+        os.makedirs(eff_directory_final, exist_ok=True)
+
         # Copy efficiencies with proper name
         # File name in format 1H.eff or 1H-example.eff
-
         for eff in os.listdir(eff_directory):
             if not eff.endswith(".eff"):
                 continue
