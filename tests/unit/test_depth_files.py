@@ -24,12 +24,18 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Juhani Sundell"
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 import unittest
+import tempfile
 
-from modules.depth_files import DepthProfile, \
-                                validate_depth_file_names
+import tests.mock_objects as mo
+import tests.utils as utils
+import modules.depth_files as depth_files
+
+from pathlib import Path
+
+from modules.depth_files import DepthProfile
 from modules.element import Element
 
 
@@ -274,7 +280,8 @@ class TestDepthFiles(unittest.TestCase):
             "Mn": "depth.Mn",
             "10C": "depth.10C"
         }
-        self.assertEqual(validate_depth_file_names(file_names), expected)
+        self.assertEqual(depth_files.validate_depth_file_names(file_names),
+                         expected)
 
         # Invalid and duplicated strings are not included in the result
         file_names = [
@@ -287,7 +294,8 @@ class TestDepthFiles(unittest.TestCase):
             "total": "depth.total",
             "10C": "depth.10C"
         }
-        self.assertEqual(validate_depth_file_names(file_names), expected)
+        self.assertEqual(depth_files.validate_depth_file_names(file_names),
+                         expected)
 
         # Testing various invalid names
         file_names = [
@@ -302,7 +310,8 @@ class TestDepthFiles(unittest.TestCase):
             "depth..total"
         ]
         expected = {}
-        self.assertEqual(validate_depth_file_names(file_names), expected)
+        self.assertEqual(depth_files.validate_depth_file_names(file_names),
+                         expected)
 
         # Function does not check if the file name is actually valid file name
         file_names = [
@@ -313,7 +322,8 @@ class TestDepthFiles(unittest.TestCase):
             "!": "depth.!",
             "|/foo\\bar": "depth.|/foo\\bar"
         }
-        self.assertEqual(validate_depth_file_names(file_names), expected)
+        self.assertEqual(depth_files.validate_depth_file_names(file_names),
+                         expected)
 
 
 if __name__ == "__main__":

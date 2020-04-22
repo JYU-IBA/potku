@@ -27,6 +27,8 @@ __version__ = "2.0"
 import abc
 import platform
 
+from pathlib import Path
+
 from modules.observing import ProgressReporter
 from modules.element import Element
 
@@ -248,3 +250,44 @@ def load_isotopes(symbol, combobox, current_isotope=None, show_std_mass=False):
         combobox.addItem(txt, userData=iso)
         if current_isotope == iso["element"].isotope:
             combobox.setCurrentIndex(idx)
+
+
+def fill_cuts_treewidget(measurement, treewidget, use_elemloss=False,
+                         checked_files=None):
+    """ Fill QTreeWidget with cut files.
+
+    Args:
+        measurement: Measurement object
+        treewidget: A QtGui.QTreeWidget, where cut files are added to.
+        use_elemloss: A boolean representing whether to add elemental
+                      losses.
+        checked_files: A list of previously checked files.
+    """
+    if checked_files is None:
+        checked_files = []
+    treewidget.clear()
+    cuts, cuts_elemloss = measurement.get_cut_files()
+    for cut in cuts:
+        item = QtWidgets.QTreeWidgetItem([cut])
+        item.directory = Path(measurement.directory, measurement.directory_cuts)
+        item.file_name = cut
+        if not checked_files or item.file_name in checked_files:
+            item.setCheckState(0, QtCore.Qt.Checked)
+        else:
+            item.setCheckState(0, QtCore.Qt.Unchecked)
+        treewidget.addTopLevelItem(item)
+    if use_elemloss and cuts_elemloss:
+        elem_root = QtWidgets.QTreeWidgetItem(["Elemental Losses"])
+        for elemloss in cuts_elemloss:
+            item = QtWidgets.QTreeWidgetItem([elemloss])
+            item.directory = Path(
+                measurement.directory,
+                measurement.directory_composition_changes,
+                "Changes")
+            item.file_name = elemloss
+            if item.file_name in checked_files:
+                item.setCheckState(0, QtCore.Qt.Checked)
+            else:
+                item.setCheckState(0, QtCore.Qt.Unchecked)
+            elem_root.addChild(item)
+        treewidget.addTopLevelItem(elem_root)

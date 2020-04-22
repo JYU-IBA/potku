@@ -64,6 +64,7 @@ from modules.global_settings import GlobalSettings
 from modules.measurement import Measurement
 from modules.request import Request
 from modules.simulation import Simulation
+from modules.selection import Selector
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -1136,7 +1137,8 @@ class Potku(QtWidgets.QMainWindow):
             measurement = \
                 self.request.samples.measurements.add_measurement_file(
                     sample, filepath, self.tab_id, object_name,
-                    import_evnt_or_binary=import_evnt_or_binary)
+                    import_evnt_or_binary=import_evnt_or_binary,
+                    selector_cls=Selector)
             if measurement == "already exists":
                 return None
             if measurement:

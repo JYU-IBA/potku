@@ -29,7 +29,8 @@ import unittest
 import tempfile
 import tests.mock_objects as mo
 
-from string import Template
+import modules.general_functions as gf
+
 from tests.utils import get_resource_dir
 from tests.utils import PlatformSwitcher
 from tests.utils import get_template_file_contents
@@ -83,7 +84,7 @@ class TestMCERD(unittest.TestCase):
         """
         # PlatformSwitcher cannot change the separator char in file paths.
         # Therefore the same bin_path and file_path is used for each system
-        bin_path = Path("external/Potku-bin/mcerd")
+        bin_path = gf.get_bin_dir() / "mcerd"
         file_path = self.directory / "He-Default"
 
         with PlatformSwitcher("Windows"):

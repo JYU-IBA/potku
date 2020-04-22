@@ -35,6 +35,8 @@ import subprocess
 import threading
 import time
 
+import modules.general_functions as gf
+
 from pathlib import Path
 from modules.layer import Layer
 
@@ -97,17 +99,18 @@ class MCERD:
         """Returns the command that is used to start the MCERD process.
         """
         if platform.system() == "Windows":
-            bin_suffix = ".exe"
+            executable = "mcerd.exe"
             ulimit = ""
             exec_cmd = ""
         else:
-            bin_suffix = ""
+            executable = "mcerd"
             ulimit = "ulimit -s 64000; "
             exec_cmd = "exec "
 
-        mcerd_path = Path(f"external/Potku-bin/mcerd{bin_suffix}")
+        mcerd_path = gf.get_bin_dir() / executable
         rec_file_path = self.sim_dir / self.__rec_filename
 
+        # TODO return a tuple insted
         return f"{ulimit}{exec_cmd}{mcerd_path} {rec_file_path}"
 
     def run(self):
@@ -119,11 +122,12 @@ class MCERD:
 
         cmd = self.get_command()
 
-        # TODO if target has no layers, mcerd's current random number generator
+        # FIXME if target has no layers, mcerd's current random number generator
         #   might generate a NaN value, causing MCERD to stop immediately. This
         #   could be handled better either by Potku or mcerd.
-        self.__process = subprocess.Popen(cmd,
-                                          shell=True)
+        # TODO possibly capture the stout so we can have better process
+        #  reporting in GUI
+        self.__process = subprocess.Popen(cmd, shell=True)
 
         # Use thread for checking if process has terminated
         thread = threading.Thread(target=self.check_if_mcerd_running)

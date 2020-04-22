@@ -34,6 +34,7 @@ import os
 import sys
 
 import dialogs.dialog_functions as df
+import widgets.gui_utils as gutils
 import modules.cut_file as cut_file
 
 from pathlib import Path
@@ -92,9 +93,9 @@ class ElementLossesDialog(QtWidgets.QDialog):
 
         if m_name not in ElementLossesDialog.checked_cuts.keys():
             ElementLossesDialog.checked_cuts[m_name] = []
-        parent.obj.fill_cuts_treewidget(
-            self.targetCutTree,
-            True,
+
+        gutils.fill_cuts_treewidget(
+            parent.obj, self.targetCutTree, True,
             ElementLossesDialog.checked_cuts[m_name])
 
         self.partitionCount.setValue(ElementLossesDialog.split_count)

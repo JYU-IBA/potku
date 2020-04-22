@@ -37,7 +37,7 @@ class GlobalSettings:
     """Global settings class to handle software settings.
     """
 
-    def __init__(self):
+    def __init__(self, save_on_creation=True):
         """Inits GlobalSettings class.
         """
         self.__config_directory = os.path.join(os.path.expanduser("~"), "potku")
@@ -45,9 +45,11 @@ class GlobalSettings:
         self.__config = configparser.ConfigParser()
 
         self.__request_directory = os.path.join(self.__config_directory,
-                                             "requests")
-        self.__make_directories(self.__config_directory)
-        self.__make_directories(self.__request_directory)
+                                                "requests")
+
+        if save_on_creation:
+            os.makedirs(self.__config_directory, exist_ok=True)
+            os.makedirs(self.__request_directory, exist_ok=True)
 
         self.__request_directory_last_open = self.__request_directory
         self.__element_colors = {"H": "#b4903c",
@@ -177,18 +179,10 @@ class GlobalSettings:
             self.__set_defaults()
             # Set default request directory
             self.set_request_directory(self.__request_directory)
-            self.save_config()
+            if save_on_creation:
+                self.save_config()
         else:
             self.__load_config()
-
-    def __make_directories(self, directory):
-        """Make directories if it doesn't exist.
-
-        Args:
-            directory: A string representing a directory.
-        """
-        if not os.path.exists(directory):
-            os.makedirs(directory)
 
     def __set_defaults(self):
         """Set settings to default values.

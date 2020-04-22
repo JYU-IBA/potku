@@ -38,18 +38,15 @@ import shutil
 import sys
 import time
 
+import modules.general_functions as gf
+
+from pathlib import Path
+
 from modules.cut_file import CutFile
 from modules.detector import Detector
-from modules.general_functions import md5_for_file
-from modules.general_functions import remove_file
-from modules.general_functions import rename_file
 from modules.run import Run
-from modules.selection import Selector
 from modules.target import Target
 from modules.ui_log_handlers import Logger
-
-from PyQt5 import QtCore
-from PyQt5 import QtWidgets
 
 
 class Measurements:
@@ -91,8 +88,9 @@ class Measurements:
         return self.measurements[key]
 
     def add_measurement_file(self, sample, file_path, tab_id, name,
-                             import_evnt_or_binary):
-        """ Add a new file to measurements.
+                             import_evnt_or_binary, selector_cls=None):
+        """Add a new file to measurements. If selector_cls is given,
+        selector will be initializaed as an object of that class..
 
         Args:
             sample: The sample under which the measurement is put.
@@ -101,7 +99,8 @@ class Measurements:
             tab_id: Integer representing identifier for measurement's tab.
             name: Name for the Measurement object.
             import_evnt_or_binary: Whether evnt or lst data is being imported
-            or not.
+                or not.
+            selector_cls: class of the selector.
 
         Return:
             Returns new measurement or None if it wasn't added
@@ -125,7 +124,8 @@ class Measurements:
             measurement.info_to_file(os.path.join(measurement_directory,
                                                   measurement.name +
                                                   ".info"))
-            measurement.create_folder_structure(measurement_directory, None)
+            measurement.create_folder_structure(measurement_directory, None,
+                                                selector_cls=selector_cls)
             serial_number = next_serial
             measurement.serial_number = serial_number
             self.request.samples.measurements.measurements[tab_id] = \
@@ -156,7 +156,8 @@ class Measurements:
                                         directory_prefix) + 2])
                 measurement.serial_number = serial_number
                 measurement.tab_id = tab_id
-                measurement.update_folders_and_selector()
+                measurement.update_folders_and_selector(
+                    selector_cls=selector_cls)
 
                 if measurement_file:
                     measurement.run = Run.from_file(os.path.join(
@@ -215,8 +216,9 @@ class Measurements:
                     new_measurement_file = os.path.join(measurement_directory,
                                                         "Data",
                                                         measurement_filename)
-                    measurement.create_folder_structure(measurement_directory,
-                                                        new_measurement_file)
+                    measurement.create_folder_structure(
+                        measurement_directory, new_measurement_file,
+                        selector_cls=selector_cls)
                     if file_directory != os.path.join(
                             measurement_directory, measurement.directory_data) \
                                 and file_directory:
@@ -364,9 +366,12 @@ class Measurement(Logger):
         else:
             return self.detector
 
-    def update_folders_and_selector(self):
-        """
-        Update folders and selector.
+    def update_folders_and_selector(self, selector_cls=None):
+        """Update folders and selector. Initializes a new selector if
+        selector_cls argument is given.
+
+        Args:
+            selector_cls: class of the selector.
         """
         for item in os.listdir(self.directory):
             # TODO if the directory we are looking for does not exist (for
@@ -393,7 +398,8 @@ class Measurement(Logger):
         self.set_loggers(self.directory, self.request.directory)
 
         element_colors = self.request.global_settings.get_element_colors()
-        self.selector = Selector(self, element_colors)
+        if selector_cls is not None:
+            self.selector = selector_cls(self, element_colors)
 
     def update_directory_references(self, new_dir):
         """
@@ -608,12 +614,15 @@ class Measurement(Logger):
         with open(profile_file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
 
-    def create_folder_structure(self, measurement_folder, measurement_file):
-        """ Creates folder structure for the measurement.
+    def create_folder_structure(self, measurement_folder, measurement_file,
+                                selector_cls=None):
+        """ Creates folder structure for the measurement. If selector_cls is
+        given, selector will be initialized as an object of that class.
 
         Args:
             measurement_folder: Path of the measurement folder.
             measurement_file: Path of the measurement file. (under Data)
+            selector_cls: class of the selector.
         """
         if measurement_file is None:
             measurement_data_folder = os.path.join(measurement_folder, "Data")
@@ -645,7 +654,8 @@ class Measurement(Logger):
         self.set_loggers(self.directory, self.request.directory)
 
         element_colors = self.request.global_settings.get_element_colors()
-        self.selector = Selector(self, element_colors)
+        if selector_cls is not None:
+            self.selector = selector_cls(self, element_colors)
 
         # Which color scheme is selected by default
         self.color_scheme = "Default color"
@@ -731,18 +741,18 @@ class Measurement(Logger):
                 info_file = file
                 break
         if info_file:
-            rename_file(os.path.join(self.directory, info_file),
-                        new_name + ".info")
+            gf.rename_file(Path(self.directory, info_file),
+                           new_name + ".info")
 
     def rename_files_in_directory(self, directory):
         if not os.path.exists(directory):
             return
         for file in os.listdir(directory):
             if file.endswith(".cut"):
-                old_path = os.path.join(directory, file)
+                old_path = Path(directory, file)
                 # Get everything except old measurement name from cut file
                 new_name = self.name + "." + file.split('.', 1)[1]
-                rename_file(old_path, new_name)
+                gf.rename_file(old_path, new_name)
 
     def set_axes(self, axes, progress=None, start=0.0, add=0.0):
         """ Set axes information to selector within measurement.
@@ -770,8 +780,8 @@ class Measurement(Logger):
             add: Value added to progress bar.
         """
         try:
-            selection_file = os.path.join(self.directory, self.directory_data,
-                                          "{0}.selections".format(self.name))
+            selection_file = Path(self.directory, self.directory_data,
+                                  "{0}.selections".format(self.name))
             with open(selection_file):
                 if not add:
                     add = 10
@@ -890,7 +900,7 @@ class Measurement(Logger):
         deleted = False
         for file in os.listdir(self.directory_cuts):
             file_path = os.path.join(self.directory_cuts, file)
-            remove_file(file_path)
+            gf.remove_file(file_path)
             deleted = True
         return deleted
 
@@ -1004,44 +1014,6 @@ class Measurement(Logger):
                         f))]
         return cuts, elemloss
 
-    def fill_cuts_treewidget(self, treewidget, use_elemloss=False,
-                             checked_files=None):
-        """ Fill QTreeWidget with cut files.
-        
-        Args:
-            treewidget: A QtGui.QTreeWidget, where cut files are added to.
-            use_elemloss: A boolean representing whether to add elemental
-                          losses.
-            checked_files: A list of previously checked files.
-        """
-        if checked_files is None:
-            checked_files = []
-        treewidget.clear()
-        cuts, cuts_elemloss = self.get_cut_files()
-        for cut in cuts:
-            item = QtWidgets.QTreeWidgetItem([cut])
-            item.directory = os.path.join(self.directory, self.directory_cuts)
-            item.file_name = cut
-            if not checked_files or item.file_name in checked_files:
-                item.setCheckState(0, QtCore.Qt.Checked)
-            else:
-                item.setCheckState(0, QtCore.Qt.Unchecked)
-            treewidget.addTopLevelItem(item)
-        if use_elemloss and cuts_elemloss:
-            elem_root = QtWidgets.QTreeWidgetItem(["Elemental Losses"])
-            for elemloss in cuts_elemloss:
-                item = QtWidgets.QTreeWidgetItem([elemloss])
-                item.directory = os.path.join(
-                    self.directory, self.directory_composition_changes,
-                    "Changes")
-                item.file_name = elemloss
-                if item.file_name in checked_files:
-                    item.setCheckState(0, QtCore.Qt.Checked)
-                else:
-                    item.setCheckState(0, QtCore.Qt.Unchecked)
-                elem_root.addChild(item)
-            treewidget.addTopLevelItem(elem_root)
-
     def load_selection(self, filename, progress=None, percent_add=0.0,
                        start=40):
         """ Load selections from a file_path.
@@ -1057,20 +1029,23 @@ class Measurement(Logger):
         """
         self.selector.load(filename, progress, percent_add, start)
 
-    def generate_tof_in(self, no_foil=False):
+    def generate_tof_in(self, no_foil=False, directory=None):
         """ Generate tof.in file for external programs.
 
         Args:
             no_foil: overrides the thickness of foil by setting it to 0
+            directory: directory in which the tof.in is saved
         
         Generates tof.in file for measurement to be used in external programs 
         (tof_list, erd_depth).
         """
         # TODO refactor this into smaller functions
-        tof_in_directory = os.path.join(os.path.realpath(os.path.curdir),
-                                        "external",
-                                        "Potku-bin")
-        tof_in_file = os.path.join(tof_in_directory, "tof.in")
+        if directory is None:
+            tof_in_directory = os.path.join(os.path.realpath(os.path.curdir),
+                                            "external", "Potku-bin")
+            tof_in_file = Path(tof_in_directory, "tof.in")
+        else:
+            tof_in_file = Path(directory, "tof.in")
 
         # Get settings 
         # use_settings = self.measurement_settings.get_measurement_settings()
@@ -1221,7 +1196,7 @@ class Measurement(Logger):
         digest_file = None
         if os.path.isfile(tof_in_file):
             with open(tof_in_file, 'r') as f:
-                digest_file = md5_for_file(f)
+                digest_file = gf.md5_for_file(f)
 
         # If different back up old tof.in and generate a new one.
         if digest_file != digest:
@@ -1233,16 +1208,10 @@ class Measurement(Logger):
                 back_up_msg = "Backed up old tof.in file to {0}".format(
                     os.path.realpath(new_file))
                 logging.getLogger(self.name).info(back_up_msg)
-            except:
-                import traceback
-                err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
-                str_err = ", ".join([sys.exc_info()[0].__name__ + ": " +
-                                     traceback._some_str(sys.exc_info()[1]),
-                                     err_file, str(sys.exc_info()[2].tb_lineno)]
-                                    )
-                error_msg = "Unexpected error when generating tof.in: {0}". \
-                    format(str_err)
-                logging.getLogger(self.name).error(error_msg)
+            except Exception as e:
+                if not isinstance(e, FileNotFoundError):
+                    error_msg = f"Error when generating tof.in: {e}"
+                    logging.getLogger(self.name).error(error_msg)
             # Write new settings to the file.
             with open(tof_in_file, "wt+") as fp:
                 fp.write(tof_in)

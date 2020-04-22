@@ -44,8 +44,9 @@ NUMBER_KEY = "number"
 ABUNDANCE_KEY = "abundance"
 MASS_KEY = "mass"
 
-this_dir = os.path.dirname(__file__)
-file_path = Path(this_dir, os.pardir, "external", "Potku-data", "masses.dat")
+this_dir = Path(__file__).parent
+file_path = Path(this_dir, os.pardir, "external", "Potku-data",
+                 "masses.dat").resolve()
 
 # Parser to parse data from masses.dat. Empty rows are ignored, first line
 # is skipped.

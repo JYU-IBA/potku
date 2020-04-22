@@ -43,60 +43,92 @@ import logging
 
 import modules.math_functions as mf
 import modules.comparison as comp
+import modules.general_functions as gf
 
+from pathlib import Path
 from functools import lru_cache
-from modules.general_functions import copy_cut_file_to_temp
+
 from modules.element import Element
 from modules.parsing import CSVParser
 
 
-class DepthFileGenerator(object):
+class DepthFileGenerator:
     """DepthFiles handles calling the external programs to create depth files.
     """
-    def __init__(self, file_paths, output_path):
+    def __init__(self, file_paths, output_directory, prefix="depth",
+                 tof_in_dir=None):
         """Inits DepthFiles.
 
         Args:
-            file_paths: Full paths of cut files to be used.
-            output_path: Full path of where depth files are to be created.
+            file_paths: file paths of cut files to be used.
+            output_path: path to the directory where depth files are to be
+            created.
+            tof_in_dir: path to directory where tof.in is located
         """
-        self.__new_cut_files = []
-        for cut in file_paths:
-            new = copy_cut_file_to_temp(cut)
-            self.__new_cut_files.append(new)
+        self.__new_cut_files = [gf.copy_cut_file_to_temp(f) for f in file_paths]
+        self.__output_path = Path(output_directory, prefix)
+        if tof_in_dir is None:
+            self.__tof_in_path = Path("tof.in")
+        else:
+            self.__tof_in_path = Path(tof_in_dir, "tof.in")
 
-        file_paths_str = ' '.join(self.__new_cut_files)
+    def get_command(self):
+        """Returns the command(s) used to run both tof_list and erd_depth.
+        """
+        if platform.system() == "Windows":
+            tof_bin = gf.get_bin_dir() / "tof_list.exe"
+            erd_bin = gf.get_bin_dir() / "erd_depth.exe"
+        else:
+            tof_bin = "./tof_list"
+            erd_bin = "./erd_depth"
 
-        self.bin_dir = '%s%s%s' % ('external', os.sep, 'Potku-bin')
-        self.command_win = 'cd ' + self.bin_dir + ' && tof_list.exe ' \
-                           + file_paths_str + ' | erd_depth.exe ' \
-                           + str(output_path) + ' tof.in'
-        self.command_linux = 'cd ' + self.bin_dir + ' && ./tof_list ' \
-                             + file_paths_str + ' | ./erd_depth ' \
-                             + str(output_path) + ' tof.in'
-        self.command_mac = 'cd ' + self.bin_dir + ' && ./tof_list ' \
-                           + file_paths_str + ' | ./erd_depth ' \
-                           + str(output_path) + ' tof.in'
+        return (str(tof_bin), *(str(f) for f in self.__new_cut_files)), \
+               (str(erd_bin), str(self.__output_path), str(self.__tof_in_path))
 
-    def create_depth_files(self):
+    def run(self):
         """Generate the files necessary for drawing the depth profile.
         """
-        used_os = platform.system()
+        bin_dir = gf.get_bin_dir()
+        tof, erd = self.get_command()
+        # Pipe the output from tof_list to erd_depth
+        tof_process = subprocess.Popen(tof, cwd=bin_dir, stdout=subprocess.PIPE)
+        ret = subprocess.run(
+            erd, cwd=bin_dir, stdin=tof_process.stdout).returncode
+        if ret != 0:
+            print(f"tof_list|erd_depth pipeline returned an error code: {ret}")
 
-        if used_os == 'Windows':
+
+def generate_depth_files(cut_files, output_directory, measurement=None,
+                         tof_in_dir=None):
+    """Generates depth files from given cut files and writes them to output
+    directory.
+
+    Deletes any previous depth files in the given directory
+
+    Args:
+        cut_files: list of file paths to .cut files
+        output_directory: directory where the depth files will be generated
+        measurement: Measurement object to generate tof.in
+        tof_in_dir: directory in which the tof.in is to be generated.
+    """
+    # TODO this could be a method of Measurement
+    if measurement is not None:
+        # tof.in file needs to exists before running DepthFileGenerator
+        measurement.generate_tof_in(directory=tof_in_dir)
+
+    os.makedirs(output_directory, exist_ok=True)
+
+    # Delete previous depth files to avoid mixup when assigning the
+    # result files back to their cut files
+    for file in os.listdir(output_directory):
+        if file.startswith("depth."):
             try:
-                # TODO tof_list may not always work properly. Log the error
-                #  instead of printing it.
-                res = subprocess.check_call(self.command_win, shell=True)
-                print("\n\n", res)
-            except Exception as e:
-                print("\n\n", e)
-        elif used_os == 'Linux':
-            subprocess.call(self.command_linux, shell=True)
-        elif used_os == 'Darwin':
-            subprocess.call(self.command_mac, shell=True)
-        else:
-            print('It appears we do no support your OS.')
+                Path(output_directory, file).unlink()
+            except OSError:
+                pass
+
+    dp = DepthFileGenerator(cut_files, output_directory, tof_in_dir=tof_in_dir)
+    dp.run()
 
 
 class DepthProfile:

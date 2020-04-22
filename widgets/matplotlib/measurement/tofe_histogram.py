@@ -213,6 +213,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         use_color_scheme = self.measurement.color_scheme
         color_scheme = MatplotlibHistogramWidget.color_scheme[use_color_scheme]
         colormap = cm.get_cmap(color_scheme)
+
+        # FIXME crashes if bin counts are zero (this can happen if event count
+        #   is set to 0 during import)
         self.axes.hist2d(x_data,
                          y_data,
                          bins=bin_counts,

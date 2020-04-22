@@ -298,6 +298,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         sort_adc_occ = OrderedDict(sorted(self.adc_occurance.items(),
                                           reverse=True))
         adc_keys = sorted(self.adc_occurance.keys())
+
+        # FIXME crashes here if no file to import was chosen
         self.spin_skiplines.setValue(skip_length)
         self.spin_adctrigger.setMinimum(int(adc_keys[0]))
         self.spin_adctrigger.setMaximum(int(adc_keys[-1]))
