@@ -24,12 +24,18 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Juhani Sundell"
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 import unittest
+import tempfile
 
-from modules.depth_files import DepthProfile, \
-                                validate_depth_file_names
+import tests.mock_objects as mo
+import tests.utils as utils
+import modules.depth_files as depth_files
+
+from pathlib import Path
+
+from modules.depth_files import DepthProfile
 from modules.element import Element
 
 
@@ -274,7 +280,8 @@ class TestDepthFiles(unittest.TestCase):
             "Mn": "depth.Mn",
             "10C": "depth.10C"
         }
-        self.assertEqual(validate_depth_file_names(file_names), expected)
+        self.assertEqual(depth_files.validate_depth_file_names(file_names),
+                         expected)
 
         # Invalid and duplicated strings are not included in the result
         file_names = [
@@ -287,7 +294,8 @@ class TestDepthFiles(unittest.TestCase):
             "total": "depth.total",
             "10C": "depth.10C"
         }
-        self.assertEqual(validate_depth_file_names(file_names), expected)
+        self.assertEqual(depth_files.validate_depth_file_names(file_names),
+                         expected)
 
         # Testing various invalid names
         file_names = [
@@ -302,7 +310,8 @@ class TestDepthFiles(unittest.TestCase):
             "depth..total"
         ]
         expected = {}
-        self.assertEqual(validate_depth_file_names(file_names), expected)
+        self.assertEqual(depth_files.validate_depth_file_names(file_names),
+                         expected)
 
         # Function does not check if the file name is actually valid file name
         file_names = [
@@ -313,7 +322,33 @@ class TestDepthFiles(unittest.TestCase):
             "!": "depth.!",
             "|/foo\\bar": "depth.|/foo\\bar"
         }
-        self.assertEqual(validate_depth_file_names(file_names), expected)
+        self.assertEqual(depth_files.validate_depth_file_names(file_names),
+                         expected)
+
+
+class TestDepthFileGeneration(unittest.TestCase):
+    def test_depth_file_generation(self):
+        # FIXME not working
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            p = Path(tmp_dir)
+
+            cut_dir = Path(utils.get_sample_data_dir(), "Ecaart-11-mini",
+                           "Tof-E_65-mini", "cuts")
+            cut_files = [
+                cut_dir / "Tof-E_65-mini.1H.0.cut",
+                cut_dir / "Tof-E_65-mini.6Li.0.cut"
+            ]
+            mesu = mo.get_measurement()
+
+            depth_files.generate_depth_files(cut_files, tmp_dir,
+                                             measurement=mesu,
+                                             tof_in_dir=tmp_dir)
+
+            self.assertTrue(p.exists())
+
+            self.assertTrue((p / "depth.H").exists())
+            self.assertTrue((p / "depth.Li").exists())
+            self.assertTrue((p / "depth.total").exists())
 
 
 if __name__ == "__main__":

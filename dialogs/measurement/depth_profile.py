@@ -36,13 +36,12 @@ import logging
 
 import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
+import modules.depth_files as depth_files
+import modules.cut_file as cut_file
 
 from pathlib import Path
 
 from modules.beam import Beam
-from modules.cut_file import get_scatter_element
-from modules.cut_file import is_rbs
-from modules.depth_files import DepthFileGenerator
 from modules.detector import Detector
 from modules.element import Element
 from modules.run import Run
@@ -458,23 +457,12 @@ class DepthProfileWidget(QtWidgets.QWidget):
             self.__line_zero = line_zero
             self.__line_scale = line_scale
             self.__systerr = systematic_error
-            
-            # Make the directory for depth files
-            if not os.path.exists(self.output_dir):
-                os.makedirs(self.output_dir)
-            output_files = Path(self.output_dir, "depth")
-            dp = DepthFileGenerator(self.use_cuts, output_files)
-            # This has to be before create_depth_files()
-            self.measurement.generate_tof_in()
-            # Delete previous depth files to avoid mixup when assigning the
-            # result files back to their cut files
-            removed_files = []
-            for file in os.listdir(self.output_dir):
-                if file.startswith("depth."):
-                    removed_files.append(Path(self.output_dir, file))
-            for f in removed_files:
-                os.remove(f)
-            dp.create_depth_files()
+
+            depth_dir = Path(self.output_dir, "depth")
+
+            depth_files.generate_depth_files(self.use_cuts,
+                                             depth_dir,
+                                             measurement=self.measurement)
             
             # Check for RBS selections.
             rbs_list = {}
@@ -482,10 +470,10 @@ class DepthProfileWidget(QtWidgets.QWidget):
                 filename = Path(cut).name
                 split = filename.split(".")
                 element = Element.from_string(split[1])
-                if is_rbs(cut):
+                if cut_file.is_rbs(cut):
                     # This should work for regular cut and split.
                     key = "{0}.{1}.{2}".format(split[1], split[2], split[3])
-                    scatter_element = get_scatter_element(cut)
+                    scatter_element = cut_file.get_scatter_element(cut)
                     rbs_list[key] = scatter_element
                     index = 0
                     found_scatter = False
@@ -514,15 +502,8 @@ class DepthProfileWidget(QtWidgets.QWidget):
                                                            self.__line_zero,
                                                            self.__line_scale,
                                                            self.__systerr)
-        except:
-            import traceback
-            msg = "Could not create Depth Profile graph. "
-            err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
-            str_err = ", ".join([sys.exc_info()[0].__name__ + ": " +
-                                 traceback._some_str(sys.exc_info()[1]),
-                                 err_file,
-                                 str(sys.exc_info()[2].tb_lineno)])
-            msg += str_err
+        except Exception as e:
+            msg = f"Could not create Depth Profile graph: {e}"
             logging.getLogger(self.measurement.name).error(msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()

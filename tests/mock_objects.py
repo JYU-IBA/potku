@@ -23,7 +23,7 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Juhani Sundell"
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 import tempfile
 import random
@@ -43,6 +43,7 @@ from modules.run import Run
 from modules.point import Point
 from modules.layer import Layer
 from modules.measurement import Measurement
+from modules.global_settings import GlobalSettings
 
 
 # This module can be used to generate various helper objects for testing
@@ -55,8 +56,11 @@ def get_detector() -> Detector:
     """
     path = Path(tempfile.gettempdir(), ".detector")
     mesu = Path(tempfile.gettempdir(), "mesu")
+    eff = Path(tempfile.gettempdir(), "efficiencies")
 
-    return Detector(path, mesu, save_in_creation=False)
+    d = Detector(path, mesu, save_in_creation=False)
+    d.efficiency_directory = eff
+    return d
 
 
 def get_element(randomize=False, isotope_p=0.5, amount_p=0.5) -> Element:
@@ -162,6 +166,12 @@ def get_layer(element_count=1, randomize=False) -> Layer:
                  1, 2)
 
 
+def get_global_settings() -> GlobalSettings:
+    """Returns a GlobalSettings object.
+    """
+    return GlobalSettings(save_on_creation=False)
+
+
 def get_request():
     """Returns a MockRequest object.
 
@@ -176,5 +186,7 @@ def get_request():
             self.directory = Path(tempfile.gettempdir())
             self.default_run = get_run()
             self.default_target = get_target()
+            self.default_measurement = get_measurement(self)
+            self.global_settings = get_global_settings()
 
     return MockRequest()
