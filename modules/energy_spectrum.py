@@ -98,12 +98,10 @@ class EnergySpectrum:
         try:
             save_output = self.__global_settings.is_es_output_saved()
             count = len(self.__cut_files)
-            dirtyinteger = 0
             
-            if not os.path.exists(self.__directory_es):
-                os.makedirs(self.__directory_es)
+            os.makedirs(self.__directory_es, exist_ok=True)
             
-            for cut_file in self.__cut_files:
+            for i, cut_file in enumerate(self.__cut_files):
                 filename_split = os.path.basename(cut_file).split('.')
                 element = Element.from_string(filename_split[1])
                 if len(filename_split) == 5:  # Regular cut file
@@ -120,18 +118,10 @@ class EnergySpectrum:
                                             save_output=save_output,
                                             no_foil=no_foil,
                                             logger_name=self.__measurement.name)
-    
-                dirtyinteger += 1
+
                 if progress is not None:
-                    progress.report((dirtyinteger / count) * 100)
-        except:
-            import traceback
-            msg = "Could not calculate Energy Spectrum. "
-            err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
-            str_err = ", ".join([sys.exc_info()[0].__name__ + ": " +
-                                 traceback._some_str(sys.exc_info()[1]),
-                                 err_file,
-                                str(sys.exc_info()[2].tb_lineno)])
-            msg += str_err
+                    progress.report(i / count * 100)
+        except Exception as e:
+            msg = f"Could not calculate Energy Spectrum: {e}."
             logging.getLogger(self.__measurement.name).error(msg)
         return cut_dict

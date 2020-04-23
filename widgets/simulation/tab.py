@@ -87,14 +87,15 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
 
         self.statusbar = statusbar
 
-    def add_simulation_target_and_recoil(self, progress_bar=None):
+    def add_simulation_target_and_recoil(self, progress=None):
         """ Add target widget for modifying the target and recoils into tab.
+
         Args:
-            progress_bar: A progress bar used when opening an existing
-            simulation.
+            progress: ProgressReporter object
         """
         self.simulation_target = TargetWidget(self, self.obj, self.obj.target,
-                                              self.icon_manager, progress_bar,
+                                              self.icon_manager,
+                                              progress=progress,
                                               statusbar=self.statusbar)
         self.add_widget(self.simulation_target, has_close_button=False)
 
@@ -122,13 +123,12 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
         self.add_widget(self.optimization_result_widget)
         return self.optimization_result_widget
     
-    def check_previous_state_files(self, progress_bar):
+    def check_previous_state_files(self, progress=None):
         """Check if saved state for Energy Spectra exist.
         If yes, make widgets.
 
         Args:
-            progress_bar: A QtWidgets.QProgressBar where loading of previous
-                          graph can be shown.
+            progress: a ProgressReporter object
         """
         self.make_energy_spectra(
             spectra_changed=self.simulation_target.spectra_changed)
@@ -141,8 +141,8 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
                 for file in os.listdir(element_simulation.directory):
                     if file.startswith(element_simulation.name_prefix) and \
                             file.endswith(".measured"):
-                        with open(os.path.join(element_simulation.directory,
-                                               file)) as m_f:
+                        with open(Path(element_simulation.directory, file)) \
+                                as m_f:
                             used_measured_element = m_f.readline()
                         break
                 self.optimization_result_widget = OptimizedRecoilsWidget(
@@ -165,11 +165,8 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
                 icon = self.icon_manager.get_icon("potku_icon.ico")
                 self.add_widget(self.optimization_result_widget, icon=icon)
                 break
-
-        progress_bar.setValue(82)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        # Mac requires event processing to show progress bar and its
-        # process.
+        if progress is not None:
+            progress.report(100)
 
     def make_energy_spectra(self, spectra_changed=None):
         """

@@ -23,40 +23,33 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Juhani Sundell"
-__version__ = ""    # TODO
+__version__ = "2.0"
 
-import abc
 import weakref
 
 
-class ABCReporter(abc.ABC):
-    """Base abstract class from which all progress reporters should derive.
+class ProgressReporter:
+    """ProgressReporter allows various processes to report their progress.
+    Reporting is done by calling the report function with a value that
+    marks the current progress.
 
-    Reporters report the progress of a single task and can be used to for
-    example update a value of a progress bar.
+    Reporting can be divided into sub-tasks by using a ProgressReporter returned
+    by get_sub_reporter function.
+
+    Generally Potku assumes that each ProgressReporter goes from 0 to 100 but
+    this is not enforced in anyway. Having an universal reporting scheme makes
+    it easier to scale the values of sub-reporters.
     """
+
     def __init__(self, progress_callback):
-        """Inits a ProgressReporter.
+        """Initializes a new ProgressReporter.
 
         Args:
-            progress_callback: function that will be called, when the
-                               reporter reports progress
+            progress_callback: function that is invoked when progress is
+                reported. This could for example set the value of a progress
+                bar.
         """
-        self.progress_callback = progress_callback
-
-    @abc.abstractmethod
-    def report(self, value):
-        """Method that is used to invoke the callback.
-
-        Args:
-            value: progress value to report.
-        """
-        pass
-
-
-class ProgressReporter(ABCReporter):
-    """A vanilla ProgressReporter that merely invokes the progress
-    callback and does not care about thread safety."""
+        self.__progress_callback = progress_callback
 
     def report(self, value):
         """Reports the value of progress by invoking the progress
@@ -65,7 +58,25 @@ class ProgressReporter(ABCReporter):
         Args:
             value: progress value to report
         """
-        self.progress_callback(value)
+        self.__progress_callback(value)
+
+    def get_sub_reporter(self, progress_callback):
+        """Returns a new instance of ProgressReporter that calls the report
+        function of this ProgressReporter with the value returned by the
+        given callback function.
+
+        Typically the progress_callback of a sub-reporter is in the form of:
+            base + coef * x,
+        where 'base' is the starting value, 'coef' is time it takes to
+        process the sub-task relative to main task (number between 0.0 and
+        1.0) and 'x' is the value of progress to be reported.
+
+        Args:
+            progress_callback: function that is called when the new
+                ProgressReporter reports progress
+        """
+        return ProgressReporter(
+            lambda value: self.report(progress_callback(value)))
 
 
 class Observable:

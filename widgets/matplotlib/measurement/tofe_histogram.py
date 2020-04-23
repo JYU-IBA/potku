@@ -604,9 +604,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             else:
                 progress_bar = None
 
-            self.measurement.load_selection(filename,
-                                            GUIReporter(progress_bar),
-                                            50)
+            self.measurement.load_selection(filename, progress=GUIReporter(
+                progress_bar))
             self.on_draw()
             self.elementSelectionSelectButton.setEnabled(True)
 

@@ -35,6 +35,7 @@ import logging
 import os
 import re
 import time
+import functools
 
 from pathlib import Path
 
@@ -462,59 +463,66 @@ class Request(ElementSimulationContainer):
         with open(self.request_file, "wt+") as configfile:
             self.__request_information.write(configfile)
 
-    def save_cuts(self, measurement, progress=None, percentage=0.0,
-                  add=0.0):
+    def save_cuts(self, measurement, progress=None):
         """ Save cuts for all measurements except for master.
         
         Args:
             measurement: A measurement class object that issued save cuts.
             progress: ProgressReporter object.
-            percentage: Base percentage in progress bar.
-            add: Percentage to add.
         """
         name = measurement.name
         master = self.has_master()
         if master != "" and name == master.name:
             nonslaves = self.get_nonslaves()
             tabs = self.get_measurement_tabs(measurement.tab_id)
-            start = percentage
-            added = None
-            if add:
-                added = add / len(tabs)
-            for tab in tabs:
+            for i, tab in enumerate(tabs):
+                if progress is not None:
+                    sub_progress = progress.get_sub_reporter(
+                        lambda x: (100 * i + x) / len(tabs)
+                    )
+                else:
+                    sub_progress = None
+
                 tab_name = tab.obj.name
                 if tab.data_loaded and tab.obj not in nonslaves and \
                         tab_name != name:
                     # No need to save same measurement twice.
-                    tab.obj.save_cuts(progress, start, added)
-                    if added:
-                        start += added
+                    tab.obj.save_cuts(progress=sub_progress)
 
-    def save_selection(self, measurement, progress=None, percentage=0.0):
+        if progress is not None:
+            progress.report(100)
+
+    def save_selection(self, measurement, progress=None):
         """ Save selection for all measurements except for master.
         
         Args:
             measurement: A measurement class object that issued save cuts.
             progress: ProgressReporter object.
-            percentage: Percentage to add to progress bar.
         """
         directory = measurement.directory_data
         name = measurement.name
-        selection_file = "{0}.selections".format(os.path.join(directory, name))
+        selection_file = "{0}.selections".format(Path(directory, name))
         master = self.has_master()
         if master != "" and name == master.name:
             nonslaves = self.get_nonslaves()
             tabs = self.get_measurement_tabs(measurement.tab_id)
-            start = 1
-            add = percentage / len(tabs)
-            for tab in tabs:
+
+            for i, tab in enumerate(tabs):
                 tab_name = tab.obj.name
                 if tab.data_loaded and tab.obj not in nonslaves and \
                         tab_name != name:
-                    tab.obj.selector.load(selection_file, progress,
-                                          add, start)
+
+                    if progress is not None:
+                        sub_progress = progress.get_sub_reporter(
+                            lambda x: (100 * i + x) / len(tabs))
+                    else:
+                        sub_progress = None
+
+                    tab.obj.selector.load(selection_file, progress=sub_progress)
                     tab.histogram.matplotlib.on_draw()
-                    start += add
+
+        if progress is not None:
+            progress.report(100)
 
     def set_master(self, measurement=None):
         """ Set master measurement for the request.

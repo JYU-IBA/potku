@@ -104,7 +104,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
 
         self.statusbar = statusbar
 
-    def add_histogram(self, progress=None, start=0.0, add=0.0):
+    def add_histogram(self, progress=None):
         """Adds ToF-E histogram into tab if it doesn't have one already.
 
         Args:
@@ -116,11 +116,14 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
                                              self.icon_manager,
                                              self,
                                              statusbar=self.statusbar)
-        if progress is not None and not start:
-            progress.report(40)
 
-        self.obj.set_axes(self.histogram.matplotlib.axes, progress,
-                          start, add)
+        if progress is not None:
+            progress.report(40)
+            sub_progress = progress.get_sub_reporter(lambda x: 40 + x * 0.2)
+        else:
+            sub_progress = None
+
+        self.obj.set_axes(self.histogram.matplotlib.axes, progress=sub_progress)
 
         self.makeSelectionsButton.clicked.connect(
             lambda: self.histogram.matplotlib.elementSelectionButton.setChecked(
@@ -128,15 +131,14 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         self.histogram.matplotlib.selectionsChanged.connect(
             self.__set_cut_button_enabled)
 
-        if progress is not None and not add:
+        if progress is not None:
             progress.report(60)
 
         # Draw after giving axes -> selections set properly
         self.histogram.matplotlib.on_draw()
 
-        if not self.obj.selector.is_empty():
-            self.histogram.matplotlib.elementSelectionSelectButton.setEnabled(
-                True)
+        self.histogram.matplotlib.elementSelectionSelectButton.setEnabled(
+            not self.obj.selector.is_empty())
         self.add_widget(self.histogram, has_close_button=False)
         self.histogram.set_cut_button_enabled()
 
@@ -144,12 +146,15 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         # button. 
         self.__set_cut_button_enabled(self.obj.selector.selections)
 
-    def check_previous_state_files(self, progress_bar=None):
+        if progress is not None:
+            progress.report(100)
+
+    def check_previous_state_files(self, progress):
         """Check if saved state for Elemental Losses, Energy Spectrum or Depth
         Profile exists. If yes, load them also.
 
         Args:
-            progress_bar: A QtWidgets.QProgressBar where loading of previous
+            progress: A QtWidgets.QProgressBar where loading of previous
                           graph can be shown.
         """
         sample_folder_name = "Sample_" + "%02d" % \
@@ -159,26 +164,25 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         self.make_elemental_losses(directory_c, self.obj.name,
                                    self.obj.serial_number,
                                    sample_folder_name)
-        progress_bar.setValue(72)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        # Mac requires event processing to show progress bar and its
-        # process.
+
+        if progress is not None:
+            progress.report(33)
+
         directory_e = self.obj.directory_energy_spectra
         self.make_energy_spectrum(directory_e, self.obj.name,
                                   self.obj.serial_number,
                                   sample_folder_name)
-        progress_bar.setValue(82)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        # Mac requires event processing to show progress bar and its
-        # process.
+
+        if progress is not None:
+            progress.report(66)
+
         directory_d = self.obj.directory_depth_profiles
         self.make_depth_profile(directory_d, self.obj.name,
                                 self.obj.serial_number,
                                 sample_folder_name)
-        progress_bar.setValue(98)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        # Mac requires event processing to show progress bar and its
-        # process.
+
+        if progress is not None:
+            progress.report(100)
 
     def make_depth_profile(self, directory, name, serial_number_m,
                            sample_folder_name):
@@ -230,8 +234,9 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
                 line_scale, systerr)
             icon = self.icon_manager.get_icon("depth_profile_icon_2_16.png")
             self.add_widget(self.depth_profile_widget, icon=icon)
-        except:  # We do not need duplicate error logs, log in widget instead
-            print(sys.exc_info())  # TODO: Remove this.
+        except Exception as e:
+            # We do not need duplicate error logs, log in widget instead
+            print(e)
 
     def make_elemental_losses(self, directory, name, serial_number,
                               old_sample_name):
@@ -279,8 +284,9 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
                 use_progress_bar=False, statusbar=self.statusbar)
             icon = self.icon_manager.get_icon("elemental_losses_icon_16.png")
             self.add_widget(self.elemental_losses_widget, icon=icon)
-        except:  # We do not need duplicate error logs, log in widget instead
-            print(sys.exc_info())  # TODO: Remove this.
+        except Exception as e:
+            # We do not need duplicate error logs, log in widget instead
+            print(e)
 
     def make_energy_spectrum(self, directory, name, serial_number,
                              old_sample_name):
@@ -311,12 +317,11 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             EnergySpectrumParamsDialog.checked_cuts[m_name] = cut_names
             self.energy_spectrum_widget = EnergySpectrumWidget(
                 self, spectrum_type="measurement",
-                use_cuts=use_cuts,
-                bin_width=width)
+                use_cuts=use_cuts, bin_width=width)
             icon = self.icon_manager.get_icon("energy_spectrum_icon_16.png")
             self.add_widget(self.energy_spectrum_widget, icon=icon)
-        except:  # We do not need duplicate error logs, log in widget instead
-            print(sys.exc_info())  # TODO: Remove this.
+        except Exception as e:
+            print(e)
 
     def measurement_save_cuts(self):
         """Save measurement selections to cut files.

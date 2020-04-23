@@ -52,6 +52,11 @@ class TestGUIReporter(unittest.TestCase):
         self.reporter.report(15.5)
         self.prg_bar.setValue.assert_called_with(15.5)
 
+    def test_sub_reporting(self):
+        sub_reporter = self.reporter.get_sub_reporter(lambda x: x / 2)
+        sub_reporter.report(10)
+        self.prg_bar.setValue.assert_called_with(5)
+
     def test_bad_report_values(self):
         # reporter.report only accepts single number as its argument
         self.assertRaises(TypeError,

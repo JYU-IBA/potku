@@ -29,6 +29,7 @@ import unittest
 
 from modules.observing import Observable
 from modules.observing import Observer
+from modules.observing import ProgressReporter
 
 
 # Mock observable and observer
@@ -197,6 +198,55 @@ class TestObserving(unittest.TestCase):
         self.assertRaises(NotImplementedError, lambda: Obs().on_complete(""))
         self.assertRaises(NotImplementedError, lambda: Obs().on_error(""))
         self.assertRaises(NotImplementedError, lambda: Obs().on_next(""))
+
+
+class TestProgressReporting(unittest.TestCase):
+    def setUp(self):
+        self.x = 0
+
+    def test_progress_reporting(self):
+        self.assertEqual(0, self.x)
+
+        def increment(value):
+            self.x += value
+
+        reporter = ProgressReporter(increment)
+        reporter.report(1)
+        self.assertEqual(1, self.x)
+
+    def test_subprogress(self):
+        self.assertEqual(0, self.x)
+
+        def increment(value):
+            self.x += value
+
+        reporter = ProgressReporter(increment)
+        sub_reporter1 = reporter.get_sub_reporter(lambda x: x / 2)
+        sub_reporter2 = sub_reporter1.get_sub_reporter(lambda x: x / 2)
+
+        reporter.report(1)
+        self.assertEqual(1, self.x)
+
+        sub_reporter1.report(1)
+        self.assertEqual(1.5, self.x)
+
+        sub_reporter2.report(1)
+        self.assertEqual(1.75, self.x)
+
+        # Callback still maintain references to parent progresses so deleting
+        # these does not matter
+        del reporter
+        del sub_reporter1
+        del increment
+
+        sub_reporter2.report(1)
+        self.assertEqual(2, self.x)
+
+    def test_bad_values(self):
+        reporter = ProgressReporter(int)
+        sub_reporter = reporter.get_sub_reporter(list)
+
+        self.assertRaises(TypeError, lambda: sub_reporter.report(1))
 
 
 if __name__ == "__main__":
