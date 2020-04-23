@@ -30,7 +30,10 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import logging
-import os
+
+from pathlib import Path
+
+# TODO move CustomLogHandler to widgets and Logger to base classes
 
 
 class CustomLogHandler(logging.Handler):
@@ -57,8 +60,8 @@ class CustomLogHandler(logging.Handler):
         """
 
     def emit(self, record):
-        """Emits the log message to the destination, which is set when the handler
-        is initialized.
+        """Emits the log message to the destination, which is set when the
+        handler is initialized.
 
         Args:
             record: The record which will be emitted.
@@ -73,12 +76,12 @@ class CustomLogHandler(logging.Handler):
                                                    record.msg)
             else:
                 message = record.msg
-            self.log_dialog.add_text(message)
+            self.log_dialog.on_log_message.emit(message)
 
             # If the log message is error or higher, also send message to error 
             # field.
             if record.levelno >= 40:
-                self.log_dialog.add_error(message)
+                self.log_dialog.on_error_message.emit(message)
         except:
             # This method should be called from handlers when an exception is 
             # encountered during an emit() call.
@@ -89,11 +92,11 @@ class CustomLogHandler(logging.Handler):
             encountered during an emit() call. If the module-level attribute
             raiseExceptions is False, exceptions get silently ignored. This is 
             what is mostly wanted for a logging system - most users will not 
-            care about errors in the logging system, they are more interested in 
+            care about errors in the logging system, they are more interested in
             application errors. You could, however, replace this with a custom 
-            handler if you wish. The specified record is the one which was being 
+            handler if you wish. The specified record is the one which was being
             processed when the exception occurred. The default value of 
-            raiseExceptions is True, as that is more useful during development.       
+            raiseExceptions is True, as that is more useful during development.
             """
             logging.raiseExceptions = False
             self.handleError(record.msg)
@@ -132,11 +135,9 @@ class Logger:
         # Adds two loghandlers. The other one will be used to log info (and up)
         # messages to a default.log file. The other one will log errors and
         # criticals to the errors.log file.
-        self.defaultlog = logging.FileHandler(os.path.join(directory,
-                                                           "default.log"))
+        self.defaultlog = logging.FileHandler(Path(directory, "default.log"))
         self.defaultlog.setLevel(logging.INFO)
-        self.errorlog = logging.FileHandler(os.path.join(directory,
-                                                         "errors.log"))
+        self.errorlog = logging.FileHandler(Path(directory, "errors.log"))
         self.errorlog.setLevel(logging.ERROR)
 
         # Set the formatter which will be used to log messages. Here you can
@@ -145,8 +146,7 @@ class Logger:
             "%(asctime)s - %(levelname)s - %(message)s",
             datefmt=self.datefmt)
 
-        requestlog = logging.FileHandler(os.path.join(request_directory,
-                                                      "request.log"))
+        requestlog = logging.FileHandler(Path(request_directory, "request.log"))
 
         req_fmt = "%(asctime)s - %(levelname)s - [{0} : '%(name)s] - " \
                   "%(message)s".format(self.category)

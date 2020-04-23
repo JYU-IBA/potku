@@ -469,7 +469,7 @@ class Selector:
                 fp.write(sel.save_string(self.is_transposed) + "\n")
             fp.close()
 
-    def load(self, filename, progress=None, add=0.0, base=0.0):
+    def load(self, filename, progress=None):
         """Load selections from a file.
         
         Removes all current selections and loads selections from given filename.
@@ -477,32 +477,38 @@ class Selector:
         Args:
             filename: String representing (full) path to selection file.
             progress: ProgressReporter object.
-            add: How many percents will be added to progress bar.
-            base: Base value for progress bar.
         """
         self.remove_all()
-        with open(filename) as fp:
-            for line in fp:
-                # ['ONone', '16', 'red', '3436, 2964, 4054;2376, 3964, 3914']
-                split = line.strip().split("    ")
-                sel = Selection(self.axes, self.element_colormap,
-                                element_type=split[0],
-                                element=split[1],
-                                isotope=(split[2] if split[2] == ""
-                                         else int(split[2])),
-                                weight_factor=float(split[3]),
-                                scatter=split[4],
-                                color=split[5],
-                                points=split[6],
-                                transposed=self.is_transposed,
-                                measurement=self.measurement)
-                self.selections.append(sel)
+        try:
+            with open(filename) as fp:
+                for line in fp:
+                    # ['ONone', '16', 'red', '3436, 2964, 4054;2376, 3964, 3914']
+                    split = line.strip().split("    ")
+                    sel = Selection(self.axes, self.element_colormap,
+                                    element_type=split[0],
+                                    element=split[1],
+                                    isotope=(split[2] if split[2] == ""
+                                             else int(split[2])),
+                                    weight_factor=float(split[3]),
+                                    scatter=split[4],
+                                    color=split[5],
+                                    points=split[6],
+                                    transposed=self.is_transposed,
+                                    measurement=self.measurement)
+                    self.selections.append(sel)
+            message = f"Selection file {filename} was read successfully!"
+            logging.getLogger(self.measurement_name).info(message)
+        except OSError as e:
+            message = f"Could not read selection file: {e}."
+            logging.getLogger(self.measurement_name).error(message)
+        except (ValueError, IndexError) as e:
+            message = f"Could not read selection data from {filename}. " \
+                      f"Reason: {e}. Check that the file contains valid data."
+            logging.getLogger(self.measurement_name).error(message)
         self.update_axes_limits()
         self.draw()  # Draw all selections
         self.auto_save()
-        self.update_selection_points(progress, add, base)
-        message = "Selection file {0} was read successfully!".format(filename)
-        logging.getLogger(self.measurement_name).info(message)
+        self.update_selection_points(progress=progress)
 
     def update_axes_limits(self):
         """Update selector's axes limits based on all points in all selections.
@@ -538,14 +544,11 @@ class Selector:
             selection.point_inside(data[n])
         selection.events_counted = True
 
-    def update_selection_points(self, progress=None, percentage=0.0,
-                                base=0.0):
+    def update_selection_points(self, progress=None):
         """Update all selections event counts.
 
         Args:
             progress: ProgressReporter object
-            percentage: How many percents will be added to progress bar.
-            base: Base value for progress bar.
         """
         data = self.measurement.data
         for selection in self.selections:
@@ -557,7 +560,7 @@ class Selector:
                 if selection.is_closed:
                     selection.point_inside(point)
             if progress is not None and i % 10_000 == 0:
-                progress.report(base + (i / len(data) * percentage))
+                progress.report(i / len(data) * 100)
 
         for selection in self.selections:
             selection.events_counted = True

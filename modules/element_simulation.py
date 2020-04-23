@@ -784,6 +784,14 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             "optimizing": self.optimization_running
         }
 
+    def get_main_recoil(self) -> RecoilElement:
+        # TODO replace the main_recoil attribute as well as all references to
+        #   recoil_elements[0] with this function
+        if self.recoil_elements:
+            return self.recoil_elements[0]
+        else:
+            return None
+
     def is_simulation_running(self):
         # TODO better method for determining this
         return bool(self.mcerd_objects) and not self.is_optimization_running()
@@ -935,25 +943,12 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         status = self.get_current_status()
 
         if status["state"] == SimulationState.DONE:
-
-            # FIXME ATM, logging from another thread than main thread will
-            #       cause an error:
-            #   QObject::connect: Cannot queue arguments of type
-            #       'QTextCursor'
-            #   (Make sure 'QTextCursor' is registered using
-            #       qRegisterMetaType().)
-            # GUI has a log box that is updated on each log message,
-            # so updating it from another thread leads to errors and possibly
-            # (albeit rarely) crashes. A thread safe GUI logging should
-            # nevertheless be implemented.
-
-            # msg = "Simulation finished. Element {0}, processes: {1},
-            # observed" \
-            #      " atoms: {2}".format(str(element),
-            #                           self.last_process_count,
-            #                           status["atom_count"])
-
-            # logging.getLogger(simulation_name).info(msg)
+            if self.simulation is not None:
+                msg = f"Simulation finished. Element " \
+                      f"{self.get_main_recoil().get_full_name()}, " \
+                      f"processes: {self.last_process_count}, " \
+                      f"observed atoms: {status['atom_count']}"
+                logging.getLogger(self.simulation.name).info(msg)
 
             self.simulations_done = True
             self.__erd_filehandler.update()

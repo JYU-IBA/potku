@@ -207,5 +207,26 @@ class TestGeneralFunctions(unittest.TestCase):
         self.assertEqual(77780, gf.round_value_by_four_biggest(77777))
 
 
+class TestBinDir(unittest.TestCase):
+    def test_get_bin_dir(self):
+        # get_bin_dir should always return the same absolute Path
+        # regardless of current working directory
+        cur_dir = os.getcwd()
+        try:
+            d1 = gf.get_bin_dir()
+
+            self.assertTrue(d1.is_absolute())
+            self.assertEqual("Potku-bin", d1.name)
+
+            os.chdir(tempfile.gettempdir())
+
+            d2 = gf.get_bin_dir()
+
+            self.assertEqual(d1, d2)
+            self.assertNotEqual(cur_dir, os.getcwd())
+        finally:
+            os.chdir(cur_dir)
+
+
 if __name__ == "__main__":
     unittest.main()
