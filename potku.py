@@ -58,6 +58,7 @@ from dialogs.simulation.new_simulation import SimulationNewDialog
 from dialogs.file_dialogs import open_file_dialog
 
 from widgets.gui_utils import GUIReporter
+from widgets.gui_utils import StatusBarHandler
 from widgets.icon_manager import IconManager
 
 from modules.global_settings import GlobalSettings
@@ -600,31 +601,24 @@ class Potku(QtWidgets.QMainWindow):
                 # Check that the data is read.
                 if not tab.data_loaded:
                     tab.data_loaded = True
-                    progress_bar = QtWidgets.QProgressBar()
-                    self.statusbar.addWidget(progress_bar, 1)
-                    progress_bar.show()
-                    progress_bar.setValue(5)
-                    QtCore.QCoreApplication.processEvents(
-                        QtCore.QEventLoop.AllEvents)
+
+                    sbh = StatusBarHandler(self.statusbar, autoremove=True)
+                    sbh.reporter.report(5)
 
                     tab.obj.load_data()
-                    progress_bar.setValue(35)
-                    QtCore.QCoreApplication.processEvents(
-                        QtCore.QEventLoop.AllEvents)
+                    sbh.reporter.report(30)
 
-                    tab.add_histogram(GUIReporter(progress_bar))
+                    tab.add_histogram(progress=sbh.reporter.get_sub_reporter(
+                        lambda x: 30 + 0.5 * x
+                    ))
 
-                    progress_bar.setValue(65)
-                    QtCore.QCoreApplication.processEvents(
-                        QtCore.QEventLoop.AllEvents)
+                    sbh.reporter.report(80)
+
                     # Load previous states.
-                    tab.check_previous_state_files(progress_bar)
-                    progress_bar.setValue(100)
-                    QtCore.QCoreApplication.processEvents(
-                        QtCore.QEventLoop.AllEvents)
+                    tab.check_previous_state_files(
+                        sbh.reporter.get_sub_reporter(lambda x: 80 + 0.2 * x))
 
-                    self.statusbar.removeWidget(progress_bar)
-                    progress_bar.hide()
+                    sbh.reporter.report(100)
 
                     self.__change_tab_icon(clicked_item)
                     master_mea = tab.obj.request.get_master()
@@ -635,23 +629,21 @@ class Potku(QtWidgets.QMainWindow):
                 name = tab.obj.name
 
                 # Check that the data is read.
-                if not tab.data_loaded:
+                if not tab.data_loaded:     # TODO
+                    sbh = StatusBarHandler(self.statusbar)
+
+                    tab.add_simulation_target_and_recoil(
+                        progress=sbh.reporter.get_sub_reporter(
+                            lambda x: 0.75 * x
+                        ))
+
+                    tab.check_previous_state_files(
+                        progress=sbh.reporter.get_sub_reporter(
+                            lambda x: 0.75 + 0.25 * x
+                        ))
+
+                    sbh.reporter.report(100)
                     tab.data_loaded = True
-                    progress_bar = QtWidgets.QProgressBar()
-                    self.statusbar.addWidget(progress_bar, 1)
-                    progress_bar.show()
-
-                    tab.add_simulation_target_and_recoil(progress_bar)
-
-                    tab.check_previous_state_files(progress_bar)
-
-                    progress_bar.setValue(100)
-                    QtCore.QCoreApplication.processEvents(
-                        QtCore.QEventLoop.AllEvents)
-
-                    self.statusbar.removeWidget(progress_bar)
-                    progress_bar.hide()
-
                     self.__change_tab_icon(clicked_item)
             else:
                 raise TabError("No such tab widget")
@@ -1154,7 +1146,7 @@ class Potku(QtWidgets.QMainWindow):
                 if load_data:
                     measurement.load_data()
 
-                    tab.add_histogram(GUIReporter(progress_bar))    # TODO
+                    tab.add_histogram(GUIReporter(progress_bar))
                     self.tabs.addTab(tab, measurement.name)
                     self.tabs.setCurrentWidget(tab)
 
@@ -1330,9 +1322,9 @@ class Potku(QtWidgets.QMainWindow):
             return
 
         time_start = datetime.now()
-        progress_bar = QtWidgets.QProgressBar()
-        self.statusbar.addWidget(progress_bar, 1)
-        progress_bar.show()
+
+        sbh = StatusBarHandler(self.statusbar, autoremove=True)
+
         nonslaves = self.request.get_nonslaves()
         master = self.request.get_master()
         master_tab = self.tab_widgets[master.tab_id]
@@ -1340,19 +1332,19 @@ class Potku(QtWidgets.QMainWindow):
         directory_d = master.directory_depth_profiles
         directory_e = master.directory_energy_spectra
         directory_c = master.directory_composition_changes
-        progress_bar.setValue(1)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+
         # Load selections and save cut files
         # TODO: Make a check for these if identical already -> don't redo.
-        # TODO
-        self.request.save_selection(master, GUIReporter(progress_bar), 20)
-        progress_bar.setValue(21)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+        # Saving selections takes about 20 % of the processing time
+        self.request.save_selection(
+            master, progress=sbh.reporter.get_sub_reporter(lambda x: 0.2 * x))
 
-        # TODO
-        self.request.save_cuts(master, GUIReporter(progress_bar), 21, 11)
-        progress_bar.setValue(33)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+        sbh.reporter.report(21)
+
+        self.request.save_cuts(master, progress=sbh.reporter.get_sub_reporter(
+            lambda x: 21 + 0.12 * x))
+
+        sbh.reporter.report(33)
 
         tree_root = self.treeWidget.invisibleRootItem()
         tree_child_count = tree_root.childCount()
@@ -1369,9 +1361,7 @@ class Potku(QtWidgets.QMainWindow):
                     tab_obj = tab.obj
                     tab_name = tab_obj.name
                     if tab_name == master_name or tab_obj in nonslaves:
-                        progress_bar.setValue(start + item_percentage)
-                        QtCore.QCoreApplication.processEvents(
-                            QtCore.QEventLoop.AllEvents)
+                        sbh.reporter.report(start + item_percentage)
                         start += item_percentage
                         continue
                     # Load measurement data if the slave is
@@ -1381,16 +1371,16 @@ class Potku(QtWidgets.QMainWindow):
                         tab.obj.load_data()
 
                         after_load = start + 0.2 * item_percentage
-                        progress_bar.setValue(after_load)
-                        QtCore.QCoreApplication.processEvents(
-                            QtCore.QEventLoop.AllEvents)
+                        sbh.reporter.report(after_load)
 
                         after_hist = start + 0.4 * item_percentage
                         add = after_hist - after_load
-                        tab.add_histogram(progress_bar, after_load, add)
-                        progress_bar.setValue(after_hist)
-                        QtCore.QCoreApplication.processEvents(
-                            QtCore.QEventLoop.AllEvents)
+                        tab.add_histogram(
+                            progress=sbh.reporter.get_sub_reporter(
+                                lambda x: after_hist + 0.01 * add * x
+                            ))
+
+                        sbh.reporter.report(after_hist)
 
                         # Load selection
                         directory = master.directory_data
@@ -1400,9 +1390,10 @@ class Potku(QtWidgets.QMainWindow):
                         tab.histogram.matplotlib.on_draw()
 
                         # Save cuts
-                        tab.obj.save_cuts(GUIReporter(progress_bar),
-                                          after_hist,
-                                          0.1 * item_percentage)
+                        tab.obj.save_cuts(
+                            progress=sbh.reporter.get_sub_reporter(
+                                lambda x: after_hist + 0.1 * item_percentage * x
+                            ))
 
                         # Update tree item icon to open folder
                         self.treeWidget.blockSignals(True)
@@ -1420,9 +1411,8 @@ class Potku(QtWidgets.QMainWindow):
                                                master.serial_number,
                                                sample_folder_name)
                         tab.depth_profile_widget.save_to_file()
-                        progress_bar.setValue(start + 0.6 * item_percentage)
-                        QtCore.QCoreApplication.processEvents(
-                            QtCore.QEventLoop.AllEvents)
+
+                        sbh.reporter.report(start + 0.6 * item_percentage)
 
                     if master_tab.elemental_losses_widget and tab.data_loaded:
                         if tab.elemental_losses_widget:
@@ -1431,9 +1421,8 @@ class Potku(QtWidgets.QMainWindow):
                                                   master.serial_number,
                                                   sample_folder_name)
                         tab.elemental_losses_widget.save_to_file()
-                        progress_bar.setValue(start + 0.8 * item_percentage)
-                        QtCore.QCoreApplication.processEvents(
-                            QtCore.QEventLoop.AllEvents)
+
+                        sbh.reporter.report(start + 0.8 * item_percentage)
 
                     if master_tab.energy_spectrum_widget and tab.data_loaded:
                         if tab.energy_spectrum_widget:
@@ -1442,18 +1431,15 @@ class Potku(QtWidgets.QMainWindow):
                                                  master.serial_number,
                                                  sample_folder_name)
                         tab.energy_spectrum_widget.save_to_file()
-                        progress_bar.setValue(start + 0.95 * item_percentage)
-                        QtCore.QCoreApplication.processEvents(
-                            QtCore.QEventLoop.AllEvents)
 
-                progress_bar.setValue(start + item_percentage)
-                QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+                        sbh.reporter.report(start + 0.95 * item_percentage)
+
+                sbh.reporter.report(start + item_percentage)
 
                 start += item_percentage
 
-        self.statusbar.removeWidget(progress_bar)
-        progress_bar.hide()
+        sbh.reporter.report(100)
+
         time_end = datetime.now()
         time_duration = (time_end - time_start).seconds
         time_str = timedelta(seconds=time_duration)

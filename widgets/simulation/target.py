@@ -52,7 +52,7 @@ class TargetWidget(QtWidgets.QWidget):
     results_accepted = pyqtSignal(ElementSimulation)
 
     def __init__(self, tab, simulation, target, icon_manager,
-                 progress_bar=None, statusbar=None):
+                 progress=None, statusbar=None):
         """Initializes thw widget that can be used to define target composition
         and
         recoil atom distribution.
@@ -62,15 +62,13 @@ class TargetWidget(QtWidgets.QWidget):
             simulation: A Simulation object.
             target: A Target object.
             icon_manager: An icon manager class object.
-            progress_bar: A progress bar used when opening a simulation.
+            progress: ProgressReporter object
         """
         super().__init__()
         uic.loadUi(Path("ui_files", "ui_target_widget.ui"), self)
 
-        if progress_bar:
-            progress_bar.setValue(0)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+        if progress is not None:
+            progress.report(0)
 
         self.tab = tab
         self.simulation = simulation
@@ -81,11 +79,8 @@ class TargetWidget(QtWidgets.QWidget):
                                                      icon_manager,
                                                      self.simulation)
 
-        if progress_bar:
-            # TODO use progress reporting
-            progress_bar.setValue(45)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+        if progress is not None:
+            progress.report(50)
 
         self.recoil_distribution_widget = RecoilAtomDistributionWidget(
             self, self.simulation, self.target, tab, icon_manager,
@@ -129,10 +124,8 @@ class TargetWidget(QtWidgets.QWidget):
         self.del_points = None
 
         self.set_shortcuts()
-        if progress_bar:
-            progress_bar.setValue(50)
-            QtCore.QCoreApplication.processEvents(
-                QtCore.QEventLoop.AllEvents)
+        if progress is not None:
+            progress.report(100)
 
         self.stop_saving = False
         self.thread = None

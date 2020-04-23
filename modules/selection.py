@@ -469,7 +469,7 @@ class Selector:
                 fp.write(sel.save_string(self.is_transposed) + "\n")
             fp.close()
 
-    def load(self, filename, progress=None, add=0.0, base=0.0):
+    def load(self, filename, progress=None):
         """Load selections from a file.
         
         Removes all current selections and loads selections from given filename.
@@ -477,8 +477,6 @@ class Selector:
         Args:
             filename: String representing (full) path to selection file.
             progress: ProgressReporter object.
-            add: How many percents will be added to progress bar.
-            base: Base value for progress bar.
         """
         self.remove_all()
         with open(filename) as fp:
@@ -500,7 +498,7 @@ class Selector:
         self.update_axes_limits()
         self.draw()  # Draw all selections
         self.auto_save()
-        self.update_selection_points(progress, add, base)
+        self.update_selection_points(progress=progress)
         message = "Selection file {0} was read successfully!".format(filename)
         logging.getLogger(self.measurement_name).info(message)
 
@@ -538,14 +536,11 @@ class Selector:
             selection.point_inside(data[n])
         selection.events_counted = True
 
-    def update_selection_points(self, progress=None, percentage=0.0,
-                                base=0.0):
+    def update_selection_points(self, progress=None):
         """Update all selections event counts.
 
         Args:
             progress: ProgressReporter object
-            percentage: How many percents will be added to progress bar.
-            base: Base value for progress bar.
         """
         data = self.measurement.data
         for selection in self.selections:
@@ -557,7 +552,7 @@ class Selector:
                 if selection.is_closed:
                     selection.point_inside(point)
             if progress is not None and i % 10_000 == 0:
-                progress.report(base + (i / len(data) * percentage))
+                progress.report(i / len(data) * 100)
 
         for selection in self.selections:
             selection.events_counted = True

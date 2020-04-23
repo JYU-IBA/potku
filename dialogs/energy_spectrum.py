@@ -552,8 +552,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 self.measurement = self.parent.obj
                 # Removal is done in the finally block so autoremove
                 # is set to False
-                sbh = StatusBarHandler(statusbar,
-                                       autoremove=False)
+                sbh = StatusBarHandler(statusbar, autoremove=False)
 
                 # Generate new tof.in file for external programs
                 self.measurement.generate_tof_in()
@@ -594,7 +593,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 spectra_changed=spectra_changed,
                 channel_width=bin_width
             )
-        except (PermissionError, IsADirectoryError) as e:
+        except (PermissionError, IsADirectoryError, FileNotFoundError) as e:
             # If the file path points to directory, this will either raise
             # PermissionError (Windows) or IsADirectoryError (Mac)
             msg = f"Could not create Energy Spectrum graph: {e}"

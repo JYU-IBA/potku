@@ -667,10 +667,10 @@ class Measurement(Logger):
         Args:
             directory: Directory to be made under measurement.
         """
-        new_dir = os.path.join(self.directory, directory)
-        if not os.path.exists(new_dir):
+        new_dir = Path(self.directory, directory)
+        if not new_dir.exists():
             os.makedirs(new_dir)
-            log = "Created a directory {0}.".format(new_dir)
+            log = f"Created a directory {new_dir}."
             logging.getLogger("request").info(log)
 
     def copy_file_into_measurement(self, file_path):
@@ -754,7 +754,7 @@ class Measurement(Logger):
                 new_name = self.name + "." + file.split('.', 1)[1]
                 gf.rename_file(old_path, new_name)
 
-    def set_axes(self, axes, progress=None, start=0.0, add=0.0):
+    def set_axes(self, axes, progress=None):
         """ Set axes information to selector within measurement.
         
         Sets axes information to selector to add selection points. Since 
@@ -764,14 +764,12 @@ class Measurement(Logger):
         Args:
             axes: Matplotlib FigureCanvas's subplot
             progress: ProgressReporter object
-            start: Start value for progress bar.
-            add: Value added to progress bar.
         """
         self.selector.axes = axes
         # We've set axes information, check for old selection.
-        self.__check_for_old_selection(progress, start, add)
+        self.__check_for_old_selection(progress)
 
-    def __check_for_old_selection(self, progress=None, start=0.0, add=0.0):
+    def __check_for_old_selection(self, progress=None):
         """ Use old selection file_path if exists.
 
         Args:
@@ -783,11 +781,7 @@ class Measurement(Logger):
             selection_file = Path(self.directory, self.directory_data,
                                   "{0}.selections".format(self.name))
             with open(selection_file):
-                if not add:
-                    add = 10
-                if not start:
-                    start = 40
-                self.load_selection(selection_file, progress, add, start)
+                self.load_selection(selection_file, progress)
         except OSError:
             # TODO: Is it necessary to inform user with this?
             # FIXME crashes here when:
@@ -909,7 +903,7 @@ class Measurement(Logger):
             deleted = True
         return deleted
 
-    def save_cuts(self, progress=None, percentage=0.0, add=0.0):
+    def save_cuts(self, progress=None):
         """ Save cut files
         
         Saves data points within selections into cut files.
@@ -917,21 +911,15 @@ class Measurement(Logger):
         if self.selector.is_empty():
             self.__remove_old_cut_files()
             # Remove .selections file
-            selection_file = os.path.join(self.directory_data, self.name +
-                                          ".selections")
-            if os.path.exists(selection_file):
+            selection_file = Path(self.directory_data,
+                                  f"{self.name}.selections")
+            try:
                 os.remove(selection_file)
+            except OSError:
+                pass
             return 0
-        if not os.path.exists(os.path.join(self.directory,
-                                           self.directory_cuts)):
-            self.__make_directories(self.directory_cuts)
 
-        if progress is not None:
-            percentage = 0
-            add = 100
-
-        first_add = add * 0.9
-        second_add = add * 0.1
+        self.__make_directories(self.directory_cuts)
 
         starttime = time.time()
 
@@ -946,38 +934,37 @@ class Measurement(Logger):
             if n % 5000 == 0:
                 # Do not always update UI to make it faster.
                 if progress is not None:
-                    progress.report(percentage + (n / data_count) * first_add)
+                    progress.report(n / data_count * 80)
             point = self.data[n]
             # Check if point is within selectors' limits for faster processing.
             if not self.selector.axes_limits.is_inside(point):
                 continue
 
-            dirtyinteger = 0  # Lazyway     # TODO use enumerate
-            for selection in self.selector.selections:
+            for i, selection in enumerate(self.selector.selections):
                 if selection.point_inside(point):
-                    points_in_selection[dirtyinteger].append(point)
-                dirtyinteger += 1
+                    points_in_selection[i].append(point)
 
         # Save all found data points into appropriate element cut files
         # Firstly clear old cut files so those won't be accidentally
         # left there.
+        if progress is not None:
+            progress.report(80)
 
-        dirtyinteger = 0  # Increases with for, for each selection
         content_length = len(points_in_selection)
-        for points in points_in_selection:
+        for i, points in enumerate(points_in_selection):
             if points:  # If not empty selection -> save
-                selection = self.selector.get_at(dirtyinteger)
+                selection = self.selector.get_at(i)
                 cut_file = CutFile(os.path.join(self.directory,
                                                 self.directory_cuts))
                 cut_file.set_info(selection, points)
                 cut_file.save()
-            dirtyinteger += 1
             if progress is not None:
-                progress.report(percentage + first_add + (dirtyinteger /
-                                content_length) * second_add)
+                progress.report(80 + (i / content_length) * 0.2)
 
-        log_msg = "Saving finished in {0} seconds.".format(time.time() -
-                                                           starttime)
+        if progress is not None:
+            progress.report(100)
+
+        log_msg = f"Saving finished in {time.time() - starttime} seconds."
         logging.getLogger(self.name).info(log_msg)
 
     def __remove_old_cut_files(self):
@@ -987,8 +974,8 @@ class Measurement(Logger):
         self.__unlink_files(os.path.join(self.directory_cuts))
         directory_changes = os.path.join(
             self.directory_composition_changes, "Changes")
-        if not os.path.exists(directory_changes):
-            self.__make_directories(directory_changes)
+
+        self.__make_directories(directory_changes)
         self.__unlink_files(directory_changes)
 
     def __unlink_files(self, directory):
@@ -1019,8 +1006,7 @@ class Measurement(Logger):
                         f))]
         return cuts, elemloss
 
-    def load_selection(self, filename, progress=None, percent_add=0.0,
-                       start=40):
+    def load_selection(self, filename, progress=None):
         """ Load selections from a file_path.
         
         Removes all current selections and loads selections from given filename.
@@ -1029,10 +1015,8 @@ class Measurement(Logger):
             filename: String representing (full) directory to selection
             file_path.
             progress: ProgressReporter object
-            percent_add: How many percents are added to progress bar.
-            start: Start value for progress bar.
         """
-        self.selector.load(filename, progress, percent_add, start)
+        self.selector.load(filename, progress=progress)
 
     def generate_tof_in(self, no_foil=False, directory=None):
         """ Generate tof.in file for external programs.
