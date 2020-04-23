@@ -479,28 +479,36 @@ class Selector:
             progress: ProgressReporter object.
         """
         self.remove_all()
-        with open(filename) as fp:
-            for line in fp:
-                # ['ONone', '16', 'red', '3436, 2964, 4054;2376, 3964, 3914']
-                split = line.strip().split("    ")
-                sel = Selection(self.axes, self.element_colormap,
-                                element_type=split[0],
-                                element=split[1],
-                                isotope=(split[2] if split[2] == ""
-                                         else int(split[2])),
-                                weight_factor=float(split[3]),
-                                scatter=split[4],
-                                color=split[5],
-                                points=split[6],
-                                transposed=self.is_transposed,
-                                measurement=self.measurement)
-                self.selections.append(sel)
+        try:
+            with open(filename) as fp:
+                for line in fp:
+                    # ['ONone', '16', 'red', '3436, 2964, 4054;2376, 3964, 3914']
+                    split = line.strip().split("    ")
+                    sel = Selection(self.axes, self.element_colormap,
+                                    element_type=split[0],
+                                    element=split[1],
+                                    isotope=(split[2] if split[2] == ""
+                                             else int(split[2])),
+                                    weight_factor=float(split[3]),
+                                    scatter=split[4],
+                                    color=split[5],
+                                    points=split[6],
+                                    transposed=self.is_transposed,
+                                    measurement=self.measurement)
+                    self.selections.append(sel)
+            message = f"Selection file {filename} was read successfully!"
+            logging.getLogger(self.measurement_name).info(message)
+        except OSError as e:
+            message = f"Could not read selection file: {e}."
+            logging.getLogger(self.measurement_name).error(message)
+        except (ValueError, IndexError) as e:
+            message = f"Could not read selection data from {filename}. " \
+                      f"Reason: {e}. Check that the file contains valid data."
+            logging.getLogger(self.measurement_name).error(message)
         self.update_axes_limits()
         self.draw()  # Draw all selections
         self.auto_save()
         self.update_selection_points(progress=progress)
-        message = "Selection file {0} was read successfully!".format(filename)
-        logging.getLogger(self.measurement_name).info(message)
 
     def update_axes_limits(self):
         """Update selector's axes limits based on all points in all selections.

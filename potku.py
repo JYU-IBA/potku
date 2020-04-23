@@ -1350,6 +1350,9 @@ class Potku(QtWidgets.QMainWindow):
         tree_child_count = tree_root.childCount()
         start = 33
         sample_percentage = 67 / tree_child_count
+
+        # TODO fix reporting here on Mac. Need to use functools.partial to apply
+        #   function parameters
         for i in range(tree_child_count):
             sample_item = tree_root.child(i)
             sample_child_count = sample_item.childCount()
@@ -1384,8 +1387,8 @@ class Potku(QtWidgets.QMainWindow):
 
                         # Load selection
                         directory = master.directory_data
-                        selection_file = "{0}.selections".format(
-                            os.path.join(directory, master_name))
+                        selection_file = Path(directory,
+                                              f"{master_name}.selections")
                         tab.obj.selector.load(selection_file)
                         tab.histogram.matplotlib.on_draw()
 

@@ -35,6 +35,7 @@ import logging
 import os
 import re
 import time
+import functools
 
 from pathlib import Path
 
@@ -503,12 +504,16 @@ class Request(ElementSimulationContainer):
 
                     if progress is not None:
                         sub_progress = progress.get_sub_reporter(
-                            lambda x: i / len(tabs) + x)
+                            functools.partial(
+                                lambda idx, x: idx / len(tabs) * 100 + x, i))
                     else:
                         sub_progress = None
 
                     tab.obj.selector.load(selection_file, progress=sub_progress)
                     tab.histogram.matplotlib.on_draw()
+
+            if progress is not None:
+                progress.report(100)
 
     def set_master(self, measurement=None):
         """ Set master measurement for the request.
