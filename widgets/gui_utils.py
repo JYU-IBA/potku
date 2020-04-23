@@ -117,6 +117,16 @@ class QtABCMeta(type(QtCore.QObject), abc.ABCMeta):
     pass
 
 
+# TODO this is for debugging purposes. Remove or comment out this code once
+#   it is no longer needed
+_debug_progress = False
+if _debug_progress:
+    from collections import defaultdict
+    _p_bars = defaultdict(list)
+else:
+    _p_bars = None
+
+
 class GUIReporter(ProgressReporter):
     """GUI Progress reporter that updates the value of a progress bar.
 
@@ -138,6 +148,17 @@ class GUIReporter(ProgressReporter):
         def __update_func(value):
             # Callback function that will be connected to the signal
             if progress_bar is not None:
+                if _p_bars is not None:
+                    # TODO for debugging purposes save values to a dict
+                    #   so it easier to inspect them later
+                    vals = _p_bars.get(progress_bar, [-1])
+                    if vals[-1] > value or value > 100 or value < 0:
+                        print("Value was smaller than previous value or out "
+                              "of range.")
+                    _p_bars[progress_bar].append(value)
+
+                # TODO make transitions smoother when gaps between values are
+                #   big
                 progress_bar.setValue(value)
 
         self.signaller = self.Signaller()
@@ -186,6 +207,7 @@ class StatusBarHandler:
     def remove_progress_bar(self):
         """Removes progress bar from status bar.
         """
+        # TODO let the progress bar stay on screen for a while after hitting 100
         if self.statusbar is not None:
             self.statusbar.removeWidget(self.progress_bar)
         if self.progress_bar is not None:

@@ -639,7 +639,7 @@ class Potku(QtWidgets.QMainWindow):
 
                     tab.check_previous_state_files(
                         progress=sbh.reporter.get_sub_reporter(
-                            lambda x: 0.75 + 0.25 * x
+                            lambda x: 75 + 0.25 * x
                         ))
 
                     sbh.reporter.report(100)
@@ -1325,6 +1325,7 @@ class Potku(QtWidgets.QMainWindow):
 
         sbh = StatusBarHandler(self.statusbar, autoremove=True)
 
+        # TODO add request.get_slaves method?
         nonslaves = self.request.get_nonslaves()
         master = self.request.get_master()
         master_tab = self.tab_widgets[master.tab_id]
@@ -1348,42 +1349,40 @@ class Potku(QtWidgets.QMainWindow):
 
         tree_root = self.treeWidget.invisibleRootItem()
         tree_child_count = tree_root.childCount()
-        start = 33
-        sample_percentage = 67 / tree_child_count
 
-        # TODO fix reporting here on Mac. Need to use functools.partial to apply
-        #   function parameters
         for i in range(tree_child_count):
             sample_item = tree_root.child(i)
             sample_child_count = sample_item.childCount()
+
+            sample_reporter = sbh.reporter.get_sub_reporter(
+                lambda x: 33 + 0.67 * (100 * i + x) / tree_child_count
+            )
             for j in range(sample_child_count):
-                item_percentage = sample_percentage / sample_child_count
                 tree_item = sample_item.child(j)
+
+                item_reporter = sample_reporter.get_sub_reporter(
+                    lambda x: (100 * j + x) / sample_child_count
+                )
+
                 if isinstance(tree_item.obj, Measurement):
                     tab = self.tab_widgets[tree_item.tab_id]
                     tab_obj = tab.obj
                     tab_name = tab_obj.name
                     if tab_name == master_name or tab_obj in nonslaves:
-                        sbh.reporter.report(start + item_percentage)
-                        start += item_percentage
                         continue
                     # Load measurement data if the slave is
                     if not tab.data_loaded:
                         tab.data_loaded = True
 
                         tab.obj.load_data()
+                        item_reporter.report(20)
 
-                        after_load = start + 0.2 * item_percentage
-                        sbh.reporter.report(after_load)
-
-                        after_hist = start + 0.4 * item_percentage
-                        add = after_hist - after_load
                         tab.add_histogram(
-                            progress=sbh.reporter.get_sub_reporter(
-                                lambda x: after_hist + 0.01 * add * x
+                            progress=item_reporter.get_sub_reporter(
+                                lambda x: 20 + 0.4 * x
                             ))
 
-                        sbh.reporter.report(after_hist)
+                        item_reporter.report(60)
 
                         # Load selection
                         directory = master.directory_data
@@ -1394,8 +1393,8 @@ class Potku(QtWidgets.QMainWindow):
 
                         # Save cuts
                         tab.obj.save_cuts(
-                            progress=sbh.reporter.get_sub_reporter(
-                                lambda x: after_hist + 0.1 * item_percentage * x
+                            progress=item_reporter.get_sub_reporter(
+                                lambda x: 60 + 0.2 * x
                             ))
 
                         # Update tree item icon to open folder
@@ -1415,7 +1414,7 @@ class Potku(QtWidgets.QMainWindow):
                                                sample_folder_name)
                         tab.depth_profile_widget.save_to_file()
 
-                        sbh.reporter.report(start + 0.6 * item_percentage)
+                    item_reporter.report(80)
 
                     if master_tab.elemental_losses_widget and tab.data_loaded:
                         if tab.elemental_losses_widget:
@@ -1425,7 +1424,7 @@ class Potku(QtWidgets.QMainWindow):
                                                   sample_folder_name)
                         tab.elemental_losses_widget.save_to_file()
 
-                        sbh.reporter.report(start + 0.8 * item_percentage)
+                    item_reporter.report(90)
 
                     if master_tab.energy_spectrum_widget and tab.data_loaded:
                         if tab.energy_spectrum_widget:
@@ -1435,11 +1434,7 @@ class Potku(QtWidgets.QMainWindow):
                                                  sample_folder_name)
                         tab.energy_spectrum_widget.save_to_file()
 
-                        sbh.reporter.report(start + 0.95 * item_percentage)
-
-                sbh.reporter.report(start + item_percentage)
-
-                start += item_percentage
+                item_reporter.report(100)
 
         sbh.reporter.report(100)
 

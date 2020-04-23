@@ -475,12 +475,22 @@ class Request(ElementSimulationContainer):
         if master != "" and name == master.name:
             nonslaves = self.get_nonslaves()
             tabs = self.get_measurement_tabs(measurement.tab_id)
-            for tab in tabs:
+            for i, tab in enumerate(tabs):
+                if progress is not None:
+                    sub_progress = progress.get_sub_reporter(
+                        lambda x: (100 * i + x) / len(tabs)
+                    )
+                else:
+                    sub_progress = None
+
                 tab_name = tab.obj.name
                 if tab.data_loaded and tab.obj not in nonslaves and \
                         tab_name != name:
                     # No need to save same measurement twice.
-                    tab.obj.save_cuts(progress)
+                    tab.obj.save_cuts(progress=sub_progress)
+
+        if progress is not None:
+            progress.report(100)
 
     def save_selection(self, measurement, progress=None):
         """ Save selection for all measurements except for master.
@@ -504,16 +514,15 @@ class Request(ElementSimulationContainer):
 
                     if progress is not None:
                         sub_progress = progress.get_sub_reporter(
-                            functools.partial(
-                                lambda idx, x: idx / len(tabs) * 100 + x, i))
+                            lambda x: (100 * i + x) / len(tabs))
                     else:
                         sub_progress = None
 
                     tab.obj.selector.load(selection_file, progress=sub_progress)
                     tab.histogram.matplotlib.on_draw()
 
-            if progress is not None:
-                progress.report(100)
+        if progress is not None:
+            progress.report(100)
 
     def set_master(self, measurement=None):
         """ Set master measurement for the request.

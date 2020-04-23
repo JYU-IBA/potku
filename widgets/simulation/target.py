@@ -212,9 +212,15 @@ class TargetWidget(QtWidgets.QWidget):
 
         if not thread and reporter is not None:
             reporter.report(50)
+            sub_reporter = reporter.get_sub_reporter(lambda x: 50 + 0.5 * x)
+        else:
+            sub_reporter = None
 
         self.recoil_distribution_widget.save_mcsimu_rec_profile(
-            self.simulation.directory, reporter)
+            self.simulation.directory, progress=sub_reporter)
+
+        if reporter is not None:
+            reporter.report(100)
 
     def set_shortcuts(self):
         """

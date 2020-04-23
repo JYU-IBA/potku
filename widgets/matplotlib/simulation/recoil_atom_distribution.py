@@ -647,13 +647,13 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 error_box.setWindowTitle("Error")
                 error_box.exec()
 
-    def save_mcsimu_rec_profile(self, directory, reporter):
+    def save_mcsimu_rec_profile(self, directory, progress=None):
         """
         Save information to .mcsimu and .profile files.
 
         Args:
             directory: Directory where to save to.
-            reporter: ProgressReporter.
+            progress: ProgressReporter.
         """
         length = len(self.element_manager.element_simulations)
         for i, element_simulation in enumerate(
@@ -669,8 +669,11 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 Path(directory,
                      f"{element_simulation.name_prefix}.profile"))
 
-            if reporter is not None:
-                reporter.report((i / length) * 100)
+            if progress is not None:
+                progress.report((i / length) * 100)
+
+        if progress is not None:
+            progress.report(100)
 
     def unlock_or_lock_edit(self):
         """
