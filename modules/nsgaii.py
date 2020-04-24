@@ -78,7 +78,8 @@ class Nsgaii(Observable):
                  recoil_type="box", number_of_processes=1, cross_p=0.9, mut_p=1,
                  stop_percent=0.3, check_time=20, ch=0.025,
                  measurement=None, cut_file=None, dis_c=20,
-                 dis_m=20, check_max=900, check_min=0, skip_simulation=False):
+                 dis_m=20, check_max=900, check_min=0, skip_simulation=False,
+                 cancellation_token=None):
         """
         Initialize the NSGA-II algorithm with needed parameters and start
         running it.
@@ -152,6 +153,8 @@ class Nsgaii(Observable):
         self.__start = None
         self.population = None
         self.measured_espe = None
+
+        self.cancellation_token = cancellation_token
 
     def __prepare_optimization(self):
         """Performs internal preparation before optimization begins. If this
@@ -948,7 +951,8 @@ class Nsgaii(Observable):
         crowd_dis = self.crowding_distance(front_no, self.population[1])
         # In a loop until number of evaluations is reached:
         evaluations = self.evaluations
-        while evaluations > 0:
+        while evaluations > 0 and \
+                not self.cancellation_token.is_cancellation_requested():
             # Join front_no and crowd_dis with transpose to get one array
             fit = np.vstack((front_no, crowd_dis)).T
             # Select group of parents (mating pool) by binary_tournament,
@@ -1024,14 +1028,14 @@ class Nsgaii(Observable):
             avg = f_sum / len(pareto_optimal_sols)
             self.element_simulation.optimized_fluence = avg
 
+        self.element_simulation.optimization_done = True
+        self.element_simulation.stop()
         self.delete_temp_files()
         self.save_results_to_file()
 
         self.on_complete(self._get_message(OptimizationState.FINISHED,
-                                           evaluations_done=self.evaluations))
-        # Signal thread that checks whether optimization
-        # is done
-        self.element_simulation.optimization_done = True
+                                           evaluations_done=self.evaluations
+                                                            - evaluations))
 
     def delete_temp_files(self):
         # Remove unnecessary opt.recoil file

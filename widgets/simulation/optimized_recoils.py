@@ -46,7 +46,7 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
     results_accepted = pyqtSignal(ElementSimulation)
 
     def __init__(self, element_simulation: ElementSimulation, measured_element,
-                 target):
+                 target, cancellation_token=None):
         """
         Initialize the widget.
         """
@@ -66,7 +66,8 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
                             f" - {measured_element} - fluence: {run.fluence}")
 
         self.recoil_atoms = RecoilAtomOptimizationWidget(
-            self, element_simulation, target)
+            self, element_simulation, target,
+            cancellation_token=cancellation_token)
         self.recoil_atoms.results_accepted.connect(self.results_accepted.emit)
 
     def delete(self):

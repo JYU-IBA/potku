@@ -100,7 +100,7 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
         self.add_widget(self.simulation_target, has_close_button=False)
 
     def add_optimization_results_widget(self, elem_sim, measurement_elem,
-                                        mode_recoil):
+                                        mode_recoil, cancellation_token=None):
         """
         Add a widget that holds progress and results of optimization.
 
@@ -112,12 +112,14 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
         """
         if mode_recoil:
             self.optimization_result_widget = OptimizedRecoilsWidget(
-                elem_sim, measurement_elem, self.obj.target)
+                elem_sim, measurement_elem, self.obj.target,
+                cancellation_token=cancellation_token)
             self.optimization_result_widget.results_accepted.connect(
                 self.simulation_target.results_accepted.emit
             )
         else:
-            self.optimization_result_widget = OptimizedFluenceWidget(elem_sim)
+            self.optimization_result_widget = OptimizedFluenceWidget(
+                elem_sim, cancellation_token=cancellation_token)
         elem_sim.optimization_widget = self.optimization_result_widget
         icon = self.icon_manager.get_icon("potku_icon.ico")
         self.add_widget(self.optimization_result_widget, icon=icon)

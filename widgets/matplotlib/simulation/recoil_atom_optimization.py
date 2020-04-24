@@ -51,7 +51,8 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
 
     results_accepted = pyqtSignal(ElementSimulation)
 
-    def __init__(self, parent, element_simulation, target):
+    def __init__(self, parent, element_simulation, target,
+                 cancellation_token=None):
         super().__init__(parent)
         self.parent = parent
         self.element_simulation = element_simulation
@@ -76,6 +77,7 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
 
         self.parent.recoilListLayout.addWidget(widget)
 
+        # TODO move these to parent
         btn_txts = "First solution", "Median solution", "Last solution"
         for t in btn_txts:
             radio_btn = QtWidgets.QRadioButton(t)
@@ -89,6 +91,15 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.move_results_btn.setEnabled(False)
         self.move_results_btn.clicked.connect(self._move_results)
         self.recoil_vertical_layout.addWidget(self.move_results_btn)
+
+        self.stop_optim_btn = QtWidgets.QPushButton("Stop optimization")
+        self.stop_optim_btn.setToolTip("Stops optimization after current "
+                                       "generation has been evaluated.")
+        self.stop_optim_btn.setEnabled(True)
+        self.stop_optim_btn.clicked.connect(self._stop_optim)
+        self.recoil_vertical_layout.addWidget(self.stop_optim_btn)
+
+        self.cancellation_token = cancellation_token
 
         spacer = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Minimum,
                                        QtWidgets.QSizePolicy.Expanding)
@@ -254,6 +265,7 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
 
         if self.element_simulation.optimization_recoils:
             self.move_results_btn.setEnabled(True)
+            self.stop_optim_btn.setEnabled(False)
 
         self.selected_line, = self.axes.plot(0, 0,
                                              marker="o",
@@ -335,3 +347,8 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
         self.element_simulation.move_optimized_recoil_to_regular_recoils()
         self.move_results_btn.setEnabled(False)
         self.results_accepted.emit(self.element_simulation)
+
+    def _stop_optim(self):
+        if self.cancellation_token is not None:
+            self.cancellation_token.request_cancellation()
+

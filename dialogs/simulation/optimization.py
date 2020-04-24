@@ -28,15 +28,14 @@ __version__ = "2.0"
 
 import os
 import threading
-import time
 
 import dialogs.dialog_functions as df
 import widgets.binding as bnd
 
 from pathlib import Path
 
-from modules.energy_spectrum import EnergySpectrum
 from modules.nsgaii import Nsgaii
+from modules.concurrency import CancellationToken
 
 from widgets.binding import PropertySavingWidget
 from widgets.gui_utils import QtABCMeta
@@ -290,9 +289,10 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
                     break
             i += 1
 
+        ct = CancellationToken()
         nsgaii = Nsgaii(element_simulation=self.element_simulation,
                         measurement=used_measurement, cut_file=cut_file,
-                        ch=self.ch,
+                        ch=self.ch, cancellation_token=ct,
                         **self.parameters_widget.get_properties())
 
         # Optimization running thread
@@ -303,7 +303,8 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
         mode_recoil = self.current_mode == "recoil"
 
         result_widget = self.tab.add_optimization_results_widget(
-            self.element_simulation, item_text, mode_recoil)
+            self.element_simulation, item_text, mode_recoil,
+            cancellation_token=ct)
 
         self.element_simulation.optimization_widget = result_widget
         nsgaii.subscribe(result_widget)
