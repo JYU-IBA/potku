@@ -108,9 +108,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.compression_x = self.__global_settings.get_tofe_compression_x()
         self.compression_y = self.__global_settings.get_tofe_compression_y()
         self.axes_range_mode = self.__global_settings.get_tofe_bin_range_mode()
-        x_range = self.__global_settings.get_tofe_bin_range_x()
-        y_range = self.__global_settings.get_tofe_bin_range_y()
-        self.axes_range = [x_range, y_range]
+        self.axes_range = (self.__global_settings.get_tofe_bin_range_x(),
+                           self.__global_settings.get_tofe_bin_range_y())
 
         self.name_y_axis = "Energy (Ch)"
         self.name_x_axis = "time of flight (Ch)"
@@ -151,34 +150,33 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             # Switch inverts
             self.invert_X, self.invert_Y = self.invert_Y, self.invert_X
 
-        self.axes.clear()  # Clear old stuff
+        # Clear old stuff
+        self.axes.clear()
 
+        # Check bin counts and axes ranges
         # If bin count too high -> it will crash the program, use 3500
-        # If 10 000, tofe_65 example can have compression as 1, but REALLY slow
-        # Usually, bin count around 8000
-        bin_counts, msg = mf.calculate_bin_counts([x_data, y_data],
-                                                  self.compression_x,
-                                                  self.compression_y)
+        # If 10 000, tofe_65 example can have compression as 1, but REALLY
+        # slow. Usually, bin count around 8000
+        if self.axes_range_mode == 1:
+            # Manual axe range mode
+            bin_counts, msg = mf.calculate_bin_counts(
+                self.axes_range, self.compression_x, self.compression_y
+            )
+            axes_range = self.axes_range
+
+        else:
+            # Automatic mode
+            bin_counts, msg = mf.calculate_bin_counts(
+                [x_data, y_data], self.compression_x, self.compression_y)
+            axes_range = None
 
         if msg is not None:
+            # Message is displayed when bin count was too high and had to be
+            # lowered
             QtWidgets.QMessageBox.warning(
                 self.parent, "Warning", msg,
                 QtWidgets.QMessageBox.Ok,
                 QtWidgets.QMessageBox.Ok)
-
-        # Check values for graph
-        axes_range = None
-
-        if self.axes_range_mode == 1:
-            axes_range = list(self.axes_range)
-            axes_range[0] = self.__fix_axes_range(axes_range[0],
-                                                  self.compression_x)
-            axes_range[1] = self.__fix_axes_range(axes_range[1],
-                                                  self.compression_y)
-            x_length = axes_range[0][1] - axes_range[0][0]
-            y_length = axes_range[1][1] - axes_range[1][0]
-            bin_counts = (x_length // self.compression_x,
-                          y_length // self.compression_y)
 
         use_color_scheme = self.measurement.color_scheme
         color_scheme = MatplotlibHistogramWidget.color_scheme[use_color_scheme]
@@ -244,17 +242,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         # Remove axis ticks and draw
         self.remove_axes_ticks()
         self.canvas.draw()
-
-    def __fix_axes_range(self, axes_range, compression):
-        """Fixes axes' range to be divisible by compression.
-        """
-        rmin, rmax = axes_range
-        mod = (rmax - rmin) % compression
-        if mod == 0:  # Everything is fine, return.
-            return axes_range
-        # More data > less data
-        rmax += compression - mod
-        return rmin, rmax
 
     def __set_y_axis_on_right(self, yes):
         if yes:

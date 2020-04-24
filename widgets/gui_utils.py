@@ -119,7 +119,7 @@ class QtABCMeta(type(QtCore.QObject), abc.ABCMeta):
 
 # TODO this is for debugging purposes. Remove or comment out this code once
 #   it is no longer needed
-_debug_progress = True
+_debug_progress = False
 if _debug_progress:
     from collections import defaultdict
     _p_bars = defaultdict(list)

@@ -572,11 +572,6 @@ class TestBinCounts(unittest.TestCase):
             self.assertIsInstance(x_bins, int)
             self.assertIsInstance(y_bins, int)
 
-
-
-
-
-
     def assert_all_equal(self, func, data_sets):
         bins = [func(ds) for ds in data_sets]
         self.assertTrue(all(x == y for x, y in itertools.combinations(bins, 2)))
