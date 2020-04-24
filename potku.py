@@ -685,12 +685,13 @@ class Potku(QtWidgets.QMainWindow):
         if import_dialog.imported:
             self.__remove_info_tab()
 
-    def load_request_measurements(self, measurements=None):
+    def load_request_measurements(self, measurements=None, progress=None):
         """Load measurement files in the request.
 
         Args:
             measurements: A list representing loadable measurements when
-            importing measurements to the request.
+                importing measurements to the request.
+            progress: a ProgressReporter object
         """
         if measurements is None:
             measurements = []
@@ -704,37 +705,47 @@ class Potku(QtWidgets.QMainWindow):
                 self.request.samples.get_samples_and_measurements()
             load_data = False
 
-        sbh = StatusBarHandler(self.statusbar)
-
         count = len(samples_with_measurements)
         dirtyinteger = 0
         for sample, measurements in samples_with_measurements.items():
             for measurement_file in measurements:
                 self.add_new_tab("measurement", measurement_file, sample,
-                                 dirtyinteger, count, load_data=load_data,
-                                 progress=sbh.reporter.get_sub_reporter(
-                                     lambda x: 0.9 * x
-                                 ))
+                                 dirtyinteger, count, load_data=load_data)
+
+                if progress is not None:
+                    progress.report(dirtyinteger / count * 100)
                 dirtyinteger += 1
 
-        sbh.reporter.report(100)
+        if progress is not None:
+            progress.report(100)
 
-    def load_request_samples(self):
+    def load_request_samples(self, progress=None):
         """"Load sample files in the request.
+
+        Args:
+            progress: a ProgressReporter object
         """
         sample_paths_in_request = self.request.get_samples_files()
         if sample_paths_in_request:
-            for sample_path in sample_paths_in_request:
+            for i, sample_path in enumerate(sample_paths_in_request):
                 sample = self.request.samples.add_sample(sample_path)
                 self.add_root_item_to_tree(sample)
+
+                if progress is not None:
+                    progress.report(i / len(sample_paths_in_request) * 100)
+
             self.request.increase_running_int_by_1()
 
-    def load_request_simulations(self, simulations=None):
+        if progress is not None:
+            progress.report(100)
+
+    def load_request_simulations(self, simulations=None, progress=None):
         """Load simulation files in the request.
 
         Args:
             simulations: A list representing loadable simulation when importing
-                          simulation to the request.
+                simulation to the request.
+            progress: a ProgressReporter object
         """
         if simulations is None:
             simulations = []
@@ -746,20 +757,19 @@ class Potku(QtWidgets.QMainWindow):
                 self.request.samples.get_samples_and_simulations()
             load_data = False
 
-        sbh = StatusBarHandler(self.statusbar)
-
         count = len(samples_with_simulations)
         dirtyinteger = 0
         for sample, simulations in samples_with_simulations.items():
             for simulation_file in simulations:
                 self.add_new_tab("simulation", simulation_file, sample,
-                                 dirtyinteger, count, load_data=load_data,
-                                 progress=sbh.reporter.get_sub_reporter(
-                                     lambda x: 0.9 * x
-                                 ))
+                                 dirtyinteger, count, load_data=load_data)
+
+                if progress is not None:
+                    progress.report(dirtyinteger / count * 100)
                 dirtyinteger += 1
 
-        sbh.reporter.report(100)
+        if progress is not None:
+            progress.report(100)
 
     def make_new_request(self):
         """Opens a dialog for creating a new request.
@@ -978,6 +988,8 @@ class Potku(QtWidgets.QMainWindow):
             )
             self.remove_from_recent_files(file)
             return
+
+        sbh = StatusBarHandler(self.statusbar)
         self.__close_request()
         self.add_to_recent_files(Path(file))
         self.request = request
@@ -991,9 +1003,17 @@ class Potku(QtWidgets.QMainWindow):
         folder = os.path.split(file)[0]
         self.settings.set_request_directory_last_open(folder)
 
-        self.load_request_samples()
-        self.load_request_measurements()
-        self.load_request_simulations()
+        sbh.reporter.report(20)
+        self.load_request_samples(progress=sbh.reporter.get_sub_reporter(
+            lambda x: 20 + 0.2 * x
+        ))
+        self.load_request_measurements(progress=sbh.reporter.get_sub_reporter(
+            lambda x: 40 + 0.2 * x
+        ))
+        self.load_request_simulations(progress=sbh.reporter.get_sub_reporter(
+            lambda x: 80 + 0.2 * x
+        ))
+
         self.__remove_introduction_tab()
         self.__set_request_buttons_enabled(True)
 
@@ -1036,6 +1056,8 @@ class Potku(QtWidgets.QMainWindow):
             except:
                 # TODO Sample was not found in tree.
                 pass
+
+        sbh.reporter.report(100)
 
     def open_request_settings(self):
         """Opens request settings dialog.

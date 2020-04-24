@@ -214,7 +214,11 @@ class StatusBarHandler:
         """Removes progress bar from status bar.
         """
         # TODO let the progress bar stay on screen for a while after hitting 100
-        self.progress_bar.valueChanged.disconnect(self.__check_progress)
+        try:
+            self.progress_bar.valueChanged.disconnect(self.__check_progress)
+        except (TypeError, AttributeError) as e:
+            # Signal was either already disconnected or progress bar was None
+            pass
         self.reporter.report(100)
         if self.statusbar is not None:
             self.statusbar.removeWidget(self.progress_bar)

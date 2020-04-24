@@ -157,7 +157,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 # gets updated
                 try:
                     self.spectra_changed.disconnect()
-                except TypeError:
+                except (TypeError, AttributeError):
                     # signal had no previous connections, nothing to do
                     pass
             self.spectra_changed.connect(self.update_spectra)
@@ -169,8 +169,11 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         """Disconnects the slot from the spectra_changed signal
         when widget is closed.
         """
-        if self.spectra_changed is not None:
+        try:
             self.spectra_changed.disconnect(self.update_spectra)
+        except (TypeError, AttributeError):
+            # Signal was either already disconnected or None
+            pass
         super().closeEvent(evnt)
 
     def __calculate_selected_area(self, start, end):

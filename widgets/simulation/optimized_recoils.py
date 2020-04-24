@@ -80,7 +80,10 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         results_accepted signal.
         """
         self.element_simulation.delete_optimization_results(optim_mode="recoil")
-        self.results_accepted.disconnect()
+        try:
+            self.results_accepted.disconnect()
+        except (TypeError, AttributeError):
+            pass
         super().closeEvent(evnt)
 
     def update_progress(self, evaluations):

@@ -52,6 +52,7 @@ from widgets.gui_utils import StatusBarHandler
 class MatplotlibHistogramWidget(MatplotlibWidget):
     """Matplotlib histogram widget, used to graph "bananas" (ToF-E).
     """
+    MAX_BIN_COUNT = 8000
     selectionsChanged = QtCore.pyqtSignal("PyQt_PyObject")
     saveCuts = QtCore.pyqtSignal("PyQt_PyObject")
     color_scheme = {"Default color": "jet",
@@ -160,14 +161,15 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         if self.axes_range_mode == 1:
             # Manual axe range mode
             bin_counts, msg = mf.calculate_bin_counts(
-                self.axes_range, self.compression_x, self.compression_y
+                self.axes_range, self.compression_x, self.compression_y,
+                max_count=MatplotlibHistogramWidget.MAX_BIN_COUNT
             )
             axes_range = self.axes_range
-
         else:
             # Automatic mode
             bin_counts, msg = mf.calculate_bin_counts(
-                [x_data, y_data], self.compression_x, self.compression_y)
+                [x_data, y_data], self.compression_x, self.compression_y,
+                max_count=MatplotlibHistogramWidget.MAX_BIN_COUNT)
             axes_range = None
 
         if msg is not None:
@@ -648,6 +650,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 if not os.path.exists(cut):
                     delete_es = True
                     # Remove unnecessary tof_list and hist files
+                    # TODO check that also no_foil.hist file is removed
                     cut_file_name = os.path.split(cut)[1].rsplit('.', 1)[0]
                     removed_files = []
                     for file in \
@@ -776,13 +779,11 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             dialog: A TofeGraphSettingsWidget.
         """
         # Populate colorbox
-        dirtyinteger = 0
         colors = sorted(MatplotlibHistogramWidget.color_scheme.items())
-        for k, unused_v in colors:  # Get keys from color scheme
+        for i, k, _ in enumerate(colors):  # Get keys from color scheme
             dialog.colorbox.addItem(k)
             if k == self.measurement.color_scheme:
-                dialog.colorbox.setCurrentIndex(dirtyinteger)
-            dirtyinteger += 1
+                dialog.colorbox.setCurrentIndex(i)
 
         # Get values
         dialog.bin_x.setValue(self.compression_x)

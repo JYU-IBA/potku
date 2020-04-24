@@ -102,10 +102,16 @@ class PercentageWidget(QtWidgets.QWidget):
     def closeEvent(self, event):
         """Overrides QWidget's closeEvent. Disconnects slots from signals.
         """
-        if self.__dist_changed_sig is not None:
+        try:
             self.__dist_changed_sig.disconnect(self._dist_changed)
-        if self.__interval_changed_sig is not None:
+        except (TypeError, AttributeError):
+            # Signal was either already disconnected or None
+            pass
+        try:
             self.__interval_changed_sig.disconnect(self._limits_changed)
+        except (TypeError, AttributeError):
+            # Signal was either already disconnected or None
+            pass
         event.accept()
 
     def _calculate_areas_and_percentages(self, start=None, end=None,
