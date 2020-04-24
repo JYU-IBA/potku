@@ -31,15 +31,18 @@ from pathlib import Path
 
 from modules.element_simulation import ElementSimulation
 
+from widgets.gui_utils import GUIObserver
+
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
 
-class OptimizedFluenceWidget(QtWidgets.QWidget):
+class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
     """
     Class that handles showing optimized fluence in a widget.
     """
     def __init__(self, element_simulation: ElementSimulation):
+        # TODO common base class for optim result widgets
         super().__init__()
         uic.loadUi(Path("ui_files", "ui_optimized_fluence_widget.ui"), self)
 
@@ -65,7 +68,7 @@ class OptimizedFluenceWidget(QtWidgets.QWidget):
         """
         Show calculated solutions in the widget.
         """
-        text = f"{evaluations} evaluations done. Running."
+        text = f"{evaluations} evaluations left. Running."
         if self.element_simulation.optimization_mcerd_running:
             text += " Simulating."
         self.progressLabel.setText(text)
@@ -84,5 +87,14 @@ class OptimizedFluenceWidget(QtWidgets.QWidget):
         """
         Shjow optimized fluence and finished amount of evaluations.
         """
-        self.progressLabel.setText(f"{evaluations} evaluations done. Finished.")
+        self.progressLabel.setText(f"{evaluations} evaluations left. Finished.")
         self.show_fluence()
+
+    def on_next_handler(self, msg):
+        self.update_progress(msg["evaluations_left"])
+
+    def on_error_handler(self, err):
+        pass
+
+    def on_complete_handler(self, msg):
+        self.show_results(msg["evaluations_done"])

@@ -36,14 +36,34 @@ import modules.file_paths as fp
 import modules.math_functions as mf
 
 from pathlib import Path
+from enum import Enum
 
 from modules.recoil_element import RecoilElement
 from modules.point import Point
 from modules.parsing import CSVParser
 from modules.energy_spectrum import EnergySpectrum
+from modules.observing import Observable
 
 
-class Nsgaii:
+class OptimizationState(Enum):
+    PREPARING = 1
+    RUNNING = 2
+    FINISHED = 3
+    ERROR = 4
+
+    def __str__(self):
+        """Returns a string representation of the SimulationState.
+        """
+        if self == OptimizationState.PREPARING:
+            return "Preparing"
+        if self == OptimizationState.RUNNING:
+            return "Running"
+        if self == OptimizationState.ERROR:
+            return "Error"
+        return "Finished"
+
+
+class Nsgaii(Observable):
     """
     Class that handles the NSGA-II optimization. This needs to handle both
     fluence and recoil element optimization. Recoil element optimization
@@ -91,6 +111,7 @@ class Nsgaii:
             check_min: Minimum time for running a simulation.
             skip_simulation: whether simulation is skipped altogether
         """
+        Observable.__init__(self)
         self.evaluations = gen * pop_size
         self.element_simulation = element_simulation  # Holds other needed
         # information including recoil points and access to simulation settings
@@ -187,6 +208,13 @@ class Nsgaii:
         # Find bit variable lengths if necessary
         if self.opt_recoil:
             self.find_bit_variable_lengths()
+
+    @staticmethod
+    def _get_message(state, **kwargs):
+        return {
+            "state": state,
+            **kwargs
+        }
 
     @classmethod
     def crowding_distance(cls, front_no, objective_values):
@@ -892,12 +920,17 @@ class Nsgaii:
             starting_solutions: First solutions used in optimization. If
                 None, initialize new solutions.
         """
+        self.on_next(self._get_message(OptimizationState.PREPARING,
+                                       evaluations_left=self.evaluations))
         self.__prepare_optimization()
 
         # TODO timer might be better choice as time.clock depends on the
         #  platform
         # https://docs.python.org/3.6/library/time.html#time.clock
         self.__start = time.clock()
+
+        self.on_next(self._get_message(OptimizationState.RUNNING,
+                                       evaluations_left=self.evaluations))
 
         # Create initial population
         if starting_solutions is not None:
@@ -952,6 +985,9 @@ class Nsgaii:
             self.element_simulation.calculated_solutions = int(
                 self.evaluations - evaluations)
 
+            self.on_next(self._get_message(
+                OptimizationState.RUNNING, evaluations_left=evaluations,
+                pareto_front=self.population[1][front_no == 1, :]))
             # Temporary prints
             if evaluations % (10*self.evaluations/self.pop_size) == 0:
 
@@ -980,13 +1016,6 @@ class Nsgaii:
             self.element_simulation.optimization_recoils.append(med_recoil)
             last_recoil = self.form_recoil(last_sol, "optlast")
             self.element_simulation.optimization_recoils.append(last_recoil)
-
-            # Remove unnecessary opt.recoil file
-            for file in os.listdir(self.element_simulation.directory):
-                if file.endswith("opt.recoil"):
-                    os.remove(
-                        os.path.join(self.element_simulation.directory, file))
-
         else:
             # Calculate average of found fluences
             f_sum = 0
@@ -995,15 +1024,41 @@ class Nsgaii:
             avg = f_sum / len(pareto_optimal_sols)
             self.element_simulation.optimized_fluence = avg
 
-            # Remove unnecessary optfl files
-            for file in os.listdir(self.element_simulation.directory):
-                if "optfl" in file:
-                    os.remove(os.path.join(self.element_simulation.directory,
-                                           file))
+        self.delete_temp_files()
+        self.save_results_to_file()
 
+        self.on_complete(self._get_message(OptimizationState.FINISHED,
+                                           evaluations_done=self.evaluations))
         # Signal thread that checks whether optimization
         # is done
         self.element_simulation.optimization_done = True
+
+    def delete_temp_files(self):
+        # Remove unnecessary opt.recoil file
+        for file in os.listdir(self.element_simulation.directory):
+            # TODO better method for determining which files to delete
+            if file.endswith("opt.recoil") or "optfl" in file:
+                try:
+                    os.remove(Path(self.element_simulation.directory, file))
+                except OSError:
+                    pass
+
+    def save_results_to_file(self):
+        if self.opt_recoil:
+            # Save optimized recoils
+            for recoil in self.element_simulation.optimization_recoils:
+                recoil.to_file(self.element_simulation.directory)
+            save_file_name = f"{self.element_simulation.name_prefix}" \
+                             f"-opt.measured"
+            with open(Path(self.element_simulation.directory, save_file_name),
+                      "w") as f:
+                f.write(self.cut_file.stem)
+        elif self.element_simulation.optimized_fluence != 0:
+            # save found fluence value
+            file_name = f"{self.element_simulation.name_prefix}-optfl.result"
+            with open(Path(self.element_simulation.directory, file_name),
+                      "w") as f:
+                f.write(str(self.element_simulation.optimized_fluence))
 
     def variation(self, pop_sols):
         """

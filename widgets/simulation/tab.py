@@ -120,7 +120,7 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
             self.optimization_result_widget = OptimizedFluenceWidget(elem_sim)
         elem_sim.optimization_widget = self.optimization_result_widget
         icon = self.icon_manager.get_icon("potku_icon.ico")
-        self.add_widget(self.optimization_result_widget)
+        self.add_widget(self.optimization_result_widget, icon=icon)
         return self.optimization_result_widget
     
     def check_previous_state_files(self, progress=None):

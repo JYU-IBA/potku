@@ -30,6 +30,7 @@ import platform
 from pathlib import Path
 
 from modules.observing import ProgressReporter
+from modules.observing import Observer
 from modules.element import Element
 
 from PyQt5 import QtCore
@@ -284,6 +285,40 @@ def load_isotopes(symbol, combobox, current_isotope=None, show_std_mass=False):
         combobox.addItem(txt, userData=iso)
         if current_isotope == iso["element"].isotope:
             combobox.setCurrentIndex(idx)
+
+
+class GUIObserver(Observer, abc.ABC, metaclass=QtABCMeta):
+    class Signaller(QtCore.QObject):
+        on_next_sig = QtCore.pyqtSignal(dict)
+        on_error_sig = QtCore.pyqtSignal(dict)
+        on_complete_sig = QtCore.pyqtSignal(dict)
+
+    def __init__(self):
+        self.__signaller = GUIObserver.Signaller()
+        self.__signaller.on_next_sig.connect(self.on_next_handler)
+        self.__signaller.on_error_sig.connect(self.on_error_handler)
+        self.__signaller.on_complete_sig.connect(self.on_complete_handler)
+
+    @abc.abstractmethod
+    def on_next_handler(self, msg):
+        pass
+
+    @abc.abstractmethod
+    def on_error_handler(self, err):
+        pass
+
+    @abc.abstractmethod
+    def on_complete_handler(self, msg):
+        pass
+
+    def on_next(self, msg):
+        self.__signaller.on_next_sig.emit(msg)
+
+    def on_error(self, err):
+        self.__signaller.on_error_sig.emit(err)
+
+    def on_complete(self, msg):
+        self.__signaller.on_complete_sig.emit(msg)
 
 
 def fill_cuts_treewidget(measurement, treewidget, use_elemloss=False,

@@ -175,11 +175,6 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             lambda: self.change_selected_cut_file(
                 self.measurementTreeWidget.currentItem()))
 
-        self.result_widget = None
-        self.measured_element = ""
-        self.optimization_thread = None
-        self.check_results_thread = None
-
         self.exec_()
 
     def get_property_file_path(self):
@@ -220,37 +215,6 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
                 if self.selected_cut_file:
                     self.pushButton_OK.setEnabled(True)
                 break
-
-    def check_progress_and_results(self):
-        """
-        Check whether result widget needs updating.
-        """
-        while not self.element_simulation.optimization_stopped:
-            calc_sols = self.element_simulation.calculated_solutions
-            self.result_widget.update_progress(calc_sols)
-            if self.element_simulation.optimization_done:
-                self.element_simulation.optimization_running = False
-                self.result_widget.show_results(calc_sols)
-
-                if self.element_simulation.optimized_fluence is None:
-                    # Save optimized recoils
-                    for recoil in self.element_simulation.optimization_recoils:
-                        recoil.to_file(self.element_simulation.directory)
-                    save_file_name = self.element_simulation.name_prefix + \
-                                     "-opt.measured"
-                    with open(os.path.join(self.element_simulation.directory,
-                                           save_file_name), "w") as f:
-                        f.write(self.measured_element)
-                elif self.element_simulation.optimized_fluence != 0:
-                    # save found fluence value
-                    file_name = self.element_simulation.name_prefix + \
-                                "-optfl.result"
-                    with open(os.path.join(self.element_simulation.directory,
-                                           file_name), "w") as f:
-                        f.write(str(self.element_simulation.optimized_fluence))
-                self.result_widget = None
-                break
-            time.sleep(5)  # Sleep for 5 seconds to save processing power
 
     def choose_optimization_mode(self, button, checked):
         """
@@ -331,24 +295,18 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
                         ch=self.ch,
                         **self.parameters_widget.get_properties())
 
-        # Result checking thread
-        self.check_results_thread = threading.Thread(
-            target=self.check_progress_and_results)
-
         # Optimization running thread
-        self.optimization_thread = threading.Thread(
+        optimization_thread = threading.Thread(
             target=nsgaii.start_optimization)
 
         # Create necessary results widget
         mode_recoil = self.current_mode == "recoil"
-        self.measured_element = item_text
 
-        self.result_widget = self.tab.add_optimization_results_widget(
+        result_widget = self.tab.add_optimization_results_widget(
             self.element_simulation, item_text, mode_recoil)
-        self.element_simulation.optimization_widget = self.result_widget
 
-        self.check_results_thread.daemon = True
-        self.check_results_thread.start()
+        self.element_simulation.optimization_widget = result_widget
+        nsgaii.subscribe(result_widget)
 
-        self.optimization_thread.daemon = True
-        self.optimization_thread.start()
+        optimization_thread.daemon = True
+        optimization_thread.start()

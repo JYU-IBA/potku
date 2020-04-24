@@ -29,6 +29,8 @@ from pathlib import Path
 
 from modules.element_simulation import ElementSimulation
 
+from widgets.gui_utils import GUIObserver
+
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import pyqtSignal
@@ -37,7 +39,7 @@ from widgets.matplotlib.simulation.recoil_atom_optimization import \
     RecoilAtomOptimizationWidget
 
 
-class OptimizedRecoilsWidget(QtWidgets.QWidget):
+class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
     """
     Class to show the results of optimization. Also shows the progress.
     """
@@ -49,6 +51,7 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         Initialize the widget.
         """
         super().__init__()
+        GUIObserver.__init__(self)
         uic.loadUi(Path("ui_files", "ui_optimization_results_widget.ui"), self)
 
         self.element_simulation = element_simulation
@@ -62,9 +65,8 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
                             f"{element_simulation.recoil_elements[0].element}"
                             f" - {measured_element} - fluence: {run.fluence}")
 
-        self.recoil_atoms = RecoilAtomOptimizationWidget(self,
-                                                         element_simulation,
-                                                         target)
+        self.recoil_atoms = RecoilAtomOptimizationWidget(
+            self, element_simulation, target)
         self.recoil_atoms.results_accepted.connect(self.results_accepted.emit)
 
     def delete(self):
@@ -90,7 +92,7 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         """
         Show calculated solutions in the widget.
         """
-        text = f"{evaluations} evaluations done. Running."
+        text = f"{evaluations} evaluations left. Running."
         if self.element_simulation.optimization_mcerd_running:
             text += " Simulating."
         self.progressLabel.setText(text)
@@ -101,3 +103,12 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget):
         """
         self.progressLabel.setText(f"{evaluations} evaluations done. Finished.")
         self.recoil_atoms.show_recoils()
+
+    def on_next_handler(self, msg):
+        self.update_progress(msg["evaluations_left"])
+
+    def on_error_handler(self, err):
+        pass
+
+    def on_complete_handler(self, msg):
+        self.show_results(msg["evaluations_done"])
