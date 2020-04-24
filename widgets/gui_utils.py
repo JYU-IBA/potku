@@ -119,7 +119,7 @@ class QtABCMeta(type(QtCore.QObject), abc.ABCMeta):
 
 # TODO this is for debugging purposes. Remove or comment out this code once
 #   it is no longer needed
-_debug_progress = False
+_debug_progress = True
 if _debug_progress:
     from collections import defaultdict
     _p_bars = defaultdict(list)
@@ -144,6 +144,8 @@ class GUIReporter(ProgressReporter):
         Args:
             progress_bar: GUI progress bar that will be updated
         """
+        # TODO remove progress_bar argument and just make this a generic
+        #  reporter that does its reporting in main thread
         @process_event_loop
         def __update_func(value):
             # Callback function that will be connected to the signal
@@ -170,17 +172,20 @@ class StatusBarHandler:
     """Helper class to show, hide and update a progress bar in the
     given statusbar.
     """
+    # TODO make this a ProgressReporter
+
     @process_event_loop
-    def __init__(self, statusbar, autoremove=True):
+    def __init__(self, statusbar: QtWidgets.QStatusBar, autoremove=True):
         """Initializes a new StatusBarHandler.
 
         Args:
             statusbar: PyQt statusbar
             autoremove: automatically hides the progress bar when its
-                        surpasses 99
+                surpasses 99
         """
         # TODO could also use a remove_at parameter that defines when
         #      the progress bar is removed
+        # TODO remove previous progress bars
         self.statusbar = statusbar
         if self.statusbar is not None:
             self.progress_bar = QtWidgets.QProgressBar()
@@ -192,6 +197,7 @@ class StatusBarHandler:
         else:
             self.progress_bar = None
         self.reporter = GUIReporter(self.progress_bar)
+        self.reporter.report(0)
 
     def __check_progress(self, value):
         """Checks if the value of progress bar is over 99 and calls
@@ -208,6 +214,8 @@ class StatusBarHandler:
         """Removes progress bar from status bar.
         """
         # TODO let the progress bar stay on screen for a while after hitting 100
+        self.progress_bar.valueChanged.disconnect(self.__check_progress)
+        self.reporter.report(100)
         if self.statusbar is not None:
             self.statusbar.removeWidget(self.progress_bar)
         if self.progress_bar is not None:

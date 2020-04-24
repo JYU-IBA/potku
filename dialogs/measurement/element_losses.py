@@ -31,7 +31,6 @@ __version__ = "2.0"
 
 import logging
 import os
-import sys
 
 import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
@@ -39,11 +38,10 @@ import modules.cut_file as cut_file
 
 from pathlib import Path
 
-from widgets.gui_utils import GUIReporter
+from widgets.gui_utils import StatusBarHandler
 
 from modules.element_losses import ElementLosses
 
-from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
@@ -108,6 +106,8 @@ class ElementLossesDialog(QtWidgets.QDialog):
         """Called when OK button is pressed. Creates a elementlosses widget and
         adds it to the parent (mdiArea).
         """
+        sbh = StatusBarHandler(self.statusbar)
+
         cut_dir = self.parent.obj.directory_cuts
         cut_elo = Path(self.parent.obj.directory_composition_changes, "Changes")
         y_axis_0_scale = self.radioButton_0max.isChecked()
@@ -141,17 +141,18 @@ class ElementLossesDialog(QtWidgets.QDialog):
         ElementLossesDialog.split_count = split_count
         ElementLossesDialog.y_scale = y_scale
 
+        sbh.reporter.report(25)
+
         if checked_cuts:
             if self.parent.elemental_losses_widget:
                 self.parent.del_widget(self.parent.elemental_losses_widget)
 
             self.parent.elemental_losses_widget = ElementLossesWidget(
-                self.parent,
-                reference_cut,
-                checked_cuts,
-                split_count,
-                y_scale,
-                statusbar=self.statusbar)
+                self.parent, reference_cut, checked_cuts, split_count,
+                y_scale, statusbar=self.statusbar,
+                progress=sbh.reporter.get_sub_reporter(
+                    lambda x: 25 + 0.70 * x
+                ))
             icon = self.parent.icon_manager \
                 .get_icon("elemental_losses_icon_16.png")
             self.parent.add_widget(self.parent.elemental_losses_widget,
@@ -173,6 +174,8 @@ class ElementLossesDialog(QtWidgets.QDialog):
                                                                    key]))
                                    for key in split_counts.keys()])
             logging.getLogger(measurement_name).info(log_info + splitinfo)
+
+            sbh.reporter.report(100)
             self.close()
 
 
@@ -182,8 +185,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
     save_file = "widget_composition_changes.save"
 
     def __init__(self, parent, reference_cut_file, checked_cuts,
-                 partition_count, y_scale, use_progress_bar=True,
-                 ignore_ref_cut=None, statusbar=None):
+                 partition_count, y_scale, statusbar=None, progress=None):
         """Inits widget.
         
         Args:
@@ -193,7 +195,7 @@ class ElementLossesWidget(QtWidgets.QWidget):
             partition_count: Integer representing how many splits cut files 
                              are divided to.
             y_scale: Integer flag representing how Y axis is scaled.
-            use_progress_bar: Whether to add a progress bar or not.
+            progress: a ProgressReporter object
         """
         try:
             super().__init__()
@@ -207,24 +209,12 @@ class ElementLossesWidget(QtWidgets.QWidget):
             self.partition_count = partition_count
             self.y_scale = y_scale
             self.statusbar = statusbar
-            if self.statusbar is not None:
-                if use_progress_bar:
-                    self.progress_bar = QtWidgets.QProgressBar()
-                    self.statusbar.addWidget(self.progress_bar, 1)
-                    self.progress_bar.show()
-                    QtCore.QCoreApplication.processEvents(
-                        QtCore.QEventLoop.AllEvents)
-                    # Mac requires event processing to show progress bar and its
-                    # process.
-                else:
-                    self.progress_bar = None
-            else:
-                self.progress_bar = None
 
             title = "{0} - Reference cut: {1}".format(
                 self.windowTitle(),
                 os.path.basename(self.reference_cut_file))
             self.setWindowTitle(title)
+
             # Calculate elemental losses
             self.losses = ElementLosses(self.measurement.directory_cuts,
                                         self.measurement.
@@ -232,8 +222,16 @@ class ElementLossesWidget(QtWidgets.QWidget):
                                         self.reference_cut_file,
                                         self.checked_cuts,
                                         self.partition_count)
+
+            if progress is not None:
+                sub_progress = progress.get_sub_reporter(
+                    lambda x: 0.9 * x
+                )
+            else:
+                sub_progress = None
+
             self.split_counts = self.losses.count_element_cuts(
-                progress=GUIReporter(self.progress_bar)
+                progress=sub_progress
             )
 
             # Check for RBS selections.
@@ -253,47 +251,29 @@ class ElementLossesWidget(QtWidgets.QWidget):
             self.matplotlib = MatplotlibElementLossesWidget(
                 self, self.split_counts, legend=True, y_scale=y_scale,
                 rbs_list=rbs_list, reference_cut_file=reference_cut_file)
-        except:
-            import traceback
-            msg = "Could not create Elemental Losses graph. "
-            err_file = sys.exc_info()[2].tb_frame.f_code.co_filename
-            str_err = ", ".join([sys.exc_info()[
-                                     0].__name__ + ": " + traceback._some_str(
-                sys.exc_info()[1]), err_file,
-                                 str(sys.exc_info()[2].tb_lineno)])
-            msg += str_err
+        except Exception as e:
+            msg = f"Could not create Elemental Losses graph: {e}"
             logging.getLogger(self.measurement.name).error(msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
         finally:
-            if self.progress_bar is not None:
-                self.statusbar.removeWidget(self.progress_bar)
-                self.progress_bar.hide()
+            if progress is not None:
+                progress.report(100)
 
     def delete(self):
         """Delete variables and do clean up.
         """
         self.losses = None
-        self.progress_bar = None
         self.matplotlib.delete()
         self.matplotlib = None
         self.close()
 
     def __save_splits(self):
-        if self.progress_bar:
-            self.progress_bar = QtWidgets.QProgressBar()
-            self.statusbar.addWidget(self.progress_bar, 1)
-            self.progress_bar.show()
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process.
-        else:
-            self.progress_bar = None
-
-        self.losses.save_splits(progress=GUIReporter(self.progress_bar))
-        if self.progress_bar is not None:
-            self.statusbar.removeWidget(self.progress_bar)
-            self.progress_bar.hide()
+        sbh = StatusBarHandler(self.statusbar)
+        self.losses.save_splits(progress=sbh.reporter.get_sub_reporter(
+            lambda x: 0.9 * x
+        ))
+        sbh.reporter.report(100)
 
     def closeEvent(self, evnt):
         """Reimplemented method when closing widget.

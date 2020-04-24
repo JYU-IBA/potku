@@ -198,13 +198,13 @@ class Simulations:
                 serial_number = int(simulation_folder[len(directory_prefix):len(
                     directory_prefix) + 2])
                 simulation.serial_number = serial_number
-                self.request.samples.simulations.simulations[
-                    tab_id] = simulation
-            except:
-                log = "Something went wrong while adding a new simulation."
+                self.request.samples.simulations.simulations[tab_id] = \
+                    simulation
+            except Exception as e:
+                log = f"Something went wrong while adding a new simulation: {e}"
                 logging.getLogger("request").critical(log)
-                print(sys.exc_info())
-        sample.simulations.simulations[tab_id] = simulation
+        if simulation is not None:
+            sample.simulations.simulations[tab_id] = simulation
         return simulation
 
     def remove_obj(self, removed_obj):

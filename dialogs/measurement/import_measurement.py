@@ -39,6 +39,7 @@ import widgets.input_validation as iv
 from pathlib import Path
 from collections import OrderedDict
 
+from widgets.gui_utils import StatusBarHandler
 from dialogs.measurement.import_timing_graph import ImportTimingGraphDialog
 from dialogs.file_dialogs import open_files_dialog
 
@@ -140,7 +141,9 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         """Import listed files with settings defined in the dialog.
         """
         imported_files = {}
+        sbh = StatusBarHandler(self.statusbar)
         string_columns = []
+
         for i in range(self.grid_column.rowCount()):
             item = self.grid_column.itemAtPosition(i, 0)
             if not item.isEmpty():
@@ -164,13 +167,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                 timing[coinc_timing.adc] = (coinc_timing.low.value(),
                                             coinc_timing.high.value())
         start_time = clock()
-        progress_bar = QtWidgets.QProgressBar()
-        self.statusbar.addWidget(progress_bar, 1)
-        progress_bar.show()
-        progress_bar.setValue(10)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        # Mac requires event processing to show progress bar and its
-        # process.
+
+        sbh.reporter.report(10)
         
         filename_list = []
         for i in range(root_child_count):
@@ -209,18 +207,9 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
                      nevents=self.spin_eventcount.value())
             measurement.measurement_file = output_file
 
-            progress_bar.setValue(10 + (i + 1) / root_child_count * 90)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-            # Mac requires event processing to show progress bar and its
-            # process.
-        
+            sbh.reporter.report(10 + (i + 1) / root_child_count * 90)
+
         filenames = ", ".join(filename_list)
-
-        progress_bar.setValue(100)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-
-        self.statusbar.removeWidget(progress_bar)
-        progress_bar.hide()
         elapsed = clock() - start_time
         log = "Imported measurements to request: {0}".format(filenames)
         log_var = "Variables used: {0} {1} {2} {3} {4}".format(
@@ -233,6 +222,8 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         logging.getLogger("request").info(log)
         logging.getLogger("request").info(log_var)
         logging.getLogger("request").info(log_elapsed)
+
+        sbh.reporter.report(100)
         self.imported = True
         self.close()
 

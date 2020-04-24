@@ -149,13 +149,12 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         if progress is not None:
             progress.report(100)
 
-    def check_previous_state_files(self, progress):
+    def check_previous_state_files(self, progress=None):
         """Check if saved state for Elemental Losses, Energy Spectrum or Depth
         Profile exists. If yes, load them also.
 
         Args:
-            progress: A QtWidgets.QProgressBar where loading of previous
-                          graph can be shown.
+            progress: a ProgressReporter object
         """
         sample_folder_name = "Sample_" + "%02d" % \
                              self.obj.sample.serial_number + "-" + \
@@ -174,18 +173,21 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
                                   sample_folder_name)
 
         if progress is not None:
-            progress.report(66)
+            progress.report(60)
 
         directory_d = self.obj.directory_depth_profiles
         self.make_depth_profile(directory_d, self.obj.name,
                                 self.obj.serial_number,
-                                sample_folder_name)
+                                sample_folder_name,
+                                progress=progress.get_sub_reporter(
+                                    lambda x: 60 + 0.4 * x
+                                ))
 
         if progress is not None:
             progress.report(100)
 
     def make_depth_profile(self, directory, name, serial_number_m,
-                           sample_folder_name):
+                           sample_folder_name, progress=None):
         """Make depth profile from loaded lines from saved file.
         
         Args:
@@ -193,6 +195,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             name: A string representing measurement's name.
             serial_number_m: Measurement's serial number.
             sample_folder_name: Sample's serial number.
+            progress: a ProgressReporter object
         """
         file = Path(directory, DepthProfileWidget.save_file)
         lines = self.__load_file(file)
@@ -231,7 +234,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             DepthProfileDialog.systerr = systerr
             self.depth_profile_widget = DepthProfileWidget(
                 self, output_dir, use_cuts, elements, x_unit, line_zero,
-                line_scale, systerr)
+                line_scale, systerr, progress=progress)
             icon = self.icon_manager.get_icon("depth_profile_icon_2_16.png")
             self.add_widget(self.depth_profile_widget, icon=icon)
         except Exception as e:
@@ -239,7 +242,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             print(e)
 
     def make_elemental_losses(self, directory, name, serial_number,
-                              old_sample_name):
+                              old_sample_name, progress=None):
         """Make elemental losses from loaded lines from saved file.
         
         Args:
@@ -247,6 +250,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             name: A string representing measurement's name.
             serial_number: Measurement's serial number.
             old_sample_name: Sample folder of the measurement.
+            progress: a ProgressReporter object
         """
         file = Path(directory, ElementLossesWidget.save_file)
         lines = self.__load_file(file)
@@ -281,7 +285,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             ElementLossesDialog.y_scale = y_scale
             self.elemental_losses_widget = ElementLossesWidget(
                 self, reference_cut, checked_cuts, split_count, y_scale,
-                use_progress_bar=False, statusbar=self.statusbar)
+                statusbar=self.statusbar, progress=progress)
             icon = self.icon_manager.get_icon("elemental_losses_icon_16.png")
             self.add_widget(self.elemental_losses_widget, icon=icon)
         except Exception as e:

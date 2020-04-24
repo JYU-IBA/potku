@@ -99,7 +99,7 @@ class DepthFileGenerator:
 
 
 def generate_depth_files(cut_files, output_directory, measurement=None,
-                         tof_in_dir=None):
+                         tof_in_dir=None, progress=None):
     """Generates depth files from given cut files and writes them to output
     directory.
 
@@ -110,6 +110,7 @@ def generate_depth_files(cut_files, output_directory, measurement=None,
         output_directory: directory where the depth files will be generated
         measurement: Measurement object to generate tof.in
         tof_in_dir: directory in which the tof.in is to be generated.
+        progress: a ProgressReporter object
     """
     # TODO this could be a method of Measurement
     if measurement is not None:
@@ -127,8 +128,14 @@ def generate_depth_files(cut_files, output_directory, measurement=None,
             except OSError:
                 pass
 
+    if progress is not None:
+        progress.report(30)
+
     dp = DepthFileGenerator(cut_files, output_directory, tof_in_dir=tof_in_dir)
     dp.run()
+
+    if progress is not None:
+        progress.report(100)
 
 
 class DepthProfile:

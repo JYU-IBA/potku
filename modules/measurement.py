@@ -228,14 +228,14 @@ class Measurements:
                     self.request.samples.measurements.measurements[tab_id] = \
                         measurement
                     measurement.measurement_file = measurement_filename
-                except:
-                    log = "Something went wrong while adding a new measurement."
+                except Exception as e:
+                    log = f"Something went wrong while adding a new " \
+                          f"measurement: {e}"
                     logging.getLogger("request").critical(log)
-                    print(sys.exc_info())
 
-        # Add Measurement to  Measurements.
-        sample.measurements.measurements[tab_id] = measurement
-        # self.request.samples.measurements.measurements[tab_id] = measurement
+        # Add Measurement to Measurements.
+        if measurement is not None:
+            sample.measurements.measurements[tab_id] = measurement
         return measurement
 
     def remove_obj(self, removed_obj):

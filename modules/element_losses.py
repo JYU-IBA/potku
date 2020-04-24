@@ -93,7 +93,7 @@ class ElementLosses:
         """Save element splits as new cut files.
 
         Args:
-            progress: ABCProgressReporter that reports the progress of saving
+            progress: a ProgressReporter that reports the progress of saving
         """
         self.__element_losses_folder_clean_up()
         dirtyinteger = 0
@@ -194,7 +194,7 @@ class ElementLosses:
                     __count_element_cuts['H'] = [4,4,3]
 
         Args:
-            progress: ABCReporter
+            progress: a ProgressReporter object
 
         Return:
             Returns dictionary of elements and their counts within splits.

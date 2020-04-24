@@ -31,8 +31,6 @@ __version__ = "2.0"
 
 import os
 
-from widgets.gui_utils import GUIReporter
-
 from dialogs.energy_spectrum import EnergySpectrumWidget
 from dialogs.graph_settings import TofeGraphSettingsWidget
 from dialogs.measurement.depth_profile import DepthProfileWidget
@@ -532,14 +530,16 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             self.__on_draw_legend()
 
     def __emit_selections_changed(self):
-        """Emits a 'selectionsChanged' signal with the selections list as a parameter. 
+        """Emits a 'selectionsChanged' signal with the selections list as a
+        parameter.
         """
         # self.emit(QtCore.SIGNAL("selectionsChanged(PyQt_PyObject)"),
         # self.measurement.selector.selections)
         self.selectionsChanged.emit(self.measurement.selector.selections)
 
     def __emit_save_cuts(self):
-        """Emits a 'selectionsChanged' signal with the selections list as a parameter. 
+        """Emits a 'selectionsChanged' signal with the selections list as a
+        parameter.
         """
         # self.emit(QtCore.SIGNAL("saveCuts(PyQt_PyObject)"), self.measurement)
         self.saveCuts.emit(self.measurement.selector.selections)
@@ -594,28 +594,17 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                                     "Load Element Selection",
                                     "Selection file (*.selections)")
         if filename:
-            if self.statusbar is not None:
-                progress_bar = QtWidgets.QProgressBar()
-                self.statusbar.addWidget(progress_bar, 1)
-                progress_bar.show()
-                progress_bar.setValue(40)
-                QtCore.QCoreApplication.processEvents(
-                    QtCore.QEventLoop.AllEvents)
-            else:
-                progress_bar = None
+            sbh = StatusBarHandler(self.statusbar)
+            sbh.reporter.report(40)
 
-            self.measurement.load_selection(filename, progress=GUIReporter(
-                progress_bar))
+            self.measurement.load_selection(
+                filename, progress=sbh.reporter.get_sub_reporter(
+                    lambda x: 40 + 0.6 * x
+                ))
             self.on_draw()
             self.elementSelectionSelectButton.setEnabled(True)
 
-            if self.statusbar is not None:
-                progress_bar.setValue(100)
-                QtCore.QCoreApplication.processEvents(
-                    QtCore.QEventLoop.AllEvents)
-
-                self.statusbar.removeWidget(progress_bar)
-                progress_bar.hide()
+            sbh.reporter.report(100)
 
         self.__emit_selections_changed()
 

@@ -50,7 +50,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
 
     def __init__(self, parent, depth_dir, elements, rbs_list, depth_scale,
                  used_cuts, x_units='nm', legend=True, line_zero=False,
-                 line_scale=False, systematic_error=3.0):
+                 line_scale=False, systematic_error=3.0, progress=None):
         """Inits depth profile widget.
 
         Args:
@@ -68,6 +68,7 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
             line_scale: A boolean representing if horizontal line is drawn at
                         the defined depth scale.
             systematic_error: A double representing systematic error.
+            progress: a ProgressReporter object
         """
         super().__init__(parent)
 
@@ -88,6 +89,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.profile_handler.read_directory(self.depth_dir,
                                             self.elements,
                                             depth_units=self.x_units)
+        if progress is not None:
+            progress.report(50)
+
         lim_a, lim_b = self.profile_handler.get_depth_range()
         if lim_a is not None and lim_b is not None:
             self.limit = LimitLines(a=lim_a, b=lim_b)
@@ -119,6 +123,9 @@ class MatplotlibDepthProfileWidget(MatplotlibWidget):
         self.__rbs_list = rbs_list
         self.__fork_toolbar_buttons()
         self.on_draw()
+
+        if progress is not None:
+            progress.report(100)
 
     def onclick(self, event):
         """Handles clicks on the graph.

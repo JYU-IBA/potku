@@ -57,7 +57,6 @@ from dialogs.request_settings import RequestSettingsDialog
 from dialogs.simulation.new_simulation import SimulationNewDialog
 from dialogs.file_dialogs import open_file_dialog
 
-from widgets.gui_utils import GUIReporter
 from widgets.gui_utils import StatusBarHandler
 from widgets.icon_manager import IconManager
 
@@ -629,7 +628,7 @@ class Potku(QtWidgets.QMainWindow):
                 name = tab.obj.name
 
                 # Check that the data is read.
-                if not tab.data_loaded:     # TODO
+                if not tab.data_loaded:
                     sbh = StatusBarHandler(self.statusbar)
 
                     tab.add_simulation_target_and_recoil(
@@ -704,21 +703,21 @@ class Potku(QtWidgets.QMainWindow):
             samples_with_measurements = \
                 self.request.samples.get_samples_and_measurements()
             load_data = False
-        progress_bar = QtWidgets.QProgressBar()
-        self.statusbar.addWidget(progress_bar, 1)
-        progress_bar.show()
+
+        sbh = StatusBarHandler(self.statusbar)
 
         count = len(samples_with_measurements)
         dirtyinteger = 0
         for sample, measurements in samples_with_measurements.items():
             for measurement_file in measurements:
                 self.add_new_tab("measurement", measurement_file, sample,
-                                 progress_bar, dirtyinteger, count,
-                                 load_data=load_data)
+                                 dirtyinteger, count, load_data=load_data,
+                                 progress=sbh.reporter.get_sub_reporter(
+                                     lambda x: 0.9 * x
+                                 ))
                 dirtyinteger += 1
 
-        self.statusbar.removeWidget(progress_bar)
-        progress_bar.hide()
+        sbh.reporter.report(100)
 
     def load_request_samples(self):
         """"Load sample files in the request.
@@ -746,21 +745,21 @@ class Potku(QtWidgets.QMainWindow):
             samples_with_simulations = \
                 self.request.samples.get_samples_and_simulations()
             load_data = False
-        progress_bar = QtWidgets.QProgressBar()
-        self.statusbar.addWidget(progress_bar, 1)
-        progress_bar.show()
+
+        sbh = StatusBarHandler(self.statusbar)
 
         count = len(samples_with_simulations)
         dirtyinteger = 0
         for sample, simulations in samples_with_simulations.items():
             for simulation_file in simulations:
                 self.add_new_tab("simulation", simulation_file, sample,
-                                 progress_bar, dirtyinteger, count,
-                                 load_data=load_data)
+                                 dirtyinteger, count, load_data=load_data,
+                                 progress=sbh.reporter.get_sub_reporter(
+                                     lambda x: 0.9 * x
+                                 ))
                 dirtyinteger += 1
 
-        self.statusbar.removeWidget(progress_bar)
-        progress_bar.hide()
+        sbh.reporter.report(100)
 
     def make_new_request(self):
         """Opens a dialog for creating a new request.
@@ -811,30 +810,25 @@ class Potku(QtWidgets.QMainWindow):
             try:
                 self.tabs.removeTab(self.tabs.indexOf(
                     self.measurement_info_tab))
-            except:
+            except AttributeError:
                 pass  # If there is no info tab, no need to worry about.
-            progress_bar = QtWidgets.QProgressBar()
-            self.statusbar.addWidget(progress_bar, 1)
-            progress_bar.show()
+            sbh = StatusBarHandler(self.statusbar)
 
             try:
-                sample_item = (self.treeWidget.findItems(sample_name,
-                                                          Qt.MatchEndsWith,
-                                                          0))[0]
-            except Exception as e:
+                sample_item = self.treeWidget.findItems(
+                    sample_name, Qt.MatchEndsWith, 0)[0]
+            except IndexError:
                 # Sample is not yet in the tree, so add it
-                self.__add_sample(sample_name)
-
-            sample_item = (self.treeWidget.findItems(sample_name,
-                                                      Qt.MatchEndsWith, 0))[0]
+                sample_item = self.__add_sample(sample_name)
 
             self.add_new_tab("measurement", dialog.filename,
-                             sample_item.obj,
-                             progress_bar, load_data=True,
-                             object_name=dialog.name)
+                             sample_item.obj, load_data=True,
+                             object_name=dialog.name,
+                             progress=sbh.reporter.get_sub_reporter(
+                                 lambda x: 0.9 * x))
             self.__remove_info_tab()
-            self.statusbar.removeWidget(progress_bar)
-            progress_bar.hide()
+
+            sbh.reporter.report(100)
 
     def create_new_simulation(self):
         """
@@ -845,19 +839,14 @@ class Potku(QtWidgets.QMainWindow):
         simulation_name = dialog.name
         sample_name = dialog.sample
         if simulation_name and sample_name:
-            progress_bar = QtWidgets.QProgressBar()
-            self.statusbar.addWidget(progress_bar, 1)
-            progress_bar.show()
+            sbh = StatusBarHandler(self.statusbar)
 
             try:
                 sample_item = self.treeWidget.findItems(sample_name,
                                                         Qt.MatchEndsWith, 0)[0]
-            except Exception as e:
+            except IndexError:
                 # Sample is not yet in the tree, so add it
-                self.__add_sample(sample_name)
-
-            sample_item = self.treeWidget.findItems(sample_name,
-                                                    Qt.MatchEndsWith, 0)[0]
+                sample_item = self.__add_sample(sample_name)
 
             serial_number = sample_item.obj.get_running_int_simulation()
             sample_item.obj.increase_running_int_simulation_by_1()
@@ -865,21 +854,25 @@ class Potku(QtWidgets.QMainWindow):
             self.add_new_tab("simulation", os.path.join(
                 self.request.directory, sample_item.obj.directory,
                 Simulation.DIRECTORY_PREFIX + "%02d" % serial_number + "-" +
-                dialog.name,
-                dialog.name + ".simulation"), sample_item.obj, progress_bar,
-                               load_data=True)
+                dialog.name, f"{dialog.name}.simulation"), sample_item.obj,
+                load_data=True, progress=sbh.reporter.get_sub_reporter(
+                    lambda x: 0.9 * x
+                ))
             self.__remove_info_tab()
-            self.statusbar.removeWidget(progress_bar)
-            progress_bar.hide()
+
+            sbh.reporter.report(100)
 
     def __add_sample(self, sample_name):
         """Creates a new Sample object and adds it to tree view.
 
         Args:
             sample_name: Sample name.
+
+        Return:
+            TreeWidgetItem
         """
         sample = self.request.samples.add_sample(name=sample_name)
-        self.add_root_item_to_tree(sample)
+        return self.add_root_item_to_tree(sample)
 
     def update_recent_file_menu(self, files=None):
         """Updates the recently opened file menu. Previous actions are
@@ -1062,6 +1055,9 @@ class Potku(QtWidgets.QMainWindow):
 
         Args:
             obj: Object related to item.
+
+        Return:
+              QTreeWidgetItem that was added
         """
         tree_item = QtWidgets.QTreeWidgetItem()
         tree_item.setText(0, "Sample " + "%02d" % obj.serial_number + " " +
@@ -1071,6 +1067,7 @@ class Potku(QtWidgets.QMainWindow):
         tree_item.obj = obj
 
         self.treeWidget.addTopLevelItem(tree_item)
+        return tree_item
 
     def __add_item_to_tree(self, parent_item, obj, load_data):
         """Add item to tree where it can be opened.
@@ -1096,9 +1093,9 @@ class Potku(QtWidgets.QMainWindow):
         parent_item.addChild(tree_item)
         parent_item.setExpanded(True)
 
-    def add_new_tab(self, tab_type, filepath, sample, progress_bar=None,
-                    file_current=0, file_count=1, load_data=False,
-                    object_name="", import_evnt_or_binary=False):
+    def add_new_tab(self, tab_type, filepath, sample, file_current=0,
+                    file_count=1, load_data=False, object_name="",
+                    import_evnt_or_binary=False, progress=None):
         """Add new tab into TabWidget.
 
         Adds a new tab into program's tabWidget. Makes a new measurement or
@@ -1109,21 +1106,28 @@ class Potku(QtWidgets.QMainWindow):
             filepath: A string representing measurement or simulation file
             path, or data path when creating a new measurement.
             sample: The sample under which the measurement or simulation is put.
-            progress_bar: A QtWidgets.QProgressBar to be updated.
             file_current: An integer representing which number is currently
             being read. (for GUI)
             file_count: An integer representing how many files will be loaded.
             load_data: A boolean representing whether to load data or not. This
-            is to save time when loading a request and we do not want to load
-            every measurement.
+                is to save time when loading a request and we do not want to
+                load every measurement.
             object_name: When creating a new Measurement, this is the name
-            for it.
+                for it.
             import_evnt_or_binary: Whether evnt or lst data is being imported
-            or not.
+                or not.
+            progress: a ProgressReporter object
         """
-        if progress_bar is not None:
-            progress_bar.setValue((100 / file_count) * file_current)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+
+        try:
+            cur_progress = (100 / file_count) * file_current
+        except ZeroDivisionError:
+            cur_progress = 0
+
+        rest = (100 - cur_progress) * 0.01
+
+        if progress is not None:
+            progress.report(cur_progress)
 
         if tab_type == "measurement":
             measurement = \
@@ -1131,9 +1135,7 @@ class Potku(QtWidgets.QMainWindow):
                     sample, filepath, self.tab_id, object_name,
                     import_evnt_or_binary=import_evnt_or_binary,
                     selector_cls=Selector)
-            if measurement == "already exists":
-                return None
-            if measurement:
+            if measurement is not None:
                 tab = MeasurementTabWidget(self.tab_id, measurement,
                                            self.icon_manager,
                                            statusbar=self.statusbar)
@@ -1146,27 +1148,30 @@ class Potku(QtWidgets.QMainWindow):
                 if load_data:
                     measurement.load_data()
 
-                    tab.add_histogram(GUIReporter(progress_bar))
+                    if progress is not None:
+                        sub_progress = progress.get_sub_reporter(
+                            lambda x: cur_progress + rest * x * 0.9
+                        )
+                    else:
+                        sub_progress = None
+
+                    tab.add_histogram(progress=sub_progress)
                     self.tabs.addTab(tab, measurement.name)
                     self.tabs.setCurrentWidget(tab)
-
-                    if progress_bar:
-                        progress_bar.setValue(100)
-                        QtCore.QCoreApplication.processEvents(
-                            QtCore.QEventLoop.AllEvents)
 
                 sample_item = self.treeWidget.findItems(
                     "%02d" % sample.serial_number + " " + sample.name,
                     Qt.MatchEndsWith, 0)[0]
                 self.__add_item_to_tree(sample_item, measurement, load_data)
                 self.tab_id += 1
-                return measurement
+
+            return measurement
 
         if tab_type == "simulation":
             simulation = self.request.samples.simulations.add_simulation_file(
                 sample, filepath, self.tab_id)
 
-            if simulation:
+            if simulation is not None:
                 tab = SimulationTabWidget(self.request, self.tab_id, simulation,
                                           self.icon_manager,
                                           statusbar=self.statusbar)
@@ -1178,10 +1183,6 @@ class Potku(QtWidgets.QMainWindow):
                 tab.data_loaded = load_data
                 if load_data:
                     tab.add_simulation_target_and_recoil()
-
-                    progress_bar.setValue(100)
-                    QtCore.QCoreApplication.processEvents(
-                        QtCore.QEventLoop.AllEvents)
 
                     self.tabs.addTab(tab, simulation.name)
                     self.tabs.setCurrentWidget(tab)

@@ -35,6 +35,8 @@ import struct
 import dialogs.dialog_functions as df
 import widgets.input_validation as iv
 
+from widgets.gui_utils import StatusBarHandler
+
 from pathlib import Path
 from dialogs.file_dialogs import open_files_dialog
 
@@ -113,11 +115,8 @@ class ImportDialogBinary(QtWidgets.QDialog):
         """Import binary files.
         """
         imported_files = {}
-        progress_bar = QtWidgets.QProgressBar()
-        self.__statusbar.addWidget(progress_bar, 1)
-        progress_bar.show()
-        progress_bar.setValue(10)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+        sbh = StatusBarHandler(self.__statusbar)
+        sbh.reporter.report(10)
         
         root = self.treeWidget.invisibleRootItem()
         root_child_count = root.childCount()
@@ -150,15 +149,9 @@ class ImportDialogBinary(QtWidgets.QDialog):
             self.__convert_file(input_file, output_file)
             measurement.measurement_file = output_file
 
-            percentage = 10 + (i + 1 / root_child_count) * 90
-            progress_bar.setValue(percentage)
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
+            sbh.reporter.report(10 + (i + 1 / root_child_count) * 90)
 
-        progress_bar.setValue(100)
-        QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-
-        self.__statusbar.removeWidget(progress_bar)
-        progress_bar.hide()
+        sbh.reporter.report(100)
         self.imported = True
 
         self.close()

@@ -30,7 +30,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import os
-import sys
 import time
 import logging
 
@@ -41,6 +40,7 @@ import modules.cut_file as cut_file
 
 from pathlib import Path
 
+from widgets.gui_utils import StatusBarHandler
 from modules.beam import Beam
 from modules.detector import Detector
 from modules.element import Element
@@ -71,6 +71,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         
         Args:
             parent: A MeasurementTabWidget.
+            statusbar: a QStatusBar object
         """
         super().__init__()
         uic.loadUi(Path("ui_files", "ui_depth_profile_params.ui"), self)
@@ -125,25 +126,14 @@ class DepthProfileDialog(QtWidgets.QDialog):
     def __accept_params(self):
         """Accept given parameters.
         """
-        if self.statusbar is not None:
-            progress_bar = QtWidgets.QProgressBar()
-            self.statusbar.addWidget(progress_bar, 1)
-            progress_bar.show()
-            QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-        else:
-            progress_bar = None
+        sbh = StatusBarHandler(self.statusbar)
 
         try:
             use_cut = []
             output_dir = self.measurement.directory_depth_profiles
             elements = []
 
-            if progress_bar is not None:
-                progress_bar.setValue(10)
-                QtCore.QCoreApplication.processEvents(
-                    QtCore.QEventLoop.AllEvents)
-                # Mac requires event processing to show progress bar and its
-                # process.
+            sbh.reporter.report(10)
             
             # Get the filepaths of the selected items
             root = self.treeWidget.invisibleRootItem()
@@ -174,11 +164,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                             DepthProfileDialog.checked_cuts[m_name].\
                                 append(item_child.file_name)
 
-            if progress_bar is not None:
-                progress_bar.setValue(20)
-                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-                # Mac requires event processing to show progress bar and its
-                # process.
+            sbh.reporter.report(20)
             
             # Get the x-axis unit to be used from the radio buttons
             x_unit = DepthProfileDialog.x_unit
@@ -188,11 +174,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
                     x_unit = radio_button.text()
             DepthProfileDialog.x_unit = x_unit
 
-            if progress_bar is not None:
-                progress_bar.setValue(57)
-                QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.AllEvents)
-                # Mac requires event processing to show progress bar and its
-                # process.
+            sbh.reporter.report(30)
             
             DepthProfileDialog.line_zero = self.check_0line.isChecked()
             DepthProfileDialog.line_scale = self.check_scaleline.isChecked()
@@ -298,14 +280,12 @@ class DepthProfileDialog(QtWidgets.QDialog):
                                        x_unit,
                                        DepthProfileDialog.line_zero,
                                        DepthProfileDialog.line_scale,
-                                       DepthProfileDialog.systerr)
+                                       DepthProfileDialog.systerr,
+                                       progress=sbh.reporter.get_sub_reporter(
+                                           lambda x: 30 + 0.6 * x
+                                       ))
 
-                if progress_bar is not None:
-                    progress_bar.setValue(90)
-                    QtCore.QCoreApplication.processEvents(QtCore.QEventLoop.
-                                                          AllEvents)
-                    # Mac requires event processing to show progress bar and its
-                    # process.
+                sbh.reporter.report(90)
                 
                 icon = self.parent.icon_manager.\
                     get_icon("depth_profile_icon_2_16.png")
@@ -315,12 +295,10 @@ class DepthProfileDialog(QtWidgets.QDialog):
             else:
                 print("No cuts have been selected for depth profile.")
         except Exception as e:
-            error_log = "Unexpected error: {0}".format(e)
+            error_log = f"Unexpected error: {e}"
             logging.getLogger(self.measurement.name).error(error_log)
         finally:
-            if self.statusbar is not None:
-                self.statusbar.removeWidget(progress_bar)
-                progress_bar.hide()
+            sbh.reporter.report(100)
 
     def __add_reference_density(self):
         """
@@ -428,7 +406,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
     save_file = "widget_depth_profile.save"
     
     def __init__(self, parent, output_dir, use_cuts, elements, x_units,
-                 line_zero, line_scale, systematic_error):
+                 line_zero, line_scale, systematic_error, progress=None):
         """Inits widget.
         
         Args:
@@ -458,9 +436,20 @@ class DepthProfileWidget(QtWidgets.QWidget):
             self.__line_scale = line_scale
             self.__systerr = systematic_error
 
+            if progress is not None:
+                sub_progress = progress.get_sub_reporter(
+                    lambda x: 0.5 * x
+                )
+            else:
+                sub_progress = None
+
             depth_files.generate_depth_files(self.use_cuts,
                                              self.output_dir,
-                                             measurement=self.measurement)
+                                             measurement=self.measurement,
+                                             progress=sub_progress)
+
+            if progress is not None:
+                progress.report(50)
             
             # Check for RBS selections.
             rbs_list = {}
@@ -486,25 +475,29 @@ class DepthProfileWidget(QtWidgets.QWidget):
                     if found_scatter:
                         elements[index] = scatter_element
 
-            depth_scale_from = self.measurement.depth_for_concentration_from
-            depth_scale_to = self.measurement.depth_for_concentration_to
-            self.matplotlib = MatplotlibDepthProfileWidget(self,
-                                                           self.output_dir,
-                                                           self.elements,
-                                                           rbs_list,
-                                                           (depth_scale_from,
-                                                            depth_scale_to),
-                                                           self.use_cuts,
-                                                           self.x_units,
-                                                           True,  # legend
-                                                           self.__line_zero,
-                                                           self.__line_scale,
-                                                           self.__systerr)
+            depth_scale = self.measurement.depth_for_concentration_from, \
+                          self.measurement.depth_for_concentration_to
+
+            if progress is not None:
+                sub_progress = progress.get_sub_reporter(
+                    lambda x: 50 + 0.5 * x
+                )
+            else:
+                sub_progress = None
+
+            self.matplotlib = MatplotlibDepthProfileWidget(
+                self, self.output_dir, self.elements, rbs_list,
+                depth_scale, self.use_cuts, self.x_units, True,
+                self.__line_zero, self.__line_scale,
+                self.__systerr, progress=sub_progress)
         except Exception as e:
             msg = f"Could not create Depth Profile graph: {e}"
             logging.getLogger(self.measurement.name).error(msg)
             if hasattr(self, "matplotlib"):
                 self.matplotlib.delete()
+        finally:
+            if progress is not None:
+                progress.report(100)
 
     def delete(self):
         """Delete variables and do clean up.
