@@ -301,3 +301,61 @@ def split_scientific_notation(x):
     sn = "%e" % d
     val, multi = sn.split("e")
     return float(val), float(f"1e{multi}")
+
+
+def calculate_bin_counts(data, comp_x, comp_y, min_count=1, max_count=8000,
+                         data_sorted=False):
+    """Returns the number of bins for x and y data with given compressions.
+
+    Args:
+        data: collection of two lists: values on the x axis and values on the
+            y axis
+        comp_x: compression on the x axis
+        comp_y: compression on the y axis
+        min_count: minimum number of bins
+        max_count: maximum number of bins
+        data_sorted: whether the data on both axis is already sorted
+
+    Return:
+        tuple where first element is a tuple of bin counts for x and y values
+        and second element is a message that indicates if the bin counts had
+        to be limited due to exceeding maximum value.
+    """
+    x_count, x_msg = _calculate_bin_count(
+        data[0], comp_x, min_count, max_count, data_sorted)
+
+    y_count, y_msg = _calculate_bin_count(
+        data[1], comp_y, min_count, max_count, data_sorted)
+
+    return (x_count, y_count), x_msg if x_msg else y_msg
+
+
+def _calculate_bin_count(lst, comp, min_count, max_count, data_sorted):
+    """Calculates bins for a single list.
+    """
+    if min_count > max_count:
+        raise ValueError("Minimum bin count was bigger than maximum")
+    if comp <= 0:
+        raise ValueError("Compression must be non-negative.")
+    if not lst:
+        return int(min_count), None
+
+    if data_sorted:
+        x0, xn = lst[0], lst[-1]
+    else:
+        x0, xn = get_min_and_max(lst)
+
+    bin_count = math.fabs(x0 - xn) / comp
+
+    if bin_count < min_count:
+        return int(min_count), None
+    if bin_count > max_count:
+        return int(max_count), f"Bin count exceeded maximum value of" \
+                            f" {max_count}. Adjustment made."
+    return int(bin_count), None
+
+
+def get_min_and_max(lst):
+    """Returns both minimum and maximum values from a list.
+    """
+    return min(lst), max(lst)

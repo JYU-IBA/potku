@@ -30,6 +30,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import os
+import modules.math_functions as mf
 
 from dialogs.energy_spectrum import EnergySpectrumWidget
 from dialogs.graph_settings import TofeGraphSettingsWidget
@@ -111,22 +112,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         y_range = self.__global_settings.get_tofe_bin_range_y()
         self.axes_range = [x_range, y_range]
 
-        if self.__x_data:
-            self.__x_data_min, self.__x_data_max = self.__fix_axes_range(
-                (min(self.__x_data), max(self.__x_data)),
-                self.compression_x)
-        else:
-            self.__x_data_min = 0
-            self.__x_data_max = 0
-
-        if self.__y_data:
-            self.__y_data_min, self.__y_data_max = self.__fix_axes_range(
-                (min(self.__y_data), max(self.__y_data)),
-                self.compression_y)
-        else:
-            self.__y_data_min = 0
-            self.__y_data_max = 0
-
         self.name_y_axis = "Energy (Ch)"
         self.name_x_axis = "time of flight (Ch)"
 
@@ -168,11 +153,22 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
         self.axes.clear()  # Clear old stuff
 
+        # If bin count too high -> it will crash the program, use 3500
+        # If 10 000, tofe_65 example can have compression as 1, but REALLY slow
+        # Usually, bin count around 8000
+        bin_counts, msg = mf.calculate_bin_counts([x_data, y_data],
+                                                  self.compression_x,
+                                                  self.compression_y)
+
+        if msg is not None:
+            QtWidgets.QMessageBox.warning(
+                self.parent, "Warning", msg,
+                QtWidgets.QMessageBox.Ok,
+                QtWidgets.QMessageBox.Ok)
+
         # Check values for graph
         axes_range = None
-        bin_counts = (
-            (self.__x_data_max - self.__x_data_min) // self.compression_x,
-            (self.__y_data_max - self.__y_data_min) // self.compression_y)
+
         if self.axes_range_mode == 1:
             axes_range = list(self.axes_range)
             axes_range[0] = self.__fix_axes_range(axes_range[0],
@@ -184,36 +180,10 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
             bin_counts = (x_length // self.compression_x,
                           y_length // self.compression_y)
 
-        # If bin count too high -> it will crash the program, use 3500
-        # If 10 000, tofe_65 example can have compression as 1, but REALLY slow
-        # Usually, bin count around 8000
-        if bin_counts[0] > 8000:
-            old_count = bin_counts[0]
-            bin_counts = (8000, bin_counts[1])
-            # TODO: Better location for message?
-            QtWidgets.QMessageBox.information(
-                self.parent, "Notice",
-                "[WARNING] {0}: X axis bin count ({2}) above 8000. {1}".format(
-                    self.measurement.name, "Limiting to prevent crash.",
-                    old_count), QtWidgets.QMessageBox.Ok,
-                QtWidgets.QMessageBox.Ok)
-        if bin_counts[1] > 8000:
-            old_count = bin_counts[1]
-            bin_counts = (bin_counts[0], 8000)
-            QtWidgets.QMessageBox.information(
-                self.parent, "Notice",
-                "[WARNING] {0}: Y axis bin count ({2}) above 8000. {1}".format(
-                    self.measurement.name,
-                    "Limiting to prevent crash.",
-                    old_count), QtWidgets.QMessageBox.Ok,
-                QtWidgets.QMessageBox.Ok)
-
         use_color_scheme = self.measurement.color_scheme
         color_scheme = MatplotlibHistogramWidget.color_scheme[use_color_scheme]
         colormap = cm.get_cmap(color_scheme)
 
-        # FIXME crashes if bin counts are zero (this can happen if event count
-        #   is set to 0 during import)
         self.axes.hist2d(x_data,
                          y_data,
                          bins=bin_counts,

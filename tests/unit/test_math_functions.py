@@ -29,6 +29,8 @@ __version__ = ""  # TODO
 import unittest
 import random
 import numpy as np
+import itertools
+import math
 
 from modules import math_functions as mf
 from modules.point import Point
@@ -441,6 +443,143 @@ class TestMisc(unittest.TestCase):
 
         self.assertRaises(ValueError,
                           lambda: mf.split_scientific_notation("2e2e2"))
+
+
+class TestBinCounts(unittest.TestCase):
+    def setUp(self):
+        a, b = 0, 100
+        n = 50
+        dim = 2
+        self.unsorted_data = [
+            [random.uniform(a, b) for _ in range(n)] for _ in range(dim)
+        ]
+        # Make sure that list contains min and max values
+        for lst in self.unsorted_data:
+            idx_a, idx_b = random.sample(range(0, n), 2)
+            lst[idx_a] = a
+            lst[idx_b] = b
+        self.asc_sorted_data = [
+            sorted(lst) for lst in self.unsorted_data
+        ]
+        self.desc_sorted_data = [
+            list(reversed(lst)) for lst in self.asc_sorted_data
+        ]
+        self.all_data = [
+            self.unsorted_data, self.asc_sorted_data, self.desc_sorted_data
+        ]
+
+    def test_calculate_bins(self):
+        kwargs = {
+            "comp_x": 10,
+            "comp_y": 20
+        }
+        self.assertEqual(((10, 5), None), mf.calculate_bin_counts(
+            self.unsorted_data, **kwargs
+        ))
+        self.assert_all_equal(
+            lambda data: mf.calculate_bin_counts(data, **kwargs),
+            self.all_data
+        )
+
+    def test_max_count(self):
+        kwargs = {
+            "comp_x": 5,
+            "comp_y": 10,
+            "max_count": 15
+        }
+        self.assertEqual(
+            ((15, 10), "Bin count exceeded maximum value of 15. Adjustment "
+                       "made."),
+            mf.calculate_bin_counts(self.unsorted_data, **kwargs))
+
+        self.assert_all_equal(
+            lambda data: mf.calculate_bin_counts(data, **kwargs),
+            self.all_data
+        )
+
+    def test_min_count(self):
+        kwargs = {
+            "comp_x": 5,
+            "comp_y": 10,
+            "min_count": 15
+        }
+        self.assertEqual(((20, 15), None), mf.calculate_bin_counts(
+            self.unsorted_data, **kwargs
+        ))
+        self.assert_all_equal(
+            lambda data: mf.calculate_bin_counts(data, **kwargs),
+            self.all_data
+        )
+
+    def test_sorted_count(self):
+        kwargs = {
+            "comp_x": 10,
+            "comp_y": 10,
+            "data_sorted": True
+        }
+        expected_x = int(math.fabs(self.unsorted_data[0][0] -
+                                   self.unsorted_data[0][-1]) / 10)
+        expected_y = int(math.fabs(self.unsorted_data[1][0] -
+                                   self.unsorted_data[1][-1]) / 10)
+
+        if not expected_x:
+            expected_x = 1
+        if not expected_y:
+            expected_y = 1
+
+        self.assertEqual(((expected_x, expected_y), None),
+                         mf.calculate_bin_counts(self.unsorted_data, **kwargs))
+
+        self.assert_all_equal(
+            lambda data: mf.calculate_bin_counts(data, **kwargs),
+            [self.asc_sorted_data, self.desc_sorted_data]
+        )
+
+    def test_bad_inputs(self):
+        self.assertRaises(
+            ValueError,
+            lambda: mf.calculate_bin_counts(self.unsorted_data, 0, 0))
+
+        self.assertRaises(
+            ValueError,
+            lambda: mf.calculate_bin_counts(self.unsorted_data, 10, -1))
+
+        self.assertRaises(
+            ValueError,
+            lambda: mf.calculate_bin_counts(self.unsorted_data, 1, 1,
+                                            min_count=20, max_count=10))
+
+    def test_empty_list(self):
+        self.assertEqual(((1, 1), None),
+                         mf.calculate_bin_counts([[1], []], 1, 1))
+
+    def test_return_type(self):
+        # bin counts should always be integers
+        n = 10
+        for _ in range(n):
+            kwargs = {
+                "data": [
+                    [random.random() for _ in range(20)],
+                    [random.random() for _ in range(20)]
+                ],
+                "comp_x": random.random(),
+                "comp_y": random.random(),
+                "min_count": random.uniform(5.5, 15.5),
+                "max_count": random.uniform(25.5, 35.5),
+                "data_sorted": random.random() > 0.5
+            }
+            (x_bins, y_bins), _ = mf.calculate_bin_counts(**kwargs)
+            self.assertIsInstance(x_bins, int)
+            self.assertIsInstance(y_bins, int)
+
+
+
+
+
+
+    def assert_all_equal(self, func, data_sets):
+        bins = [func(ds) for ds in data_sets]
+        self.assertTrue(all(x == y for x, y in itertools.combinations(bins, 2)))
 
 
 if __name__ == "__main__":
