@@ -358,6 +358,10 @@ class RecoilAtomParetoFront(MatplotlibWidget):
     def __init__(self, parent):
         super().__init__(parent)
         self.pareto_front = None
+        self.x_max = 30
+        self.y_max = 2000
+        self.axes.set_xlim(0, self.x_max)
+        self.axes.set_ylim(0, self.y_max)
 
     def update_pareto_front(self, pareto_front):
         xs = [x for x, y in pareto_front]
@@ -368,7 +372,13 @@ class RecoilAtomParetoFront(MatplotlibWidget):
         except AttributeError:
             self.pareto_front, = self.axes.plot(xs, ys, linestyle="None",
                                                 marker="o")
+        x_max = max(self.x_max, *xs)
+        y_max = max(self.y_max, *ys)
+        if x_max != self.x_max:
+            self.axes.set_xlim(0, self.x_max)
+            self.x_max = x_max
+        if y_max != self.y_max:
+            self.axes.set_ylim(0, self.y_max)
+            self.y_max = y_max
         self.canvas.draw()
         self.canvas.flush_events()
-
-
