@@ -289,6 +289,7 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
                     break
             i += 1
 
+        # TODO move following code to the result widget
         ct = CancellationToken()
         nsgaii = Nsgaii(element_simulation=self.element_simulation,
                         measurement=used_measurement, cut_file=cut_file,

@@ -645,7 +645,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         # Start as many processes as is given in number of processes
         for i in range(number_of_processes):
             if self.__cancellation_token is not None:
-                self.__cancellation_token.raise_if_cancelled()
+                if self.__cancellation_token.is_cancellation_requested():
+                    return
 
             settings.update({
                 "seed_number": seed_number,
@@ -830,6 +831,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             self.on_next(status)
             if status["state"] == SimulationState.DONE:
                 break
+            elif self.__cancellation_token is not None:
+                self.__cancellation_token.raise_if_cancelled()
 
     def count_active_processes(self):
         """Returns the number of active processes.

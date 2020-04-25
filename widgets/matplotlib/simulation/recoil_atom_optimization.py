@@ -351,4 +351,24 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
     def _stop_optim(self):
         if self.cancellation_token is not None:
             self.cancellation_token.request_cancellation()
+        self.stop_optim_btn.setEnabled(False)
+
+
+class RecoilAtomParetoFront(MatplotlibWidget):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.pareto_front = None
+
+    def update_pareto_front(self, pareto_front):
+        xs = [x for x, y in pareto_front]
+        ys = [y for x, y in pareto_front]
+        try:
+            self.pareto_front.set_xdata(xs)
+            self.pareto_front.set_ydata(ys)
+        except AttributeError:
+            self.pareto_front, = self.axes.plot(xs, ys, linestyle="None",
+                                                marker="o")
+        self.canvas.draw()
+        self.canvas.flush_events()
+
 

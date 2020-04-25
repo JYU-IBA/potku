@@ -27,7 +27,6 @@ __version__ = "2.0"
 
 import numpy as np
 import os
-import time
 import collections
 
 import modules.optimization as opt
@@ -37,6 +36,7 @@ import modules.math_functions as mf
 
 from pathlib import Path
 from enum import Enum
+from timeit import default_timer as timer
 
 from modules.recoil_element import RecoilElement
 from modules.point import Point
@@ -149,8 +149,6 @@ class Nsgaii(Observable):
         self.measurement = measurement
         self.cut_file = Path(cut_file)
 
-        # Starting time of optimization
-        self.__start = None
         self.population = None
         self.measured_espe = None
 
@@ -290,14 +288,14 @@ class Nsgaii(Observable):
             # Run mcerd for first solution
             self.element_simulation.optimization_recoils.append(current_recoil)
             if not self.mcerd_run:
-                self.element_simulation.start(self.number_of_processes,
-                                              start_value=201,
-                                              optimize=True,
-                                              stop_p=self.stop_percent,
-                                              check_t=self.check_time,
-                                              optimize_recoil=True,
-                                              check_max=self.check_max,
-                                              check_min=self.check_min)
+                # TODO run this in a thread so we could use the same
+                #  cancellation token as NSGAII uses
+                self.element_simulation.start(
+                    self.number_of_processes, start_value=201, optimize=True,
+                    stop_p=self.stop_percent, check_t=self.check_time,
+                    optimize_recoil=True, check_max=self.check_max,
+                    check_min=self.check_min,
+                    cancellation_token=self.cancellation_token)
                 if self.element_simulation.optimization_stopped:
                     return None
                 self.mcerd_run = True
@@ -321,13 +319,13 @@ class Nsgaii(Observable):
         else:  # Evaluate fluence
             if not self.mcerd_run:
                 # TODO maybe move this to the __prepare method?
-                self.element_simulation.start(self.number_of_processes, 201,
-                                              optimize=True,
-                                              stop_p=self.stop_percent,
-                                              check_t=self.check_time,
-                                              optimize_recoil=False,
-                                              check_max=self.check_max,
-                                              check_min=self.check_min)
+                self.element_simulation.start(
+                    self.number_of_processes, 201, optimize=True,
+                    stop_p=self.stop_percent, check_t=self.check_time,
+                    optimize_recoil=False, check_max=self.check_max,
+                    check_min=self.check_min,
+                    cancellation_token=self.cancellation_token
+                )
                 if self.element_simulation.optimization_stopped:
                     return None
                 self.mcerd_run = True
@@ -768,7 +766,6 @@ class Nsgaii(Observable):
                         (self.upper_limits - self.lower_limits) \
                         + self.lower_limits
 
-        self.__start = time.clock()
         pop = self.evaluate_solutions(init_sols)
         return pop
 
@@ -927,10 +924,7 @@ class Nsgaii(Observable):
                                        evaluations_left=self.evaluations))
         self.__prepare_optimization()
 
-        # TODO timer might be better choice as time.clock depends on the
-        #  platform
-        # https://docs.python.org/3.6/library/time.html#time.clock
-        self.__start = time.clock()
+        start_time = timer()
 
         self.on_next(self._get_message(OptimizationState.RUNNING,
                                        evaluations_left=self.evaluations))
@@ -951,17 +945,25 @@ class Nsgaii(Observable):
         crowd_dis = self.crowding_distance(front_no, self.population[1])
         # In a loop until number of evaluations is reached:
         evaluations = self.evaluations
-        while evaluations > 0 and \
-                not self.cancellation_token.is_cancellation_requested():
+        while evaluations > 0:
+            if self.cancellation_token is not None:
+                if self.cancellation_token.is_cancellation_requested():
+                    break
             # Join front_no and crowd_dis with transpose to get one array
             fit = np.vstack((front_no, crowd_dis)).T
             # Select group of parents (mating pool) by binary_tournament,
             # usually number of parents is half of population.
             pool_size = round(self.pop_size / 2)
 
-            # FIXME crashes here if skip_simulation has been selected and no
-            #   simulation results exist
-            pool_ind = opt.tournament_allow_doubles(2, pool_size, fit)
+            try:
+                pool_ind = opt.tournament_allow_doubles(2, pool_size, fit)
+            except IndexError:
+                self.on_error(self._get_message(
+                    OptimizationState.FINISHED,
+                    error="Ensure that there is simulated data for this recoil "
+                          "element before starting optimization."))
+                self.clean_up()
+                return
             pop_sol, pop_obj = np.array(self.population[0]), \
                                np.array(self.population[1])
             pool = [pop_sol[pool_ind, :], pop_obj[pool_ind, :]]
@@ -989,25 +991,35 @@ class Nsgaii(Observable):
             self.element_simulation.calculated_solutions = int(
                 self.evaluations - evaluations)
 
+            elapsed_time = timer() - start_time
             self.on_next(self._get_message(
                 OptimizationState.RUNNING, evaluations_left=evaluations,
-                pareto_front=self.population[1][front_no == 1, :]))
+                pareto_front=self.population[1][front_no == 1, :],
+                elapsed=elapsed_time))
+
             # Temporary prints
             if evaluations % (10*self.evaluations/self.pop_size) == 0:
-
-                end = time.clock()
                 percent = 100*(self.evaluations - evaluations)/self.evaluations
                 print(
                     'Running time %10.2f, percentage %s, done %f' % (
-                        end-self.__start, percent, self.evaluations -
+                        elapsed_time - start_time, percent, self.evaluations -
                         evaluations))
 
         # Finally, sort by non-domination
         front_no, last_front_no = self.nd_sort(self.population[1],
                                                self.pop_size)
         # Find first front
-        pareto_optimal_sols = self.population[0][front_no == 1, :]
-        pareto_optimal_objs = self.population[1][front_no == 1, :]
+        try:
+            pareto_optimal_sols = self.population[0][front_no == 1, :]
+            pareto_optimal_objs = self.population[1][front_no == 1, :]
+        except TypeError:
+            self.on_error(self._get_message(
+                OptimizationState.FINISHED,
+                error="Could not form the Pareto front. Optimization may have"
+                      "been stopped before any solutions were evaluated."))
+            self.clean_up()
+            return
+
         if self.opt_recoil:
             first_sol, med_sol, last_sol = pick_final_solutions(
                 pareto_optimal_objs, pareto_optimal_sols, count=3)
@@ -1028,14 +1040,17 @@ class Nsgaii(Observable):
             avg = f_sum / len(pareto_optimal_sols)
             self.element_simulation.optimized_fluence = avg
 
-        self.element_simulation.optimization_done = True
-        self.element_simulation.stop()
-        self.delete_temp_files()
+        self.clean_up()
         self.save_results_to_file()
 
         self.on_complete(self._get_message(OptimizationState.FINISHED,
                                            evaluations_done=self.evaluations
                                                             - evaluations))
+
+    def clean_up(self):
+        self.element_simulation.optimization_done = True
+        self.element_simulation.stop()
+        self.delete_temp_files()
 
     def delete_temp_files(self):
         # Remove unnecessary opt.recoil file

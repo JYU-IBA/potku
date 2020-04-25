@@ -37,6 +37,8 @@ from PyQt5.QtCore import pyqtSignal
 
 from widgets.matplotlib.simulation.recoil_atom_optimization import \
     RecoilAtomOptimizationWidget
+from widgets.matplotlib.simulation.recoil_atom_optimization import \
+    RecoilAtomParetoFront
 
 
 class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
@@ -50,6 +52,8 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
         """
         Initialize the widget.
         """
+        # TODO make a common base class for result widgets
+        # TODO change the push button to radio group
         super().__init__()
         GUIObserver.__init__(self)
         uic.loadUi(Path("ui_files", "ui_optimization_results_widget.ui"), self)
@@ -68,7 +72,20 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
         self.recoil_atoms = RecoilAtomOptimizationWidget(
             self, element_simulation, target,
             cancellation_token=cancellation_token)
+        self.pareto_front = RecoilAtomParetoFront(self)
+
         self.recoil_atoms.results_accepted.connect(self.results_accepted.emit)
+        self.pushButton.clicked.connect(self.switch_widget)
+
+    def switch_widget(self):
+        self.stackedWidget: QtWidgets.QStackedWidget
+        if self.stackedWidget.currentIndex() == 1:
+            self.pushButton.setText("Show Pareto front")
+            self.stackedWidget.setCurrentIndex(0)
+        else:
+            self.pushButton.setText("Show distribution")
+            self.stackedWidget.setCurrentIndex(1)
+
 
     def delete(self):
         """Delete variables and do clean up.
@@ -82,6 +99,7 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
         optimization files. Stop optimization if necessary. Disconnect
         results_accepted signal.
         """
+        # TODO stop optimization
         self.element_simulation.delete_optimization_results(optim_mode="recoil")
         try:
             self.results_accepted.disconnect()
@@ -100,16 +118,19 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
 
     def show_results(self, evaluations):
         """
-        Shjow optimized recoils and finished amount of evaluations.
+        Show optimized recoils and finished amount of evaluations.
         """
         self.progressLabel.setText(f"{evaluations} evaluations done. Finished.")
         self.recoil_atoms.show_recoils()
 
     def on_next_handler(self, msg):
         self.update_progress(msg["evaluations_left"])
+        if "pareto_front" in msg:
+            self.pareto_front.update_pareto_front(msg["pareto_front"])
 
     def on_error_handler(self, err):
-        pass
+        text = f"Error encountered: {err['error']} Optimization stopped."
+        self.progressLabel.setText(text)
 
     def on_complete_handler(self, msg):
         self.show_results(msg["evaluations_done"])
