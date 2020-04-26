@@ -77,8 +77,7 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
                                metaclass=QtABCMeta):
     """Class for creating a simulation settings tab.
     """
-    # TODO name, desc, number_of_ions and number_of_ions_in_presimu should
-    #   perhaps not be tracked
+    # TODO name, desc should perhaps not be tracked
     name = bnd.bind("nameLineEdit", track_change=True)
     description = bnd.bind("descriptionPlainTextEdit", track_change=True)
     simulation_type = bnd.bind("typeOfSimulationComboBox",
@@ -88,9 +87,8 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
     simulation_mode = bnd.bind("modeComboBox",
                                fget=_simulation_mode_from_combobox,
                                track_change=True)
-    number_of_ions = bnd.bind("numberOfIonsSpinBox", track_change=True)
-    number_of_ions_in_presimu = bnd.bind("numberOfPreIonsSpinBox",
-                                         track_change=True)
+    number_of_ions = bnd.bind("numberOfIonsSpinBox")
+    number_of_ions_in_presimu = bnd.bind("numberOfPreIonsSpinBox")
     number_of_scaling_ions = bnd.bind("numberOfScalingIonsSpinBox",
                                       track_change=True)
     number_of_recoils = bnd.bind("numberOfRecoilsSpinBox",
