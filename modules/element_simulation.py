@@ -827,12 +827,14 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """
         while True:
             time.sleep(1)
-            status = self.get_current_status()
-            self.on_next(status)
-            if status["state"] == SimulationState.DONE:
-                break
-            elif self.__cancellation_token is not None:
+            if self.__cancellation_token is not None:
                 self.__cancellation_token.raise_if_cancelled()
+            status = self.get_current_status()
+            if status["state"] == SimulationState.DONE:
+                # on_complete is already reported by stop method so no need to
+                # do it here
+                break
+            self.on_next(status)
 
     def count_active_processes(self):
         """Returns the number of active processes.

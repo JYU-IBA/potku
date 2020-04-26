@@ -76,13 +76,11 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
         self.OKButton.clicked.connect(self.update_settings_and_close)
         self.applyButton.clicked.connect(self.update_settings)
         self.cancelButton.clicked.connect(self.close)
-        self.defaultSettingsCheckBox.stateChanged.connect(
-            self.toggle_settings)
+        self.defaultSettingsCheckBox.stateChanged.connect(self.toggle_settings)
 
         self.__original_property_values = {}
         self.use_default_settings = self.element_simulation.use_default_settings
 
-        self.__close = True
         self.exec_()
 
     def get_original_property_values(self):
@@ -102,17 +100,17 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
             self.sim_widget.setEnabled(True)
 
     def update_settings_and_close(self):
-        """Updates settings and closes the dialog."""
-        self.update_settings()
-        if self.__close:
+        """Updates settings and closes the dialog if update_settings returns
+        True.
+        """
+        if self.update_settings():
             self.close()
 
     def update_settings(self):
-        """Delete existing file.
-        If default settings are used, put them to element simulation and save
-        into a file.
-        If default settings are not used, read settings from dialog,
-        put them to element simulation and save them to file.
+        """Updates ElementSimulation settings and saves them into a file.
+
+        Return:
+            boolean that indicates whether the dialog can be closed.
         """
         if not self.sim_widget.fields_are_valid:
             QtWidgets.QMessageBox.critical(self, "Warning",
@@ -122,8 +120,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
                                            "indicated in red.",
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
-            self.__close = False
-            return
+            return False
 
         # TODO could compare default element simulation and this element
         #  simulation to see if reset is actually needed
@@ -135,24 +132,25 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
             else:
                 msg = "element specific settings"
 
-            filter_func = lambda e: e is self.element_simulation
+            def filter_func(elem_sim):
+                # Filter out other element simulations than the one used by this
+                # dialog
+                elem_sim is self.element_simulation
 
             if not df.delete_element_simulations(
                 self, simulation, msg=msg, tab=self.tab,
                 filter_func=filter_func
             ):
-                self.__close = False
-                return
+                return False
 
         if self.element_simulation.name != self.sim_widget.name:
             # Remove current simu file if name has been changed
             self.element_simulation.remove_file()
 
-        self.sim_widget.update_settings()
-
         self.element_simulation.use_default_settings = self.use_default_settings
-        self.element_simulation.to_file()
-
+        self.sim_widget.update_settings()
         # TODO remove files with old name, if name has changed
 
-        self.__close = True
+        self.element_simulation.to_file()
+
+        return True
