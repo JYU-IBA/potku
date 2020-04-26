@@ -34,6 +34,7 @@ import time
 
 import dialogs.dialog_functions as df
 import widgets.binding as bnd
+import modules.general_functions as gf
 
 from pathlib import Path
 
@@ -115,7 +116,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.measurement_settings_widget.dateLabel.setText(time.strftime(
             "%c %z %Z", time.localtime(self.simulation.modification_time)))
 
-        self.tabs.currentChanged.connect(lambda: self.__check_for_red())
+        self.tabs.currentChanged.connect(lambda: df.check_for_red(self))
         self.__close = True
 
         self.exec()
@@ -129,12 +130,6 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.tabs.setEnabled(False)
         else:
             self.tabs.setEnabled(True)
-
-    def __check_for_red(self):
-        """
-        Check whether there are any invalid field in the tabs.
-        """
-        df.check_for_red(self)
 
     def __update_parameters(self):
         """
@@ -238,13 +233,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                 }
 
             # Delete possible extra .measurement files
-            filename_to_remove = ""
-            for file in os.listdir(self.simulation.directory):
-                if file.endswith(".measurement"):
-                    filename_to_remove = file
-                    break
-            if filename_to_remove:
-                os.remove(Path(self.simulation.directory, filename_to_remove))
+            gf.remove_files(self.simulation.directory,
+                            exts={".measurement"})
 
             # Write measurement settings to file
             with open(new_measurement_settings_file_path, "w") as file:

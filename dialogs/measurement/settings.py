@@ -34,6 +34,7 @@ import shutil
 import time
 
 import dialogs.dialog_functions as df
+import modules.general_functions as gf
 
 from pathlib import Path
 
@@ -113,9 +114,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
         self.profile_settings_widget = ProfileSettingsWidget(self.measurement)
         self.tabs.addTab(self.profile_settings_widget, "Profile")
 
-        self.tabs.currentChanged.connect(self.__check_for_red)
-
-        self.__close = True
+        self.tabs.currentChanged.connect(lambda: df.check_for_red(self))
 
         self.exec()
 
@@ -125,12 +124,6 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.tabs.setEnabled(False)
         else:
             self.tabs.setEnabled(True)
-
-    def __check_for_red(self):
-        """
-        Check whether there are any invalid field in the tabs.
-        """
-        df.check_for_red(self)
 
     def __update_parameters(self):
         """ Update Measurement's Run, Detector and Target objects. If measurement
@@ -144,8 +137,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                                            "element.",
                                            QtWidgets.QMessageBox.Ok,
                                            QtWidgets.QMessageBox.Ok)
-            self.__close = False
-            return
+            return False
 
         if not self.measurement.measurement_setting_file_name:
             self.measurement.measurement_setting_file_name = \
@@ -172,15 +164,10 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                 # Remove Measurement specific Detector files
                 shutil.rmtree(det_folder_path)
 
-            filenames_to_remove = []
-            for file in os.listdir(self.measurement.directory):
-                if file.endswith(".measurement") or file.endswith(".profile")\
-                        or file.endswith(".target"):
-                    filenames_to_remove.append(file)
-            for file in filenames_to_remove:
-                # Remove Measurement specific .measurement and .profile files
-                os.remove(Path(self.measurement.directory, file))
-            self.__close = True
+            gf.remove_files(
+                self.measurement.directory,
+                exts={".measurement", ".profile", ".target"})
+            return True
         else:
             # Check the target and detector angles
             ok_pressed = self.measurement_settings_widget.check_angles()
@@ -193,8 +180,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                                                    "fields indicated in red.",
                                                    QtWidgets.QMessageBox.Ok,
                                                    QtWidgets.QMessageBox.Ok)
-                    self.__close = False
-                    return
+                    return False
                 # Use Measurement specific settings
                 try:
                     self.measurement.use_default_profile_settings = False
@@ -239,13 +225,9 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                              f"{self.measurement.detector.name}.detector")
 
                     # Delete possible extra .measurement and .profile files
-                    filenames_to_remove = []
-                    for file in os.listdir(self.measurement.directory):
-                        if file.endswith(".measurement") or file.endswith(
-                                ".profile"):
-                            filenames_to_remove.append(file)
-                    for filename in filenames_to_remove:
-                        os.remove(Path(self.measurement.directory, filename))
+                    gf.remove_files(
+                        self.measurement.directory,
+                        exts={".measurement", ".profile"})
 
                     # Save general measurement settings parameters.
                     new_measurement_settings_file_path = Path(
@@ -275,9 +257,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                         f"{self.measurement.target.name}.target")
                     self.measurement.target.to_file(
                         target_file_path, new_measurement_settings_file_path)
-
-                    self.__close = True
-
+                    return True
                 except TypeError:
                     QtWidgets.QMessageBox.question(self, "Warning",
                                                    "Some of the setting values "
@@ -286,12 +266,10 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                                                    " to save them.",
                                                    QtWidgets.QMessageBox.Ok,
                                                    QtWidgets.QMessageBox.Ok)
-            else:
-                self.__close = False
+        return False
 
     def __save_settings_and_close(self):
-        """ Save settings and close dialog.
+        """ Save settings and close dialog if __update_parameters returns True.
         """
-        self.__update_parameters()
-        if self.__close:
+        if self.__update_parameters():
             self.close()

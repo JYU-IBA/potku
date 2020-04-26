@@ -32,17 +32,17 @@ import platform
 import tempfile
 import modules.comparison as comp
 
+from pathlib import Path
+
 from modules import general_functions as gf
 from modules.element import Element
 from tests.utils import get_sample_data_dir, verify_files
 
-_DIR_PATH = os.path.join(get_sample_data_dir(),
-                         "Ecaart-11-mini",
-                         "Tof-E_65-mini",
-                         "cuts")
+_DIR_PATH = Path(get_sample_data_dir(), "Ecaart-11-mini", "Tof-E_65-mini",
+                 "cuts")
 _FILE_PATHS = [
-    os.path.join(_DIR_PATH, "Tof-E_65-mini.1H.0.cut"),
-    os.path.join(_DIR_PATH, "Tof-E_65-mini.1H.1.cut")
+    Path(_DIR_PATH, "Tof-E_65-mini.1H.0.cut"),
+    Path(_DIR_PATH, "Tof-E_65-mini.1H.1.cut")
 ]
 
 _os = platform.system()
@@ -173,7 +173,7 @@ class TestGeneralFunctions(unittest.TestCase):
         # Create a temporary directory to store a temporary file
         with tempfile.TemporaryDirectory() as tmp_dir:
             # Create an empty file by opening and closing it immediately
-            tmp_file = os.path.join(tmp_dir, "testfile")
+            tmp_file = Path(tmp_dir, "testfile")
             open(tmp_file, "a").close()
 
             # Assert that line count is 0
@@ -191,7 +191,7 @@ class TestGeneralFunctions(unittest.TestCase):
             self.assertEqual(2, gf.count_lines_in_file(tmp_file))
 
         # Final checks that the temporary file and directory were removed
-        self.assertFalse(os.path.exists(tmp_file),
+        self.assertFalse(tmp_file.exists(),
                          msg="Temporary file {0} was not removed after "
                              "the test".format(tmp_file))
         self.assertFalse(os.path.exists(tmp_dir),
@@ -226,6 +226,73 @@ class TestBinDir(unittest.TestCase):
             self.assertNotEqual(cur_dir, os.getcwd())
         finally:
             os.chdir(cur_dir)
+
+
+class TestFileIO(unittest.TestCase):
+    def test_remove_files(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            bar_file = Path(tmp_dir, "foo.bar")
+            foo_file = Path(tmp_dir, "bar.foo")
+            foo2_file = Path(tmp_dir, "bar.foo2")
+            bar_dir = Path(tmp_dir, "x.bar")
+            open(bar_file, "a").close()
+            open(foo_file, "a").close()
+            open(foo2_file, "a").close()
+            os.makedirs(bar_dir)
+
+            self.assertTrue(bar_file.exists())
+            self.assertTrue(foo_file.exists())
+            self.assertTrue(foo2_file.exists())
+            self.assertTrue(bar_dir.exists())
+
+            gf.remove_files(tmp_dir, exts={".bar"})
+
+            self.assertFalse(bar_file.exists())
+            self.assertTrue(foo_file.exists())
+            self.assertTrue(foo2_file.exists())
+            self.assertTrue(bar_dir.exists())
+
+            gf.remove_files(tmp_dir, exts={".foo", ".foo2"})
+
+            self.assertFalse(foo_file.exists())
+            self.assertFalse(foo2_file.exists())
+            self.assertTrue(bar_dir.exists())
+
+    def test_remove_files_no_ext(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            no_ext = Path(tmp_dir, "foo")
+            open(no_ext, "a").close()
+            self.assertTrue(no_ext.exists())
+
+            gf.remove_files(tmp_dir)
+            gf.remove_files(tmp_dir, exts=[])
+
+            self.assertTrue(no_ext.exists())
+
+            gf.remove_files(tmp_dir, exts=[""])
+            self.assertFalse(no_ext.exists())
+
+    def test_file_name_conditions(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            bar_file = Path(tmp_dir, "foo.bar")
+            foo_file = Path(tmp_dir, "bar.foo")
+            foo2_file = Path(tmp_dir, "bar2.foo")
+
+            open(bar_file, "a").close()
+            open(foo_file, "a").close()
+            open(foo2_file, "a").close()
+
+            self.assertTrue(bar_file.exists())
+            self.assertTrue(foo_file.exists())
+            self.assertTrue(foo2_file.exists())
+
+            gf.remove_files(tmp_dir, exts={".bar"},
+                            filter_func=lambda f: f.startswith("bar."))
+
+            self.assertFalse(bar_file.exists())
+            self.assertFalse(foo_file.exists())
+            self.assertTrue(foo2_file.exists())
+
 
 
 if __name__ == "__main__":

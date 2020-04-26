@@ -85,6 +85,29 @@ def remove_file(file_path):
         print(e)
 
 
+def remove_files(directory, exts=None, filter_func=None):
+    """Removes all files in a directory that match given conditions.
+
+    Args:
+        directory: directory where the files are located
+        exts: collection of file extensions. Files with these extensions will
+            be deleted.
+        filter_func: additional filter function. Any file that matches this
+            function will be deleted.
+    """
+    if not exts and filter_func is None:
+        return
+    if filter_func is None:
+        filter_func = lambda _: False
+
+    for file in os.scandir(directory):
+        if Path(file.path).suffix in exts or filter_func(file.name):
+            try:
+                os.remove(file)
+            except OSError:
+                pass
+
+
 def hist(data, width=1.0, col=1):
     """Format data into slices of given width.
 

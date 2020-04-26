@@ -32,6 +32,8 @@ import os
 import shutil
 import time
 
+import modules.general_functions as gf
+
 from pathlib import Path
 
 from modules.element import Element
@@ -243,8 +245,7 @@ class Detector:
             else:
                 file_to_remove = Path(self.efficiency_directory,
                                       "Used_efficiencies", f"{element}.eff")
-            if file_to_remove.exists():
-                os.remove(file_to_remove)
+            os.remove(file_to_remove)
         except OSError:
             # File was not found in efficiency file folder.
             pass
@@ -315,14 +316,8 @@ class Detector:
         # Delete possible extra .detector files
         det_folder = Path(detector_file_path).parent
         os.makedirs(det_folder, exist_ok=True)
-        filename_to_remove = None
-        for file in os.listdir(det_folder):
-            if file.endswith(".detector"):
-                # TODO this only removes one file, what about others?
-                filename_to_remove = file
-                break
-        if filename_to_remove is not None:
-            os.remove(Path(det_folder, filename_to_remove))
+        gf.remove_files(det_folder,
+                        exts={".detector"})
 
         timestamp = time.time()
 
