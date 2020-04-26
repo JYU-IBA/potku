@@ -355,30 +355,61 @@ class RecoilAtomOptimizationWidget(MatplotlibWidget):
 
 
 class RecoilAtomParetoFront(MatplotlibWidget):
+    PADDING = 0.95, 1.05
+
     def __init__(self, parent):
         super().__init__(parent)
         self.pareto_front = None
-        self.x_max = 30
-        self.y_max = 2000
-        self.axes.set_xlim(0, self.x_max)
-        self.axes.set_ylim(0, self.y_max)
+        self.automatic_readjustment = True
+        self.axes.set_yscale("symlog")
+        self.x_range = None, None
+        self.y_range = None, None
+        self.home_btn = self.mpl_toolbar.children()[4]
+        self.drag_btn = self.mpl_toolbar.children()[12]
+        self.zoom_btn = self.mpl_toolbar.children()[14]
+        self.home_btn.clicked.connect(lambda: self.set_autoadjustment(True))
+        self.drag_btn.clicked.connect(lambda: self.set_autoadjustment(False))
+        self.zoom_btn.clicked.connect(lambda: self.set_autoadjustment(False))
 
     def update_pareto_front(self, pareto_front):
-        xs = [x for x, y in pareto_front]
-        ys = [y for x, y in pareto_front]
+        xs, ys = tuple(zip(*pareto_front))
         try:
             self.pareto_front.set_xdata(xs)
             self.pareto_front.set_ydata(ys)
+
+            self.x_range = self._fix_range(self.x_range, xs,
+                                           *RecoilAtomParetoFront.PADDING)
+            self.y_range = self._fix_range(self.y_range, ys,
+                                           *RecoilAtomParetoFront.PADDING)
+
+            if self.automatic_readjustment:
+                self.axes.set_xlim(self.x_range)
+                self.axes.set_ylim(self.y_range)
         except AttributeError:
             self.pareto_front, = self.axes.plot(xs, ys, linestyle="None",
                                                 marker="o")
-        x_max = max(self.x_max, *xs)
-        y_max = max(self.y_max, *ys)
-        if x_max != self.x_max:
-            self.axes.set_xlim(0, self.x_max)
-            self.x_max = x_max
-        if y_max != self.y_max:
-            self.axes.set_ylim(0, self.y_max)
-            self.y_max = y_max
+            self.x_range = self.axes.get_xlim()
+            self.y_range = self.axes.get_ylim()
+
         self.canvas.draw()
         self.canvas.flush_events()
+
+    def set_autoadjustment(self, b):
+        self.automatic_readjustment = b
+        if b:
+            self.mpl_toolbar.mode_tool = 0
+            self.drag_btn.setChecked(False)
+            self.zoom_btn.setChecked(False)
+
+    @staticmethod
+    def _fix_range(cur_range, axis, min_padding=1.0, max_padding=1.0):
+        x0_min, x0_max = cur_range
+        x1_min, x1_max = min(axis) * min_padding, max(axis) * max_padding
+
+        if x0_min is None:
+            x0_min = x1_min
+        if x0_max is None:
+            x0_max = x1_max
+
+        return min(x0_min, x1_min), max(x0_max, x1_max)
+
