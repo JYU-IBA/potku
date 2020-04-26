@@ -135,24 +135,37 @@ class BaseTab(abc.ABC, metaclass=QtABCMeta):
 
     @abc.abstractmethod
     def get_saveable_widgets(self) -> dict:
+        """Returns a dictionary of where values are widgets and keys are
+        strings that are used when widget geometries are saved.
+        """
         pass
 
     @abc.abstractmethod
-    def get_widget_to_activate(self) -> QWidget:
+    def get_default_widget(self) -> QWidget:
+        """Returns the default widget to activate when geometries are
+        restored.
+        """
         pass
 
     def save_geometries(self):
+        """Saves the geometries of all saveable widgets that this tab
+        has.
+        """
         for key, widget in self.get_saveable_widgets().items():
             if widget is not None:
                 gutils.set_potku_setting(key,
                                          widget.subwindow.saveGeometry())
 
     def restore_geometries(self):
+        """Restores the geometries of all the widgets that have had their
+        geometries saved. Activates the widget that is returned by
+        get_default_widget.
+        """
         for key, widget in self.get_saveable_widgets().items():
             if widget is not None:
                 geom = gutils.get_potku_setting(key, bytes("", "utf-8"))
                 widget.subwindow.restoreGeometry(geom)
 
-        active_widget = self.get_widget_to_activate()
+        active_widget = self.get_default_widget()
         if active_widget is not None:
             self.mdiArea.setActiveSubWindow(active_widget.subwindow)

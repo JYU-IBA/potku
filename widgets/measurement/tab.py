@@ -103,7 +103,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
 
         self.statusbar = statusbar
 
-    def get_widget_to_activate(self):
+    def get_default_widget(self):
         return self.histogram
 
     def get_saveable_widgets(self):
@@ -497,7 +497,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         #
         # result = f_done + s_done
         result = new.join(li)
-        if "\\" in result and not "/" in result:
+        if "\\" in result and "/" not in result:
             # This is a patch to make it possible to open .cut files made
             # on another os.
             # TODO it would be better to use Path when writing these paths

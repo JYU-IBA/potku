@@ -90,9 +90,9 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
     def get_saveable_widgets(self):
         """Returns a list of Widgets whose geometries can be saved.
         """
-        return []
+        return {}
 
-    def get_widget_to_activate(self):
+    def get_default_widget(self):
         # TODO
         return None
 
@@ -117,7 +117,9 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
             elem_sim: Element simulation that is being optimized.
             measurement_elem: Measured element used in optimization.
             mode_recoil: Whether recoil result widget is shown or fluence
-            result widget.
+                result widget.
+            cancellation_token: token used to indicate the stopping of
+                optimization
         """
         if mode_recoil:
             self.optimization_result_widget = OptimizedRecoilsWidget(
