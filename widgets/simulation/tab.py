@@ -38,7 +38,6 @@ from dialogs.energy_spectrum import EnergySpectrumWidget
 from dialogs.simulation.optimization import OptimizationDialog
 from dialogs.simulation.settings import SimulationSettingsDialog
 
-from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 
@@ -51,6 +50,7 @@ from widgets.base_tab import BaseTab
 class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
     """Tab widget where simulation stuff is added.
     """
+
     def __init__(self, request, tab_id, simulation, icon_manager,
                  statusbar=None):
         """ Init simulation tab class.
@@ -86,6 +86,15 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
         self.optimization_result_widget = None
 
         self.statusbar = statusbar
+
+    def get_saveable_widgets(self):
+        """Returns a list of Widgets whose geometries can be saved.
+        """
+        return []
+
+    def get_widget_to_activate(self):
+        # TODO
+        return None
 
     def add_simulation_target_and_recoil(self, progress=None):
         """ Add target widget for modifying the target and recoils into tab.

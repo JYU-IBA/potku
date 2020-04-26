@@ -22,10 +22,12 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = ""  # TODO
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 import abc
 import logging
+
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
@@ -130,3 +132,27 @@ class BaseTab(abc.ABC, metaclass=QtABCMeta):
                         self.log.add_error(line.strip())
                     else:
                         self.log.add_text(line.strip())
+
+    @abc.abstractmethod
+    def get_saveable_widgets(self) -> dict:
+        pass
+
+    @abc.abstractmethod
+    def get_widget_to_activate(self) -> QWidget:
+        pass
+
+    def save_geometries(self):
+        for key, widget in self.get_saveable_widgets().items():
+            if widget is not None:
+                gutils.set_potku_setting(key,
+                                         widget.subwindow.saveGeometry())
+
+    def restore_geometries(self):
+        for key, widget in self.get_saveable_widgets().items():
+            if widget is not None:
+                geom = gutils.get_potku_setting(key, bytes("", "utf-8"))
+                widget.subwindow.restoreGeometry(geom)
+
+        active_widget = self.get_widget_to_activate()
+        if active_widget is not None:
+            self.mdiArea.setActiveSubWindow(active_widget.subwindow)

@@ -38,10 +38,14 @@ from PyQt5 import QtWidgets
 from PyQt5.QtCore import QSettings
 
 # TODO check the preferred name for the org
+# Potku uses QSettings to store non-portable settings such as window
+# geometries and recently opened requests.
+# For settings that can be ported from one installation to another, use global
+# settings or PropertySavingWidget
 _SETTINGS_KEY = ("JYU-IBA", f"Potku {__version__}")
 
 
-def get_potku_settings() -> QSettings:
+def _get_potku_settings() -> QSettings:
     """Returns a QSettings object that can be used to store Potku's
     settings.
     """
@@ -53,12 +57,47 @@ def get_potku_settings() -> QSettings:
     return QSettings(*_SETTINGS_KEY)
 
 
-def remove_potku_settings(key=None):
-    """Removes settings stored for the given key.
+def remove_potku_setting(key=None):
+    """Removes a value stored for the given key. If key is None, all settings
+    stored by Potku are removed.
+
+    Args:
+        key: a string identifying a value
     """
-    # TODO if key is 'None', this should remove all settings stored by Potku
-    settings = get_potku_settings()
+    if key is None:
+        raise NotImplementedError("Removing all settings not yet implemented.")
+    settings = _get_potku_settings()
     settings.remove(key)
+
+
+def get_potku_setting(key: str, default_value, value_type=None):
+    """Returns a value that has been stored for the given key.
+
+    Args:
+        key: a string identifying a stored value
+        default_value: value that is returned if the key has not been stored
+        value_type: type of return value
+
+    Return:
+        object of type 'value_type'
+    """
+    settings = _get_potku_settings()
+    if value_type is None:
+        return settings.value(key, default_value)
+    return settings.value(key, default_value, value_type)
+
+
+def set_potku_setting(key: str, value):
+    """Stores a value for the given key. If a value has been previously stored
+    with this key, the old value is overwritten.
+
+    Args:
+        key: a string identifying the value to be stored
+        value: value to be stored
+    """
+    # TODO check which types are supported by QSettings
+    settings = _get_potku_settings()
+    settings.setValue(key, value)
 
 
 if platform.system() == "Darwin":
@@ -241,8 +280,7 @@ def change_visibility(qwidget: QtWidgets.QWidget, visibility=None, key=None):
         visibility = not qwidget.isVisible()
     qwidget.setVisible(visibility)
     if key is not None:
-        settings = get_potku_settings()
-        settings.setValue(key, visibility)
+        set_potku_setting(key, visibility)
 
 
 def change_arrow(qbutton: QtWidgets.QPushButton, arrow=None):
