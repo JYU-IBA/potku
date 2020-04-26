@@ -148,16 +148,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             return True
         return False
 
-    def other_values_changed(self):
-        """Checks whether values that do not require resetting simulations
-        have been changed.
-        """
-        return not all((
-            not self.measurement_settings_widget.other_values_changed(),
-            not self.detector_settings_widget.other_values_changed(),
-            not self.profile_settings_widget.values_changed()
-        ))
-
     def __update_settings(self):
         """Reads values from Request Settings dialog and updates them in
         default objects.
@@ -186,13 +176,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
                                            QtWidgets.QMessageBox.Ok)
             return False
 
-        if not self.values_changed():
-            # Check if only those values have been changed that don't require
-            #  rerunning simulations
-            if not self.other_values_changed():
-                return True
-
-        else:
+        if self.values_changed():
             if not self.simulation_settings_widget.are_values_changed():
                 filter_func = lambda e: e.simulation.use_request_settings
             else:
@@ -225,12 +209,12 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             # Simulation settings
             self.simulation_settings_widget.update_settings()
 
-            self.request.default_detector.to_file(Path(
-                self.request.default_detector_folder, "Default.detector"),
+            self.request.default_detector.to_file(
+                Path(self.request.default_detector_folder, "Default.detector"),
                 default_measurement_settings_file)
 
-            self.request.default_simulation.to_file(Path(
-                self.request.default_folder, "Default.simulation"))
+            self.request.default_simulation.to_file(
+                Path(self.request.default_folder, "Default.simulation"))
             self.request.default_element_simulation.to_file(
                 Path(self.request.default_folder, "Default.mcsimu"))
 
