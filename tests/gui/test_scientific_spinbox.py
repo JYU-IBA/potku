@@ -22,13 +22,11 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Juhani Sundell"
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 import sys
 import unittest
-import warnings
-
-from tests.utils import change_wd_to_root
+import tests.utils as utils
 
 from widgets.scientific_spinbox import ScientificSpinBox
 
@@ -42,14 +40,13 @@ app = QApplication(sys.argv)
 
 class TestSciSpinbox(unittest.TestCase):
     # Change working directory to root so the Spinbox can load ui-files
-    @change_wd_to_root
+    @utils.change_wd_to_root
     def setUp(self):
-        with warnings.catch_warnings():
-            # PyQt triggers a DeprecationWarning when loading an ui file.
-            # Suppress the it so the test output does not get cluttered by
-            # unnecessary warnings.
-            warnings.simplefilter("ignore")
-            self.sbox = ScientificSpinBox(10.0, 1e+22, 5.0e+20, 10.0e+23)
+        # PyQt triggers a DeprecationWarning when loading an ui file.
+        # Suppress the it so the test output does not get cluttered by
+        # unnecessary warnings.
+        self.sbox = utils.run_without_warnings(
+            lambda: ScientificSpinBox(10.0, 1e+22, 5.0e+20, 10.0e+23))
 
     def test_decrease(self):
         down_btn = self.sbox.downButton

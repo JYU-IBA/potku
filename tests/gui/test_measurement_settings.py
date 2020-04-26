@@ -21,12 +21,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = ""  # TODO
-__version__ = ""  # TODO
+__author__ = "Juhani Sundell"
+__version__ = "2.0"
 
 import unittest
 import sys
-import warnings
 
 import tests.mock_objects as mo
 import tests.utils as utils
@@ -43,10 +42,8 @@ app = QApplication(sys.argv)
 class MyTestCase(unittest.TestCase):
     @utils.change_wd_to_root
     def setUp(self):
-        with warnings.catch_warnings():
-            # Ignore deprecation warning from uic
-            warnings.simplefilter("ignore")
-            self.mesu_widget = MeasurementSettingsWidget(mo.get_measurement())
+        self.mesu_widget = utils.run_without_warnings(
+            lambda: MeasurementSettingsWidget(mo.get_measurement()))
 
     def test_ion_binding(self):
         # This is the default beam ion

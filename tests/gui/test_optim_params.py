@@ -22,12 +22,11 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Juhani Sundell"
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 import unittest
 import sys
-
-from tests.utils import change_wd_to_root
+import tests.utils as utils
 
 from widgets.simulation.optimization_parameters import \
     OptimizationRecoilParameterWidget
@@ -41,19 +40,20 @@ app = QApplication(sys.argv)
 
 
 class TestRecoilParameters(unittest.TestCase):
-    @change_wd_to_root
+    @utils.change_wd_to_root
     def test_kwargs(self):
         # Tests for settings parameters with kwargs
-        widget = OptimizationRecoilParameterWidget(check_max=100.7,
-                                                   upper_limits=(1, 2))
+        widget = utils.run_without_warnings(
+            lambda: OptimizationRecoilParameterWidget(check_max=100.7,
+                                                      upper_limits=(1, 2)))
         self.assertEqual(1, widget.upperXDoubleSpinBox.value())
         self.assertEqual(2, widget.upperYDoubleSpinBox.value())
         self.assertEqual(QTime(0, 1, 40), widget.maxTimeEdit.time())
 
-    @change_wd_to_root
+    @utils.change_wd_to_root
     def test_recoil_combobox(self):
         # Tests for recoil combobox that has custom binding functions
-        widget = OptimizationRecoilParameterWidget()
+        widget = utils.run_without_warnings(OptimizationRecoilParameterWidget)
         self.assertEqual(5, widget.sol_size)
         self.assertEqual("box", widget.recoil_type)
         self.assertEqual("4-point box",
@@ -77,11 +77,12 @@ class TestRecoilParameters(unittest.TestCase):
         self.assertEqual("8-point two-peak",
                          widget.recoilTypeComboBox.currentText())
 
-    @change_wd_to_root
+    @utils.change_wd_to_root
     def test_bad_inputs(self):
         # Widget should be able to handle bad inputs by retaining previous
         # or default values
-        widget = OptimizationRecoilParameterWidget(foo=1)
+        widget = utils.run_without_warnings(
+            lambda: OptimizationRecoilParameterWidget(foo=1))
         self.assertFalse(hasattr(widget, "foo"))
 
         widget.sol_size = "foo"
@@ -109,10 +110,11 @@ class TestRecoilParameters(unittest.TestCase):
 
         # Providing the value as kwargs does nothing as the exception is
         # handled in the set_properties method
-        widget = OptimizationRecoilParameterWidget(optimize_recoil=False)
+        widget = utils.run_without_warnings(
+            lambda: OptimizationRecoilParameterWidget(optimize_recoil=False))
         self.assertTrue(widget.optimize_recoil)
 
-    @change_wd_to_root
+    @utils.change_wd_to_root
     def test_get_properties(self):
         """Test that get_properties returns the default values of each type
         of optimization widget after initialization.
@@ -152,11 +154,13 @@ class TestRecoilParameters(unittest.TestCase):
         }
         recoil_expected.update(common)
 
-        fluence_widget = OptimizationFluenceParameterWidget()
+        fluence_widget = utils.run_without_warnings(
+            OptimizationFluenceParameterWidget)
         self.assertEqual(fluence_expected,
                          fluence_widget.get_properties())
 
-        recoil_widget = OptimizationRecoilParameterWidget()
+        recoil_widget = utils.run_without_warnings(
+            OptimizationRecoilParameterWidget)
         self.assertEqual(recoil_expected,
                          recoil_widget.get_properties())
 

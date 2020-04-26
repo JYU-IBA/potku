@@ -22,7 +22,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Juhani Sundell"
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 import unittest
 
@@ -41,7 +41,6 @@ class TestLayer(unittest.TestCase):
             "elements": ["He", "4C 2"],
             "start_depth": 10
         }, layer.to_dict())
-
 
 
 if __name__ == '__main__':

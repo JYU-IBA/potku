@@ -24,7 +24,7 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Juhani Sundell"
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 import unittest
 import os
@@ -292,7 +292,6 @@ class TestFileIO(unittest.TestCase):
             self.assertFalse(bar_file.exists())
             self.assertFalse(foo_file.exists())
             self.assertTrue(foo2_file.exists())
-
 
 
 if __name__ == "__main__":

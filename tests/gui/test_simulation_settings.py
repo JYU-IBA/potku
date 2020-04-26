@@ -22,7 +22,7 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Juhani Sundell"
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 import unittest
 import sys
@@ -62,7 +62,8 @@ class TestSimulationSettingsWidget(unittest.TestCase):
     def test_setting_parameters(self):
         """Test that correct values are shown in the widget.
         """
-        sim_widget = SimulationSettingsWidget(self.elem_sim)
+        sim_widget = utils.run_without_warnings(
+            lambda: SimulationSettingsWidget(self.elem_sim))
         self.assertEqual("foo", sim_widget.nameLineEdit.text())
         self.assertEqual("bar",
                          sim_widget.descriptionPlainTextEdit.toPlainText())
@@ -93,7 +94,8 @@ class TestSimulationSettingsWidget(unittest.TestCase):
 
         Patching is used to avoid unneccessary file removal and writing.
         """
-        sim_widget = SimulationSettingsWidget(self.elem_sim)
+        sim_widget = utils.run_without_warnings(
+            lambda: SimulationSettingsWidget(self.elem_sim))
         sim_widget.name = "foofoo"
         sim_widget.description = "barbar"
         sim_widget.simulation_type = "RBS"
@@ -122,7 +124,8 @@ class TestSimulationSettingsWidget(unittest.TestCase):
 
     @utils.change_wd_to_root
     def test_value_changed(self):
-        sim_widget = SimulationSettingsWidget(self.elem_sim)
+        sim_widget = utils.run_without_warnings(
+            lambda: SimulationSettingsWidget(self.elem_sim))
         self.assertFalse(sim_widget.are_values_changed())
 
         # Seed is not taken into account

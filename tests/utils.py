@@ -26,7 +26,7 @@ utils.py contains various utility functions to be used in tests
 """
 
 __author__ = "Juhani Sundell"
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 import os
 import hashlib
@@ -34,26 +34,28 @@ import unittest
 import logging
 import platform
 import time
+import warnings
+
+from pathlib import Path
 
 from string import Template
 from timeit import default_timer as timer
 
 
-def get_sample_data_dir():
-    """Returns the absolute path to the sample data directory"""
+def get_sample_data_dir() -> Path:
+    """Returns the absolute path to the sample data directory.
+    """
     # Absolute path to the directory where utils.py file is
-    path_to_this_file = os.path.dirname(__file__)
+    path_to_this_file = Path(__file__).parent
     # Traverse the path to sample data
-    path_to_sample_data = os.path.join(path_to_this_file,
-                                       os.pardir,
-                                       "sample_data")
+    path_to_sample_data = Path(path_to_this_file, os.pardir, "sample_data")
     # Return the path as an absolute path
-    return os.path.abspath(path_to_sample_data)
+    return path_to_sample_data.resolve()
 
 
-def get_resource_dir():
+def get_resource_dir() -> Path:
     """Returns the resource directory's absolute path as a string."""
-    return os.path.join(os.path.dirname(__file__), "resource")
+    return Path(__file__).parent / "resource"
 
 
 def change_wd_to_root(func):
@@ -70,9 +72,7 @@ def change_wd_to_root(func):
     # Get old working directory and path to this file. Then traverse to
     # parent directory (i.e. the root)
     old_wd = os.getcwd()
-    path_to_this_file = os.path.dirname(__file__)
-    path_to_root = os.path.join(path_to_this_file,
-                                os.pardir)
+    path_to_root = Path(__file__).parent.parent.resolve()
 
     def wrapper(*args, **kwargs):
         # Change the dir, run the func and change back in the finally
@@ -226,3 +226,12 @@ def expected_failure_if(cond):
     if cond:
         return unittest.expectedFailure
     return lambda func: func
+
+
+def run_without_warnings(func):
+    """Runs the given function and returns its return value while ignoring
+    warnings.
+    """
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        return func()

@@ -24,12 +24,13 @@ along with this program (file named 'LICENCE').
 """
 
 __author__ = "Juhani Sundell"
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 import unittest
-import os
 import platform
 import math
+
+from pathlib import Path
 
 from modules.depth_files import DepthProfileHandler
 from modules.element import Element
@@ -38,10 +39,8 @@ from timeit import default_timer as timer
 
 # These tests require reading files from the sample data directory
 # Path to the depth file directory
-_DIR_PATH = os.path.join(get_sample_data_dir(),
-                         "Ecaart-11-mini",
-                         "Tof-E_65-mini",
-                         "depthfiles")
+_DIR_PATH = Path(get_sample_data_dir(), "Ecaart-11-mini", "Tof-E_65-mini",
+                 "depthfiles")
 
 # List of depth files to be read from the directory
 _FILE_NAMES = [
@@ -58,7 +57,7 @@ _FILE_NAMES = [
 _DEFAULT_MSG = "reading files in TestDepthProfileHandling"
 
 # Combined absolute file paths
-_file_paths = [os.path.join(_DIR_PATH, fname) for fname in _FILE_NAMES]
+_file_paths = [Path(_DIR_PATH, fname) for fname in _FILE_NAMES]
 
 __os = platform.system()
 
