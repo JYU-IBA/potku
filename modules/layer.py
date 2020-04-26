@@ -62,7 +62,7 @@ class Layer:
             True or False.
         """
         return self.start_depth < coordinate <= self.start_depth + \
-        self.thickness
+            self.thickness
 
     def get_mcerd_params(self):
         """Returns a list of strings that are passed as parameters for MCERD.

@@ -221,9 +221,9 @@ class _CompositionWidget(MatplotlibWidget):
             self.__layer_selector.set_visible(False)
             self.__layer_selector = None
         x_lim = self.axes.get_xlim()
-        layer_patch =  self.axes.axvspan(
+        layer_patch = self.axes.axvspan(
             layer.start_depth, layer.start_depth + layer.thickness,
-                              facecolor='b', alpha=0.2)
+            facecolor='b', alpha=0.2)
         if x_lim != self.axes.get_xlim():
             self.axes.set_xbound(*x_lim)
         # layer_patch = matplotlib.patches.Rectangle(
@@ -405,8 +405,7 @@ class _CompositionWidget(MatplotlibWidget):
             # layer and a height of 1.
             self.axes.axvspan(layer.start_depth,
                               next_layer_position + layer.thickness,
-                              facecolor=color
-            )
+                              facecolor=color)
 
             # Alternate the color.
             if is_next_color_dark:

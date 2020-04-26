@@ -176,11 +176,8 @@ class Nsgaii(Observable):
         hist_file = Path(self.measurement.directory_energy_spectra,
                          f"{self.cut_file.stem}.no_foil.hist")
 
-        # If mcerd run was stopped by closing the widget -> optimization
-        # needs to stop
-        # TODO
-        #if self.element_simulation.optimization_stopped:
-        #    return False
+        # TODO If mcerd run was stopped by closing the widget -> optimization
+        #   needs to stop
 
         parser = CSVParser((0, float), (1, float))
         self.measured_espe = list(      # FIXME can raise OSERROR

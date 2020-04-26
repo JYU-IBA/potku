@@ -191,10 +191,8 @@ class SimulationControlsWidget(Observer, QtWidgets.QWidget):
                                       "simulation?\n\nIf you do, old simulation"
                                       " results will be preserved.\nOtherwise "
                                       "they will be deleted.",
-                                                   QtWidgets.QMessageBox.Yes |
-                                                   QtWidgets.QMessageBox.No |
-                                                   QtWidgets.QMessageBox.Cancel,
-                                                   QtWidgets.QMessageBox.Cancel)
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
             if reply == QtWidgets.QMessageBox.Cancel:
                 return  # If clicked Cancel don't start simulation
             elif reply == QtWidgets.QMessageBox.No:

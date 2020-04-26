@@ -323,7 +323,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
             last = float(val[-1][0])
 
             float_values = [(float(x[0]), float(x[1])) for x in val]
-            self.lines_of_area.append({key : float_values})
+            self.lines_of_area.append({key: float_values})
             if not lowest:
                 lowest = first
             if not highest:
