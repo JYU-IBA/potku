@@ -430,7 +430,7 @@ def set_up_side_panel(qwidget, key, side):
         key: key used to store the visibility of the panel in QSettings object.
         side: which side of the QWidget the side panel is ('left' or 'right')
     """
-    show_panel = gutils.get_potku_settings().value(key, True, bool)
+    show_panel = gutils.get_potku_setting(key, True, bool)
 
     # Show or hide panel depending on previous settings
     gutils.change_visibility(qwidget.frame,

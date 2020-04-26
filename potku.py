@@ -428,7 +428,11 @@ class Potku(QtWidgets.QMainWindow):
                     simulation.target.to_file(
                         os.path.join(simulation.directory,
                                      simulation.target.name + ".target"), None)
-        self.close()
+
+        widget = self.tabs.currentWidget()
+        widget.save_geometries()
+
+        super().closeEvent(event)
 
     def create_report(self):
         """
@@ -624,6 +628,8 @@ class Potku(QtWidgets.QMainWindow):
                     if master_mea and tab.obj.name == master_mea.name:
                         name = "{0} (master)".format(name)
 
+                    tab.restore_geometries()
+
             elif type(tab) is SimulationTabWidget:
                 name = tab.obj.name
 
@@ -652,8 +658,8 @@ class Potku(QtWidgets.QMainWindow):
                 self.tabs.addTab(tab, name)
             self.tabs.setCurrentWidget(tab)
 
-        except AttributeError:
-            pass
+        except AttributeError as e:
+            print(e)    # TODO remove print
         self.treeWidget.blockSignals(False)
 
     def import_pelletron(self):
@@ -912,7 +918,7 @@ class Potku(QtWidgets.QMainWindow):
     def clear_recent_files(self):
         """Clears the list of recently opened files.
         """
-        gutils.remove_potku_settings(key=Potku.RECENT_FILES_KEY)
+        gutils.remove_potku_setting(key=Potku.RECENT_FILES_KEY)
         self.update_recent_file_menu(files=[])
 
     @staticmethod
@@ -920,8 +926,7 @@ class Potku(QtWidgets.QMainWindow):
         """Returns a list of recently opened .request files. Files are sorted
         so that the most recent is first.
         """
-        settings = gutils.get_potku_settings()
-        return settings.value(Potku.RECENT_FILES_KEY, [], list)
+        return gutils.get_potku_setting(Potku.RECENT_FILES_KEY, [], list)
 
     @staticmethod
     def set_recent_files(files):
@@ -930,9 +935,8 @@ class Potku(QtWidgets.QMainWindow):
         Args:
             files: list of file paths (as strings) to store
         """
-        settings = gutils.get_potku_settings()
-        settings.setValue(Potku.RECENT_FILES_KEY,
-                          files[:Potku.MAX_RECENT_FILES])
+        gutils.set_potku_setting(Potku.RECENT_FILES_KEY,
+                                 files[:Potku.MAX_RECENT_FILES])
 
     def add_to_recent_files(self, file):
         """Inserts the given file as the first element in the recently

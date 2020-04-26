@@ -30,7 +30,6 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
 __version__ = "2.0"
 
 import os
-import sys
 
 import dialogs.dialog_functions as df
 
@@ -104,18 +103,25 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
 
         self.statusbar = statusbar
 
+    def get_widget_to_activate(self):
+        return self.histogram
+
+    def get_saveable_widgets(self):
+        return {
+            "hist": self.histogram,
+            "elem_loss": self.elemental_losses_widget,
+            "espe": self.energy_spectrum_widget,
+            "depth": self.depth_profile_widget
+        }
+
     def add_histogram(self, progress=None):
         """Adds ToF-E histogram into tab if it doesn't have one already.
 
         Args:
             progress: ProgressReporter object
-            start: Start value of progress bar.
-            add: Value added to progress bar.
         """
-        self.histogram = TofeHistogramWidget(self.obj,
-                                             self.icon_manager,
-                                             self,
-                                             statusbar=self.statusbar)
+        self.histogram = TofeHistogramWidget(
+            self.obj, self.icon_manager, self, statusbar=self.statusbar)
 
         if progress is not None:
             progress.report(40)
