@@ -476,7 +476,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
                         elements[index] = scatter_element
 
             depth_scale = self.measurement.depth_for_concentration_from, \
-                          self.measurement.depth_for_concentration_to
+                self.measurement.depth_for_concentration_to
 
             if progress is not None:
                 sub_progress = progress.get_sub_reporter(

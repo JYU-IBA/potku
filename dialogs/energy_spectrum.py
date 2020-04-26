@@ -233,7 +233,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
             # Change the bin width label text
             self.histogramTicksLabel.setText("Simulation and measurement "
-                                                "histogram bin width:")
+                                             "histogram bin width:")
 
             self.importPushButton.clicked.connect(self.__import_external_file)
             self.exec_()
@@ -481,7 +481,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 return
 
         shutil.copyfile(file_path, os.path.join(self.imported_files_folder,
-                                                    name))
+                                                name))
 
         item = QtWidgets.QTreeWidgetItem()
         item.setText(0, name)

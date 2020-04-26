@@ -126,8 +126,8 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
             self.tabs.setEnabled(True)
 
     def __update_parameters(self):
-        """ Update Measurement's Run, Detector and Target objects. If measurement
-         specific parameters are in use, save them into a file.
+        """Update Measurement's Run, Detector and Target objects. If measurement
+        specific parameters are in use, save them into a file.
         """
         if self.measurement_settings_widget.isotopeComboBox.currentIndex()\
                 == -1:

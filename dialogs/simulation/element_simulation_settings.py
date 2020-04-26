@@ -135,7 +135,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
             def filter_func(elem_sim):
                 # Filter out other element simulations than the one used by this
                 # dialog
-                elem_sim is self.element_simulation
+                return elem_sim is self.element_simulation
 
             if not df.delete_element_simulations(
                 self, simulation, msg=msg, tab=self.tab,

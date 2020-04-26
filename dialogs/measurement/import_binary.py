@@ -142,8 +142,8 @@ class ImportDialogBinary(QtWidgets.QDialog):
             while True:  # Allow import of same named files.
                 if not os.path.isfile(output_file):
                     break
-                output_file = "{0}-{2}.{1}".format(measurement.directory_data
-                 + os.sep + item_name, "asc", n)
+                output_file = "{0}-{2}.{1}".format(
+                    measurement.directory_data + os.sep + item_name, "asc", n)
                 n += 1
             imported_files[sample] = output_file
             self.__convert_file(input_file, output_file)

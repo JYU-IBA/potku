@@ -137,7 +137,8 @@ class LayerPropertiesDialog(QtWidgets.QDialog, bnd.PropertyTrackingWidget,
         """
         Show information of the current layer.
         """
-        self.set_properties(name=self.layer.name, thickness=self.layer.thickness,
+        self.set_properties(name=self.layer.name,
+                            thickness=self.layer.thickness,
                             density=self.layer.density)
 
         for elem in self.layer.elements:

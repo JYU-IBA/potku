@@ -112,7 +112,7 @@ class CalibrationDialog(QtWidgets.QDialog):
                 old_params = f1, f2
             except ValueError as e:
                 m = "Can't get old calibration parameters from the settings " \
-                    "dialog."
+                    f"dialog: {e}."
                 print(m)
                 
         self.linearFittingWidget = CalibrationLinearFittingWidget(
