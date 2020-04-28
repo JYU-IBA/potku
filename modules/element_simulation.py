@@ -118,7 +118,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "use_default_settings", "controls", "simulation", \
                 "simulations_done", "__full_edit_on", "y_min", "main_recoil",\
                 "optimization_recoils", "__previous_espe", \
-                "__opt_seed", "optimization_done", "calculated_solutions", \
+                "__opt_seed", "optimization_done", \
                 "optimization_stopped", "optimization_widget", \
                 "optimization_running", "optimized_fluence", \
                 "optimization_mcerd_running", "last_process_count", "sample", \
@@ -159,11 +159,11 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             seed_number: Seed number to give unique value to one simulation.
             minimum_energy: Minimum energy.
             channel_width: Channel width.
-            sample: Sample object under which Element Simualtion belongs.
+            sample: Sample object under which ElementSimulation belongs.
             element simulation.
             main_recoil: Main recoil element.
             optimization_recoils: List or recoils that are used for
-            optimization.
+                optimization.
             optimized_fluence: Optimized fluence value.
             save_on_creation: Determines if the element simulation is saved to
                     a file when initialized
@@ -260,7 +260,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.__previous_espe = None
         self.__opt_seed = None
         self.optimization_done = False
-        self.calculated_solutions = 0
         self.optimization_stopped = False
         self.optimization_widget = None
         self.optimization_running = False
@@ -585,7 +584,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
               use_old_erd_files=True,
               optimize=False, stop_p=False, check_t=False,
               optimize_recoil=False, check_max=False, check_min=False,
-              shared_ions=False, cancellation_token=None):
+              shared_ions=False, cancellation_token=None, observer=None):
         """
         Start the simulation.
 
@@ -603,7 +602,13 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             shared_ions: boolean that determines if the ion counts are
                 divided by the number of processes
             cancellation_token: CancellationToken that can be used to stop
-                                the start process
+                the start process
+            observer: a valid observer for rx.Observable. This observer
+                will be subscribed to all simulation processes.
+
+        Return:
+            a dictionary of disposables that can be used to unsubscribe from
+            the simulation process.
         """
         self.simulations_done = False
 
@@ -620,6 +625,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             seed_number = start_value
         if max_seed is not None and seed_number <= max_seed:
             seed_number = max_seed + 1
+        # This is a hacky way of telling the observers that simulation is
+        # running. The 'None' value will be replaced by an actual MCERD
+        # object further down the code.
+        self.mcerd_objects = {seed_number: None}
 
         if not optimize_recoil:
             recoil = self.recoil_elements[0]
@@ -641,6 +650,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.on_next(self.get_current_status(starting=True))
 
         self.__cancellation_token = cancellation_token
+        unsubs = {}
 
         # Start as many processes as is given in number of processes
         for i in range(number_of_processes):
@@ -686,10 +696,14 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
             self.optimization_mcerd_running = optimize
 
-            mcerd = MCERD(settings,
-                          self,
-                          optimize_fluence=optimize_fluence)
-            mcerd.run()
+            mcerd = MCERD(settings, self, optimize_fluence=optimize_fluence)
+            observable = mcerd.run()
+
+            if observer is not None and observable is not None:
+                # TODO remove the None check for obs
+                # TODO pipe some additional data to this stream such as observed
+                #   atoms so we can get rid of the checker thread.
+                unsubs[seed_number] = observable.subscribe(observer)
             self.mcerd_objects[seed_number] = mcerd
 
             seed_number += 1
@@ -711,6 +725,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             # the spectra have been calculated)
             self.check_spectra_change(stop_p, check_t, optimize_recoil,
                                       check_max, check_min)
+        return unsubs
 
     def get_settings(self):
         """Returns simulation settings as a dict. Overrides base class function.
@@ -778,7 +793,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         # Return status as a dict
         return {
-            "name": "{0}-{1}".format(self.name_prefix, self.name),
+            "name": self.get_full_name(),
             "atom_count": total_count,
             "running":  process_count,
             "state": state,
@@ -1246,6 +1261,7 @@ class ERDFileHandler:
     def get_old_atom_counts(self):
         """Returns the number of atoms in already simulated .erd files.
         """
+        # files = list(self.__old_files.keys())
         return sum(self.__get_atom_count_cached(file)
                    for file in self.__old_files)
 
@@ -1255,7 +1271,7 @@ class ERDFileHandler:
         """
         return gf.count_lines_in_file(erd_file, check_file_exists=True)
 
-    @functools.lru_cache(32)
+    @functools.lru_cache(128)
     def __get_atom_count_cached(self, erd_file):
         """Cached version of the atom counter. If the atoms in the
         ERD file have already been counted, a cached result is returned.
@@ -1268,7 +1284,10 @@ class ERDFileHandler:
         """
         # TODO check if the name of the RecoilElement has changed and update
         #   file references if necessary
-        self.__old_files.update(self.__active_files)
+        self.__old_files = {
+            **self.__old_files,
+            **self.__active_files
+        }
         self.__active_files = {}
 
     def clear(self):

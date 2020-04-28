@@ -163,7 +163,6 @@ class Nsgaii(Observable):
                              "no measurement defined.")
 
         self.element_simulation.optimized_fluence = None
-        self.element_simulation.calculated_solutions = 0
         self.element_simulation.optimization_done = False
         self.element_simulation.optimization_stopped = False
         self.element_simulation.optimization_running = True
@@ -984,9 +983,6 @@ class Nsgaii(Observable):
 
             # Update the amount of evaluation left
             evaluations -= self.pop_size
-
-            self.element_simulation.calculated_solutions = int(
-                self.evaluations - evaluations)
 
             elapsed_time = timer() - start_time
             self.on_next(self._get_message(
