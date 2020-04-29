@@ -112,13 +112,11 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "minimum_scattering_angle", "minimum_main_scattering_angle", \
                 "minimum_energy", "simulation_mode", "seed_number", \
                 "recoil_elements", "recoil_atoms", "mcerd_objects", \
-                "get_espe", "channel_width", "detector", \
-                "settings", "espe_settings", "__erd_filehandler", \
-                "description", "run", "spectra", "name", \
-                "use_default_settings", "controls", "simulation", \
+                "channel_width", "detector", "__erd_filehandler", \
+                "description", "run", "name", \
+                "use_default_settings", "simulation", \
                 "simulations_done", "__full_edit_on", "y_min", "main_recoil",\
-                "optimization_recoils", "__previous_espe", \
-                "__opt_seed", "optimization_done", \
+                "optimization_recoils", "optimization_done", \
                 "optimization_stopped", "optimization_widget", \
                 "optimization_running", "optimized_fluence", \
                 "optimization_mcerd_running", "last_process_count", "sample", \
@@ -134,8 +132,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                  minimum_main_scattering_angle=20, simulation_mode="narrow",
                  seed_number=101, minimum_energy=1.0, channel_width=0.025,
                  use_default_settings=True, main_recoil=None,
-                 optimization_recoils=None, __opt_seed=None,
-                 optimized_fluence=None, save_on_creation=True):
+                 optimization_recoils=None, optimized_fluence=None,
+                 save_on_creation=True):
         """ Initializes ElementSimulation.
         Args:
             directory: Folder of simulation that contains the ElementSimulation.
@@ -168,6 +166,11 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             save_on_creation: Determines if the element simulation is saved to
                     a file when initialized
         """
+        # FIXME there is an inconsistency when it comes to the return value
+        #  is_simulation_finished method. If the user starts a new simulation,
+        #  but stops it before pre-sim ends, the method will return True,
+        #  However, when the program is restarted, and the ElementSimulation is
+        #  initialized again, the method will once again return False.
         # Call Observable's initialization to set up observer list
         Observable.__init__(self)
 
@@ -236,14 +239,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         # This has all the mcerd objects so get_espe knows all the element
         # simulations that belong together (with different seed numbers)
         self.mcerd_objects = {}
-        self.get_espe = None
-        self.spectra = []
-
-        # TODO get rid of this reference to GUI element. Currently there are
-        #      some other objects that modify controls via this reference so
-        #      that needs to be sorted out before removing this. (Also this
-        #      should be removed from __slots__)
-        self.controls = None
 
         # Total number of processes that were run last time this simulation
         # was started
@@ -256,9 +251,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.optimization_recoils = optimization_recoils
         if self.optimization_recoils is None:
             self.optimization_recoils = []
-        # This is needed for optimization mcerd stopping
-        self.__previous_espe = None
-        self.__opt_seed = None
+
         self.optimization_done = False
         self.optimization_stopped = False
         self.optimization_widget = None
@@ -342,7 +335,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         recoil_element.update(new_values)
 
         # Delete possible extra rec files.
-        filename_to_delete = None
         for file in os.listdir(self.directory):
             if file.startswith(old_name) and \
                     (file.endswith(".rec") or file.endswith(".sct")):
@@ -560,31 +552,30 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             file_path: File in which the channel width will be saved.
         """
         # Read .profile to obj to update only channel width
-        if os.path.exists(file_path):
+        time_stamp = time.time()
+        if Path(file_path).exists():
             with open(file_path) as file:
                 obj_profile = json.load(file)
 
-            obj_profile["modification_time"] = time.strftime("%c %z %Z",
-                                                             time.localtime(
-                                                                 time.time()))
-            obj_profile["modification_time_unix"] = time.time()
+            obj_profile["modification_time"] = time.strftime(
+                "%c %z %Z", time.localtime(time_stamp))
+            obj_profile["modification_time_unix"] = time_stamp
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
         else:
             obj_profile = {"energy_spectra": {},
-                           "modification_time": time.strftime("%c %z %Z",
-                                                              time.localtime(
-                                                                  time.time())),
-                           "modification_time_unix": time.time()}
+                           "modification_time": time.strftime(
+                               "%c %z %Z", time.localtime(time_stamp)),
+                           "modification_time_unix": time_stamp}
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
 
         with open(file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
 
     def start(self, number_of_processes, start_value=None,
-              use_old_erd_files=True,
-              optimize=False, stop_p=False, check_t=False,
-              optimize_recoil=False, check_max=False, check_min=False,
-              shared_ions=False, cancellation_token=None, observer=None):
+              use_old_erd_files=True, optimize=False, stop_p=False,
+              check_t=False, optimize_recoil=False, check_max=False,
+              check_min=False, shared_ions=False, cancellation_token=None,
+              observer=None):
         """
         Start the simulation.
 
@@ -635,7 +626,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         else:
             recoil = self.optimization_recoils[0]
 
-        self.__opt_seed = seed_number
+        opt_seed = seed_number
 
         if number_of_processes < 1:
             number_of_processes = 1
@@ -690,9 +681,11 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                                                     optim_mode="recoil")
 
             new_erd_file = Path(self.directory, new_erd_file)
-
-            if new_erd_file.exists():
+            try:
+                # remove file if it exists previously
                 os.remove(new_erd_file)
+            except OSError:
+                pass
 
             self.optimization_mcerd_running = optimize
 
@@ -700,7 +693,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             observable = mcerd.run()
 
             if observer is not None and observable is not None:
-                # TODO remove the None check for obs
+                # TODO remove the None check for observable
                 # TODO pipe some additional data to this stream such as observed
                 #   atoms so we can get rid of the checker thread.
                 unsubs[seed_number] = observable.subscribe(observer)
@@ -724,7 +717,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             # Check the change between current and previous energy spectra (if
             # the spectra have been calculated)
             self.check_spectra_change(stop_p, check_t, optimize_recoil,
-                                      check_max, check_min)
+                                      check_max, check_min, opt_seed)
         return unsubs
 
     def get_settings(self):
@@ -857,7 +850,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         return len(self.mcerd_objects)
 
     def check_spectra_change(self, stop_percent, check_time, optimize_recoil,
-                             check_max, check_min):
+                             check_max, check_min, seed):
         """
         If there are previous and current energy spectra, check the change in
         distance between them. When this is smaller than the threshold,
@@ -873,6 +866,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         previous_avg = None
         sleep_beginning = True
         check_start = time.time()
+        previous_espe = None
         while True:
             if not self.mcerd_objects:
                 self.optimization_mcerd_running = False
@@ -905,29 +899,28 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 self.stop()
 
             erd_file = Path(self.directory,
-                            fp.get_erd_file_name(recoils[0],
-                                                 self.__opt_seed,
+                            fp.get_erd_file_name(recoils[0], seed,
                                                  optim_mode=opt_mode))
-            if os.path.exists(erd_file):
+            if erd_file.exists():
                 # Calculate new energy spectrum
                 self.calculate_espe(recoils[0], optimize_recoil=opt,
                                     optimize_fluence=optfl)
-                espe_file = os.path.join(self.directory, recoils[0].prefix +
-                                         "-" + recoil_name + ".simu")
+                espe_file = Path(self.directory,
+                                 f"{recoils[0].prefix}-{recoil_name}.simu")
                 espe = gf.read_espe_file(espe_file)
                 if espe:
                     # Change items to float types
                     espe = list(np.float_(espe))
-                    if self.__previous_espe:
-                        espe, self.__previous_espe = gf.uniform_espe_lists([
-                            espe, self.__previous_espe], self.channel_width)
+                    if previous_espe:
+                        espe, previous_espe = gf.uniform_espe_lists(
+                            [espe, previous_espe], self.channel_width)
                         # Calculate distance between energy spectra
                         # TODO move this to math_functions
                         sum_diff = 0
                         i = 0
                         amount = 0
                         for point in espe:
-                            prev_point = self.__previous_espe[i]
+                            prev_point = previous_espe[i]
                             p_y = float(point[1])
                             pr_y = float(prev_point[1])
                             if p_y != 0 or pr_y != 0:
@@ -943,7 +936,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                                 self.stop()
                                 break
                         previous_avg = avg
-                    self.__previous_espe = espe
+                    previous_espe = espe
 
     def notify(self, sim):
         """
@@ -1079,8 +1072,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             "spectrum_file": spectrum_file,
             "recoil_file": recoil_file
         }
-        self.get_espe = GetEspe(espe_settings)
-        self.get_espe.run_get_espe()
+        get_espe = GetEspe(espe_settings)
+        get_espe.run_get_espe()
 
     def get_mcerd_params(self):
         """Returns the parameters for MCERD simulations.

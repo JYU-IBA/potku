@@ -52,7 +52,8 @@ class ElementWidget(QtWidgets.QWidget):
     """
 
     def __init__(self, parent, element, parent_tab, element_simulation,
-                 color, icon_manager, statusbar=None, spectra_changed=None):
+                 color, icon_manager, statusbar=None, spectra_changed=None,
+                 recoil_name_changed=None):
         """
         Initializes the ElementWidget.
 
@@ -66,6 +67,8 @@ class ElementWidget(QtWidgets.QWidget):
             statusbar: PyQt statusbar
             spectra_changed: pyqtSignal that indicates a change in energy
                 spectra
+            recoil_name_changed: signal that indicates that a recoil name
+                has changed.
         """
         super().__init__()
 
@@ -114,7 +117,8 @@ class ElementWidget(QtWidgets.QWidget):
         add_recoil_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                         QtWidgets.QSizePolicy.Fixed)
         add_recoil_button.clicked.connect(lambda: self.add_new_recoil(
-            spectra_changed=spectra_changed))
+            spectra_changed=spectra_changed,
+            recoil_name_changed=recoil_name_changed))
         add_recoil_button.setToolTip("Add a new recoil to element")
 
         if platform.system() == "Darwin":
@@ -133,7 +137,7 @@ class ElementWidget(QtWidgets.QWidget):
 
         self.running_int_recoil = 1
 
-    def add_new_recoil(self, spectra_changed=None):
+    def add_new_recoil(self, spectra_changed=None, recoil_name_changed=None):
         """
         Add new recoil to element simulation.
         """
@@ -156,7 +160,8 @@ class ElementWidget(QtWidgets.QWidget):
         recoil_widget = RecoilElementWidget(
             self.parent, self.tab, self, self.element_simulation,
             color, recoil_element, statusbar=self.statusbar,
-            spectra_changed=spectra_changed
+            spectra_changed=spectra_changed,
+            recoil_name_changed=recoil_name_changed
         )
         recoil_element.widgets.append(recoil_widget)
         self.element_simulation.recoil_elements.append(recoil_element)

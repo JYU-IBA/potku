@@ -55,10 +55,16 @@ from PyQt5.QtCore import Qt
 
 
 def _str_from_group_box(instance, attr):
+    """Gets the title from group box.
+    """
+    # TODO make this a default getter for group boxes
     return getattr(instance, attr).title()
 
 
 def _str_to_group_box(instance, attr, txt):
+    """Sets the title of a group box.
+    """
+    # TODO make this a default setter fro group boxes
     getattr(instance, attr).setTitle(txt)
 
 
@@ -85,13 +91,15 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
     """
 
     def __init__(self, element_simulation: ElementSimulation,
-                 recoil_dist_widget):
+                 recoil_dist_widget, recoil_name_changed=None):
         """
         Initializes a SimulationControlsWidget.
 
         Args:
              element_simulation: An ElementSimulation class object.
              recoil_dist_widget: RecoilAtomDistributionWidget.
+             recoil_name_changed: signal that indicates that a recoil name
+                has changed.
         """
         super().__init__()
         GUIObserver.__init__(self)
@@ -100,14 +108,13 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         # TODO show starting seed in the UI?
         # TODO set minimum count for ions (global setting that would be checked
         #   before running simulation, user should be warned if too low)
-        # TODO decouple controls from element_simulation
         self.element_simulation = element_simulation
-        self.element_simulation.controls = self
         self.element_simulation.subscribe(self)
         self.recoil_dist_widget = recoil_dist_widget
         self.progress_bars = {}
 
-        self.recoil_name = self.element_simulation.get_full_name()
+        self.recoil_name = \
+            self.element_simulation.get_main_recoil().get_full_name()
         self.show_status(self.element_simulation.get_current_status())
 
         self.run_button.clicked.connect(self.start_simulation)
@@ -115,6 +122,28 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         self.stop_button.clicked.connect(self.stop_simulation)
         self.stop_button.setIcon(QIcon("ui_icons/reinhardt/player_stop.svg"))
         self.enable_buttons()
+
+        self.recoil_name_changed = recoil_name_changed
+        if self.recoil_name_changed is not None:
+            self.recoil_name_changed.connect(self._set_name)
+
+    def closeEvent(self, event):
+        """Disconnects self from recoil_name_changed signal and closes the
+        widget.
+        """
+        try:
+            self.recoil_name_changed.disconnect(self._set_name)
+        except (AttributeError, TypeError):
+            pass
+        super().closeEvent(event)
+
+    def _set_name(self, _, recoil_elem):
+        """Sets the name shown in group box title to the name of the
+        given recoil element if the recoil element is the same as the
+        main recoil.
+        """
+        if recoil_elem is self.element_simulation.get_main_recoil():
+            self.recoil_name = recoil_elem.get_full_name()
 
     def enable_buttons(self):
         """Switches the states of run and stop button depending on the state
@@ -172,12 +201,10 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
             self.recoil_dist_widget.update_plot()
 
         # TODO indicate to user that ion counts are shared between processes
-
-        number_of_processes = self.process_count
-
+        # TODO store the unsubscribers returned by start method
         starter_thread = threading.Thread(
             target=lambda: self.element_simulation.start(
-                number_of_processes,
+                self.process_count,
                 use_old_erd_files=use_old_erd_files,
                 shared_ions=True,
                 cancellation_token=CancellationToken(),
@@ -211,7 +238,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         Args:
             running_processes: Number of running processes.
             starting: boolean that determines if the processes are just
-                      starting
+                starting
         """
         all_proc = self.process_count
         if starting:
@@ -266,11 +293,13 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
 
         if "msg" in status:
             if status["msg"] == "Presimulation finished":
-                self.update_progress_bars(
+                # TODO add a presimulation done flag to the rx pipeline
+                self.update_progress_bar(
                     status["seed"], 0,
                     stylesheet=SimulationControlsWidget.SIM_PROGRESS_STYLE)
         elif "calculated" in status:
-            self.update_progress_bars(
+            self.update_progress_bar(
+                # TODO do the calculation in the rx pipeline
                 status["seed"], status["calculated"] / status["total"] * 100)
         else:
             if status["state"] == SimulationState.STARTING:
@@ -279,7 +308,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
             self.show_status(status)
 
     def on_error_handler(self, err):
-        # For now just print any errors that the stream may thow at us
+        # For now just print any errors that the stream may throw at us
         print(err)
 
     def on_complete_handler(self, status):
@@ -305,14 +334,23 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         for i in reversed(range(self.process_layout.count())):
             self.process_layout.itemAt(i).widget().deleteLater()
 
-    def update_progress_bars(self, seed, value, stylesheet=None):
-        """Updates or adds a progress bar.
+    def update_progress_bar(self, seed: int, value: float, stylesheet=None):
+        """Updates or adds a progress bar for a simulation process that uses
+        the given seed.
+
+        Args:
+            seed: seed of the simulation process
+            value: value to be shown in the progress bar.
+            stylesheet: stylesheet given to to the progress bar.
         """
         if seed not in self.progress_bars:
             if stylesheet is None:
                 stylesheet = SimulationControlsWidget.PRESIM_PROGRESS_STYLE
             progress_bar = QtWidgets.QProgressBar()
             progress_bar.setStyleSheet(stylesheet)
+
+            # Align the percentage display to the right side of the
+            # progress bar.
             progress_bar.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
             self.progress_bars[seed] = progress_bar
             self.process_layout.addRow(QtWidgets.QLabel(str(seed)),
