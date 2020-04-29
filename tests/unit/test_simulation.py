@@ -28,10 +28,12 @@ __version__ = "2.0"
 import unittest
 import tempfile
 import os
-import tests.mock_objects as mo
 
+import tests.mock_objects as mo
+import tests.utils as utils
+
+from pathlib import Path
 from unittest.mock import patch
-from tests.utils import disable_logging
 from modules.simulation import Simulation
 
 
@@ -45,12 +47,9 @@ class TestSimulation(unittest.TestCase):
 
             # Logging needs to be disabled, otherwise loggers retain file
             # handlers that prevent removing the temp_dir
-            disable_logging()
+            utils.disable_logging()
 
-            def assign():
-                sim.x = 10
-
-            self.assertRaises(AttributeError, lambda: assign())
+            self.assertRaises(AttributeError, lambda: utils.slots_test(sim))
 
         # Just in case make sure that the temp_dir got deleted
         self.assertFalse(os.path.exists(temp_dir))
@@ -73,3 +72,39 @@ class TestSimulation(unittest.TestCase):
         elem_sim.stop()
         self.assertEqual(([], [elem_sim], [], []),
                          sim.get_active_simulations())
+
+    def test_serialization(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            fp = Path(tmp_dir, "test.simu")
+            sim = Simulation(tmp_dir, mo.get_request(), name="foo",
+                             description="bar", save_on_creation=False,
+                             run=mo.get_run(), detector=mo.get_detector(),
+                             target=mo.get_target())
+
+            sim.to_file(fp)
+
+            sim2 = Simulation.from_file(mo.get_request(), fp,
+                                        detector=mo.get_detector(),
+                                        target=mo.get_target(),
+                                        run=mo.get_run())
+
+            self.assertEqual(sim.name, sim2.name)
+            self.assertEqual(sim.description, sim2.description)
+            self.assertEqual(sim.measurement_setting_file_description,
+                             sim2.measurement_setting_file_description)
+            self.assertEqual(sim.measurement_setting_file_name,
+                             sim2.measurement_setting_file_name)
+            self.assertEqual(sim.use_request_settings,
+                             sim2.use_request_settings)
+
+            self.assertEqual(sim.detector.name, sim2.detector.name)
+            self.assertEqual(sim.detector.angle_offset,
+                             sim2.detector.angle_offset)
+
+            self.assertEqual(sim.target.scattering_element,
+                             sim2.target.scattering_element)
+            self.assertEqual(sim.target.target_type, sim2.target.target_type)
+
+            self.assertEqual(sim.run.fluence, sim2.run.fluence)
+
+            self.assertNotEqual(sim.modification_time, sim2.modification_time)

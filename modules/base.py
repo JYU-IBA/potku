@@ -105,7 +105,7 @@ class AdjustableSettings:
     """
     __slots__ = ()
 
-    def get_settings(self):
+    def get_settings(self) -> dict:
         """Returns a dictionary that contains the names of the settings and
         their current values.
         """

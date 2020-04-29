@@ -26,6 +26,9 @@ __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 import unittest
+
+import tests.mock_objects as mo
+
 from modules.beam import Beam
 from modules.element import Element
 
@@ -38,3 +41,18 @@ class TestBeam(unittest.TestCase):
              "Beam energy: 14 MeV"],
             beam.get_mcerd_params()
         )
+
+    def test_adjustable_settings(self):
+        beam = mo.get_beam()
+        kwargs = {
+            "energy": 1,
+            "charge": 2,
+            "ion": mo.get_element(randomize=True),
+            "energy_distribution": 3,
+            "spot_size": (1, 2),
+            "profile": "foo",
+            "divergence": 7
+        }
+        self.assertNotEqual(kwargs, beam.get_settings())
+        beam.set_settings(**kwargs)
+        self.assertEqual(kwargs, beam.get_settings())

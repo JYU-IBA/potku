@@ -216,11 +216,11 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
 
         run_params = {
             f"run_{key}": value
-            for key, value in self.tmp_run.get_setting_parameters().items()
+            for key, value in self.tmp_run.get_settings().items()
         }
         bean_params = {
             f"beam_{key}": value
-            for key, value in self.tmp_run.beam.get_setting_parameters().items()
+            for key, value in self.tmp_run.beam.get_settings().items()
         }
         self.set_properties(**run_params, **bean_params)
 
@@ -280,8 +280,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
                 self.measurement_setting_file_description
 
             run_params, beam_params = self.get_run_and_beam_parameters()
-            self.obj.run.set_setting_parameters(**run_params)
-            self.obj.run.beam.set_setting_parameters(**beam_params)
+            self.obj.run.set_settings(**run_params)
+            self.obj.run.beam.set_settings(**beam_params)
             self.obj.run.previous_fluence = self.tmp_run.previous_fluence
             self.obj.detector.detector_theta = self.detector_theta
             self.obj.target.target_theta = self.target_theta
@@ -329,8 +329,8 @@ class MeasurementSettingsWidget(QtWidgets.QWidget,
         # TODO: Show a message box, don't just quietly do nothing
         if isotope_index != -1:
             run_params, beam_params = self.get_run_and_beam_parameters()
-            self.tmp_run.set_setting_parameters(**run_params)
-            self.tmp_run.beam.set_setting_parameters(**beam_params)
+            self.tmp_run.set_settings(**run_params)
+            self.tmp_run.beam.set_settings(**beam_params)
         else:
             QtWidgets.QMessageBox.critical(self, "Warning",
                                            "No isotope selected.\n\nPlease "

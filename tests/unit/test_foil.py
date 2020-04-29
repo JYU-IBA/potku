@@ -27,6 +27,8 @@ __version__ = "2.0"
 
 import unittest
 
+import tests.utils as utils
+
 from modules.foil import Foil
 from modules.foil import CircularFoil
 from modules.foil import RectangularFoil
@@ -101,16 +103,10 @@ class TestFoil(unittest.TestCase):
 
     def test_slots(self):
         """Tests that __slots__ work properly for Foils"""
-        rec = RectangularFoil()
-        cir = CircularFoil()
-
-        def assignment_attempt(obj):
-            obj.x = 10
-
-        self.assertRaises(AttributeError, lambda: assignment_attempt(rec))
-        self.assertRaises(AttributeError, lambda: assignment_attempt(cir))
-        self.assertRaises(AttributeError, lambda: rec.__dict__)
-        self.assertRaises(AttributeError, lambda: cir.__dict__)
+        self.assertRaises(AttributeError,
+                          lambda: utils.slots_test(RectangularFoil()))
+        self.assertRaises(AttributeError,
+                          lambda: utils.slots_test(CircularFoil()))
 
     def test_get_mcerd_params(self):
         unit_rec = RectangularFoil(size_x=1.0, size_y=1.0, distance=1.0)

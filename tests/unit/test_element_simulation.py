@@ -35,6 +35,7 @@ import threading
 
 import modules.file_paths as fp
 import tests.mock_objects as mo
+import tests.utils as utils
 
 from modules.recoil_element import RecoilElement
 from modules.element import Element
@@ -364,11 +365,10 @@ class TestElementSimulation(unittest.TestCase):
         self.assertEqual("i dunno, two maybe?", self.elem_sim.number_of_preions)
 
     def test_slots(self):
-        """Tests that __slots__ declaration works."""
-        def set_xyz():
-            self.elem_sim.xyz = "foo"
-
-        self.assertRaises(AttributeError, set_xyz)
+        """Tests that __slots__ declaration works.
+        """
+        self.assertRaises(AttributeError,
+                          lambda: utils.slots_test(self.elem_sim))
 
 
 def write_line(file):

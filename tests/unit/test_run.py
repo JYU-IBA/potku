@@ -36,10 +36,15 @@ from modules.run import Run
 class TestRun(unittest.TestCase):
     def test_settings_parameters(self):
         run = Run()
-        self.assertEqual(
-            ["fluence", "current", "charge", "time"],
-            list(run.get_setting_parameters().keys())
-        )
+        kwargs = {
+            "fluence": 1,
+            "current": 2,
+            "charge": 3,
+            "time": 4
+        }
+        self.assertNotEqual(kwargs, run.get_settings())
+        run.set_settings(**kwargs)
+        self.assertEqual(kwargs, run.get_settings())
 
     def test_serialization(self):
         with tempfile.TemporaryDirectory() as tmp_dir:

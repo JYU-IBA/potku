@@ -36,6 +36,8 @@ import modules.general_functions as gf
 
 from pathlib import Path
 
+from modules.base import Serializable
+from modules.base import MCERDParameterContainer
 from modules.element import Element
 from modules.foil import Foil
 from modules.foil import CircularFoil
@@ -43,7 +45,7 @@ from modules.foil import RectangularFoil
 from modules.layer import Layer
 
 
-class Detector:
+class Detector(MCERDParameterContainer, Serializable):
     """
     Detector class that handles all the information about a detector.
     It also can convert itself to and from JSON file.

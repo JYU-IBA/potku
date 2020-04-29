@@ -30,6 +30,8 @@ import unittest
 import tempfile
 import os
 
+import tests.utils as utils
+
 from modules.parsing import CSVParser
 from modules.parsing import ToFListParser
 
@@ -240,12 +242,12 @@ class TestParsing(unittest.TestCase):
                                                  separator="\t")))
 
     def test_slots(self):
-        """Tests that __slots__ work in CSVParser"""
-        def assign(parser):
-            parser.x = 42
-
-        self.assertRaises(AttributeError, lambda: assign(CSVParser()))
-        self.assertRaises(AttributeError, lambda: assign(ToFListParser()))
+        """Tests that __slots__ work in CSVParser.
+        """
+        self.assertRaises(AttributeError,
+                          lambda: utils.slots_test(CSVParser()))
+        self.assertRaises(AttributeError,
+                          lambda: utils.slots_test(ToFListParser()))
 
 
 if __name__ == "__main__":

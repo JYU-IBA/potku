@@ -34,8 +34,10 @@ import re
 
 import modules.masses as masses
 
+from modules.base import MCERDParameterContainer
 
-class Element:
+
+class Element(MCERDParameterContainer):
     """
     Element class that handles information about one element.
     """

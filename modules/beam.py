@@ -28,10 +28,12 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
+from modules.base import AdjustableSettings
+from modules.base import MCERDParameterContainer
 from modules.element import Element
 
 
-class Beam:
+class Beam(AdjustableSettings, MCERDParameterContainer):
     """
     Class for handling beam information.
     """
@@ -70,13 +72,16 @@ class Beam:
             f"Beam energy: {self.energy} MeV"
         ]
 
-    def get_setting_parameters(self):
+    def get_settings(self):
+        """Returns a dictionary of settings that can be adjusted.
+        """
         d = dict(vars(self))
         return d
 
-    def set_setting_parameters(self, **kwargs):
-        # TODO make a base class for objects that have settings parameters
-        allowed_params = self.get_setting_parameters()
+    def set_settings(self, **kwargs):
+        """Sets the values of this Beam objects adjustable settings.
+        """
+        allowed_params = self.get_settings()
         for k, v in kwargs.items():
             if k in allowed_params:
                 setattr(self, k, v)

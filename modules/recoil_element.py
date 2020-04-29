@@ -36,12 +36,14 @@ import time
 import modules.file_paths as fp
 import modules.math_functions as mf
 
+from modules.base import Serializable
+from modules.base import MCERDParameterContainer
 from modules.element import Element
 from modules.point import Point
 from modules.parsing import CSVParser
 
 
-class RecoilElement:
+class RecoilElement(MCERDParameterContainer, Serializable):
     """An element that has a list of points and a widget. The points are kept
     in ascending order by their x coordinate.
     """

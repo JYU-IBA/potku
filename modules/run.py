@@ -31,11 +31,13 @@ import json
 import os
 import time
 
+from modules.base import Serializable
+from modules.base import AdjustableSettings
 from modules.beam import Beam
 from modules.element import Element
 
 
-class Run:
+class Run(Serializable, AdjustableSettings):
     """
     Class that handles parameters concerning a run.
     """
@@ -127,14 +129,18 @@ class Run:
 
         return cls(beam=beam_object, **run)
 
-    def get_setting_parameters(self):
+    def get_settings(self):
+        """Returns a dictionary of settings that can be adjusted.
+        """
         d = dict(vars(self))
         d.pop("previous_fluence")
         d.pop("beam")
         return d
 
-    def set_setting_parameters(self, **kwargs):
-        allowed_params = self.get_setting_parameters()
+    def set_settings(self, **kwargs):
+        """Sets the values of Run settings to given keyword argument values.
+        """
+        allowed_params = self.get_settings()
         for k, v in kwargs.items():
             if k in allowed_params:
                 setattr(self, k, v)

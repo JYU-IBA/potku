@@ -29,6 +29,9 @@ __version__ = "2.0"
 
 import math
 
+from modules.base import MCERDParameterContainer
+
+
 # Unit conversion values for solid angle
 #   sr: steradian
 #   msr: millisteradian
@@ -40,7 +43,7 @@ _UNITS = {
 }
 
 
-class Foil:
+class Foil(MCERDParameterContainer):
     """Class for detector foil.
     """
 

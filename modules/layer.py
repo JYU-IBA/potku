@@ -28,8 +28,10 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
+from modules.base import MCERDParameterContainer
 
-class Layer:
+
+class Layer(MCERDParameterContainer):
     """Class for a target or foil layer.
     """
 

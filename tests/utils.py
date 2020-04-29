@@ -35,6 +35,7 @@ import logging
 import platform
 import time
 import warnings
+import random
 
 from pathlib import Path
 
@@ -235,3 +236,16 @@ def run_without_warnings(func):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         return func()
+
+
+def slots_test(obj):
+    """Checks whether the given object has a working __slots__ declaration,
+    this function raises an AttributeError
+    """
+    if not hasattr(obj, "__slots__"):
+        return
+    for i in range(1000):
+        attr = f"xyz{i}"
+        if not hasattr(obj, attr) and attr not in getattr(obj, "__slots__"):
+            setattr(obj, attr, "foo")
+            break

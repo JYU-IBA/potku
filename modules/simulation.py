@@ -33,12 +33,12 @@ __version__ = "2.0"
 import json
 import logging
 import os
-import sys
 import time
 
 import modules.general_functions as gf
 
 from modules.base import ElementSimulationContainer
+from modules.base import Serializable
 from modules.detector import Detector
 from modules.element_simulation import ElementSimulation
 from modules.run import Run
@@ -111,6 +111,12 @@ class Simulations:
                 directory_prefix) + 2])
             simulation.serial_number = serial_number
             simulation.tab_id = tab_id
+
+            # TODO provide detector, run and target as parameters to the
+            #  Simulation.from_file method or make Simulation read those files
+            #  too in that method
+            # TODO refactor these os.listdir iterations into something more
+            #   reusable and stable
 
             for f in os.listdir(simulation_folder_path):
                 if f.endswith(measurement_extension):
@@ -229,7 +235,7 @@ class Simulations:
         self.simulations = remove_key(self.simulations, tab_id)
 
 
-class Simulation(Logger, ElementSimulationContainer):
+class Simulation(Logger, ElementSimulationContainer, Serializable):
     """
     A Simulation class that handles information about one Simulation.
     """
@@ -371,13 +377,14 @@ class Simulation(Logger, ElementSimulationContainer):
         return element_simulation
 
     @classmethod
-    def from_file(cls, request, file_path):
+    def from_file(cls, request, file_path, detector=None, target=None, run=None,
+                  sample=None):
         """Initialize Simulation from a JSON file.
 
         Args:
             request: Request which the Simulation belongs to.
             file_path: A file path to JSON file containing the
-            simulation information.
+                simulation information.
         """
         with open(file_path) as file:
             simu_obj = json.load(file)
@@ -386,7 +393,8 @@ class Simulation(Logger, ElementSimulationContainer):
         # that is what the Simulation object uses internally
         simu_obj["modification_time"] = simu_obj.pop("modification_time_unix")
 
-        return cls(request=request, path=file_path, **simu_obj)
+        return cls(file_path, request, detector=detector, target=target,
+                   run=run, sample=sample, **simu_obj)
 
     def to_file(self, file_path):
         """Save simulation settings to a file.
@@ -396,12 +404,13 @@ class Simulation(Logger, ElementSimulationContainer):
         """
 
         # TODO could add file paths to detector and run files here too
+        time_stamp = time.time()
         obj = {
             "name": self.name,
             "description": self.description,
             "modification_time": time.strftime("%c %z %Z", time.localtime(
-                time.time())),
-            "modification_time_unix": time.time(),
+                time_stamp)),
+            "modification_time_unix": time_stamp,
             "use_request_settings": self.use_request_settings
         }
 
