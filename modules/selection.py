@@ -30,19 +30,21 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen " \
              "\n Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
+# TODO move this module under widgets.matplotlib
 
 import logging
 import os
 
+import modules.math_functions as mf
+import modules.general_functions as gf
+
+import matplotlib as mpl
+
 from dialogs.measurement.selection import SelectionSettingsDialog
 
-from math import sqrt
-
-from matplotlib.lines import Line2D
-from matplotlib.path import Path
+from pathlib import Path
 
 from modules.element import Element
-from modules.general_functions import rename_file
 
 from PyQt5 import QtWidgets
 
@@ -54,7 +56,7 @@ class AxesLimits:
     def __init__(self):
         """Inits axes limits
         """
-        self.__used__ = False
+        self.__used = False
         self.__x_min = None
         self.__x_max = None
         self.__y_min = None
@@ -66,13 +68,13 @@ class AxesLimits:
         Args:
             point: A point as list (x, y) representing point.
         """
-        if self.__used__:
+        if self.__used:
             self.__x_min = min(point[0], self.__x_min)
             self.__x_max = max(point[0], self.__x_max)
             self.__y_min = min(point[1], self.__y_min)
             self.__y_max = max(point[1], self.__y_max)
         else:
-            self.__used__ = True
+            self.__used = True
             self.__x_min = point[0]
             self.__x_max = point[0]
             self.__y_min = point[1]
@@ -87,7 +89,7 @@ class AxesLimits:
         Return:
             Returns True when point is within limits.
         """
-        if not self.__used__:
+        if not self.__used:
             return False
         if point[0] < self.__x_min:
             return False
@@ -116,11 +118,10 @@ class Selector:
         # self.settings = measurement.measurement_settings
         self.measurement = measurement
         self.measurement_name = measurement.name
-        self.directory = os.path.join(measurement.directory,
-                                      measurement.directory_data)
-        self.selection_file = os.path.join(
-            self.directory,
-            "{0}.selections".format(self.measurement_name))
+        self.directory = Path(measurement.directory,
+                              self.measurement.directory_data)
+        self.selection_file = Path(self.directory,
+                                   f"{self.measurement_name}.selections")
         # List is sufficient enough
         self.selections = []
         self.new_selection_is_allowed = True
@@ -208,7 +209,7 @@ class Selector:
         # Check if closing selection
         if sel.count() >= 3:  # Requirement for there to be selection
             # If we are close enough, close selection
-            if self.distance(sel.get_first(), point) < self.looseness:
+            if mf.distance(sel.get_first(), point) < self.looseness:
                 selection_is_ok = sel.end_selection(canvas)
                 # If selection was cancelled -> remove just made selection
                 if not selection_is_ok:
@@ -220,7 +221,7 @@ class Selector:
         # Do not allow selection of too close point
         if sel.count() >= 1:
             for point2 in sel.get_points():
-                if self.distance(point2, point) < self.looseness:
+                if mf.distance(point2, point) < self.looseness:
                     print("Point too close!")
                     return -1
 
@@ -249,14 +250,14 @@ class Selector:
         self.measurement_name = measurement.name
         self.directory = measurement.directory_data
 
-        selection_file_without_path = os.path.split(self.selection_file)[1]
-        old_selection_file_in_new_path = \
-            os.path.join(self.directory, selection_file_without_path)
+        selection_file_without_path = self.selection_file.name
+        old_selection_file_in_new_path = Path(self.directory,
+                                              selection_file_without_path)
         try:
-            if os.path.exists(old_selection_file_in_new_path):
-                new_file = rename_file(old_selection_file_in_new_path,
-                                       self.measurement_name + ".selections")
-                self.selection_file = os.path.join(self.directory, new_file)
+            if old_selection_file_in_new_path.exists():
+                new_file = gf.rename_file(old_selection_file_in_new_path,
+                                          self.measurement_name + ".selections")
+                self.selection_file = Path(self.directory, new_file)
         except OSError:
             QtWidgets.QMessageBox.critical(self, "Error",
                                            "Something went wrong while "
@@ -305,20 +306,6 @@ class Selector:
             s.delete()
         self.selections.clear()
         self.selected_id = None
-
-    def distance(self, p0, p1):
-        """Distance between points
-        
-        Calculates and returns distance between two points.
-        
-        Args:
-            p0: Point A
-            p1: Point B
-        
-        Return:
-            Distance (float) between two points.
-        """
-        return sqrt((p0[0] - p1[0]) ** 2 + (p0[1] - p1[1]) ** 2)
 
     def draw(self):
         """Draw selections.
@@ -384,7 +371,7 @@ class Selector:
             0: If point is not within selection.
         """
         for selection in self.selections:
-            path = Path(selection.get_points())
+            path = mpl.path.Path(selection.get_points())
             if path.contains_point(point):
                 self.selected_id = selection.id
                 if highlight:
@@ -461,13 +448,12 @@ class Selector:
     def auto_save(self):
         """Save all selections into a file.
         """
-        if not os.path.exists(self.directory):
+        if not self.directory.exists():
             os.makedirs(self.directory)
         # Truncate old .sel and write new one
         with open(self.selection_file, "wt+") as fp:
             for sel in self.selections:
                 fp.write(sel.save_string(self.is_transposed) + "\n")
-            fp.close()
 
     def load(self, filename, progress=None):
         """Load selections from a file.
@@ -652,11 +638,12 @@ class Selection:
             return -1
         else:
             if self.points is None:
-                self.points = Line2D([point[0]], [point[1]],
-                                     linestyle=Selection.LINE_STYLE,
-                                     marker=Selection.LINE_MARKER,
-                                     markersize=Selection.LINE_MARKER_SIZE,
-                                     color=self.default_color)
+                self.points = mpl.lines.Line2D(
+                    [point[0]], [point[1]],
+                    linestyle=Selection.LINE_STYLE,
+                    marker=Selection.LINE_MARKER,
+                    markersize=Selection.LINE_MARKER_SIZE,
+                    color=self.default_color)
             else:
                 x, y = self.points.get_data()
                 x.append(point[0])
@@ -891,34 +878,9 @@ class Selection:
         """
         if not self.axes_limits.is_inside(point):
             return False
-        inside = self.__point_inside_polygon(point[0], point[1],
-                                             self.get_points())
+        inside = mf.point_inside_polygon((point[0], point[1]),
+                                         self.get_points())
         # While at it, increase event point counts if not counted already.
         if inside and not self.events_counted:
             self.event_count += 1
-        return inside
-
-    def __point_inside_polygon(self, x, y, poly):
-        """Finds out if a point x, y is inside a polygon "poly"
-        
-        Determine if a point is inside a given polygon or not
-        Polygon is a list of (x,y) pairs.        
-        
-        Algorithm got from: http://www.ariel.com.au/a/python-point-int-poly.html
-        """
-        n = len(poly)
-        inside = False
-
-        p1x, p1y = poly[0]
-        for i in range(n + 1):
-            p2x, p2y = poly[i % n]
-            if y > min(p1y, p2y):
-                if y <= max(p1y, p2y):
-                    if x <= max(p1x, p2x):
-                        if p1y != p2y:
-                            xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + \
-                                      p1x
-                        if p1x == p2x or x <= xinters:
-                            inside = not inside
-            p1x, p1y = p2x, p2y
         return inside

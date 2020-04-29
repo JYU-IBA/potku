@@ -97,6 +97,11 @@ class Point:
 
         raise ValueError("Unknown key or index")
 
+    def __len__(self):
+        """This is a 2D point so always return 2.
+        """
+        return 2
+
     def get_coordinates(self):
         """
         Get point coordinates.

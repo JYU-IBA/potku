@@ -21,9 +21,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
+# Author's note: functions get_rounding_decimals, point_inside_polygon and
+# distance have been moved here from other modules
 
 __author__ = "Juhani Sundell"
-__version__ = ""    # TODO
+__version__ = "2.0"
 
 import math
 
@@ -359,3 +361,46 @@ def get_min_and_max(lst):
     """Returns both minimum and maximum values from a list.
     """
     return min(lst), max(lst)
+
+
+def point_inside_polygon(point, poly):
+    """Finds out if a point x, y is inside a polygon "poly"
+
+    Determine if a point is inside a given polygon or not
+    Polygon is a list of (x,y) pairs.
+
+    Algorithm got from: http://www.ariel.com.au/a/python-point-int-poly.html
+    """
+    # TODO test using shapely or numpy for this
+    x, y = point
+    n = len(poly)
+    inside = False
+
+    p1x, p1y = poly[0]
+    for i in range(n + 1):
+        p2x, p2y = poly[i % n]
+        if y > min(p1y, p2y):
+            if y <= max(p1y, p2y):
+                if x <= max(p1x, p2x):
+                    if p1y != p2y:
+                        xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + \
+                                  p1x
+                    if p1x == p2x or x <= xinters:
+                        inside = not inside
+        p1x, p1y = p2x, p2y
+    return inside
+
+
+def distance(p0, p1):
+    """Distance between points
+
+    Calculates and returns distance between two points.
+
+    Args:
+        p0: Point A
+        p1: Point B
+
+    Return:
+        Distance (float) between two points.
+    """
+    return math.sqrt((p0[0] - p1[0]) ** 2 + (p0[1] - p1[1]) ** 2)

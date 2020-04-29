@@ -445,6 +445,59 @@ class TestMisc(unittest.TestCase):
                           lambda: mf.split_scientific_notation("2e2e2"))
 
 
+class TestPointInside(unittest.TestCase):
+    # TODO do a performance test and compare current implementation to numpy
+    #   or shapely
+    def test_bad_inputs(self):
+        self.assertRaises(IndexError,
+                          lambda: mf.point_inside_polygon(Point(0, 0), []))
+
+        square = [
+            (0, 0), (0, 1), (1, 1), (1, 0)
+        ]
+        self.assertRaises(ValueError,
+                          lambda: mf.point_inside_polygon([], square))
+        self.assertRaises(ValueError,
+                          lambda: mf.point_inside_polygon([1, 2, 3], square))
+
+    def test_point_and_straight(self):
+        self.assertFalse(mf.point_inside_polygon(Point(0, 0), [Point(0, 0)]))
+        self.assertFalse(mf.point_inside_polygon(Point(0, 0),
+                                                 [Point(-1, 0), Point(1, 0)]))
+
+    def test_triangle(self):
+        triangle = (
+            Point(0, 0), Point(10, 10), Point(20, 0)
+        )
+        self.assertTrue(mf.point_inside_polygon(Point(10, 5), triangle))
+        self.assertFalse(mf.point_inside_polygon(Point(5, 5), triangle))
+        self.assertFalse(mf.point_inside_polygon(Point(20, 5), triangle))
+
+        self.assertFalse(mf.point_inside_polygon(Point(20, 0), triangle))
+
+    def test_rectangle(self):
+        rectangle = (
+            Point(0, 0),
+            Point(1, 1),
+            Point(2, 1),
+            Point(1, 0)
+        )
+        self.assertFalse(mf.point_inside_polygon(Point(0, 0), rectangle))
+        self.assertFalse(mf.point_inside_polygon(Point(1, 0), rectangle))
+        self.assertFalse(mf.point_inside_polygon(Point(1, 1), rectangle))
+
+        # TODO why are these two True?
+        self.assertTrue(mf.point_inside_polygon(Point(1.5, 1), rectangle))
+        self.assertTrue(mf.point_inside_polygon(Point(2, 1), rectangle))
+
+        self.assertTrue(mf.point_inside_polygon(Point(1, 0.5), rectangle))
+        self.assertTrue(mf.point_inside_polygon(Point(1.5, 0.8), rectangle))
+
+        self.assertFalse(mf.point_inside_polygon(Point(0, 0.25), rectangle))
+        self.assertFalse(mf.point_inside_polygon(Point(0.5, -0.1), rectangle))
+        self.assertFalse(mf.point_inside_polygon(Point(1.5, 0.25), rectangle))
+
+
 class TestBinCounts(unittest.TestCase):
     def setUp(self):
         a, b = 0, 100
