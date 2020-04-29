@@ -1036,9 +1036,9 @@ class Nsgaii(Observable):
         self.clean_up()
         self.save_results_to_file()
 
-        self.on_complete(self._get_message(OptimizationState.FINISHED,
-                                           evaluations_done=self.evaluations
-                                                            - evaluations))
+        self.on_completed(self._get_message(
+            OptimizationState.FINISHED,
+            evaluations_done=self.evaluations - evaluations))
 
     def clean_up(self):
         self.element_simulation.optimization_done = True

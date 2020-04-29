@@ -839,7 +839,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 self.__cancellation_token.raise_if_cancelled()
             status = self.get_current_status()
             if status["state"] == SimulationState.DONE:
-                # on_complete is already reported by stop method so no need to
+                # on_completed is already reported by stop method so no need to
                 # do it here
                 break
             self.on_next(status)
@@ -965,7 +965,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
             self.simulations_done = True
             self.__erd_filehandler.update()
-            self.on_complete(self.get_current_status())
+            self.on_completed(self.get_current_status())
 
     def stop(self):
         """ Stop the simulation."""
@@ -1005,7 +1005,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         logging.getLogger(self.simulation.name).info(msg)
         self.__erd_filehandler.update()
-        self.on_complete(status)
+        self.on_completed(status)
 
     def calculate_espe(self, recoil_element, optimize_recoil=False, ch=None,
                        fluence=None, optimize_fluence=False):
@@ -1160,7 +1160,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         self.__erd_filehandler.clear()
         self.unlock_edit()
-        self.on_complete(self.get_current_status())
+        self.on_completed(self.get_current_status())
 
 
 class ERDFileHandler:

@@ -311,21 +311,18 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         # For now just print any errors that the stream may throw at us
         print(err)
 
-    def on_complete_handler(self, status):
+    def on_completed_handler(self, status):
         """This method is called when the ElementSimulation has run all of
         its simulation processes.
 
         GUI is updated to show the status and button states are switched
         accordingly.
         """
+        # TODO this method fails if the rx.Observable reports an on_completed
+        #  event as it is not going to report a valid dictionary for the
+        #  show_status method.
         self.show_status(status)
         self.enable_buttons()
-
-    def on_completed(self, status):
-        # rx requires the observer to have a method called on_completed
-        # Currently this is not getting called
-        # TODO rename the base method in modules.observing.Observer
-        print(status)
 
     def remove_progress_bars(self):
         """Removes all progress bars and seed labels.

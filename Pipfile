@@ -10,10 +10,11 @@ matplotlib = "*"
 "PyQt5" = "==5.9.2"
 Shapely = "*"
 wheel = "*"
+rx = "*"
 
 [dev-packages]
-"pypiwin32" = {sys_platform = "== 'win32'"}
-"pywin32" = {sys_platform = "== 'win32'"}
+pypiwin32 = {sys_platform = "== 'win32'"}
+pywin32 = {sys_platform = "== 'win32'"}
 
 [requires]
 python_version = "3.6"

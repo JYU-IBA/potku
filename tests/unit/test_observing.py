@@ -45,7 +45,7 @@ class Sub(Observer):
         self.nexts = []
         self.compl = []
 
-    def on_complete(self, msg):
+    def on_completed(self, msg):
         self.compl.append(msg)
 
     def on_error(self, err):
@@ -103,7 +103,7 @@ class TestObserving(unittest.TestCase):
         self.assertEqual([], sub.errs)
 
         pub.on_next("foo")
-        pub.on_complete("bar")
+        pub.on_completed("bar")
         pub.on_error("kissa istuu")
 
         self.assertEqual(["foo"], sub.nexts)
@@ -138,7 +138,7 @@ class TestObserving(unittest.TestCase):
         # Subscribing twice to the same publisher means messages are received
         # twice
         pub1.subscribe(sub1)
-        pub1.on_complete("done")
+        pub1.on_completed("done")
         self.assertEqual(["done", "done"], sub1.compl)
         self.assertEqual(["done"], sub2.compl)
 
@@ -195,7 +195,7 @@ class TestObserving(unittest.TestCase):
         class Obs(Observer):
             pass
 
-        self.assertRaises(NotImplementedError, lambda: Obs().on_complete(""))
+        self.assertRaises(NotImplementedError, lambda: Obs().on_completed(""))
         self.assertRaises(NotImplementedError, lambda: Obs().on_error(""))
         self.assertRaises(NotImplementedError, lambda: Obs().on_next(""))
 
