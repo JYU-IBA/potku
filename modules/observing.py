@@ -146,14 +146,14 @@ class Observable:
         """
         self.__publish(lambda obs: obs.on_error(err))
 
-    def on_complete(self, msg):
+    def on_completed(self, msg):
         """Notifies the Observers that the Observable has completed its
         process.
 
         Args:
             msg: message to Observers
         """
-        self.__publish(lambda obs: obs.on_complete(msg))
+        self.__publish(lambda obs: obs.on_completed(msg))
 
     def on_next(self, msg):
         """Publishes a status update to Observers.
@@ -237,7 +237,7 @@ class Observer:
         """
         raise NotImplementedError
 
-    def on_complete(self, msg):
+    def on_completed(self, msg):
         """Observable invokes this method to inform that it has
         completed its operation.
 

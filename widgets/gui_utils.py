@@ -326,37 +326,66 @@ def load_isotopes(symbol, combobox, current_isotope=None, show_std_mass=False):
 
 
 class GUIObserver(Observer, abc.ABC, metaclass=QtABCMeta):
+    """GUIObserver is an implementation of the modules.observing.Observer
+    class. It is an abstract class that defines three abstract handler
+    methods that are invoked when an observable publishes some message.
+
+    The handler methods will be executed in the main thread so it is safe to
+    alter GUI elements within those methods.
+
+    GUIObserver can be used to observe both modules.observing.Observables and
+    rx.Observables.
+
+    All messages relayed to this class should be dictionaries
+    """
     class Signaller(QtCore.QObject):
         on_next_sig = QtCore.pyqtSignal(dict)
         on_error_sig = QtCore.pyqtSignal(dict)
-        on_complete_sig = QtCore.pyqtSignal(dict)
+        on_completed_sig = QtCore.pyqtSignal(dict)
 
     def __init__(self):
+        """Initializes a new GUIObserver.
+        """
+        # The GUIObserver itself is not a QObject so we use a helper class to
+        # connect the signals. Note: this may change in the future.
         self.__signaller = GUIObserver.Signaller()
         self.__signaller.on_next_sig.connect(self.on_next_handler)
         self.__signaller.on_error_sig.connect(self.on_error_handler)
-        self.__signaller.on_complete_sig.connect(self.on_complete_handler)
+        self.__signaller.on_completed_sig.connect(self.on_completed_handler)
 
     @abc.abstractmethod
-    def on_next_handler(self, msg):
+    def on_next_handler(self, msg: dict):
+        """Method that is invoked when an observable reports a new message.
+        """
         pass
 
     @abc.abstractmethod
-    def on_error_handler(self, err):
+    def on_error_handler(self, err: dict):
+        """Method that is invoked when an observable reports an error.
+        """
         pass
 
     @abc.abstractmethod
-    def on_complete_handler(self, msg):
+    def on_completed_handler(self, msg: dict):
+        """Method that is invoked when an observable reports that is has
+        completed its process.
+        """
         pass
 
-    def on_next(self, msg):
+    def on_next(self, msg: dict):
+        """Inherited from modules.observing.Observable.
+        """
         self.__signaller.on_next_sig.emit(msg)
 
-    def on_error(self, err):
+    def on_error(self, err: dict):
+        """Inherited from modules.observing.Observable.
+        """
         self.__signaller.on_error_sig.emit(err)
 
-    def on_complete(self, msg):
-        self.__signaller.on_complete_sig.emit(msg)
+    def on_completed(self, msg: dict):
+        """Inherited from modules.observing.Observable.
+        """
+        self.__signaller.on_completed_sig.emit(msg)
 
 
 def fill_cuts_treewidget(measurement, treewidget, use_elemloss=False,
@@ -366,8 +395,7 @@ def fill_cuts_treewidget(measurement, treewidget, use_elemloss=False,
     Args:
         measurement: Measurement object
         treewidget: A QtGui.QTreeWidget, where cut files are added to.
-        use_elemloss: A boolean representing whether to add elemental
-                      losses.
+        use_elemloss: A boolean representing whether to add elemental losses.
         checked_files: A list of previously checked files.
     """
     if checked_files is None:

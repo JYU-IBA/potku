@@ -59,6 +59,7 @@ from dialogs.file_dialogs import open_file_dialog
 
 from widgets.gui_utils import StatusBarHandler
 from widgets.icon_manager import IconManager
+from widgets.base_tab import BaseTab
 
 from modules.global_settings import GlobalSettings
 from modules.measurement import Measurement
@@ -430,7 +431,8 @@ class Potku(QtWidgets.QMainWindow):
                                      simulation.target.name + ".target"), None)
 
         widget = self.tabs.currentWidget()
-        widget.save_geometries()
+        if isinstance(widget, BaseTab):
+            widget.save_geometries()
 
         super().closeEvent(event)
 

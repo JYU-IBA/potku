@@ -132,5 +132,5 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
         text = f"Error encountered: {err['error']} Optimization stopped."
         self.progressLabel.setText(text)
 
-    def on_complete_handler(self, msg):
+    def on_completed_handler(self, msg):
         self.show_results(msg["evaluations_done"])

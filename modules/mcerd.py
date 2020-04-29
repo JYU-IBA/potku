@@ -34,10 +34,21 @@ import shutil
 import subprocess
 import threading
 import time
+import re
 
 import modules.general_functions as gf
 
 from pathlib import Path
+
+try:
+    import rx
+    from rx import operators as ops
+    from rx.scheduler import ThreadPoolScheduler
+    RX_ON = True
+except ImportError:
+    # No observable streams for you
+    RX_ON = False
+
 from modules.layer import Layer
 
 
@@ -60,8 +71,7 @@ class MCERD:
         """
         self.__settings = settings
 
-        # TODO rather than having a direct reference to parent, MCERD could
-        #      be an Observable
+        # TODO remove reference to parent
         self.parent = parent
 
         rec_elem = self.__settings["recoil_element"]
@@ -110,12 +120,17 @@ class MCERD:
         mcerd_path = gf.get_bin_dir() / executable
         rec_file_path = self.sim_dir / self.__rec_filename
 
-        # TODO return a tuple insted
         return f"{ulimit}{exec_cmd}{mcerd_path} {rec_file_path}"
 
-    def run(self):
+    def run(self, print_to_console=True):
         """Starts the MCERD process. Also starts a thread that
         periodically checks if the MCERD has finished.
+
+        Args:
+            print_to_console: whether MCERD output is also printed to console
+
+        Return:
+            observable stream or None if rx was not found when importing
         """
         # Create files necessary to run MCERD
         self.__create_mcerd_files()
@@ -125,14 +140,46 @@ class MCERD:
         # FIXME if target has no layers, mcerd's current random number generator
         #   might generate a NaN value, causing MCERD to stop immediately. This
         #   could be handled better either by Potku or mcerd.
-        # TODO possibly capture the stout so we can have better process
-        #  reporting in GUI
-        self.__process = subprocess.Popen(cmd, shell=True)
+        # TODO use timeout when optimizing and max time is set
+        self.__process = subprocess.Popen(cmd, shell=True,
+                                          stdout=subprocess.PIPE,
+                                          stderr=subprocess.PIPE)
+
+        if RX_ON:
+            errs = rx.from_iterable(iter(self.__process.stderr.readline, b""))
+            outs = rx.from_iterable(iter(self.__process.stdout.readline, b""))
+
+            pool_scheduler = ThreadPoolScheduler(5)
+            seed = self.__settings["seed_number"]
+
+            merged = rx.merge(errs, outs).pipe(
+                # TODO flatten the final output (begins with 'Beam ion: ...')
+                #   into a single item
+                ops.subscribe_on(pool_scheduler),
+                ops.map(lambda x: {
+                    "seed": seed,
+                    **parse_raw_output(x)
+                })
+            )
+
+            if print_to_console:
+                # TODO fix this so that print method is just another subscriber
+                def f(x):
+                    print(x)
+                    return x
+                merged = merged.pipe(
+                    ops.map(f)
+                )
+        else:
+            merged = None
 
         # Use thread for checking if process has terminated
+        # TODO rx should be able to handle this too
         thread = threading.Thread(target=self.check_if_mcerd_running)
         thread.daemon = True
         thread.start()
+
+        return merged
 
     def check_if_mcerd_running(self):
         """
@@ -156,8 +203,6 @@ class MCERD:
             subprocess.call(cmd)
         elif used_os == "Linux" or used_os == "Darwin":
             self.__process.kill()
-        else:
-            print("It appears we do not support your OS.")
 
     def __create_mcerd_files(self):
         """Creates the temporary files needed for running MCERD.
@@ -341,3 +386,23 @@ class MCERD:
                     os.remove(self.sim_dir / file)
                 except OSError:
                     pass
+
+
+_pattern = re.compile("Calculated (?P<calculated>\d+) of (?P<total>\d+) ions "
+                      "\(\d+%\)")
+
+
+def parse_raw_output(raw_line):
+    """Parses raw output produced by MCERD into something meaningful.
+    """
+    s = raw_line.decode("utf-8").strip()
+    m = re.match(_pattern, s)
+    try:
+        return {
+            "calculated": int(m.group("calculated")),
+            "total": int(m.group("total"))
+        }
+    except AttributeError:
+        return {
+            "msg": s
+        }

@@ -48,7 +48,7 @@ class RecoilElementWidget(QtWidgets.QWidget):
     #   module
     def __init__(self, parent, parent_tab, parent_element_widget,
                  element_simulation, color, recoil_element, statusbar=None,
-                 spectra_changed=None):
+                 spectra_changed=None, recoil_name_changed=None):
         """
         Initialize the widget.
 
@@ -59,6 +59,11 @@ class RecoilElementWidget(QtWidgets.QWidget):
             element_simulation: ElementSimulation object.
             color: Color for the circle.
             recoil_element: RecoilElement object.
+            statusbar: QStatusBar object
+            spectra_changed: signal that indicates that a recoil element
+                distribution has changed and spectra needs to be updated.
+            recoil_name_changed: signal that indicates that a recoil name
+                has changed.
         """
         super().__init__()
 
@@ -92,7 +97,8 @@ class RecoilElementWidget(QtWidgets.QWidget):
         draw_spectrum_button.setToolTip("Draw energy spectra")
 
         remove_recoil_button = QtWidgets.QPushButton()
-        remove_recoil_button.setIcon(QIcon("ui_icons/reinhardt/edit_delete.svg"))
+        remove_recoil_button.setIcon(
+            QIcon("ui_icons/reinhardt/edit_delete.svg"))
         remove_recoil_button.setSizePolicy(QtWidgets.QSizePolicy.Fixed,
                                            QtWidgets.QSizePolicy.Fixed)
         remove_recoil_button.clicked.connect(self.remove_recoil)
@@ -108,6 +114,22 @@ class RecoilElementWidget(QtWidgets.QWidget):
         horizontal_layout.addWidget(remove_recoil_button)
 
         self.setLayout(horizontal_layout)
+
+        self.recoil_name_changed = recoil_name_changed
+        if self.recoil_name_changed is not None:
+            self.recoil_name_changed.connect(self._set_name)
+
+    def closeEvent(self, event):
+        try:
+            self.recoil_name_changed.disconnect(self._set_name)
+        except (TypeError, ValueError):
+            pass
+        super().closeEvent(event)
+
+    def _set_name(self, _, rec_elem):
+        if rec_elem is self.recoil_element:
+            self.radio_button.setText(
+                self.recoil_element.get_full_name())
 
     def plot_spectrum(self, spectra_changed=None):
         """

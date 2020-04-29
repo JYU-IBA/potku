@@ -140,15 +140,18 @@ class ElementManager:
             if recoil_element.widgets[0].radio_button == radio_button:
                 return recoil_element
 
-    def add_new_element_simulation(self, element, color, spectra_changed=None):
+    def add_new_element_simulation(self, element, color, spectra_changed=None,
+                                   recoil_name_changed=None):
         """
         Create a new ElementSimulation and RecoilElement with default points.
 
         Args:
-             element: Element that tells the element to add.
-             color: QColor object for recoil color.
+            element: Element that tells the element to add.
+            color: QColor object for recoil color.
             spectra_changed: pyqtSignal that is emitted when recoil element
                 distribution is changed, causing the spectra to change also.
+            recoil_name_changed: pyqtSignal that is emitted when recoil element
+                name changes
 
         Return:
             Created ElementSimulation
@@ -189,27 +192,27 @@ class ElementManager:
 
         recoil_element = RecoilElement(element, points, color,
                                        rec_type=rec_type)
-        element_widget = ElementWidget(self.parent, element,
-                                       self.parent_tab, None, color,
-                                       self.icon_manager,
-                                       statusbar=self.statusbar,
-                                       spectra_changed=spectra_changed)
-        recoil_element.widgets.append(element_widget)
         element_simulation = self.simulation.add_element_simulation(
             recoil_element)
-        element_widget.element_simulation = element_simulation
+        element_widget = ElementWidget(
+            self.parent, element, self.parent_tab, element_simulation, color,
+            self.icon_manager, statusbar=self.statusbar,
+            spectra_changed=spectra_changed,
+            recoil_name_changed=recoil_name_changed)
+        recoil_element.widgets.append(element_widget)
 
         # Add simulation controls widget
         simulation_controls_widget = SimulationControlsWidget(
-            element_simulation, self.parent)
-        simulation_controls_widget.element_simulation = element_simulation
+            element_simulation, self.parent,
+            recoil_name_changed=recoil_name_changed)
         self.parent_tab.contentsLayout.addWidget(simulation_controls_widget)
         element_simulation.recoil_elements[0] \
             .widgets.append(simulation_controls_widget)
 
         return element_simulation
 
-    def add_element_simulation(self, element_simulation, spectra_changed=None):
+    def add_element_simulation(self, element_simulation, spectra_changed=None,
+                               recoil_name_changed=None):
         """
         Add an existing ElementSimulation.
 
@@ -218,22 +221,19 @@ class ElementManager:
             spectra_changed: pyqtSignal that is emitted when recoil element
                 distribution is changed, causing the spectra to change also.
         """
-        main_element_widget = \
-            ElementWidget(self.parent,
-                          element_simulation.recoil_elements[0].element,
-                          self.parent_tab, element_simulation,
-                          element_simulation.recoil_elements[0].color,
-                          self.icon_manager,
-                          statusbar=self.statusbar,
-                          spectra_changed=spectra_changed)
+        main_element_widget = ElementWidget(
+            self.parent, element_simulation.recoil_elements[0].element,
+            self.parent_tab, element_simulation,
+            element_simulation.recoil_elements[0].color, self.icon_manager,
+            statusbar=self.statusbar, spectra_changed=spectra_changed,
+            recoil_name_changed=recoil_name_changed)
         element_simulation.recoil_elements[0] \
             .widgets.append(main_element_widget)
-        main_element_widget.element_simulation = element_simulation
 
         # Add simulation controls widget
         simulation_controls_widget = SimulationControlsWidget(
-            element_simulation, self.parent)
-        simulation_controls_widget.element_simulation = element_simulation
+            element_simulation, self.parent,
+            recoil_name_changed=recoil_name_changed)
         self.parent_tab.contentsLayout.addWidget(simulation_controls_widget)
         element_simulation.recoil_elements[0] \
             .widgets.append(simulation_controls_widget)
@@ -242,23 +242,25 @@ class ElementManager:
         for i in range(1, len(element_simulation.recoil_elements)):
             self.add_secondary_recoil(element_simulation.recoil_elements[i],
                                       element_simulation, main_element_widget,
-                                      spectra_changed=spectra_changed)
+                                      spectra_changed=spectra_changed,
+                                      recoil_name_changed=recoil_name_changed)
 
     def add_secondary_recoil(self, recoil_element, element_simulation,
-                             main_element_widget, spectra_changed=None):
+                             main_element_widget, spectra_changed=None,
+                             recoil_name_changed=None):
         """Adds an existing secondary RecoilElement to the given
         ElementSimulation object.
         """
         recoil_element_widget = RecoilElementWidget(
             self.parent, self.parent_tab, main_element_widget,
             element_simulation, recoil_element.color, recoil_element,
-            statusbar=self.statusbar, spectra_changed=spectra_changed
+            statusbar=self.statusbar, spectra_changed=spectra_changed,
+            recoil_name_changed=recoil_name_changed
         )
         recoil_element.widgets.append(recoil_element_widget)
-        recoil_element_widget.element_simulation = element_simulation
 
         # Check if there are e.g. Default-1 named recoil elements. If so,
-        #  increase element.running_int_recoil
+        # increase element.running_int_recoil
         recoil_name = recoil_element.name
         if recoil_name.startswith("Default-"):
             possible_int = recoil_name.split('-')[1]
@@ -270,7 +272,8 @@ class ElementManager:
         return recoil_element_widget
 
     def update_element_simulation(self, element_simulation: ElementSimulation,
-                                  spectra_changed=None):
+                                  spectra_changed=None,
+                                  recoil_name_changed=None):
         # TODO refactor and clean this up
         main_element_widget = next((w for w in
                                    element_simulation.recoil_elements[0].widgets
@@ -284,10 +287,10 @@ class ElementManager:
                               if isinstance(w, RecoilElementWidget) or
                               isinstance(w, ElementWidget)), None)
             if secondary is None:
-                rw = self.add_secondary_recoil(recoil,
-                                               element_simulation,
-                                               main_element_widget,
-                                               spectra_changed=spectra_changed)
+                rw = self.add_secondary_recoil(
+                    recoil, element_simulation, main_element_widget,
+                    spectra_changed=spectra_changed,
+                    recoil_name_changed=recoil_name_changed)
 
                 self.parent.radios.addButton(rw.radio_button)
                 self.parent.other_recoils.append(recoil)
@@ -374,6 +377,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     limit_changed = pyqtSignal(float, float)
 
     update_element_simulation = pyqtSignal(ElementSimulation)
+    recoil_name_changed = pyqtSignal(ElementSimulation, RecoilElement)
 
     full_edit_on = bnd.bind("edit_lock_push_button", fget=_full_edit_from_btn,
                             fset=_full_edit_to_btn)
@@ -386,7 +390,7 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             parent: A TargetWidget class object.
             simulation: A simulation object.
             target: A Target object.
-            tab: A
+            tab: TODO
             icon_manager: An IconManager class object.
         """
 
@@ -552,9 +556,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             button.setChecked(True)
             break
 
-        self.update_element_simulation.connect(lambda elem_sim:
-            self.element_manager.update_element_simulation(
-                elem_sim, self.recoil_dist_changed))
+        self.update_element_simulation.connect(
+            lambda elem_sim: self.element_manager.update_element_simulation(
+                elem_sim, spectra_changed=self.recoil_dist_changed,
+                recoil_name_changed=self.recoil_name_changed))
 
     def format_coord(self, x, y):
         """
@@ -639,6 +644,9 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                         f"{self.current_recoil_element.prefix}-"
                         f"{old_recoil_name}")
 
+                    self.recoil_name_changed.emit(
+                        self.current_element_simulation,
+                        self.current_recoil_element)
                 self.update_recoil_element_info_labels()
                 self.update_colors()
             except KeyError:
@@ -1036,16 +1044,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.current_recoil_element.multiplier) + " at./cm\xb3"
         )
 
-        # Ypdate controls widget text
-        if self.current_recoil_element is \
-                self.current_element_simulation.main_recoil:
-            # TODO remove reference to controls from elem_sim
-            self.current_element_simulation.controls.controls_group_box \
-                .setTitle(self.current_recoil_element.get_full_name())
-        else:
-            self.current_recoil_element.widgets[0].radio_button.setText(
-                self.current_recoil_element.get_full_name())
-
     def recoil_element_info_on_switch(self):
         """
         Show recoil element info on switch.
@@ -1071,23 +1069,24 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 .setChecked(True)
 
     def add_element(self, element, element_simulation=None, color=None):
-        """
-        Adds a new ElementSimulation based on the element. If elem_sim is
-         not None, only UI widgets need to be added.
+        """Adds a new ElementSimulation based on the element. If elem_sim is
+        not None, only UI widgets need to be added.
 
-         Args:
-             element: Element that is added.
-             element_simulation: ElementSimulation that needs the UI widgets.
-             color: A QColor object.
+        Args:
+            element: Element that is added.
+            element_simulation: ElementSimulation that needs the UI widgets.
+            color: A QColor object.
         """
         if element_simulation is None:
             # Create new ElementSimulation
-            element_simulation = self.element_manager \
-                .add_new_element_simulation(element, color, 
-                                            self.recoil_dist_changed)
+            element_simulation = \
+                self.element_manager.add_new_element_simulation(
+                    element, color, spectra_changed=self.recoil_dist_changed,
+                    recoil_name_changed=self.recoil_name_changed)
         else:
             self.element_manager.add_element_simulation(
-                element_simulation, self.recoil_dist_changed)
+                element_simulation, spectra_changed=self.recoil_dist_changed,
+                recoil_name_changed=self.recoil_name_changed)
 
         # Add recoil element widgets
         for recoil_element in element_simulation.recoil_elements:
