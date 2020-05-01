@@ -134,6 +134,12 @@ class BaseTab(abc.ABC, metaclass=QtABCMeta):
                         self.log.add_text(line.strip())
 
     @abc.abstractmethod
+    def load_data(self):
+        """Loads the data belonging to the object into view.
+        """
+        pass
+
+    @abc.abstractmethod
     def get_saveable_widgets(self) -> dict:
         """Returns a dictionary of where values are widgets and keys are
         strings that are used when widget geometries are saved.

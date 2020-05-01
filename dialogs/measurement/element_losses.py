@@ -178,6 +178,8 @@ class ElementLossesDialog(QtWidgets.QDialog):
             sbh.reporter.report(100)
             self.close()
 
+        sbh.reporter.report(100)
+
 
 class ElementLossesWidget(QtWidgets.QWidget):
     """Element losses widget which is added to measurement tab.

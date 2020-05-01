@@ -373,8 +373,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         previous = self.elemental_losses_widget
         ElementLossesDialog(self, self.statusbar)
         if self.elemental_losses_widget != previous and \
-                type(self.elemental_losses_widget) is not None:
-            # TODO type(x) is not None???
+                self.elemental_losses_widget is not None:
             self.elemental_losses_widget.save_to_file()
 
     def toggle_master_button(self):
@@ -530,3 +529,35 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
                                    "depth_profile.svg", size=(30, 30))
         self.icon_manager.set_icon(self.command_master,
                                    "editcut.svg", size=(30, 30))
+
+    def load_data(self, progress=None):
+        """Loads the data belonging to the Measurement into view.
+        """
+        # Check that the data is read.
+        if not self.data_loaded:
+            self.data_loaded = True
+            self.obj.load_data()
+
+            if progress is not None:
+                progress.report(25)
+                sub_progress = progress.get_sub_reporter(
+                    lambda x: 25 + 0.5 * x
+                )
+            else:
+                sub_progress = None
+
+            self.add_histogram(progress=sub_progress)
+
+            if progress is not None:
+                progress.report(75)
+                sub_progress = progress.get_sub_reporter(
+                    lambda x: 75 + 0.2 * x
+                )
+
+            # Load previous states.
+            self.check_previous_state_files(sub_progress)
+
+            self.restore_geometries()
+
+        if progress is not None:
+            progress.report(100)

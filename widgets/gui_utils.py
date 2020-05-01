@@ -335,13 +335,11 @@ class GUIObserver(Observer, abc.ABC, metaclass=QtABCMeta):
 
     GUIObserver can be used to observe both modules.observing.Observables and
     rx.Observables.
-
-    All messages relayed to this class should be dictionaries
     """
     class Signaller(QtCore.QObject):
-        on_next_sig = QtCore.pyqtSignal(dict)
-        on_error_sig = QtCore.pyqtSignal(dict)
-        on_completed_sig = QtCore.pyqtSignal(dict)
+        on_next_sig = QtCore.pyqtSignal(object)
+        on_error_sig = QtCore.pyqtSignal(object)
+        on_completed_sig = QtCore.pyqtSignal(object)
 
     def __init__(self):
         """Initializes a new GUIObserver.
@@ -354,35 +352,35 @@ class GUIObserver(Observer, abc.ABC, metaclass=QtABCMeta):
         self.__signaller.on_completed_sig.connect(self.on_completed_handler)
 
     @abc.abstractmethod
-    def on_next_handler(self, msg: dict):
+    def on_next_handler(self, msg):
         """Method that is invoked when an observable reports a new message.
         """
         pass
 
     @abc.abstractmethod
-    def on_error_handler(self, err: dict):
+    def on_error_handler(self, err):
         """Method that is invoked when an observable reports an error.
         """
         pass
 
     @abc.abstractmethod
-    def on_completed_handler(self, msg: dict):
+    def on_completed_handler(self, msg):
         """Method that is invoked when an observable reports that is has
         completed its process.
         """
         pass
 
-    def on_next(self, msg: dict):
+    def on_next(self, msg):
         """Inherited from modules.observing.Observable.
         """
         self.__signaller.on_next_sig.emit(msg)
 
-    def on_error(self, err: dict):
+    def on_error(self, err):
         """Inherited from modules.observing.Observable.
         """
         self.__signaller.on_error_sig.emit(err)
 
-    def on_completed(self, msg: dict):
+    def on_completed(self, msg):
         """Inherited from modules.observing.Observable.
         """
         self.__signaller.on_completed_sig.emit(msg)
@@ -426,3 +424,14 @@ def fill_cuts_treewidget(measurement, treewidget, use_elemloss=False,
                 item.setCheckState(0, QtCore.Qt.Unchecked)
             elem_root.addChild(item)
         treewidget.addTopLevelItem(elem_root)
+
+
+def block_treewidget_signals(func):
+    """Decorator that blocks signals from an instance's treeWidget so that
+    the tree can be edited.
+    """
+    def wrapper(instance, *args, **kwargs):
+        instance.treeWidget.blockSignals(True)
+        func(instance, *args, **kwargs)
+        instance.treeWidget.blockSignals(False)
+    return wrapper
