@@ -44,6 +44,7 @@ from dialogs.measurement.element_losses import ElementLossesWidget
 from dialogs.measurement.settings import MeasurementSettingsDialog
 
 from modules.element import Element
+from modules.measurement import Measurement
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -60,7 +61,8 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
 
     issueMaster = QtCore.pyqtSignal()
 
-    def __init__(self, tab_id, measurement, icon_manager, statusbar=None):
+    def __init__(self, tab_id, measurement: Measurement, icon_manager,
+                 statusbar=None):
         """Init measurement tab class.
         Args:
             tab_id: An integer representing ID of the tabwidget.
@@ -75,16 +77,16 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         self.obj = measurement
         self.icon_manager = icon_manager
 
+        # Various widgets that are shown in the tab. These will be populated
+        # using the load_data method
         self.histogram = None
-        # self.add_histogram()
         self.elemental_losses_widget = None
         self.energy_spectrum_widget = None
         self.depth_profile_widget = None
-        # self.check_previous_state_files()  # For above three.
         self.log = None
+        self.data_loaded = False
 
         self.saveCutsButton.clicked.connect(self.measurement_save_cuts)
-
         self.analyzeElementLossesButton.clicked.connect(
             self.open_element_losses)
         self.energySpectrumButton.clicked.connect(self.open_energy_spectrum)
@@ -92,26 +94,28 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         self.command_master.clicked.connect(self.__master_issue_commands)
         self.openSettingsButton.clicked.connect(self.__open_settings)
 
-        self.data_loaded = False
-
         df.set_up_side_panel(self, "mesu_panel_shown", "right")
 
         # Enable master button
         self.toggle_master_button()
-
         self.set_icons()
-
         self.statusbar = statusbar
 
     def get_default_widget(self):
+        """Histogram will be the widget that gets activated when the tab
+        is created.
+        """
         return self.histogram
 
     def get_saveable_widgets(self):
+        """Returns dictionary of widgets whose geometries will be stored.
+        """
         return {
             "hist": self.histogram,
             "elem_loss": self.elemental_losses_widget,
             "espe": self.energy_spectrum_widget,
-            "depth": self.depth_profile_widget
+            "depth": self.depth_profile_widget,
+            "log": self.log
         }
 
     def add_histogram(self, progress=None):
@@ -166,28 +170,28 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
                              self.obj.sample.serial_number + "-" + \
                              self.obj.sample.name
         directory_c = self.obj.directory_composition_changes
-        self.make_elemental_losses(directory_c, self.obj.name,
-                                   self.obj.serial_number,
-                                   sample_folder_name)
+        self.make_elemental_losses(
+            directory_c, self.obj.name, self.obj.serial_number,
+            sample_folder_name)
 
         if progress is not None:
             progress.report(33)
 
         directory_e = self.obj.directory_energy_spectra
-        self.make_energy_spectrum(directory_e, self.obj.name,
-                                  self.obj.serial_number,
-                                  sample_folder_name)
+        self.make_energy_spectrum(
+            directory_e, self.obj.name, self.obj.serial_number,
+            sample_folder_name)
 
         if progress is not None:
-            progress.report(60)
+            progress.report(50)
+            sub_progress = progress.get_sub_reporter(lambda x: 50 + 0.4 * x)
+        else:
+            sub_progress = None
 
         directory_d = self.obj.directory_depth_profiles
-        self.make_depth_profile(directory_d, self.obj.name,
-                                self.obj.serial_number,
-                                sample_folder_name,
-                                progress=progress.get_sub_reporter(
-                                    lambda x: 60 + 0.4 * x
-                                ))
+        self.make_depth_profile(
+            directory_d, self.obj.name, self.obj.serial_number,
+            sample_folder_name, progress=sub_progress)
 
         if progress is not None:
             progress.report(100)
