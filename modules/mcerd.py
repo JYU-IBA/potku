@@ -35,6 +35,8 @@ import subprocess
 import threading
 import time
 import re
+import shlex
+import multiprocessing
 
 import modules.general_functions as gf
 
@@ -118,9 +120,9 @@ class MCERD:
             exec_cmd = "exec "
 
         mcerd_path = gf.get_bin_dir() / executable
-        rec_file_path = self.sim_dir / self.__rec_filename
 
-        return f"{ulimit}{exec_cmd}{mcerd_path} {rec_file_path}"
+        return f"{ulimit}{exec_cmd}{mcerd_path} " \
+               f"{shlex.quote(str(self.__command_file))}"
 
     def run(self, print_to_console=True):
         """Starts the MCERD process. Also starts a thread that
@@ -149,16 +151,23 @@ class MCERD:
             errs = rx.from_iterable(iter(self.__process.stderr.readline, b""))
             outs = rx.from_iterable(iter(self.__process.stdout.readline, b""))
 
-            pool_scheduler = ThreadPoolScheduler(5)
             seed = self.__settings["seed_number"]
+            thread_count = multiprocessing.cpu_count()
+            pool_scheduler = ThreadPoolScheduler(thread_count)
 
             merged = rx.merge(errs, outs).pipe(
                 # TODO flatten the final output (begins with 'Beam ion: ...')
                 #   into a single item
                 ops.subscribe_on(pool_scheduler),
+                ops.map(lambda x: x.decode("utf-8").strip()),
+                ops.scan(lambda acc, x: {
+                    "presim": acc["presim"] and x != "Presimulation finished",
+                    "msg": x
+                }, seed={"presim": True}),
                 ops.map(lambda x: {
                     "seed": seed,
-                    **parse_raw_output(x)
+                    "presim": x["presim"],
+                    **parse_raw_output(x["msg"])
                 })
             )
 
@@ -167,6 +176,7 @@ class MCERD:
                 def f(x):
                     print(x)
                     return x
+
                 merged = merged.pipe(
                     ops.map(f)
                 )
@@ -188,7 +198,7 @@ class MCERD:
         while True:
             try:
                 time.sleep(10)
-                if self.__process.poll() == 0:
+                if self.__process.poll() is not None:
                     self.parent.notify(self)
                     self.__process = None
                     break
@@ -236,7 +246,6 @@ class MCERD:
     def get_command_file_contents(self):
         """Returns the contents of MCERD's command file as a string.
         """
-        # TODO this could also be done with a template file
         beam = self.__settings["beam"]
         target = self.__settings["target"]
         recoil_element = self.__settings["recoil_element"]
@@ -389,20 +398,20 @@ class MCERD:
 
 
 _pattern = re.compile("Calculated (?P<calculated>\d+) of (?P<total>\d+) ions "
-                      "\(\d+%\)")
+                      "\((?P<percentage>\d+)%\)")
 
 
 def parse_raw_output(raw_line):
     """Parses raw output produced by MCERD into something meaningful.
     """
-    s = raw_line.decode("utf-8").strip()
-    m = re.match(_pattern, s)
+    m = re.match(_pattern, raw_line)
     try:
         return {
             "calculated": int(m.group("calculated")),
-            "total": int(m.group("total"))
+            "total": int(m.group("total")),
+            "percentage": int(m.group("percentage"))
         }
     except AttributeError:
         return {
-            "msg": s
+            "msg": raw_line
         }

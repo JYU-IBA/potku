@@ -30,6 +30,8 @@ import abc
 
 import widgets.binding as bnd
 
+from modules.nsgaii import OptimizationType
+
 from pathlib import Path
 
 from widgets.binding import PropertyBindingWidget
@@ -99,6 +101,10 @@ class OptimizationParameterWidget(QtWidgets.QWidget,
     check_min = bnd.bind("minTimeEdit")
     skip_simulation = bnd.bind("skip_sim_chk_box")
 
+    @abc.abstractmethod
+    def optimization_type(self) -> OptimizationType:
+        pass
+
     def __init__(self, ui_file, **kwargs):
         """Initializes a optimization parameter widget.
 
@@ -147,8 +153,8 @@ class OptimizationRecoilParameterWidget(OptimizationParameterWidget):
                            twoway=False)
 
     @property
-    def optimize_recoil(self):
-        return True
+    def optimization_type(self) -> OptimizationType:
+        return OptimizationType.RECOIL
 
     def __init__(self, **kwargs):
         """Initialize the widget.
@@ -185,8 +191,8 @@ class OptimizationFluenceParameterWidget(OptimizationParameterWidget):
         return 1
 
     @property
-    def optimize_recoil(self):
-        return False
+    def optimization_type(self) -> OptimizationType:
+        return OptimizationType.FLUENCE
 
     def __init__(self, **kwargs):
         """Initialize the widget.

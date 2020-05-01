@@ -97,7 +97,9 @@ class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
         self.update_progress(msg["evaluations_left"])
 
     def on_error_handler(self, err):
-        pass
+        # TODO fix the layout of the dialog show that this is shown properly.
+        self.progressLabel.setText(
+            f"Error occurred: {err['error']}. Optimization stopped.")
 
     def on_completed_handler(self, msg):
         self.show_results(msg["evaluations_done"])

@@ -31,19 +31,21 @@ import modules.mcerd as mcerd
 
 class TestParseOutput(unittest.TestCase):
     def test_calculated_amounts(self):
-        s1 = b"Calculated 0 of 0 ions (0%)"
-        s2 = b"Calculated 9595 of 10100 ions (95%)"
-        s3 = b"Calculated 0 of n ions (50%)"
-        s4 = b"Calculated -10 of -1000 ions (10%)"
+        s1 = "Calculated 0 of 0 ions (0%)"
+        s2 = "Calculated 9595 of 10100 ions (5%)"
+        s3 = "Calculated 0 of n ions (50%)"
+        s4 = "Calculated -10 of -1000 ions (10%)"
 
         self.assertEqual({
             "calculated": 0,
-            "total": 0
+            "total": 0,
+            "percentage": 0
         }, mcerd.parse_raw_output(s1))
 
         self.assertEqual({
             "calculated": 9595,
-            "total": 10100
+            "total": 10100,
+            "percentage": 5
         }, mcerd.parse_raw_output(s2))
 
         self.assertEqual({
@@ -55,9 +57,9 @@ class TestParseOutput(unittest.TestCase):
         }, mcerd.parse_raw_output(s4))
 
     def test_others(self):
-        s1 = b"Presimulation finished"
-        s2 = b"Energy would change too much in virtual detector"
-        s3 = b"Energy would change too much in virtual detector     -1.582 MeV"
+        s1 = "Presimulation finished"
+        s2 = "Energy would change too much in virtual detector"
+        s3 = "Energy would change too much in virtual detector     -1.582 MeV"
 
         self.assertEqual({
             "msg": "Presimulation finished"

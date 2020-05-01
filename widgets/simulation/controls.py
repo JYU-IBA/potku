@@ -297,10 +297,8 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
                 self.update_progress_bar(
                     status["seed"], 0,
                     stylesheet=SimulationControlsWidget.SIM_PROGRESS_STYLE)
-        elif "calculated" in status:
-            self.update_progress_bar(
-                # TODO do the calculation in the rx pipeline
-                status["seed"], status["calculated"] / status["total"] * 100)
+        elif "percentage" in status:
+            self.update_progress_bar(status["seed"], status["percentage"])
         else:
             if status["state"] == SimulationState.STARTING:
                 self.remove_progress_bars()
@@ -309,7 +307,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
 
     def on_error_handler(self, err):
         # For now just print any errors that the stream may throw at us
-        print(err)
+        print("Error:", err)
 
     def on_completed_handler(self, status):
         """This method is called when the ElementSimulation has run all of

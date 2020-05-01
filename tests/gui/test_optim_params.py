@@ -28,6 +28,8 @@ import unittest
 import sys
 import tests.utils as utils
 
+from modules.nsgaii import OptimizationType
+
 from widgets.simulation.optimization_parameters import \
     OptimizationRecoilParameterWidget
 from widgets.simulation.optimization_parameters import \
@@ -105,14 +107,14 @@ class TestRecoilParameters(unittest.TestCase):
         # Directly setting optimize_recoil to False will cause an
         # AttributeError.
         def assign_false():
-            widget.optimize_recoil = False
+            widget.optimization_type = False
         self.assertRaises(AttributeError, assign_false)
 
         # Providing the value as kwargs does nothing as the exception is
         # handled in the set_properties method
         widget = utils.run_without_warnings(
             lambda: OptimizationRecoilParameterWidget(optimize_recoil=False))
-        self.assertTrue(widget.optimize_recoil)
+        self.assertIs(widget.optimization_type, OptimizationType.RECOIL)
 
     @utils.change_wd_to_root
     def test_get_properties(self):
@@ -132,7 +134,7 @@ class TestRecoilParameters(unittest.TestCase):
             "gen": 5,
             "lower_limits": 0.0,
             "sol_size": 1,
-            "optimize_recoil": False,
+            "optimization_type": OptimizationType.FLUENCE,
             "upper_limits": 10000000000.0,
             "dis_c": 20,
             "dis_m": 20,
@@ -148,7 +150,7 @@ class TestRecoilParameters(unittest.TestCase):
             "lower_limits": (0.01, 0.0001),
             "sol_size": 5,
             "recoil_type": "box",
-            "optimize_recoil": True,
+            "optimization_type": OptimizationType.RECOIL,
             "check_max": 600,
             "check_min": 0
         }

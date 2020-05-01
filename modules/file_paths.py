@@ -26,9 +26,11 @@ return or validate various file paths used by Potku. File I/O
 should be performed in other modules.
 """
 __author__ = "Juhani Sundell"
-__version__ = ""  # TODO
+__version__ = "2.0"
 
 from pathlib import Path
+
+# from modules.nsgaii import OptimizationType
 
 
 def get_erd_file_name(recoil_element, seed, optim_mode=None):
@@ -46,9 +48,9 @@ def get_erd_file_name(recoil_element, seed, optim_mode=None):
     if optim_mode is None:
         return f"{recoil_element.prefix}-{recoil_element.name}." \
                f"{seed}.erd"
-    if optim_mode == "fluence":
+    if optim_mode == 2:
         return f"{recoil_element.prefix}-optfl.{seed}.erd"
-    if optim_mode == "recoil":
+    if optim_mode == 1:
         return f"{recoil_element.prefix}-opt.{seed}.erd"
 
     raise ValueError(f"Unknown optimization mode '{optim_mode}'")

@@ -272,6 +272,9 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
                                 "Detector File (*.detector)")
         if not file:
             return
+        file = Path(file)
+        if file.suffix != ".detector":
+            file = Path(file.parent, f"{file.name}.detector")
         if not self.some_values_changed():
             self.obj.to_file(file, None)
         else:
@@ -283,7 +286,6 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             self.update_settings()
             self.obj.to_file(file, None)
             self.obj = original_obj
-            pass
 
     def show_settings(self):
         """

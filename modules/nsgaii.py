@@ -36,6 +36,7 @@ import modules.math_functions as mf
 
 from pathlib import Path
 from enum import Enum
+from enum import IntEnum
 from timeit import default_timer as timer
 
 from modules.recoil_element import RecoilElement
@@ -43,6 +44,11 @@ from modules.point import Point
 from modules.parsing import CSVParser
 from modules.energy_spectrum import EnergySpectrum
 from modules.observing import Observable
+
+
+class OptimizationType(IntEnum):
+    RECOIL = 1
+    FLUENCE = 2
 
 
 class OptimizationState(Enum):
@@ -74,7 +80,8 @@ class Nsgaii(Observable):
     """
 
     def __init__(self, gen, element_simulation=None, pop_size=100, sol_size=5,
-                 upper_limits=None, lower_limits=None, optimize_recoil=True,
+                 upper_limits=None, lower_limits=None,
+                 optimization_type=OptimizationType.RECOIL,
                  recoil_type="box", number_of_processes=1, cross_p=0.9, mut_p=1,
                  stop_percent=0.3, check_time=20, ch=0.025,
                  measurement=None, cut_file=None, dis_c=20,
@@ -91,27 +98,27 @@ class Nsgaii(Observable):
             sol_size: Amount of variables in one solution.
             upper_limits: Upper limit(s) for variables in a solution.
             lower_limits: Lower limit(s) for a variable in a solution.
-            optimize_recoil: Whether to optimize recoil or fluence.
+            optimization_type: Whether to optimize recoil or fluence.
             recoil_type: Type of recoil: either "box" (4 points or 5),
-            "two-peak" (high areas at both ends of recoil, low in the middle)
-             or "free" (no limits to the shape of the recoil).
-            number_of_processes: How many processes are used in MCERD
-            calculation.
+                "two-peak" (high areas at both ends of recoil, low in the middle)
+                or "free" (no limits to the shape of the recoil).
+                number_of_processes: How many processes are used in MCERD
+                calculation.
             cross_p: Crossover probability.
             mut_p: Mutation probability, should be something small.
             stop_percent: When to stop running MCERD (based on the ratio in
             average change between checkups).
             check_time: Time interval for checking if MCERD should be stopped.
             ch: Channel with for running get_espe.
-            hist_file: Hist file corresponding to measured energy spectrum
             used in comparing the simulated energy spectra.
             dis_c: Distribution index for crossover. When this is big,
-            a  new solution is close to its parents.
+                a new solution is close to its parents.
             dis_m: Distribution for mutation.
             check_max: Maximum time for running a simulation.
             check_min: Minimum time for running a simulation.
             skip_simulation: whether simulation is skipped altogether
         """
+        # TODO separate the two optimization types into two classes
         Observable.__init__(self)
         self.evaluations = gen * pop_size
         self.element_simulation = element_simulation  # Holds other needed
@@ -124,7 +131,7 @@ class Nsgaii(Observable):
         self.lower_limits = lower_limits
         if self.lower_limits is None:
             self.lower_limits = [0.01, 0.0001]
-        self.opt_recoil = optimize_recoil
+        self.optimization_type = optimization_type
         self.rec_type = recoil_type
 
         # MCERd specific parameters
@@ -179,12 +186,11 @@ class Nsgaii(Observable):
         #   needs to stop
 
         parser = CSVParser((0, float), (1, float))
-        self.measured_espe = list(      # FIXME can raise OSERROR
-            parser.parse_file(hist_file, method="row"))
+        self.measured_espe = list(parser.parse_file(hist_file, method="row"))
 
         # Previous erd files are used as the starting point so combine them
         # into a single file
-        if self.opt_recoil:
+        if self.optimization_type is OptimizationType.RECOIL:
             erd_file_name = fp.get_erd_file_name(
                 self.element_simulation.recoil_elements[0], "test",
                 optim_mode="recoil")
@@ -203,7 +209,7 @@ class Nsgaii(Observable):
         self.modify_measurement()
 
         # Find bit variable lengths if necessary
-        if self.opt_recoil:
+        if self.optimization_type is OptimizationType.RECOIL:
             self.find_bit_variable_lengths()
 
     @staticmethod
@@ -273,7 +279,7 @@ class Nsgaii(Observable):
             Solutions and their objective function values.
         """
         objective_values = []
-        if self.opt_recoil:
+        if self.optimization_type is OptimizationType.RECOIL:
             # Empty the list of optimization recoils
             self.element_simulation.optimization_recoils = []
 
@@ -287,10 +293,10 @@ class Nsgaii(Observable):
                 # TODO run this in a thread so we could use the same
                 #  cancellation token as NSGAII uses
                 self.element_simulation.start(
-                    self.number_of_processes, start_value=201, optimize=True,
+                    self.number_of_processes, start_value=201,
+                    optimization_type=self.optimization_type,
                     stop_p=self.stop_percent, check_t=self.check_time,
-                    optimize_recoil=True, check_max=self.check_max,
-                    check_min=self.check_min,
+                    check_max=self.check_max, heck_min=self.check_min,
                     cancellation_token=self.cancellation_token)
                 if self.element_simulation.optimization_stopped:
                     return None
@@ -305,9 +311,9 @@ class Nsgaii(Observable):
                 if self.element_simulation.optimization_stopped:
                     return None
                 # Run get_espe
-                self.element_simulation.calculate_espe(recoil,
-                                                       optimize_recoil=True,
-                                                       ch=self.channel_width)
+                self.element_simulation.calculate_espe(
+                    recoil, optimization_type=self.optimization_type,
+                    ch=self.channel_width)
                 espe_file = Path(self.element_simulation.directory,
                                  f"{recoil.get_full_name()}.simu")
                 objective_values.append(self.get_objective_values(espe_file))
@@ -316,10 +322,10 @@ class Nsgaii(Observable):
             if not self.mcerd_run:
                 # TODO maybe move this to the __prepare method?
                 self.element_simulation.start(
-                    self.number_of_processes, 201, optimize=True,
+                    self.number_of_processes, 201,
+                    optimization_type=self.optimization_type,
                     stop_p=self.stop_percent, check_t=self.check_time,
-                    optimize_recoil=False, check_max=self.check_max,
-                    check_min=self.check_min,
+                    check_max=self.check_max, check_min=self.check_min,
                     cancellation_token=self.cancellation_token
                 )
                 if self.element_simulation.optimization_stopped:
@@ -333,11 +339,9 @@ class Nsgaii(Observable):
                 # Round solution appropriately
                 sol_fluence = gf.round_value_by_four_biggest(solution[0])
                 # Run get_espe
-                self.element_simulation.calculate_espe(recoil,
-                                                       optimize_recoil=False,
-                                                       ch=self.channel_width,
-                                                       fluence=sol_fluence,
-                                                       optimize_fluence=True)
+                self.element_simulation.calculate_espe(
+                    recoil, ptimization_type=self.optimization_type,
+                    ch=self.channel_width, fluence=sol_fluence)
                 # Read espe file
                 # TODO should it be recoil.get_full_name?
                 espe_file = Path(self.element_simulation.directory,
@@ -595,7 +599,7 @@ class Nsgaii(Observable):
             Created population with solutions and objective function values.
         """
         init_sols = None
-        if self.opt_recoil:  # Optimize recoil element
+        if self.optimization_type is OptimizationType.RECOIL:
             if len(self.upper_limits) < 2:
                 x_upper = 1.0
                 y_upper = 1.0
@@ -616,7 +620,7 @@ class Nsgaii(Observable):
                     x_coords = get_xs(x_lower, x_upper, self.pop_size)
 
                     self.__const_var_i.append(0)
-                    self.__const_var_i.append(4)
+                    self.__const_var_i.appe=nd(4)
 
                     y_coords = get_ys(y_lower, y_upper, self.pop_size)
 
@@ -918,7 +922,14 @@ class Nsgaii(Observable):
         """
         self.on_next(self._get_message(OptimizationState.PREPARING,
                                        evaluations_left=self.evaluations))
-        self.__prepare_optimization()
+        try:
+            self.__prepare_optimization()
+        except OSError as e:
+            self.on_error(self._get_message(
+                OptimizationState.FINISHED,
+                error=f"Preparation for optimization failed: {e}"))
+            self.clean_up()
+            return
 
         start_time = timer()
 
@@ -1013,7 +1024,7 @@ class Nsgaii(Observable):
             self.clean_up()
             return
 
-        if self.opt_recoil:
+        if self.optimization_type is OptimizationType.RECOIL:
             first_sol, med_sol, last_sol = pick_final_solutions(
                 pareto_optimal_objs, pareto_optimal_sols, count=3)
 
@@ -1056,7 +1067,7 @@ class Nsgaii(Observable):
                     pass
 
     def save_results_to_file(self):
-        if self.opt_recoil:
+        if self.optimization_type is OptimizationType.RECOIL:
             # Save optimized recoils
             for recoil in self.element_simulation.optimization_recoils:
                 recoil.to_file(self.element_simulation.directory)
@@ -1102,7 +1113,7 @@ class Nsgaii(Observable):
             binary_parent_1 = []
             binary_parent_2 = []
             # If no crossover, parents are used in mutation
-            if self.opt_recoil:
+            if self.optimization_type is OptimizationType.RECOIL:
                 # Transform child 1 and 2 into binary mode, to match the
                 # possible values when taking decimal precision into account
                 # Transform variables into binary
@@ -1119,7 +1130,7 @@ class Nsgaii(Observable):
                 child_2 = parent_2
             if np.random.uniform() <= self.cross_p:  # Do crossover.
                 # Select between real coded of binary handling
-                if self.opt_recoil:
+                if self.optimization_type is OptimizationType.RECOIL:
                     child_1, child_2 = opt.single_point_crossover(
                         binary_parent_1, binary_parent_2)
 
@@ -1137,7 +1148,8 @@ class Nsgaii(Observable):
                 offspring.append(child_2)
                 p += 1
 
-        if self.opt_recoil:  # Do binary mutation
+        if self.optimization_type is OptimizationType.RECOIL:
+            # Do binary mutation
             # Calculate length of one solution (number of bits)
             sol_length = 0
             for var in offspring[0]:
