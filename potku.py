@@ -585,12 +585,14 @@ class Potku(QtWidgets.QMainWindow):
                 connects the item to the corresponding MeasurementTabWidget
             *_: unused event args.
         """
+        sbh = StatusBarHandler(self.statusbar)
         try:
             tab_id = clicked_item.tab_id
             tab = self.tab_widgets[tab_id]
 
-            sbh = StatusBarHandler(self.statusbar, autoremove=True)
-            tab.load_data(progress=sbh.reporter)
+            tab.load_data(progress=sbh.reporter.get_sub_reporter(
+                lambda x: 0.9 * x
+            ))
 
             name = tab.obj.name
             if type(tab) is MeasurementTabWidget:
@@ -606,6 +608,7 @@ class Potku(QtWidgets.QMainWindow):
 
         except AttributeError as e:
             print(e)    # TODO remove print
+        sbh.reporter.report(100)
 
     def import_pelletron(self):
         """Import Pelletron's measurements into request.
@@ -812,7 +815,7 @@ class Potku(QtWidgets.QMainWindow):
             serial_number = sample_item.obj.get_running_int_simulation()
             sample_item.obj.increase_running_int_simulation_by_1()
 
-            self.add_new_tab("simulation", os.path.join(
+            self.add_new_tab("simulation", Path(
                 self.request.directory, sample_item.obj.directory,
                 Simulation.DIRECTORY_PREFIX + "%02d" % serial_number + "-" +
                 dialog.name, f"{dialog.name}.simulation"), sample_item.obj,
@@ -1074,7 +1077,7 @@ class Potku(QtWidgets.QMainWindow):
 
         Args:
             tab_type: Either "measurement" or "simulation".
-            filepath: A string representing measurement or simulation file
+            filepath: A Path representing measurement or simulation file
             path, or data path when creating a new measurement.
             sample: The sample under which the measurement or simulation is put.
             file_current: An integer representing which number is currently
