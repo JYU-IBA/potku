@@ -78,7 +78,7 @@ def remove_file(file_path):
     if not file_path:
         return
     try:
-        #shutil.rmtree(file_path)
+        # shutil.rmtree(file_path)
         os.remove(file_path)
     except Exception as e:
         # Removal failed
@@ -92,16 +92,18 @@ def remove_files(directory, exts=None, filter_func=None):
         directory: directory where the files are located
         exts: collection of file extensions. Files with these extensions will
             be deleted.
-        filter_func: additional filter function. Any file that matches this
-            function will be deleted.
+        filter_func: additional filter function applied to the file name. If
+            provided, only the files that have the correct extension and match
+            the filter_func condition will be deleted.
     """
-    if not exts and filter_func is None:
+    if not exts:
         return
     if filter_func is None:
-        filter_func = lambda _: False
+        def filter_func(_):
+            return True
 
     for file in os.scandir(directory):
-        if Path(file.path).suffix in exts or filter_func(file.name):
+        if Path(file.path).suffix in exts and filter_func(file.name):
             try:
                 os.remove(file)
             except OSError:
@@ -584,24 +586,6 @@ def find_nearest(x, lst):
         return after
     else:
         return before
-
-
-def delete_simulation_results(element_simulation, recoil_element):
-    """
-    Delete simulation result files.
-
-    Args:
-         element_simulation: Element simulation object.
-         recoil_element: Recoil element object.
-    """
-    files_to_delete = []
-    for file in os.listdir(element_simulation.directory):
-        if file.startswith(recoil_element.prefix) and "opt" not in file:
-            if file.endswith(".recoil") or file.endswith("erd") or \
-                    file.endswith(".simu") or file.endswith(".scatter"):
-                files_to_delete.append(Path(element_simulation.directory, file))
-    for f in files_to_delete:
-        os.remove(f)    # FIXME check for OSError
 
 
 def calculate_new_point(previous_point, new_x, next_point,

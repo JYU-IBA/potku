@@ -29,6 +29,7 @@ import rx
 import itertools
 
 import modules.mcerd as mcerd
+import modules.observing as observing
 
 
 class TestParseOutput(unittest.TestCase):
@@ -108,7 +109,8 @@ class TestParseOutput(unittest.TestCase):
 
         obs = Observer()
         rx.from_iterable(iter(output)).pipe(
-            mcerd.MCERD.get_pipeline(100, "foo")
+            mcerd.MCERD.get_pipeline(100, "foo"),
+            # observing.get_printer()
         ).subscribe(obs)
 
         self.assertEqual(len(output) - 1, len(obs.nexts))

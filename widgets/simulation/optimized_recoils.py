@@ -26,8 +26,11 @@ __author__ = "Heta Rekilä"
 __version__ = "2.0"
 
 from pathlib import Path
+from typing import Optional
 
 from modules.element_simulation import ElementSimulation
+from modules.nsgaii import OptimizationType
+from modules.concurrency import CancellationToken
 
 from widgets.gui_utils import GUIObserver
 
@@ -48,7 +51,8 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
     results_accepted = pyqtSignal(ElementSimulation)
 
     def __init__(self, element_simulation: ElementSimulation, measured_element,
-                 target, cancellation_token=None):
+                 target,
+                 cancellation_token: Optional[CancellationToken] = None):
         """
         Initialize the widget.
         """
@@ -86,7 +90,6 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
             self.pushButton.setText("Show distribution")
             self.stackedWidget.setCurrentIndex(1)
 
-
     def delete(self):
         """Delete variables and do clean up.
         """
@@ -100,7 +103,8 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
         results_accepted signal.
         """
         # TODO stop optimization
-        self.element_simulation.delete_optimization_results(optim_mode="recoil")
+        self.element_simulation.delete_optimization_results(
+            optim_mode=OptimizationType.RECOIL)
         try:
             self.results_accepted.disconnect()
         except (TypeError, AttributeError):

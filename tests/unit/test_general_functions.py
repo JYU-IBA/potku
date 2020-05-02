@@ -275,22 +275,26 @@ class TestFileIO(unittest.TestCase):
     def test_file_name_conditions(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
             bar_file = Path(tmp_dir, "foo.bar")
+            bar2_file = Path(tmp_dir, "bar.bar")
             foo_file = Path(tmp_dir, "bar.foo")
             foo2_file = Path(tmp_dir, "bar2.foo")
 
             open(bar_file, "a").close()
+            open(bar2_file, "a").close()
             open(foo_file, "a").close()
             open(foo2_file, "a").close()
 
             self.assertTrue(bar_file.exists())
+            self.assertTrue(bar2_file.exists())
             self.assertTrue(foo_file.exists())
             self.assertTrue(foo2_file.exists())
 
             gf.remove_files(tmp_dir, exts={".bar"},
                             filter_func=lambda f: f.startswith("bar."))
 
-            self.assertFalse(bar_file.exists())
-            self.assertFalse(foo_file.exists())
+            self.assertTrue(bar_file.exists())
+            self.assertFalse(bar2_file.exists())
+            self.assertTrue(foo_file.exists())
             self.assertTrue(foo2_file.exists())
 
 

@@ -608,9 +608,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         if not use_old_erd_files:
             self.__erd_filehandler.clear()
-
-            for recoil in self.recoil_elements:
-                gf.delete_simulation_results(self, recoil)
+            self.delete_simulation_results()
 
         settings, run, detector = self.get_mcerd_params()
 
@@ -688,7 +686,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             if self.__cancellation_token is not None:
                 observable = observable.pipe(
                     ops.take_while(
-                        lambda _: not cancellation_token.is_cancellation_requested())
+                        lambda _: not
+                        cancellation_token.is_cancellation_requested())
                 )
 
             if observer is not None:
@@ -849,6 +848,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             status = self.get_current_status()
             if status["state"] == SimulationState.DONE:
                 self.on_completed(status)
+                break
             self.on_next(status)
 
     def count_active_processes(self):
@@ -973,7 +973,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
             self.simulations_done = True
             self.__erd_filehandler.update()
-            self.on_completed(self.get_current_status())
+            self.on_completed(status)
 
     def stop(self):
         """ Stop the simulation."""
@@ -1100,55 +1100,48 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         return settings, run, detector
 
-    def _get_optimization_files(self, optim_mode="recoil"):
-        """Returns all files related to given optimization mode from the
-        ElementSimulation's directory.
-
-        Args:
-            optim_mode: either "recoil" or "fluence"
-
-        Return:
-            list of file names.
-        """
-        if optim_mode == "recoil":
-            cond = lambda f: f.startswith(f"{self.name_prefix}-opt") and \
-                             not f.startswith(f"{self.name_prefix}-optfl")
-        elif optim_mode == "fluence":
-            cond = lambda f: f.startswith(f"{self.name_prefix}-optfl")
-        else:
-            raise ValueError(f"Unknown optimization mode '{optim_mode}' given"
-                             f"to _get_optimization_files.")
-        files = []
-        for file in os.listdir(self.directory):
-            if cond(file):
-                files.append(file)
-        return files
-
-    def delete_optimization_results(self, optim_mode="recoil"):
+    def delete_optimization_results(self, optim_mode=OptimizationType.RECOIL):
         """Deletes optimization results. Also stops the optimization if
         it is running.
 
         Args:
-            optim_mode: either 'recoil' or 'fluence'
+            optim_mode: OptimizationType
         """
         if self.optimization_running:
             self.stop()
 
-        # Delete existing files from previous optimization
-        # TODO use the function in general_functions
-        removed_files = self._get_optimization_files(optim_mode=optim_mode)
-        for rf in removed_files:
-            # FIXME removing these files while optimization is running
-            #  will cause an exception in NSGAII.
-            path = Path(self.directory, rf)
-            try:
-                os.remove(path)
-            except (OSError, FileNotFoundError):
-                pass
+        if optim_mode is OptimizationType.RECOIL:
+            def filter_func(file):
+                return file.startswith(f"{self.name_prefix}-opt") and not \
+                    file.startswith(f"{self.name_prefix}-optfl")
+        elif optim_mode is OptimizationType.FLUENCE:
+            def filter_func(file):
+                return file.startswith(f"{self.name_prefix}-optfl")
+        else:
+            raise ValueError(f"Unknown optimization type: {optim_mode}.")
+
+        gf.remove_files(
+            self.directory, exts={".recoil", ".erd", ".simu", ".scatter"},
+            filter_func=filter_func)
+
         self.optimization_recoils = []
         self.optimization_widget = None
         self.optimization_running = False
         self.optimization_stopped = True
+
+    def delete_simulation_results(self):
+        """Deletes all simulation results for this ElementSimulation.
+        """
+        prefixes = {recoil.get_full_name() for recoil in self.recoil_elements}
+
+        def filter_func(file):
+            return any(file.startswith(pre) for pre in prefixes) and \
+                "opt" not in file
+
+        gf.remove_files(
+            self.directory,
+            exts={".recoil", ".erd", ".simu", ".scatter"},
+            filter_func=filter_func)
 
     def reset(self, remove_files=True):
         """Function that resets the state of ElementSimulation.
@@ -1164,10 +1157,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.optimization_running = False
 
         if remove_files:
-            for recoil in self.recoil_elements:
-                gf.delete_simulation_results(self, recoil)
-
-        self.__erd_filehandler.clear()
+            self.delete_simulation_results()
+            self.__erd_filehandler.clear()
         self.unlock_edit()
         self.on_completed(self.get_current_status())
 

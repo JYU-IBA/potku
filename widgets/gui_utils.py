@@ -370,8 +370,6 @@ class GUIObserver(Observer, abc.ABC, metaclass=QtABCMeta):
         pass
 
     @abc.abstractmethod
-    @QtCore.pyqtSlot()
-    @QtCore.pyqtSlot(object)
     def on_completed_handler(self, *msg):
         """Method that is invoked when an observable reports that is has
         completed its process.
@@ -443,6 +441,7 @@ def block_treewidget_signals(func):
     """
     def wrapper(instance, *args, **kwargs):
         instance.treeWidget.blockSignals(True)
-        func(instance, *args, **kwargs)
+        res = func(instance, *args, **kwargs)
         instance.treeWidget.blockSignals(False)
+        return res
     return wrapper

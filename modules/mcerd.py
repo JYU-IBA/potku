@@ -87,6 +87,7 @@ class MCERD:
         self.recoil_file = self.sim_dir / f"{self.__rec_filename}.{suffix}"
         self.result_file = self.sim_dir / res_file
 
+        # These files will be deleted after the simulation
         self.__command_file = self.sim_dir / self.__rec_filename
         self.__target_file = self.sim_dir / f"{self.__filename}.erd_target"
         self.__detector_file = self.sim_dir / f"{self.__filename}.erd_detector"
@@ -134,6 +135,7 @@ class MCERD:
         errs = rx.from_iterable(iter(self.__process.stderr.readline, b""))
         outs = rx.from_iterable(iter(self.__process.stdout.readline, b""))
         is_running = rx.timer(0, 10).pipe(
+            # TODO could raise an exception if mcerd returns a non-zero value
             ops.map(lambda *_: self.__process.poll() is None),
             ops.take_while(lambda x: x, inclusive=True)
         )
@@ -152,22 +154,26 @@ class MCERD:
                 "is_running": x[1]
             }),
             ops.take_while(
-                lambda x: x["is_running"] and not x["msg"].startswith(
-                    "angave"), inclusive=True)
+                lambda x: x["is_running"] and not x["msg"].startswith("angave"),
+        inclusive=True)
         )
 
         if print_to_console:
             merged = merged.pipe(
-                observing.get_printer(f"simulation process with seed "
-                                      f"{seed}.")
+                observing.get_printer(f"simulation process with seed {seed}.")
             )
 
         return merged
 
     @staticmethod
-    def get_pipeline(seed, name):
-        """Returns an rx pipeline that converts the raw output from MCERD
-        into a dictionary.
+    def get_pipeline(seed: int, name: str):
+        """Returns an rx pipeline that parses the raw output from MCERD
+        into dictionaries.
+
+        Each dictionary contains the same keys. If certain value cannot be
+        parsed from the output (i.e. the raw line does not contain it),
+        either the value from the previous dictionary is carried over or a
+        default value is used.
 
         Args:
             seed: seed used in the MCERD process
@@ -187,12 +193,10 @@ class MCERD:
                 "seed": seed,
                 "name": name,
                 "presim": x["presim"],
-                "calculated": acc["calculated"] if "calculated" not in x
-                else x["calculated"],
-                "total": acc["total"] if "total" not in x else x["total"],
-                "percentage": acc["percentage"] if "percentage" not in x else
-                x["percentage"],
-                "msg": "" if "msg" not in x else x["msg"]
+                "calculated": x.get("calculated", acc["calculated"]),
+                "total": x.get("total", acc["total"]),
+                "percentage": x.get("percentage", acc["percentage"]),
+                "msg": x.get("msg", "")
             }, seed={"calculated": 0, "total": 0, "percentage": 0}),
         )
         return pipeline
@@ -344,23 +348,8 @@ class MCERD:
         Args:
             destination: Destination folder.
         """
-        try:
-            shutil.copy(self.result_file, destination)
-            self.copy_recoil(destination)
-        except FileNotFoundError:
-            raise
-
-    def copy_recoil(self, destination):
-        """
-        Copy recoil file into given destination.
-
-        Args:
-            destination: Destination folder.
-        """
-        try:
-            shutil.copy(self.recoil_file, destination)
-        except FileNotFoundError:
-            raise
+        shutil.copy(self.result_file, destination)
+        shutil.copy(self.recoil_file, destination)
 
     def delete_unneeded_files(self):
         """
@@ -374,19 +363,12 @@ class MCERD:
         except OSError:
             pass  # Could not delete all the files
 
-        for file in os.listdir(self.sim_dir):
-            if file.startswith(self.__rec_filename):
-                if file.endswith(".out") or file.endswith(".dat") or \
-                   file.endswith(".range"):
-                    try:
-                        os.remove(self.sim_dir / file)
-                    except OSError:
-                        continue  # Could not delete the file
-            if file.startswith(self.__rec_filename) and file.endswith(".pre"):
-                try:
-                    os.remove(self.sim_dir / file)
-                except OSError:
-                    pass
+        def filter_func(f):
+            return f.startswith(self.__rec_filename)
+
+        gf.remove_files(
+            self.sim_dir, exts={".out", ".dat", ".range", ".pre"},
+            filter_func=filter_func)
 
 
 _pattern = re.compile("Calculated (?P<calculated>\d+) of (?P<total>\d+) ions "
