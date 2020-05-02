@@ -32,24 +32,17 @@ import os
 import platform
 import shutil
 import subprocess
-import threading
-import time
 import re
 import shlex
 import multiprocessing
+import rx
 
 import modules.general_functions as gf
+import modules.observing as observing
 
 from pathlib import Path
-
-try:
-    import rx
-    from rx import operators as ops
-    from rx.scheduler import ThreadPoolScheduler
-    RX_ON = True
-except ImportError:
-    # No observable streams for you
-    RX_ON = False
+from rx import operators as ops
+from rx.scheduler import ThreadPoolScheduler
 
 from modules.layer import Layer
 
@@ -59,32 +52,27 @@ class MCERD:
     An MCERD class that handles calling the mcerd binary and creating the
     files it needs.
     """
-    __slots__ = "__settings", "parent", "__rec_filename", "__filename", \
+    __slots__ = "__settings", "__rec_filename", "__filename", \
                 "recoil_file", "sim_dir", "result_file", "__target_file", \
                 "__command_file", "__detector_file", "__foils_file", \
                 "__presimulation_file", "__process"
 
-    def __init__(self, settings, parent, optimize_fluence=False):
+    def __init__(self, settings, filename, optimize_fluence=False):
         """Create an MCERD object.
 
         Args:
             settings: All settings that MCERD needs in one dictionary.
-            parent: ElementSimulation object.
         """
         self.__settings = settings
-
-        # TODO remove reference to parent
-        self.parent = parent
 
         rec_elem = self.__settings["recoil_element"]
 
         if optimize_fluence:
-            recoil_name = "optfl"
+            self.__rec_filename = f"{rec_elem.prefix}-optfl"
         else:
-            recoil_name = rec_elem.name
+            self.__rec_filename = rec_elem.get_full_name()
 
-        self.__rec_filename = f"{rec_elem.prefix}-{recoil_name}"
-        self.__filename = f"{self.parent.name_prefix}-{self.parent.name}"
+        self.__filename = filename
 
         self.sim_dir = Path(self.__settings["sim_dir"])
 
@@ -139,71 +127,75 @@ class MCERD:
 
         cmd = self.get_command()
 
-        # FIXME if target has no layers, mcerd's current random number generator
-        #   might generate a NaN value, causing MCERD to stop immediately. This
-        #   could be handled better either by Potku or mcerd.
         # TODO use timeout when optimizing and max time is set
-        self.__process = subprocess.Popen(cmd, shell=True,
-                                          stdout=subprocess.PIPE,
-                                          stderr=subprocess.PIPE)
+        self.__process = subprocess.Popen(
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        if RX_ON:
-            errs = rx.from_iterable(iter(self.__process.stderr.readline, b""))
-            outs = rx.from_iterable(iter(self.__process.stdout.readline, b""))
+        errs = rx.from_iterable(iter(self.__process.stderr.readline, b""))
+        outs = rx.from_iterable(iter(self.__process.stdout.readline, b""))
+        is_running = rx.timer(0, 10).pipe(
+            ops.map(lambda *_: self.__process.poll() is None),
+            ops.take_while(lambda x: x, inclusive=True)
+        )
 
-            seed = self.__settings["seed_number"]
-            thread_count = multiprocessing.cpu_count()
-            pool_scheduler = ThreadPoolScheduler(thread_count)
+        seed = self.__settings["seed_number"]
+        thread_count = multiprocessing.cpu_count()
+        pool_scheduler = ThreadPoolScheduler(thread_count)
 
-            merged = rx.merge(errs, outs).pipe(
-                # TODO flatten the final output (begins with 'Beam ion: ...')
-                #   into a single item
-                ops.subscribe_on(pool_scheduler),
-                ops.map(lambda x: x.decode("utf-8").strip()),
-                ops.scan(lambda acc, x: {
-                    "presim": acc["presim"] and x != "Presimulation finished",
-                    "msg": x
-                }, seed={"presim": True}),
-                ops.map(lambda x: {
-                    "seed": seed,
-                    "presim": x["presim"],
-                    **parse_raw_output(x["msg"])
-                })
+        merged = rx.merge(errs, outs).pipe(
+            ops.subscribe_on(pool_scheduler),
+            MCERD.get_pipeline(seed, self.__rec_filename)
+        )
+        merged = rx.combine_latest(merged, is_running).pipe(
+            ops.map(lambda x: {
+                **x[0],
+                "is_running": x[1]
+            }),
+            ops.take_while(
+                lambda x: x["is_running"] and not x["msg"].startswith(
+                    "angave"), inclusive=True)
+        )
+
+        if print_to_console:
+            merged = merged.pipe(
+                observing.get_printer(f"simulation process with seed "
+                                      f"{seed}.")
             )
-
-            if print_to_console:
-                # TODO fix this so that print method is just another subscriber
-                def f(x):
-                    print(x)
-                    return x
-
-                merged = merged.pipe(
-                    ops.map(f)
-                )
-        else:
-            merged = None
-
-        # Use thread for checking if process has terminated
-        # TODO rx should be able to handle this too
-        thread = threading.Thread(target=self.check_if_mcerd_running)
-        thread.daemon = True
-        thread.start()
 
         return merged
 
-    def check_if_mcerd_running(self):
+    @staticmethod
+    def get_pipeline(seed, name):
+        """Returns an rx pipeline that converts the raw output from MCERD
+        into a dictionary.
+
+        Args:
+            seed: seed used in the MCERD process
+            name: name of the process (usually the name of the recoil element)
         """
-        Check if MCERD process is still running. If not, notify parent.
-        """
-        while True:
-            try:
-                time.sleep(10)
-                if self.__process.poll() is not None:
-                    self.parent.notify(self)
-                    self.__process = None
-                    break
-            except AttributeError:
-                break
+        # TODO reduce the final output (starts with "Beam ion: ...) into single
+        #  item
+        pipeline = rx.pipe(
+            ops.map(lambda x: x.decode("utf-8").strip()),
+            ops.take_while(
+                lambda x: not x.startswith("angave"), inclusive=True),
+            ops.scan(lambda acc, x: {
+                "presim": acc["presim"] and x != "Presimulation finished",
+                **parse_raw_output(x)
+            }, seed={"presim": True}),
+            ops.scan(lambda acc, x: {
+                "seed": seed,
+                "name": name,
+                "presim": x["presim"],
+                "calculated": acc["calculated"] if "calculated" not in x
+                else x["calculated"],
+                "total": acc["total"] if "total" not in x else x["total"],
+                "percentage": acc["percentage"] if "percentage" not in x else
+                x["percentage"],
+                "msg": "" if "msg" not in x else x["msg"]
+            }, seed={"calculated": 0, "total": 0, "percentage": 0}),
+        )
+        return pipeline
 
     def stop_process(self):
         """Stop the MCERD process and delete the MCERD object."""
@@ -412,6 +404,17 @@ def parse_raw_output(raw_line):
             "percentage": int(m.group("percentage"))
         }
     except AttributeError:
+        if raw_line == "Presimulation finished":
+            return {
+                "calculated": 0,
+                "percentage": 0,
+                "msg": raw_line
+            }
+        elif raw_line.startswith("angave"):
+            return {
+                "msg": raw_line,
+                "percentage": 100
+            }
         return {
             "msg": raw_line
         }

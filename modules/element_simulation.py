@@ -33,12 +33,14 @@ import numpy as np
 import os
 import threading
 import time
-import functools
 import itertools
+import functools
 
 import modules.file_paths as fp
 import modules.general_functions as gf
 
+from typing import Optional
+from rx import operators as ops
 from enum import Enum
 from pathlib import Path
 from collections import deque
@@ -62,9 +64,6 @@ class SimulationState(Enum):
     # Simulation process are starting
     STARTING = 2
 
-    # ERD files exist, MCERD running, but last ERD file is empty
-    PRESIM = 3
-
     # MCERD is running, last ERD file is not empty
     RUNNING = 4
 
@@ -78,8 +77,6 @@ class SimulationState(Enum):
             return "Not run"
         if self == SimulationState.STARTING:
             return "Starting"
-        if self == SimulationState.PRESIM:
-            return "Pre-sim"
         if self == SimulationState.RUNNING:
             return "Running"
         return "Done"
@@ -393,6 +390,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 simulation parameters.
             profile_file_path: A file path to JSON file containing the
                 channel width.
+            sample: sample under which the parent simulation belongs to
+            detector: detector that is used when simulation is not run with
+                request settings.
         """
         with open(mcsimu_file_path) as mcsimu_file:
             mcsimu = json.load(mcsimu_file)
@@ -607,6 +607,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         if not use_old_erd_files:
             self.__erd_filehandler.clear()
 
+            for recoil in self.recoil_elements:
+                gf.delete_simulation_results(self, recoil)
+
         settings, run, detector = self.get_mcerd_params()
 
         # Set seed to either the value provided as parameter or use the one
@@ -673,16 +676,21 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             if optimization_type is None:
                 self.__erd_filehandler.add_active_file(new_erd_file)
 
+            # Make a shallow copy of the settings dictionary everytime it is
+            # used as an argument.
             mcerd = MCERD(
-                settings, self,
+                dict(settings), self.get_full_name(),
                 optimize_fluence=optimization_type is OptimizationType.FLUENCE)
             observable = mcerd.run()
 
-            if observer is not None and observable is not None:
-                # TODO remove the None check for observable
+            if observer is not None:
                 # TODO pipe some additional data to this stream such as observed
                 #   atoms so we can get rid of the checker thread.
-                unsubs[seed_number] = observable.subscribe(observer)
+                unsubs[seed_number] = observable.pipe(
+                    ops.do_action(
+                        on_completed=functools.partial(self.notify, mcerd),
+                    )
+                ).subscribe(observer)
             self.mcerd_objects[seed_number] = mcerd
 
             seed_number += 1
@@ -748,6 +756,11 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                     'state': enum
                 }
         """
+        # FIXME when running really short processes that end before other
+        #  processes begin, status is reported as 'DONE' instead of 'RUNNING'
+        #  because at that moment there are no active simulation processes.
+        #  In the GUI, this causes the start button to become enabled even
+        #  though it should not be.
         process_count = self.count_active_processes()
         active_count = self.__erd_filehandler.get_active_atom_counts()
         old_count = self.__erd_filehandler.get_old_atom_counts()
@@ -760,13 +773,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             # No ERD files exist so simulation has not started
             state = SimulationState.NOTRUN
         elif process_count:
-            # Some processes are running, we are either in presim or running
-            # state
-            if not active_count:
-                state = SimulationState.PRESIM
-            else:
-                # We are in full sim mode
-                state = SimulationState.RUNNING
+            state = SimulationState.RUNNING
         else:
             # ERD files exist but no active simulation is in process
             state = SimulationState.DONE
@@ -780,7 +787,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             "optimizing": self.optimization_running
         }
 
-    def get_main_recoil(self) -> RecoilElement:
+    def get_main_recoil(self) -> Optional[RecoilElement]:
         # TODO replace the main_recoil attribute as well as all references to
         #   recoil_elements[0] with this function
         if self.recoil_elements:
@@ -788,20 +795,29 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         else:
             return None
 
-    def is_simulation_running(self):
+    def is_simulation_running(self) -> bool:
+        """Whether simulation is currently running and optimization is not
+        running.
+        """
         # TODO better method for determining this
         return bool(self.mcerd_objects) and not self.is_optimization_running()
 
-    def is_simulation_finished(self):
+    def is_simulation_finished(self) -> bool:
+        """Whether simulation is finished.
+        """
         return self.simulations_done
 
-    def is_optimization_running(self):
+    def is_optimization_running(self) -> bool:
+        """Whether optimization is running.
+        """
         return self.optimization_running
 
-    def is_optimization_finished(self):
+    def is_optimization_finished(self) -> bool:
+        """Whether optimization has finished.
+        """
         # TODO better method for determining this
         return self.optimization_widget is not None and \
-               not self.is_optimization_running()
+            not self.is_optimization_running()
 
     def get_max_seed(self):
         """Returns maximum seed that has been used in simulations.
@@ -822,13 +838,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """
         while True:
             time.sleep(1)
-            if self.__cancellation_token is not None:
-                self.__cancellation_token.raise_if_cancelled()
             status = self.get_current_status()
             if status["state"] == SimulationState.DONE:
-                # on_completed is already reported by stop method so no need to
-                # do it here
-                break
+                self.on_completed(status)
             self.on_next(status)
 
     def count_active_processes(self):
@@ -849,6 +861,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             optimize_recoil: Whether recoil is being optimized.
             check_max: Maximum time until simulation is stopped.
             check_min: Minimum time to run simulation.
+            seed: seed of the first simulation process
         """
         previous_avg = None
         sleep_beginning = True
@@ -1114,6 +1127,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             self.stop()
 
         # Delete existing files from previous optimization
+        # TODO use the function in general_functions
         removed_files = self._get_optimization_files(optim_mode=optim_mode)
         for rf in removed_files:
             # FIXME removing these files while optimization is running
