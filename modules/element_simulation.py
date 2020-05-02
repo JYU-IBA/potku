@@ -271,6 +271,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             self.__full_edit_on = True
             self.y_min = 0.0
 
+        # CancellationToken that can be given to ElementSimulation when
+        # simulation starts
         self.__cancellation_token = None
 
     def unlock_edit(self):
@@ -658,8 +660,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         # Start as many processes as is given in number of processes
         for i in range(number_of_processes):
-            if self.__cancellation_token is not None:
-                if self.__cancellation_token.is_cancellation_requested():
+            if cancellation_token is not None:
+                if cancellation_token.is_cancellation_requested():
                     return
 
             settings["seed_number"] = seed_number
@@ -682,6 +684,12 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 dict(settings), self.get_full_name(),
                 optimize_fluence=optimization_type is OptimizationType.FLUENCE)
             observable = mcerd.run()
+
+            if self.__cancellation_token is not None:
+                observable = observable.pipe(
+                    ops.take_while(
+                        lambda _: not cancellation_token.is_cancellation_requested())
+                )
 
             if observer is not None:
                 # TODO pipe some additional data to this stream such as observed
