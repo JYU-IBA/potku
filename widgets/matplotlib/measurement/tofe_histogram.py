@@ -780,9 +780,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         """
         # Populate colorbox
         colors = sorted(MatplotlibHistogramWidget.color_scheme.items())
-        for i, k, _ in enumerate(colors):  # Get keys from color scheme
-            dialog.colorbox.addItem(k)
-            if k == self.measurement.color_scheme:
+        for i, (color, _) in enumerate(colors):  # Get keys from color scheme
+            dialog.colorbox.addItem(color)
+            if color == self.measurement.color_scheme:
                 dialog.colorbox.setCurrentIndex(i)
 
         # Get values

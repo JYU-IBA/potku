@@ -203,20 +203,18 @@ class Request(ElementSimulationContainer):
         """
         Create default measurement.
         """
-        measurement_info_path = os.path.join(self.default_folder,
-                                             "Default.info")
-        if os.path.exists(measurement_info_path):
+        measurement_info_path = Path(self.default_folder, "Default.info")
+        if measurement_info_path.exists():
             # Read measurement from file
             self.default_measurement = Measurement.from_file(
                 measurement_info_path,
-                os.path.join(self.default_folder, "Default.measurement"),
-                os.path.join(self.default_folder, "Default.profile"),
+                Path(self.default_folder, "Default.measurement"),
+                Path(self.default_folder, "Default.profile"),
                 self)
             self.default_run = Run.from_file(self.default_measurement_file_path)
         else:
             # Create default measurement for request
-            default_info_path = os.path.join(self.default_folder,
-                                             "Default.info")
+            default_info_path = Path(self.default_folder, "Default.info")
             self.default_measurement = Measurement(
                 self, path=default_info_path,
                 run=self.default_run,
@@ -227,17 +225,16 @@ class Request(ElementSimulationContainer):
                                                      "measurement "
                                                      "parameters.",
                 use_default_profile_settings=False)
-            self.default_measurement.info_to_file(
-                os.path.join(self.default_folder,
-                             self.default_measurement.name + ".info"))
-            self.default_measurement.measurement_to_file(os.path.join(
+            self.default_measurement.info_to_file(Path(
+                self.default_folder, f"{self.default_measurement.name}.info"))
+            self.default_measurement.measurement_to_file(Path(
                 self.default_folder,
                 self.default_measurement.measurement_setting_file_name
                 + ".measurement"))
-            self.default_measurement.profile_to_file(os.path.join(
+            self.default_measurement.profile_to_file(Path(
                 self.default_folder,
-                self.default_measurement.profile_name + ".profile"))
-            self.default_measurement.run.to_file(os.path.join(
+                f"{self.default_measurement.profile_name}.profile"))
+            self.default_measurement.run.to_file(Path(
                 self.default_folder,
                 self.default_measurement.measurement_setting_file_name +
                 ".measurement"))

@@ -28,6 +28,7 @@ import unittest
 
 import modules.file_paths as fp
 
+from modules.nsgaii import OptimizationType
 from modules.recoil_element import RecoilElement
 from modules.element import Element
 
@@ -41,13 +42,15 @@ class TestFilePaths(unittest.TestCase):
         self.assertEqual("He-Default.102.erd",
                          fp.get_erd_file_name(rec_elem, 102))
 
-        self.assertEqual("He-opt.101.erd",
-                         fp.get_erd_file_name(rec_elem, 101,
-                                              optim_mode="recoil"))
+        self.assertEqual(
+            "He-opt.101.erd",
+            fp.get_erd_file_name(
+                rec_elem, 101, optim_mode=OptimizationType.RECOIL))
 
-        self.assertEqual("He-optfl.101.erd",
-                         fp.get_erd_file_name(rec_elem, 101,
-                                              optim_mode="fluence"))
+        self.assertEqual(
+            "He-optfl.101.erd",
+            fp.get_erd_file_name(
+                rec_elem, 101, optim_mode=OptimizationType.FLUENCE))
 
         self.assertRaises(ValueError,
                           lambda: fp.get_erd_file_name(rec_elem, 101,

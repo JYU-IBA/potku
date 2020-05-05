@@ -27,9 +27,12 @@ __version__ = "2.0"
 
 import modules.general_functions as gf
 
+from typing import Optional
 from pathlib import Path
 
 from modules.element_simulation import ElementSimulation
+from modules.nsgaii import OptimizationType
+from modules.concurrency import CancellationToken
 
 from widgets.gui_utils import GUIObserver
 
@@ -42,7 +45,7 @@ class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
     Class that handles showing optimized fluence in a widget.
     """
     def __init__(self, element_simulation: ElementSimulation,
-                 cancellation_token=None):
+                 cancellation_token: Optional[CancellationToken] = None):
         # TODO common base class for optim result widgets
         super().__init__()
         uic.loadUi(Path("ui_files", "ui_optimized_fluence_widget.ui"), self)
@@ -51,7 +54,7 @@ class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
         if self.element_simulation.optimized_fluence:
             self.show_fluence()
 
-        # TODO implement cancellation_token
+        self.cancellation_token = cancellation_token
 
     def delete(self):
         """Delete variables and do clean up.
@@ -62,8 +65,10 @@ class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
         """Reimplemented method when closing widget. Remove existing
         optimization files. Stop optimization if necessary.
         """
+        if self.cancellation_token is not None:
+            self.cancellation_token.request_cancellation()
         self.element_simulation.delete_optimization_results(
-            optim_mode="fluence")
+            optim_mode=OptimizationType.FLUENCE)
 
         super().closeEvent(evnt)
 
@@ -97,7 +102,9 @@ class OptimizedFluenceWidget(QtWidgets.QWidget, GUIObserver):
         self.update_progress(msg["evaluations_left"])
 
     def on_error_handler(self, err):
-        pass
+        # TODO fix the layout of the dialog show that this is shown properly.
+        self.progressLabel.setText(
+            f"Error occurred: {err['error']}. Optimization stopped.")
 
     def on_completed_handler(self, msg):
         self.show_results(msg["evaluations_done"])

@@ -33,22 +33,26 @@ import numpy as np
 import os
 import threading
 import time
-import functools
 import itertools
+import functools
 
 import modules.file_paths as fp
 import modules.general_functions as gf
 
+from typing import Optional
+from rx import operators as ops
 from enum import Enum
 from pathlib import Path
 from collections import deque
 
-from modules.base import Serializable, AdjustableSettings, \
-    MCERDParameterContainer
+from modules.base import Serializable
+from modules.base import AdjustableSettings
+from modules.base import MCERDParameterContainer
 from modules.get_espe import GetEspe
 from modules.mcerd import MCERD
 from modules.observing import Observable
 from modules.recoil_element import RecoilElement
+from modules.nsgaii import OptimizationType
 
 
 class SimulationState(Enum):
@@ -59,9 +63,6 @@ class SimulationState(Enum):
 
     # Simulation process are starting
     STARTING = 2
-
-    # ERD files exist, MCERD running, but last ERD file is empty
-    PRESIM = 3
 
     # MCERD is running, last ERD file is not empty
     RUNNING = 4
@@ -76,8 +77,6 @@ class SimulationState(Enum):
             return "Not run"
         if self == SimulationState.STARTING:
             return "Starting"
-        if self == SimulationState.PRESIM:
-            return "Pre-sim"
         if self == SimulationState.RUNNING:
             return "Running"
         return "Done"
@@ -248,9 +247,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             self.directory, self.main_recoil)
 
         # TODO check if all optimization stuff can be moved to another module
-        self.optimization_recoils = optimization_recoils
-        if self.optimization_recoils is None:
+        if optimization_recoils is None:
             self.optimization_recoils = []
+        else:
+            self.optimization_recoils = optimization_recoils
 
         self.optimization_done = False
         self.optimization_stopped = False
@@ -271,6 +271,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             self.__full_edit_on = True
             self.y_min = 0.0
 
+        # CancellationToken that can be given to ElementSimulation when
+        # simulation starts
         self.__cancellation_token = None
 
     def unlock_edit(self):
@@ -383,13 +385,16 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         Args:
             request: Request that ElementSimulation belongs to.
             prefix: String that is used to prefix ".rec" files of this
-            ElementSimulation.
+                ElementSimulation.
             simulation_folder: A file path to simulation folder that contains
-            files ending with ".rec".
+                files ending with ".rec".
             mcsimu_file_path: A file path to JSON file containing the
-            simulation parameters.
+                simulation parameters.
             profile_file_path: A file path to JSON file containing the
-            channel width.
+                channel width.
+            sample: sample under which the parent simulation belongs to
+            detector: detector that is used when simulation is not run with
+                request settings.
         """
         with open(mcsimu_file_path) as mcsimu_file:
             mcsimu = json.load(mcsimu_file)
@@ -572,10 +577,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             json.dump(obj_profile, file, indent=4)
 
     def start(self, number_of_processes, start_value=None,
-              use_old_erd_files=True, optimize=False, stop_p=False,
-              check_t=False, optimize_recoil=False, check_max=False,
-              check_min=False, shared_ions=False, cancellation_token=None,
-              observer=None):
+              use_old_erd_files=True, optimization_type=None, stop_p=False,
+              check_t=False, check_max=False, check_min=False,
+              shared_ions=False, cancellation_token=None, observer=None):
         """
         Start the simulation.
 
@@ -584,10 +588,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             start_value: Which is the first seed.
             use_old_erd_files: whether the simulation continues using old erd
                 files or not
-            optimize: Whether mcerd run relates to optimization.
+            optimization_type: either recoil, fluence or None
             stop_p: Percent for stopping the MCERD run.
             check_t: Time between checks to see whether to stop MCERD or not.
-            optimize_recoil: Whether optimization concerns recoil.
             check_max: Maximum time to run simulation.
             check_min: Minimum time to run simulation.
             shared_ions: boolean that determines if the ion counts are
@@ -605,6 +608,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         if not use_old_erd_files:
             self.__erd_filehandler.clear()
+            self.delete_simulation_results()
 
         settings, run, detector = self.get_mcerd_params()
 
@@ -621,12 +625,13 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         # object further down the code.
         self.mcerd_objects = {seed_number: None}
 
-        if not optimize_recoil:
-            recoil = self.recoil_elements[0]
-        else:
+        if optimization_type is OptimizationType.RECOIL:
             recoil = self.optimization_recoils[0]
+        else:
+            recoil = self.recoil_elements[0]
 
         opt_seed = seed_number
+        self.optimization_mcerd_running = optimization_type is not None
 
         if number_of_processes < 1:
             number_of_processes = 1
@@ -637,6 +642,14 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             settings["number_of_ions"] //= number_of_processes
             settings["number_of_ions_in_presimu"] //= number_of_processes
 
+        settings.update({
+            "beam": run.beam,
+            "target": self.simulation.target,
+            "detector": detector,
+            "recoil_element": recoil,
+            "sim_dir": self.directory
+        })
+
         # Notify observers that we are about to go
         self.on_next(self.get_current_status(starting=True))
 
@@ -645,40 +658,13 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         # Start as many processes as is given in number of processes
         for i in range(number_of_processes):
-            if self.__cancellation_token is not None:
-                if self.__cancellation_token.is_cancellation_requested():
+            if cancellation_token is not None:
+                if cancellation_token.is_cancellation_requested():
                     return
 
-            settings.update({
-                "seed_number": seed_number,
-                "beam": run.beam,
-                "target": self.simulation.target,
-                "detector": detector,
-                "recoil_element": recoil,
-                "sim_dir": self.directory
-            })
-
-            optimize_fluence = False
-
-            # TODO create an optimization_mode enum {None, "rec", "flu"} instead
-            #      of using three different booleans
-            if not optimize_recoil:
-                if not optimize:
-                    new_erd_file = fp.get_erd_file_name(recoil,
-                                                        seed_number)
-                    self.__erd_filehandler.add_active_file(
-                        Path(self.directory, new_erd_file))
-                else:
-                    optimize_fluence = True
-                    self.optimized_fluence = 0
-                    new_erd_file = fp.get_erd_file_name(recoil,
-                                                        seed_number,
-                                                        optim_mode="fluence")
-
-            else:
-                new_erd_file = fp.get_erd_file_name(recoil,
-                                                    seed_number,
-                                                    optim_mode="recoil")
+            settings["seed_number"] = seed_number
+            new_erd_file = fp.get_erd_file_name(recoil, seed_number,
+                                                optim_mode=optimization_type)
 
             new_erd_file = Path(self.directory, new_erd_file)
             try:
@@ -687,16 +673,31 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             except OSError:
                 pass
 
-            self.optimization_mcerd_running = optimize
+            if optimization_type is None:
+                self.__erd_filehandler.add_active_file(new_erd_file)
 
-            mcerd = MCERD(settings, self, optimize_fluence=optimize_fluence)
+            # Make a shallow copy of the settings dictionary everytime it is
+            # used as an argument.
+            mcerd = MCERD(
+                dict(settings), self.get_full_name(),
+                optimize_fluence=optimization_type is OptimizationType.FLUENCE)
             observable = mcerd.run()
 
-            if observer is not None and observable is not None:
-                # TODO remove the None check for observable
+            if self.__cancellation_token is not None:
+                observable = observable.pipe(
+                    ops.take_while(
+                        lambda _: not
+                        cancellation_token.is_cancellation_requested())
+                )
+
+            if observer is not None:
                 # TODO pipe some additional data to this stream such as observed
                 #   atoms so we can get rid of the checker thread.
-                unsubs[seed_number] = observable.subscribe(observer)
+                unsubs[seed_number] = observable.pipe(
+                    ops.do_action(
+                        on_completed=functools.partial(self.notify, mcerd),
+                    )
+                ).subscribe(observer)
             self.mcerd_objects[seed_number] = mcerd
 
             seed_number += 1
@@ -708,16 +709,17 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 # TODO create command file for each process so they can
                 #  be started at the same time?
 
-        if not optimize:
-            # Start updating observers on current progress
-            thread = threading.Thread(target=self._check_status)
-            thread.daemon = True
-            thread.start()
-        else:
+        # Start updating observers on current progress
+        thread = threading.Thread(target=self._check_status)
+        thread.daemon = True
+        thread.start()
+
+        if optimization_type is not None:
             # Check the change between current and previous energy spectra (if
             # the spectra have been calculated)
-            self.check_spectra_change(stop_p, check_t, optimize_recoil,
-                                      check_max, check_min, opt_seed)
+            self.check_spectra_change(
+                stop_p, check_t, optimization_type is OptimizationType.RECOIL,
+                check_max, check_min, opt_seed)
         return unsubs
 
     def get_settings(self):
@@ -761,6 +763,11 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                     'state': enum
                 }
         """
+        # FIXME when running really short processes that end before other
+        #  processes begin, status is reported as 'DONE' instead of 'RUNNING'
+        #  because at that moment there are no active simulation processes.
+        #  In the GUI, this causes the start button to become enabled even
+        #  though it should not be.
         process_count = self.count_active_processes()
         active_count = self.__erd_filehandler.get_active_atom_counts()
         old_count = self.__erd_filehandler.get_old_atom_counts()
@@ -773,13 +780,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             # No ERD files exist so simulation has not started
             state = SimulationState.NOTRUN
         elif process_count:
-            # Some processes are running, we are either in presim or running
-            # state
-            if not active_count:
-                state = SimulationState.PRESIM
-            else:
-                # We are in full sim mode
-                state = SimulationState.RUNNING
+            state = SimulationState.RUNNING
         else:
             # ERD files exist but no active simulation is in process
             state = SimulationState.DONE
@@ -793,7 +794,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             "optimizing": self.optimization_running
         }
 
-    def get_main_recoil(self) -> RecoilElement:
+    def get_main_recoil(self) -> Optional[RecoilElement]:
         # TODO replace the main_recoil attribute as well as all references to
         #   recoil_elements[0] with this function
         if self.recoil_elements:
@@ -801,20 +802,29 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         else:
             return None
 
-    def is_simulation_running(self):
+    def is_simulation_running(self) -> bool:
+        """Whether simulation is currently running and optimization is not
+        running.
+        """
         # TODO better method for determining this
         return bool(self.mcerd_objects) and not self.is_optimization_running()
 
-    def is_simulation_finished(self):
+    def is_simulation_finished(self) -> bool:
+        """Whether simulation is finished.
+        """
         return self.simulations_done
 
-    def is_optimization_running(self):
+    def is_optimization_running(self) -> bool:
+        """Whether optimization is running.
+        """
         return self.optimization_running
 
-    def is_optimization_finished(self):
+    def is_optimization_finished(self) -> bool:
+        """Whether optimization has finished.
+        """
         # TODO better method for determining this
         return self.optimization_widget is not None and \
-               not self.is_optimization_running()
+            not self.is_optimization_running()
 
     def get_max_seed(self):
         """Returns maximum seed that has been used in simulations.
@@ -835,12 +845,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """
         while True:
             time.sleep(1)
-            if self.__cancellation_token is not None:
-                self.__cancellation_token.raise_if_cancelled()
             status = self.get_current_status()
             if status["state"] == SimulationState.DONE:
-                # on_completed is already reported by stop method so no need to
-                # do it here
+                self.on_completed(status)
                 break
             self.on_next(status)
 
@@ -862,6 +869,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             optimize_recoil: Whether recoil is being optimized.
             check_max: Maximum time until simulation is stopped.
             check_min: Minimum time to run simulation.
+            seed: seed of the first simulation process
         """
         previous_avg = None
         sleep_beginning = True
@@ -965,7 +973,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
             self.simulations_done = True
             self.__erd_filehandler.update()
-            self.on_completed(self.get_current_status())
+            self.on_completed(status)
 
     def stop(self):
         """ Stop the simulation."""
@@ -1092,54 +1100,48 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         return settings, run, detector
 
-    def _get_optimization_files(self, optim_mode="recoil"):
-        """Returns all files related to given optimization mode from the
-        ElementSimulation's directory.
-
-        Args:
-            optim_mode: either "recoil" or "fluence"
-
-        Return:
-            list of file names.
-        """
-        if optim_mode == "recoil":
-            cond = lambda f: f.startswith(f"{self.name_prefix}-opt") and \
-                             not f.startswith(f"{self.name_prefix}-optfl")
-        elif optim_mode == "fluence":
-            cond = lambda f: f.startswith(f"{self.name_prefix}-optfl")
-        else:
-            raise ValueError(f"Unknown optimization mode '{optim_mode}' given"
-                             f"to _get_optimization_files.")
-        files = []
-        for file in os.listdir(self.directory):
-            if cond(file):
-                files.append(file)
-        return files
-
-    def delete_optimization_results(self, optim_mode="recoil"):
+    def delete_optimization_results(self, optim_mode=OptimizationType.RECOIL):
         """Deletes optimization results. Also stops the optimization if
         it is running.
 
         Args:
-            optim_mode: either 'recoil' or 'fluence'
+            optim_mode: OptimizationType
         """
         if self.optimization_running:
             self.stop()
 
-        # Delete existing files from previous optimization
-        removed_files = self._get_optimization_files(optim_mode=optim_mode)
-        for rf in removed_files:
-            # FIXME removing these files while optimization is running
-            #  will cause an exception in NSGAII.
-            path = Path(self.directory, rf)
-            try:
-                os.remove(path)
-            except (OSError, FileNotFoundError):
-                pass
+        if optim_mode is OptimizationType.RECOIL:
+            def filter_func(file):
+                return file.startswith(f"{self.name_prefix}-opt") and not \
+                    file.startswith(f"{self.name_prefix}-optfl")
+        elif optim_mode is OptimizationType.FLUENCE:
+            def filter_func(file):
+                return file.startswith(f"{self.name_prefix}-optfl")
+        else:
+            raise ValueError(f"Unknown optimization type: {optim_mode}.")
+
+        gf.remove_files(
+            self.directory, exts={".recoil", ".erd", ".simu", ".scatter"},
+            filter_func=filter_func)
+
         self.optimization_recoils = []
         self.optimization_widget = None
         self.optimization_running = False
         self.optimization_stopped = True
+
+    def delete_simulation_results(self):
+        """Deletes all simulation results for this ElementSimulation.
+        """
+        prefixes = {recoil.get_full_name() for recoil in self.recoil_elements}
+
+        def filter_func(file):
+            return any(file.startswith(pre) for pre in prefixes) and \
+                "opt" not in file
+
+        gf.remove_files(
+            self.directory,
+            exts={".recoil", ".erd", ".simu", ".scatter"},
+            filter_func=filter_func)
 
     def reset(self, remove_files=True):
         """Function that resets the state of ElementSimulation.
@@ -1155,10 +1157,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.optimization_running = False
 
         if remove_files:
-            for recoil in self.recoil_elements:
-                gf.delete_simulation_results(self, recoil)
-
-        self.__erd_filehandler.clear()
+            self.delete_simulation_results()
+            self.__erd_filehandler.clear()
         self.unlock_edit()
         self.on_completed(self.get_current_status())
 

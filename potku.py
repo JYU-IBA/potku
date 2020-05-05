@@ -215,9 +215,10 @@ class Potku(QtWidgets.QMainWindow):
         if isinstance(self.treeWidget.currentItem().obj, Measurement):
             menu.addAction("Make master", self.__make_master_measurement)
             menu.addAction("Remove master", self.__remove_master_measurement)
-            menu.addAction("Exclude from slaves",
-                           self.__make_nonslave_measurement)
-            menu.addAction("Include as slave", self.__make_slave_measurement)
+            menu.addAction(
+                "Exclude from slaves", lambda: self.__set_slave_status(False))
+            menu.addAction(
+                "Include as slave", lambda: self.__set_slave_status(True))
 
         menu.exec_(self.treeWidget.viewport().mapToGlobal(position))
 
@@ -227,7 +228,8 @@ class Potku(QtWidgets.QMainWindow):
         clicked_item = self.treeWidget.currentItem()
         self.treeWidget.editItem(clicked_item)
 
-    def __rename_dir(self):
+    @gutils.block_treewidget_signals
+    def __rename_dir(self, *_):
         """Renames object based on selected tree item. This method is called
         when tree item is changed.
         """
@@ -246,9 +248,7 @@ class Potku(QtWidgets.QMainWindow):
                 return
 
             if valid_text == "":
-                self.treeWidget.blockSignals(True)
                 clicked_item.setText(0, clicked_item.obj.name)
-                self.treeWidget.blockSignals(False)
                 return
 
             if valid_text == clicked_item.obj.name:
@@ -273,13 +273,8 @@ class Potku(QtWidgets.QMainWindow):
                                                " on name " + new_name,
                                                QtWidgets.QMessageBox.Ok,
                                                QtWidgets.QMessageBox.Ok)
-                # Block edit event from tree view when changing the name back
-                # to original.
-                self.treeWidget.blockSignals(True)
                 clicked_item.setText(0, clicked_item.obj.name)
-                self.treeWidget.blockSignals(False)
                 return
-            self.treeWidget.blockSignals(True)
             clicked_item.obj.name = new_name
             clicked_item.setText(0, clicked_item.obj.name)
 
@@ -289,8 +284,7 @@ class Potku(QtWidgets.QMainWindow):
                 try:
                     clicked_item.obj.rename_info_file(new_name)
                     clicked_item.obj.info_to_file(
-                        os.path.join(new_dir, clicked_item.obj.name
-                                     + ".info"))
+                        os.path.join(new_dir, clicked_item.obj.name + ".info"))
                 except OSError:
                     QtWidgets.QMessageBox.critical(self, "Error",
                                                    "Something went wrong while "
@@ -365,8 +359,7 @@ class Potku(QtWidgets.QMainWindow):
                         self.tabs.setCurrentWidget(tab_widget)
                         break
 
-            self.treeWidget.blockSignals(False)
-
+    @gutils.block_treewidget_signals
     def __remove_tree_item(self):
         """Removes selected tree item in tree view and in folder structure.
         """
@@ -405,9 +398,7 @@ class Potku(QtWidgets.QMainWindow):
             shutil.rmtree(clicked_item.obj.directory)
 
             # Remove object from tree
-            self.treeWidget.blockSignals(True)
             clicked_item.parent().removeChild(clicked_item)
-            self.treeWidget.blockSignals(False)
 
             # Remove object tab
             for i in range(self.tabs.count()):
@@ -585,84 +576,39 @@ class Potku(QtWidgets.QMainWindow):
             (item.parent() or root).removeChild(item)
         gc.collect()  # Suggest garbage collector to clean.
 
-    def focus_selected_tab(self, clicked_item):
+    @gutils.block_treewidget_signals
+    def focus_selected_tab(self, clicked_item, *_):
         """Focus to selected tab (in tree widget) and if it isn't open, open it.
 
         Args:
             clicked_item: TreeWidgetItem with tab_id attribute (int) that
-            connects the item to the corresponding MeasurementTabWidget
+                connects the item to the corresponding MeasurementTabWidget
+            *_: unused event args.
         """
-
-        # Blocking signals from tree view to prevent edit event
-        self.treeWidget.blockSignals(True)
-
+        sbh = StatusBarHandler(self.statusbar)
         try:
             tab_id = clicked_item.tab_id
             tab = self.tab_widgets[tab_id]
 
+            tab.load_data(progress=sbh.reporter.get_sub_reporter(
+                lambda x: 0.9 * x
+            ))
+
+            name = tab.obj.name
             if type(tab) is MeasurementTabWidget:
-                name = tab.obj.name
-
-                # Check that the data is read.
-                if not tab.data_loaded:
-                    tab.data_loaded = True
-
-                    sbh = StatusBarHandler(self.statusbar, autoremove=True)
-                    sbh.reporter.report(5)
-
-                    tab.obj.load_data()
-                    sbh.reporter.report(30)
-
-                    tab.add_histogram(progress=sbh.reporter.get_sub_reporter(
-                        lambda x: 30 + 0.5 * x
-                    ))
-
-                    sbh.reporter.report(80)
-
-                    # Load previous states.
-                    tab.check_previous_state_files(
-                        sbh.reporter.get_sub_reporter(lambda x: 80 + 0.2 * x))
-
-                    sbh.reporter.report(100)
-
-                    self.__change_tab_icon(clicked_item)
-                    master_mea = tab.obj.request.get_master()
-                    if master_mea and tab.obj.name == master_mea.name:
-                        name = "{0} (master)".format(name)
-
-                    tab.restore_geometries()
-
-            elif type(tab) is SimulationTabWidget:
-                name = tab.obj.name
-
-                # Check that the data is read.
-                if not tab.data_loaded:
-                    sbh = StatusBarHandler(self.statusbar)
-
-                    tab.add_simulation_target_and_recoil(
-                        progress=sbh.reporter.get_sub_reporter(
-                            lambda x: 0.75 * x
-                        ))
-
-                    tab.check_previous_state_files(
-                        progress=sbh.reporter.get_sub_reporter(
-                            lambda x: 75 + 0.25 * x
-                        ))
-
-                    sbh.reporter.report(100)
-                    tab.data_loaded = True
-                    self.__change_tab_icon(clicked_item)
-            else:
-                raise TabError("No such tab widget")
+                master_mea = tab.obj.request.get_master()
+                if master_mea and tab.obj.name == master_mea.name:
+                    name = f"{name} (master)"
 
             # Check that the tab to be focused exists.
             if not self.__tab_exists(tab_id):
                 self.tabs.addTab(tab, name)
             self.tabs.setCurrentWidget(tab)
+            self.__change_tab_icon(clicked_item)
 
         except AttributeError as e:
             print(e)    # TODO remove print
-        self.treeWidget.blockSignals(False)
+        sbh.reporter.report(100)
 
     def import_pelletron(self):
         """Import Pelletron's measurements into request.
@@ -869,7 +815,7 @@ class Potku(QtWidgets.QMainWindow):
             serial_number = sample_item.obj.get_running_int_simulation()
             sample_item.obj.increase_running_int_simulation_by_1()
 
-            self.add_new_tab("simulation", os.path.join(
+            self.add_new_tab("simulation", Path(
                 self.request.directory, sample_item.obj.directory,
                 Simulation.DIRECTORY_PREFIX + "%02d" % serial_number + "-" +
                 dialog.name, f"{dialog.name}.simulation"), sample_item.obj,
@@ -1131,7 +1077,7 @@ class Potku(QtWidgets.QMainWindow):
 
         Args:
             tab_type: Either "measurement" or "simulation".
-            filepath: A string representing measurement or simulation file
+            filepath: A Path representing measurement or simulation file
             path, or data path when creating a new measurement.
             sample: The sample under which the measurement or simulation is put.
             file_current: An integer representing which number is currently
@@ -1146,7 +1092,6 @@ class Potku(QtWidgets.QMainWindow):
                 or not.
             progress: a ProgressReporter object
         """
-
         try:
             cur_progress = (100 / file_count) * file_current
         except ZeroDivisionError:
@@ -1207,7 +1152,6 @@ class Potku(QtWidgets.QMainWindow):
                 tab.setAttribute(QtCore.Qt.WA_DeleteOnClose)
                 tab.add_log()
                 self.tab_widgets[self.tab_id] = tab
-                # tab.add_log()
                 tab.data_loaded = load_data
                 if load_data:
                     tab.add_simulation_target_and_recoil()
@@ -1221,6 +1165,7 @@ class Potku(QtWidgets.QMainWindow):
                 self.__add_item_to_tree(sample_item, simulation, load_data)
                 self.tab_id += 1
 
+    @gutils.block_treewidget_signals
     def __change_tab_icon(self, tree_item, icon="folder_open.svg"):
         """Change tab icon in QTreeWidgetItem.
 
@@ -1242,60 +1187,30 @@ class Potku(QtWidgets.QMainWindow):
             self.tab_widgets = {}
             self.tab_id = 0
 
-    def __make_nonslave_measurement(self):
-        """Exclude selected measurement from slave category.
+    @gutils.block_treewidget_signals
+    def __set_slave_status(self, is_slave):
+        """Sets the currently selected tree item as either a slave or non-slave
+
+        Args:
+            is_slave: whether the item will be a slave or not.
         """
-        self.treeWidget.blockSignals(True)
         items = self.treeWidget.selectedItems()
         if not items:
             return
         clicked_item = self.treeWidget.currentItem()
 
-        self.request.exclude_slave(clicked_item.obj)
-        clicked_item.setText(0, clicked_item.obj.name)
+        if is_slave:
+            self.request.include_slave(clicked_item.obj)
+            clicked_item.setText(0, clicked_item.obj.name + " (slave)")
+        else:
+            self.request.exclude_slave(clicked_item.obj)
+            clicked_item.setText(0, clicked_item.obj.name)
 
-        # tree_root = self.treeWidget.invisibleRootItem()
-        # for i in range(tree_root.childCount()):
-        #     sample_item = tree_root.child(i)
-        #     for j in range(sample_item.childCount()):
-        #         tree_item = sample_item.child(j)
-        #         if isinstance(tree_item.obj, Measurement):
-        #             tab_widget = self.tab_widgets[tree_item.tab_id]
-        #             if master and tab_widget.obj.directory != master.directory:
-        #                 self.request.exclude_slave(tab_widget.obj)
-        #                 tree_item.setText(0, tab_widget.obj.name)
-        self.treeWidget.blockSignals(False)
-
-    def __make_slave_measurement(self):
-        """Include selected measurements in slave category.
-        """
-        self.treeWidget.blockSignals(True)
-        items = self.treeWidget.selectedItems()
-        if not items:
-            return
-        clicked_item = self.treeWidget.currentItem()
-        self.request.include_slave(clicked_item.obj)
-        clicked_item.setText(0, clicked_item.obj.name + " (slave)")
-
-        # tree_root = self.treeWidget.invisibleRootItem()
-        # for i in range(tree_root.childCount()):
-        #     sample_item = tree_root.child(i)
-        #     for j in range(sample_item.childCount()):
-        #         tree_item = sample_item.child(j)
-        #         if isinstance(tree_item.obj, Measurement):
-        #             tab_widget = self.tab_widgets[tree_item.tab_id]
-        #             if master and master.directory != tab_widget.obj.directory:
-        #                 self.request.include_slave(tab_widget.obj)
-        #                 tree_item.setText(0, "{0} (slave)".format(
-        #                     tab_widget.obj.name))
-        self.treeWidget.blockSignals(False)
-
+    @gutils.block_treewidget_signals
     def __make_master_measurement(self):
         """Make selected or first of the selected measurements
         a master measurement.
         """
-        self.treeWidget.blockSignals(True)
-
         items = self.treeWidget.selectedItems()
         if not items:
             return
@@ -1329,8 +1244,6 @@ class Potku(QtWidgets.QMainWindow):
                         self.tabs.setTabText(tab.tab_id, tab_name)
                     else:
                         self.tabs.setTabText(tab.tab_id, tab_name)
-
-        self.treeWidget.blockSignals(False)
 
     def __master_issue_commands(self):
         """Issue commands from master measurement to all slave measurements in
@@ -1427,9 +1340,7 @@ class Potku(QtWidgets.QMainWindow):
                             ))
 
                         # Update tree item icon to open folder
-                        self.treeWidget.blockSignals(True)
                         self.__change_tab_icon(tree_item)
-                        self.treeWidget.blockSignals(False)
 
                     sample_folder_name = "Sample_" + "%02d" % \
                                          master.sample.serial_number + "-" \
@@ -1491,11 +1402,10 @@ class Potku(QtWidgets.QMainWindow):
         if index >= 0:
             self.tabs.removeTab(index)
 
+    @gutils.block_treewidget_signals
     def __remove_master_measurement(self):
         """Remove master measurement
         """
-        self.treeWidget.blockSignals(True)
-
         old_master = self.request.get_master()
         self.request.set_master()  # No master measurement
 
@@ -1516,8 +1426,6 @@ class Potku(QtWidgets.QMainWindow):
             old_master_tab = self.tab_widgets[old_master.tab_id]
             old_master_tab.toggle_master_button()
         self.request.set_master()  # No master measurement
-
-        self.treeWidget.blockSignals(False)
 
     def __remove_info_tab(self):
         """Removes an info tab from the QTabWidget 'tab_measurements' that

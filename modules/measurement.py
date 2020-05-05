@@ -111,19 +111,17 @@ class Measurements:
         if import_evnt_or_binary:
             next_serial = sample.get_running_int_measurement()
             measurement_directory = \
-                os.path.join(self.request.directory, sample.directory,
-                             directory_prefix + "%02d" % next_serial +
-                             "-" + name)
+                Path(self.request.directory, sample.directory,
+                     directory_prefix + "%02d" % next_serial + "-" + name)
             sample.increase_running_int_measurement_by_1()
-            if not os.path.exists(measurement_directory):
+            if not measurement_directory.exists():
                 os.makedirs(measurement_directory)
             measurement = Measurement(self.request, measurement_directory,
                                       tab_id, name)
             measurement.sample = sample
 
-            measurement.info_to_file(os.path.join(measurement_directory,
-                                                  measurement.name +
-                                                  ".info"))
+            measurement.info_to_file(Path(
+                measurement_directory, measurement.name + ".info"))
             measurement.create_folder_structure(measurement_directory, None,
                                                 selector_cls=selector_cls)
             serial_number = next_serial
@@ -139,9 +137,9 @@ class Measurements:
             measurement_file = None
             for file in os.listdir(file_directory):
                 if file.endswith(".profile"):
-                    profile_file_path = os.path.join(file_directory, file)
+                    profile_file_path = Path(file_directory, file)
                 elif file.endswith(".measurement"):
-                    measurement_file = os.path.join(file_directory, file)
+                    measurement_file = Path(file_directory, file)
 
             # Create Measurement from file
             if os.path.exists(file_path) and file_path.endswith(".info"):
@@ -160,25 +158,25 @@ class Measurements:
                     selector_cls=selector_cls)
 
                 if measurement_file:
-                    measurement.run = Run.from_file(os.path.join(
-                        measurement.directory, measurement_file))
+                    measurement.run = Run.from_file(
+                        Path(measurement.directory, measurement_file))
 
                 # Read Detector anf Target information from file.
                 for file in os.listdir(file_directory):
                     if file.endswith(".target"):
-                        measurement.target = Target.from_file(os.path.join(
-                            file_directory, file), os.path.join(
-                            file_directory,
-                            measurement_file), self.request)
+                        measurement.target = Target.from_file(
+                            Path(file_directory, file),
+                            Path(file_directory, measurement_file),
+                            self.request)
                     if file.startswith("Detector"):
                         det_folder = os.path.join(file_directory,
                                                   "Detector")
                         for f in os.listdir(det_folder):
                             if f.endswith(".detector"):
                                 measurement.detector = Detector.from_file(
-                                    os.path.join(det_folder, f),
-                                    os.path.join(measurement.directory,
-                                                 measurement_file),
+                                    Path(det_folder, f),
+                                    Path(measurement.directory,
+                                         measurement_file),
                                     self.request)
                                 measurement.detector.update_directories(
                                     det_folder)
@@ -196,9 +194,9 @@ class Measurements:
                             return measurement  # measurement = None
                     next_serial = sample.get_running_int_measurement()
                     measurement_directory = \
-                        os.path.join(self.request.directory, sample.directory,
-                                     directory_prefix + "%02d" % next_serial +
-                                     "-" + name)
+                        Path(self.request.directory, sample.directory,
+                             directory_prefix + "%02d" % next_serial + "-" +
+                             name)
                     sample.increase_running_int_measurement_by_1()
                     if not os.path.exists(measurement_directory):
                         os.makedirs(measurement_directory)
@@ -300,9 +298,10 @@ class Measurement(Logger):
         self.path = path
         self.name = name
         self.description = description
-        if not modification_time:
-            modification_time = time.time()
-        self.modification_time = modification_time
+        if modification_time is None:
+            self.modification_time = time.time()
+        else:
+            self.modification_time = modification_time
 
         self.sample = sample
 
@@ -322,9 +321,11 @@ class Measurement(Logger):
 
         self.profile_name = profile_name
         self.profile_description = profile_description
-        if not profile_modification_time:
-            profile_modification_time = time.time()
-        self.profile_modification_time = profile_modification_time
+        if profile_modification_time is None:
+            self.profile_modification_time = time.time()
+        else:
+            self.profile_modification_time = profile_modification_time
+
         self.reference_density = reference_density
         self.number_of_depth_steps = number_of_depth_steps
         self.depth_step_for_stopping = depth_step_for_stopping
@@ -401,7 +402,7 @@ class Measurement(Logger):
         if selector_cls is not None:
             self.selector = selector_cls(self, element_colors)
 
-    def update_directory_references(self, new_dir):
+    def update_directory_references(self, new_dir: Path):
         """
         Update directory references.
 
@@ -409,14 +410,12 @@ class Measurement(Logger):
             new_dir: Path to measurement folder with new name.
         """
         self.directory = new_dir
-        self.directory_data = os.path.join(self.directory, "Data")
-        self.directory_cuts = os.path.join(self.directory_data, "Cuts")
-        self.directory_composition_changes = os.path.join(self.directory,
-                                                          "Composition_changes")
-        self.directory_depth_profiles = os.path.join(self.directory,
-                                                     "Depth_profiles")
-        self.directory_energy_spectra = os.path.join(self.directory,
-                                                     "Energy_spectra")
+        self.directory_data = Path(self.directory, "Data")
+        self.directory_cuts = Path(self.directory_data, "Cuts")
+        self.directory_composition_changes = Path(
+            self.directory, "Composition_changes")
+        self.directory_depth_profiles = Path(self.directory, "Depth_profiles")
+        self.directory_energy_spectra = Path(self.directory, "Energy_spectra")
 
         if self.detector:
             self.detector.update_directory_references(self)
@@ -426,8 +425,8 @@ class Measurement(Logger):
         self.set_loggers(self.directory, self.request.directory)
 
     @classmethod
-    def from_file(cls, measurement_info_path, measurement_file_path,
-                  profile_file_path, request):
+    def from_file(cls, measurement_info_path: Path, measurement_file_path: Path,
+                  profile_file_path: Path, request):
         """
         Read Measurement information from filea.
 
@@ -440,138 +439,127 @@ class Measurement(Logger):
         Return:
             Measurement object.
         """
+        with open(measurement_info_path) as mesu_info:
+            obj_info = json.load(mesu_info)
+        obj_info["modification_time"] = obj_info.pop("modification_time_unix")
 
-        obj_info = json.load(open(measurement_info_path))
-        if measurement_file_path and os.path.exists(measurement_file_path):
-            obj_measurement = json.load(open(measurement_file_path))
-            measurement_settings_name = obj_measurement["general"]["name"]
-            measurement_settings_description = \
-                obj_measurement["general"]["description"]
-            measurement_setting_modification_time = \
-                obj_measurement["general"]["modification_time_unix"]
+        if measurement_file_path is not None and measurement_file_path.exists():
+            with open(measurement_file_path) as mesu_file:
+                obj_gen = json.load(mesu_file)["general"]
+
+            mesu_general = {
+                "measurement_setting_file_name": obj_gen["name"],
+                "measurement_setting_file_description": obj_gen["description"],
+                "measurement_setting_modification_time": obj_gen[
+                    "modification_time_unix"
+                ]
+            }
         else:
-            measurement_settings_name = ""
-            measurement_settings_description = ""
-            measurement_setting_modification_time = time.time()
+            mesu_general = {}
 
-        if profile_file_path and os.path.exists(profile_file_path):
-            obj_profile = json.load(open(profile_file_path))
-            profile_name = obj_profile["general"]["name"]
-            profile_description = obj_profile["general"]["description"]
-            profile_modification_time = obj_profile["general"][
-                "modification_time_unix"]
+        if profile_file_path and profile_file_path.exists():
+            with open(profile_file_path) as prof_file:
+                obj_prof = json.load(prof_file)
 
-            reference_density = obj_profile["depth_profiles"][
-                "reference_density"]
-            number_of_depth_steps = \
-                obj_profile["depth_profiles"]["number_of_depth_steps"]
-            depth_step_for_stopping = \
-                obj_profile["depth_profiles"]["depth_step_for_stopping"]
-            depth_step_for_output = \
-                obj_profile["depth_profiles"]["depth_step_for_output"]
-            depth_for_concentration_from = \
-                obj_profile["depth_profiles"]["depth_for_concentration_from"]
-            depth_for_concentration_to = \
-                obj_profile["depth_profiles"]["depth_for_concentration_to"]
+            prof_gen = {
+                "profile_name": obj_prof["general"]["name"],
+                "profile_description": obj_prof["general"]["description"],
+                "profile_modification_time": obj_prof["general"][
+                    "modification_time_unix"]
+            }
 
-            channel_width = obj_profile["energy_spectra"]["channel_width"]
+            depth = obj_prof["depth_profiles"]
 
-            reference_cut = obj_profile["composition_changes"]["reference_cut"]
-            number_of_splits = \
-                obj_profile["composition_changes"]["number_of_splits"]
-            normalization = obj_profile["composition_changes"]["normalization"]
-            if obj_profile["general"]["use_default_settings"] == "True":
+            channel_width = obj_prof["energy_spectra"]["channel_width"]
+
+            comp = obj_prof["composition_changes"]
+
+            if obj_prof["general"]["use_default_settings"] == "True":
                 use_default_profile_settings = True
             else:
                 use_default_profile_settings = False
 
         else:
             measurement = request.default_measurement
-            profile_name = measurement.profile_name
-            profile_description = measurement.profile_description
-            profile_modification_time = measurement.profile_modification_time
-            number_of_depth_steps = measurement.number_of_depth_steps
-            depth_step_for_stopping = measurement.depth_step_for_stopping
-            depth_step_for_output = measurement.depth_step_for_output
-            depth_for_concentration_from = \
-                measurement.depth_for_concentration_from
-            depth_for_concentration_to = measurement.depth_for_concentration_to
+            prof_gen = {
+                "profile_name": measurement.profile_name,
+                "profile_description": measurement.profile_description,
+                "profile_modification_time":
+                    measurement.profile_modification_time,
+            }
+
+            depth = {
+                "number_of_depth_steps": measurement.number_of_depth_steps,
+                "depth_step_for_stopping": measurement.depth_step_for_stopping,
+                "depth_step_for_output": measurement.depth_step_for_output,
+                "depth_for_concentration_from":
+                    measurement.depth_for_concentration_from,
+                "depth_for_concentration_to":
+                    measurement.depth_for_concentration_to
+            }
             channel_width = measurement.channel_width
-            reference_cut = measurement.reference_cut
-            number_of_splits = measurement.number_of_splits
-            normalization = measurement.normalization
-            reference_density = measurement.reference_density
+            comp = {
+                "reference_cut": measurement.reference_cut,
+                "number_of_splits": measurement.number_of_splits,
+                "normalization": measurement.normalization,
+                "reference_density": measurement.reference_density,
+            }
+
             use_default_profile_settings = True
 
-        name = obj_info["name"]
-        description = obj_info["description"]
-        modification_time = obj_info["modification_time_unix"]
+        return cls(
+            request=request, path=measurement_info_path, run=None,
+            detector=None, target=None, channel_width=channel_width,
+            **obj_info, **prof_gen, **depth, **comp, **mesu_general,
+            use_default_profile_settings=use_default_profile_settings)
 
-        return cls(request=request, path=measurement_info_path, name=name,
-                   description=description,
-                   modification_time=modification_time,
-                   run=None, detector=None,
-                   target=None, profile_name=profile_name,
-                   profile_description=profile_description,
-                   profile_modification_time=profile_modification_time,
-                   number_of_depth_steps=number_of_depth_steps,
-                   depth_step_for_stopping=depth_step_for_stopping,
-                   depth_step_for_output=depth_step_for_output,
-                   depth_for_concentration_from=depth_for_concentration_from,
-                   depth_for_concentration_to=depth_for_concentration_to,
-                   channel_width=channel_width, reference_cut=reference_cut,
-                   number_of_splits=number_of_splits,
-                   normalization=normalization,
-                   reference_density=reference_density,
-                   measurement_setting_file_name=measurement_settings_name,
-                   measurement_setting_file_description=measurement_settings_description,
-                   measurement_setting_modification_time=measurement_setting_modification_time,
-                   use_default_profile_settings=use_default_profile_settings)
-
-    def measurement_to_file(self, measurement_file_path):
+    def measurement_to_file(self, measurement_file_path: Path):
         """
         Write a .measurement file.
 
         Args:
             measurement_file_path: Path to .measurement file.
         """
-        if os.path.exists(measurement_file_path):
+        if measurement_file_path.exists():
             with open(measurement_file_path) as mesu:
                 obj_measurement = json.load(mesu)
         else:
             obj_measurement = {}
 
+        time_stamp = time.time()
         obj_measurement["general"] = {}
 
         obj_measurement["general"]["name"] = self.measurement_setting_file_name
         obj_measurement["general"]["description"] = \
             self.measurement_setting_file_description
         obj_measurement["general"]["modification_time"] = \
-            time.strftime("%c %z %Z", time.localtime(time.time()))
-        obj_measurement["general"]["modification_time_unix"] = time.time()
+            time.strftime("%c %z %Z", time.localtime(time_stamp))
+        obj_measurement["general"]["modification_time_unix"] = time_stamp
 
         with open(measurement_file_path, "w") as file:
             json.dump(obj_measurement, file, indent=4)
 
-    def info_to_file(self, info_file_path):
+    def info_to_file(self, info_file_path: Path):
         """
         Write an .info file.
 
         Args:
             info_file_path: Path to .info file.
         """
+        time_stamp = time.time()
+
         obj_info = {
             "name": self.name,
             "description": self.description,
             "modification_time": time.strftime("%c %z %Z",
-                                               time.localtime(time.time())),
-            "modification_time_unix": time.time()
+                                               time.localtime(time_stamp)),
+            "modification_time_unix": time_stamp
         }
 
         with open(info_file_path, "w") as file:
             json.dump(obj_info, file, indent=4)
 
-    def profile_to_file(self, profile_file_path):
+    def profile_to_file(self, profile_file_path: Path):
         """
         Write a .profile file.
 
@@ -614,8 +602,8 @@ class Measurement(Logger):
         with open(profile_file_path, "w") as file:
             json.dump(obj_profile, file, indent=4)
 
-    def create_folder_structure(self, measurement_folder, measurement_file,
-                                selector_cls=None):
+    def create_folder_structure(self, measurement_folder: Path,
+                                measurement_file: Path, selector_cls=None):
         """ Creates folder structure for the measurement. If selector_cls is
         given, selector will be initialized as an object of that class.
 
@@ -624,8 +612,9 @@ class Measurement(Logger):
             measurement_file: Path of the measurement file. (under Data)
             selector_cls: class of the selector.
         """
+        # TODO refactor this and update_directory references
         if measurement_file is None:
-            measurement_data_folder = os.path.join(measurement_folder, "Data")
+            measurement_data_folder = Path(measurement_folder, "Data")
             self.measurement_file = None
         else:
             measurement_data_folder, measurement_name = \
@@ -634,20 +623,19 @@ class Measurement(Logger):
 
         self.directory = measurement_folder
         self.directory_data = measurement_data_folder
-        self.directory_cuts = os.path.join(self.directory_data, "Cuts")
-        self.directory_composition_changes = os.path.join(self.directory,
-                                                          "Composition_changes")
-        self.directory_depth_profiles = os.path.join(self.directory,
-                                                     "Depth_profiles")
-        self.directory_energy_spectra = os.path.join(self.directory,
-                                                     "Energy_spectra")
+        self.directory_cuts = Path(self.directory_data, "Cuts")
+        self.directory_composition_changes = Path(
+            self.directory, "Composition_changes")
+        self.directory_depth_profiles = Path(
+            self.directory, "Depth_profiles")
+        self.directory_energy_spectra = Path(self.directory, "Energy_spectra")
 
         self.__make_directories(self.directory)
         self.__make_directories(self.directory_data)
         self.__make_directories(self.directory_cuts)
         self.__make_directories(self.directory_composition_changes)
-        self.__make_directories(os.path.join(self.directory_composition_changes,
-                                             "Changes"))
+        self.__make_directories(Path(self.directory_composition_changes,
+                                "Changes"))
         self.__make_directories(self.directory_depth_profiles)
         self.__make_directories(self.directory_energy_spectra)
 
@@ -681,7 +669,7 @@ class Measurement(Logger):
             file_path: The file that needs to be copied.
         """
         file_name = os.path.basename(file_path)
-        new_path = os.path.join(self.directory, self.directory_data, file_name)
+        new_path = Path(self.directory, self.directory_data, file_name)
         shutil.copyfile(file_path, new_path)
 
     def load_data(self):
@@ -696,9 +684,9 @@ class Measurement(Logger):
                 self.measurement_file)
             extension = extension.lower()
             if extension == ".asc":
-                file_to_open = os.path.join(self.directory,
-                                            self.directory_data,
-                                            measurement_name + extension)
+                file_to_open = Path(
+                    self.directory, self.directory_data,
+                    f"{measurement_name}.asc")
                 # TODO this could maybe be done with CSVParser, but variable
                 #      column counts are going to be a problem
                 with open(file_to_open, "r") as fp:
@@ -898,7 +886,7 @@ class Measurement(Logger):
         """
         deleted = False
         for file in os.listdir(self.directory_cuts):
-            file_path = os.path.join(self.directory_cuts, file)
+            file_path = Path(self.directory_cuts, file)
             gf.remove_file(file_path)
             deleted = True
         return deleted
@@ -954,8 +942,7 @@ class Measurement(Logger):
         for i, points in enumerate(points_in_selection):
             if points:  # If not empty selection -> save
                 selection = self.selector.get_at(i)
-                cut_file = CutFile(os.path.join(self.directory,
-                                                self.directory_cuts))
+                cut_file = CutFile(Path(self.directory, self.directory_cuts))
                 cut_file.set_info(selection, points)
                 cut_file.save()
             if progress is not None:
@@ -971,8 +958,8 @@ class Measurement(Logger):
         """
         Remove old cut files.
         """
-        self.__unlink_files(os.path.join(self.directory_cuts))
-        directory_changes = os.path.join(
+        self.__unlink_files(Path(self.directory_cuts))
+        directory_changes = Path(
             self.directory_composition_changes, "Changes")
 
         self.__make_directories(directory_changes)
@@ -980,7 +967,7 @@ class Measurement(Logger):
 
     def __unlink_files(self, directory):
         for the_file in os.listdir(directory):
-            file_path = os.path.join(directory, the_file)
+            file_path = Path(directory, the_file)
             try:
                 if os.path.isfile(file_path):
                     os.unlink(file_path)
@@ -994,16 +981,13 @@ class Measurement(Logger):
         Return:
             Returns a list of cut files in measurement.
         """
-        cuts = [f for f in os.listdir(os.path.join(self.directory,
-                                                   self.directory_cuts))
-                if os.path.isfile(os.path.join(self.directory,
-                                               self.directory_cuts, f))]
+        cuts = [f for f in os.listdir(Path(self.directory, self.directory_cuts))
+                if os.path.isfile(Path(self.directory, self.directory_cuts, f))]
         elemloss = [f for f in os.listdir(os.path.join(
             self.directory, self.directory_composition_changes, "Changes"))
-                    if os.path.isfile(os.path.join(
+                    if os.path.isfile(Path(
                         self.directory, self.directory_composition_changes,
-                        "Changes",
-                        f))]
+                        "Changes", f))]
         return cuts, elemloss
 
     def load_selection(self, filename, progress=None):
@@ -1150,13 +1134,12 @@ class Measurement(Logger):
         for eff in os.listdir(eff_directory):
             if not eff.endswith(".eff"):
                 continue
-            old_file = os.path.join(eff_directory, eff)
+            old_file = Path(eff_directory, eff)
             element = eff.split('-')[0]
             if element.endswith(".eff"):
-                file_to_copy = os.path.join(eff_directory_final, eff)
+                file_to_copy = Path(eff_directory_final, eff)
             else:
-                file_to_copy = os.path.join(eff_directory_final, element
-                                            + ".eff")
+                file_to_copy = Path(eff_directory_final, element + ".eff")
             shutil.copy(old_file, file_to_copy)
         str_eff_dir = "Efficiency directory: {0}".format(eff_directory_final)
 

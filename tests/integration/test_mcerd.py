@@ -77,7 +77,7 @@ class TestMCERD(unittest.TestCase):
             "number_of_scaling_ions": 14,
             "number_of_ions_in_presimu": 100,
             "number_of_ions": 1000
-        }, mo.get_element_simulation())
+        }, mo.get_element_simulation().get_full_name())
 
     def test_get_command(self):
         """Tests the get_command function on different platforms.
@@ -113,16 +113,16 @@ class TestMCERD(unittest.TestCase):
 
         # These use the parent prefix, therefore they do not start with 'He'
         self.assertEqual(
-            self.directory / "-Default.erd_target",
+            self.directory / "Default.erd_target",
             self.mcerd._MCERD__target_file)
         self.assertEqual(
-            self.directory / "-Default.erd_detector",
+            self.directory / "Default.erd_detector",
             self.mcerd._MCERD__detector_file)
         self.assertEqual(
-            self.directory / "-Default.foils",
+            self.directory / "Default.foils",
             self.mcerd._MCERD__foils_file)
         self.assertEqual(
-            self.directory / "-Default.pre",
+            self.directory / "Default.pre",
             self.mcerd._MCERD__presimulation_file)
 
     def test_get_command_file_contents(self):
@@ -130,10 +130,10 @@ class TestMCERD(unittest.TestCase):
 
         expected = get_template_file_contents(
             detector_file,
-            tgt_file=self.directory / "-Default.erd_target",
-            det_file=self.directory / "-Default.erd_detector",
+            tgt_file=self.directory / "Default.erd_target",
+            det_file=self.directory / "Default.erd_detector",
             rec_file=self.directory / "He-Default.recoil",
-            pre_file=self.directory / "-Default.pre"
+            pre_file=self.directory / "Default.pre"
         )
         output = self.mcerd.get_command_file_contents()
 
@@ -144,7 +144,7 @@ class TestMCERD(unittest.TestCase):
 
         expected = get_template_file_contents(
             detector_file,
-            foils_file=self.directory / "-Default.foils"
+            foils_file=self.directory / "Default.foils"
         )
         output = self.mcerd.get_detector_file_contents()
 

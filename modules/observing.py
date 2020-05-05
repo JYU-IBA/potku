@@ -26,6 +26,9 @@ __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 import weakref
+import sys
+
+import rx.operators as ops
 
 
 class ProgressReporter:
@@ -245,3 +248,16 @@ class Observer:
             msg: message from the Observable
         """
         raise NotImplementedError
+
+
+def get_printer(completed_msg=""):
+    """Returns an rx.operator that prints the observed item to console.
+
+    Args:
+        completed_msg: message shown when the observable completes.
+    """
+    return ops.do_action(
+        on_next=print,
+        on_error=lambda x: print("Error:", x, file=sys.stderr),
+        on_completed=lambda: print("Completed:", completed_msg)
+    )
