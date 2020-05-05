@@ -136,7 +136,7 @@ class Nsgaii(Observable):
 
         # MCERd specific parameters
         self.number_of_processes = number_of_processes
-        self.mcerd_run = skip_simulation
+        self._is_mcerd_run = skip_simulation
         self.stop_percent = stop_percent
         self.check_time = check_time
         self.check_max = check_max
@@ -170,9 +170,6 @@ class Nsgaii(Observable):
                              "no measurement defined.")
 
         self.element_simulation.optimized_fluence = None
-        self.element_simulation.optimization_done = False
-        self.element_simulation.optimization_stopped = False
-        self.element_simulation.optimization_running = True
 
         es = EnergySpectrum(self.measurement, [self.cut_file],
                             self.channel_width, no_foil=True)
@@ -190,14 +187,9 @@ class Nsgaii(Observable):
 
         # Previous erd files are used as the starting point so combine them
         # into a single file
-        if self.optimization_type is OptimizationType.RECOIL:
-            erd_file_name = fp.get_erd_file_name(
-                self.element_simulation.recoil_elements[0], "test",
-                optim_mode="recoil")
-        else:
-            erd_file_name = fp.get_erd_file_name(
-                self.element_simulation.recoil_elements[0], "test",
-                optim_mode="fluence")
+        erd_file_name = fp.get_erd_file_name(
+            self.element_simulation.recoil_elements[0], "combined",
+            optim_mode=self.optimization_type)
 
         gf.combine_files(self.element_simulation.get_erd_files(),
                          Path(self.element_simulation.directory,
@@ -289,18 +281,14 @@ class Nsgaii(Observable):
             current_recoil = self.form_recoil(sols[0])
             # Run mcerd for first solution
             self.element_simulation.optimization_recoils.append(current_recoil)
-            if not self.mcerd_run:
-                # TODO run this in a thread so we could use the same
-                #  cancellation token as NSGAII uses
+            if not self._is_mcerd_run:
                 self.element_simulation.start(
                     self.number_of_processes, start_value=201,
                     optimization_type=self.optimization_type,
                     stop_p=self.stop_percent, check_t=self.check_time,
                     check_max=self.check_max, heck_min=self.check_min,
                     cancellation_token=self.cancellation_token)
-                if self.element_simulation.optimization_stopped:
-                    return None
-                self.mcerd_run = True
+                self._is_mcerd_run = True
 
             # Create other recoils
             for solution in sols[1:]:
@@ -308,8 +296,6 @@ class Nsgaii(Observable):
                 self.element_simulation.optimization_recoils.append(recoil)
 
             for recoil in self.element_simulation.optimization_recoils:
-                if self.element_simulation.optimization_stopped:
-                    return None
                 # Run get_espe
                 self.element_simulation.calculate_espe(
                     recoil, optimization_type=self.optimization_type,
@@ -319,7 +305,7 @@ class Nsgaii(Observable):
                 objective_values.append(self.get_objective_values(espe_file))
 
         else:  # Evaluate fluence
-            if not self.mcerd_run:
+            if not self._is_mcerd_run:
                 # TODO maybe move this to the __prepare method?
                 self.element_simulation.start(
                     self.number_of_processes, 201,
@@ -328,14 +314,10 @@ class Nsgaii(Observable):
                     check_max=self.check_max, check_min=self.check_min,
                     cancellation_token=self.cancellation_token
                 )
-                if self.element_simulation.optimization_stopped:
-                    return None
-                self.mcerd_run = True
+                self._is_mcerd_run = True
 
             recoil = self.element_simulation.recoil_elements[0]
             for solution in sols:
-                if self.element_simulation.optimization_stopped:
-                    return None
                 # Round solution appropriately
                 sol_fluence = gf.round_value_by_four_biggest(solution[0])
                 # Run get_espe
@@ -620,7 +602,7 @@ class Nsgaii(Observable):
                     x_coords = get_xs(x_lower, x_upper, self.pop_size)
 
                     self.__const_var_i.append(0)
-                    self.__const_var_i.appe=nd(4)
+                    self.__const_var_i.append(4)
 
                     y_coords = get_ys(y_lower, y_upper, self.pop_size)
 
@@ -978,7 +960,7 @@ class Nsgaii(Observable):
             offspring = self.variation(pool[0])
             # Evaluate offspring solutions to get offspring population
             offspring_pop = self.evaluate_solutions(offspring)
-            if self.element_simulation.optimization_stopped:
+            if not self.element_simulation.is_optimization_running():
                 return
             # Join parent population and offspring population
             joined_sols = np.vstack((self.population[0], offspring_pop[0]))
