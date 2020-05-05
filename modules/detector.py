@@ -84,10 +84,11 @@ class Detector(MCERDParameterContainer, Serializable):
             detector_theta: Angle of the detector.
             save_in_creation: Whether to save created detector into a file.
         """
-        self.path = path
+        self.path = Path(path)
 
         self.name = name
-        self.__measurement_settings_file_path = measurement_settings_file_path
+        self.__measurement_settings_file_path = Path(
+            measurement_settings_file_path)
         self.description = description
         if modification_time is None:
             self.modification_time = time.time()
@@ -179,18 +180,16 @@ class Detector(MCERDParameterContainer, Serializable):
         Return:
             List of efficiency files.
         """
-        files = []
-        for path in self.efficiencies:
-            file = os.path.split(path)[1]
-            files.append(file)
-        return files
+        return [
+            f.name for f in self.efficiencies
+        ]
 
-    def save_efficiency_file_path(self, file_path):
+    def save_efficiency_file_path(self, file_path: Path):
         """Add the efficiency file path to detector's efficiencies list.
         """
-        self.efficiencies.append(file_path)
+        self.efficiencies.append(Path(file_path))
 
-    def add_efficiency_file(self, file_path):
+    def add_efficiency_file(self, file_path: Path):
         """Copies efficiency file to detector's efficiency folder.
 
         Args:
@@ -211,18 +210,17 @@ class Detector(MCERDParameterContainer, Serializable):
         """
         # TODO maybe the widget could keep a list of files to remove instead of
         #      the detector? Detector should just delete given files
-        file_path = ""
-        folder_and_file = Path("Efficiency_files", file_name)
+        file_path = None
         for f in self.efficiencies:
-            if f.endswith(folder_and_file):
+            if f.parent.name == "Efficiency_files" and f.name.endswith(
+                    file_name):
                 file_path = f
-            if f.endswith(file_name):
-                self.efficiencies.remove(f)
 
-        if file_path:
+        if file_path is not None:
+            self.efficiencies.remove(file_path)
             self.efficiencies_to_remove.append(file_path)
 
-    def remove_efficiency_file(self, file_name):
+    def remove_efficiency_file(self, file_name: Path):
         """Removes efficiency file from detector's efficiency file folder.
 
         Args:
@@ -231,7 +229,7 @@ class Detector(MCERDParameterContainer, Serializable):
         try:
             os.remove(Path(self.efficiency_directory, file_name))
             # Remove file from used efficiencies if it exists
-            element_split = file_name.split('-')
+            element_split = file_name.name.split('-')
             if len(element_split) <= 2:
                 element = element_split[0]
             else:
@@ -253,8 +251,8 @@ class Detector(MCERDParameterContainer, Serializable):
             pass
 
     @classmethod
-    def from_file(cls, detector_file_path, measurement_file_path, request,
-                  save=True):
+    def from_file(cls, detector_file_path: Path, measurement_file_path: Path,
+                  request, save=True):
         """Initialize Detector from a JSON file.
 
         Args:

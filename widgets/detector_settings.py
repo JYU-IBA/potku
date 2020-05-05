@@ -96,9 +96,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.efficiencyListWidget.addItems(efficiency_files)
         self.obj.efficiencies = []
         for f in efficiency_files:
-            # TODO change to Path
-            self.obj.efficiencies.append(os.path.join(
-                self.obj.efficiency_directory, f))
+            self.obj.efficiencies.append(
+                Path(self.obj.efficiency_directory, f))
         self.addEfficiencyButton.clicked.connect(self.__add_efficiency)
         self.removeEfficiencyButton.clicked.connect(self.__remove_efficiency)
 
@@ -133,10 +132,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         except ValueError:
             number_part = slope_value_and_mult
             multiply_part = 1
-        self.scientific_tof_slope = ScientificSpinBox(number_part,
-                                                      multiply_part,
-                                                      -math.inf, math.inf,
-                                                      show_btns=False)
+        self.scientific_tof_slope = ScientificSpinBox(
+            number_part, multiply_part, -math.inf, math.inf, show_btns=False)
 
         # Parse the value and multiplier
         offset_value_and_mult = str(self.obj.tof_offset)
@@ -182,8 +179,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
 
         original_obj = self.obj
         self.obj = temp_detector
-        self.obj.efficiency_directory = os.path.join(os.path.split(
-            self.obj.path)[0], "Efficiency_files")
+        self.obj.efficiency_directory = Path(
+            os.path.split(self.obj.path)[0], "Efficiency_files")
 
         self.tmp_foil_info = []
         self.tof_foils = []
@@ -211,16 +208,16 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             self.efficiencyListWidget.takeItem(
                 self.efficiencyListWidget.row(item))
         for orig_eff in original_obj.get_efficiency_files():
-            path = os.path.join(original_obj.efficiency_directory, orig_eff)
+            path = Path(original_obj.efficiency_directory, orig_eff)
             original_obj.remove_efficiency_file_path(path)
 
         self.efficiencyListWidget.addItems(efficiency_files)
         self.obj.efficiencies = []
         for f in efficiency_files:
-            self.obj.efficiencies.append(os.path.join(
-                self.obj.efficiency_directory, f))
-            self.obj.save_efficiency_file_path(os.path.join(
-                self.obj.efficiency_directory, f))
+            self.obj.efficiencies.append(
+                Path(self.obj.efficiency_directory, f))
+            self.obj.save_efficiency_file_path(
+                Path(self.obj.efficiency_directory, f))
 
         self.show_settings()
 
@@ -393,14 +390,14 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
             return True
 
         # Efficiencies
-        existing_efficiency_files = [os.path.join(
+        existing_efficiency_files = [Path(
             self.obj.efficiency_directory, x) for x in
             self.obj.get_efficiency_files()]
         modified_efficiencies = copy.deepcopy(existing_efficiency_files)
         for file in self.obj.efficiencies:
             file_name = os.path.split(file)[1]
-            new_path = os.path.join(self.obj.efficiency_directory,
-                                    file_name)
+            new_path = Path(
+                self.obj.efficiency_directory, file_name)
             if new_path not in modified_efficiencies:
                 modified_efficiencies.append(new_path)
 
@@ -601,22 +598,19 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         """Adds efficiency file in detector's efficiency list for moving into
         efficiency folder later and updates settings view.
         """
-        new_efficiency_file = open_file_dialog(self,
-                                               self.request.default_folder,
-                                               "Select efficiency file",
-                                               "Efficiency File (*.eff)")
+        new_efficiency_file = open_file_dialog(
+            self, self.request.default_folder, "Select efficiency file",
+            "Efficiency File (*.eff)")
         if not new_efficiency_file:
             return
         for path in self.obj.efficiencies:
             existing_eff_name = os.path.split(path)[1]
             new_eff_name = os.path.split(new_efficiency_file)[1]
             if existing_eff_name == new_eff_name:
-                QtWidgets.QMessageBox.critical(self, "Error",
-                                               "There already is an "
-                                               "efficiency file for this "
-                                               "element.\n",
-                                               QtWidgets.QMessageBox.Ok,
-                                               QtWidgets.QMessageBox.Ok)
+                QtWidgets.QMessageBox.critical(
+                    self, "Error",
+                    "There already is an efficiency file for this element.\n",
+                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 return
             existing_element = existing_eff_name.split('-')[0]
             if existing_element.endswith(".eff"):
@@ -630,7 +624,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
                                                QtWidgets.QMessageBox.Ok,
                                                QtWidgets.QMessageBox.Ok)
                 return
-        self.obj.save_efficiency_file_path(new_efficiency_file)
+        self.obj.save_efficiency_file_path(Path(new_efficiency_file))
         self.efficiencyListWidget.clear()
         self.efficiencyListWidget.addItems(
             self.obj.get_efficiency_files_from_list())

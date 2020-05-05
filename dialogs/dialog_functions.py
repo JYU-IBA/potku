@@ -148,10 +148,6 @@ def get_updated_efficiency_files(qdialog, efficiency_files):
 
     return eff_files_used
 
-# TODO stop_simulations and delete_energy_spectra are still work in progress
-#      so the code looks untidy. The code should be left pretty much untouched
-#      until duplicated code segments have been refactored.
-
 
 def delete_optim_espe(qdialog, elem_sim):
     """Deletes energy spectra from optimized recoils"""
