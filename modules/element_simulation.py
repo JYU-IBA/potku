@@ -31,7 +31,6 @@ import json
 import logging
 import numpy as np
 import os
-import threading
 import time
 import itertools
 import functools
@@ -39,6 +38,7 @@ import rx
 
 import modules.file_paths as fp
 import modules.general_functions as gf
+import modules.observing as observing
 
 from typing import Optional
 from rx import operators as ops
@@ -114,7 +114,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "optimization_recoils", "optimization_done", \
                 "optimization_stopped", "optimization_widget", \
                 "optimization_running", "optimized_fluence", \
-                "last_process_count", "sample", \
+                "sample", \
                 "__cancellation_token", "_simulation_running"
 
     def __init__(self, directory, request, recoil_elements,
@@ -232,10 +232,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             self.profile_to_file(Path(self.directory, f"{prefix}.profile"))
 
         self._mcerd_objects = set()
-
-        # Total number of processes that were run last time this simulation
-        # was started
-        self.last_process_count = 0
 
         self.__erd_filehandler = ERDFileHandler.from_directory(
             self.directory, self.main_recoil)
@@ -619,8 +615,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         if number_of_processes < 1:
             number_of_processes = 1
 
-        self.last_process_count = number_of_processes
-
         if shared_ions:
             settings["number_of_ions"] //= number_of_processes
             settings["number_of_ions_in_presimu"] //= number_of_processes
@@ -636,8 +630,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.__cancellation_token = cancellation_token
         self._set_flags(True, optimization_type)
 
-        import modules.observing as observing
-
         # New MCERD process is started every five seconds until number of
         # processes is reached or cancellation has been requested.
         # Seed is incremented for each new process.
@@ -650,14 +642,21 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 recoil, x, optimization_type, dict(settings),
                     cancellation_token)),
             ops.flat_map(lambda x: x),
+            ops.scan(lambda acc, x: {
+                **x,
+                "total_processes": number_of_processes,
+                "finished_processes": acc["finished_processes"] + int(
+                    not x["is_running"])
+            }, seed={"finished_processes": 0}),
             ops.combine_latest(rx.timer(0, 1).pipe(
-                ops.map(lambda x: self.get_current_status()),
-                ops.take_while(
-                    lambda _: any(self._mcerd_objects), # FIXME
-                    inclusive=True)
+                ops.map(lambda x: self.get_current_status())
             )),
             ops.map(lambda x: {**x[0], **x[1]}),
             observing.get_printer(),
+            ops.take_while(
+                lambda x: x["finished_processes"] < x["total_processes"]
+                and not cancellation_token.is_cancellation_requested(),
+                inclusive=True),
             ops.do_action(
                 on_completed=self._clean_up
             )
@@ -695,9 +694,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             optimize_fluence=optimization_type is OptimizationType.FLUENCE)
         self._mcerd_objects.add(mcerd)
 
-        import functools
         return mcerd.run(
             print_to_console=False, cancellation_token=cancellation_token).pipe(
+                observing.get_printer(),
                 ops.do_action(
                     on_completed=functools.partial(
                         self._mcerd_objects.remove, mcerd))
@@ -758,7 +757,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         #  because at that moment there are no active simulation processes.
         #  In the GUI, this causes the start button to become enabled even
         #  though it should not be.
-        process_count = self.count_active_processes()
         active_count = self.__erd_filehandler.get_active_atom_counts()
         old_count = self.__erd_filehandler.get_old_atom_counts()
         total_count = active_count + old_count
@@ -774,7 +772,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         # Return status as a dict
         return {
             "atom_count": total_count,
-            "running":  process_count,
             "state": state,
             "optimizing": self.is_optimization_running()
         }
@@ -925,8 +922,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         if self.simulation is not None:
             msg = f"Simulation finished. Element " \
                   f"{self.get_main_recoil().get_full_name()}, " \
-                  f"processes: {self.last_process_count}, " \
-                  f"observed atoms: {atom_count}"
+                  f"observed atoms: {atom_count}."
             logging.getLogger(self.simulation.name).info(msg)
 
     def stop(self):
@@ -1152,12 +1148,14 @@ class ERDFileHandler:
             raise ValueError("Given .erd file is an already simulated file")
 
         # Check that the file is valid
-        tpl = next(fp.validate_erd_file_names([erd_file],
-                                              self.recoil_element),
-                   None)
+        tpl = next(fp.validate_erd_file_names(
+            [erd_file], self.recoil_element), None)
 
         if tpl is not None:
-            self.__active_files[tpl[0]] = tpl[1]
+            self.__active_files = {
+                **self.__active_files,
+                tpl[0]: tpl[1]
+            }
         else:
             raise ValueError("Given file was not a valid .erd file")
 

@@ -151,13 +151,15 @@ class MCERD:
             ops.subscribe_on(pool_scheduler),
             MCERD.get_pipeline(self.__seed, self.__rec_filename),
             ops.combine_latest(is_running),
-            ops.map(lambda x: {**x[0], "is_running": x[1]}),
             ops.do_action(
                 on_next=lambda _: self._stop(cancellation_token)),
+            ops.map(lambda x: {
+                **x[0],
+                "is_running": x[1] and not x[0]["msg"].startswith("Beam ion: ")
+                and not cancellation_token.is_cancellation_requested()
+            }),
             ops.take_while(
-                lambda x: x["is_running"] and not
-                x["msg"].startswith("Beam ion: ") and not
-                cancellation_token.is_cancellation_requested(),
+                lambda x: x["is_running"],
                 inclusive=True),
         )
 
