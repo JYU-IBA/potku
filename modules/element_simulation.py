@@ -662,6 +662,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 and not cancellation_token.is_cancellation_requested(),
                 inclusive=True),
             ops.do_action(
+                on_error=lambda _: self._clean_up(),
                 on_completed=self._clean_up
             )
         )
@@ -701,8 +702,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         return mcerd.run(
             print_to_console=True, cancellation_token=cancellation_token).pipe(
                 ops.do_action(
-                    on_completed=functools.partial(
-                        self._mcerd_objects.remove, mcerd))
+                    on_error=lambda _: self._mcerd_objects.remove(mcerd),
+                    on_completed=lambda _: self._mcerd_objects.remove(mcerd))
                 )
 
     def _set_flags(self, b, optim_mode=None):

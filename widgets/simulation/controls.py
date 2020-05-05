@@ -83,6 +83,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         fset=_process_count_to_label)
     observed_atoms = bnd.bind("observed_atom_count_label")
     simulation_state = bnd.bind("state_label")
+    mcerd_error = bnd.bind("mcerd_error_lbl")
 
     # TODO these styles could use some brush up...
     PRESIM_PROGRESS_STYLE = """
@@ -128,6 +129,8 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         self.stop_button.clicked.connect(self.stop_simulation)
         self.stop_button.setIcon(QIcon("ui_icons/reinhardt/player_stop.svg"))
         self.enable_buttons()
+
+        self.mcerd_error_lbl.hide()
 
         self.__unsub = None
 
@@ -189,6 +192,8 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
                 use_old_erd_files = True
         elif status["state"] == SimulationState.NOTRUN:
             use_old_erd_files = False
+
+        self.mcerd_error_lbl.hide()
 
         # Lock full edit
         # TODO move this to ElementSimulation's start method
@@ -271,9 +276,11 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         """Called when observable (either ElementSimulation or the rx stream
         reports an error.
         """
-        # For now just print any errors that the stream may throw at us
-        # TODO add an error label
-        print("Error:", err)
+        self.mcerd_error = err
+        self.mcerd_error_lbl.show()
+
+        self.enable_buttons()
+        self.show_status(self.element_simulation.get_current_status())
         if self.__unsub is not None:
             self.__unsub.dispose()
 

@@ -47,6 +47,7 @@ from rx.scheduler import ThreadPoolScheduler
 from modules.layer import Layer
 from modules.concurrency import CancellationToken
 
+# TODO consider making this module stateless
 
 class MCERD:
     """
@@ -115,12 +116,17 @@ class MCERD:
         return f"{ulimit}{exec_cmd}{mcerd_path} " \
                f"{shlex.quote(str(self.__command_file))}"
 
-    def run(self, print_to_console=True, cancellation_token=None):
+    def run(self, print_to_console=True, cancellation_token=None,
+            poll_interval=10):
         """Starts the MCERD process. Also starts a thread that
         periodically checks if the MCERD has finished.
 
         Args:
             print_to_console: whether MCERD output is also printed to console
+            cancellation_token: token that is checked periodically to see if
+                the simulation should be stopped.
+            poll_interval: seconds between each check to see if the simulation
+                process is still running.
 
         Return:
             observable stream or None if rx was not found when importing
@@ -133,14 +139,14 @@ class MCERD:
             cancellation_token = CancellationToken()
 
         # TODO use timeout when optimizing and max time is set
+        # TODO use rx.timer to periodically check cancellation_token
         self.__process = subprocess.Popen(
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         errs = rx.from_iterable(iter(self.__process.stderr.readline, b""))
         outs = rx.from_iterable(iter(self.__process.stdout.readline, b""))
-        is_running = rx.timer(0, 10).pipe(
-            # TODO could raise an exception if mcerd returns a non-zero value
-            ops.map(lambda *_: self.__process.poll() is None),
+        is_running = rx.timer(0, poll_interval).pipe(
+            ops.map(lambda _: MCERD.is_running(self.__process)),
             ops.take_while(lambda x: x, inclusive=True)
         )
 
@@ -152,7 +158,7 @@ class MCERD:
             MCERD.get_pipeline(self.__seed, self.__rec_filename),
             ops.combine_latest(is_running),
             ops.do_action(
-                on_next=lambda _: self._stop(cancellation_token)),
+                on_next=lambda _: self._stop_if_cancelled(cancellation_token)),
             ops.map(lambda x: {
                 **x[0],
                 "is_running": x[1] and not x[0]["msg"].startswith("Beam ion: ")
@@ -171,9 +177,24 @@ class MCERD:
 
         return merged
 
-    def _stop(self, cancellation_token):
+    def _stop_if_cancelled(self, cancellation_token):
+        """Stops the simulation if cancellation has been requested.
+        """
         if cancellation_token.is_cancellation_requested():
             self.stop_process()
+
+    @staticmethod
+    def is_running(process: subprocess.Popen) -> bool:
+        """Checks if the given process is running. Raises SubprocessError if
+        the process returns an error code.
+        """
+        res = process.poll()
+        if res == 0:
+            return False
+        if res is None:
+            return True
+        raise subprocess.SubprocessError(
+            f"MCERD stopped with an error code {res}.")
 
     @staticmethod
     def get_pipeline(seed: int, name: str):
