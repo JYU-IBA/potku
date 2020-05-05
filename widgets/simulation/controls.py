@@ -252,21 +252,18 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         Args:
             status: status update sent by ElementSimulation or observable stream
         """
-        try:
-            if status["msg"] == "Presimulation finished":
-                style = SimulationControlsWidget.SIM_PROGRESS_STYLE
-            else:
-                style = None
-            self.update_progress_bar(
-                status["seed"], status["percentage"], stylesheet=style)
+        if status["msg"] == "Presimulation finished":
+            style = SimulationControlsWidget.SIM_PROGRESS_STYLE
+        else:
+            style = None
+        self.update_progress_bar(
+            status["seed"], status["percentage"], stylesheet=style)
 
-            self.finished_processes = (
-                status["finished_processes"], status["total_processes"])
+        self.finished_processes = (
+            status["finished_processes"], status["total_processes"])
 
-            if status["started"]:
-                self.enable_buttons(starting=True)
-        except KeyError:
-            pass    # TODO better handling when simulation is reset
+        if status["started"]:
+            self.enable_buttons(starting=True)
 
         self.show_status(status)
 
@@ -289,6 +286,10 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         GUI is updated to show the status and button states are switched
         accordingly.
         """
+        if not statuses:
+            self.show_status(self.element_simulation.get_current_status())
+        else:
+            self.show_status(statuses[0])
         self.enable_buttons()
         if self.__unsub is not None:
             self.__unsub.dispose()

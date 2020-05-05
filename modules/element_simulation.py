@@ -569,7 +569,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def start(self, number_of_processes, start_value=None,
               use_old_erd_files=True, optimization_type=None, stop_p=False,
               check_t=False, check_max=False, check_min=False,
-              shared_ions=False, cancellation_token=None):
+              shared_ions=False, cancellation_token=None, start_interval=5,
+              status_check_interval=1) -> Optional[rx.Observable]:
         """
         Start the simulation.
 
@@ -587,10 +588,15 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 divided by the number of processes
             cancellation_token: CancellationToken that can be used to stop
                 the start process
+            start_interval: seconds between the start of each simulation
+                (ensures that MCERD's startup files are not being
+                overwritten by later processes)
+            status_check_interval: seconds between each observed atoms count.
 
         """
         if self.is_simulation_running():
             return None
+        self._set_flags(True, optimization_type)
 
         if not use_old_erd_files:
             self.__erd_filehandler.clear()
@@ -628,19 +634,18 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         })
 
         self.__cancellation_token = cancellation_token
-        self._set_flags(True, optimization_type)
 
         # New MCERD process is started every five seconds until number of
         # processes is reached or cancellation has been requested.
         # Seed is incremented for each new process.
-        return rx.timer(0, 5).pipe(
+        return rx.timer(0, start_interval).pipe(
             ops.take_while(
                 lambda _: not cancellation_token.is_cancellation_requested()),
             ops.take(number_of_processes),
             ops.scan(lambda acc, _: acc + 1, seed=seed_number - 1),
             ops.map(lambda x: self._start(
                 recoil, x, optimization_type, dict(settings),
-                    cancellation_token)),
+                cancellation_token)),
             ops.flat_map(lambda x: x),
             ops.scan(lambda acc, x: {
                 **x,
@@ -648,11 +653,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "finished_processes": acc["finished_processes"] + int(
                     not x["is_running"])
             }, seed={"finished_processes": 0}),
-            ops.combine_latest(rx.timer(0, 1).pipe(
+            ops.combine_latest(rx.timer(0, status_check_interval).pipe(
                 ops.map(lambda x: self.get_current_status())
             )),
             ops.map(lambda x: {**x[0], **x[1]}),
-            observing.get_printer(),
             ops.take_while(
                 lambda x: x["finished_processes"] < x["total_processes"]
                 and not cancellation_token.is_cancellation_requested(),
@@ -671,7 +675,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         #        check_max, check_min, opt_seed)
 
     def _start(self, recoil, seed_number, optimization_type, settings,
-               cancellation_token):
+               cancellation_token) -> rx.Observable:
         """Inner method that creates an MCERD instance and runs it.
 
         Returns an observable stream of MCERD output.
@@ -695,8 +699,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self._mcerd_objects.add(mcerd)
 
         return mcerd.run(
-            print_to_console=False, cancellation_token=cancellation_token).pipe(
-                observing.get_printer(),
+            print_to_console=True, cancellation_token=cancellation_token).pipe(
                 ops.do_action(
                     on_completed=functools.partial(
                         self._mcerd_objects.remove, mcerd))
@@ -1078,7 +1081,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             self.delete_simulation_results()
             self.__erd_filehandler.clear()
         self.unlock_edit()
-        self.on_next(self.get_current_status())
+        self.on_completed(self.get_current_status())
 
 
 class ERDFileHandler:
