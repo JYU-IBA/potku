@@ -35,7 +35,6 @@ import json
 import logging
 import os
 import shutil
-import sys
 import time
 
 import modules.general_functions as gf
@@ -87,7 +86,7 @@ class Measurements:
             return None
         return self.measurements[key]
 
-    def add_measurement_file(self, sample, file_path, tab_id, name,
+    def add_measurement_file(self, sample, file_path: Path, tab_id, name,
                              import_evnt_or_binary, selector_cls=None):
         """Add a new file to measurements. If selector_cls is given,
         selector will be initializaed as an object of that class..
@@ -122,8 +121,8 @@ class Measurements:
 
             measurement.info_to_file(Path(
                 measurement_directory, measurement.name + ".info"))
-            measurement.create_folder_structure(measurement_directory, None,
-                                                selector_cls=selector_cls)
+            measurement.create_folder_structure(
+                measurement_directory, None, selector_cls=selector_cls)
             serial_number = next_serial
             measurement.serial_number = serial_number
             self.request.samples.measurements.measurements[tab_id] = \
@@ -142,11 +141,10 @@ class Measurements:
                     measurement_file = Path(file_directory, file)
 
             # Create Measurement from file
-            if os.path.exists(file_path) and file_path.endswith(".info"):
-                measurement = Measurement.from_file(file_path,
-                                                    measurement_file,
-                                                    profile_file_path,
-                                                    self.request)
+            if file_path.exists() and file_path.suffix == ".info":
+                measurement = Measurement.from_file(
+                    file_path, measurement_file, profile_file_path,
+                    self.request)
                 measurement.sample = sample
                 measurement_folder_name = os.path.split(file_directory)[1]
                 serial_number = int(measurement_folder_name[
@@ -169,8 +167,7 @@ class Measurements:
                             Path(file_directory, measurement_file),
                             self.request)
                     if file.startswith("Detector"):
-                        det_folder = os.path.join(file_directory,
-                                                  "Detector")
+                        det_folder = Path(file_directory, "Detector")
                         for f in os.listdir(det_folder):
                             if f.endswith(".detector"):
                                 measurement.detector = Detector.from_file(
@@ -198,28 +195,25 @@ class Measurements:
                              directory_prefix + "%02d" % next_serial + "-" +
                              name)
                     sample.increase_running_int_measurement_by_1()
-                    if not os.path.exists(measurement_directory):
+                    if not measurement_directory.exists():
                         os.makedirs(measurement_directory)
-                    measurement = Measurement(self.request,
-                                              measurement_directory,
-                                              tab_id, name)
+                    measurement = Measurement(
+                        self.request, measurement_directory, tab_id, name)
                     measurement.sample = sample
 
-                    measurement.info_to_file(os.path.join(measurement_directory,
-                                                          measurement.name +
-                                                          ".info"))
+                    measurement.info_to_file(
+                        Path(measurement_directory, measurement.name + ".info"))
 
                     # Create path for measurement file used by the program and
                     # create folder structure.
-                    new_measurement_file = os.path.join(measurement_directory,
-                                                        "Data",
-                                                        measurement_filename)
+                    new_measurement_file = Path(
+                        measurement_directory, "Data", measurement_filename)
                     measurement.create_folder_structure(
                         measurement_directory, new_measurement_file,
                         selector_cls=selector_cls)
                     if file_directory != os.path.join(
                             measurement_directory, measurement.directory_data) \
-                                and file_directory:
+                            and file_directory:
                         measurement.copy_file_into_measurement(file_path)
                     serial_number = next_serial
                     measurement.serial_number = serial_number
@@ -295,7 +289,7 @@ class Measurement(Logger):
         self.tab_id = tab_id
 
         self.request = request  # To which request be belong to
-        self.path = path
+        self.path = Path(path)
         self.name = name
         self.description = description
         if modification_time is None:
@@ -380,21 +374,21 @@ class Measurement(Logger):
             #  as self.directory_energy_spectra remains None. Maybe initialize
             #  some default values for each folder
             if item.startswith("Composition_changes"):
-                self.directory_composition_changes = os.path.join(
+                self.directory_composition_changes = Path(
                     self.directory, "Composition_changes")
             elif item.startswith("Data"):
-                self.directory_data = os.path.join(self.directory, "Data")
+                self.directory_data = Path(self.directory, "Data")
             elif item.startswith("Depth_profiles"):
-                self.directory_depth_profiles = os.path.join(self.directory,
-                                                             "Depth_profiles")
+                self.directory_depth_profiles = Path(
+                    self.directory, "Depth_profiles")
             elif item.startswith("Energy_spectra"):
-                self.directory_energy_spectra = os.path.join(self.directory,
-                                                             "Energy_spectra")
+                self.directory_energy_spectra = Path(
+                    self.directory, "Energy_spectra")
         for file in os.listdir(self.directory_data):
             if file.endswith(".asc"):
                 self.measurement_file = file
             elif file.startswith("Cuts"):
-                self.directory_cuts = os.path.join(self.directory_data, "Cuts")
+                self.directory_cuts = Path(self.directory_data, "Cuts")
 
         self.set_loggers(self.directory, self.request.directory)
 
@@ -603,7 +597,8 @@ class Measurement(Logger):
             json.dump(obj_profile, file, indent=4)
 
     def create_folder_structure(self, measurement_folder: Path,
-                                measurement_file: Path, selector_cls=None):
+                                measurement_file: Path = None,
+                                selector_cls=None):
         """ Creates folder structure for the measurement. If selector_cls is
         given, selector will be initialized as an object of that class.
 
@@ -762,8 +757,6 @@ class Measurement(Logger):
 
         Args:
             progress: ProgressReporter object
-            start: Start value for progress bar.
-            add: Value added to progress bar.
         """
         try:
             selection_file = Path(self.directory, self.directory_data,
@@ -983,7 +976,7 @@ class Measurement(Logger):
         """
         cuts = [f for f in os.listdir(Path(self.directory, self.directory_cuts))
                 if os.path.isfile(Path(self.directory, self.directory_cuts, f))]
-        elemloss = [f for f in os.listdir(os.path.join(
+        elemloss = [f for f in os.listdir(Path(
             self.directory, self.directory_composition_changes, "Changes"))
                     if os.path.isfile(Path(
                         self.directory, self.directory_composition_changes,
@@ -1131,6 +1124,7 @@ class Measurement(Logger):
 
         # Copy efficiencies with proper name
         # File name in format 1H.eff or 1H-example.eff
+        # TODO make a new function out of this
         for eff in os.listdir(eff_directory):
             if not eff.endswith(".eff"):
                 continue

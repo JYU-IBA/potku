@@ -135,7 +135,7 @@ class Potku(QtWidgets.QMainWindow):
         self.actionGlobal_Settings.triggered.connect(self.open_global_settings)
         self.actionRequest_Settings.triggered.connect(
             self.open_request_settings)
-        self.actionAbout.triggered.connect(self.open_about_dialog)
+        self.actionAbout.triggered.connect(AboutDialog)
 
         self.actionNew_Request_2.triggered.connect(self.make_new_request)
         self.actionOpen_Request_2.triggered.connect(self.open_request)
@@ -749,11 +749,6 @@ class Potku(QtWidgets.QMainWindow):
             self.__set_request_buttons_enabled(True)
             self.add_to_recent_files(Path(self.request.request_file))
 
-    def open_about_dialog(self):
-        """Show Potku program about dialog.
-        """
-        AboutDialog()
-
     def open_global_settings(self):
         """Opens global settings dialog.
         """
@@ -785,11 +780,10 @@ class Potku(QtWidgets.QMainWindow):
                 # Sample is not yet in the tree, so add it
                 sample_item = self.__add_sample(sample_name)
 
-            self.add_new_tab("measurement", dialog.filename,
-                             sample_item.obj, load_data=True,
-                             object_name=dialog.name,
-                             progress=sbh.reporter.get_sub_reporter(
-                                 lambda x: 0.9 * x))
+            self.add_new_tab(
+                "measurement", dialog.filename, sample_item.obj, load_data=True,
+                object_name=dialog.name,
+                progress=sbh.reporter.get_sub_reporter(lambda x: 0.9 * x))
             self.__remove_info_tab()
 
             sbh.reporter.report(100)
@@ -995,7 +989,7 @@ class Potku(QtWidgets.QMainWindow):
                                          master_measurement_name))
                     elif tab_widget.obj in nonslaves or \
                             not master_measurement_name or type(
-                        tab_widget.obj) == Simulation:
+                            tab_widget.obj) == Simulation:
                         item.setText(0, tab_name)
                     else:
                         item.setText(0, "{0} (slave)".format(tab_name))
@@ -1067,7 +1061,7 @@ class Potku(QtWidgets.QMainWindow):
         parent_item.addChild(tree_item)
         parent_item.setExpanded(True)
 
-    def add_new_tab(self, tab_type, filepath, sample, file_current=0,
+    def add_new_tab(self, tab_type, filepath: Path, sample, file_current=0,
                     file_count=1, load_data=False, object_name="",
                     import_evnt_or_binary=False, progress=None):
         """Add new tab into TabWidget.
@@ -1096,7 +1090,7 @@ class Potku(QtWidgets.QMainWindow):
             cur_progress = (100 / file_count) * file_current
         except ZeroDivisionError:
             cur_progress = 0
-
+        filepath = Path(filepath)
         rest = (100 - cur_progress) * 0.01
 
         if progress is not None:

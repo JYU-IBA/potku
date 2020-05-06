@@ -307,8 +307,8 @@ def tof_list(cut_file, directory, save_output=False, no_foil=False,
 
         if save_output:
             if not directory:
-                directory = os.path.join(os.path.realpath(os.path.curdir),
-                                         "energy_spectrum_output")
+                directory = Path(
+                    os.path.realpath(os.path.curdir), "energy_spectrum_output")
 
             os.makedirs(directory, exist_ok=True)
 

@@ -109,11 +109,10 @@ class ElementLosses:
             split_count = len(splits)
             split_number = 0
             for split in splits:
-                new_cut = CutFile(elem_loss=True,
-                                  split_number=split_number,
-                                  split_count=split_count)
-                new_dir = os.path.join(self.directory_composition_changes,
-                                       "Changes")
+                new_cut = CutFile(
+                    elem_loss=True, split_number=split_number,
+                    split_count=split_count)
+                new_dir = Path(self.directory_composition_changes, "Changes")
                 new_cut.copy_info(main_cut, new_dir, split, split_count)
                 new_cut.save(main_cut.element_number)
                 split_number += 1
@@ -175,10 +174,9 @@ class ElementLosses:
         """TODO
         """
         for the_file in os.listdir(
-                os.path.join(self.directory_composition_changes, "Changes")):
-            file_path = os.path.join(
-                os.path.join(self.directory_composition_changes, "Changes"),
-                the_file)
+                Path(self.directory_composition_changes, "Changes")):
+            file_path = Path(
+                self.directory_composition_changes, "Changes", the_file)
             try:
                 if os.path.isfile(file_path):
                     os.unlink(file_path)
