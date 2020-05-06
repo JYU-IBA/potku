@@ -155,8 +155,9 @@ class Detector(MCERDParameterContainer, Serializable):
         Update detector's path and efficiency folder path and efficiencies'
         paths.
         """
-        old_path_to_det, det_file = os.path.split(self.path)
-        old_path_to_obj, det_folder = os.path.split(old_path_to_det)
+        old_path_to_det, det_file = self.path.parent, self.path.name
+        old_path_to_obj, det_folder = \
+            old_path_to_det.parent, old_path_to_det.name
         new_path = Path(obj.directory, det_folder)
 
         self.path = Path(new_path, det_file)
@@ -224,33 +225,25 @@ class Detector(MCERDParameterContainer, Serializable):
             self.efficiencies_to_remove.append(file_path)
 
     def remove_efficiency_file(self, file_name: Path):
-        """Removes efficiency file from detector's efficiency file folder.
+        """Removes efficiency file from detector's efficiency file folder as
+        well as the used efficiencies folder.
 
         Args:
             file_name: Name of the efficiency file.
         """
+        file_name = Path(file_name)
         try:
             os.remove(Path(self.efficiency_directory, file_name))
-            # Remove file from used efficiencies if it exists
-            element_split = file_name.name.split('-')
-            if len(element_split) <= 2:
-                element = element_split[0]
-            else:
-                if os.sep in element_split[-1]:
-                    element = element_split[-1]
-                else:
-                    element = element_split[len(element_split) - 2]
-            if os.sep in element:
-                element = os.path.split(element)[1]
-            if element.endswith(".eff"):
-                file_to_remove = Path(self.efficiency_directory,
-                                      "Used_efficiencies", element)
-            else:
-                file_to_remove = Path(self.efficiency_directory,
-                                      "Used_efficiencies", f"{element}.eff")
-            os.remove(file_to_remove)
         except OSError:
-            # File was not found in efficiency file folder.
+            pass
+        try:
+            used_eff_file = \
+                self.get_used_efficiencies_dir() / \
+                Detector.get_used_efficiency_file_name(file_name)
+            os.remove(used_eff_file)
+        except (OSError, ValueError):
+            # File was not found in efficiency file folder or the file extension
+            # was wrong.
             pass
 
     @classmethod
@@ -319,8 +312,7 @@ class Detector(MCERDParameterContainer, Serializable):
         # Delete possible extra .detector files
         det_folder = Path(detector_file_path).parent
         os.makedirs(det_folder, exist_ok=True)
-        gf.remove_files(det_folder,
-                        exts={".detector"})
+        gf.remove_files(det_folder, exts={".detector"})
 
         timestamp = time.time()
 
@@ -406,6 +398,31 @@ class Detector(MCERDParameterContainer, Serializable):
         except (ZeroDivisionError, ValueError):
             return 0
 
+    @staticmethod
+    def get_used_efficiency_file_name(file_name) -> Path:
+        """Returns an efficiency file name that can be used by tof_list.
+
+        File name should end in '.eff', otherwise ValueError is raised.
+        If the file name includes comments (indicated by a '-'), they will be
+        stripped from the output. A file named '1He-autumn2019.eff' becomes
+        '1He.eff'.
+
+        Args:
+            file_name: either a file name or path to a file
+
+        Return:
+            Path object that is only the file name.
+        """
+        file_name = Path(file_name)
+        if file_name.suffix != ".eff":
+            raise ValueError(
+                f"Efficiency file should have the extension '.eff'."
+                f"Given file was named '{file_name}'.")
+        first_part = file_name.name.split("-")[0]
+        if first_part.endswith(".eff"):
+            return Path(first_part)
+        return Path(f"{first_part}.eff")
+
     def get_used_efficiencies_dir(self):
         """Returns the path to efficiency folder where the files used when
         running tof_list are located.
@@ -420,12 +437,9 @@ class Detector(MCERDParameterContainer, Serializable):
         destination = self.get_used_efficiencies_dir()
         os.makedirs(destination, exist_ok=True)
         for eff in os.listdir(self.efficiency_directory):
-            if not eff.endswith(".eff"):
+            try:
+                used_file = Detector.get_used_efficiency_file_name(eff)
+            except ValueError:
                 continue
             old_file = Path(self.efficiency_directory, eff)
-            element = eff.split('-')[0]
-            if element.endswith(".eff"):
-                file_to_copy = Path(destination, element)
-            else:
-                file_to_copy = Path(destination, element + ".eff")
-            shutil.copy(old_file, file_to_copy)
+            shutil.copy(old_file, destination / used_file)

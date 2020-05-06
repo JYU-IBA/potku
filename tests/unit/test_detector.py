@@ -40,7 +40,7 @@ from modules.foil import RectangularFoil
 
 class TestBeam(unittest.TestCase):
     def setUp(self):
-        self.path = Path(tempfile.gettempdir(), ".detector")
+        self.path = Path(tempfile.gettempdir(), "Detector", ".detector")
         self.mesu = Path(tempfile.gettempdir(), "mesu")
         self.det = Detector(self.path, self.mesu, save_in_creation=False)
         self.unit_foil = CircularFoil(diameter=1, distance=1, transmission=1)
@@ -125,38 +125,113 @@ class TestBeam(unittest.TestCase):
             for f1, f2 in zip(det1.foils, det2.foils):
                 self.assertEqual(f1.get_mcerd_params(), f2.get_mcerd_params())
 
+
+class TestEfficiencyFiles(unittest.TestCase):
+    """Tests for handling .eff files.
+    """
+    def setUp(self) -> None:
+        mesu = Path(tempfile.gettempdir(), "mesu")
+        self.det = Detector(
+            Path(tempfile.gettempdir(), "Detector", ".detector"), mesu,
+            save_in_creation=False)
+        # Efficiency files and expected efficiency files after copying
+        self.eff_files = {
+            "1H.eff": "1H.eff",
+            "16O.eff": "16O.eff",
+            "4C-foo.eff": "4C.eff",
+            "4C_foo.eff": "4C_foo.eff",
+            "42H.eff-bar": None,
+            "1H.ef": None,
+            "H.eff": "H.eff",
+            "eff.eff.eff": "eff.eff.eff",
+            "2H.eff-foo.eff": "2H.eff",
+            "f.eff-foo-.eff": "f.eff",
+            ".eff": None,
+            "mn-mn-nm-.eff-.eff": "mn.eff"
+        }
+
+    def test_add_efficiencies(self):
+        """When a new efficiency file is added, it will be copied to the
+        efficiency directory of the detector. No checks are performed so any
+        file name goes.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            self.det.update_directories(tmp_dir)
+            self.create_eff_files(tmp_dir, self.eff_files)
+
+            self.assertEqual([], os.listdir(self.det.efficiency_directory))
+            for file in self.eff_files:
+                self.det.add_efficiency_file(Path(tmp_dir, file))
+
+            self.assertEqual(
+                sorted(self.eff_files.keys()),
+                sorted(os.listdir(self.det.efficiency_directory))
+            )
+            self.assertFalse(self.det.get_used_efficiencies_dir().exists())
+
     def test_copying_eff_files(self):
+        """When files are copied to the used efficiencies folder, which will
+        then be provided to tof_list as a parameter, file names are validated
+        and extra comments are removed.
+        """
         with tempfile.TemporaryDirectory() as tmp_dir:
             effs_folder = Path(tmp_dir, Detector.EFFICIENCY_DIR)
             used_folder = effs_folder / Detector.USED_EFFICIENCIES_DIR
-            det = Detector(Path(tmp_dir, "t.detector"), Path(tmp_dir, "mesu"))
-            det.update_directories(tmp_dir)
+            self.det.update_directories(tmp_dir)
 
-            self.assertEqual(used_folder, det.get_used_efficiencies_dir())
+            self.assertEqual(effs_folder, self.det.efficiency_directory)
+            self.assertEqual(used_folder, self.det.get_used_efficiencies_dir())
             self.assertTrue(effs_folder.exists())
             self.assertFalse(used_folder.exists())
 
-            # Efficiency files and expected efficiency files after copying
-            eff_files = {
-                "1H.eff": "1H.eff",
-                "16O.eff": "16O.eff",
-                "4C-foo.eff": "4C.eff",
-                "4C_foo.eff": "4C_foo.eff",
-                "42H.eff-bar": None,
-                "1H.ef": None,
-                "H.eff": "H.eff",
-                "eff.eff.eff": "eff.eff.eff",
-                "2H.eff-foo.eff": "2H.eff",
-                "f.eff-foo-.eff": "f.eff",
-                ".eff": ".eff",
-                "mn-mn-nm-.eff-.eff": "mn.eff"
-            }
-            expected = sorted([f for f in eff_files.values() if f is not None])
-            for f in eff_files:
-                open(effs_folder / f, "a").close()
+            expected = sorted(
+                [f for f in self.eff_files.values() if f is not None])
+            self.create_eff_files(self.det.efficiency_directory, self.eff_files)
 
-            det.copy_efficiency_files()
+            self.det.copy_efficiency_files()
             self.assertTrue(used_folder.exists())
             used_effs = sorted(os.listdir(used_folder))
             self.assertEqual(expected, used_effs)
 
+    def test_remove_efficiencies(self):
+        """When an efficiency file is removed, it will be removed from both
+        the efficiency directory and the used efficiencies directory.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            self.det.update_directories(tmp_dir)
+            self.create_eff_files(self.det.efficiency_directory, self.eff_files)
+
+            self.det.copy_efficiency_files()
+            self.assertNotEqual([], os.listdir(self.det.efficiency_directory))
+            self.assertNotEqual(
+                [], os.listdir(self.det.get_used_efficiencies_dir()))
+
+            for file in self.eff_files:
+                self.det.remove_efficiency_file(file)
+
+            self.assertEqual(
+                [Detector.USED_EFFICIENCIES_DIR],
+                os.listdir(self.det.efficiency_directory))
+            self.assertEqual(
+                [], os.listdir(self.det.get_used_efficiencies_dir()))
+
+    def test_directory_reference_update(self):
+        self.assertEqual(
+            Path(tempfile.gettempdir(), "Detector", ".detector"), self.det.path)
+        self.assertIsNone(self.det.efficiency_directory)
+
+        mesu = mo.get_measurement()
+        mesu_path = Path(tempfile.gettempdir(), "mesu")
+        mesu.directory = Path(mesu_path)
+
+        self.det.update_directory_references(mesu)
+
+        self.assertEqual(mesu_path / "Detector" / ".detector", self.det.path)
+        self.assertEqual(
+            mesu_path / "Detector" / Detector.EFFICIENCY_DIR,
+            self.det.efficiency_directory)
+
+    @staticmethod
+    def create_eff_files(directory, eff_files):
+        for f in eff_files:
+            open(Path(directory, f), "a").close()
