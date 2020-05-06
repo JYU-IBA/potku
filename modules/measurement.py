@@ -1111,31 +1111,11 @@ class Measurement(Logger):
         str_num_iterations = "Number of iterations: {0}\n".format(
             global_settings.get_num_iterations())
 
-        # Efficiency directory
-        if self.detector:
-            eff_directory = self.detector.efficiency_directory
-        else:
-            eff_directory = self.request.default_detector.efficiency_directory
+        # Efficiency file handling
+        detector.copy_efficiency_files()
 
-        # Add folder that has all the efficiency files in tof_list binary
-        # appropriate format
-        eff_directory_final = Path(eff_directory, "Used_efficiencies")
-        os.makedirs(eff_directory_final, exist_ok=True)
-
-        # Copy efficiencies with proper name
-        # File name in format 1H.eff or 1H-example.eff
-        # TODO make a new function out of this
-        for eff in os.listdir(eff_directory):
-            if not eff.endswith(".eff"):
-                continue
-            old_file = Path(eff_directory, eff)
-            element = eff.split('-')[0]
-            if element.endswith(".eff"):
-                file_to_copy = Path(eff_directory_final, eff)
-            else:
-                file_to_copy = Path(eff_directory_final, element + ".eff")
-            shutil.copy(old_file, file_to_copy)
-        str_eff_dir = "Efficiency directory: {0}".format(eff_directory_final)
+        str_eff_dir = "Efficiency directory: {0}".format(
+            detector.get_used_efficiencies_dir())
 
         # Combine strings
         measurement = str_beam + str_energy + str_detector + str_target + \

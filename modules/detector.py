@@ -57,6 +57,9 @@ class Detector(MCERDParameterContainer, Serializable):
                 "detector_theta", "__measurement_settings_file_path", \
                 "efficiencies_to_remove", "save_in_creation"
 
+    EFFICIENCY_DIR = "Efficiency_files"
+    USED_EFFICIENCIES_DIR = "Used_efficiencies"
+
     def __init__(self, path, measurement_settings_file_path, name="Default",
                  description="", modification_time=None, detector_type="TOF",
                  foils=None, tof_foils=None, virtual_size=(2.0, 5.0),
@@ -141,10 +144,10 @@ class Detector(MCERDParameterContainer, Serializable):
         Args:
             directory: Path to where all the detector information goes.
         """
-        self.path = directory
+        self.path = Path(directory)
         os.makedirs(self.path, exist_ok=True)
 
-        self.efficiency_directory = Path(self.path, "Efficiency_files")
+        self.efficiency_directory = Path(self.path, Detector.EFFICIENCY_DIR)
         os.makedirs(self.efficiency_directory, exist_ok=True)
 
     def update_directory_references(self, obj):
@@ -158,7 +161,7 @@ class Detector(MCERDParameterContainer, Serializable):
 
         self.path = Path(new_path, det_file)
 
-        self.efficiency_directory = Path(new_path, "Efficiency_files")
+        self.efficiency_directory = Path(new_path, Detector.EFFICIENCY_DIR)
 
     def get_efficiency_files(self):
         """Get efficiency files that are in detector's efficiency file folder
@@ -212,7 +215,7 @@ class Detector(MCERDParameterContainer, Serializable):
         #      the detector? Detector should just delete given files
         file_path = None
         for f in self.efficiencies:
-            if f.parent.name == "Efficiency_files" and f.name.endswith(
+            if f.parent.name == Detector.EFFICIENCY_DIR and f.name.endswith(
                     file_name):
                 file_path = f
 
@@ -402,3 +405,27 @@ class Detector(MCERDParameterContainer, Serializable):
                        for foil in self.foils)
         except (ZeroDivisionError, ValueError):
             return 0
+
+    def get_used_efficiencies_dir(self):
+        """Returns the path to efficiency folder where the files used when
+        running tof_list are located.
+        """
+        return Path(self.efficiency_directory, Detector.USED_EFFICIENCIES_DIR)
+
+    def copy_efficiency_files(self):
+        """Copies efficiency files to the directory where tof_list will be
+        looking for them. Additional comments are stripped from the files.
+        (i.e. 1H-example.eff becomes 1H.eff).
+        """
+        destination = self.get_used_efficiencies_dir()
+        os.makedirs(destination, exist_ok=True)
+        for eff in os.listdir(self.efficiency_directory):
+            if not eff.endswith(".eff"):
+                continue
+            old_file = Path(self.efficiency_directory, eff)
+            element = eff.split('-')[0]
+            if element.endswith(".eff"):
+                file_to_copy = Path(destination, eff)
+            else:
+                file_to_copy = Path(destination, element + ".eff")
+            shutil.copy(old_file, file_to_copy)

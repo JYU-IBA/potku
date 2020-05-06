@@ -180,7 +180,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         original_obj = self.obj
         self.obj = temp_detector
         self.obj.efficiency_directory = Path(
-            os.path.split(self.obj.path)[0], "Efficiency_files")
+            os.path.split(self.obj.path)[0], Detector.EFFICIENCY_DIR)
 
         self.tmp_foil_info = []
         self.tof_foils = []

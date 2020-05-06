@@ -27,6 +27,7 @@ __version__ = "2.0"
 
 import unittest
 import tempfile
+import os
 
 import tests.mock_objects as mo
 
@@ -123,3 +124,36 @@ class TestBeam(unittest.TestCase):
 
             for f1, f2 in zip(det1.foils, det2.foils):
                 self.assertEqual(f1.get_mcerd_params(), f2.get_mcerd_params())
+
+    def test_copying_eff_files(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            effs_folder = Path(tmp_dir, Detector.EFFICIENCY_DIR)
+            used_folder = effs_folder / Detector.USED_EFFICIENCIES_DIR
+            det = Detector(Path(tmp_dir, "t.detector"), Path(tmp_dir, "mesu"))
+            det.update_directories(tmp_dir)
+
+            self.assertEqual(used_folder, det.get_used_efficiencies_dir())
+            self.assertTrue(effs_folder.exists())
+            self.assertFalse(used_folder.exists())
+
+            # Efficiency files and expected efficiency files after copying
+            eff_files = {
+                "1H.eff": "1H.eff",
+                "16O.eff": "16O.eff",
+                "4C-foo.eff": "4C.eff",
+                "4C_foo.eff": "4C_foo.eff",
+                "1H.ef": None,
+                "H.eff": "H.eff",
+                "eff.eff.eff": "eff.eff.eff",
+                "h.eff-foo-.eff": "h.eff-foo-.eff",
+                ".eff": ".eff",
+            }
+            expected = sorted([f for f in eff_files.values() if f is not None])
+            for f in eff_files:
+                open(effs_folder / f, "a").close()
+
+            det.copy_efficiency_files()
+            self.assertTrue(used_folder.exists())
+            used_effs = sorted(os.listdir(used_folder))
+            self.assertEqual(expected, used_effs)
+
