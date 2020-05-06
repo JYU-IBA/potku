@@ -425,7 +425,7 @@ class Detector(MCERDParameterContainer, Serializable):
             old_file = Path(self.efficiency_directory, eff)
             element = eff.split('-')[0]
             if element.endswith(".eff"):
-                file_to_copy = Path(destination, eff)
+                file_to_copy = Path(destination, element)
             else:
                 file_to_copy = Path(destination, element + ".eff")
             shutil.copy(old_file, file_to_copy)

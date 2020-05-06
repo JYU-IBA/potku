@@ -142,11 +142,14 @@ class TestBeam(unittest.TestCase):
                 "16O.eff": "16O.eff",
                 "4C-foo.eff": "4C.eff",
                 "4C_foo.eff": "4C_foo.eff",
+                "42H.eff-bar": None,
                 "1H.ef": None,
                 "H.eff": "H.eff",
                 "eff.eff.eff": "eff.eff.eff",
-                "h.eff-foo-.eff": "h.eff-foo-.eff",
+                "2H.eff-foo.eff": "2H.eff",
+                "f.eff-foo-.eff": "f.eff",
                 ".eff": ".eff",
+                "mn-mn-nm-.eff-.eff": "mn.eff"
             }
             expected = sorted([f for f in eff_files.values() if f is not None])
             for f in eff_files:
