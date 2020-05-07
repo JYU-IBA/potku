@@ -727,8 +727,8 @@ class Measurement(Logger):
             gf.rename_file(Path(self.directory, info_file),
                            new_name + ".info")
 
-    def rename_files_in_directory(self, directory):
-        if not os.path.exists(directory):
+    def rename_files_in_directory(self, directory: Path):
+        if not directory.exists():
             return
         for file in os.listdir(directory):
             if file.endswith(".cut"):
@@ -741,7 +741,7 @@ class Measurement(Logger):
         """ Set axes information to selector within measurement.
         
         Sets axes information to selector to add selection points. Since 
-        previously when creating measurement old selection could not be checked. 
+        previously when creating measurement old selection could not be checked.
         Now is time to check for it, while data is still "loading".
         
         Args:

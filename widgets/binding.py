@@ -279,8 +279,8 @@ class PropertySavingWidget(PropertyBindingWidget, abc.ABC):
         try:
             with open(file_path) as file:
                 params = json.load(file)
-        except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError,
-                PermissionError, IsADirectoryError):
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError,
+                IsADirectoryError):
             return
 
         self.set_properties(**params)

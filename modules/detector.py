@@ -366,7 +366,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             except KeyError:
                 # Add detector theta
                 obj["geometry"] = {"detector_theta": self.detector_theta}
-        except FileNotFoundError:
+        except OSError:
             # Write new .measurement file
             obj = {"geometry": {"detector_theta": self.detector_theta}}
 

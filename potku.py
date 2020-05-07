@@ -284,35 +284,29 @@ class Potku(QtWidgets.QMainWindow):
                 try:
                     clicked_item.obj.rename_info_file(new_name)
                     clicked_item.obj.info_to_file(
-                        os.path.join(new_dir, clicked_item.obj.name + ".info"))
-                except OSError:
-                    QtWidgets.QMessageBox.critical(self, "Error",
-                                                   "Something went wrong while "
-                                                   "renaming info file.",
-                                                   QtWidgets.QMessageBox.Ok,
-                                                   QtWidgets.QMessageBox.Ok)
+                        Path(new_dir, clicked_item.obj.name + ".info"))
+                except OSError as e:
+                    QtWidgets.QMessageBox.critical(
+                        self, "Error", f"Failed to rename info file: {e}.",
+                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
                 # Rename all cut files
                 try:
                     clicked_item.obj.rename_files_in_directory(
                         clicked_item.obj.directory_cuts)
-                except OSError:
-                    QtWidgets.QMessageBox.critical(self, "Error",
-                                                   "Something went wrong while "
-                                                   "renaming cuts.",
-                                                   QtWidgets.QMessageBox.Ok,
-                                                   QtWidgets.QMessageBox.Ok)
+                except OSError as e:
+                    QtWidgets.QMessageBox.critical(
+                        self, "Error", f"Failed to rename cut files: {e}.",
+                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 # Rename all split files
                 try:
-                    clicked_item.obj.rename_files_in_directory(os.path.join(
+                    clicked_item.obj.rename_files_in_directory(Path(
                         clicked_item.obj.directory_composition_changes,
                         "Changes"))
-                except OSError:
-                    QtWidgets.QMessageBox.critical(self, "Error",
-                                                   "Something went wrong while "
-                                                   "renaming splits.",
-                                                   QtWidgets.QMessageBox.Ok,
-                                                   QtWidgets.QMessageBox.Ok)
+                except OSError as e:
+                    QtWidgets.QMessageBox.critical(
+                        self, "Error", f"Failed to rename splits {e}",
+                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
                 # Update Energy spectrum, Composition changes and Depth profile
                 # save files.
@@ -342,12 +336,10 @@ class Potku(QtWidgets.QMainWindow):
                     clicked_item.obj.rename_simulation_file()
                     clicked_item.obj.to_file(
                         Path(new_dir, f"{clicked_item.obj.name}.simulation"))
-                except OSError:
-                    QtWidgets.QMessageBox.critical(self, "Error",
-                                                   "Something went wrong while "
-                                                   "renaming info file.",
-                                                   QtWidgets.QMessageBox.Ok,
-                                                   QtWidgets.QMessageBox.Ok)
+                except OSError as e:
+                    QtWidgets.QMessageBox.critical(
+                        self, "Error", f"Failed to rename info file: {e}.",
+                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
                 # Update Tab name
                 for i in range(self.tabs.count()):
@@ -418,8 +410,8 @@ class Potku(QtWidgets.QMainWindow):
                         for recoil_element in elem_sim.recoil_elements:
                             recoil_element.to_file(elem_sim.directory)
                     simulation.target.to_file(
-                        os.path.join(simulation.directory,
-                                     simulation.target.name + ".target"), None)
+                        Path(simulation.directory, simulation.target.name +
+                             ".target"), None)
 
         widget = self.tabs.currentWidget()
         if isinstance(widget, BaseTab):
@@ -542,10 +534,9 @@ class Potku(QtWidgets.QMainWindow):
 
                 # Remove measurement's directory tree
                 shutil.rmtree(measurement.directory)
-                os.remove(os.path.join(self.request.directory,
-                                       measurement.measurement_file))
+                Path(self.request.directory /
+                     measurement.measurement_file).unlink()
             except:
-                print("Error with removing files")
                 QtWidgets.QMessageBox.question(self, "Confirmation",
                                                "Problem with deleting files.",
                                                QtWidgets.QMessageBox.Ok,
@@ -1486,8 +1477,7 @@ class Potku(QtWidgets.QMainWindow):
         """
         # TODO changed the file path to point to the manual, I guess this needs
         #      to be updated in the .spec file too?
-        manual_filename = os.path.join("documentation", "manual",
-                                       "Potku-manual.pdf")
+        manual_filename = Path("documentation", "manual", "Potku-manual.pdf")
         used_os = platform.system()
         try:
             if used_os == "Windows":
@@ -1496,7 +1486,7 @@ class Potku(QtWidgets.QMainWindow):
                 subprocess.call(("xdg-open", manual_filename))
             elif used_os == "Darwin":
                 subprocess.call(("open", manual_filename))
-        except FileNotFoundError:
+        except OSError:
             QtWidgets.QMessageBox.critical(self, "Not found",
                                            "There is no manual to be found!",
                                            QtWidgets.QMessageBox.Ok,
