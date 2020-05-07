@@ -37,6 +37,7 @@ import modules.general_functions as gf
 from pathlib import Path
 
 from modules.base import Serializable
+from modules.base import AdjustableSettings
 from modules.base import MCERDParameterContainer
 from modules.element import Element
 from modules.foil import Foil
@@ -45,7 +46,7 @@ from modules.foil import RectangularFoil
 from modules.layer import Layer
 
 
-class Detector(MCERDParameterContainer, Serializable):
+class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
     """
     Detector class that handles all the information about a detector.
     It also can convert itself to and from JSON file.
@@ -54,8 +55,8 @@ class Detector(MCERDParameterContainer, Serializable):
                 "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
                 "angle_slope", "angle_offset", "path", "modification_time",\
                 "efficiencies", "efficiency_directory", "timeres", \
-                "detector_theta", "__measurement_settings_file_path", \
-                "efficiencies_to_remove", "save_in_creation"
+                "detector_theta", "_measurement_settings_file_path", \
+                "efficiencies_to_remove"
 
     EFFICIENCY_DIR = "Efficiency_files"
     USED_EFFICIENCIES_DIR = "Used_efficiencies"
@@ -65,14 +66,14 @@ class Detector(MCERDParameterContainer, Serializable):
                  foils=None, tof_foils=None, virtual_size=(2.0, 5.0),
                  tof_slope=5.8e-11, tof_offset=-1.0e-9, angle_slope=0,
                  angle_offset=0, timeres=250.0, detector_theta=41,
-                 save_in_creation=True):
+                 save_on_creation=True):
         """Initialize a detector.
 
         Args:
             path: Path to .detector file.
             name: Detector name.
             measurement_settings_file_path: Path to measurement settings file
-                                            which has detector angles.
+                which has detector angles.
             description: Detector parameters description.
             modification_time: Modification time of detector file in Unix time.
             detector_type: Type of detector.
@@ -85,12 +86,12 @@ class Detector(MCERDParameterContainer, Serializable):
             angle_offset: Angle offset.
             timeres: Time resolution.
             detector_theta: Angle of the detector.
-            save_in_creation: Whether to save created detector into a file.
+            save_on_creation: Whether to save created detector into a file.
         """
         self.path = Path(path)
 
         self.name = name
-        self.__measurement_settings_file_path = Path(
+        self._measurement_settings_file_path = Path(
             measurement_settings_file_path)
         self.description = description
         if modification_time is None:
@@ -136,8 +137,8 @@ class Detector(MCERDParameterContainer, Serializable):
         self.efficiencies_to_remove = []
         self.efficiency_directory = None
 
-        if save_in_creation:
-            self.to_file(self.path, self.__measurement_settings_file_path)
+        if save_on_creation:
+            self.to_file(self.path, self._measurement_settings_file_path)
 
     def update_directories(self, directory):
         """Creates directories if they do not exist and updates paths.
@@ -171,11 +172,10 @@ class Detector(MCERDParameterContainer, Serializable):
         Return:
             Returns a string list of efficiency files.
         """
-        files = []
-        for f in os.listdir(self.efficiency_directory):
-            if f.strip().endswith(".eff"):
-                files.append(f)
-        return files
+        return [
+            Path(f) for f in os.listdir(self.efficiency_directory) if
+            f.endswith(".eff") and f != ".eff"
+        ]
 
     def get_efficiency_files_from_list(self):
         """Get efficiency files that are stored in detector's efficiency list,
@@ -200,9 +200,32 @@ class Detector(MCERDParameterContainer, Serializable):
             file_path: Path of the efficiency file.
         """
         try:
-            shutil.copy(file_path, self.efficiency_directory)
+            if Path(file_path).suffix == ".eff":
+                shutil.copy(file_path, self.efficiency_directory)
         except shutil.SameFileError:
             pass
+
+    def get_settings(self) -> dict:
+        return {
+            "name": self.name,
+            "modification_time": self.modification_time,
+            "description": self.description,
+            "detector_type": self.type,
+            "angle_slope": self.angle_slope,
+            "angle_offset": self.angle_offset,
+            "tof_slope": self.tof_slope,
+            "tof_offset": self.tof_offset,
+            "timeres": self.timeres,
+            "virtual_size": self.virtual_size
+        }
+
+    def set_settings(self, detector_type=None, **kwargs):
+        allowed = self.get_settings()
+        if detector_type is not None:
+            self.type = detector_type
+        for key, value in kwargs.items():
+            if key in allowed:
+                setattr(self, key, value)
 
     def remove_efficiency_file_path(self, file_name):
         """
@@ -298,7 +321,7 @@ class Detector(MCERDParameterContainer, Serializable):
         return cls(path=detector_file_path,
                    measurement_settings_file_path=measurement_file_path,
                    foils=foils, detector_theta=detector_theta,
-                   save_in_creation=save, **detector)
+                   save_on_creation=save, **detector)
 
     def to_file(self, detector_file_path, measurement_file_path):
         """Save detector settings to a file.
@@ -318,22 +341,14 @@ class Detector(MCERDParameterContainer, Serializable):
 
         # Read Detector parameters to dictionary
         obj = {
-            "name": self.name,
-            "description": self.description,
-            "modification_time": time.strftime("%c %z %Z", time.localtime(
-                timestamp)),
-            "modification_time_unix": timestamp,
-            "detector_type": self.type,
+            **self.get_settings(),
             "foils": [
                 foil.to_dict() for foil in self.foils
             ],
             "tof_foils": self.tof_foils,
-            "timeres": self.timeres,
-            "virtual_size": self.virtual_size,
-            "tof_slope": self.tof_slope,
-            "tof_offset": self.tof_offset,
-            "angle_slope": self.angle_slope,
-            "angle_offset": self.angle_offset,
+            "modification_time": time.strftime(
+                "%c %z %Z", time.localtime(timestamp)),
+            "modification_time_unix": timestamp
         }
 
         with open(detector_file_path, "w") as file:

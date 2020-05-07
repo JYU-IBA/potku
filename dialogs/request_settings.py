@@ -140,6 +140,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         Return:
             True or False.
         """
+        if self.detector_settings_widget.values_changed() != \
+                self.detector_settings_widget.are_values_changed():
+            print("This should not happen")
         if self.measurement_settings_widget.are_values_changed():
             return True
         if self.detector_settings_widget.values_changed():

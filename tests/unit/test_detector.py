@@ -42,7 +42,7 @@ class TestBeam(unittest.TestCase):
     def setUp(self):
         self.path = Path(tempfile.gettempdir(), "Detector", ".detector")
         self.mesu = Path(tempfile.gettempdir(), "mesu")
-        self.det = Detector(self.path, self.mesu, save_in_creation=False)
+        self.det = Detector(self.path, self.mesu, save_on_creation=False)
         self.unit_foil = CircularFoil(diameter=1, distance=1, transmission=1)
         self.rect_foil = RectangularFoil(size_x=2, size_y=2, distance=2,
                                          transmission=2)
@@ -104,7 +104,7 @@ class TestBeam(unittest.TestCase):
                             virtual_size=(1, 2), tof_slope=4.4e-10,
                             tof_offset=2, angle_slope=3, angle_offset=4,
                             timeres=251, detector_theta=42, tof_foils=[0, 0],
-                            save_in_creation=False, foils=[self.unit_foil,
+                            save_on_creation=False, foils=[self.unit_foil,
                                                            self.rect_foil])
             det1.to_file(det_file, mesu_file)
 
@@ -133,7 +133,7 @@ class TestEfficiencyFiles(unittest.TestCase):
         mesu = Path(tempfile.gettempdir(), "mesu")
         self.det = Detector(
             Path(tempfile.gettempdir(), "Detector", ".detector"), mesu,
-            save_in_creation=False)
+            save_on_creation=False)
         # Efficiency files and expected efficiency files after copying
         self.eff_files = {
             "1H.eff": "1H.eff",
@@ -149,11 +149,30 @@ class TestEfficiencyFiles(unittest.TestCase):
             ".eff": None,
             "mn-mn-nm-.eff-.eff": "mn.eff"
         }
+        self.filtered_effs = sorted([
+            Path(f) for f in self.eff_files
+            if f.endswith(".eff") and f != ".eff"
+        ])
+
+    def test_get_efficiency_files(self):
+        """get_efficiency_files only returns files ending in .eff even if
+        the directory contains other files.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            self.det.update_directories(tmp_dir)
+            self.create_eff_files(self.det.efficiency_directory, self.eff_files)
+            self.assertNotEqual(
+                sorted(self.eff_files.keys()),
+                sorted(self.det.get_efficiency_files()))
+            self.assertEqual(
+                self.filtered_effs, sorted(self.det.get_efficiency_files()))
 
     def test_add_efficiencies(self):
         """When a new efficiency file is added, it will be copied to the
-        efficiency directory of the detector. No checks are performed so any
-        file name goes.
+        efficiency directory of the detector. Only files ending with '.eff'
+        are copied.
+
+        Used efficiency files folder is not yet created.
         """
         with tempfile.TemporaryDirectory() as tmp_dir:
             self.det.update_directories(tmp_dir)
@@ -163,8 +182,12 @@ class TestEfficiencyFiles(unittest.TestCase):
             for file in self.eff_files:
                 self.det.add_efficiency_file(Path(tmp_dir, file))
 
-            self.assertEqual(
+            self.assertNotEqual(
                 sorted(self.eff_files.keys()),
+                sorted(os.listdir(self.det.efficiency_directory))
+            )
+            self.assertEqual(
+                sorted([str(f) for f in self.filtered_effs]),
                 sorted(os.listdir(self.det.efficiency_directory))
             )
             self.assertFalse(self.det.get_used_efficiencies_dir().exists())

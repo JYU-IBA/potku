@@ -31,33 +31,50 @@ import copy
 import math
 import os
 import platform
-import time
 
 import widgets.input_validation as iv
+import widgets.binding as bnd
+import dialogs.file_dialogs as fdialogs
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
 from dialogs.measurement.calibration import CalibrationDialog
 from dialogs.simulation.foil import FoilDialog
-from dialogs.file_dialogs import open_file_dialog
-from dialogs.file_dialogs import save_file_dialog
 
 from modules.detector import Detector
 from modules.foil import CircularFoil
+from modules.request import Request
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
-from PyQt5.QtCore import Qt
 
 from widgets.foil import FoilWidget
 from widgets.scientific_spinbox import ScientificSpinBox
 
 
-class DetectorSettingsWidget(QtWidgets.QWidget):
+class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
+                             metaclass=gutils.QtABCMeta):
     """Class for creating a detector settings tab.
     """
-    def __init__(self, obj, request, icon_manager, run=None):
+    efficiency_files = bnd.bind("efficiencyListWidget")
+
+    name = bnd.bind("nameLineEdit")
+    modification_time = bnd.bind(
+        "dateLabel", fget=bnd.unix_time_from_label, fset=bnd.unix_time_to_label)
+    description = bnd.bind("descriptionLineEdit")
+    detector_type = bnd.bind("typeComboBox", track_change=True)
+    angle_slope = bnd.bind("angleSlopeLineEdit", track_change=True)
+    angle_offset = bnd.bind("angleOffsetLineEdit", track_change=True)
+    tof_slope = bnd.bind("scientific_tof_slope", track_change=True)
+    tof_offset = bnd.bind("scientific_tof_offset", track_change=True)
+    timeres = bnd.bind("timeResSpinBox", track_change=True)
+    virtual_size = bnd.multi_bind(
+        ("virtualSizeXSpinBox", "virtualSizeYSpinBox"), track_change=True
+    )
+
+    def __init__(self, obj: Detector, request: Request, icon_manager, run=None):
         """
         Initializes a DetectorSettingsWidget object.
 
@@ -74,6 +91,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.request = request
         self.icon_manager = icon_manager
         self.run = run
+        self.__original_properties = {}
 
         # Temporary foils list which holds all the information given in the
         # foil dialog
@@ -91,13 +109,6 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.newFoilButton.clicked.connect(
             lambda: self._add_new_foil(self.foils_layout))
 
-        # Efficiency files
-        efficiency_files = self.obj.get_efficiency_files()
-        self.efficiencyListWidget.addItems(efficiency_files)
-        self.obj.efficiencies = []
-        for f in efficiency_files:
-            self.obj.efficiencies.append(
-                Path(self.obj.efficiency_directory, f))
         self.addEfficiencyButton.clicked.connect(self.__add_efficiency)
         self.removeEfficiencyButton.clicked.connect(self.__remove_efficiency)
 
@@ -124,35 +135,16 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.formLayout_2.removeRow(self.offsetLineEdit)
 
         # Parse the value and multiplier
-        slope_value_and_mult = str(self.obj.tof_slope)
-        try:
-            e_index = slope_value_and_mult.index('e')
-            number_part = slope_value_and_mult[:e_index]
-            multiply_part = "1" + slope_value_and_mult[e_index:]
-        except ValueError:
-            number_part = slope_value_and_mult
-            multiply_part = 1
         self.scientific_tof_slope = ScientificSpinBox(
-            number_part, multiply_part, -math.inf, math.inf, show_btns=False)
+            0, 0, -math.inf, math.inf, show_btns=False)
 
-        # Parse the value and multiplier
-        offset_value_and_mult = str(self.obj.tof_offset)
-        try:
-            e_index = offset_value_and_mult.index('e')
-            number_part = offset_value_and_mult[:e_index]
-            multiply_part = "1" + offset_value_and_mult[e_index:]
-        except ValueError:
-            number_part = offset_value_and_mult
-            multiply_part = 1
-        self.scientific_tof_offset = ScientificSpinBox(number_part,
-                                                       multiply_part,
-                                                       -math.inf, math.inf,
-                                                       show_btns=False)
+        self.scientific_tof_offset = ScientificSpinBox(
+            0, 0, -math.inf, math.inf, show_btns=False)
 
-        self.formLayout_2.insertRow(0, "ToF slope [s/channel]:",
-                                    self.scientific_tof_slope)
-        self.formLayout_2.insertRow(1, "ToF offset[s]:",
-                                    self.scientific_tof_offset)
+        self.formLayout_2.insertRow(
+            0, "ToF slope [s/channel]:", self.scientific_tof_slope)
+        self.formLayout_2.insertRow(
+            1, "ToF offset[s]:", self.scientific_tof_offset)
 
         if platform.system() == "Darwin":
             self.scientific_tof_offset.scientificLineEdit.setFixedWidth(170)
@@ -164,13 +156,16 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
 
         self.show_settings()
 
+    def get_original_property_values(self):
+        return self.__original_properties
+
     def __load_file(self):
         """
         Load settings from file.
         """
-        file = open_file_dialog(self, self.request.default_folder,
-                                "Select detector file",
-                                "Detector File (*.detector)")
+        file = fdialogs.open_file_dialog(
+            self, self.request.default_folder, "Select detector file",
+            "Detector File (*.detector)")
         if not file:
             return
         # Read the file into a temp detector object
@@ -198,63 +193,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         self.foils_layout = self._add_default_foils()
         self.detectorScrollAreaContents.layout().addLayout(self.foils_layout)
 
-        # Efficiency files
-        efficiency_files = self.obj.get_efficiency_files()
-        # Remove old efficiency items
-        all_items = []
-        for i in range(self.efficiencyListWidget.count()):
-            all_items.append(self.efficiencyListWidget.item(i))
-        for item in all_items:
-            self.efficiencyListWidget.takeItem(
-                self.efficiencyListWidget.row(item))
-        for orig_eff in original_obj.get_efficiency_files():
-            path = Path(original_obj.efficiency_directory, orig_eff)
-            original_obj.remove_efficiency_file_path(path)
-
-        self.efficiencyListWidget.addItems(efficiency_files)
-        self.obj.efficiencies = []
-        for f in efficiency_files:
-            self.obj.efficiencies.append(
-                Path(self.obj.efficiency_directory, f))
-            self.obj.save_efficiency_file_path(
-                Path(self.obj.efficiency_directory, f))
-
         self.show_settings()
-
-        # Calibration spinboxes
-        # Parse the value and multiplier
-        # TODO refactor duplicate code
-        slope_value_and_mult = str(self.obj.tof_slope)
-        try:
-            e_index = slope_value_and_mult.index('e')
-            number_part = slope_value_and_mult[:e_index]
-            multiply_part = "1" + slope_value_and_mult[e_index:]
-        except ValueError:
-            number_part = slope_value_and_mult
-            multiply_part = 1
-
-        self.scientific_tof_slope.value = number_part
-        self.scientific_tof_slope.multiplier = multiply_part
-        self.scientific_tof_slope.value_str = str(number_part) + str(
-            multiply_part)[1:]
-        self.scientific_tof_slope.scientificLineEdit.setText(
-            str(number_part) + str(multiply_part)[1:])
-
-        # Parse the value and multiplier
-        offset_value_and_mult = str(self.obj.tof_offset)
-        try:
-            e_index = offset_value_and_mult.index('e')
-            number_part = offset_value_and_mult[:e_index]
-            multiply_part = "1" + offset_value_and_mult[e_index:]
-        except ValueError:
-            number_part = offset_value_and_mult
-            multiply_part = 1
-        self.scientific_tof_offset.value = number_part
-        self.scientific_tof_offset.multiplier = multiply_part
-        self.scientific_tof_offset.value_str = str(number_part) + str(
-            multiply_part)[1:]
-        self.scientific_tof_offset.scientificLineEdit.setText(
-            str(number_part) + str(multiply_part)[1:])
 
         # Transfer efficiency files
         original_obj.efficiencies = self.obj.efficiencies
@@ -264,9 +203,9 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
     def __save_file(self):
         """Opens file dialog and sets and saves the settings to a file.
         """
-        file = save_file_dialog(self, self.request.default_folder,
-                                "Save detector file",
-                                "Detector File (*.detector)")
+        file = fdialogs.save_file_dialog(
+            self, self.request.default_folder, "Save detector file",
+            "Detector File (*.detector)")
         if not file:
             return
         file = Path(file)
@@ -289,20 +228,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         Show Detector settings.
         """
         # Detector settings
-        self.nameLineEdit.setText(self.obj.name)
-        self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
-            self.obj.modification_time)))
-        self.descriptionLineEdit.setPlainText(self.obj.description)
-        self.typeComboBox.setCurrentIndex(self.typeComboBox.findText(
-            self.obj.type, Qt.MatchFixedString))
-        self.angleSlopeLineEdit.setText(
-            str(self.obj.angle_slope))
-        self.angleOffsetLineEdit.setText(
-            str(self.obj.angle_offset))
-
-        self.timeResSpinBox.setValue(self.obj.timeres)
-        self.virtualSizeXSpinBox.setValue(self.obj.virtual_size[0])
-        self.virtualSizeYSpinBox.setValue(self.obj.virtual_size[1])
+        self.set_properties(**self.obj.get_settings())
+        self.efficiency_files = self.obj.get_efficiency_files()
 
         # Detector foils
         self.tmp_foil_info = copy.deepcopy(self.obj.foils)
@@ -315,17 +242,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         """
         Update detector settings.
         """
-        self.obj.name = self.nameLineEdit.text()
-        self.obj.description = self.descriptionLineEdit.toPlainText()
-        self.obj.type = self.typeComboBox.currentText()
-        self.obj.angle_offset = self.angleOffsetLineEdit.text()
-        self.obj.angle_slope = self.angleSlopeLineEdit.text()
-        self.obj.tof_slope = self.scientific_tof_slope.get_value()
-        self.obj.tof_offset = self.scientific_tof_offset.get_value()
-
-        self.obj.virtual_size = self.virtualSizeXSpinBox.value(), \
-                                self.virtualSizeYSpinBox.value()
-        self.obj.timeres = self.timeResSpinBox.value()
+        self.obj.set_settings(**self.get_properties())
         # Detector foils
         self.calculate_distance()
         self.obj.foils = self.tmp_foil_info
@@ -471,7 +388,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
                 return True
         return False
 
-    def layer_elements_changed(self, layer1, layer2):
+    @staticmethod
+    def layer_elements_changed(layer1, layer2):
         """
         Check if layer1 elements are different than layer2 elements.
 
@@ -600,7 +518,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget):
         """Adds efficiency file in detector's efficiency list for moving into
         efficiency folder later and updates settings view.
         """
-        new_efficiency_file = open_file_dialog(
+        new_efficiency_file = fdialogs.open_file_dialog(
             self, self.request.default_folder, "Select efficiency file",
             "Efficiency File (*.eff)")
         if not new_efficiency_file:
