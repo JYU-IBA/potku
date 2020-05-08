@@ -98,7 +98,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                         MCERDParameterContainer):
     """
     Class for handling the element specific simulation. Can have multiple
-    MCERD objects, but only one GetEspe object.
+    MCERD objects.
     """
 
     __slots__ = "directory", "request", "name_prefix", "modification_time", \
@@ -114,8 +114,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "optimization_recoils", "optimization_done", \
                 "optimization_stopped", "optimization_widget", \
                 "optimization_running", "optimized_fluence", \
-                "sample", \
-                "__cancellation_token", "_simulation_running"
+                "sample", "__cancellation_token", "_simulation_running"
 
     def __init__(self, directory, request, recoil_elements,
                  simulation=None, name_prefix="", sample=None,
@@ -703,7 +702,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             print_to_console=True, cancellation_token=cancellation_token).pipe(
                 ops.do_action(
                     on_error=lambda _: self._mcerd_objects.remove(mcerd),
-                    on_completed=lambda _: self._mcerd_objects.remove(mcerd))
+                    on_completed=lambda: self._mcerd_objects.remove(mcerd))
                 )
 
     def _set_flags(self, b, optim_mode=None):

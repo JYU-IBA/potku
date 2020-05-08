@@ -113,8 +113,7 @@ class MCERD:
 
         mcerd_path = gf.get_bin_dir() / executable
 
-        return f"{ulimit}{exec_cmd}{mcerd_path} " \
-               f"{shlex.quote(str(self.__command_file))}"
+        return f"{ulimit}{exec_cmd}{mcerd_path} {self.__command_file}"
 
     def run(self, print_to_console=True, cancellation_token=None,
             poll_interval=10):
