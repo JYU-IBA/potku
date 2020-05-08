@@ -28,6 +28,7 @@ __version__ = "2.0"
 import unittest
 import tempfile
 import os
+import shutil
 
 import tests.mock_objects as mo
 
@@ -159,7 +160,13 @@ class TestEfficiencyFiles(unittest.TestCase):
         the directory contains other files.
         """
         with tempfile.TemporaryDirectory() as tmp_dir:
+            # The efficiency directory does not exists yet, get_efficiency_files
+            # returns an empty list
+            self.assertIsNone(self.det.efficiency_directory)
+            self.assertEqual([], self.det.get_efficiency_files())
+
             self.det.update_directories(tmp_dir)
+            self.assertTrue(self.det.efficiency_directory.exists())
             self.create_eff_files(self.det.efficiency_directory, self.eff_files)
             self.assertNotEqual(
                 sorted(self.eff_files.keys()),
@@ -181,6 +188,13 @@ class TestEfficiencyFiles(unittest.TestCase):
             self.assertNotIn(Path("O.eff"), self.det.get_efficiency_files())
             dir_path.rmdir()
 
+            # If the Used_efficiency files directory is removed, OSError is
+            # raised
+            shutil.rmtree(self.det.efficiency_directory)
+            self.assertRaises(
+                OSError, lambda: self.det.get_efficiency_files()
+            )
+
     def test_add_efficiencies(self):
         """When a new efficiency file is added, it will be copied to the
         efficiency directory of the detector. Only files ending with '.eff'
@@ -189,8 +203,15 @@ class TestEfficiencyFiles(unittest.TestCase):
         Used efficiency files folder is not yet created.
         """
         with tempfile.TemporaryDirectory() as tmp_dir:
-            self.det.update_directories(tmp_dir)
             self.create_eff_files(tmp_dir, self.eff_files)
+            # If detector dir has not yet been established with the
+            # update_directories_method, add_efficiency_file raises an error
+            path = Path(tmp_dir, "1H.eff")
+            self.assertTrue(path.exists())
+            self.assertRaises(
+                TypeError, lambda: self.det.add_efficiency_file(path))
+
+            self.det.update_directories(tmp_dir)
 
             self.assertEqual([], os.listdir(self.det.efficiency_directory))
             for file in self.eff_files:
@@ -294,6 +315,20 @@ class TestEfficiencyFiles(unittest.TestCase):
             self.assertFalse(path.exists())
             self.assertTrue(used_path.exists())
 
+    def test_update_directory(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            self.assertIsNone(self.det.efficiency_directory)
+            self.assertIsNone(self.det.get_used_efficiencies_dir())
+            expected = Path(tmp_dir, Detector.EFFICIENCY_DIR)
+            self.assertFalse(expected.exists())
+
+            self.det.update_directories(tmp_dir)
+
+            self.assertTrue(self.det.efficiency_directory.exists())
+            self.assertEqual(expected, self.det.efficiency_directory)
+            self.assertEqual(expected / Detector.USED_EFFICIENCIES_DIR,
+                             self.det.get_used_efficiencies_dir())
+
     def test_directory_reference_update(self):
         self.assertEqual(
             Path(tempfile.gettempdir(), "Detector", ".detector"), self.det.path)
@@ -309,6 +344,8 @@ class TestEfficiencyFiles(unittest.TestCase):
         self.assertEqual(
             mesu_path / "Detector" / Detector.EFFICIENCY_DIR,
             self.det.efficiency_directory)
+        # Directory is not yet created
+        self.assertFalse(self.det.efficiency_directory.exists())
 
     @staticmethod
     def create_eff_files(directory, eff_files):

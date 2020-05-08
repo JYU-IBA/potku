@@ -102,12 +102,19 @@ def remove_files(directory, exts=None, filter_func=None):
         def filter_func(_):
             return True
 
-    for file in os.scandir(directory):
-        if Path(file.path).suffix in exts and filter_func(file.name):
-            try:
-                os.remove(file)
-            except OSError:
-                pass
+    try:
+        for file in os.scandir(directory):
+            fp = Path(file)
+            if fp.suffix in exts and filter_func(file.name):
+                try:
+                    fp.unlink()
+                except OSError:
+                    # fp could be a directory, or permissions may prevent
+                    # deletion
+                    pass
+    except OSError:
+        # Directory not found (or directory is a file), nothing to do
+        pass
 
 
 def hist(data, width=1.0, col=1):

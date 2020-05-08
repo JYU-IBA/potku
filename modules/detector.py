@@ -421,7 +421,12 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         """Returns the path to efficiency folder where the files used when
         running tof_list are located.
         """
-        return Path(self.efficiency_directory, Detector.USED_EFFICIENCIES_DIR)
+        try:
+            return Path(
+                self.efficiency_directory, Detector.USED_EFFICIENCIES_DIR)
+        except TypeError:
+            # efficiency directory is None, this should also return None
+            return None
 
     def copy_efficiency_files(self):
         """Copies efficiency files to the directory where tof_list will be

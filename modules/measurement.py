@@ -108,6 +108,7 @@ class Measurements:
         measurement = None
 
         if import_evnt_or_binary:
+            # TODO remove duplicate code when creating new Measurement
             next_serial = sample.get_running_int_measurement()
             measurement_directory = \
                 Path(self.request.directory, sample.directory,
@@ -115,12 +116,12 @@ class Measurements:
             sample.increase_running_int_measurement_by_1()
             if not measurement_directory.exists():
                 os.makedirs(measurement_directory)
-            measurement = Measurement(self.request, measurement_directory,
-                                      tab_id, name)
+            measurement = Measurement(
+                self.request, measurement_directory, tab_id, name)
             measurement.sample = sample
 
-            measurement.info_to_file(Path(
-                measurement_directory, measurement.name + ".info"))
+            measurement.info_to_file(
+                Path(measurement_directory, measurement.name + ".info"))
             measurement.create_folder_structure(
                 measurement_directory, None, selector_cls=selector_cls)
             serial_number = next_serial
@@ -129,6 +130,7 @@ class Measurements:
                 measurement
 
         else:
+            # TODO why is the same path split twice?
             measurement_filename = os.path.split(file_path)[1]
             file_directory, file_name = os.path.split(file_path)
 
@@ -652,9 +654,14 @@ class Measurement(Logger):
         """
         new_dir = Path(self.directory, directory)
         if not new_dir.exists():
-            os.makedirs(new_dir)
-            log = f"Created a directory {new_dir}."
-            logging.getLogger("request").info(log)
+            try:
+                new_dir.mkdir()
+                log = f"Created a directory {new_dir}."
+                logging.getLogger("request").info(log)
+            except OSError as e:
+                logging.getLogger("request").error(
+                    f"Failed to create a directory: {e}."
+                )
 
     def copy_file_into_measurement(self, file_path):
         """
@@ -951,22 +958,10 @@ class Measurement(Logger):
         """
         Remove old cut files.
         """
-        self.__unlink_files(Path(self.directory_cuts))
+        gf.remove_files(self.directory_cuts, exts={".cut"})
         directory_changes = Path(
             self.directory_composition_changes, "Changes")
-
-        self.__make_directories(directory_changes)
-        self.__unlink_files(directory_changes)
-
-    def __unlink_files(self, directory):
-        for the_file in os.listdir(directory):
-            file_path = Path(directory, the_file)
-            try:
-                if os.path.isfile(file_path):
-                    os.unlink(file_path)
-            except Exception:
-                log_msg = "Failed to remove the old cut files."
-                logging.getLogger(self.name).error(log_msg)
+        gf.remove_files(directory_changes, exts={".cut"})
 
     def get_cut_files(self):
         """ Get cut files from a measurement.
@@ -1011,7 +1006,10 @@ class Measurement(Logger):
         else:
             tof_in_file = Path(directory) / "tof.in"
 
-        # Get settings 
+        # Get settings
+        # TODO self.detector and other stuff should never be None. Instead,
+        #   we should check whether measurement settings are being used and
+        #   then select the correct detector
         # use_settings = self.measurement_settings.get_measurement_settings()
         global_settings = self.request.global_settings
 

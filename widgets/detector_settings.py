@@ -106,7 +106,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
 
         # Add foil widgets and foil objects
         self.detector_structure_widgets = []
-        self.foils_layout = self._add_default_foils()
+        self.foils_layout = self._add_default_foils(self.obj)
         self.detectorScrollAreaContents.layout().addLayout(self.foils_layout)
         self.newFoilButton.clicked.connect(
             lambda: self._add_new_foil(self.foils_layout))
@@ -176,13 +176,9 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             "Detector File (*.detector)")
         if not file:
             return
-        # Read the file into a temp detector object
-        # TODO file file??
-        temp_detector = Detector.from_file(file, file, self.request, False)
 
-        self.obj = temp_detector
-        self.obj.efficiency_directory = Path(
-            self.obj.path.parent, Detector.EFFICIENCY_DIR)
+        temp_detector = Detector.from_file(file, file, self.request, False)
+        self.obj.set_settings(**temp_detector.get_settings())
 
         self.tmp_foil_info = []
         self.tof_foils = []
@@ -197,7 +193,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
                     layout_item.itemAt(j).widget().deleteLater()
 
         # Add foil widgets and foil objects
-        self.foils_layout = self._add_default_foils()
+        self.foils_layout = self._add_default_foils(temp_detector)
         self.detectorScrollAreaContents.layout().addLayout(self.foils_layout)
 
         self.show_settings()
@@ -405,7 +401,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             foil_widget.timingFoilCheckBox.setEnabled(False)
         return foil_widget
 
-    def _add_default_foils(self):
+    def _add_default_foils(self, detector: Detector):
         """Add default foils as widgets.
 
         Return:
@@ -413,10 +409,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         """
         layout = QtWidgets.QHBoxLayout()
 
-        foils = self.obj.foils
+        foils = detector.foils
         for i in range(len(foils)):
             foil_widget = self._add_new_foil(layout, foils[i])
-            for index in self.obj.tof_foils:
+            for index in detector.tof_foils:
                 if index == i:
                     foil_widget.timingFoilCheckBox.setChecked(True)
         return layout
