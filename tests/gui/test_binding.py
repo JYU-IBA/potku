@@ -26,7 +26,8 @@ __version__ = "2.0"
 
 import unittest
 import sys
-import warnings
+import random
+import time
 
 import tests.utils as utils
 import numpy as np
@@ -54,6 +55,7 @@ class BWidget(QtWidgets.QWidget, bnd.PropertyBindingWidget,
     pla = bnd.bind("plaintext")
     not2way = bnd.bind("not2waySpinBox", twoway=False)
     sci = bnd.bind("scibox")
+    lst = bnd.bind("listWidget")
 
     def __init__(self):
         super().__init__()
@@ -66,17 +68,13 @@ class BWidget(QtWidgets.QWidget, bnd.PropertyBindingWidget,
         self.plaintext = QtWidgets.QPlainTextEdit()
         self.not2waySpinBox = QtWidgets.QSpinBox()
         self.scibox = ScientificSpinBox(0, 1, 0, 10)
+        self.listWidget = QtWidgets.QListWidget()
 
 
 class TestBinding(unittest.TestCase):
     @utils.change_wd_to_root
     def setUp(self):
-        with warnings.catch_warnings():
-            # PyQt triggers a DeprecationWarning when loading an ui file.
-            # Suppress the it so the test output does not get cluttered by
-            # unnecessary warnings.
-            warnings.simplefilter("ignore")
-            self.widget = BWidget()
+        self.widget = BWidget()
 
     def test_getproperties(self):
         self.assertEqual(
@@ -89,7 +87,8 @@ class TestBinding(unittest.TestCase):
                 "pla": "",
                 "lab": "",
                 "not2way": 0,
-                "sci": 0
+                "sci": 0,
+                "lst": []
             }, self.widget.get_properties()
         )
 
@@ -111,37 +110,27 @@ class TestBinding(unittest.TestCase):
 
     def test_set_properties(self):
         """Tests setting multiple properties at once."""
-        self.widget.set_properties(foo=3, bar=4.5)
+        self.widget.set_properties(
+            foo=3, bar=4.5, baz="test", tim=100, che=True, lst=["1", 2])
         self.assertEqual({
                 "foo": 3,
                 "bar": 4.5,
-                "baz": "",
-                "tim": 0,
-                "che": False,
+                "baz": "test",
+                "tim": 100,
+                "che": True,
                 "pla": "",
                 "lab": "",
                 "not2way": 0,
-                "sci": 0
+                "sci": 0,
+                "lst": ["1", 2]
             }, self.widget.get_properties()
         )
 
-        self.widget.set_properties(baz="test", tim=100, che=True)
-        self.assertEqual({
-            "foo": 3,
-            "bar": 4.5,
-            "baz": "test",
-            "tim": 100,
-            "che": True,
-            "pla": "",
-            "lab": "",
-            "not2way": 0,
-            "sci": 0
-        }, self.widget.get_properties())
-
         # Setting the not2way changes nothing as well as setting tim to
         # unsuitable type. Label does however convert values to string.
-        self.widget.set_properties(pla="foo", lab=4, not2way=7,
-                                   tim="foo", sci=1.234e-6)
+        self.widget.set_properties(
+            pla="foo", lab=4, not2way=7, tim="foo", sci=1.234e-6,
+            lst=[None, self.widget])
         self.assertEqual({
             "foo": 3,
             "bar": 4.5,
@@ -151,7 +140,8 @@ class TestBinding(unittest.TestCase):
             "pla": "foo",
             "lab": "4",
             "not2way": 0,
-            "sci": 1.234e-6
+            "sci": 1.234e-6,
+            "lst": [None, self.widget]
         }, self.widget.get_properties())
 
 
@@ -365,6 +355,23 @@ class TestTimeConversion(unittest.TestCase):
         self.assertEqual(86_399, bnd.from_qtime(bnd.to_qtime(86_399)))
         self.assertEqual(0, bnd.from_qtime(bnd.to_qtime(86_400)))
         self.assertEqual(86_399, bnd.from_qtime(bnd.to_qtime(-1)))
+
+    def test_unix_time_to_and_from_label(self):
+        class TimeWidget:
+            def __init__(self):
+                self.time_label = QtWidgets.QLabel()
+        tim = TimeWidget()
+        self.assertEqual(0.0, bnd.unix_time_from_label(tim, "time_label"))
+        n = 10
+        for _ in range(n):
+            unix_time = random.uniform(0, time.time())
+            bnd.unix_time_to_label(tim, "time_label", unix_time)
+            self.assertEqual(
+                time.strftime("%c %z %Z", time.localtime(unix_time)),
+                tim.time_label.text()
+            )
+            self.assertEqual(
+                unix_time, bnd.unix_time_from_label(tim, "time_label"))
 
 
 if __name__ == '__main__':

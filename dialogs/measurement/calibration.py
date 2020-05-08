@@ -94,21 +94,16 @@ class CalibrationDialog(QtWidgets.QDialog):
             self.cutFilesTreeWidget.resizeColumnToContents(column)
 
         self.curveFittingWidget = \
-            CalibrationCurveFittingWidget(self,
-                                          self.__cut_file,
-                                          self.tof_calibration,
-                                          self.detector,
-                                          self.binWidthSpinBox.value(), 1,
-                                          self.run)
+            CalibrationCurveFittingWidget(
+                self, self.__cut_file, self.tof_calibration, self.detector,
+                self.binWidthSpinBox.value(), 1, self.run)
         
         old_params = None
         # Get old parameters from the parent dialog
-        if parent_settings_widget:
+        if parent_settings_widget is not None:
             try:
-                f1 = self.parent_settings_widget.scientific_tof_offset \
-                    .get_value()
-                f2 = self.parent_settings_widget.scientific_tof_slope \
-                    .get_value()
+                f1 = self.parent_settings_widget.tof_offset
+                f2 = self.parent_settings_widget.tof_slope
                 old_params = f1, f2
             except ValueError as e:
                 m = "Can't get old calibration parameters from the settings " \
@@ -142,18 +137,13 @@ class CalibrationDialog(QtWidgets.QDialog):
         
         self.timer = QtCore.QTimer(interval=1500, timeout=self.timeout)
 
-        if platform.system() == "Darwin":
-            self.tofSecondsLineEdit.setFixedWidth(170)
-            self.tofChannelLineEdit.setFixedWidth(170)
-            self.offsetLineEdit.setFixedWidth(170)
-            self.slopeLineEdit.setFixedWidth(170)
-
-        if platform.system() == "Linux":
-            self.tofSecondsLineEdit.setFixedWidth(190)
-            self.tofChannelLineEdit.setFixedWidth(190)
-            self.offsetLineEdit.setFixedWidth(190)
-            self.slopeLineEdit.setFixedWidth(190)
         self.exec_()
+
+    def showEvent(self, _):
+        """Called after dialog is shown. Size is adjusted so that all elements
+        fit nicely on screen.
+        """
+        self.adjustSize()
 
     def remove_selected_points(self):
         """Remove selected items from point tree widget
@@ -181,12 +171,10 @@ class CalibrationDialog(QtWidgets.QDialog):
         fields.
         """
         if self.parent_settings_widget is not None:
-            self.parent_settings_widget.scientific_tof_slope.set_value(
-                float(self.slopeLineEdit.text())
-            )
-            self.parent_settings_widget.scientific_tof_offset.set_value(
-                float(self.offsetLineEdit.text())
-            )
+            self.parent_settings_widget.tof_slope = float(
+                self.slopeLineEdit.text())
+            self.parent_settings_widget.tof_offset = float(
+                self.offsetLineEdit.text())
             return True
         return False
 

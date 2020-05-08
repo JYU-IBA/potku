@@ -88,6 +88,8 @@ class TestSimulation(unittest.TestCase):
                                         target=mo.get_target(),
                                         run=mo.get_run())
 
+            utils.disable_logging()
+
             self.assertEqual(sim.name, sim2.name)
             self.assertEqual(sim.description, sim2.description)
             self.assertEqual(sim.measurement_setting_file_description,

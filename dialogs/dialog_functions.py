@@ -41,25 +41,6 @@ from modules.detector import Detector
 from PyQt5 import QtWidgets
 
 
-def update_efficiency_files(detector):
-    """Updates the efficiency files in the given detector by adding and
-    removing files.
-    """
-    # TODO if a file is removed and new file with same name is added, this
-    #      also removes the new file
-    for file in detector.efficiencies:
-        detector.add_efficiency_file(file)
-
-    detector.efficiencies.clear()
-
-    for file in detector.efficiencies_to_remove:
-        detector.remove_efficiency_file(file)
-
-    # Clear the list so same files do not get deleted over and over
-    # again
-    detector.efficiencies_to_remove.clear()
-
-
 def check_for_red(widget):
     """Looks for invalid values in widgets tab collection
     and blocks signals if it finds one.
@@ -115,38 +96,40 @@ def _update_cuts(old_cut_files, directory):
                 old_cut_files[i] = Path(directory, file)
 
 
-def get_updated_efficiency_files(qdialog, efficiency_files):
-    """Returns a list of used efficiency files that can be used to update
-    a GUI element
+def update_used_eff_file_label(qdialog, efficiency_files):
+    """Updates the used efficiency file label of a qdialog
 
     Args:
-        qdialog:
-        efficiency_files:
+        qdialog: qdialog whose label will be updated
+        efficiency_files: list of efficiency files
     """
-    eff_files_used = []
+    eff_files_used = set()
     root = qdialog.treeWidget.invisibleRootItem()
     child_count = root.childCount()
-    for eff in efficiency_files:
-        str_element, _ = eff.split(".")
-        element = Element.from_string(str_element)
-        for i in range(child_count):
-            item = root.child(i)
-            # TODO: Perhaps make this update every time a cut file is
-            # selected so user knows exactly what files are used instead
-            # of what files match all the cut files.
 
-            # TODO: Does not check elemental losses for efficiency files.
-            if not hasattr(item, "file_name"):
-                continue
-            cut_element = Element.from_string(item.file_name.split(".")[1])
-            mass = cut_element.isotope
-            if not mass:
-                mass = round(cut_element.get_st_mass(), 0)
-            if cut_element.symbol == element.symbol and \
-                    mass == element.isotope:
-                eff_files_used.append(eff)
+    eff_elems = {
+        Detector.get_used_efficiency_file_name(eff_file).stem: eff_file
+        for eff_file in efficiency_files
+    }
 
-    return eff_files_used
+    for i in range(child_count):
+        item = root.child(i)
+
+        if not hasattr(item, "file_name"):
+            continue
+
+        # TODO check for RBS selection too
+        cut_element_str = item.file_name.split(".")[1]
+
+        if cut_element_str in eff_elems:
+            eff_files_used.add(eff_elems[cut_element_str])
+
+    if eff_files_used:
+        eff_file_txt = "\t\n".join(str(f) for f in eff_files_used)
+        qdialog.label_efficiency_files.setText(
+           f"Efficiency files used:\t\n{eff_file_txt}")
+    else:
+        qdialog.label_efficiency_files.setText("No efficiency files.")
 
 
 def delete_optim_espe(qdialog, elem_sim):
@@ -186,24 +169,19 @@ def update_detector_settings(entity, det_folder_path: Path,
         det_folder_path: path to the detector's folder,
         measurement_settings_file_path: TODO
     """
-    # TODO this could be a function of Measurement and Simulation
     # Create default Detector for Measurement
     detector_file_path = Path(det_folder_path, "Default.detector")
-    if not det_folder_path.exists:
-        os.makedirs(det_folder_path)
-    entity.detector = Detector(detector_file_path,
-                               measurement_settings_file_path)
+    os.makedirs(det_folder_path, exist_ok=True)
+
+    entity.detector = Detector(
+        detector_file_path, measurement_settings_file_path)
     entity.detector.update_directories(det_folder_path)
 
     # Transfer the default detector efficiencies to new
     # Detector
-    entity.detector.efficiencies = list(
-        entity.request.default_detector.efficiencies)
-    # Default efficiencies are emptied because efficiencies
-    # added in measurement specific dialog go by default in
-    # the list. The list is only used for this transferring,
-    # so emptying it does no harm.
-    entity.request.default_detector.efficiencies = []
+    for eff_file in entity.request.default_detector.get_efficiency_files(
+            full_path=True):
+        entity.detector.add_efficiency_file(eff_file)
 
 
 def update_tab(tab):

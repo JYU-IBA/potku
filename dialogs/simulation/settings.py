@@ -117,7 +117,6 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             "%c %z %Z", time.localtime(self.simulation.modification_time)))
 
         self.tabs.currentChanged.connect(lambda: df.check_for_red(self))
-        self.__close = True
 
         self.exec()
 
@@ -138,29 +137,24 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         """
         if self.measurement_settings_widget.isotopeComboBox.currentIndex()\
                 == -1:
-            QtWidgets.QMessageBox.critical(self, "Warning",
-                                           "No isotope selected.\n\nPlease "
-                                           "select an isotope for the beam "
-                                           "element.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
-            self.__close = False
-            return
+            QtWidgets.QMessageBox.critical(
+                self, "Warning",
+                "No isotope selected.\n\n"
+                "Please select an isotope for the beam element.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            return False
 
         if not self.simulation.measurement_setting_file_name:
             self.simulation.measurement_setting_file_name = \
                 self.simulation.name
 
         if not self.tabs.currentWidget().fields_are_valid:
-            QtWidgets.QMessageBox.critical(self, "Warning",
-                                           "Some of the setting values have"
-                                           " not been set.\n" +
-                                           "Please input values in fields "
-                                           "indicated in red.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
-            self.__close = False
-            return
+            QtWidgets.QMessageBox.critical(
+                self, "Warning",
+                "Some of the setting values have not been set.\n"
+                "Please input values in fields indicated in red.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            return False
 
         if (self.use_request_settings != self.simulation.use_request_settings) \
                 or (not self.use_request_settings and self.values_changed()):
@@ -173,8 +167,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             if not df.delete_element_simulations(
                     self, self.simulation, tab=self.tab,
                     msg="simulation settings"):
-                self.__close = False
-                return
+                return False
 
         try:
             # Update simulation settings
@@ -204,8 +197,6 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             self.simulation.detector.path = \
                 Path(det_folder_path,
                      f"{self.simulation.detector.name}.detector")
-
-            df.update_efficiency_files(self.simulation.detector)
 
             # Save measurement settings parameters.
             new_measurement_settings_file_path = Path(
@@ -251,22 +242,22 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
             # Save Target object to file
             self.simulation.target.to_file(target_file_path,
                                            new_measurement_settings_file_path)
-            self.__close = True
+            return True
 
         except TypeError:
-            QtWidgets.QMessageBox.question(self, "Warning",
-                                           "Some of the setting values "
-                                           "have not been set.\n" +
-                                           "Please input setting values"
-                                           " to save them.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(
+                self, "Warning",
+                "Some of the setting values have not been set.\n"
+                "Please input setting values to save them.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+
+        return False
 
     def __save_settings_and_close(self):
-        """Save settings and close the dialog.
+        """Saves settings and closes the dialog if __update_parameters returns
+        True.
         """
-        self.__update_parameters()
-        if self.__close:
+        if self.__update_parameters():
             self.close()
 
     def values_changed(self):

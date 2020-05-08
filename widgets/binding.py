@@ -27,6 +27,7 @@ __version__ = "2.0"
 import os
 import abc
 import json
+import time
 
 from widgets.scientific_spinbox import ScientificSpinBox
 from widgets.isotope_selection import IsotopeSelectionWidget
@@ -49,6 +50,43 @@ def to_qtime(seconds: int) -> QTime:
     return t
 
 
+def unix_time_to_label(instance, attr: str, unix_time: float):
+    """Sets the text of a label to a formatted string representations
+    of the given unix time. Unix time is also stored as an attribute of
+    the label so it can be later retrieved.
+    """
+    label = getattr(instance, attr)
+    label.unix_time = unix_time
+    label.setText(time.strftime("%c %z %Z", time.localtime(unix_time)))
+
+
+def unix_time_from_label(instance, attr: str) -> float:
+    label = getattr(instance, attr)
+    try:
+        return label.unix_time
+    except AttributeError:
+        return 0.0
+
+
+def get_items(list_widget: QtWidgets.QListWidget):
+    """Returns the items in a QListWidget.
+    """
+    return [
+        list_widget.item(i).data(QtCore.Qt.UserRole)
+        for i in range(list_widget.count())
+    ]
+
+
+def set_items(list_widget: QtWidgets.QListWidget, ls):
+    """Sets the items in a QListWidget.
+    """
+    list_widget.clear()
+    for li in ls:
+        item = QtWidgets.QListWidgetItem(str(li))
+        item.setData(QtCore.Qt.UserRole, li)
+        list_widget.addItem(item)
+
+
 # Collections of default getter and setter methods for various QObjects.
 # Keys are the types of the QObjects and values are methods.
 _DEFAULT_GETTERS = {
@@ -62,7 +100,8 @@ _DEFAULT_GETTERS = {
     QtWidgets.QPlainTextEdit: lambda qobj: qobj.toPlainText(),
     QtWidgets.QPushButton: lambda qobj: qobj.text(),
     ScientificSpinBox: lambda qobj: qobj.get_value(),
-    IsotopeSelectionWidget: lambda qobj: qobj.get_element()
+    IsotopeSelectionWidget: lambda qobj: qobj.get_element(),
+    QtWidgets.QListWidget: get_items
 }
 
 _DEFAULT_SETTERS = {
@@ -76,7 +115,8 @@ _DEFAULT_SETTERS = {
     QtWidgets.QPlainTextEdit: lambda qobj, txt: qobj.setPlainText(txt),
     QtWidgets.QPushButton: lambda qobj, txt: qobj.setText(txt),
     ScientificSpinBox: lambda qobj, value: qobj.set_value(value),
-    IsotopeSelectionWidget: lambda qobj, elem: qobj.set_element(elem)
+    IsotopeSelectionWidget: lambda qobj, elem: qobj.set_element(elem),
+    QtWidgets.QListWidget: set_items
 }
 
 
@@ -104,8 +144,8 @@ def _fset(instance, qobj_name, value):
         value: new value for the QObject.
     """
     qobj = getattr(instance, qobj_name)
-    setter = _DEFAULT_SETTERS.get(type(qobj),
-                                  lambda obj, val: obj.setValue(val))
+    setter = _DEFAULT_SETTERS.get(
+        type(qobj), lambda obj, val: obj.setValue(val))
     setter(qobj, value)
 
 
@@ -239,8 +279,8 @@ class PropertySavingWidget(PropertyBindingWidget, abc.ABC):
         try:
             with open(file_path) as file:
                 params = json.load(file)
-        except (FileNotFoundError, json.JSONDecodeError, UnicodeDecodeError,
-                PermissionError, IsADirectoryError):
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError,
+                IsADirectoryError):
             return
 
         self.set_properties(**params)

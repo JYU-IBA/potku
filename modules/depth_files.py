@@ -280,8 +280,7 @@ class DepthProfile:
         # Otherwise read just depths and concentrations
         parser = CSVParser((x_column, float),
                            (3, lambda x: float(x) * 100))
-        depths, conc = tuple(parser.parse_file(file_path,
-                                               method="col"))
+        depths, conc = tuple(parser.parse_file(file_path, method="col"))
         return cls(depths, conc)
 
     def get_profile_name(self):
@@ -470,7 +469,7 @@ def validate_depth_file_names(file_names):
     }
 
 
-def get_depth_files(elements, dir_depth, cut_files):
+def get_depth_files(elements, dir_depth):
     """Returns a list of depth files in a directory that match the
     elements.
 
@@ -478,26 +477,22 @@ def get_depth_files(elements, dir_depth, cut_files):
         elements: List of Element objects that should have a
                   corresponding depth file.
         dir_depth: Directory of the erd depth result files.
-        cut_files: List of cut files that were used.
 
     Return:
         A list of full depth file paths which matched the given
         elements.
     """
-    # TODO implement or remove cut_files parameter
-
     # Check which file paths in the director are valid depth file paths
     file_paths = os.listdir(dir_depth)
     validated_filenames = validate_depth_file_names(file_paths)
 
     # By default, add 'depth.total' to the list
-    depth_files = [os.path.join(dir_depth, "depth.total")]
-    for s, elem in comp.match_strs_to_elements(validated_filenames.keys(),
-                                               elements):
+    depth_files = [Path(dir_depth, "depth.total")]
+    for s, elem in comp.match_strs_to_elements(
+            validated_filenames.keys(), elements):
         # Add all file names that matched an element in the element collection
         if elem:
-            depth_files.append(
-                os.path.join(dir_depth, validated_filenames[s]))
+            depth_files.append(Path(dir_depth, validated_filenames[s]))
 
     return depth_files
 
@@ -524,7 +519,7 @@ class DepthProfileHandler:
                       depth files
             depth_units: unit in which depths are measured
         """
-        file_paths = get_depth_files(elements, directory_path, [])
+        file_paths = get_depth_files(elements, directory_path)
         self.read_files(file_paths, elements, depth_units=depth_units)
 
     def read_files(self, file_paths, elements, depth_units="nm",
@@ -548,19 +543,19 @@ class DepthProfileHandler:
         self.__relative_profiles.clear()
 
         # Depth files are named as 'depth.[name of the element]'
-        elem_strs = (f.split(".")[-1] for f in file_paths)
+        elem_strs = (f.name.split(".")[-1] for f in file_paths)
 
         # Match each 'depth' file to an element
         matches = dict(comp.match_strs_to_elements(elem_strs, elements))
 
         for file_path in file_paths:
             # Read files and generate DepthProfiles
-            element_part = file_path.split('.')[-1]
+            element_part = file_path.name.split('.')[-1]
 
             try:
-                profile = DepthProfile.from_file(file_path,
-                                                 element=matches[element_part],
-                                                 depth_units=depth_units)
+                profile = DepthProfile.from_file(
+                    file_path, element=matches[element_part],
+                    depth_units=depth_units)
 
                 self.__absolute_profiles[profile.get_profile_name()] = profile
 

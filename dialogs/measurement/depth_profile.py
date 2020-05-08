@@ -349,14 +349,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
         else:
             eff_files = self.parent.obj.detector.get_efficiency_files()
 
-        eff_files_used = df.get_updated_efficiency_files(self, eff_files)
-
-        if eff_files_used:
-            self.label_efficiency_files.setText(
-               "Efficiency files used: \t\n{0}".format("\t\n".join(
-                   eff_files_used)))
-        else:
-            self.label_efficiency_files.setText("No efficiency files.")
+        df.update_used_eff_file_label(self, eff_files)
 
     def __show_important_settings(self):
         """Show some important setting values in the depth profile parameter
@@ -411,7 +404,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
         
         Args:
             parent: A MeasurementTabWidget.
-            output_dir: A string representing directory in which the depth files 
+            output_dir: A string representing directory in which the depth files
                         are located.
             use_cuts: A string list representing Cut files.
             elements: A list of Element objects that are used in depth profile.

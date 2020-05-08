@@ -37,6 +37,7 @@ import modules.general_functions as gf
 from pathlib import Path
 
 from modules.base import Serializable
+from modules.base import AdjustableSettings
 from modules.base import MCERDParameterContainer
 from modules.element import Element
 from modules.foil import Foil
@@ -45,7 +46,7 @@ from modules.foil import RectangularFoil
 from modules.layer import Layer
 
 
-class Detector(MCERDParameterContainer, Serializable):
+class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
     """
     Detector class that handles all the information about a detector.
     It also can convert itself to and from JSON file.
@@ -53,23 +54,25 @@ class Detector(MCERDParameterContainer, Serializable):
     __slots__ = "name", "description", "date", "type", "foils",\
                 "tof_foils", "virtual_size", "tof_slope", "tof_offset",\
                 "angle_slope", "angle_offset", "path", "modification_time",\
-                "efficiencies", "efficiency_directory", "timeres", \
-                "detector_theta", "__measurement_settings_file_path", \
-                "efficiencies_to_remove", "save_in_creation"
+                "efficiency_directory", "timeres", \
+                "detector_theta", "_measurement_settings_file_path",
+
+    EFFICIENCY_DIR = "Efficiency_files"
+    USED_EFFICIENCIES_DIR = "Used_efficiencies"
 
     def __init__(self, path, measurement_settings_file_path, name="Default",
                  description="", modification_time=None, detector_type="TOF",
                  foils=None, tof_foils=None, virtual_size=(2.0, 5.0),
                  tof_slope=5.8e-11, tof_offset=-1.0e-9, angle_slope=0,
                  angle_offset=0, timeres=250.0, detector_theta=41,
-                 save_in_creation=True):
+                 save_on_creation=True):
         """Initialize a detector.
 
         Args:
             path: Path to .detector file.
             name: Detector name.
             measurement_settings_file_path: Path to measurement settings file
-                                            which has detector angles.
+                which has detector angles.
             description: Detector parameters description.
             modification_time: Modification time of detector file in Unix time.
             detector_type: Type of detector.
@@ -82,12 +85,12 @@ class Detector(MCERDParameterContainer, Serializable):
             angle_offset: Angle offset.
             timeres: Time resolution.
             detector_theta: Angle of the detector.
-            save_in_creation: Whether to save created detector into a file.
+            save_on_creation: Whether to save created detector into a file.
         """
         self.path = Path(path)
 
         self.name = name
-        self.__measurement_settings_file_path = Path(
+        self._measurement_settings_file_path = Path(
             measurement_settings_file_path)
         self.description = description
         if modification_time is None:
@@ -118,6 +121,7 @@ class Detector(MCERDParameterContainer, Serializable):
                                                  100.0, 3.44, 0.0)])]
         self.tof_foils = tof_foils
         if not self.tof_foils:
+            # TODO make being a timing foil an attribute of a foil
             # Set default ToF foils
             self.tof_foils = [1, 2]
         self.timeres = timeres
@@ -129,22 +133,20 @@ class Detector(MCERDParameterContainer, Serializable):
         self.detector_theta = detector_theta
 
         # Efficiency file paths and directory
-        self.efficiencies = []
-        self.efficiencies_to_remove = []
         self.efficiency_directory = None
 
-        if save_in_creation:
-            self.to_file(self.path, self.__measurement_settings_file_path)
+        if save_on_creation:
+            self.to_file(self.path, self._measurement_settings_file_path)
 
     def update_directories(self, directory):
         """Creates directories if they do not exist and updates paths.
         Args:
             directory: Path to where all the detector information goes.
         """
-        self.path = directory
+        self.path = Path(directory)
         os.makedirs(self.path, exist_ok=True)
 
-        self.efficiency_directory = Path(self.path, "Efficiency_files")
+        self.efficiency_directory = Path(self.path, Detector.EFFICIENCY_DIR)
         os.makedirs(self.efficiency_directory, exist_ok=True)
 
     def update_directory_references(self, obj):
@@ -152,102 +154,98 @@ class Detector(MCERDParameterContainer, Serializable):
         Update detector's path and efficiency folder path and efficiencies'
         paths.
         """
-        old_path_to_det, det_file = os.path.split(self.path)
-        old_path_to_obj, det_folder = os.path.split(old_path_to_det)
+        old_path_to_det, det_file = self.path.parent, self.path.name
+        old_path_to_obj, det_folder = \
+            old_path_to_det.parent, old_path_to_det.name
         new_path = Path(obj.directory, det_folder)
 
         self.path = Path(new_path, det_file)
 
-        self.efficiency_directory = Path(new_path, "Efficiency_files")
+        self.efficiency_directory = Path(new_path, Detector.EFFICIENCY_DIR)
 
-    def get_efficiency_files(self):
-        """Get efficiency files that are in detector's efficiency file folder
-        and return them as a list.
+    def get_efficiency_files(self, full_path=False):
+        """Returns efficiency files that are in detector's efficiency file
+        folder, either with full path or just the file name.
 
         Return:
             Returns a string list of efficiency files.
         """
-        files = []
-        for f in os.listdir(self.efficiency_directory):
-            if f.strip().endswith(".eff"):
-                files.append(f)
-        return files
-
-    def get_efficiency_files_from_list(self):
-        """Get efficiency files that are stored in detector's efficiency list,
-        i.e. that are not yet moved under any detector's efficiency folder.
-
-        Return:
-            List of efficiency files.
-        """
+        def filter_func(dir_entry):
+            fp = Path(dir_entry)
+            if fp.is_file() and fp.suffix == ".eff":
+                if full_path:
+                    return fp
+                return Path(fp.name)
+            return None
         return [
-            f.name for f in self.efficiencies
+            *filter(
+                lambda f: f is not None,
+                (filter_func(file) for file in os.scandir(
+                    self.efficiency_directory)))
         ]
 
-    def save_efficiency_file_path(self, file_path: Path):
-        """Add the efficiency file path to detector's efficiencies list.
-        """
-        self.efficiencies.append(Path(file_path))
-
     def add_efficiency_file(self, file_path: Path):
-        """Copies efficiency file to detector's efficiency folder.
+        """Copies efficiency file to detector's efficiency folder. Existing
+        files are overwritten.
+
+        Raises OSError if the file_path points to a directory.
 
         Args:
             file_path: Path of the efficiency file.
         """
-        try:
-            shutil.copy(file_path, self.efficiency_directory)
-        except shutil.SameFileError:
-            pass
+        fp = Path(file_path)
+        if fp.suffix == ".eff":
+            try:
+                shutil.copy(fp, self.efficiency_directory)
+            except shutil.SameFileError:
+                pass
 
-    def remove_efficiency_file_path(self, file_name):
+    def get_settings(self) -> dict:
+        """Returns a dictionary of settings that can be adjusted.
         """
-        Add efficiency file to remove to the list of to be removed efficiency
-        file paths and remove it from the efficiencies list.
+        return {
+            "name": self.name,
+            "modification_time": self.modification_time,
+            "description": self.description,
+            "detector_type": self.type,
+            "angle_slope": self.angle_slope,
+            "angle_offset": self.angle_offset,
+            "tof_slope": self.tof_slope,
+            "tof_offset": self.tof_offset,
+            "timeres": self.timeres,
+            "virtual_size": self.virtual_size
+        }
 
-        Args:
-            file_name: Name of the efficiency file.
+    def set_settings(self, detector_type=None, **kwargs):
+        """Adjusts this Detector's settings with given keyword arguments.
         """
-        # TODO maybe the widget could keep a list of files to remove instead of
-        #      the detector? Detector should just delete given files
-        file_path = None
-        for f in self.efficiencies:
-            if f.parent.name == "Efficiency_files" and f.name.endswith(
-                    file_name):
-                file_path = f
-
-        if file_path is not None:
-            self.efficiencies.remove(file_path)
-            self.efficiencies_to_remove.append(file_path)
+        allowed = self.get_settings()
+        if detector_type is not None:
+            self.type = detector_type
+        for key, value in kwargs.items():
+            if key in allowed:
+                setattr(self, key, value)
 
     def remove_efficiency_file(self, file_name: Path):
-        """Removes efficiency file from detector's efficiency file folder.
+        """Removes efficiency file from detector's efficiency file folder as
+        well as the used efficiencies folder.
 
         Args:
             file_name: Name of the efficiency file.
         """
+        file_name = Path(file_name)
         try:
-            os.remove(Path(self.efficiency_directory, file_name))
-            # Remove file from used efficiencies if it exists
-            element_split = file_name.name.split('-')
-            if len(element_split) <= 2:
-                element = element_split[0]
-            else:
-                if os.sep in element_split[-1]:
-                    element = element_split[-1]
-                else:
-                    element = element_split[len(element_split) - 2]
-            if os.sep in element:
-                element = os.path.split(element)[1]
-            if element.endswith(".eff"):
-                file_to_remove = Path(self.efficiency_directory,
-                                      "Used_efficiencies", element)
-            else:
-                file_to_remove = Path(self.efficiency_directory,
-                                      "Used_efficiencies", f"{element}.eff")
-            os.remove(file_to_remove)
+            Path(self.efficiency_directory, file_name).unlink()
         except OSError:
-            # File was not found in efficiency file folder.
+            pass
+        try:
+            used_eff_file = \
+                self.get_used_efficiencies_dir() / \
+                Detector.get_used_efficiency_file_name(file_name)
+            os.remove(used_eff_file)
+        except (OSError, ValueError):
+            # File was not found in efficiency file folder or the file extension
+            # was wrong.
             pass
 
     @classmethod
@@ -302,7 +300,7 @@ class Detector(MCERDParameterContainer, Serializable):
         return cls(path=detector_file_path,
                    measurement_settings_file_path=measurement_file_path,
                    foils=foils, detector_theta=detector_theta,
-                   save_in_creation=save, **detector)
+                   save_on_creation=save, **detector)
 
     def to_file(self, detector_file_path, measurement_file_path):
         """Save detector settings to a file.
@@ -316,29 +314,20 @@ class Detector(MCERDParameterContainer, Serializable):
         # Delete possible extra .detector files
         det_folder = Path(detector_file_path).parent
         os.makedirs(det_folder, exist_ok=True)
-        gf.remove_files(det_folder,
-                        exts={".detector"})
+        gf.remove_files(det_folder, exts={".detector"})
 
         timestamp = time.time()
 
         # Read Detector parameters to dictionary
         obj = {
-            "name": self.name,
-            "description": self.description,
-            "modification_time": time.strftime("%c %z %Z", time.localtime(
-                timestamp)),
-            "modification_time_unix": timestamp,
-            "detector_type": self.type,
+            **self.get_settings(),
             "foils": [
                 foil.to_dict() for foil in self.foils
             ],
             "tof_foils": self.tof_foils,
-            "timeres": self.timeres,
-            "virtual_size": self.virtual_size,
-            "tof_slope": self.tof_slope,
-            "tof_offset": self.tof_offset,
-            "angle_slope": self.angle_slope,
-            "angle_offset": self.angle_offset,
+            "modification_time": time.strftime(
+                "%c %z %Z", time.localtime(timestamp)),
+            "modification_time_unix": timestamp
         }
 
         with open(detector_file_path, "w") as file:
@@ -356,7 +345,7 @@ class Detector(MCERDParameterContainer, Serializable):
             except KeyError:
                 # Add detector theta
                 obj["geometry"] = {"detector_theta": self.detector_theta}
-        except FileNotFoundError:
+        except OSError:
             # Write new .measurement file
             obj = {"geometry": {"detector_theta": self.detector_theta}}
 
@@ -402,3 +391,57 @@ class Detector(MCERDParameterContainer, Serializable):
                        for foil in self.foils)
         except (ZeroDivisionError, ValueError):
             return 0
+
+    @staticmethod
+    def get_used_efficiency_file_name(file_name) -> Path:
+        """Returns an efficiency file name that can be used by tof_list.
+
+        File name should end in '.eff', otherwise ValueError is raised.
+        If the file name includes comments (indicated by a '-'), they will be
+        stripped from the output. A file named '1He-autumn2019.eff' becomes
+        '1He.eff'.
+
+        Args:
+            file_name: either a file name or path to a file
+
+        Return:
+            Path object that is only the file name.
+        """
+        file_name = Path(file_name)
+        if file_name.suffix != ".eff":
+            raise ValueError(
+                f"Efficiency file should have the extension '.eff'."
+                f"Given file was named '{file_name}'.")
+        first_part = file_name.name.split("-")[0]
+        if first_part.endswith(".eff"):
+            return Path(first_part)
+        return Path(f"{first_part}.eff")
+
+    def get_used_efficiencies_dir(self):
+        """Returns the path to efficiency folder where the files used when
+        running tof_list are located.
+        """
+        try:
+            return Path(
+                self.efficiency_directory, Detector.USED_EFFICIENCIES_DIR)
+        except TypeError:
+            # efficiency directory is None, this should also return None
+            return None
+
+    def copy_efficiency_files(self):
+        """Copies efficiency files to the directory where tof_list will be
+        looking for them. Additional comments are stripped from the files.
+        (i.e. 1H-example.eff becomes 1H.eff).
+        """
+        destination = self.get_used_efficiencies_dir()
+        destination.mkdir(exist_ok=True)
+        # Remove previous files
+        gf.remove_files(destination, {".eff"})
+
+        for eff in self.get_efficiency_files(full_path=True):
+            try:
+                used_file = Detector.get_used_efficiency_file_name(eff)
+            except ValueError:
+                continue
+            old_file = Path(self.efficiency_directory, eff)
+            shutil.copy(old_file, destination / used_file)

@@ -44,6 +44,7 @@ from modules.point import Point
 from modules.layer import Layer
 from modules.measurement import Measurement
 from modules.global_settings import GlobalSettings
+from modules.sample import Samples
 
 
 # This module can be used to generate various helper objects for testing
@@ -58,7 +59,7 @@ def get_detector() -> Detector:
     mesu = Path(tempfile.gettempdir(), "mesu")
     eff = Path(tempfile.gettempdir(), "efficiencies")
 
-    d = Detector(path, mesu, save_in_creation=False)
+    d = Detector(path, mesu, save_on_creation=False)
     d.efficiency_directory = eff
     return d
 
@@ -172,7 +173,7 @@ def get_global_settings() -> GlobalSettings:
     return GlobalSettings(save_on_creation=False)
 
 
-def get_request():
+def get_request(return_real=False):
     """Returns a MockRequest object.
 
     This is done to avoid lengthy file writing operations when a real
@@ -188,5 +189,5 @@ def get_request():
             self.default_target = get_target()
             self.default_measurement = get_measurement(self)
             self.global_settings = get_global_settings()
-
+            self.samples = Samples(self)
     return MockRequest()

@@ -24,11 +24,10 @@ You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
 __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
-             "\n Sinikka Siironen"
+             "\n Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
 import os
-import time
 
 import widgets.input_validation as iv
 import widgets.binding as bnd
@@ -100,12 +99,10 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
     minimum_energy_of_ions = bnd.bind("minimumEnergyDoubleSpinBox",
                                       track_change=True)
 
-    # Seed and date are not tracked for changes
+    # Seed and modification time are not tracked for changes
     seed_number = bnd.bind("seedSpinBox")
-    date = bnd.bind(
-        "dateLabel",
-        fset=lambda qobj, t: qobj.setText(time.strftime("%c %z %Z",
-                                                        time.localtime(t))))
+    modification_time = bnd.bind(
+        "dateLabel", fget=bnd.unix_time_from_label, fset=bnd.unix_time_to_label)
 
     def __init__(self, element_simulation: ElementSimulation):
         """
@@ -141,7 +138,7 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
         self.set_properties(
             name=self.element_simulation.name,
             description=self.element_simulation.description,
-            date=self.element_simulation.modification_time,
+            modification_time=self.element_simulation.modification_time,
             **self.element_simulation.get_settings())
 
     def get_original_property_values(self):
@@ -182,7 +179,7 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
         params = self.get_properties()
         self.element_simulation.name = params.pop("name")
         self.element_simulation.description = params.pop("description")
-        params.pop("date")
+        params.pop("modification_time")
 
         if self.simulation_type != self.element_simulation.simulation_type:
             if self.simulation_type == "ERD":

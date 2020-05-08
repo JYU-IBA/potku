@@ -135,7 +135,7 @@ class Potku(QtWidgets.QMainWindow):
         self.actionGlobal_Settings.triggered.connect(self.open_global_settings)
         self.actionRequest_Settings.triggered.connect(
             self.open_request_settings)
-        self.actionAbout.triggered.connect(self.open_about_dialog)
+        self.actionAbout.triggered.connect(AboutDialog)
 
         self.actionNew_Request_2.triggered.connect(self.make_new_request)
         self.actionOpen_Request_2.triggered.connect(self.open_request)
@@ -284,35 +284,29 @@ class Potku(QtWidgets.QMainWindow):
                 try:
                     clicked_item.obj.rename_info_file(new_name)
                     clicked_item.obj.info_to_file(
-                        os.path.join(new_dir, clicked_item.obj.name + ".info"))
-                except OSError:
-                    QtWidgets.QMessageBox.critical(self, "Error",
-                                                   "Something went wrong while "
-                                                   "renaming info file.",
-                                                   QtWidgets.QMessageBox.Ok,
-                                                   QtWidgets.QMessageBox.Ok)
+                        Path(new_dir, clicked_item.obj.name + ".info"))
+                except OSError as e:
+                    QtWidgets.QMessageBox.critical(
+                        self, "Error", f"Failed to rename info file: {e}.",
+                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
                 # Rename all cut files
                 try:
                     clicked_item.obj.rename_files_in_directory(
                         clicked_item.obj.directory_cuts)
-                except OSError:
-                    QtWidgets.QMessageBox.critical(self, "Error",
-                                                   "Something went wrong while "
-                                                   "renaming cuts.",
-                                                   QtWidgets.QMessageBox.Ok,
-                                                   QtWidgets.QMessageBox.Ok)
+                except OSError as e:
+                    QtWidgets.QMessageBox.critical(
+                        self, "Error", f"Failed to rename cut files: {e}.",
+                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 # Rename all split files
                 try:
-                    clicked_item.obj.rename_files_in_directory(os.path.join(
+                    clicked_item.obj.rename_files_in_directory(Path(
                         clicked_item.obj.directory_composition_changes,
                         "Changes"))
-                except OSError:
-                    QtWidgets.QMessageBox.critical(self, "Error",
-                                                   "Something went wrong while "
-                                                   "renaming splits.",
-                                                   QtWidgets.QMessageBox.Ok,
-                                                   QtWidgets.QMessageBox.Ok)
+                except OSError as e:
+                    QtWidgets.QMessageBox.critical(
+                        self, "Error", f"Failed to rename splits {e}",
+                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
                 # Update Energy spectrum, Composition changes and Depth profile
                 # save files.
@@ -342,12 +336,10 @@ class Potku(QtWidgets.QMainWindow):
                     clicked_item.obj.rename_simulation_file()
                     clicked_item.obj.to_file(
                         Path(new_dir, f"{clicked_item.obj.name}.simulation"))
-                except OSError:
-                    QtWidgets.QMessageBox.critical(self, "Error",
-                                                   "Something went wrong while "
-                                                   "renaming info file.",
-                                                   QtWidgets.QMessageBox.Ok,
-                                                   QtWidgets.QMessageBox.Ok)
+                except OSError as e:
+                    QtWidgets.QMessageBox.critical(
+                        self, "Error", f"Failed to rename info file: {e}.",
+                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
                 # Update Tab name
                 for i in range(self.tabs.count()):
@@ -418,8 +410,8 @@ class Potku(QtWidgets.QMainWindow):
                         for recoil_element in elem_sim.recoil_elements:
                             recoil_element.to_file(elem_sim.directory)
                     simulation.target.to_file(
-                        os.path.join(simulation.directory,
-                                     simulation.target.name + ".target"), None)
+                        Path(simulation.directory, simulation.target.name +
+                             ".target"), None)
 
         widget = self.tabs.currentWidget()
         if isinstance(widget, BaseTab):
@@ -542,10 +534,9 @@ class Potku(QtWidgets.QMainWindow):
 
                 # Remove measurement's directory tree
                 shutil.rmtree(measurement.directory)
-                os.remove(os.path.join(self.request.directory,
-                                       measurement.measurement_file))
+                Path(self.request.directory /
+                     measurement.measurement_file).unlink()
             except:
-                print("Error with removing files")
                 QtWidgets.QMessageBox.question(self, "Confirmation",
                                                "Problem with deleting files.",
                                                QtWidgets.QMessageBox.Ok,
@@ -749,11 +740,6 @@ class Potku(QtWidgets.QMainWindow):
             self.__set_request_buttons_enabled(True)
             self.add_to_recent_files(Path(self.request.request_file))
 
-    def open_about_dialog(self):
-        """Show Potku program about dialog.
-        """
-        AboutDialog()
-
     def open_global_settings(self):
         """Opens global settings dialog.
         """
@@ -785,11 +771,10 @@ class Potku(QtWidgets.QMainWindow):
                 # Sample is not yet in the tree, so add it
                 sample_item = self.__add_sample(sample_name)
 
-            self.add_new_tab("measurement", dialog.filename,
-                             sample_item.obj, load_data=True,
-                             object_name=dialog.name,
-                             progress=sbh.reporter.get_sub_reporter(
-                                 lambda x: 0.9 * x))
+            self.add_new_tab(
+                "measurement", dialog.filename, sample_item.obj, load_data=True,
+                object_name=dialog.name,
+                progress=sbh.reporter.get_sub_reporter(lambda x: 0.9 * x))
             self.__remove_info_tab()
 
             sbh.reporter.report(100)
@@ -995,7 +980,7 @@ class Potku(QtWidgets.QMainWindow):
                                          master_measurement_name))
                     elif tab_widget.obj in nonslaves or \
                             not master_measurement_name or type(
-                        tab_widget.obj) == Simulation:
+                            tab_widget.obj) == Simulation:
                         item.setText(0, tab_name)
                     else:
                         item.setText(0, "{0} (slave)".format(tab_name))
@@ -1067,7 +1052,7 @@ class Potku(QtWidgets.QMainWindow):
         parent_item.addChild(tree_item)
         parent_item.setExpanded(True)
 
-    def add_new_tab(self, tab_type, filepath, sample, file_current=0,
+    def add_new_tab(self, tab_type, filepath: Path, sample, file_current=0,
                     file_count=1, load_data=False, object_name="",
                     import_evnt_or_binary=False, progress=None):
         """Add new tab into TabWidget.
@@ -1096,7 +1081,7 @@ class Potku(QtWidgets.QMainWindow):
             cur_progress = (100 / file_count) * file_current
         except ZeroDivisionError:
             cur_progress = 0
-
+        filepath = Path(filepath)
         rest = (100 - cur_progress) * 0.01
 
         if progress is not None:
@@ -1492,8 +1477,7 @@ class Potku(QtWidgets.QMainWindow):
         """
         # TODO changed the file path to point to the manual, I guess this needs
         #      to be updated in the .spec file too?
-        manual_filename = os.path.join("documentation", "manual",
-                                       "Potku-manual.pdf")
+        manual_filename = Path("documentation", "manual", "Potku-manual.pdf")
         used_os = platform.system()
         try:
             if used_os == "Windows":
@@ -1502,7 +1486,7 @@ class Potku(QtWidgets.QMainWindow):
                 subprocess.call(("xdg-open", manual_filename))
             elif used_os == "Darwin":
                 subprocess.call(("open", manual_filename))
-        except FileNotFoundError:
+        except OSError:
             QtWidgets.QMessageBox.critical(self, "Not found",
                                            "There is no manual to be found!",
                                            QtWidgets.QMessageBox.Ok,

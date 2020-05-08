@@ -35,7 +35,6 @@ import logging
 import os
 import re
 import time
-import functools
 
 from pathlib import Path
 
@@ -55,7 +54,7 @@ class Request(ElementSimulationContainer):
     """Request class to handle all measurements.
     """
 
-    def __init__(self, directory, name, global_settings, tabs):
+    def __init__(self, directory: Path, name, global_settings, tabs):
         """ Initializes Request class.
         
         Args:
@@ -65,9 +64,9 @@ class Request(ElementSimulationContainer):
             tabs: A dictionary of MeasurementTabWidgets and SimulationTabWidgets
                   of the request.
         """
-        self.directory = directory
+        self.directory = Path(directory)
         self.request_name = name
-        unused_directory, tmp_dirname = os.path.split(self.directory)
+        _, tmp_dirname = os.path.split(self.directory)
         self.global_settings = global_settings
         self.samples = Samples(self)
 
@@ -83,18 +82,17 @@ class Request(ElementSimulationContainer):
         self._running_int = 1  # TODO: Maybe be saved into .request file?
 
         # Check folder exists and make request file there.
-        if not os.path.exists(directory):
-            os.makedirs(directory)
+        if not self.directory.exists():
+            os.makedirs(self.directory)
 
         # If Default folder doesn't exist, create it.
-        self.default_folder = os.path.join(self.directory, "Default")
-        if not os.path.exists(self.default_folder):
-            # Create Default folder under request folder
-            os.makedirs(self.default_folder)
+        self.default_folder = Path(self.directory, "Default")
+        # Create Default folder under request folder
+        os.makedirs(self.default_folder, exist_ok=True)
 
         # Try reading default objects from Default folder.
-        self.default_measurement_file_path = os.path.join(self.default_folder,
-                                                          "Default.measurement")
+        self.default_measurement_file_path = Path(
+            self.default_folder, "Default.measurement")
 
         self.default_detector_folder = None
         self.default_detector = None
@@ -127,7 +125,7 @@ class Request(ElementSimulationContainer):
         # tmp_dirname has extra .potku in it, need to remove it for the
         # .request file name
         stripped_tmp_dirname = tmp_dirname.replace(".potku", "")
-        self.request_file = os.path.join(directory, "{0}.request".format(
+        self.request_file = Path(directory, "{0}.request".format(
             stripped_tmp_dirname))
 
         # Defaults
@@ -138,7 +136,7 @@ class Request(ElementSimulationContainer):
             time.strftime("%c %z %Z", time.localtime(time.time()))
         self.__request_information["meta"]["master"] = ""
         self.__request_information["meta"]["nonslave"] = ""
-        if not os.path.exists(self.request_file):
+        if not self.request_file.exists():
             self.save()
         else:
             self.load()
@@ -168,36 +166,31 @@ class Request(ElementSimulationContainer):
         """
         Create default detector.
         """
-        self.default_detector_folder = os.path.join(self.default_folder,
-                                                    "Detector")
+        self.default_detector_folder = Path(self.default_folder, "Detector")
 
-        detector_path = os.path.join(self.directory,
-                                     self.default_detector_folder,
-                                     "Default.detector")
-        if os.path.exists(detector_path):
+        detector_path = Path(
+            self.directory, self.default_detector_folder, "Default.detector")
+        if detector_path.exists():
             # Read detector from file
             self.default_detector = Detector.from_file(
-                detector_path,
-                self.default_measurement_file_path, self)
+                detector_path, self.default_measurement_file_path, self)
             self.default_detector.update_directories(
                 self.default_detector_folder)
         else:
             # Create Detector folder under Default folder
-            if not os.path.exists(self.default_detector_folder):
+            if not self.default_detector_folder.exists():
                 os.makedirs(self.default_detector_folder)
             # Create default detector for request
             self.default_detector = Detector(
-                os.path.join(self.default_detector_folder,
-                             "Default.detector"),
+                Path(self.default_detector_folder, "Default.detector"),
                 self.default_measurement_file_path, name="Default-detector",
                 description="These are default detector settings.")
             self.default_detector.update_directories(
                 self.default_detector_folder)
 
-        self.default_detector.to_file(os.path.join(self.default_folder,
-                                                   "Detector",
-                                                   "Default.detector"),
-                                      self.default_measurement_file_path)
+        self.default_detector.to_file(
+            Path(self.default_folder, "Detector", "Default.detector"),
+            self.default_measurement_file_path)
 
     def create_default_measurement(self):
         """
@@ -243,23 +236,22 @@ class Request(ElementSimulationContainer):
         """
         Create default target.
         """
-        target_path = os.path.join(self.default_folder, "Default.target")
-        if os.path.exists(target_path):
+        target_path = Path(self.default_folder, "Default.target")
+        if target_path.exists():
             # Read target from file
             self.default_target = Target.from_file(
                 target_path, self.default_measurement_file_path, self)
         else:
             # Create default target for request
-            self.default_target = Target(description="These are default "
-                                                     "target parameters.")
-            self.default_target.to_file(os.path.join(self.default_folder,
-                                                     "Default.target"),
-                                        self.default_measurement_file_path)
+            self.default_target = Target(
+                description="These are default target parameters.")
+            self.default_target.to_file(
+                Path(self.default_folder, "Default.target"),
+                self.default_measurement_file_path)
 
-        self.default_target.to_file(os.path.join(self.default_folder,
-                                                 self.default_target.name
-                                                 + ".target"),
-                                    self.default_measurement_file_path)
+        self.default_target.to_file(
+            Path(self.default_folder, self.default_target.name + ".target"),
+            self.default_measurement_file_path)
 
     def create_default_run(self):
         """
@@ -270,7 +262,7 @@ class Request(ElementSimulationContainer):
             self.default_run = Run.from_file(self.default_measurement_file_path)
         except KeyError:
             # Save new Run parameters to file.
-            self.default_run.to_file(os.path.join(
+            self.default_run.to_file(Path(
                 self.default_folder,
                 self.default_measurement.measurement_setting_file_name +
                 ".measurement"))
@@ -279,29 +271,26 @@ class Request(ElementSimulationContainer):
         """
         Create default simulation.
         """
-        simulation_path = os.path.join(self.default_folder,
-                                       "Default.simulation")
-        if os.path.exists(simulation_path):
+        simulation_path = Path(self.default_folder, "Default.simulation")
+        if simulation_path.exists():
             # Read default simulation from file
             self.default_simulation = Simulation.from_file(
                 self, simulation_path)
         else:
             # Create default simulation for request
-            self.default_simulation = Simulation(os.path.join(
-                self.default_folder, "Default.simulation"), self,
+            self.default_simulation = Simulation(
+                Path(self.default_folder, "Default.simulation"), self,
                 description="This is a default simulation.",
                 measurement_setting_file_description="These are default "
                                                      "measurement parameters.")
 
-        mcsimu_path = os.path.join(self.default_folder, "Default.mcsimu")
-        if os.path.exists(mcsimu_path):
+        mcsimu_path = Path(self.default_folder, "Default.mcsimu")
+        if mcsimu_path.exists():
             # Read default element simulation from file
             self.default_element_simulation = \
-                ElementSimulation.from_file(self, "4He", self.default_folder,
-                                            mcsimu_path,
-                                            os.path.join(
-                                                self.default_folder,
-                                                "Default.profile"))
+                ElementSimulation.from_file(
+                    self, "4He", self.default_folder, mcsimu_path,
+                    Path(self.default_folder, "Default.profile"))
             self.default_element_simulation.simulation = self.default_simulation
         else:
             # Create default element simulation for request
@@ -367,9 +356,9 @@ class Request(ElementSimulationContainer):
         """
         samples = []
         for item in os.listdir(self.directory):
-            if os.path.isdir(os.path.join(self.directory, item)) and \
+            if os.path.isdir(Path(self.directory, item)) and \
                     item.startswith("Sample_"):
-                samples.append(os.path.join(self.directory, item))
+                samples.append(Path(self.directory, item))
                 # It is presumed that the sample numbers are of format
                 # '01', '02',...,'10', '11',...
 
@@ -543,11 +532,10 @@ class Request(ElementSimulationContainer):
         logger = logging.getLogger("request")
         logger.setLevel(logging.DEBUG)
 
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - "
-                                      "%(message)s",
-                                      datefmt="%Y-%m-%d %H:%M:%S")
-        requestlog = logging.FileHandler(os.path.join(self.directory,
-                                                      "request.log"))
+        formatter = logging.Formatter(
+            "%(asctime)s - %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S")
+        requestlog = logging.FileHandler(Path(self.directory, "request.log"))
         requestlog.setLevel(logging.INFO)
         requestlog.setFormatter(formatter)
 

@@ -297,6 +297,20 @@ class TestFileIO(unittest.TestCase):
             self.assertTrue(foo_file.exists())
             self.assertTrue(foo2_file.exists())
 
+    def test_remove_files_with_bad_inputs(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            # Nonexistent directories cause no changes
+            path = Path(tmp_dir, "foo.bar")
+            self.assertFalse(path.exists())
+            gf.remove_files(path, exts={".bar"})
+            self.assertFalse(path.exists())
+
+            # Neither if the directory is actually a file
+            open(path, "a").close()
+            self.assertTrue(path.is_file())
+            gf.remove_files(path, exts={".bar"})
+            self.assertTrue(path.is_file())
+
 
 if __name__ == "__main__":
     unittest.main()
