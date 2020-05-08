@@ -500,13 +500,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
             eff_files = self.measurement.request.default_detector.\
                 get_efficiency_files()
 
-        eff_files_used = df.get_updated_efficiency_files(self, eff_files)
-
-        if eff_files_used:
-            self.label_efficiency_files.setText(
-                "Efficiency files used: {0}".format(", ".join(eff_files_used)))
-        else:
-            self.label_efficiency_files.setText("No efficiency files.")
+        df.update_used_eff_file_label(self, eff_files)
 
 
 class EnergySpectrumWidget(QtWidgets.QWidget):

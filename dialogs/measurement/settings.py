@@ -217,8 +217,6 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                     self.measurement_settings_widget.update_settings()
                     self.detector_settings_widget.update_settings()
 
-                    df.update_efficiency_files(self.measurement.detector)
-
                     self.profile_settings_widget.update_settings()
                     self.measurement.detector.path = \
                         Path(det_folder_path,

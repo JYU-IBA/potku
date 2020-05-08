@@ -49,6 +49,7 @@ from modules.request import Request
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
+from PyQt5 import QtCore
 
 from widgets.foil import FoilWidget
 from widgets.scientific_spinbox import ScientificSpinBox
@@ -58,6 +59,9 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
                              metaclass=gutils.QtABCMeta):
     """Class for creating a detector settings tab.
     """
+    # Key that is used to store the folder of the most recently added eff file
+    EFF_FILE_FOLDER_KEY = "efficiency_folder"
+
     efficiency_files = bnd.bind("efficiencyListWidget")
 
     name = bnd.bind("nameLineEdit")
@@ -75,8 +79,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
     )
 
     def __init__(self, obj: Detector, request: Request, icon_manager, run=None):
-        """
-        Initializes a DetectorSettingsWidget object.
+        """Initializes a DetectorSettingsWidget object.
 
         Args:
               obj: a Detector object.
@@ -112,6 +115,11 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.addEfficiencyButton.clicked.connect(self.__add_efficiency)
         self.removeEfficiencyButton.clicked.connect(self.__remove_efficiency)
 
+        self.efficiencyListWidget: QtWidgets.QListWidget
+        self.efficiencyListWidget.itemSelectionChanged.connect(
+            self._enable_remove_btn)
+        self._enable_remove_btn()
+
         # Calibration settings
         self.executeCalibrationButton.clicked.connect(
             self.__open_calibration_dialog)
@@ -136,10 +144,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
 
         # Parse the value and multiplier
         self.scientific_tof_slope = ScientificSpinBox(
-            0, 0, -math.inf, math.inf, show_btns=False)
+            0, 0, -math.inf, math.inf)
 
         self.scientific_tof_offset = ScientificSpinBox(
-            0, 0, -math.inf, math.inf, show_btns=False)
+            0, 0, -math.inf, math.inf)
 
         self.formLayout_2.insertRow(
             0, "ToF slope [s/channel]:", self.scientific_tof_slope)
@@ -157,11 +165,12 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.show_settings()
 
     def get_original_property_values(self):
+        """Returns the original values of the widget's properties.
+        """
         return self.__original_properties
 
     def __load_file(self):
-        """
-        Load settings from file.
+        """Load settings from file.
         """
         file = fdialogs.open_file_dialog(
             self, self.request.default_folder, "Select detector file",
@@ -175,7 +184,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         original_obj = self.obj
         self.obj = temp_detector
         self.obj.efficiency_directory = Path(
-            os.path.split(self.obj.path)[0], Detector.EFFICIENCY_DIR)
+            self.obj.path.parent, Detector.EFFICIENCY_DIR)
 
         self.tmp_foil_info = []
         self.tof_foils = []
@@ -194,11 +203,6 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.detectorScrollAreaContents.layout().addLayout(self.foils_layout)
 
         self.show_settings()
-
-        # Transfer efficiency files
-        original_obj.efficiencies = self.obj.efficiencies
-        # Reset obj reference
-        self.obj = original_obj
 
     def __save_file(self):
         """Opens file dialog and sets and saves the settings to a file.
@@ -224,8 +228,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             self.obj = original_obj
 
     def show_settings(self):
-        """
-        Show Detector settings.
+        """Show Detector settings.
         """
         # Detector settings
         self.set_properties(**self.obj.get_settings())
@@ -239,8 +242,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.tof_foils = copy.deepcopy(self.obj.tof_foils)
 
     def update_settings(self):
-        """
-        Update detector settings.
+        """Update detector settings.
         """
         self.obj.set_settings(**self.get_properties())
         # Detector foils
@@ -250,8 +252,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.obj.tof_foils = self.tof_foils
 
     def some_values_changed(self):
-        """
-        Check if any detector settings values have been changed.
+        """Check if any detector settings values have been changed.
 
         Return:
             True or False.
@@ -263,8 +264,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         return False
 
     def values_changed(self):
-        """
-        Check if detector settings values that require rerunning of the
+        """Check if detector settings values that require rerunning of the
         simulation have been changed.
 
         Return:
@@ -272,9 +272,9 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         """
         if self.obj.type != self.typeComboBox.currentText():
             return True
-        if self.obj.angle_offset != self.angleOffsetLineEdit.text():
+        if self.obj.angle_offset != self.angleOffsetLineEdit.value():
             return True
-        if self.obj.angle_slope != self.angleSlopeLineEdit.text():
+        if self.obj.angle_slope != self.angleSlopeLineEdit.value():
             return True
         if self.obj.tof_offset != self.scientific_tof_offset.get_value():
             return True
@@ -296,41 +296,21 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         return False
 
     def other_values_changed(self):
-        """
-        Check if detector settings values that don't require rerunning
+        """Check if detector settings values that don't require rerunning
         simulations have been changed.
 
         Return:
              True or False.
         """
-        if self.obj.name != self.nameLineEdit.text():
+        if self.obj.name != self.name:
             return True
-        if self.obj.description != self.descriptionLineEdit.toPlainText():
-            return True
-
-        # Efficiencies
-        existing_efficiency_files = [Path(
-            self.obj.efficiency_directory, x) for x in
-            self.obj.get_efficiency_files()]
-        modified_efficiencies = copy.deepcopy(existing_efficiency_files)
-        for file in self.obj.efficiencies:
-            file_name = os.path.split(file)[1]
-            new_path = Path(
-                self.obj.efficiency_directory, file_name)
-            if new_path not in modified_efficiencies:
-                modified_efficiencies.append(new_path)
-
-        for file in self.obj.efficiencies_to_remove:
-            modified_efficiencies.remove(file)
-
-        if existing_efficiency_files != modified_efficiencies:
+        if self.obj.description != self.description:
             return True
 
         return False
 
     def foils_changed(self):
-        """
-        Check if detector foils have been changed.
+        """Check if detector foils have been changed.
 
         Return:
             True or False.
@@ -360,8 +340,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         return False
 
     def layers_changed(self, foil1, foil2):
-        """
-        Check if foil1 has different layers than foil2.
+        """Check if foil1 has different layers than foil2.
 
         Args:
             foil1: Foil object.
@@ -390,8 +369,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
 
     @staticmethod
     def layer_elements_changed(layer1, layer2):
-        """
-        Check if layer1 elements are different than layer2 elements.
+        """Check if layer1 elements are different than layer2 elements.
 
         Args:
             layer1: Layer object.
@@ -410,11 +388,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         return False
 
     def _add_new_foil(self, layout, new_foil=None):
-        """
-        Add a new foil into detector.
-         Args:
-              layout: Layout into which the foil widget is added.
-              new_foil: New Foil object to be added.
+        """Add a new foil into detector.
+        Args:
+            layout: Layout into which the foil widget is added.
+            new_foil: New Foil object to be added.
         """
         if self.tmp_foil_info:
             prev_distance = self.tmp_foil_info[-1].distance
@@ -442,8 +419,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         return foil_widget
 
     def _add_default_foils(self):
-        """
-        Add default foils as widgets.
+        """Add default foils as widgets.
 
         Return:
             Layout that holds the default foil widgets.
@@ -459,8 +435,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         return layout
 
     def _check_and_add(self):
-        """
-        Check if foil widget needs to be added into tof_foils list or
+        """Check if foil widget needs to be added into tof_foils list or
         removed from it.
         """
         check_box = self.sender()
@@ -484,8 +459,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
                 break
 
     def _disable_checkboxes(self):
-        """
-        Disbale selection of foil widgets as tof foil if they are not in the
+        """Disable selection of foil widgets as tof foil if they are not in the
         tof_foils list.
         """
         for i in range(len(self.detector_structure_widgets)):
@@ -494,16 +468,22 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
                 widget.timingFoilCheckBox.setEnabled(False)
 
     def _enable_checkboxes(self):
-        """
-        Allow all foil widgets to be selected as tof foil.
+        """Allow all foil widgets to be selected as tof foil.
         """
         for i in range(len(self.detector_structure_widgets)):
             widget = self.detector_structure_widgets[i]
             widget.timingFoilCheckBox.setEnabled(True)
 
-    def _open_foil_dialog(self):
+    def _enable_remove_btn(self):
+        """Sets the remove button either enabled or not depending whether an
+        item is selected in the efficiency file list.
         """
-        Open the FoilDialog which is used to modify the Foil object.
+        self.removeEfficiencyButton.setEnabled(
+            bool(self.efficiencyListWidget.currentItem())
+        )
+
+    def _open_foil_dialog(self):
+        """Open the FoilDialog which is used to modify the Foil object.
         """
         foil_name = self.sender().text()
         foil_object_index = -1
@@ -518,62 +498,56 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         """Adds efficiency file in detector's efficiency list for moving into
         efficiency folder later and updates settings view.
         """
-        new_efficiency_file = fdialogs.open_file_dialog(
-            self, self.request.default_folder, "Select efficiency file",
+        eff_folder = gutils.get_potku_setting(
+            DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
+            self.request.default_folder)
+
+        new_eff_file = fdialogs.open_file_dialog(
+            self, eff_folder, "Select efficiency file",
             "Efficiency File (*.eff)")
-        if not new_efficiency_file:
+        if not new_eff_file:
             return
-        for path in self.obj.efficiencies:
-            existing_eff_name = os.path.split(path)[1]
-            new_eff_name = os.path.split(new_efficiency_file)[1]
-            if existing_eff_name == new_eff_name:
-                QtWidgets.QMessageBox.critical(
-                    self, "Error",
-                    "There already is an efficiency file for this element.\n",
-                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-                return
-            existing_element = existing_eff_name.split('-')[0]
-            if existing_element.endswith(".eff"):
-                existing_element = existing_element.split('.')[0]
-            new_element = new_eff_name.split('-')[0]
-            if existing_element == new_element:
-                QtWidgets.QMessageBox.critical(self, "Error",
-                                               "There already is an "
-                                               "efficiency file for this "
-                                               "element.\n",
-                                               QtWidgets.QMessageBox.Ok,
-                                               QtWidgets.QMessageBox.Ok)
-                return
-        self.obj.save_efficiency_file_path(Path(new_efficiency_file))
-        self.efficiencyListWidget.clear()
-        self.efficiencyListWidget.addItems(
-            self.obj.get_efficiency_files_from_list())
+
+        new_eff_file = Path(new_eff_file)
+        # Store the folder where we previously fetched an eff-file
+        gutils.set_potku_setting(
+            DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
+            str(new_eff_file.parent))
+
+        stripped_files = {
+            Detector.get_used_efficiency_file_name(f)
+            for f in self.efficiency_files
+        }
+        if not Detector.get_used_efficiency_file_name(
+                new_eff_file) in stripped_files:
+            self.obj.add_efficiency_file(new_eff_file)
+            self.efficiency_files = self.obj.get_efficiency_files()
+        else:
+            QtWidgets.QMessageBox.critical(
+                self, "Error",
+                "There already is an efficiency file for this element.\n",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def __remove_efficiency(self):
         """Removes efficiency file from detector's efficiency directory and
         updates settings view.
         """
         if self.efficiencyListWidget.currentItem():
-            reply = QtWidgets.QMessageBox.question(self, "Confirmation",
-                                                   "Are you sure you want to "
-                                                   "delete selected efficiency"
-                                                   "?",
-                                                   QtWidgets.QMessageBox.Yes |
-                                                   QtWidgets.QMessageBox.No |
-                                                   QtWidgets.QMessageBox.Cancel,
-                                                   QtWidgets.QMessageBox.Cancel)
+            reply = QtWidgets.QMessageBox.question(
+                self, "Confirmation",
+                "Are you sure you want to delete selected efficiency?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
             if reply == QtWidgets.QMessageBox.No or reply == \
                     QtWidgets.QMessageBox.Cancel:
-                return  # If clicked Yes, then continue normally
-
-            selected_efficiency_file = \
-                self.efficiencyListWidget.currentItem().text()
-            # self.obj.remove_efficiency_file(
-            #     selected_efficiency_file)
-            self.obj.remove_efficiency_file_path(selected_efficiency_file)
-            self.efficiencyListWidget.clear()
-            self.efficiencyListWidget.addItems(
-                self.obj.get_efficiency_files_from_list())
+                return
+            self.efficiencyListWidget: QtWidgets.QListWidget
+            selected_eff_file = self.efficiencyListWidget.currentItem().data(
+                QtCore.Qt.UserRole
+            )
+            self.obj.remove_efficiency_file(selected_eff_file)
+            self.efficiency_files = self.obj.get_efficiency_files()
+            self._enable_remove_btn()
 
     def __open_calibration_dialog(self):
         """
@@ -596,8 +570,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             foil.distance = distance
 
     def delete_foil(self, foil_widget):
-        """
-        Delete a foil from widgets and Foil objects.
+        """Delete a foil from widgets and Foil objects.
 
         Args:
             foil_widget: Widget to be deleted. Its index is used to delete

@@ -87,9 +87,8 @@ class Request(ElementSimulationContainer):
 
         # If Default folder doesn't exist, create it.
         self.default_folder = Path(self.directory, "Default")
-        if not self.default_folder.exists():
-            # Create Default folder under request folder
-            os.makedirs(self.default_folder)
+        # Create Default folder under request folder
+        os.makedirs(self.default_folder, exist_ok=True)
 
         # Try reading default objects from Default folder.
         self.default_measurement_file_path = Path(

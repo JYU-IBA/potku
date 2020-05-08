@@ -207,8 +207,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             # Detector settings
             self.detector_settings_widget.update_settings()
 
-            df.update_efficiency_files(self.request.default_detector)
-
             # Simulation settings
             self.simulation_settings_widget.update_settings()
 
