@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Dialog</class>
- <widget class="QDialog" name="Dialog">
+ <class>dialog</class>
+ <widget class="QDialog" name="dialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -34,6 +34,12 @@
   <layout class="QVBoxLayout" name="verticalLayout_7">
    <item>
     <widget class="QTabWidget" name="tabWidget">
+     <property name="minimumSize">
+      <size>
+       <width>250</width>
+       <height>0</height>
+      </size>
+     </property>
      <property name="currentIndex">
       <number>0</number>
      </property>
@@ -50,9 +56,15 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="minimumSize">
+          <size>
+           <width>250</width>
+           <height>0</height>
+          </size>
+         </property>
          <property name="maximumSize">
           <size>
-           <width>16777215</width>
+           <width>250</width>
            <height>16777215</height>
           </size>
          </property>
@@ -96,7 +108,11 @@
            </property>
            <layout class="QVBoxLayout" name="verticalLayout_11">
             <item>
-             <layout class="QVBoxLayout" name="fittingResultsLayout"/>
+             <layout class="QVBoxLayout" name="fittingResultsLayout">
+              <property name="sizeConstraint">
+               <enum>QLayout::SetDefaultConstraint</enum>
+              </property>
+             </layout>
             </item>
             <item>
              <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -279,7 +295,7 @@
            </property>
            <property name="maximumSize">
             <size>
-             <width>16777215</width>
+             <width>250</width>
              <height>16777215</height>
             </size>
            </property>
@@ -288,27 +304,13 @@
            </property>
            <layout class="QVBoxLayout" name="verticalLayout">
             <item>
-             <layout class="QHBoxLayout" name="horizontalLayout_2">
-              <property name="leftMargin">
-               <number>30</number>
-              </property>
-              <property name="rightMargin">
-               <number>30</number>
-              </property>
-              <item>
-               <widget class="QPushButton" name="removePointButton">
-                <property name="text">
-                 <string>Remove</string>
-                </property>
-                <property name="autoDefault">
-                 <bool>false</bool>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
              <widget class="QTreeWidget" name="pointsTreeWidget">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
               <property name="selectionMode">
                <enum>QAbstractItemView::MultiSelection</enum>
               </property>
@@ -317,6 +319,16 @@
                 <string>Point</string>
                </property>
               </column>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="removePointButton">
+              <property name="text">
+               <string>Remove</string>
+              </property>
+              <property name="autoDefault">
+               <bool>false</bool>
+              </property>
              </widget>
             </item>
            </layout>
@@ -472,7 +484,6 @@
  <tabstops>
   <tabstop>cutFilesTreeWidget</tabstop>
   <tabstop>tabWidget</tabstop>
-  <tabstop>removePointButton</tabstop>
   <tabstop>pointsTreeWidget</tabstop>
   <tabstop>cancelButton</tabstop>
  </tabstops>

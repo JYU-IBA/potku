@@ -137,18 +137,13 @@ class CalibrationDialog(QtWidgets.QDialog):
         
         self.timer = QtCore.QTimer(interval=1500, timeout=self.timeout)
 
-        if platform.system() == "Darwin":
-            self.tofSecondsLineEdit.setFixedWidth(170)
-            self.tofChannelLineEdit.setFixedWidth(170)
-            self.offsetLineEdit.setFixedWidth(170)
-            self.slopeLineEdit.setFixedWidth(170)
-
-        if platform.system() == "Linux":
-            self.tofSecondsLineEdit.setFixedWidth(190)
-            self.tofChannelLineEdit.setFixedWidth(190)
-            self.offsetLineEdit.setFixedWidth(190)
-            self.slopeLineEdit.setFixedWidth(190)
         self.exec_()
+
+    def showEvent(self, _):
+        """Called after dialog is shown. Size is adjusted so that all elements
+        fit nicely on screen.
+        """
+        self.adjustSize()
 
     def remove_selected_points(self):
         """Remove selected items from point tree widget
