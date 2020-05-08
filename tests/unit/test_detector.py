@@ -167,6 +167,20 @@ class TestEfficiencyFiles(unittest.TestCase):
             self.assertEqual(
                 self.filtered_effs, sorted(self.det.get_efficiency_files()))
 
+            # full_path parameter returns the eff files with full paths
+            full_paths = sorted(Path(self.det.efficiency_directory, f)
+                                for f in self.filtered_effs)
+            self.assertEqual(
+                full_paths, sorted(self.det.get_efficiency_files(
+                    full_path=True)))
+
+            # directories are not returned
+            dir_path = Path(self.det.efficiency_directory, "O.eff")
+            dir_path.mkdir()
+            self.assertTrue(dir_path.is_dir())
+            self.assertNotIn(Path("O.eff"), self.det.get_efficiency_files())
+            dir_path.rmdir()
+
     def test_add_efficiencies(self):
         """When a new efficiency file is added, it will be copied to the
         efficiency directory of the detector. Only files ending with '.eff'
@@ -190,7 +204,24 @@ class TestEfficiencyFiles(unittest.TestCase):
                 sorted([str(f) for f in self.filtered_effs]),
                 sorted(os.listdir(self.det.efficiency_directory))
             )
+            # The used eff files directory is not yet created
             self.assertFalse(self.det.get_used_efficiencies_dir().exists())
+
+            # If a file with same name is added again, the old file is
+            # overwritten
+            for file in self.eff_files:
+                self.det.add_efficiency_file(Path(tmp_dir, file))
+
+            # Adding a file that is already in the folder does nothing
+            for file in self.det.get_efficiency_files(full_path=True):
+                self.det.add_efficiency_file(file)
+
+            # Adding a directory raises an error
+            dir_path = Path(tmp_dir, "O.eff")
+            dir_path.mkdir()
+            self.assertRaises(
+                OSError, lambda: self.det.add_efficiency_file(dir_path)
+            )
 
     def test_copying_eff_files(self):
         """When files are copied to the used efficiencies folder, which will
@@ -216,6 +247,14 @@ class TestEfficiencyFiles(unittest.TestCase):
             used_effs = sorted(os.listdir(used_folder))
             self.assertEqual(expected, used_effs)
 
+            # Existing files are removed
+            path = self.det.get_used_efficiencies_dir() / "O.eff"
+            self.create_eff_files(
+                self.det.get_used_efficiencies_dir(), ["O.eff"])
+            self.assertTrue(path.exists())
+            self.det.copy_efficiency_files()
+            self.assertFalse(path.exists())
+
     def test_remove_efficiencies(self):
         """When an efficiency file is removed, it will be removed from both
         the efficiency directory and the used efficiencies directory.
@@ -237,6 +276,23 @@ class TestEfficiencyFiles(unittest.TestCase):
                 os.listdir(self.det.efficiency_directory))
             self.assertEqual(
                 [], os.listdir(self.det.get_used_efficiencies_dir()))
+
+            # If the file is a directory, exceptions will be handled by the
+            # remove method
+            path = self.det.efficiency_directory / "O.eff"
+            path.mkdir()
+            self.det.remove_efficiency_file(path.name)
+            self.assertTrue(path.exists())
+            path.rmdir()
+
+            used_path = self.det.get_used_efficiencies_dir() / "O.eff"
+            used_path.mkdir()
+            open(path, "a").close()
+            self.assertTrue(path.exists())
+            self.assertTrue(used_path.exists())
+            self.det.remove_efficiency_file(used_path.name)
+            self.assertFalse(path.exists())
+            self.assertTrue(used_path.exists())
 
     def test_directory_reference_update(self):
         self.assertEqual(

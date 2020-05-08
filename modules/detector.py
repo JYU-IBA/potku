@@ -164,32 +164,41 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         self.efficiency_directory = Path(new_path, Detector.EFFICIENCY_DIR)
 
     def get_efficiency_files(self, full_path=False):
-        """Get efficiency files that are in detector's efficiency file folder
-        and return them as a list.
+        """Returns efficiency files that are in detector's efficiency file
+        folder, either with full path or just the file name.
 
         Return:
             Returns a string list of efficiency files.
         """
-        if full_path:
-            func = lambda f: Path(self.efficiency_directory, f)
-        else:
-            func = Path
+        def filter_func(dir_entry):
+            fp = Path(dir_entry)
+            if fp.is_file() and fp.suffix == ".eff":
+                if full_path:
+                    return fp
+                return Path(fp.name)
+            return None
         return [
-            func(f) for f in os.listdir(self.efficiency_directory)
-            if f.endswith(".eff") and f != ".eff"
+            *filter(
+                lambda f: f is not None,
+                (filter_func(file) for file in os.scandir(
+                    self.efficiency_directory)))
         ]
 
     def add_efficiency_file(self, file_path: Path):
-        """Copies efficiency file to detector's efficiency folder.
+        """Copies efficiency file to detector's efficiency folder. Existing
+        files are overwritten.
+
+        Raises OSError if the file_path points to a directory.
 
         Args:
             file_path: Path of the efficiency file.
         """
-        try:
-            if Path(file_path).suffix == ".eff":
-                shutil.copy(file_path, self.efficiency_directory)
-        except shutil.SameFileError:
-            pass
+        fp = Path(file_path)
+        if fp.suffix == ".eff":
+            try:
+                shutil.copy(fp, self.efficiency_directory)
+            except shutil.SameFileError:
+                pass
 
     def get_settings(self) -> dict:
         """Returns a dictionary of settings that can be adjusted.
@@ -226,7 +235,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         """
         file_name = Path(file_name)
         try:
-            os.remove(Path(self.efficiency_directory, file_name))
+            Path(self.efficiency_directory, file_name).unlink()
         except OSError:
             pass
         try:
@@ -420,8 +429,11 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         (i.e. 1H-example.eff becomes 1H.eff).
         """
         destination = self.get_used_efficiencies_dir()
-        os.makedirs(destination, exist_ok=True)
-        for eff in os.listdir(self.efficiency_directory):
+        destination.mkdir(exist_ok=True)
+        # Remove previous files
+        gf.remove_files(destination, {".eff"})
+
+        for eff in self.get_efficiency_files(full_path=True):
             try:
                 used_file = Detector.get_used_efficiency_file_name(eff)
             except ValueError:

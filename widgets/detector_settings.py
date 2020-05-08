@@ -29,7 +29,6 @@ __version__ = "2.0"
 
 import copy
 import math
-import os
 import platform
 
 import widgets.input_validation as iv
@@ -181,7 +180,6 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         # TODO file file??
         temp_detector = Detector.from_file(file, file, self.request, False)
 
-        original_obj = self.obj
         self.obj = temp_detector
         self.obj.efficiency_directory = Path(
             self.obj.path.parent, Detector.EFFICIENCY_DIR)
@@ -270,21 +268,10 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         Return:
             True or False.
         """
-        if self.obj.type != self.typeComboBox.currentText():
+        if self.are_values_changed():
             return True
-        if self.obj.angle_offset != self.angleOffsetLineEdit.value():
-            return True
-        if self.obj.angle_slope != self.angleSlopeLineEdit.value():
-            return True
-        if self.obj.tof_offset != self.scientific_tof_offset.get_value():
-            return True
-        if self.obj.tof_slope != self.scientific_tof_slope.get_value():
-            return True
-        if self.obj.virtual_size != (self.virtualSizeXSpinBox.value(),
-                                     self.virtualSizeYSpinBox.value()):
-            return True
-        if self.obj.timeres != self.timeResSpinBox.value():
-            return True
+
+        # TODO refactor foils
         # Detector foils
         self.calculate_distance()
         if self.foils_changed():
@@ -520,8 +507,14 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         }
         if not Detector.get_used_efficiency_file_name(
                 new_eff_file) in stripped_files:
-            self.obj.add_efficiency_file(new_eff_file)
-            self.efficiency_files = self.obj.get_efficiency_files()
+            try:
+                self.obj.add_efficiency_file(new_eff_file)
+                self.efficiency_files = self.obj.get_efficiency_files()
+            except OSError as e:
+                QtWidgets.QMessageBox.critical(
+                    self, "Error",
+                    f"Failed to add the efficiency file: {e}\n",
+                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
         else:
             QtWidgets.QMessageBox.critical(
                 self, "Error",
