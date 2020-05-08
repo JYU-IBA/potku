@@ -154,12 +154,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         """
         if self.measurement_settings_widget.isotopeComboBox.currentIndex()\
                 == -1:
-            QtWidgets.QMessageBox.critical(self, "Warning",
-                                           "No isotope selected.\n\nPlease "
-                                           "select an isotope for the beam "
-                                           "element.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.critical(
+                self, "Warning",
+                "No isotope selected.\n\n"
+                "Please select an isotope for the beam element.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             return False
 
         # Check the target and detector angles
@@ -167,13 +166,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             return False
 
         if not self.tabs.currentWidget().fields_are_valid:
-            QtWidgets.QMessageBox.critical(self, "Warning",
-                                           "Some of the setting values have"
-                                           " not been set.\n" +
-                                           "Please input values in fields "
-                                           "indicated in red.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.critical(
+                self, "Warning",
+                "Some of the setting values have not been set.\n"
+                "Please input values in fields indicated in red.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
             return False
 
         if self.values_changed():
@@ -203,8 +200,6 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
             # Detector settings
             self.detector_settings_widget.update_settings()
-
-            df.update_efficiency_files(self.request.default_detector)
 
             # Simulation settings
             self.simulation_settings_widget.update_settings()
@@ -257,13 +252,11 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             return True
         except TypeError:
             # TODO: Make a better warning text.
-            QtWidgets.QMessageBox.question(self, "Warning",
-                                           "Some of the setting values have"
-                                           " not been set.\n" +
-                                           "Please input setting values to "
-                                           "save them.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(
+                self, "Warning",
+                "Some of the setting values have not been set.\n"
+                "Please input setting values to save them.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def find_related_tab(self, tab_id):
         """

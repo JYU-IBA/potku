@@ -86,6 +86,7 @@
 #define STOP_DATA   DATAPATH/stopping.bin
 
 #define WORD_LENGTH 256
+#define EFF_DIR_LENGTH 1024
 
 #define max(A,B)  ((A) > (B)) ? (A) : (B)
 #define min(A,B)  ((A) < (B)) ? (A) : (B)
@@ -106,18 +107,18 @@ typedef struct {
     double acalib1;
     double acalib2;
    double *ecalib;
-   char eff_dir[256];
+   char eff_dir[EFF_DIR_LENGTH];
 } Input;
 
 /*
 
-# awk '{print ($1*-0.6339980E-10 + 0.5130320E-06)}' test2.out 
-# | awk '{print (0.5*16*1.6605402e-27*(0.684/$1)^2)/1.6021773e-16}' 
+# awk '{print ($1*-0.6339980E-10 + 0.5130320E-06)}' test2.out
+# | awk '{print (0.5*16*1.6605402e-27*(0.684/$1)^2)/1.6021773e-16}'
 # | hist 50 | xgra
- 
-# cat t307vs.H |awk '{if($2>0) print $0}'| 
-# awk '{printf("%14.5e %14.5e\n",$1+(rand()-0.5),$2+(rand()-0.5))}' | 
-# awk '{printf("%15.10e\n",($1*-0.6339980E-10 + 0.5130320E-06))}' | 
+
+# cat t307vs.H |awk '{if($2>0) print $0}'|
+# awk '{printf("%14.5e %14.5e\n",$1+(rand()-0.5),$2+(rand()-0.5))}' |
+# awk '{printf("%15.10e\n",($1*-0.6339980E-10 + 0.5130320E-06))}' |
 # awk '{printf("%15.10e\n",(0.001*0.5*1.0079*1.6605402e-27*(0.684/$1)^2)
 # /1.6021773e-16)}' | hist 0.004 > t307vs.H.ene
 
@@ -128,7 +129,7 @@ Energy:                 53.0
 Detector angle:         40
 Target angle:           20
 Toflen:                 0.684
-Carbon foil thickness:  5.0 
+Carbon foil thickness:  5.0
 TOF calibration:        -0.6339980e-10 0.5130320e-06
 Efficiency:		1H 1H.eff
 
@@ -235,7 +236,7 @@ int main(int argc, char *argv[])
       sto[i] = set_sto(table, (Z[i])?Z[i]:ZZ,M[i],emax[i]*MAX_FACTOR);
       fprintf(stderr, "For stopping purposes (in carbon foil), this is Z=%i and mass is %g u\n", ZZ, M[i]/C_U);
 /*    step[i] = get_step(emax[i]*MAX_FACTOR,sto[i]); */
-      weight[i] = set_weight(symbol[i],(Z[i])?Z[i]:ZZ,&input);
+      weight[i] = set_weight(symbol[i],Z[i],&input);
       Z[i] = ZZ;
       if(*argv[i+1] == '.'){
          if(*++argv[i+1] == 'e'){
@@ -262,7 +263,7 @@ int main(int argc, char *argv[])
    char herpderp_1 [10];
    char herpderp_2 [10];
    float user_weight = 1.0;
-   
+
    char herp_type [3];
    char herp_scatter [6];
    int herp_isotope=0;
@@ -270,7 +271,7 @@ int main(int argc, char *argv[])
       fprintf(stderr, "Processing file %i.\n", i);
 	  tech = ERD;
 	  herp_d = (char *) malloc(sizeof(char)*WORD_LENGTH);
-      /* Don't read the first ten lines, except the one line which 
+      /* Don't read the first ten lines, except the one line which
          contains the user-specified weight factor which is memorized. */
       for(derp_n=0;derp_n<10;derp_n++){
 	     fgets(herp_c, 100, fp[i]);
@@ -286,14 +287,14 @@ int main(int argc, char *argv[])
          }
 		 if(derp_n == 5 && tech == RBS) { //line number6 in cut file = scatter element
             sscanf(herp_c, "%s %s %s", &herpderp_1, &herpderp_2, herp_d);
-			
+
 			// Parse isotope from string -separate mass from element (from line 6)
             herp_isotope=0;
 			while(isdigit(*herp_d)) herp_isotope = herp_isotope*10 + *herp_d++ - '0';
-			
+
 			// Parse element
 			sscanf(herp_d, "%s", herp_scatter);
-			
+
 			fprintf(stderr, "Scatter element: %s\n", herp_scatter);
 			fprintf(stderr, "Scatter isotope: %i\n", herp_isotope);
 			double m_scatter=get_mass(herp_scatter, &herp_isotope);
@@ -310,7 +311,7 @@ int main(int argc, char *argv[])
 #endif
 			*/
          }
-         
+
 	  }
        char *line = (char *) malloc(sizeof(char)*WORD_LENGTH);
        int ang1;
@@ -418,7 +419,7 @@ double **set_weight(char *symbol, int z, Input *input)
    yx = (char *) malloc(sizeof(char)*WORD_LENGTH);
    kax = (char *) malloc(sizeof(char)*WORD_LENGTH);
    ret = (double **) malloc(sizeof(double *)*2);
-
+   fprintf(stderr, "set_weight(%s, %i, %p)\n", symbol, z, input);
    if(z){
       for(i=1; z/(i*10)>0; i*=10);
       for(; i>0; i/=10){
@@ -428,18 +429,17 @@ double **set_weight(char *symbol, int z, Input *input)
    }
    while((*file++ = *symbol++));
    file = strcat(tmp,".eff");
-   fprintf(stderr,"Directory: %s\n", input->eff_dir);
-   //fprintf(stderr,"Directory length: %d\n", strlen(input->eff_dir));
+   //fprintf(stderr,"Directory: %s\n", input->eff_dir);
 	if (strlen(input->eff_dir) > 0) {
-		tmp = (char *) malloc(sizeof(char)*WORD_LENGTH);
+		tmp = (char *) malloc(sizeof(char)*EFF_DIR_LENGTH+strlen(file)+2);
 		strcpy(tmp, input->eff_dir);
 		strcat(tmp, "/");
 		strcat(tmp, file);
 		file = tmp;
 	}
-   fprintf(stderr,"Efficiency file: %s\n", file);
-   while((fp = fopen(file,"r")) == NULL && isdigit(*file)) file++;
+   fp = fopen(file, "r");
    if(fp != NULL){
+    fprintf(stderr,"Used efficiency file: %s\n", file);
       fscanf(fp,"%s %s",yx,kax);
       if(!strcmp(yx,"keV")) multe = EFF_KEV;
       else if(!strcmp(yx,"MeV")) multe = EFF_MEV;
@@ -455,7 +455,7 @@ double **set_weight(char *symbol, int z, Input *input)
          ret[0][i] = energy*multe;
          ret[1][i] = (multp?1.0:100.0)/pct;
       }
-      fprintf(stderr, "%i points corrected.\n",i);
+      fprintf(stderr, "Got %i points from efficiency file. Highest energy %g MeV\n",i, ret[0][i-1]/C_MEV);
       fclose(fp);
    } else {
       ret[0] = (double *) malloc(sizeof(double)*2);
@@ -603,14 +603,14 @@ void read_input(Input *input)
 
     input->acalib1=0.0;
     input->acalib2=0.0;
-    
+
     while(fgets(line, WORD_LENGTH, fp)) {
         sscanf(line, "Angle calibration: %lf %lf", &input->acalib1, &input->acalib2);
     }
     fclose(fp);
-    
+
     fp = fopen(INPUT_FILE, "r");
-   /* The loop here (word by word) is rediculous. I'm not going to touch it. */ 
+   /* The loop here (word by word) is rediculous. I'm not going to touch it. */
    while(fscanf(fp, "%s", read)==1) {
       if(!strcmp(read,"Beam:")){
          if(fscanf(fp,"%s",read) == 0){

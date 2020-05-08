@@ -119,7 +119,7 @@ class Target:
             target_theta = measurement["geometry"]["target_theta"]
         # If keys do not exist or measurement_file_path is empty or file
         # doesn't exist:
-        except (KeyError, IsADirectoryError, FileNotFoundError, TypeError):
+        except (OSError, KeyError, TypeError):
             target_theta = request.default_target.target_theta
 
         # Note: this way of using kwargs does make it harder to maintain

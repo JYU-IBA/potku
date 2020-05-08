@@ -37,6 +37,8 @@ import time
 
 import modules.general_functions as gf
 
+from pathlib import Path
+
 from modules.base import ElementSimulationContainer
 from modules.base import Serializable
 from modules.detector import Detector
@@ -79,7 +81,7 @@ class Simulations:
             return None
         return self.simulations[key]
 
-    def add_simulation_file(self, sample, simulation_path, tab_id):
+    def add_simulation_file(self, sample, simulation_path: Path, tab_id):
         """Add a new file to simulations.
 
         Args:
@@ -103,9 +105,8 @@ class Simulations:
         profile_extension = ".profile"
 
         # Create simulation from file
-        if os.path.exists(simulation_path):
-            simulation = Simulation.from_file(sample.request,
-                                              simulation_path)
+        if simulation_path.exists():
+            simulation = Simulation.from_file(sample.request, simulation_path)
             simulation.sample = sample
             serial_number = int(simulation_folder[len(directory_prefix):len(
                 directory_prefix) + 2])
@@ -122,11 +123,9 @@ class Simulations:
                 if f.endswith(measurement_extension):
                     measurement_settings_file = f
                     simulation.run = Run.from_file(
-                        os.path.join(
-                            simulation.directory, measurement_settings_file))
-                    with open(
-                            os.path.join(simulation.directory,
-                                         measurement_settings_file)) as mesu_f:
+                        Path(simulation.directory, measurement_settings_file))
+                    with open(Path(simulation.directory,
+                                   measurement_settings_file)) as mesu_f:
                         mesu_settings = json.load(mesu_f)
 
                     simulation.measurement_setting_file_name = \
@@ -138,15 +137,14 @@ class Simulations:
                     break
 
             # Read Detector information from file.
-            det_folder = os.path.join(simulation_folder_path,
-                                      "Detector")
+            det_folder = Path(simulation_folder_path, "Detector")
             if os.path.isdir(det_folder):
                 for file in os.listdir(det_folder):
                     if file.endswith(detector_extension):
                         simulation.detector = Detector.from_file(
-                            os.path.join(det_folder, file),
-                            os.path.join(simulation.directory,
-                                         measurement_settings_file),
+                            Path(det_folder, file),
+                            Path(simulation.directory,
+                                 measurement_settings_file),
                             self.request)
                         simulation.detector.update_directories(det_folder)
                         break
@@ -154,15 +152,15 @@ class Simulations:
             for file in os.listdir(simulation_folder_path):
                 # Read Target information from file.
                 if file.endswith(target_extension):
-                    simulation.target = Target.from_file(os.path.join(
-                        simulation_folder_path, file), os.path.join(
-                        simulation_folder_path,
-                        measurement_settings_file), self.request)
+                    simulation.target = Target.from_file(
+                        Path(simulation_folder_path, file),
+                        Path(simulation_folder_path, measurement_settings_file),
+                        self.request)
 
                 # Read read ElementSimulation information from files.
                 if file.endswith(element_simulation_extension):
                     # .mcsimu file
-                    mcsimu_file_path = os.path.join(simulation.directory, file)
+                    mcsimu_file_path = Path(simulation.directory, file)
 
                     element_str_with_name = file.split(".")[0]
 
@@ -172,10 +170,9 @@ class Simulations:
                     for f in os.listdir(simulation.directory):
                         if f.endswith(profile_extension) and f.startswith(
                                 prefix):
-                            profile_file_path = os.path.join(
-                                simulation.directory, f)
+                            profile_file_path = Path(simulation.directory, f)
 
-                    if os.path.exists(profile_file_path):
+                    if profile_file_path.exists():
                         # Create ElementSimulation from files
                         element_simulation = ElementSimulation.from_file(
                             self.request, prefix, simulation_folder_path,
@@ -248,7 +245,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
 
     DIRECTORY_PREFIX = "MC_simulation_"
 
-    def __init__(self, path, request, name="Default",
+    def __init__(self, path: Path, request, name="Default",
                  description="",
                  modification_time=None, tab_id=-1, run=None,
                  detector=None, target=None,
@@ -281,18 +278,20 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         Logger.__init__(self, name, "Simulation")
 
         self.tab_id = tab_id
-        self.path = path
+        self.path = Path(path)
         self.request = request
         self.sample = sample
 
         self.name = name
         self.description = description
         if not modification_time:
-            modification_time = time.time()
-        self.modification_time = modification_time
+            self.modification_time = time.time()
+        else:
+            self.modification_time = modification_time
 
-        self.measurement_setting_file_name = measurement_setting_file_name
-        if not self.measurement_setting_file_name:
+        if measurement_setting_file_name:
+            self.measurement_setting_file_name = measurement_setting_file_name
+        else:
             self.measurement_setting_file_name = name
         self.measurement_setting_file_description = \
             measurement_setting_file_description
@@ -311,7 +310,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         self.defaultlog = None
         self.errorlog = None
 
-        self.directory, self.simulation_file = os.path.split(self.path)
+        self.directory, self.simulation_file = self.path.parent, self.path.name
         self.create_folder_structure()
 
         if save_on_creation:
@@ -324,14 +323,15 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         self.__make_directories(self.directory)
         self.set_loggers(self.directory, self.request.directory)
 
-    def __make_directories(self, directory):
+    @staticmethod
+    def __make_directories(directory: Path):
         """
         Makes a directory and adds the event to log.
 
         Args:
              directory: Directory to create.
         """
-        if not os.path.exists(directory):
+        if not directory.exists():
             os.makedirs(directory)
             log = "Created a directory {0}.".format(directory)
             logging.getLogger("request").info(log)
@@ -345,7 +345,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
                 simulation_file = file
                 break
         if simulation_file:
-            gf.rename_file(os.path.join(self.directory, simulation_file),
+            gf.rename_file(Path(self.directory, simulation_file),
                            self.simulation_file)
 
     def add_element_simulation(self, recoil_element):
@@ -362,29 +362,28 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         else:
             simulation_type = "RBS"
 
-        element_simulation = ElementSimulation(directory=self.directory,
-                                               request=self.request,
-                                               simulation=self,
-                                               name_prefix=element_str,
-                                               name=name,
-                                               detector=self.detector,
-                                               recoil_elements=[recoil_element],
-                                               run=self.run,
-                                               sample=self.sample,
-                                               simulation_type=simulation_type)
+        element_simulation = ElementSimulation(
+            directory=self.directory, request=self.request, simulation=self,
+            name_prefix=element_str, name=name, detector=self.detector,
+            recoil_elements=[recoil_element], run=self.run, sample=self.sample,
+            simulation_type=simulation_type)
         # element_simulation.recoil_elements.append(recoil_element)
         self.element_simulations.append(element_simulation)
         return element_simulation
 
     @classmethod
-    def from_file(cls, request, file_path, detector=None, target=None, run=None,
-                  sample=None):
+    def from_file(cls, request, file_path: Path, detector=None, target=None,
+                  run=None, sample=None):
         """Initialize Simulation from a JSON file.
 
         Args:
             request: Request which the Simulation belongs to.
             file_path: A file path to JSON file containing the
                 simulation information.
+            detector: Detector used by this simulation
+            target: Target used by this simulation
+            run: Run used by this simulation
+            sample: Sample under which this simulation belongs to
         """
         with open(file_path) as file:
             simu_obj = json.load(file)
@@ -427,7 +426,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         self.directory = new_dir
         self.simulation_file = self.name + ".simulation"
 
-        self.path = os.path.join(self.directory, self.simulation_file)
+        self.path = Path(self.directory, self.simulation_file)
         if self.detector:
             self.detector.update_directory_references(self)
 

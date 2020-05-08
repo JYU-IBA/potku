@@ -216,7 +216,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             prefix = self.name_prefix
         else:
             name = self.name
-            if os.sep + "Default" in self.directory:
+            if os.sep + "Default" in str(self.directory):
                 prefix = "Default" + "_element"
                 name = "Default"
             else:

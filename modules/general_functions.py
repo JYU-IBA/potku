@@ -102,12 +102,19 @@ def remove_files(directory, exts=None, filter_func=None):
         def filter_func(_):
             return True
 
-    for file in os.scandir(directory):
-        if Path(file.path).suffix in exts and filter_func(file.name):
-            try:
-                os.remove(file)
-            except OSError:
-                pass
+    try:
+        for file in os.scandir(directory):
+            fp = Path(file)
+            if fp.suffix in exts and filter_func(file.name):
+                try:
+                    fp.unlink()
+                except OSError:
+                    # fp could be a directory, or permissions may prevent
+                    # deletion
+                    pass
+    except OSError:
+        # Directory not found (or directory is a file), nothing to do
+        pass
 
 
 def hist(data, width=1.0, col=1):
@@ -169,7 +176,7 @@ def read_espe_file(espe_file):
                     continue
                 else:
                     data.append(data_point)
-    except (FileNotFoundError, UnicodeDecodeError):
+    except (OSError, UnicodeDecodeError):
         # File was not found, or it could not be decoded (for example, it could
         # have been .png)
         pass
@@ -307,8 +314,8 @@ def tof_list(cut_file, directory, save_output=False, no_foil=False,
 
         if save_output:
             if not directory:
-                directory = os.path.join(os.path.realpath(os.path.curdir),
-                                         "energy_spectrum_output")
+                directory = Path(
+                    os.path.realpath(os.path.curdir), "energy_spectrum_output")
 
             os.makedirs(directory, exist_ok=True)
 

@@ -27,13 +27,13 @@ __version__ = "2.0"
 
 import unittest
 import tempfile
+import platform
+
 import tests.mock_objects as mo
+import tests.utils as utils
 
 import modules.general_functions as gf
 
-from tests.utils import get_resource_dir
-from tests.utils import PlatformSwitcher
-from tests.utils import get_template_file_contents
 from modules.mcerd import MCERD
 from modules.target import Target
 from modules.layer import Layer
@@ -79,6 +79,7 @@ class TestMCERD(unittest.TestCase):
             "number_of_ions": 1000
         }, mo.get_element_simulation().get_full_name())
 
+    @utils.expected_failure_if(platform.system() == "Windows")
     def test_get_command(self):
         """Tests the get_command function on different platforms.
         """
@@ -87,15 +88,15 @@ class TestMCERD(unittest.TestCase):
         bin_path = gf.get_bin_dir() / "mcerd"
         file_path = self.directory / "He-Default"
 
-        with PlatformSwitcher("Windows"):
+        with utils.PlatformSwitcher("Windows"):
             cmd = f"{bin_path}.exe {file_path}"
             self.assertEqual(cmd, self.mcerd.get_command())
 
-        with PlatformSwitcher("Linux"):
+        with utils.PlatformSwitcher("Linux"):
             cmd = f"ulimit -s 64000; exec {bin_path} {file_path}"
             self.assertEqual(cmd, self.mcerd.get_command())
 
-        with PlatformSwitcher("Darwin"):
+        with utils.PlatformSwitcher("Darwin"):
             # file_path and command stay same
             self.assertEqual(cmd, self.mcerd.get_command())
 
@@ -126,9 +127,9 @@ class TestMCERD(unittest.TestCase):
             self.mcerd._MCERD__presimulation_file)
 
     def test_get_command_file_contents(self):
-        detector_file = Path(get_resource_dir()) / "mcerd_command.txt"
+        detector_file = utils.get_resource_dir() / "mcerd_command.txt"
 
-        expected = get_template_file_contents(
+        expected = utils.get_template_file_contents(
             detector_file,
             tgt_file=self.directory / "Default.erd_target",
             det_file=self.directory / "Default.erd_detector",
@@ -140,9 +141,9 @@ class TestMCERD(unittest.TestCase):
         self.assertEqual(expected, output)
 
     def test_get_detector_file_contents(self):
-        detector_file = Path(get_resource_dir()) / "detector_file.txt"
+        detector_file = utils.get_resource_dir() / "detector_file.txt"
 
-        expected = get_template_file_contents(
+        expected = utils.get_template_file_contents(
             detector_file,
             foils_file=self.directory / "Default.foils"
         )
@@ -151,9 +152,9 @@ class TestMCERD(unittest.TestCase):
         self.assertEqual(expected, output)
 
     def test_get_target_file_contents(self):
-        target_file = Path(get_resource_dir()) / "target_file.txt"
+        target_file = utils.get_resource_dir() / "target_file.txt"
 
-        expected = get_template_file_contents(
+        expected = utils.get_template_file_contents(
             target_file
         )
         output = self.mcerd.get_target_file_contents()
@@ -161,8 +162,8 @@ class TestMCERD(unittest.TestCase):
         self.assertEqual(expected, output)
 
     def test_get_foils_file_contents(self):
-        foils_file = Path(get_resource_dir()) / "foils_file.txt"
-        expected = get_template_file_contents(
+        foils_file = utils.get_resource_dir() / "foils_file.txt"
+        expected = utils.get_template_file_contents(
             foils_file
         )
         output = self.mcerd.get_foils_file_contents()
@@ -170,8 +171,8 @@ class TestMCERD(unittest.TestCase):
         self.assertEqual(expected, output)
 
     def test_recoil_file_contents(self):
-        recoil_file = Path(get_resource_dir()) / "mcerd_recoil_file.txt"
-        expected = get_template_file_contents(
+        recoil_file = utils.get_resource_dir() / "mcerd_recoil_file.txt"
+        expected = utils.get_template_file_contents(
             recoil_file
         )
         output = self.mcerd.get_recoil_file_contents()

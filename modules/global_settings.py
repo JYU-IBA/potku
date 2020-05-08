@@ -32,6 +32,8 @@ __version__ = "2.0"
 import configparser
 import os
 
+from pathlib import Path
+
 
 class GlobalSettings:
     """Global settings class to handle software settings.
@@ -40,12 +42,12 @@ class GlobalSettings:
     def __init__(self, save_on_creation=True):
         """Inits GlobalSettings class.
         """
-        self.__config_directory = os.path.join(os.path.expanduser("~"), "potku")
-        self.__config_file = os.path.join(self.__config_directory, "potku2.ini")  # Number according to release!
+        self.__config_directory = Path(os.path.expanduser("~"), "potku")
+        # Number according to release!
+        self.__config_file = Path(self.__config_directory, "potku2.ini")
         self.__config = configparser.ConfigParser()
 
-        self.__request_directory = os.path.join(self.__config_directory,
-                                                "requests")
+        self.__request_directory = Path(self.__config_directory, "requests")
 
         if save_on_creation:
             os.makedirs(self.__config_directory, exist_ok=True)
@@ -175,7 +177,7 @@ class GlobalSettings:
         self.__flags_cross_section = {1: "Rutherford", 2: "L'Ecuyer",
                                       3: "Andersen"}
 
-        if not os.path.exists(self.__config_file):
+        if not self.__config_file.exists():
             self.__set_defaults()
             # Set default request directory
             self.set_request_directory(self.__request_directory)
