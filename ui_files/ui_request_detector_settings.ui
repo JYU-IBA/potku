@@ -327,7 +327,7 @@
             </sizepolicy>
            </property>
            <property name="currentIndex">
-            <number>2</number>
+            <number>1</number>
            </property>
            <property name="usesScrollButtons">
             <bool>false</bool>
@@ -463,8 +463,11 @@ T</string>
                  <property name="alternatingRowColors">
                   <bool>true</bool>
                  </property>
+                 <property name="selectionMode">
+                  <enum>QAbstractItemView::MultiSelection</enum>
+                 </property>
                  <property name="selectionBehavior">
-                  <enum>QAbstractItemView::SelectRows</enum>
+                  <enum>QAbstractItemView::SelectItems</enum>
                  </property>
                 </widget>
                </item>

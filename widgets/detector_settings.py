@@ -114,7 +114,6 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.addEfficiencyButton.clicked.connect(self.__add_efficiency)
         self.removeEfficiencyButton.clicked.connect(self.__remove_efficiency)
 
-        self.efficiencyListWidget: QtWidgets.QListWidget
         self.efficiencyListWidget.itemSelectionChanged.connect(
             self._enable_remove_btn)
         self._enable_remove_btn()
@@ -478,63 +477,70 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         self.sender().setText(self.tmp_foil_info[foil_object_index].name)
 
     def __add_efficiency(self):
-        """Adds efficiency file in detector's efficiency list for moving into
-        efficiency folder later and updates settings view.
+        """Opens a dialog that allows the user to add efficiency files to
+        the Efficiency_files folder of the detector.
         """
         eff_folder = gutils.get_potku_setting(
             DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
             self.request.default_folder)
 
-        new_eff_file = fdialogs.open_file_dialog(
-            self, eff_folder, "Select efficiency file",
+        new_eff_files = fdialogs.open_files_dialog(
+            self, eff_folder, "Select efficiency files",
             "Efficiency File (*.eff)")
-        if not new_eff_file:
+        if not new_eff_files:
             return
 
-        new_eff_file = Path(new_eff_file)
+        used_eff_files = {
+            Detector.get_used_efficiency_file_name(f)
+            for f in self.efficiency_files
+        }
+
+        for eff_file in new_eff_files:
+            new_eff_file = Path(eff_file)
+            used_eff_file = Detector.get_used_efficiency_file_name(new_eff_file)
+
+            if used_eff_file not in used_eff_files:
+                try:
+                    self.obj.add_efficiency_file(new_eff_file)
+                    used_eff_files.add(used_eff_file)
+                except OSError as e:
+                    QtWidgets.QMessageBox.critical(
+                        self, "Error",
+                        f"Failed to add the efficiency file: {e}\n",
+                        QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+            else:
+                QtWidgets.QMessageBox.critical(
+                    self, "Error",
+                    f"There already is an efficiency file for element "
+                    f"{used_eff_file.stem}.\n",
+                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
+
+        self.efficiency_files = self.obj.get_efficiency_files()
         # Store the folder where we previously fetched an eff-file
         gutils.set_potku_setting(
             DetectorSettingsWidget.EFF_FILE_FOLDER_KEY,
             str(new_eff_file.parent))
 
-        stripped_files = {
-            Detector.get_used_efficiency_file_name(f)
-            for f in self.efficiency_files
-        }
-        if not Detector.get_used_efficiency_file_name(
-                new_eff_file) in stripped_files:
-            try:
-                self.obj.add_efficiency_file(new_eff_file)
-                self.efficiency_files = self.obj.get_efficiency_files()
-            except OSError as e:
-                QtWidgets.QMessageBox.critical(
-                    self, "Error",
-                    f"Failed to add the efficiency file: {e}\n",
-                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-        else:
-            QtWidgets.QMessageBox.critical(
-                self, "Error",
-                "There already is an efficiency file for this element.\n",
-                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
-
     def __remove_efficiency(self):
-        """Removes efficiency file from detector's efficiency directory and
+        """Removes efficiency files from detector's efficiency directory and
         updates settings view.
         """
-        if self.efficiencyListWidget.currentItem():
+        self.efficiencyListWidget: QtWidgets.QListWidget
+        selected_items = self.efficiencyListWidget.selectedItems()
+        if selected_items:
             reply = QtWidgets.QMessageBox.question(
                 self, "Confirmation",
-                "Are you sure you want to delete selected efficiency?",
+                "Are you sure you want to delete selected efficiencies?",
                 QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
                 QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
             if reply == QtWidgets.QMessageBox.No or reply == \
                     QtWidgets.QMessageBox.Cancel:
                 return
-            self.efficiencyListWidget: QtWidgets.QListWidget
-            selected_eff_file = self.efficiencyListWidget.currentItem().data(
-                QtCore.Qt.UserRole
-            )
-            self.obj.remove_efficiency_file(selected_eff_file)
+
+            for item in selected_items:
+                selected_eff_file = item.data(QtCore.Qt.UserRole)
+                self.obj.remove_efficiency_file(selected_eff_file)
+
             self.efficiency_files = self.obj.get_efficiency_files()
             self._enable_remove_btn()
 
