@@ -54,9 +54,8 @@ def open_file_dialog(parent, default_folder, title, files):
     """
     # Convert the folder parameter to string to avoid TypeError when the
     # default_folder is a Path object
-    filename = QtWidgets.QFileDialog.getOpenFileName(parent, title,
-                                                     str(default_folder),
-                                                     parent.tr(files))
+    filename = QtWidgets.QFileDialog.getOpenFileName(
+        parent, title, str(default_folder), parent.tr(files))
     return filename[0]
 
 
@@ -80,10 +79,9 @@ def open_files_dialog(parent, default_folder, title, files):
 
         "C:/Transfer/FinlandiaData/esimerkkidata.zip"
     """
-    filenames = QtWidgets.QFileDialog.getOpenFileNames(parent, title,
-                                                       str(default_folder),
-                                                       parent.tr(files))
-    return filenames[0]     # TODO does this return just one?
+    filenames = QtWidgets.QFileDialog.getOpenFileNames(
+        parent, title, str(default_folder), parent.tr(files))
+    return filenames[0]
 
 
 def save_file_dialog(parent, default_folder, title, files):
@@ -105,7 +103,6 @@ def save_file_dialog(parent, default_folder, title, files):
 
         "C:/Transfer/FinlandiaData/esimerkkidata.zip"
     """
-    filename = QtWidgets.QFileDialog.getSaveFileName(parent, title,
-                                                     str(default_folder),
-                                                     parent.tr(files))[0]
+    filename = QtWidgets.QFileDialog.getSaveFileName(
+        parent, title, str(default_folder), parent.tr(files))[0]
     return filename
