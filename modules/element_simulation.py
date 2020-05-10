@@ -566,10 +566,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             json.dump(obj_profile, file, indent=4)
 
     def start(self, number_of_processes, start_value=None,
-              use_old_erd_files=True, optimization_type=None, stop_p=False,
-              check_t=False, check_max=False, check_min=False,
+              use_old_erd_files=True, optimization_type=None,
               shared_ions=False, cancellation_token=None, start_interval=5,
-              status_check_interval=1) -> Optional[rx.Observable]:
+              status_check_interval=1, **kwargs) -> Optional[rx.Observable]:
         """
         Start the simulation.
 
@@ -579,10 +578,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             use_old_erd_files: whether the simulation continues using old erd
                 files or not
             optimization_type: either recoil, fluence or None
-            stop_p: Percent for stopping the MCERD run.
-            check_t: Time between checks to see whether to stop MCERD or not.
-            check_max: Maximum time to run simulation.
-            check_min: Minimum time to run simulation.
             shared_ions: boolean that determines if the ion counts are
                 divided by the number of processes
             cancellation_token: CancellationToken that can be used to stop
@@ -591,7 +586,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 (ensures that MCERD's startup files are not being
                 overwritten by later processes)
             status_check_interval: seconds between each observed atoms count.
+            kwargs: keyword arguments passed down to MCERD's run method
 
+        Return:
+            observable stream
         """
         if self.is_simulation_running():
             return None
@@ -642,9 +640,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 lambda _: not cancellation_token.is_cancellation_requested()),
             ops.take(number_of_processes),
             ops.scan(lambda acc, _: acc + 1, seed=seed_number - 1),
-            ops.map(lambda x: self._start(
-                recoil, x, optimization_type, dict(settings),
-                cancellation_token)),
+            ops.map(lambda next_seed: self._start(
+                recoil, next_seed, optimization_type, dict(settings),
+                cancellation_token, **kwargs)),
             ops.flat_map(lambda x: x),
             ops.scan(lambda acc, x: {
                 **x,
@@ -675,7 +673,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         #        check_max, check_min, opt_seed)
 
     def _start(self, recoil, seed_number, optimization_type, settings,
-               cancellation_token) -> rx.Observable:
+               cancellation_token, **kwargs) -> rx.Observable:
         """Inner method that creates an MCERD instance and runs it.
 
         Returns an observable stream of MCERD output.
@@ -698,8 +696,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             optimize_fluence=optimization_type is OptimizationType.FLUENCE)
         self._mcerd_objects.add(mcerd)
 
-        return mcerd.run(
-            print_to_console=True, cancellation_token=cancellation_token).pipe(
+        return mcerd.run(cancellation_token=cancellation_token, **kwargs).pipe(
                 ops.do_action(
                     on_error=lambda _: self._mcerd_objects.remove(mcerd),
                     on_completed=lambda: self._mcerd_objects.remove(mcerd))
@@ -755,11 +752,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                     'state': enum
                 }
         """
-        # FIXME when running really short processes that end before other
-        #  processes begin, status is reported as 'DONE' instead of 'RUNNING'
-        #  because at that moment there are no active simulation processes.
-        #  In the GUI, this causes the start button to become enabled even
-        #  though it should not be.
         active_count = self.__erd_filehandler.get_active_atom_counts()
         old_count = self.__erd_filehandler.get_old_atom_counts()
         total_count = active_count + old_count

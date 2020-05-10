@@ -421,7 +421,7 @@ _pattern = re.compile("Calculated (?P<calculated>\d+) of (?P<total>\d+) ions "
 def parse_raw_output(raw_line):
     """Parses raw output produced by MCERD into something meaningful.
     """
-    m = re.match(_pattern, raw_line)
+    m = _pattern.match(raw_line)
     try:
         return {
             "calculated": int(m.group("calculated")),
