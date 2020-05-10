@@ -29,7 +29,7 @@ import numpy as np
 import os
 import collections
 import rx
-import functools
+import subprocess
 
 import modules.optimization as opt
 import modules.general_functions as gf
@@ -166,11 +166,6 @@ class Nsgaii(Observable):
 
     def __prepare_optimization(self, initial_pop=None, cancellation_token=None):
         """Performs internal preparation before optimization begins.
-
-        In order to run optimization we need to:
-            - calculate the energy spectrum from the cut file. This is the
-            spectrum that we will be comparing our optimized spectra.
-            -
         """
         # Calculate the energy spectrum that the optimized solutions are
         # compared to.
@@ -224,13 +219,12 @@ class Nsgaii(Observable):
             ]
 
         if not self._skip_simulation:
-            # TODO implement max time check
             seed = max(200, self.element_simulation.get_max_seed()) + 1
             observable = self.element_simulation.start(
                 self.number_of_processes, start_value=seed,
                 optimization_type=self.optimization_type,
                 cancellation_token=cancellation_token,
-                print_to_console=True)
+                print_to_console=True, max_time=self.check_max)
 
             if observable is not None:
                 self.on_next(self._get_message(
@@ -249,7 +243,12 @@ class Nsgaii(Observable):
                 merged = rx.merge(observable, spectra_chk)
                 # Simulation needs to finish before optimization can start
                 # so we run this synchronously.
-                merged.run()
+                # TODO use callback instead of running sync
+                try:
+                    merged.run()
+                except subprocess.SubprocessError as e:
+                    if str(e) != "MCERD stopped with an error code 1.":
+                        raise
 
         self.population = self.evaluate_solutions(initial_pop)
 
@@ -926,7 +925,7 @@ class Nsgaii(Observable):
             OptimizationState.PREPARING, evaluations_left=self.evaluations))
         try:
             self.__prepare_optimization(starting_solutions, cancellation_token)
-        except (OSError, ValueError) as e:
+        except (OSError, ValueError, subprocess.SubprocessError) as e:
             self.on_error(self._get_message(
                 OptimizationState.FINISHED,
                 error=f"Preparation for optimization failed: {e}"))
@@ -1412,6 +1411,7 @@ def check_spectra_change(elem_sim, optim_mode, seed,
         elem_sim.directory, fp.get_erd_file_name(
             recoils[0], seed, optim_mode=optim_mode))
     if erd_file.exists():
+        # TODO change this to try except instead of checking if the file exists
         # Calculate new energy spectrum
         elem_sim.calculate_espe(
             recoils[0], optimize_recoil=opt, optimize_fluence=optfl)

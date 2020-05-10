@@ -46,6 +46,7 @@ from enum import Enum
 from pathlib import Path
 from collections import deque
 
+from modules.concurrency import CancellationToken
 from modules.base import Serializable
 from modules.base import AdjustableSettings
 from modules.base import MCERDParameterContainer
@@ -106,7 +107,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "number_of_scaling_ions", "number_of_recoils", \
                 "minimum_scattering_angle", "minimum_main_scattering_angle", \
                 "minimum_energy", "simulation_mode", "seed_number", \
-                "recoil_elements", "recoil_atoms", "_mcerd_objects", \
+                "recoil_elements", "recoil_atoms", \
                 "channel_width", "detector", "__erd_filehandler", \
                 "description", "run", "name", \
                 "use_default_settings", "simulation", \
@@ -114,7 +115,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "optimization_recoils", "optimization_done", \
                 "optimization_stopped", "optimization_widget", \
                 "optimization_running", "optimized_fluence", \
-                "sample", "__cancellation_token", "_simulation_running"
+                "sample", "__cts", "_simulation_running"
 
     def __init__(self, directory, request, recoil_elements,
                  simulation=None, name_prefix="", sample=None,
@@ -195,6 +196,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.sample = sample
 
         # TODO raise errors if the type and mode are wrong
+        # TODO make these into enums
         self.simulation_type = simulation_type
         self.simulation_mode = simulation_mode
 
@@ -230,7 +232,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
             self.profile_to_file(Path(self.directory, f"{prefix}.profile"))
 
-        self._mcerd_objects = set()
+        # Collection of CancellationTokens
+        self.__cts = set()
 
         self.__erd_filehandler = ERDFileHandler.from_directory(
             self.directory, self.main_recoil)
@@ -259,10 +262,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         else:
             self.__full_edit_on = True
             self.y_min = 0.0
-
-        # CancellationToken that can be given to ElementSimulation when
-        # simulation starts
-        self.__cancellation_token = None
 
     def unlock_edit(self):
         """
@@ -630,7 +629,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             "sim_dir": self.directory
         })
 
-        self.__cancellation_token = cancellation_token
+        if cancellation_token is None:
+            cancellation_token = CancellationToken()
+
+        self.__cts.add(cancellation_token)
 
         # New MCERD process is started every five seconds until number of
         # processes is reached or cancellation has been requested.
@@ -651,26 +653,20 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                     not x["is_running"])
             }, seed={"finished_processes": 0}),
             ops.combine_latest(rx.timer(0, status_check_interval).pipe(
-                ops.map(lambda x: self.get_current_status())
+                ops.map(lambda x: self.get_current_status()),
+                ops.take_while(
+                    lambda _:
+                    not cancellation_token.is_cancellation_requested())
             )),
             ops.map(lambda x: {**x[0], **x[1]}),
             ops.take_while(
-                lambda x: x["finished_processes"] < x["total_processes"]
-                and not cancellation_token.is_cancellation_requested(),
+                lambda x: x["finished_processes"] < x["total_processes"],
                 inclusive=True),
             ops.do_action(
-                on_error=lambda _: self._clean_up(),
-                on_completed=self._clean_up
+                on_error=lambda _: self._clean_up(cancellation_token),
+                on_completed=lambda: self._clean_up(cancellation_token)
             )
         )
-
-        #if optimization_type is not None:
-        #    # Check the change between current and previous energy spectra (if
-        #    # the spectra have been calculated)
-        #    # TODO return an observable so optim can pipe this function itself
-        #    self.check_spectra_change(
-        #        stop_p, check_t, optimization_type is OptimizationType.RECOIL,
-        #        check_max, check_min, opt_seed)
 
     def _start(self, recoil, seed_number, optimization_type, settings,
                cancellation_token, **kwargs) -> rx.Observable:
@@ -694,13 +690,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         mcerd = MCERD(
             seed_number, settings, self.get_full_name(),
             optimize_fluence=optimization_type is OptimizationType.FLUENCE)
-        self._mcerd_objects.add(mcerd)
 
-        return mcerd.run(cancellation_token=cancellation_token, **kwargs).pipe(
-                ops.do_action(
-                    on_error=lambda _: self._mcerd_objects.remove(mcerd),
-                    on_completed=lambda: self._mcerd_objects.remove(mcerd))
-                )
+        return mcerd.run(cancellation_token=cancellation_token, **kwargs)
 
     def _set_flags(self, b, optim_mode=None):
         """Sets the boolean flags that indicate the state of
@@ -744,13 +735,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                       be determined by the caller.
 
         Return:
-            dict in the form of
-                {
-                    'name': 'name_prefix'-'name'
-                    'atom_count': integer,
-                    'running': integer,
-                    'state': enum
-                }
+            dictionary
         """
         active_count = self.__erd_filehandler.get_active_atom_counts()
         old_count = self.__erd_filehandler.get_old_atom_counts()
@@ -783,7 +768,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """Whether simulation is currently running and optimization is not
         running.
         """
-        # TODO
         return self._simulation_running
 
     def is_simulation_finished(self) -> bool:
@@ -815,11 +799,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """Returns both active and already simulated ERD files.
         """
         return list(f for f, _, _ in self.__erd_filehandler)
-
-    def count_active_processes(self):
-        """Returns the number of active processes.
-        """
-        return len(self._mcerd_objects)
 
     def check_spectra_change(self, stop_percent, check_time, optimize_recoil,
                              check_max, check_min, seed):
@@ -910,24 +889,25 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                         previous_avg = avg
                     previous_espe = espe
 
-    def _clean_up(self):
+    def _clean_up(self, cancellation_token):
+        """Performs clean up after all of the simulation process have ended.
+        """
         self._set_flags(False)
         self.__erd_filehandler.update()
-        atom_count = self.__erd_filehandler.get_old_atom_counts()
+        self.__cts.remove(cancellation_token)
         if self.simulation is not None:
+            atom_count = self.__erd_filehandler.get_old_atom_counts()
             msg = f"Simulation finished. Element " \
                   f"{self.get_main_recoil().get_full_name()}, " \
                   f"observed atoms: {atom_count}."
             logging.getLogger(self.simulation.name).info(msg)
 
     def stop(self):
-        """ Stop the simulation."""
-        # TODO check if this and notify can be refactored
-        if self.__cancellation_token is not None:
-            self.__cancellation_token.request_cancellation()
-
-        self._mcerd_objects = set()
-        self._clean_up()
+        """ Stop the simulation.
+        """
+        cts = list(self.__cts)
+        for ct in cts:
+            ct.request_cancellation()
 
     def calculate_espe(self, recoil_element, optimize_recoil=False, ch=None,
                        fluence=None, optimize_fluence=False,

@@ -116,9 +116,8 @@ class MCERD:
         return f"{ulimit}{exec_cmd}{mcerd_path} {self.__command_file}"
 
     def run(self, print_to_console=True, cancellation_token=None,
-            poll_interval=10):
-        """Starts the MCERD process. Also starts a thread that
-        periodically checks if the MCERD has finished.
+            poll_interval=10, first_check=0.2, max_time=None, ct_check=0.2):
+        """Starts the MCERD process.
 
         Args:
             print_to_console: whether MCERD output is also printed to console
@@ -126,9 +125,13 @@ class MCERD:
                 the simulation should be stopped.
             poll_interval: seconds between each check to see if the simulation
                 process is still running.
+            first_check: seconds until the first time mcerd is polled.
+            max_time: maximum running time in seconds.
+            ct_check: how often cancellation is checked in seconds.
 
         Return:
-            observable stream or None if rx was not found when importing
+            observable stream where each item is a dictionary. All dictionaries
+            contain the same keys.
         """
         # Create files necessary to run MCERD
         self.__create_mcerd_files()
@@ -137,17 +140,17 @@ class MCERD:
         if cancellation_token is None:
             cancellation_token = CancellationToken()
 
-        # TODO use timeout when optimizing and max time is set
-        # TODO use rx.timer to periodically check cancellation_token
         self.__process = subprocess.Popen(
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         errs = rx.from_iterable(iter(self.__process.stderr.readline, b""))
         outs = rx.from_iterable(iter(self.__process.stdout.readline, b""))
-        is_running = rx.timer(0, poll_interval).pipe(
+        is_running = rx.timer(first_check, poll_interval).pipe(
             ops.map(lambda _: MCERD.is_running(self.__process)),
-            ops.take_while(lambda x: x, inclusive=True)
         )
+
+        ct_check = rx.timer(0, ct_check).pipe(
+            ops.map(lambda _: self._stop_if_cancelled(cancellation_token)))
 
         thread_count = multiprocessing.cpu_count()
         pool_scheduler = ThreadPoolScheduler(thread_count)
@@ -155,18 +158,21 @@ class MCERD:
         merged = rx.merge(errs, outs).pipe(
             ops.subscribe_on(pool_scheduler),
             MCERD.get_pipeline(self.__seed, self.__rec_filename),
-            ops.combine_latest(is_running),
-            ops.do_action(
-                on_next=lambda _: self._stop_if_cancelled(cancellation_token)),
+            ops.combine_latest(is_running, ct_check),
             ops.map(lambda x: {
                 **x[0],
                 "is_running": x[1] and not x[0]["msg"].startswith("Beam ion: ")
-                and not cancellation_token.is_cancellation_requested()
-            }),
-            ops.take_while(
-                lambda x: x["is_running"],
-                inclusive=True),
+                and not x[2]
+            })
         )
+
+        if max_time is not None:
+            stopper = rx.timer(max_time).pipe(
+                # TODO this may not work properly when running multiple
+                #   processes at the same time
+                ops.filter(lambda _: bool(self.stop_process())),
+            )
+            merged = rx.merge(merged, stopper)
 
         if print_to_console:
             merged = merged.pipe(
@@ -174,13 +180,18 @@ class MCERD:
                     f"simulation process with seed {self.__seed}.")
             )
 
-        return merged
+        return merged.pipe(
+            ops.take_while(lambda x: x["is_running"], inclusive=True)
+        )
 
     def _stop_if_cancelled(self, cancellation_token):
         """Stops the simulation if cancellation has been requested.
+        Returns True if cancellation was requested, False otherwise
         """
         if cancellation_token.is_cancellation_requested():
             self.stop_process()
+            return True
+        return False
 
     @staticmethod
     def is_running(process: subprocess.Popen) -> bool:
@@ -245,6 +256,7 @@ class MCERD:
 
     def stop_process(self):
         """Stop the MCERD process and delete the MCERD object."""
+        print("Stopping")
         used_os = platform.system()
         if used_os == "Windows":
             cmd = "TASKKILL /F /PID " + str(self.__process.pid) + " /T"
