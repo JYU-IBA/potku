@@ -125,8 +125,8 @@ class TestErdFileHandler(unittest.TestCase):
 
         exp = [(f, s, False) for f, s in self.expected_values]
         self.assertEqual(exp, [f for f in handler])
-        self.assertEqual(0, handler.get_active_atom_counts())
-        self.assertEqual(0, handler.get_old_atom_counts())
+        self.assertEqual(0, handler.get_active_atom_count())
+        self.assertEqual(0, handler.get_old_atom_count())
 
     def test_max_seed(self):
         handler = ERDFileHandler([], self.elem_4he)
@@ -191,42 +191,58 @@ class TestErdFileHandler(unittest.TestCase):
 
             # Initialise a handler from the tmp_dir and add an active file
             handler = ERDFileHandler.from_directory(tmp_dir, self.elem_4he)
-            handler.add_active_file(os.path.join(tmp_dir,
-                                                 "4He-Default.103.erd"))
+            handler.add_active_file(
+                os.path.join(tmp_dir, "4He-Default.103.erd"))
 
             # Append a line to each file
             for erd_file, _, _ in handler:
                 write_line(erd_file)
 
-            self.assertEqual(1, handler.get_active_atom_counts())
-            self.assertEqual(4, handler.get_old_atom_counts())
+            self.assertEqual(1, handler.get_active_atom_count())
+            self.assertEqual(4, handler.get_old_atom_count())
+            self.assertEqual(5, handler.get_total_atom_count())
 
             # As the results of old files are cached, only counts in active
             # files are incremented
             for erd_file, _, _ in handler:
                 write_line(erd_file)
 
-            self.assertEqual(2, handler.get_active_atom_counts())
-            self.assertEqual(4, handler.get_old_atom_counts())
+            self.assertEqual(2, handler.get_active_atom_count())
+            self.assertEqual(4, handler.get_old_atom_count())
+            self.assertEqual(6, handler.get_total_atom_count())
 
             # If the handler is updated, active file is moved to old files
             handler.update()
-            self.assertEqual(0, handler.get_active_atom_counts())
-            self.assertEqual(6, handler.get_old_atom_counts())
+            self.assertEqual(0, handler.get_active_atom_count())
+            self.assertEqual(6, handler.get_old_atom_count())
+            self.assertEqual(6, handler.get_total_atom_count())
 
             # Now the atom count will no longer update in the added file
             for erd_file, _, _ in handler:
                 write_line(erd_file)
 
-            self.assertEqual(0, handler.get_active_atom_counts())
-            self.assertEqual(6, handler.get_old_atom_counts())
+            self.assertEqual(0, handler.get_active_atom_count())
+            self.assertEqual(6, handler.get_old_atom_count())
+            self.assertEqual(6, handler.get_total_atom_count())
 
         # Assert that clearing also clears cache
         handler.clear()
-        self.assertEqual(0, handler.get_old_atom_counts())
+        self.assertEqual(0, handler.get_active_atom_count())
+        self.assertEqual(0, handler.get_old_atom_count())
+        self.assertEqual(0, handler.get_total_atom_count())
 
         # Assert that tmp dir got deleted
         self.assertFalse(os.path.exists(tmp_dir))
+
+    def test_results_exists(self):
+        handler = ERDFileHandler([], self.elem_4he)
+        self.assertFalse(handler.results_exists())
+        handler.add_active_file(self.valid_erd_files[0])
+        self.assertTrue(handler.results_exists())
+        handler.update()
+        self.assertTrue(handler.results_exists())
+        handler.clear()
+        self.assertFalse(handler.results_exists())
 
     def test_thread_safety(self):
         """Tests that ErdFileHandler is thread safe."""
@@ -237,26 +253,26 @@ class TestErdFileHandler(unittest.TestCase):
             for i in range(n):
                 handler.add_active_file(f"4He-Default.{i}.erd")
 
-        self.assert_runs_ok(adder, handler.get_active_atom_counts)
+        self.assert_runs_ok(adder, handler.get_active_atom_count)
         self.assertEqual(n, len(handler))
 
         def updater():
             time.sleep(0.01)
             handler.update()
 
-        self.assert_runs_ok(handler.get_active_atom_counts, updater)
+        self.assert_runs_ok(handler.get_active_atom_count, updater)
         self.assertEqual(n, len(handler))
 
         def clearer():
             time.sleep(0.01)
             handler.clear()
 
-        self.assert_runs_ok(handler.get_old_atom_counts, clearer)
+        self.assert_runs_ok(handler.get_old_atom_count, clearer)
         self.assertEqual(0, len(handler))
 
         # Add the files again and see if counting old atoms works when updating
         adder()
-        self.assert_runs_ok(handler.get_old_atom_counts, updater)
+        self.assert_runs_ok(handler.get_old_atom_count, updater)
         self.assertEqual(n, len(handler))
 
         clearer()

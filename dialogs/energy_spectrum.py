@@ -36,15 +36,16 @@ import shutil
 
 import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
+import modules.general_functions as gf
+import modules.cut_file as cut_file
+import dialogs.file_dialogs as fdialogs
 
 from pathlib import Path
 
-from dialogs.file_dialogs import open_file_dialog
 from widgets.gui_utils import StatusBarHandler
-from modules.cut_file import is_rbs, get_scatter_element
 from modules.energy_spectrum import EnergySpectrum
-from modules.general_functions import read_espe_file
 from modules.measurement import Measurement
+from modules.enums import OptimizationType
 
 from PyQt5 import uic
 from PyQt5 import QtCore
@@ -282,31 +283,27 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         used_simulations = {}
 
         for i in range(child_count):
+            # TODO list items should have the recoil data in user role so
+            #   we do not have iterate these all over again
             item = root.child(i)
             if item.checkState(0):
                 for elem_sim in self.parent.obj.element_simulations:
                     for rec_elem in elem_sim.recoil_elements:
                         rec_elem_name = rec_elem.get_full_name()
                         if rec_elem_name == item.text(0):
-                            result_file = Path(self.parent.obj.directory,
-                                               f"{rec_elem_name}.simu")
                             used_simulations.setdefault(elem_sim, []).append({
                                 "recoil_element": rec_elem,
-                                "result_file": result_file,
-                                "optimize_recoil": False
                             })
                             break
-                    if elem_sim.optimization_done:
+                    if elem_sim.is_optimization_finished():
                         for rec_elem in elem_sim.optimization_recoils:
                             rec_elem_name = rec_elem.get_full_name()
                             if rec_elem_name == item.text(0):
-                                result_file = Path(self.parent.obj.directory,
-                                                   f"{rec_elem_name}.simu")
                                 used_simulations.setdefault(
                                     elem_sim, []).append({
                                         "recoil_element": rec_elem,
-                                        "result_file": result_file,
-                                        "optimize_recoil": True
+                                        "optimization_type":
+                                            OptimizationType.RECOIL
                                     })
                                 break
 
@@ -345,10 +342,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
 
         # Calculate espes for simulations
         for elem_sim, lst in used_simulations.items():
-            elem_sim.channel_width = self.bin_width
             for d in lst:
-                self.result_files.append(d.pop("result_file"))
-                elem_sim.calculate_espe(**d)
+                self.result_files.append(
+                    elem_sim.calculate_espe(**d, ch=self.bin_width))
 
         sbh.reporter.report(66)
 
@@ -455,17 +451,15 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         """
         Import an external file that matches the format of hist and simu files.
         """
-        QtWidgets.QMessageBox.information(self, "Notice",
-                                          "The external file needs to have the "
-                                          "following format:\n\nenergy count\n"
-                                          "energy count\nenergy count\n...\n\n"
-                                          "to match the simulation and "
-                                          "measurement energy spectra files.",
-                                          QtWidgets.QMessageBox.Ok,
-                                          QtWidgets.QMessageBox.Ok)
-        file_path = open_file_dialog(
-            self, self.element_simulation.request.directory, "Select a file "
-                                                             "to import", "")
+        QtWidgets.QMessageBox.information(
+            self, "Notice",
+            "The external file needs to have the following format:\n\n"
+            "energy count\nenergy count\nenergy count\n...\n\n"
+            "to match the simulation and measurement energy spectra files.",
+            QtWidgets.QMessageBox.Ok,  QtWidgets.QMessageBox.Ok)
+        file_path = fdialogs.open_file_dialog(
+            self, self.element_simulation.request.directory,
+            "Select a file to import", "")
         if not file_path:
             return
 
@@ -480,8 +474,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     QtWidgets.QMessageBox.Ok)
                 return
 
-        shutil.copyfile(file_path, os.path.join(self.imported_files_folder,
-                                                name))
+        shutil.copyfile(
+            file_path, os.path.join(self.imported_files_folder, name))
 
         item = QtWidgets.QTreeWidgetItem()
         item.setText(0, name)
@@ -563,11 +557,11 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 for cut in self.use_cuts:
                     filename = os.path.basename(cut)
                     split = filename.split(".")
-                    if is_rbs(cut):
+                    if cut_file.is_rbs(cut):
                         # This should work for regular cut and split.
                         key = "{0}.{1}.{2}.{3}".format(split[1], split[2],
                                                        split[3], split[4])
-                        rbs_list[key] = get_scatter_element(cut)
+                        rbs_list[key] = cut_file.get_scatter_element(cut)
 
             else:
                 self.simulation = self.parent.obj
@@ -575,8 +569,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 self.save_file = "widget_energy_spectrum_" + str(
                     save_file_int) + ".save"
                 for file in use_cuts:
-                    self.energy_spectrum_data[file] = read_espe_file(
-                        file)
+                    self.energy_spectrum_data[file] = gf.read_espe_file(file)
 
             # Graph in matplotlib widget and add to window
             self.matplotlib = MatplotlibEnergySpectrumWidget(
@@ -606,9 +599,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
         """
         changes_dir = Path(self.parent.obj.directory_composition_changes,
                            "Changes")
-        df.update_cuts(self.use_cuts,
-                       self.parent.obj.directory_cuts,
-                       changes_dir)
+        df.update_cuts(
+            self.use_cuts, self.parent.obj.directory_cuts, changes_dir)
 
     def delete(self):
         """Delete variables and do clean up.

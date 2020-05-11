@@ -713,16 +713,15 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         if rec_elem is None or elem_sim is None:
             return
 
-        spectrum_file = Path(elem_sim.directory,
-                             f"{rec_elem.get_full_name()}.simu")
+        espe_file = Path(elem_sim.directory, f"{rec_elem.get_full_name()}.simu")
 
-        if spectrum_file in self.plots:
+        if espe_file in self.plots:
             elem_sim.calculate_espe(rec_elem, ch=self.channel_width)
-            espe_data = gf.read_espe_file(spectrum_file)
+            espe_data = gf.read_espe_file(espe_file)
 
             data = get_axis_values(espe_data)
 
-            self.plots[spectrum_file].set_data(data)
+            self.plots[espe_file].set_data(data)
 
             self.canvas.draw()
             self.canvas.flush_events()

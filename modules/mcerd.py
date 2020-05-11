@@ -49,6 +49,7 @@ from modules.concurrency import CancellationToken
 
 # TODO consider making this module stateless
 
+
 class MCERD:
     """
     An MCERD class that handles calling the mcerd binary and creating the
@@ -146,23 +147,20 @@ class MCERD:
         errs = rx.from_iterable(iter(self.__process.stderr.readline, b""))
         outs = rx.from_iterable(iter(self.__process.stdout.readline, b""))
         is_running = rx.timer(first_check, poll_interval).pipe(
-            ops.map(lambda _: MCERD.is_running(self.__process)),
+            ops.map(lambda x: {
+                "is_running": MCERD.is_running(self.__process)
+            })
         )
 
         ct_check = rx.timer(0, ct_check).pipe(
-            ops.map(lambda _: self._stop_if_cancelled(cancellation_token)))
-
-        thread_count = multiprocessing.cpu_count()
-        pool_scheduler = ThreadPoolScheduler(thread_count)
-
-        merged = rx.merge(errs, outs).pipe(
-            ops.subscribe_on(pool_scheduler),
-            MCERD.get_pipeline(self.__seed, self.__rec_filename),
-            ops.combine_latest(is_running, ct_check),
+            # Filter out all the positive values. We do not want to push
+            # updates every time cancellation is checked as there is nothing
+            # to update.
+            ops.map(lambda _: self._stop_if_cancelled(cancellation_token)),
+            ops.filter(lambda x: not x),
             ops.map(lambda x: {
-                **x[0],
-                "is_running": x[1] and not x[0]["msg"].startswith("Beam ion: ")
-                and not x[2]
+                "is_running": False,
+                "msg": "Simulation was stopped"
             })
         )
 
@@ -170,9 +168,26 @@ class MCERD:
             stopper = rx.timer(max_time).pipe(
                 # TODO this may not work properly when running multiple
                 #   processes at the same time
-                ops.filter(lambda _: bool(self.stop_process())),
+                ops.map(lambda _: {
+                    "is_running": bool(self.stop_process()),
+                    "msg": "Simulation timed out."
+                }),
             )
-            merged = rx.merge(merged, stopper)
+        else:
+            stopper = rx.empty()
+
+        thread_count = multiprocessing.cpu_count()
+        pool_scheduler = ThreadPoolScheduler(thread_count)
+
+        merged = rx.merge(errs, outs).pipe(
+            ops.subscribe_on(pool_scheduler),
+            MCERD.get_pipeline(self.__seed, self.__rec_filename),
+            ops.combine_latest(rx.merge(
+                is_running, ct_check, stopper
+            )),
+            ops.map(MCERD._combine_items),
+            ops.take_while(lambda x: x["is_running"], inclusive=True)
+        )
 
         if print_to_console:
             merged = merged.pipe(
@@ -180,18 +195,28 @@ class MCERD:
                     f"simulation process with seed {self.__seed}.")
             )
 
-        return merged.pipe(
-            ops.take_while(lambda x: x["is_running"], inclusive=True)
-        )
+        return merged
 
     def _stop_if_cancelled(self, cancellation_token):
-        """Stops the simulation if cancellation has been requested.
-        Returns True if cancellation was requested, False otherwise
+        """Stops the simulation if cancellation has been requested. Returns
+        True if cancellation has not been requested and simulation is still
+        running, False otherwise.
         """
         if cancellation_token.is_cancellation_requested():
             self.stop_process()
-            return True
-        return False
+            return False
+        return True
+
+    @staticmethod
+    def _combine_items(items) -> dict:
+        """Helper function for combining items from two streams.
+        """
+        item1, item2 = items
+        return {
+            **item1, **item2,
+            "is_running": item2["is_running"] and not item1[
+                "msg"].startswith("Beam ion: "),
+        }
 
     @staticmethod
     def is_running(process: subprocess.Popen) -> bool:
@@ -255,13 +280,12 @@ class MCERD:
         )
 
     def stop_process(self):
-        """Stop the MCERD process and delete the MCERD object."""
-        print("Stopping")
-        used_os = platform.system()
-        if used_os == "Windows":
-            cmd = "TASKKILL /F /PID " + str(self.__process.pid) + " /T"
+        """Stop the MCERD process and delete the MCERD object.
+        """
+        if platform.system() == "Windows":
+            cmd = f"TASKKILL /F /PID {self.__process.pid} /T"
             subprocess.call(cmd)
-        elif used_os == "Linux" or used_os == "Darwin":
+        else:
             self.__process.kill()
 
         self.delete_unneeded_files()

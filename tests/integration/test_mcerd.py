@@ -58,11 +58,10 @@ class TestMCERD(unittest.TestCase):
                 Element.from_string("Si 1.0")
             ], 1000.0, 2.32, start_depth=90.01)
         ])
-        cls.mcerd = MCERD({
+        cls.mcerd = MCERD(101, {
             "recoil_element": mo.get_recoil_element(),
             "sim_dir": tempfile.gettempdir(),
             "simulation_type": "ERD",
-            "seed_number": 101,
             "target": target,
             "detector": mo.get_detector(),
             "beam": mo.get_beam(),
@@ -79,7 +78,6 @@ class TestMCERD(unittest.TestCase):
             "number_of_ions": 1000
         }, mo.get_element_simulation().get_full_name())
 
-    @utils.expected_failure_if(platform.system() == "Windows")
     def test_get_command(self):
         """Tests the get_command function on different platforms.
         """

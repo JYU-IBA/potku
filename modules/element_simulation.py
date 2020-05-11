@@ -54,29 +54,8 @@ from modules.get_espe import GetEspe
 from modules.mcerd import MCERD
 from modules.observing import Observable
 from modules.recoil_element import RecoilElement
-from modules.nsgaii import OptimizationType
-
-
-class SimulationState(Enum):
-    """This enum is used to represent the state of simulation.
-    """
-    # No ERD files exist and simulation is not started
-    NOTRUN = 1
-
-    # MCERD is running
-    RUNNING = 4
-
-    # ERD files exist, MCERD not running
-    DONE = 5
-
-    def __str__(self):
-        """Returns a string representation of the SimulationState.
-        """
-        if self == SimulationState.NOTRUN:
-            return "Not run"
-        if self == SimulationState.RUNNING:
-            return "Running"
-        return "Done"
+from modules.enums import OptimizationType
+from modules.enums import SimulationState
 
 
 # Mappings between the names of the MCERD parameters (keys) and
@@ -697,8 +676,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """Sets the boolean flags that indicate the state of
         simulation accordingly.
         """
-        self.simulations_done = not b and self._simulation_running
-        self._simulation_running = b and optim_mode is None
+        self.simulations_done = not b and self._simulation_running or \
+            self.optimization_running
+        self._simulation_running = b
         self.optimization_done = not b and self.optimization_running
         self.optimization_running = b and optim_mode is not None
 
@@ -724,34 +704,25 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 # keyword does not have a known mapping, nothing to do
                 pass
 
-    def get_current_status(self, starting=False):
+    def get_current_status(self):
         """Returns the number of atoms counted, number of running processes and
         the state of simulation.
-
-        Args:
-            starting: boolean which indicates whether simulations are starting.
-                      Currently get_current_status cannot tell the difference
-                      between Starting and Finished simulation so this has to
-                      be determined by the caller.
 
         Return:
             dictionary
         """
-        active_count = self.__erd_filehandler.get_active_atom_counts()
-        old_count = self.__erd_filehandler.get_old_atom_counts()
-        total_count = active_count + old_count
-        erd_file_count = len(self.__erd_filehandler)
+        atom_count = self.__erd_filehandler.get_total_atom_count()
 
         if self.is_simulation_running():
             state = SimulationState.RUNNING
-        elif not erd_file_count:
-            state = SimulationState.NOTRUN
-        else:
+        elif self.is_simulation_finished():
             state = SimulationState.DONE
+        else:
+            state = SimulationState.NOTRUN
 
         # Return status as a dict
         return {
-            "atom_count": total_count,
+            "atom_count": atom_count,
             "state": state,
             "optimizing": self.is_optimization_running()
         }
@@ -773,7 +744,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def is_simulation_finished(self) -> bool:
         """Whether simulation is finished.
         """
-        return self.simulations_done
+        return self.__erd_filehandler.results_exists()
 
     def is_optimization_running(self) -> bool:
         """Whether optimization is running.
@@ -783,9 +754,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def is_optimization_finished(self) -> bool:
         """Whether optimization has finished.
         """
-        # TODO better method for determining this
-        return self.optimization_widget is not None and \
-            not self.is_optimization_running()
+        return any(self.optimization_recoils)
 
     def get_max_seed(self):
         """Returns maximum seed that has been used in simulations.
@@ -800,95 +769,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """
         return list(f for f, _, _ in self.__erd_filehandler)
 
-    def check_spectra_change(self, stop_percent, check_time, optimize_recoil,
-                             check_max, check_min, seed):
-        """
-        If there are previous and current energy spectra, check the change in
-        distance between them. When this is smaller than the threshold,
-        mcerd can be stopped.
-
-        Args:
-            stop_percent: Percent at which to stop.
-            check_time: Time between the percentage checks.
-            optimize_recoil: Whether recoil is being optimized.
-            check_max: Maximum time until simulation is stopped.
-            check_min: Minimum time to run simulation.
-            seed: seed of the first simulation process
-        """
-        previous_avg = None
-        sleep_beginning = True
-        check_start = time.time()
-        previous_espe = None
-        while True:
-            if not self.is_simulation_running():
-                self.simulations_done = True
-                break
-            if sleep_beginning:
-                time.sleep(check_min)  # Sleep for user-defined time to
-                # ensure bigger results than just few percents
-                sleep_beginning = False
-            else:
-                time.sleep(check_time)  # Sleep for specified time
-            # Check if erd file can be found (presimulation has been
-            # finished)
-            if optimize_recoil:
-                recoils = self.optimization_recoils
-                opt = True
-                optfl = False
-                recoil_name = self.optimization_recoils[0].name
-                opt_mode = "recoil"
-            else:
-                recoils = self.recoil_elements
-                opt = False
-                optfl = True
-                recoil_name = "optfl"
-                opt_mode = "fluence"
-
-            # Check if maximum time has been used for simulation
-            current_time = time.time()
-            if current_time - check_start >= check_max:  # Max time
-                self.stop()
-
-            erd_file = Path(self.directory,
-                            fp.get_erd_file_name(recoils[0], seed,
-                                                 optim_mode=opt_mode))
-            if erd_file.exists():
-                # Calculate new energy spectrum
-                self.calculate_espe(recoils[0], optimize_recoil=opt,
-                                    optimize_fluence=optfl)
-                espe_file = Path(self.directory,
-                                 f"{recoils[0].prefix}-{recoil_name}.simu")
-                espe = gf.read_espe_file(espe_file)
-                if espe:
-                    # Change items to float types
-                    espe = list(np.float_(espe))
-                    if previous_espe:
-                        espe, previous_espe = gf.uniform_espe_lists(
-                            [espe, previous_espe], self.channel_width)
-                        # Calculate distance between energy spectra
-                        # TODO move this to math_functions
-                        sum_diff = 0
-                        i = 0
-                        amount = 0
-                        for point in espe:
-                            prev_point = previous_espe[i]
-                            p_y = float(point[1])
-                            pr_y = float(prev_point[1])
-                            if p_y != 0 or pr_y != 0:
-                                amount += 1
-                            diff = abs(p_y - pr_y)
-                            sum_diff += diff
-                            i += 1
-                        # Take average of sum_diff (non-zero diffs)
-                        avg = sum_diff/amount
-                        if previous_avg:
-                            avg_ratio = avg/previous_avg
-                            if avg_ratio < stop_percent:
-                                self.stop()
-                                break
-                        previous_avg = avg
-                    previous_espe = espe
-
     def _clean_up(self, cancellation_token):
         """Performs clean up after all of the simulation process have ended.
         """
@@ -896,7 +776,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.__erd_filehandler.update()
         self.__cts.remove(cancellation_token)
         if self.simulation is not None:
-            atom_count = self.__erd_filehandler.get_old_atom_counts()
+            atom_count = self.__erd_filehandler.get_total_atom_count()
             msg = f"Simulation finished. Element " \
                   f"{self.get_main_recoil().get_full_name()}, " \
                   f"observed atoms: {atom_count}."
@@ -909,47 +789,45 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         for ct in cts:
             ct.request_cancellation()
 
-    def calculate_espe(self, recoil_element, optimize_recoil=False, ch=None,
-                       fluence=None, optimize_fluence=False,
+    def calculate_espe(self, recoil_element, ch=None, fluence=None,
                        optimization_type=None):
         """
         Calculate the energy spectrum from the MCERD result file.
 
         Args:
             recoil_element: Recoil element.
-            optimize_recoil: Whether recoil is optimized.
             ch: Channel width to use.
             fluence: Fluence to use.
-            optimize_fluence: TODO
+            optimization_type: either recoil, fluence or None
+
+        Return:
+            path to the espe file
         """
         if self.simulation_type == "ERD":
             suffix = ".recoil"
         else:
             suffix = ".scatter"
 
-        # TODO
         if optimization_type is OptimizationType.RECOIL:
-            recoil_elements = self.recoil_elements
-            if optimize_fluence:
-                erd_recoil_name = "optfl"
-                recoil_name = "optfl"
-            else:
-                erd_recoil_name = self.recoil_elements[0].name
-                recoil_name = recoil_element.name
+            recoil = self.optimization_recoils[0]
+            espe_file = f"{recoil.get_full_name()}-opt.simu"
+        elif optimization_type is OptimizationType.FLUENCE:
+            recoil = self.recoil_elements[0]
+            espe_file = f"{recoil.get_full_name()}-optfl.simu"
         else:
-            recoil_elements = self.optimization_recoils
-            recoil_name = recoil_element.name
-            erd_recoil_name = "opt"
+            recoil = self.recoil_elements[0]
+            espe_file = f"{recoil.get_full_name()}.simu"
 
-        recoil_file = Path(self.directory, recoil_element.prefix +
-                           "-" + recoil_name + suffix)
+        erd_file = Path(
+            self.directory,
+            fp.get_erd_file_name(recoil, "*", optim_mode=optimization_type))
+        espe_file = Path(self.directory, espe_file)
+        recoil_file = Path(
+            self.directory, f"{recoil_element.get_full_name()}.{suffix}")
+
         with open(recoil_file, "w") as rec_file:
             rec_file.write("\n".join(recoil_element.get_mcerd_params()))
 
-        erd_file = Path(self.directory, recoil_elements[0].prefix +
-                        "-" + erd_recoil_name + ".*.erd")
-        spectrum_file = Path(self.directory, recoil_element.prefix +
-                             "-" + recoil_name + ".simu")
         if ch:
             channel_width = ch
         else:
@@ -973,11 +851,14 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             "timeres": detector.timeres,
             "solid": detector.calculate_solid(),
             "erd_file": erd_file,
-            "spectrum_file": spectrum_file,
+            "spectrum_file": espe_file,
             "recoil_file": recoil_file
         }
         get_espe = GetEspe(espe_settings)
         get_espe.run_get_espe()
+
+        # TODO could also return the contents of the espe_file
+        return Path(espe_file)
 
     def get_mcerd_params(self):
         """Returns the parameters for MCERD simulations.
@@ -1075,8 +956,8 @@ class ERDFileHandler:
 
         self.__old_files = {
             file: seed
-            for file, seed in fp.validate_erd_file_names(old_files,
-                                                         self.recoil_element)
+            for file, seed in fp.validate_erd_file_names(
+                old_files, self.recoil_element)
         }
 
     @classmethod
@@ -1093,7 +974,7 @@ class ERDFileHandler:
             new ERDFileHandler.
         """
         full_paths = (Path(directory, file)
-                      for file in os.listdir(directory))
+                      for file in os.scandir(directory))
         return cls(full_paths, recoil_element)
 
     def __iter__(self):
@@ -1140,18 +1021,21 @@ class ERDFileHandler:
         """
         return max((seed for _, seed, _ in self), default=None)
 
-    def get_active_atom_counts(self):
+    def get_active_atom_count(self):
         """Returns the number of atoms in currently active .erd files.
         """
         return sum(self.__get_atom_count(file)
                    for file in self.__active_files)
 
-    def get_old_atom_counts(self):
+    def get_old_atom_count(self):
         """Returns the number of atoms in already simulated .erd files.
         """
         # files = list(self.__old_files.keys())
         return sum(self.__get_atom_count_cached(file)
                    for file in self.__old_files)
+
+    def get_total_atom_count(self):
+        return self.get_active_atom_count() + self.get_old_atom_count()
 
     @staticmethod
     def __get_atom_count(erd_file):
@@ -1184,6 +1068,9 @@ class ERDFileHandler:
         self.__active_files = {}
         self.__old_files = {}
         self.__get_atom_count_cached.cache_clear()
+
+    def results_exists(self):
+        return any(self.__old_files) or any(self.__active_files)
 
     def __len__(self):
         """Returns the number of active files and already simulated files.

@@ -30,6 +30,7 @@ import os
 import collections
 import rx
 import subprocess
+import math
 
 import modules.optimization as opt
 import modules.general_functions as gf
@@ -37,8 +38,6 @@ import modules.file_paths as fp
 import modules.math_functions as mf
 
 from pathlib import Path
-from enum import Enum
-from enum import IntEnum
 from timeit import default_timer as timer
 from rx import operators as ops
 
@@ -47,32 +46,8 @@ from modules.point import Point
 from modules.parsing import CSVParser
 from modules.energy_spectrum import EnergySpectrum
 from modules.observing import Observable
-
-
-class OptimizationType(IntEnum):
-    RECOIL = 1
-    FLUENCE = 2
-
-
-class OptimizationState(Enum):
-    PREPARING = 1
-    SIMULATING = 2
-    RUNNING = 3
-    FINISHED = 4
-    ERROR = 5
-
-    def __str__(self):
-        """Returns a string representation of the SimulationState.
-        """
-        if self == OptimizationState.PREPARING:
-            return "Preparing"
-        if self == OptimizationState.SIMULATING:
-            return "Simulating"
-        if self == OptimizationState.RUNNING:
-            return "Running"
-        if self == OptimizationState.ERROR:
-            return "Error"
-        return "Finished"
+from modules.concurrency import CancellationToken
+from modules.enums import OptimizationType
 
 
 class Nsgaii(Observable):
@@ -219,11 +194,18 @@ class Nsgaii(Observable):
             ]
 
         if not self._skip_simulation:
-            seed = max(200, self.element_simulation.get_max_seed()) + 1
+
+            def stop_if_cancelled(optim_ct, mcerd_ct):
+                if optim_ct.is_cancellation_requested():
+                    mcerd_ct.request_cancellation()
+                    return False
+                return True
+
+            ct = CancellationToken()
             observable = self.element_simulation.start(
-                self.number_of_processes, start_value=seed,
+                self.number_of_processes, start_value=201,
                 optimization_type=self.optimization_type,
-                cancellation_token=cancellation_token,
+                cancellation_token=ct,
                 print_to_console=True, max_time=self.check_max)
 
             if observable is not None:
@@ -231,24 +213,30 @@ class Nsgaii(Observable):
                     OptimizationState.SIMULATING,
                     evaluations_left=self.evaluations))
 
+                ct_check = rx.timer(0, 0.2).pipe(
+                    ops.take_while(lambda _: stop_if_cancelled(
+                        cancellation_token, ct)),
+                    ops.filter(lambda _: False),
+                )
+
                 spectra_chk = rx.timer(self.check_min, self.check_time).pipe(
-                    ops.scan(lambda acc, x: check_spectra_change(
-                        self.element_simulation,
-                        self.optimization_type,
-                        seed,
-                        previous_espe=acc[1]), seed=(None, None)),
-                    ops.map(lambda x: x[0] is None or x[0] < self.stop_percent),
-                    ops.take_while(lambda x: x, inclusive=True)
+                    ops.merge(ct_check),
+                    ops.map(lambda _: get_optim_espe(
+                        self.element_simulation, self.optimization_type)),
+                    ops.scan(
+                        lambda prev_espe, next_espe: (prev_espe[1], next_espe),
+                        seed=[None, None]),
+                    ops.map(lambda espes: calculate_change(
+                        *espes, self.element_simulation.channel_width)),
+                    ops.take_while(lambda change: change > self.stop_percent),
+                    ops.do_action(
+                        on_completed=lambda: ct.request_cancellation())
                 )
                 merged = rx.merge(observable, spectra_chk)
                 # Simulation needs to finish before optimization can start
                 # so we run this synchronously.
                 # TODO use callback instead of running sync
-                try:
-                    merged.run()
-                except subprocess.SubprocessError as e:
-                    if str(e) != "MCERD stopped with an error code 1.":
-                        raise
+                merged.run()
 
         self.population = self.evaluate_solutions(initial_pop)
 
@@ -328,11 +316,9 @@ class Nsgaii(Observable):
 
             for recoil in self.element_simulation.optimization_recoils:
                 # Run get_espe
-                self.element_simulation.calculate_espe(
+                espe_file = self.element_simulation.calculate_espe(
                     recoil, optimization_type=self.optimization_type,
                     ch=self.channel_width)
-                espe_file = Path(self.element_simulation.directory,
-                                 f"{recoil.get_full_name()}.simu")
                 objective_values.append(self.get_objective_values(espe_file))
 
         else:  # Evaluate fluence
@@ -341,14 +327,9 @@ class Nsgaii(Observable):
                 # Round solution appropriately
                 sol_fluence = gf.round_value_by_four_biggest(solution[0])
                 # Run get_espe
-                self.element_simulation.calculate_espe(
+                espe_file = self.element_simulation.calculate_espe(
                     recoil, ptimization_type=self.optimization_type,
                     ch=self.channel_width, fluence=sol_fluence)
-                # Read espe file
-                # TODO should it be recoil.get_full_name?
-                espe_file = Path(self.element_simulation.directory,
-                                 recoil.prefix + "-optfl.simu")
-
                 objective_values.append(self.get_objective_values(espe_file))
 
         pop = collections.namedtuple("Population",
@@ -362,9 +343,6 @@ class Nsgaii(Observable):
                                             ("area", "sum_distance"))
         optim_espe = gf.read_espe_file(espe_file)
         if optim_espe:
-            # Change from string to float items
-            optim_espe = list(np.float_(optim_espe))
-
             # Make spectra the same size
             optim_espe, measured_espe = gf.uniform_espe_lists(
                 [optim_espe, self.measured_espe],
@@ -929,7 +907,7 @@ class Nsgaii(Observable):
             self.on_error(self._get_message(
                 OptimizationState.FINISHED,
                 error=f"Preparation for optimization failed: {e}"))
-            self.clean_up()
+            self.clean_up(cancellation_token)
             return
 
         start_time = timer()
@@ -963,7 +941,7 @@ class Nsgaii(Observable):
                     OptimizationState.FINISHED,
                     error="Ensure that there is simulated data for this recoil "
                           "element before starting optimization."))
-                self.clean_up()
+                self.clean_up(cancellation_token)
                 return
             pop_sol, pop_obj = np.array(self.population[0]), \
                                np.array(self.population[1])
@@ -1013,7 +991,7 @@ class Nsgaii(Observable):
                 OptimizationState.FINISHED,
                 error="Could not form the Pareto front. Optimization may have "
                       "been stopped before any solutions were evaluated."))
-            self.clean_up()
+            self.clean_up(cancellation_token)
             return
 
         if self.optimization_type is OptimizationType.RECOIL:
@@ -1036,15 +1014,16 @@ class Nsgaii(Observable):
             avg = f_sum / len(pareto_optimal_sols)
             self.element_simulation.optimized_fluence = avg
 
-        self.clean_up()
+        self.clean_up(cancellation_token)
         self.save_results_to_file()
 
         self.on_completed(self._get_message(
             OptimizationState.FINISHED,
             evaluations_done=self.evaluations - evaluations))
 
-    def clean_up(self):
-        self.element_simulation.optimization_done = True
+    def clean_up(self, cancellation_token):
+        if cancellation_token is not None:
+            cancellation_token.request_cancellation()
         self.delete_temp_files()
 
     def delete_temp_files(self):
@@ -1382,64 +1361,32 @@ def get_ys(y_lower, y_upper, pop_size, z=None, lower_limit_at_first=False):
     return np.array([y_coords[0], y_coords[1], y_coords[2], low_limit])
 
 
-def check_spectra_change(elem_sim, optim_mode, seed,
-                         previous_avg=None, previous_espe=None):
-    """
-    If there are previous and current energy spectra, check the change in
-    distance between them. When this is smaller than the threshold,
-    mcerd can be stopped.
-
-    Args:
-        seed: seed of the first simulation process
-    """
-    # Check if erd file can be found (presimulation has been
-    # finished)
-    avg, espe = None, None
-
-    if optim_mode is OptimizationType.RECOIL:
-        recoils = elem_sim.optimization_recoils
-        opt = True
-        optfl = False
-        recoil_name = elem_sim.optimization_recoils[0].name
+def get_optim_espe(elem_sim, optimization_type):
+    if optimization_type is OptimizationType.RECOIL:
+        recoil = elem_sim.optimization_recoils[0]
     else:
-        recoils = elem_sim.recoil_elements
-        opt = False
-        optfl = True
-        recoil_name = "optfl"
+        recoil = elem_sim.recoil_elements[0]
 
-    erd_file = Path(
-        elem_sim.directory, fp.get_erd_file_name(
-            recoils[0], seed, optim_mode=optim_mode))
-    if erd_file.exists():
-        # TODO change this to try except instead of checking if the file exists
-        # Calculate new energy spectrum
-        elem_sim.calculate_espe(
-            recoils[0], optimize_recoil=opt, optimize_fluence=optfl)
-        espe_file = Path(
-            elem_sim.directory, f"{recoils[0].prefix}-{recoil_name}.simu")
-        espe = gf.read_espe_file(espe_file)
+    espe_file = elem_sim.calculate_espe(
+        recoil, optimization_type=optimization_type)
+    return gf.read_espe_file(espe_file)
 
-        if espe:
-            # Change items to float types
-            espe = list(np.float_(espe))
-            if previous_espe:
-                espe, previous_espe = gf.uniform_espe_lists(
-                    [espe, previous_espe], elem_sim.channel_width)
-                # Calculate distance between energy spectra
-                # TODO move this to math_functions
-                sum_diff = 0
-                i = 0
-                amount = 0
-                for point in espe:
-                    prev_point = previous_espe[i]
-                    p_y = float(point[1])
-                    pr_y = float(prev_point[1])
-                    if p_y != 0 or pr_y != 0:
-                        amount += 1
-                    diff = abs(p_y - pr_y)
-                    sum_diff += diff
-                    i += 1
-                # Take average of sum_diff (non-zero diffs)
-                avg = sum_diff / amount
 
-    return avg, espe
+def calculate_change(espe1, espe2, channel_width):
+    if not espe1 or not espe2:
+        return math.inf
+    uniespe1, uniespe2 = gf.uniform_espe_lists([espe1, espe2], channel_width)
+
+    # Calculate distance between energy spectra
+    # TODO move this to math_functions
+    sum_diff = 0
+    amount = 0
+    for point1, point2 in zip(uniespe1, uniespe2):
+        if point1[1] != 0 or point2[1] != 0:
+            amount += 1
+            sum_diff += abs(point1[1] - point2[1])
+    # Take average of sum_diff (non-zero diffs)
+    if amount:
+        return sum_diff / amount
+    else:
+        return math.inf
