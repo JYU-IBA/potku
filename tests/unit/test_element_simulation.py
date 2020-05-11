@@ -44,6 +44,9 @@ from modules.element_simulation import ElementSimulation
 
 from tests.utils import expected_failure_if
 
+from pathlib import Path
+from unittest.mock import patch
+
 
 class TestErdFileHandler(unittest.TestCase):
     @classmethod
@@ -286,11 +289,9 @@ class TestElementSimulation(unittest.TestCase):
             "minimum_main_scattering_angle": 14.0,
             "number_of_preions": 3
         }
-        self.elem_sim = ElementSimulation(tempfile.gettempdir(),
-                                          mo.get_request(),
-                                          [self.main_rec],
-                                          save_on_creation=False,
-                                          **self.kwargs)
+        self.elem_sim = ElementSimulation(
+            tempfile.gettempdir(), mo.get_request(), [self.main_rec],
+            save_on_creation=False, **self.kwargs)
 
     def test_get_full_name(self):
         self.assertEqual("Default", self.elem_sim.get_full_name())
@@ -370,6 +371,70 @@ class TestElementSimulation(unittest.TestCase):
         self.assertRaises(AttributeError,
                           lambda: utils.slots_test(self.elem_sim))
 
+    @patch("modules.get_espe.GetEspe.__init__", return_value=None)
+    @patch("modules.get_espe.GetEspe.run_get_espe")
+    def test_calculate_spectrum(self, mock_run, mock_get_espe):
+        self.main_rec.name = "main_rec"
+        optim_recoil = mo.get_recoil_element()
+        optim_recoil.prefix = "C"
+        optim_recoil.name = "optimized"
+        espe_recoil = mo.get_recoil_element()
+        espe_recoil.prefix = "H"
+        espe_recoil.name = "spectrum"
+
+        self.elem_sim.optimization_recoils = [optim_recoil]
+        self.elem_sim.simulation = mo.get_simulation()
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            self.elem_sim.directory = tmp_dir
+
+            # No optimization
+            rec_file = Path(
+                tmp_dir, f"{espe_recoil.get_full_name()}.recoil")
+            erd_file = Path(
+                tmp_dir, f"{self.main_rec.get_full_name()}.*.erd")
+            espe_file = Path(
+                tmp_dir, f"{espe_recoil.get_full_name()}.simu")
+
+            kwargs = {"recoil_element": espe_recoil}
+            self.assert_files_equal(
+                mock_get_espe, kwargs, rec_file, erd_file, espe_file)
+
+            # Recoil optimization
+            rec_file = Path(
+                tmp_dir, f"{espe_recoil.get_full_name()}.recoil")
+            erd_file = Path(
+                tmp_dir, f"{optim_recoil.prefix}-opt.*.erd")
+            espe_file = Path(
+                tmp_dir, f"{espe_recoil.get_full_name()}.simu")
+
+            kwargs = {"recoil_element": espe_recoil, "optimize_recoil": True}
+            self.assert_files_equal(
+                mock_get_espe, kwargs, rec_file, erd_file, espe_file)
+
+            # Fluence optimization
+            rec_file = Path(
+                tmp_dir, f"{espe_recoil.prefix}-optfl.recoil")
+            erd_file = Path(
+                tmp_dir, f"{self.main_rec.prefix}-optfl.*.erd")
+            espe_file = Path(
+                tmp_dir, f"{espe_recoil.prefix}-optfl.simu")
+
+            kwargs = {"recoil_element": espe_recoil, "optimize_fluence": True}
+            self.assert_files_equal(
+                mock_get_espe, kwargs, rec_file, erd_file, espe_file)
+
+    def assert_files_equal(self, mock_get_espe, kwargs, rec_file, erd_file,
+                           espe_file):
+        self.elem_sim.calculate_espe(**kwargs)
+
+        self.assertTrue(rec_file.exists())
+        rec_file.unlink()
+
+        args, = mock_get_espe.call_args[0]
+        self.assertEqual(rec_file, args["recoil_file"])
+        self.assertEqual(erd_file, args["erd_file"])
+        self.assertEqual(espe_file, args["spectrum_file"])
 
 def write_line(file):
     with open(file, "a") as file:
