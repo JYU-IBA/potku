@@ -195,10 +195,10 @@ class GlobalSettings:
         self.__config.add_section("depth_profile")
         self.__config.add_section("tof-e_graph")
         self.__config.set("default", "request_directory",
-                          self.__request_directory)
+                          str(self.__request_directory))
         self.__config.set("default",
                           "request_directory_last_open",
-                          self.__request_directory_last_open)
+                          str(self.__request_directory_last_open))
         keys = self.__element_colors.keys()
         for key in keys:
             self.__config.set("colors", key, self.__element_colors[key])
@@ -232,39 +232,33 @@ class GlobalSettings:
         with open(self.__config_file, 'wt+') as configfile:
             self.__config.write(configfile)
 
-    def get_request_directory(self):
+    def get_request_directory(self) -> Path:
         """Get default request directory.
         """
-        return self.__config["default"]["request_directory"]
+        return Path(self.__config["default"]["request_directory"])
 
-    def set_request_directory(self, directory):
+    def set_request_directory(self, directory: Path):
         """Save default request directory.
 
         Args:
             directory: String representing folder where requests will be saved
             by default.
         """
-        folders = directory.split("/")
-        os_dir = os.sep.join(folders)
-        self.__config["default"]["request_directory"] = os_dir
+        self.__config["default"]["request_directory"] = str(directory)
         self.save_config()
 
-    def get_request_directory_last_open(self):
+    def get_request_directory_last_open(self) -> Path:
         """Get directory where last request was opened.
         """
-        return self.__config["default"]["request_directory_last_open"]
+        return Path(self.__config["default"]["request_directory_last_open"])
 
-    def set_request_directory_last_open(self, directory):
+    def set_request_directory_last_open(self, directory: Path):
         """Save last opened request directory.
 
         Args:
             directory: String representing request folder.
         """
-        # TODO use the directory as Path object instead of converting it to
-        #  string
-        folders = str(directory).split("/")
-        os_dir = os.sep.join(folders)
-        self.__config["default"]["request_directory_last_open"] = os_dir
+        self.__config["default"]["request_directory_last_open"] = str(directory)
         self.save_config()
 
     def get_element_colors(self):
