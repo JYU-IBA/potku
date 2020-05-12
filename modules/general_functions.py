@@ -44,7 +44,6 @@ import logging
 from pathlib import Path
 from decimal import Decimal
 from modules.parsing import ToFListParser
-from subprocess import Popen
 from tests.utils import stopwatch
 
 
@@ -389,39 +388,35 @@ def carbon_stopping(element, isotope, energy, carbon_thickness, carbon_density):
     # parameters can be 0 but not None
     if element is not None and isotope is not None and energy is not None and \
             carbon_thickness is not None:
+        areal_density_tfu = (carbon_density * 1.0e3 * carbon_thickness * 1.0e-9) / (12.0 * 1.66053906660e-27) / 1.0e19
         if platform.system() == 'Windows':
-            print("Running gsto_stop.exe on Windows.")
-            args = [str(bin_dir / "gsto_stop.exe"),
-                    "{0}-{1}".format(isotope, element), 'C', str(energy)]
-            print(args)
-            p = Popen(args, cwd=bin_dir, stdin=subprocess.PIPE,
-                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            get_stop = str(bin_dir / "get_stop.exe")
         else:
-            print("Running gsto_stop on Unix.")
-            args = ['./gsto_stop', "{0}-{1}".format(isotope, element),
-                    'C', str(energy)]
-            print(args)
-            p = Popen(args, cwd=bin_dir, stdin=subprocess.PIPE,
-                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            get_stop = './get_stop';
 
+        args = [get_stop, "{0}{1}".format(isotope, element), str(energy),
+                '-l', 'C', '-t', "{0}tfu".format(areal_density_tfu)]
+        print(args)
+        p = subprocess.Popen(args, cwd=bin_dir, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         stdout, unused_stderr = p.communicate()
         output = stdout.decode()
         print(unused_stderr.decode())
-        print("Stopping: ", output, "eV/(1e15 at/cm^2)")
-        # amu = 1.660548782e-27
-        # Energy loss in eV calculated from energy loss (eV/10e15 at/cm^2)
-        # and thickness (kg/cm^2)
-        # e_loss = (float(output) / 1e15) * (carbon_thickness * 1e-9 / (12 *
-        # amu)) Original line
-
-        # This only works for carbon, and with one layer in the carbon timing
-        #  foil!!!
-        e_loss = float(output) * ((((carbon_density / 12 * 6.0221409e+23) / 1e7)
-                                   * carbon_thickness) / 1e15)
-        # e_loss = stopping * ( ( (density/( unit mass)*
-        # avogadro's number / (cm->nm) ) *  carbon_thickness) /1e15 )
-        e_loss *= 1.6021765e-19  # eV to Joule
-        return e_loss
+        print(output)
+        energy_loss = 0.0
+        for line in output.split("\n"):
+            try:
+                (var, val) = line.split(' = ', 1)
+                (x, unit) = val.split()[:2]
+                x = float(x)
+                if unit == 'keV':
+                    x *= 1.6021766e-16
+                if unit == 'MeV':
+                    x *= 1.6021766e-13
+                if var == 'delta E':
+                    energy_loss = x
+            except ValueError:
+                continue
+        return energy_loss
     else:
         print("No parameters to calculate carbon stopping energy.")
         return None
