@@ -691,17 +691,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
         Unlock or lock full edit.
         """
         if not self.full_edit_on:
+            # TODO use the function in dialog functions
             # Check if current element simulation is running
             add = None
-            if self.current_element_simulation.mcerd_objects and not\
-                    self.current_element_simulation.optimization_running:
+            if self.current_element_simulation.is_simulation_running() and not\
+                    self.current_element_simulation.is_optimization_running():
                 add = "Are you sure you want to unlock full edit for this" \
                       " running element simulation?\nIt will be stopped and " \
                       "all its simulation results will be deleted.\n\nUnlock " \
                       "full edit anyway?"
-            elif self.current_element_simulation.simulations_done and not \
-                    self.current_element_simulation.optimization_done and not\
-                    self.current_element_simulation.optimization_running:
+            elif self.current_element_simulation.is_simulation_finished() \
+                    and not \
+                    self.current_element_simulation.is_optimization_finished() \
+                    and not \
+                    self.current_element_simulation.is_optimization_running():
                 add = "Are you sure you want to unlock full edit for this " \
                       "element simulation?\nAll its simulation results will " \
                       "be deleted.\n\nUnlock full edit anyway?"
@@ -1203,23 +1206,16 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
 
         # Stop simulation if running
         if add:
-            if self.current_element_simulation.optimization_running:
-                self.current_element_simulation.stop()
-                self.current_element_simulation.optimization_stopped = True
-                self.current_element_simulation.optimization_running = False
-            else:
-                self.current_element_simulation.stop()
-                # Remove possible other recoil elements
-                for recoil_elem in element_simulation.recoil_elements:
-                    if recoil_elem is element_simulation.recoil_elements[0]:
-                        continue
-                    self.remove_recoil_element(recoil_elem.widgets[0],
-                                               element_simulation, recoil_elem)
-                    # Delete energy spectra that use recoil
-                    df.delete_recoil_espe(self.tab, recoil_elem.get_full_name())
+            self.current_element_simulation.stop()
+            # Remove possible other recoil elements
+            for recoil_elem in element_simulation.recoil_elements:
+                if recoil_elem is element_simulation.recoil_elements[0]:
+                    continue
+                self.remove_recoil_element(recoil_elem.widgets[0],
+                                           element_simulation, recoil_elem)
+                # Delete energy spectra that use recoil
+                df.delete_recoil_espe(self.tab, recoil_elem.get_full_name())
 
-        self.current_recoil_element = None
-        self.remove_element(element_simulation)
         # Remove recoil lines
         for recoil in element_simulation.recoil_elements:
             if recoil in self.other_recoils:
@@ -1240,8 +1236,10 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             self.tab.del_widget(
                 self.current_element_simulation.optimization_widget)
 
-        self.show_other_recoils()
+        self.current_recoil_element = None
         self.current_element_simulation = None
+        self.remove_element(element_simulation)
+        self.show_other_recoils()
         self.parent.elementInfoWidget.hide()
         self.update_plot()
 

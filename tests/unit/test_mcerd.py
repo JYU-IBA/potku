@@ -113,7 +113,7 @@ class TestParseOutput(unittest.TestCase):
             # observing.get_printer()
         ).subscribe(obs)
 
-        self.assertEqual(len(output) - 1, len(obs.nexts))
+        self.assertEqual(len(output) - 3, len(obs.nexts))
         self.assertTrue(all(
             x.keys() == y.keys() for x, y in itertools.combinations(
                 obs.nexts, 2)
@@ -143,7 +143,9 @@ class TestParseOutput(unittest.TestCase):
 
         self.assertEqual({
             "presim": False,
-            "msg": "angave 25.6119865",
+            "msg": "Beam ion: Z=17, M=34.969\n"
+                   "Atom:   5 6.0000 12.000000\n"
+                   "angave 25.6119865",
             "seed": 100,
             "name": "foo",
             "percentage": 100,

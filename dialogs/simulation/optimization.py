@@ -290,15 +290,14 @@ class OptimizationDialog(QtWidgets.QDialog, PropertySavingWidget,
             i += 1
 
         # TODO move following code to the result widget
-        ct = CancellationToken()
         nsgaii = Nsgaii(element_simulation=self.element_simulation,
                         measurement=used_measurement, cut_file=cut_file,
-                        ch=self.ch, cancellation_token=ct,
-                        **self.parameters_widget.get_properties())
+                        ch=self.ch, **self.parameters_widget.get_properties())
 
         # Optimization running thread
+        ct = CancellationToken()
         optimization_thread = threading.Thread(
-            target=nsgaii.start_optimization)
+            target=nsgaii.start_optimization, kwargs={"cancellation_token": ct})
 
         # Create necessary results widget
         mode_recoil = self.current_mode == "recoil"

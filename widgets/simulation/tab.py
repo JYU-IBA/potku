@@ -163,7 +163,6 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
                 self.optimization_result_widget.results_accepted.connect(
                     self.simulation_target.results_accepted.emit
                 )
-                element_simulation.optimization_done = True
                 element_simulation.optimization_widget = \
                     self.optimization_result_widget
                 icon = self.icon_manager.get_icon("potku_icon.ico")
@@ -172,7 +171,6 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
             elif element_simulation.optimized_fluence:
                 self.optimization_result_widget = OptimizedFluenceWidget(
                     element_simulation)
-                element_simulation.optimization_done = True
                 element_simulation.optimization_widget = \
                     self.optimization_result_widget
                 icon = self.icon_manager.get_icon("potku_icon.ico")
@@ -190,11 +188,10 @@ class SimulationTabWidget(QtWidgets.QWidget, BaseTab):
         for file in os.listdir(self.simulation.directory):
             if file.endswith(".save"):
                 # TODO this can be a problem if the request folder has been
-                # copied elsewhere, as the '.save' file has the old file
-                # paths saved
-                file_path = os.path.join(self.simulation.directory, file)
+                #   copied elsewhere, as the '.save' file has the old file
+                #   paths saved
+                file_path = Path(self.simulation.directory, file)
                 save_file_int = file.rsplit('_', 1)[1].split(".save")[0]
-                lines = []
                 with open(file_path, 'r') as save_file:
                     lines = save_file.readlines()
                 if not lines:

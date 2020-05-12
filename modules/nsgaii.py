@@ -28,6 +28,9 @@ __version__ = "2.0"
 import numpy as np
 import os
 import collections
+import rx
+import subprocess
+import math
 
 import modules.optimization as opt
 import modules.general_functions as gf
@@ -35,38 +38,17 @@ import modules.file_paths as fp
 import modules.math_functions as mf
 
 from pathlib import Path
-from enum import Enum
-from enum import IntEnum
 from timeit import default_timer as timer
+from rx import operators as ops
 
 from modules.recoil_element import RecoilElement
 from modules.point import Point
 from modules.parsing import CSVParser
 from modules.energy_spectrum import EnergySpectrum
 from modules.observing import Observable
-
-
-class OptimizationType(IntEnum):
-    RECOIL = 1
-    FLUENCE = 2
-
-
-class OptimizationState(Enum):
-    PREPARING = 1
-    RUNNING = 2
-    FINISHED = 3
-    ERROR = 4
-
-    def __str__(self):
-        """Returns a string representation of the SimulationState.
-        """
-        if self == OptimizationState.PREPARING:
-            return "Preparing"
-        if self == OptimizationState.RUNNING:
-            return "Running"
-        if self == OptimizationState.ERROR:
-            return "Error"
-        return "Finished"
+from modules.concurrency import CancellationToken
+from modules.enums import OptimizationType
+from modules.enums import OptimizationState
 
 
 class Nsgaii(Observable):
@@ -85,8 +67,7 @@ class Nsgaii(Observable):
                  recoil_type="box", number_of_processes=1, cross_p=0.9, mut_p=1,
                  stop_percent=0.3, check_time=20, ch=0.025,
                  measurement=None, cut_file=None, dis_c=20,
-                 dis_m=20, check_max=900, check_min=0, skip_simulation=False,
-                 cancellation_token=None):
+                 dis_m=20, check_max=900, check_min=0, skip_simulation=False):
         """
         Initialize the NSGA-II algorithm with needed parameters and start
         running it.
@@ -100,8 +81,8 @@ class Nsgaii(Observable):
             lower_limits: Lower limit(s) for a variable in a solution.
             optimization_type: Whether to optimize recoil or fluence.
             recoil_type: Type of recoil: either "box" (4 points or 5),
-                "two-peak" (high areas at both ends of recoil, low in the middle)
-                or "free" (no limits to the shape of the recoil).
+                "two-peak" (high areas at both ends of recoil, low in the
+                middle) or "free" (no limits to the shape of the recoil).
                 number_of_processes: How many processes are used in MCERD
                 calculation.
             cross_p: Crossover probability.
@@ -110,7 +91,7 @@ class Nsgaii(Observable):
             average change between checkups).
             check_time: Time interval for checking if MCERD should be stopped.
             ch: Channel with for running get_espe.
-            used in comparing the simulated energy spectra.
+                used in comparing the simulated energy spectra.
             dis_c: Distribution index for crossover. When this is big,
                 a new solution is close to its parents.
             dis_m: Distribution for mutation.
@@ -136,7 +117,7 @@ class Nsgaii(Observable):
 
         # MCERd specific parameters
         self.number_of_processes = number_of_processes
-        self.mcerd_run = skip_simulation
+        self._skip_simulation = skip_simulation
         self.stop_percent = stop_percent
         self.check_time = check_time
         self.check_max = check_max
@@ -159,45 +140,34 @@ class Nsgaii(Observable):
         self.population = None
         self.measured_espe = None
 
-        self.cancellation_token = cancellation_token
-
-    def __prepare_optimization(self):
-        """Performs internal preparation before optimization begins. If this
-        returns False, optimization should not begin.
+    def __prepare_optimization(self, initial_pop=None, cancellation_token=None):
+        """Performs internal preparation before optimization begins.
         """
+        # Calculate the energy spectrum that the optimized solutions are
+        # compared to.
         if self.measurement is None:
             raise ValueError("Optimization could not be prepared, "
                              "no measurement defined.")
 
         self.element_simulation.optimized_fluence = None
-        self.element_simulation.optimization_done = False
-        self.element_simulation.optimization_stopped = False
-        self.element_simulation.optimization_running = True
 
         es = EnergySpectrum(self.measurement, [self.cut_file],
                             self.channel_width, no_foil=True)
 
+        # TODO maybe just use he value returned by calc_spectrum?
         x = es.calculate_spectrum(no_foil=True)
         # Add result files
         hist_file = Path(self.measurement.directory_energy_spectra,
                          f"{self.cut_file.stem}.no_foil.hist")
-
-        # TODO If mcerd run was stopped by closing the widget -> optimization
-        #   needs to stop
 
         parser = CSVParser((0, float), (1, float))
         self.measured_espe = list(parser.parse_file(hist_file, method="row"))
 
         # Previous erd files are used as the starting point so combine them
         # into a single file
-        if self.optimization_type is OptimizationType.RECOIL:
-            erd_file_name = fp.get_erd_file_name(
-                self.element_simulation.recoil_elements[0], "test",
-                optim_mode="recoil")
-        else:
-            erd_file_name = fp.get_erd_file_name(
-                self.element_simulation.recoil_elements[0], "test",
-                optim_mode="fluence")
+        erd_file_name = fp.get_erd_file_name(
+            self.element_simulation.recoil_elements[0], "combined",
+            optim_mode=self.optimization_type)
 
         gf.combine_files(self.element_simulation.get_erd_files(),
                          Path(self.element_simulation.directory,
@@ -208,12 +178,85 @@ class Nsgaii(Observable):
         # counting
         self.modify_measurement()
 
+        # Create initial population
+        if initial_pop is None:
+            initial_pop = self.initialize_population()
+
         # Find bit variable lengths if necessary
         if self.optimization_type is OptimizationType.RECOIL:
             self.find_bit_variable_lengths()
+            # Empty the list of optimization recoils
+
+            # Form points from first solution. First solution of first
+            # population will always cover the whole x axis range between
+            # lower and upper values -> mcerd never needs to be run again
+            self.element_simulation.optimization_recoils = [
+                self.form_recoil(initial_pop[0])
+            ]
+
+        if not self._skip_simulation:
+            def stop_if_cancelled(optim_ct, mcerd_ct):
+                if optim_ct.is_cancellation_requested():
+                    mcerd_ct.request_cancellation()
+                return mcerd_ct.is_cancellation_requested()
+
+            ct = CancellationToken()
+            observable = self.element_simulation.start(
+                self.number_of_processes, start_value=201,
+                optimization_type=self.optimization_type,
+                cancellation_token=ct,
+                print_to_console=True, max_time=self.check_max)
+
+            if observable is not None:
+                self.on_next(self._get_message(
+                    OptimizationState.SIMULATING,
+                    evaluations_left=self.evaluations))
+
+                ct_check = rx.timer(0, 0.2).pipe(
+                    ops.take_while(lambda _: not stop_if_cancelled(
+                        cancellation_token, ct)),
+                    ops.filter(lambda _: False),
+                )
+
+                spectra_chk = rx.timer(self.check_min, self.check_time).pipe(
+                    ops.merge(ct_check),
+                    ops.map(lambda _: get_optim_espe(
+                        self.element_simulation, self.optimization_type)),
+                    ops.scan(
+                        lambda prev_espe, next_espe: (prev_espe[1], next_espe),
+                        seed=[None, None]),
+                    ops.map(lambda espes: calculate_change(
+                        *espes, self.element_simulation.channel_width)),
+                    ops.take_while(
+                        lambda change: change > self.stop_percent and not
+                        ct.is_cancellation_requested()
+                    ),
+                    ops.do_action(
+                        on_completed=ct.request_cancellation)
+                )
+                merged = rx.merge(observable, spectra_chk).pipe(
+                    ops.take_while(
+                        lambda x: not isinstance(x, dict) or x["is_running"],
+                        inclusive=True)
+                )
+                # Simulation needs to finish before optimization can start
+                # so we run this synchronously.
+                # TODO use callback instead of running sync
+                merged.run()
+                # TODO should not have to call this manually
+                self.element_simulation._clean_up(ct)
+
+            else:
+                raise ValueError(
+                    "Could not start simulation. Check that simulation is not "
+                    "currently running.")
+
+        self.population = self.evaluate_solutions(initial_pop)
 
     @staticmethod
     def _get_message(state, **kwargs):
+        """Returns a dictionary with the state of the optimization and
+        other """
         return {
             "state": state,
             **kwargs
@@ -260,10 +303,12 @@ class Nsgaii(Observable):
                     ind_front_prev = front[rank[j - 1]]
                     # Normalize the objective function values
                     dist = pop_obj[(ind_front_next, i)] - \
-                           pop_obj[(ind_front_prev, i)]
+                        pop_obj[(ind_front_prev, i)]
                     if dist == 0:
                         current_distance = 0
                     else:
+                        # TODO raises RuntimeWarning here if simulation time
+                        #  outs before presim ends
                         current_distance = dist / (f_max[i] - f_min[i])
                     crowd_dis[ind_pop] = crowd_dis[ind_pop] + current_distance
         return crowd_dis
@@ -280,73 +325,26 @@ class Nsgaii(Observable):
         """
         objective_values = []
         if self.optimization_type is OptimizationType.RECOIL:
-            # Empty the list of optimization recoils
-            self.element_simulation.optimization_recoils = []
-
-            # Form points from first solution. First solution of first
-            # population will always cover the whole x axis range between
-            # lower and upper values -> mcerd never needs to be run again
-            current_recoil = self.form_recoil(sols[0])
-            # Run mcerd for first solution
-            self.element_simulation.optimization_recoils.append(current_recoil)
-            if not self.mcerd_run:
-                # TODO run this in a thread so we could use the same
-                #  cancellation token as NSGAII uses
-                self.element_simulation.start(
-                    self.number_of_processes, start_value=201,
-                    optimization_type=self.optimization_type,
-                    stop_p=self.stop_percent, check_t=self.check_time,
-                    check_max=self.check_max, heck_min=self.check_min,
-                    cancellation_token=self.cancellation_token)
-                if self.element_simulation.optimization_stopped:
-                    return None
-                self.mcerd_run = True
-
-            # Create other recoils
-            for solution in sols[1:]:
-                recoil = self.form_recoil(solution)
-                self.element_simulation.optimization_recoils.append(recoil)
+            self.element_simulation.optimization_recoils = [
+                self.form_recoil(solution) for solution in sols
+            ]
 
             for recoil in self.element_simulation.optimization_recoils:
-                if self.element_simulation.optimization_stopped:
-                    return None
                 # Run get_espe
-                self.element_simulation.calculate_espe(
+                espe_file = self.element_simulation.calculate_espe(
                     recoil, optimization_type=self.optimization_type,
                     ch=self.channel_width)
-                espe_file = Path(self.element_simulation.directory,
-                                 f"{recoil.get_full_name()}.simu")
                 objective_values.append(self.get_objective_values(espe_file))
 
         else:  # Evaluate fluence
-            if not self.mcerd_run:
-                # TODO maybe move this to the __prepare method?
-                self.element_simulation.start(
-                    self.number_of_processes, 201,
-                    optimization_type=self.optimization_type,
-                    stop_p=self.stop_percent, check_t=self.check_time,
-                    check_max=self.check_max, check_min=self.check_min,
-                    cancellation_token=self.cancellation_token
-                )
-                if self.element_simulation.optimization_stopped:
-                    return None
-                self.mcerd_run = True
-
             recoil = self.element_simulation.recoil_elements[0]
             for solution in sols:
-                if self.element_simulation.optimization_stopped:
-                    return None
                 # Round solution appropriately
                 sol_fluence = gf.round_value_by_four_biggest(solution[0])
                 # Run get_espe
-                self.element_simulation.calculate_espe(
-                    recoil, ptimization_type=self.optimization_type,
+                espe_file = self.element_simulation.calculate_espe(
+                    recoil, optimization_type=self.optimization_type,
                     ch=self.channel_width, fluence=sol_fluence)
-                # Read espe file
-                # TODO should it be recoil.get_full_name?
-                espe_file = Path(self.element_simulation.directory,
-                                 recoil.prefix + "-optfl.simu")
-
                 objective_values.append(self.get_objective_values(espe_file))
 
         pop = collections.namedtuple("Population",
@@ -360,9 +358,6 @@ class Nsgaii(Observable):
                                             ("area", "sum_distance"))
         optim_espe = gf.read_espe_file(espe_file)
         if optim_espe:
-            # Change from string to float items
-            optim_espe = list(np.float_(optim_espe))
-
             # Make spectra the same size
             optim_espe, measured_espe = gf.uniform_espe_lists(
                 [optim_espe, self.measured_espe],
@@ -598,7 +593,6 @@ class Nsgaii(Observable):
         Return:
             Created population with solutions and objective function values.
         """
-        init_sols = None
         if self.optimization_type is OptimizationType.RECOIL:
             if len(self.upper_limits) < 2:
                 x_upper = 1.0
@@ -620,7 +614,7 @@ class Nsgaii(Observable):
                     x_coords = get_xs(x_lower, x_upper, self.pop_size)
 
                     self.__const_var_i.append(0)
-                    self.__const_var_i.appe=nd(4)
+                    self.__const_var_i.append(4)
 
                     y_coords = get_ys(y_lower, y_upper, self.pop_size)
 
@@ -763,11 +757,10 @@ class Nsgaii(Observable):
             # Create a random population
             init_sols = np.random.random_sample(
                 (self.pop_size, self.sol_size)) * \
-                        (self.upper_limits - self.lower_limits) \
-                        + self.lower_limits
+                (self.upper_limits - self.lower_limits) \
+                + self.lower_limits
 
-        pop = self.evaluate_solutions(init_sols)
-        return pop
+        return init_sols
 
     def modify_measurement(self):
         """
@@ -883,7 +876,7 @@ class Nsgaii(Observable):
         pop_n, t = np.shape(population[0])
         # Sort intermediate population based on non-domination
         front_no, last_front_no = Nsgaii.nd_sort(population[1], pop_n, pop_size)
-        include_in_next = [False for i in range(front_no.size)]
+        include_in_next = [False for _ in range(front_no.size)]
         # Find all individuals that belong to better fronts, except the last one
         # that doesn't fit
         for i in range(front_no.size):
@@ -909,7 +902,8 @@ class Nsgaii(Observable):
 
         return next_pop, front_no[index], crowd_dis[index]
 
-    def start_optimization(self, starting_solutions=None):
+    def start_optimization(self, starting_solutions=None,
+                           cancellation_token=None):
         """
         Start the optimization. This includes sorting based on
         non-domination and crowding distance, creating offspring population
@@ -919,29 +913,24 @@ class Nsgaii(Observable):
         Args:
             starting_solutions: First solutions used in optimization. If
                 None, initialize new solutions.
+            cancellation_token: CancellationToken that is used to stop the
+                optimization before all evaluations have been evaluated.
         """
-        self.on_next(self._get_message(OptimizationState.PREPARING,
-                                       evaluations_left=self.evaluations))
+        self.on_next(self._get_message(
+            OptimizationState.PREPARING, evaluations_left=self.evaluations))
         try:
-            self.__prepare_optimization()
-        except OSError as e:
+            self.__prepare_optimization(starting_solutions, cancellation_token)
+        except (OSError, ValueError, subprocess.SubprocessError) as e:
             self.on_error(self._get_message(
                 OptimizationState.FINISHED,
                 error=f"Preparation for optimization failed: {e}"))
-            self.clean_up()
+            self.clean_up(cancellation_token)
             return
 
         start_time = timer()
 
-        self.on_next(self._get_message(OptimizationState.RUNNING,
-                                       evaluations_left=self.evaluations))
-
-        # Create initial population
-        if starting_solutions is not None:
-            # Change pop_size and sol_size to match given solutions
-            self.population = self.evaluate_solutions(starting_solutions)
-        else:
-            self.population = self.initialize_population()
+        self.on_next(self._get_message(
+            OptimizationState.RUNNING, evaluations_left=self.evaluations))
 
         # Sort the initial population according to non-domination
         front_no, last_front_no = self.nd_sort(self.population[1],
@@ -953,8 +942,8 @@ class Nsgaii(Observable):
         # In a loop until number of evaluations is reached:
         evaluations = self.evaluations
         while evaluations > 0:
-            if self.cancellation_token is not None:
-                if self.cancellation_token.is_cancellation_requested():
+            if cancellation_token is not None:
+                if cancellation_token.is_cancellation_requested():
                     break
             # Join front_no and crowd_dis with transpose to get one array
             fit = np.vstack((front_no, crowd_dis)).T
@@ -969,17 +958,15 @@ class Nsgaii(Observable):
                     OptimizationState.FINISHED,
                     error="Ensure that there is simulated data for this recoil "
                           "element before starting optimization."))
-                self.clean_up()
+                self.clean_up(cancellation_token)
                 return
             pop_sol, pop_obj = np.array(self.population[0]), \
-                               np.array(self.population[1])
+                np.array(self.population[1])
             pool = [pop_sol[pool_ind, :], pop_obj[pool_ind, :]]
             # Form offspring solutions with this pool, and do variation on them
             offspring = self.variation(pool[0])
             # Evaluate offspring solutions to get offspring population
             offspring_pop = self.evaluate_solutions(offspring)
-            if self.element_simulation.optimization_stopped:
-                return
             # Join parent population and offspring population
             joined_sols = np.vstack((self.population[0], offspring_pop[0]))
             joined_objs = np.vstack((self.population[1], offspring_pop[1]))
@@ -1019,9 +1006,9 @@ class Nsgaii(Observable):
         except TypeError:
             self.on_error(self._get_message(
                 OptimizationState.FINISHED,
-                error="Could not form the Pareto front. Optimization may have"
+                error="Could not form the Pareto front. Optimization may have "
                       "been stopped before any solutions were evaluated."))
-            self.clean_up()
+            self.clean_up(cancellation_token)
             return
 
         if self.optimization_type is OptimizationType.RECOIL:
@@ -1044,16 +1031,16 @@ class Nsgaii(Observable):
             avg = f_sum / len(pareto_optimal_sols)
             self.element_simulation.optimized_fluence = avg
 
-        self.clean_up()
+        self.clean_up(cancellation_token)
         self.save_results_to_file()
 
         self.on_completed(self._get_message(
             OptimizationState.FINISHED,
             evaluations_done=self.evaluations - evaluations))
 
-    def clean_up(self):
-        self.element_simulation.optimization_done = True
-        self.element_simulation.stop()
+    def clean_up(self, cancellation_token):
+        if cancellation_token is not None:
+            cancellation_token.request_cancellation()
         self.delete_temp_files()
 
     def delete_temp_files(self):
@@ -1166,7 +1153,7 @@ class Nsgaii(Observable):
                 else:
                     length = self.bit_length_y
                 if i in self.__const_var_i:
-                    do_mutation[:,bit_index: bit_index + length] = False
+                    do_mutation[:, bit_index: bit_index + length] = False
                 bit_index += length
 
             # Indicate mutation for all variables that have a random number
@@ -1391,20 +1378,32 @@ def get_ys(y_lower, y_upper, pop_size, z=None, lower_limit_at_first=False):
     return np.array([y_coords[0], y_coords[1], y_coords[2], low_limit])
 
 
-if __name__ == "__main__":
-    # for testing purposes
-    import tempfile
-    import tests.mock_objects as mo
+def get_optim_espe(elem_sim, optimization_type):
+    if optimization_type is OptimizationType.RECOIL:
+        recoil = elem_sim.optimization_recoils[0]
+    else:
+        recoil = elem_sim.recoil_elements[0]
 
-    cut_file = Path("..", "sample_data", "Ecaart-11-mini", "Tof-E_65-mini",
-                    "cuts", "Tof-E_65-mini.1H.0.cut")
+    espe_file = elem_sim.calculate_espe(
+        recoil, optimization_type=optimization_type)
+    return gf.read_espe_file(espe_file)
 
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        m = mo.get_measurement()
-        e = mo.get_element_simulation()
 
-        # TODO crashes because of MockRequest
-        n = Nsgaii(10, cut_file=cut_file, measurement=m,
-                   element_simulation=e)
+def calculate_change(espe1, espe2, channel_width):
+    if not espe1 or not espe2:
+        return math.inf
+    uniespe1, uniespe2 = gf.uniform_espe_lists([espe1, espe2], channel_width)
 
-        n.start_optimization()
+    # Calculate distance between energy spectra
+    # TODO move this to math_functions
+    sum_diff = 0
+    amount = 0
+    for point1, point2 in zip(uniespe1, uniespe2):
+        if point1[1] != 0 or point2[1] != 0:
+            amount += 1
+            sum_diff += abs(point1[1] - point2[1])
+    # Take average of sum_diff (non-zero diffs)
+    if amount:
+        return sum_diff / amount
+    else:
+        return math.inf

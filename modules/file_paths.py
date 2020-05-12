@@ -30,7 +30,7 @@ __version__ = "2.0"
 
 from pathlib import Path
 
-# from modules.nsgaii import OptimizationType
+from modules.enums import OptimizationType
 
 
 def get_erd_file_name(recoil_element, seed, optim_mode=None):
@@ -39,18 +39,18 @@ def get_erd_file_name(recoil_element, seed, optim_mode=None):
 
     Args:
         recoil_element: recoil element
-        seed: seed of the simulation
+        seed: seed of the simulation or '*'
         optim_mode: either None, 'recoil' or 'fluence'
 
     Return:
         .erd file name
     """
     if optim_mode is None:
-        return f"{recoil_element.prefix}-{recoil_element.name}." \
+        return f"{recoil_element.get_full_name()}." \
                f"{seed}.erd"
-    if optim_mode == 2:
+    if optim_mode is OptimizationType.FLUENCE:
         return f"{recoil_element.prefix}-optfl.{seed}.erd"
-    if optim_mode == 1:
+    if optim_mode is OptimizationType.RECOIL:
         return f"{recoil_element.prefix}-opt.{seed}.erd"
 
     raise ValueError(f"Unknown optimization mode '{optim_mode}'")

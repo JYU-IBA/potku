@@ -111,13 +111,11 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
             pass
         super().closeEvent(evnt)
 
-    def update_progress(self, evaluations):
+    def update_progress(self, evaluations, state):
         """
         Show calculated solutions in the widget.
         """
-        text = f"{evaluations} evaluations left. Running."
-        if self.element_simulation.optimization_mcerd_running:
-            text += " Simulating."
+        text = f"{evaluations} evaluations left. {state}."
         self.progressLabel.setText(text)
 
     def show_results(self, evaluations):
@@ -128,13 +126,21 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
         self.recoil_atoms.show_recoils()
 
     def on_next_handler(self, msg):
-        self.update_progress(msg["evaluations_left"])
+        if "evaluations_left" in msg:
+            self.update_progress(msg["evaluations_left"], msg["state"])
         if "pareto_front" in msg:
             self.pareto_front.update_pareto_front(msg["pareto_front"])
 
     def on_error_handler(self, err):
-        text = f"Error encountered: {err['error']} Optimization stopped."
+        try:
+            err_msg = err["error"]
+        except TypeError:
+            # rx error
+            err_msg = err
+
+        text = f"Error encountered: {err_msg} Optimization stopped."
         self.progressLabel.setText(text)
 
-    def on_completed_handler(self, msg):
-        self.show_results(msg["evaluations_done"])
+    def on_completed_handler(self, msg=None):
+        if msg is not None:
+            self.show_results(msg["evaluations_done"])

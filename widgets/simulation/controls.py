@@ -28,10 +28,9 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen \n Juhani Sundell"
 __version__ = "2.0"
 
-import threading
-
 import widgets.binding as bnd
 
+from rx import operators as ops
 from pathlib import Path
 
 from modules.element_simulation import SimulationState
@@ -84,6 +83,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         fset=_process_count_to_label)
     observed_atoms = bnd.bind("observed_atom_count_label")
     simulation_state = bnd.bind("state_label")
+    mcerd_error = bnd.bind("mcerd_error_lbl")
 
     # TODO these styles could use some brush up...
     PRESIM_PROGRESS_STYLE = """
@@ -130,6 +130,10 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         self.stop_button.setIcon(QIcon("ui_icons/reinhardt/player_stop.svg"))
         self.enable_buttons()
 
+        self.mcerd_error_lbl.hide()
+
+        self.__unsub = None
+
         self.recoil_name_changed = recoil_name_changed
         if self.recoil_name_changed is not None:
             self.recoil_name_changed.connect(self._set_name)
@@ -152,14 +156,19 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         if recoil_elem is self.element_simulation.get_main_recoil():
             self.recoil_name = recoil_elem.get_full_name()
 
-    def enable_buttons(self):
+    def enable_buttons(self, starting=False):
         """Switches the states of run and stop button depending on the state
         of the ElementSimulation object.
         """
         # TODO make sure that this works when first started
-        start_enabled = not self.element_simulation.is_simulation_running()
-        stop_enabled = not (start_enabled or
-                            self.element_simulation.is_optimization_running())
+        if self.element_simulation.is_optimization_running():
+            start_enabled, stop_enabled = False, False
+        else:
+            start_enabled = not (self.element_simulation.is_simulation_running()
+                                 and starting)
+            stop_enabled = not (
+                    start_enabled or
+                    self.element_simulation.is_optimization_running())
         self.run_button.setEnabled(start_enabled)
         self.stop_button.setEnabled(stop_enabled)
         self.processes_spinbox.setEnabled(start_enabled)
@@ -187,6 +196,13 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
                 use_old_erd_files = True
         elif status["state"] == SimulationState.NOTRUN:
             use_old_erd_files = False
+        else:
+            self.mcerd_error = "Simulation currently running. Cannot start a " \
+                               "new one."
+            self.mcerd_error_lbl.show()
+            return
+
+        self.mcerd_error_lbl.hide()
 
         # Lock full edit
         # TODO move this to ElementSimulation's start method
@@ -196,17 +212,21 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
             self.recoil_dist_widget.full_edit_on = False
             self.recoil_dist_widget.update_plot()
 
+        self.finished_processes = 0, self.process_count
+        self.remove_progress_bars()
+
         # TODO indicate to user that ion counts are shared between processes
-        # TODO store the unsubscribers returned by start method
-        starter_thread = threading.Thread(
-            target=lambda: self.element_simulation.start(
-                self.process_count,
-                use_old_erd_files=use_old_erd_files,
-                shared_ions=True,
-                cancellation_token=CancellationToken(),
-                observer=self
-            ))
-        starter_thread.start()
+        observable = self.element_simulation.start(
+            self.process_count, use_old_erd_files=use_old_erd_files,
+            shared_ions=True, cancellation_token=CancellationToken()
+        )
+        if observable is not None:
+            self.__unsub = observable.pipe(
+                ops.scan(lambda acc, x: {
+                    **x,
+                    "started":  x["is_running"] and not acc["started"]
+                }, seed={"started": False})
+            ).subscribe(self)
 
     def show_status(self, status):
         """Updates the status of simulation in the GUI
@@ -246,44 +266,52 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         Args:
             status: status update sent by ElementSimulation or observable stream
         """
-
-        if "msg" in status:
-            if status["msg"] == "Presimulation finished":
-                style = SimulationControlsWidget.SIM_PROGRESS_STYLE
-            else:
-                style = None
-            self.update_progress_bar(
-                status["seed"], status["percentage"], stylesheet=style)
+        if status["msg"] == "Presimulation finished":
+            style = SimulationControlsWidget.SIM_PROGRESS_STYLE
         else:
-            if status["state"] == SimulationState.STARTING:
-                self.finished_processes = 0, self.process_count
-                self.remove_progress_bars()
-                self.enable_buttons()
-            self.show_status(status)
+            style = None
+        self.update_progress_bar(
+            status["seed"], status["percentage"], stylesheet=style)
+
+        self.finished_processes = (
+            status["finished_processes"], status["total_processes"])
+
+        if status["started"]:
+            self.enable_buttons(starting=True)
+
+        self.show_status(status)
 
     def on_error_handler(self, err):
         """Called when observable (either ElementSimulation or the rx stream
         reports an error.
         """
-        # For now just print any errors that the stream may throw at us
-        # TODO add an error label
-        print("Error:", err)
+        self.mcerd_error = err
+        self.mcerd_error_lbl.show()
+
+        self.enable_buttons()
+        self.show_status(self.element_simulation.get_current_status())
+        if self.__unsub is not None:
+            self.__unsub.dispose()
 
     @QtCore.pyqtSlot()
     @QtCore.pyqtSlot(object)
-    def on_completed_handler(self, *statuses):
+    def on_completed_handler(self, status=None):
         """This method is called when the ElementSimulation has run all of
         its simulation processes.
 
         GUI is updated to show the status and button states are switched
         accordingly.
         """
-        if statuses:
-            self.show_status(statuses[0])
-            self.enable_buttons()
+        if status is None:
+            self.show_status(self.element_simulation.get_current_status())
+            if self.__unsub is not None:
+                self.__unsub.dispose()
         else:
-            fin, all_proc = self.finished_processes
-            self.finished_processes = fin + 1, self.process_count
+            self.show_status(status)
+        for process_bar in self.progress_bars.values():
+            # TODO this only affects the number, adjust the color too
+            process_bar.setEnabled(False)
+        self.enable_buttons()
 
     def remove_progress_bars(self):
         """Removes all progress bars and seed labels.

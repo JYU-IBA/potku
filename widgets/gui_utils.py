@@ -370,7 +370,7 @@ class GUIObserver(Observer, abc.ABC, metaclass=QtABCMeta):
         pass
 
     @abc.abstractmethod
-    def on_completed_handler(self, *msg):
+    def on_completed_handler(self, msg=None):
         """Method that is invoked when an observable reports that is has
         completed its process.
         """
@@ -386,11 +386,11 @@ class GUIObserver(Observer, abc.ABC, metaclass=QtABCMeta):
         """
         self.__signaller.on_error_sig.emit(err)
 
-    def on_completed(self, *msg):
+    def on_completed(self, msg=None):
         """Inherited from modules.observing.Observable.
         """
-        if msg:
-            self.__signaller.on_completed_sig[object].emit(*msg)
+        if msg is not None:
+            self.__signaller.on_completed_sig[object].emit(msg)
         else:
             self.__signaller.on_completed_sig.emit()
 

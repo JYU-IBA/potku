@@ -33,7 +33,7 @@ __version__ = "2.0"
 
 import bisect
 import hashlib
-import numpy
+import numpy as np
 import os
 import platform
 import shutil
@@ -166,7 +166,7 @@ def read_espe_file(espe_file):
 
     Returns:
         Returns energy spectrum data as a list.
-        """
+    """
     data = []
     try:
         with open(espe_file, 'r') as file:
@@ -180,7 +180,7 @@ def read_espe_file(espe_file):
         # File was not found, or it could not be decoded (for example, it could
         # have been .png)
         pass
-    return data
+    return list(np.float_(data))
 
 
 def calculate_spectrum(tof_listed_files, spectrum_width, measurement,
@@ -230,12 +230,9 @@ def calculate_spectrum(tof_listed_files, spectrum_width, measurement,
                         "{0}.{1}{2}.hist".format(os.path.splitext(file)[0],
                                                  key,
                                                  foil_txt))
-        numpy_array = numpy.array(histed,
-                                  dtype=[('float', float),
-                                         ('int', int)])
+        numpy_array = np.array(histed, dtype=[('float', float), ('int', int)])
 
-        numpy.savetxt(filename, numpy_array, delimiter=" ",
-                      fmt="%5.5f %6d")
+        np.savetxt(filename, numpy_array, delimiter=" ", fmt="%5.5f %6d")
 
     return histed_files
 
@@ -328,18 +325,13 @@ def tof_list(cut_file, directory, save_output=False, no_foil=False,
                 directory,
                 "{0}{1}.tof_list".format(Path(cut_file).stem,
                                          foil_txt))
-            numpy_array = numpy.array(tof_output,
-                                      dtype=[('float1', float),
-                                             ('float2', float),
-                                             ('float3', float),
-                                             ('int1', int),
-                                             ('float4', float),
-                                             ('string', numpy.str_, 3),
-                                             ('float5', float),
-                                             ('int2', int)])
-            numpy.savetxt(directory_es_file, numpy_array,
-                          delimiter=" ",
-                          fmt="%5.1f %5.1f %10.5f %3d %8.4f %s %6.3f %d")
+            numpy_array = np.array(
+                tof_output, dtype=[
+                    ('float1', float), ('float2', float), ('float3', float),
+                    ('int1', int), ('float4', float), ('string', np.str_, 3),
+                    ('float5', float), ('int2', int)])
+            np.savetxt(directory_es_file, numpy_array, delimiter=" ",
+                       fmt="%5.1f %5.1f %10.5f %3d %8.4f %s %6.3f %d")
         return tof_output
     except Exception as e:
         msg = f"Error in tof_list: {e}"
@@ -749,9 +741,12 @@ def combine_files(file_paths, destination):
     """
     with open(destination, "w") as dest:
         for file in file_paths:
-            with open(file) as src:     # FIXME check for OSERROR
-                for line in src:
-                    dest.write(line)
+            try:
+                with open(file) as src:
+                    for line in src:
+                        dest.write(line)
+            except OSError:
+                pass
 
 
 def get_bin_dir() -> Path:
