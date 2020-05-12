@@ -741,9 +741,12 @@ def combine_files(file_paths, destination):
     """
     with open(destination, "w") as dest:
         for file in file_paths:
-            with open(file) as src:     # FIXME check for OSERROR
-                for line in src:
-                    dest.write(line)
+            try:
+                with open(file) as src:
+                    for line in src:
+                        dest.write(line)
+            except OSError:
+                pass
 
 
 def get_bin_dir() -> Path:
