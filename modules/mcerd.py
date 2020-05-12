@@ -33,7 +33,6 @@ import platform
 import shutil
 import subprocess
 import re
-import shlex
 import multiprocessing
 import rx
 
@@ -149,7 +148,7 @@ class MCERD:
         is_running = rx.timer(first_check, poll_interval).pipe(
             ops.map(lambda x: {
                 "is_running": MCERD.is_running(self.__process)
-            })
+            }),
         )
 
         ct_check = rx.timer(0, ct_check).pipe(
@@ -161,20 +160,21 @@ class MCERD:
             ops.map(lambda x: {
                 "is_running": False,
                 "msg": "Simulation was stopped"
-            })
+            }),
         )
 
         if max_time is not None:
-            stopper = rx.timer(max_time).pipe(
-                # TODO this may not work properly when running multiple
-                #   processes at the same time
+            timeout = rx.timer(max_time).pipe(
+                ops.do_action(
+                    on_next=lambda _:
+                    cancellation_token.request_cancellation()),
                 ops.map(lambda _: {
                     "is_running": bool(self.stop_process()),
-                    "msg": "Simulation timed out."
-                }),
+                    "msg": "Simulation timed out"
+                })
             )
         else:
-            stopper = rx.empty()
+            timeout = rx.empty()
 
         thread_count = multiprocessing.cpu_count()
         pool_scheduler = ThreadPoolScheduler(thread_count)
@@ -183,10 +183,10 @@ class MCERD:
             ops.subscribe_on(pool_scheduler),
             MCERD.get_pipeline(self.__seed, self.__rec_filename),
             ops.combine_latest(rx.merge(
-                is_running, ct_check, stopper
+                is_running, ct_check, timeout
             )),
             ops.map(MCERD._combine_items),
-            ops.take_while(lambda x: x["is_running"], inclusive=True)
+            ops.take_while(lambda x: x["is_running"], inclusive=True),
         )
 
         if print_to_console:

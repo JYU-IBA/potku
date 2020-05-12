@@ -29,7 +29,6 @@ __version__ = "2.0"
 
 import json
 import logging
-import numpy as np
 import os
 import time
 import itertools
@@ -38,11 +37,9 @@ import rx
 
 import modules.file_paths as fp
 import modules.general_functions as gf
-import modules.observing as observing
 
 from typing import Optional
 from rx import operators as ops
-from enum import Enum
 from pathlib import Path
 from collections import deque
 
@@ -91,9 +88,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "description", "run", "name", \
                 "use_default_settings", "simulation", \
                 "simulations_done", "__full_edit_on", "y_min", "main_recoil",\
-                "optimization_recoils", "optimization_done", \
-                "optimization_stopped", "optimization_widget", \
-                "optimization_running", "optimized_fluence", \
+                "optimization_recoils", "optimization_widget", \
+                "_optimization_running", "optimized_fluence", \
                 "sample", "__cts", "_simulation_running"
 
     def __init__(self, directory, request, recoil_elements,
@@ -224,10 +220,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             self.optimization_recoils = optimization_recoils
 
         self._simulation_running = False
-        self.optimization_done = False
-        self.optimization_stopped = False
+        self._optimization_running = False
         self.optimization_widget = None
-        self.optimization_running = False
         # Store fluence optimization results
         self.optimized_fluence = optimized_fluence
 
@@ -569,9 +563,13 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         Return:
             observable stream
         """
-        if self.is_simulation_running():
+        if self.is_simulation_running() or self.is_optimization_running():
             return None
         self._set_flags(True, optimization_type)
+        if self.is_optimization_running():
+            # This is done to inform the controls about optimization starting
+            # so the GUI elements can be disabled.
+            self.on_completed(self.get_current_status())
 
         if not use_old_erd_files:
             self.__erd_filehandler.clear()
@@ -635,11 +633,13 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 ops.map(lambda x: self.get_current_status()),
                 ops.take_while(
                     lambda _:
-                    not cancellation_token.is_cancellation_requested())
+                    not cancellation_token.is_cancellation_requested(),
+                    inclusive=True),
             )),
             ops.map(lambda x: {**x[0], **x[1]}),
             ops.take_while(
-                lambda x: x["finished_processes"] < x["total_processes"],
+                lambda x: x["finished_processes"] < x["total_processes"] and
+                not x["msg"].startswith("Simulation "),
                 inclusive=True),
             ops.do_action(
                 on_error=lambda _: self._clean_up(cancellation_token),
@@ -676,11 +676,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """Sets the boolean flags that indicate the state of
         simulation accordingly.
         """
-        self.simulations_done = not b and self._simulation_running or \
-            self.optimization_running
-        self._simulation_running = b
-        self.optimization_done = not b and self.optimization_running
-        self.optimization_running = b and optim_mode is not None
+        self._simulation_running = b and optim_mode is None
+        self._optimization_running = b and optim_mode is not None
 
     def get_settings(self):
         """Returns simulation settings as a dict. Overrides base class function.
@@ -744,17 +741,20 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def is_simulation_finished(self) -> bool:
         """Whether simulation is finished.
         """
-        return self.__erd_filehandler.results_exists()
+        return not self.is_simulation_running() and \
+            self.__erd_filehandler.results_exist()
 
     def is_optimization_running(self) -> bool:
         """Whether optimization is running.
         """
-        return self.optimization_running
+        return self._optimization_running
 
     def is_optimization_finished(self) -> bool:
         """Whether optimization has finished.
         """
-        return any(self.optimization_recoils)
+        # TODO better way to determine this
+        return not self.is_optimization_running() and (any(
+            self.optimization_recoils) or self.optimized_fluence is not None)
 
     def get_max_seed(self):
         """Returns maximum seed that has been used in simulations.
@@ -782,6 +782,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                   f"observed atoms: {atom_count}."
             logging.getLogger(self.simulation.name).info(msg)
 
+        self.on_completed(self.get_current_status())
+
     def stop(self):
         """ Stop the simulation.
         """
@@ -804,26 +806,27 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             path to the espe file
         """
         if self.simulation_type == "ERD":
-            suffix = ".recoil"
+            suffix = "recoil"
         else:
-            suffix = ".scatter"
+            suffix = "scatter"
 
         if optimization_type is OptimizationType.RECOIL:
             recoil = self.optimization_recoils[0]
-            espe_file = f"{recoil.get_full_name()}-opt.simu"
-        elif optimization_type is OptimizationType.FLUENCE:
-            recoil = self.recoil_elements[0]
-            espe_file = f"{recoil.get_full_name()}-optfl.simu"
         else:
             recoil = self.recoil_elements[0]
-            espe_file = f"{recoil.get_full_name()}.simu"
+
+        if optimization_type is OptimizationType.FLUENCE:
+            espe_file = f"{recoil_element.prefix}-optfl.simu"
+            recoil_file = f"{recoil_element.prefix}-optfl.{suffix}"
+        else:
+            espe_file = f"{recoil_element.get_full_name()}.simu"
+            recoil_file = f"{recoil_element.get_full_name()}.{suffix}"
 
         erd_file = Path(
             self.directory,
             fp.get_erd_file_name(recoil, "*", optim_mode=optimization_type))
         espe_file = Path(self.directory, espe_file)
-        recoil_file = Path(
-            self.directory, f"{recoil_element.get_full_name()}.{suffix}")
+        recoil_file = Path(self.directory, recoil_file)
 
         with open(recoil_file, "w") as rec_file:
             rec_file.write("\n".join(recoil_element.get_mcerd_params()))
@@ -877,7 +880,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         return settings, run, detector
 
-    def delete_optimization_results(self, optim_mode=OptimizationType.RECOIL):
+    def delete_optimization_results(self, optim_mode=None):
         """Deletes optimization results. Also stops the optimization if
         it is running.
 
@@ -887,6 +890,12 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         if self.is_optimization_running():
             self.stop()
 
+        # FIXME ensure that these files are actually optimization results and
+        #   not just simulations with names like <something>-opt or
+        #   <something>-optfl.
+        #   Would perhaps be better if the optimization files are in their
+        #   own folder.
+
         if optim_mode is OptimizationType.RECOIL:
             def filter_func(file):
                 return file.startswith(f"{self.name_prefix}-opt") and not \
@@ -894,17 +903,21 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         elif optim_mode is OptimizationType.FLUENCE:
             def filter_func(file):
                 return file.startswith(f"{self.name_prefix}-optfl")
+            self.optimized_fluence = None
+        elif optim_mode is None:
+            def filter_func(file):
+                return file.startswith(f"{self.name_prefix}-opt") or \
+                    file.startswith(f"{self.name_prefix}-optfl")
+            self.optimized_fluence = None
         else:
             raise ValueError(f"Unknown optimization type: {optim_mode}.")
 
         gf.remove_files(
-            self.directory, exts={".recoil", ".erd", ".simu", ".scatter"},
+            self.directory,
+            exts={".recoil", ".erd", ".simu", ".scatter", ".rec"},
             filter_func=filter_func)
 
         self.optimization_recoils = []
-        self.optimization_widget = None
-        self.optimization_running = False
-        self.optimization_stopped = True
 
     def delete_simulation_results(self):
         """Deletes all simulation results for this ElementSimulation.
@@ -927,14 +940,15 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             remove_files: whether simulation result files are also removed
         """
         self.stop()
+        # TODO should wait here until the simulation fully stops
 
         self._set_flags(False)
 
         if remove_files:
             self.delete_simulation_results()
+            self.delete_optimization_results()
             self.__erd_filehandler.clear()
         self.unlock_edit()
-        self.on_completed(self.get_current_status())
 
 
 class ERDFileHandler:
@@ -1030,11 +1044,12 @@ class ERDFileHandler:
     def get_old_atom_count(self):
         """Returns the number of atoms in already simulated .erd files.
         """
-        # files = list(self.__old_files.keys())
         return sum(self.__get_atom_count_cached(file)
                    for file in self.__old_files)
 
     def get_total_atom_count(self):
+        """Returns the total number of observed atoms.
+        """
         return self.get_active_atom_count() + self.get_old_atom_count()
 
     @staticmethod
@@ -1069,7 +1084,9 @@ class ERDFileHandler:
         self.__old_files = {}
         self.__get_atom_count_cached.cache_clear()
 
-    def results_exists(self):
+    def results_exist(self):
+        """Returns True if ERD files exist.
+        """
         return any(self.__old_files) or any(self.__active_files)
 
     def __len__(self):

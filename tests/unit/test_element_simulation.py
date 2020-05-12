@@ -41,6 +41,7 @@ from modules.recoil_element import RecoilElement
 from modules.element import Element
 from modules.element_simulation import ERDFileHandler
 from modules.element_simulation import ElementSimulation
+from modules.enums import OptimizationType
 
 from tests.utils import expected_failure_if
 
@@ -239,17 +240,18 @@ class TestErdFileHandler(unittest.TestCase):
 
     def test_results_exists(self):
         handler = ERDFileHandler([], self.elem_4he)
-        self.assertFalse(handler.results_exists())
+        self.assertFalse(handler.results_exist())
         handler.add_active_file(self.valid_erd_files[0])
-        self.assertTrue(handler.results_exists())
+        self.assertTrue(handler.results_exist())
         handler.update()
-        self.assertTrue(handler.results_exists())
+        self.assertTrue(handler.results_exist())
         handler.clear()
-        self.assertFalse(handler.results_exists())
+        self.assertFalse(handler.results_exist())
 
     def test_thread_safety(self):
         """Tests that ErdFileHandler is thread safe."""
-        n = 10000
+        n = 10_000
+        delay = 0.01
         handler = ERDFileHandler([], self.elem_4he)
 
         def adder():
@@ -260,14 +262,14 @@ class TestErdFileHandler(unittest.TestCase):
         self.assertEqual(n, len(handler))
 
         def updater():
-            time.sleep(0.01)
+            time.sleep(delay)
             handler.update()
 
         self.assert_runs_ok(handler.get_active_atom_count, updater)
         self.assertEqual(n, len(handler))
 
         def clearer():
-            time.sleep(0.01)
+            time.sleep(delay)
             handler.clear()
 
         self.assert_runs_ok(handler.get_old_atom_count, clearer)
@@ -390,6 +392,9 @@ class TestElementSimulation(unittest.TestCase):
     @patch("modules.get_espe.GetEspe.__init__", return_value=None)
     @patch("modules.get_espe.GetEspe.run_get_espe")
     def test_calculate_spectrum(self, mock_run, mock_get_espe):
+        """Tests that the file paths generated during energy spectrum
+        calculation are correct depending on the type of optimization.
+        """
         self.main_rec.name = "main_rec"
         optim_recoil = mo.get_recoil_element()
         optim_recoil.prefix = "C"
@@ -412,7 +417,9 @@ class TestElementSimulation(unittest.TestCase):
             espe_file = Path(
                 tmp_dir, f"{espe_recoil.get_full_name()}.simu")
 
-            kwargs = {"recoil_element": espe_recoil}
+            kwargs = {
+                "recoil_element": espe_recoil
+            }
             self.assert_files_equal(
                 mock_get_espe, kwargs, rec_file, erd_file, espe_file)
 
@@ -424,7 +431,10 @@ class TestElementSimulation(unittest.TestCase):
             espe_file = Path(
                 tmp_dir, f"{espe_recoil.get_full_name()}.simu")
 
-            kwargs = {"recoil_element": espe_recoil, "optimize_recoil": True}
+            kwargs = {
+                "recoil_element": espe_recoil,
+                "optimization_type": OptimizationType.RECOIL
+            }
             self.assert_files_equal(
                 mock_get_espe, kwargs, rec_file, erd_file, espe_file)
 
@@ -436,21 +446,63 @@ class TestElementSimulation(unittest.TestCase):
             espe_file = Path(
                 tmp_dir, f"{espe_recoil.prefix}-optfl.simu")
 
-            kwargs = {"recoil_element": espe_recoil, "optimize_fluence": True}
+            kwargs = {
+                "recoil_element": espe_recoil,
+                "optimization_type": OptimizationType.FLUENCE
+            }
             self.assert_files_equal(
                 mock_get_espe, kwargs, rec_file, erd_file, espe_file)
 
     def assert_files_equal(self, mock_get_espe, kwargs, rec_file, erd_file,
                            espe_file):
-        self.elem_sim.calculate_espe(**kwargs)
-
-        self.assertTrue(rec_file.exists())
-        rec_file.unlink()
+        result_file = self.elem_sim.calculate_espe(**kwargs)
 
         args, = mock_get_espe.call_args[0]
         self.assertEqual(rec_file, args["recoil_file"])
         self.assertEqual(erd_file, args["erd_file"])
         self.assertEqual(espe_file, args["spectrum_file"])
+        self.assertEqual(espe_file, result_file)
+
+        self.assertTrue(rec_file.exists())
+        rec_file.unlink()
+
+    @patch("modules.element_simulation.ERDFileHandler.results_exist")
+    def test_elem_sim_state(self, mock_exist):
+        """Tests for ElementSimulation's state booleans.
+        """
+        mock_exist.side_effect = [False, True, True, True]
+        self.assertFalse(self.elem_sim.is_simulation_running())
+        self.assertFalse(self.elem_sim.is_simulation_finished())
+        self.assertFalse(self.elem_sim.is_optimization_running())
+        self.assertFalse(self.elem_sim.is_optimization_finished())
+
+        self.elem_sim._set_flags(True)
+
+        self.assertTrue(self.elem_sim.is_simulation_running())
+        self.assertFalse(self.elem_sim.is_simulation_finished())
+        self.assertFalse(self.elem_sim.is_optimization_running())
+        self.assertFalse(self.elem_sim.is_optimization_finished())
+
+        self.elem_sim._set_flags(False)
+
+        self.assertFalse(self.elem_sim.is_simulation_running())
+        self.assertTrue(self.elem_sim.is_simulation_finished())
+        self.assertFalse(self.elem_sim.is_optimization_running())
+        self.assertFalse(self.elem_sim.is_optimization_finished())
+
+        self.elem_sim._set_flags(True, OptimizationType.RECOIL)
+
+        self.assertFalse(self.elem_sim.is_simulation_running())
+        self.assertTrue(self.elem_sim.is_simulation_finished())
+        self.assertTrue(self.elem_sim.is_optimization_running())
+        self.assertFalse(self.elem_sim.is_optimization_finished())
+
+        self.elem_sim.optimized_fluence = 1
+        self.assertFalse(self.elem_sim.is_optimization_finished())
+
+        self.elem_sim._set_flags(False)
+        self.assertTrue(self.elem_sim.is_optimization_finished())
+
 
 def write_line(file):
     with open(file, "a") as file:

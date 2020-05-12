@@ -161,10 +161,14 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         of the ElementSimulation object.
         """
         # TODO make sure that this works when first started
-        start_enabled = not (self.element_simulation.is_simulation_running()
-                             and starting)
-        stop_enabled = not (start_enabled or
-                            self.element_simulation.is_optimization_running())
+        if self.element_simulation.is_optimization_running():
+            start_enabled, stop_enabled = False, False
+        else:
+            start_enabled = not (self.element_simulation.is_simulation_running()
+                                 and starting)
+            stop_enabled = not (
+                    start_enabled or
+                    self.element_simulation.is_optimization_running())
         self.run_button.setEnabled(start_enabled)
         self.stop_button.setEnabled(stop_enabled)
         self.processes_spinbox.setEnabled(start_enabled)
@@ -192,6 +196,11 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
                 use_old_erd_files = True
         elif status["state"] == SimulationState.NOTRUN:
             use_old_erd_files = False
+        else:
+            self.mcerd_error = "Simulation currently running. Cannot start a " \
+                               "new one."
+            self.mcerd_error_lbl.show()
+            return
 
         self.mcerd_error_lbl.hide()
 
@@ -286,20 +295,23 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
 
     @QtCore.pyqtSlot()
     @QtCore.pyqtSlot(object)
-    def on_completed_handler(self, *statuses):
+    def on_completed_handler(self, status=None):
         """This method is called when the ElementSimulation has run all of
         its simulation processes.
 
         GUI is updated to show the status and button states are switched
         accordingly.
         """
-        if not statuses:
+        if status is None:
             self.show_status(self.element_simulation.get_current_status())
+            if self.__unsub is not None:
+                self.__unsub.dispose()
         else:
-            self.show_status(statuses[0])
+            self.show_status(status)
+        for process_bar in self.progress_bars.values():
+            # TODO this only affects the number, adjust the color too
+            process_bar.setEnabled(False)
         self.enable_buttons()
-        if self.__unsub is not None:
-            self.__unsub.dispose()
 
     def remove_progress_bars(self):
         """Removes all progress bars and seed labels.

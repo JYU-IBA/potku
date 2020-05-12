@@ -48,6 +48,7 @@ from modules.energy_spectrum import EnergySpectrum
 from modules.observing import Observable
 from modules.concurrency import CancellationToken
 from modules.enums import OptimizationType
+from modules.enums import OptimizationState
 
 
 class Nsgaii(Observable):
@@ -194,12 +195,10 @@ class Nsgaii(Observable):
             ]
 
         if not self._skip_simulation:
-
             def stop_if_cancelled(optim_ct, mcerd_ct):
                 if optim_ct.is_cancellation_requested():
                     mcerd_ct.request_cancellation()
-                    return False
-                return True
+                return mcerd_ct.is_cancellation_requested()
 
             ct = CancellationToken()
             observable = self.element_simulation.start(
@@ -214,7 +213,7 @@ class Nsgaii(Observable):
                     evaluations_left=self.evaluations))
 
                 ct_check = rx.timer(0, 0.2).pipe(
-                    ops.take_while(lambda _: stop_if_cancelled(
+                    ops.take_while(lambda _: not stop_if_cancelled(
                         cancellation_token, ct)),
                     ops.filter(lambda _: False),
                 )
@@ -228,15 +227,29 @@ class Nsgaii(Observable):
                         seed=[None, None]),
                     ops.map(lambda espes: calculate_change(
                         *espes, self.element_simulation.channel_width)),
-                    ops.take_while(lambda change: change > self.stop_percent),
+                    ops.take_while(
+                        lambda change: change > self.stop_percent and not
+                        ct.is_cancellation_requested()
+                    ),
                     ops.do_action(
-                        on_completed=lambda: ct.request_cancellation())
+                        on_completed=ct.request_cancellation)
                 )
-                merged = rx.merge(observable, spectra_chk)
+                merged = rx.merge(observable, spectra_chk).pipe(
+                    ops.take_while(
+                        lambda x: not isinstance(x, dict) or x["is_running"],
+                        inclusive=True)
+                )
                 # Simulation needs to finish before optimization can start
                 # so we run this synchronously.
                 # TODO use callback instead of running sync
                 merged.run()
+                # TODO should not have to call this manually
+                self.element_simulation._clean_up(ct)
+
+            else:
+                raise ValueError(
+                    "Could not start simulation. Check that simulation is not "
+                    "currently running.")
 
         self.population = self.evaluate_solutions(initial_pop)
 
@@ -290,10 +303,12 @@ class Nsgaii(Observable):
                     ind_front_prev = front[rank[j - 1]]
                     # Normalize the objective function values
                     dist = pop_obj[(ind_front_next, i)] - \
-                           pop_obj[(ind_front_prev, i)]
+                        pop_obj[(ind_front_prev, i)]
                     if dist == 0:
                         current_distance = 0
                     else:
+                        # TODO raises RuntimeWarning here if simulation time
+                        #  outs before presim ends
                         current_distance = dist / (f_max[i] - f_min[i])
                     crowd_dis[ind_pop] = crowd_dis[ind_pop] + current_distance
         return crowd_dis
@@ -328,7 +343,7 @@ class Nsgaii(Observable):
                 sol_fluence = gf.round_value_by_four_biggest(solution[0])
                 # Run get_espe
                 espe_file = self.element_simulation.calculate_espe(
-                    recoil, ptimization_type=self.optimization_type,
+                    recoil, optimization_type=self.optimization_type,
                     ch=self.channel_width, fluence=sol_fluence)
                 objective_values.append(self.get_objective_values(espe_file))
 
@@ -742,8 +757,8 @@ class Nsgaii(Observable):
             # Create a random population
             init_sols = np.random.random_sample(
                 (self.pop_size, self.sol_size)) * \
-                        (self.upper_limits - self.lower_limits) \
-                        + self.lower_limits
+                (self.upper_limits - self.lower_limits) \
+                + self.lower_limits
 
         return init_sols
 
@@ -861,7 +876,7 @@ class Nsgaii(Observable):
         pop_n, t = np.shape(population[0])
         # Sort intermediate population based on non-domination
         front_no, last_front_no = Nsgaii.nd_sort(population[1], pop_n, pop_size)
-        include_in_next = [False for i in range(front_no.size)]
+        include_in_next = [False for _ in range(front_no.size)]
         # Find all individuals that belong to better fronts, except the last one
         # that doesn't fit
         for i in range(front_no.size):
@@ -898,6 +913,8 @@ class Nsgaii(Observable):
         Args:
             starting_solutions: First solutions used in optimization. If
                 None, initialize new solutions.
+            cancellation_token: CancellationToken that is used to stop the
+                optimization before all evaluations have been evaluated.
         """
         self.on_next(self._get_message(
             OptimizationState.PREPARING, evaluations_left=self.evaluations))
@@ -944,7 +961,7 @@ class Nsgaii(Observable):
                 self.clean_up(cancellation_token)
                 return
             pop_sol, pop_obj = np.array(self.population[0]), \
-                               np.array(self.population[1])
+                np.array(self.population[1])
             pool = [pop_sol[pool_ind, :], pop_obj[pool_ind, :]]
             # Form offspring solutions with this pool, and do variation on them
             offspring = self.variation(pool[0])
@@ -1136,7 +1153,7 @@ class Nsgaii(Observable):
                 else:
                     length = self.bit_length_y
                 if i in self.__const_var_i:
-                    do_mutation[:,bit_index: bit_index + length] = False
+                    do_mutation[:, bit_index: bit_index + length] = False
                 bit_index += length
 
             # Indicate mutation for all variables that have a random number
