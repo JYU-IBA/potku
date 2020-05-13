@@ -87,7 +87,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "channel_width", "detector", "__erd_filehandler", \
                 "description", "run", "name", \
                 "use_default_settings", "simulation", \
-                "simulations_done", "__full_edit_on", "y_min", "main_recoil",\
+                "__full_edit_on", "y_min", "main_recoil",\
                 "optimization_recoils", "optimization_widget", \
                 "_optimization_running", "optimized_fluence", \
                 "sample", "__cts", "_simulation_running"
@@ -225,11 +225,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         # Store fluence optimization results
         self.optimized_fluence = optimized_fluence
 
-        # Check if there are any files to tell that simulations have
-        # been run previously
-        self.simulations_done = len(self.__erd_filehandler) != 0
-
-        if self.simulations_done:
+        if self.is_simulation_finished():
             self.__full_edit_on = False
             self.y_min = 0.0001
         else:

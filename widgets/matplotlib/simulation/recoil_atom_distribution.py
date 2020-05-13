@@ -53,6 +53,8 @@ from modules.element import Element
 from modules.point import Point
 from modules.recoil_element import RecoilElement
 from modules.element_simulation import ElementSimulation
+from modules.simulation import Simulation
+from modules.target import Target
 
 from PyQt5 import QtCore
 from PyQt5 import QtGui
@@ -67,6 +69,7 @@ from widgets.simulation.controls import SimulationControlsWidget
 from widgets.simulation.percentage_widget import PercentageWidget
 from widgets.simulation.point_coordinates import PointCoordinatesWidget
 from widgets.simulation.recoil_element import RecoilElementWidget
+from widgets.base_tab import BaseTab
 
 
 class ElementManager:
@@ -77,7 +80,7 @@ class ElementManager:
     Each RecoilElement has 1 Element, 1 ElementWidget and 2...n Points.
     """
 
-    def __init__(self, parent_tab, parent, icon_manager, simulation,
+    def __init__(self, parent_tab, parent, icon_manager, simulation: Simulation,
                  statusbar=None):
         """
         Initializes element manager.
@@ -95,7 +98,8 @@ class ElementManager:
         self.statusbar = statusbar
         self.element_simulations = self.simulation.element_simulations
 
-    def get_element_simulation_with_recoil_element(self, recoil_element):
+    def get_element_simulation_with_recoil_element(
+            self, recoil_element: RecoilElement) -> ElementSimulation:
         """
         Get element simulation with recoil element.
 
@@ -109,7 +113,8 @@ class ElementManager:
             if element_simulation.recoil_elements[0] == recoil_element:
                 return element_simulation
 
-    def get_element_simulation_with_radio_button(self, radio_button):
+    def get_element_simulation_with_radio_button(
+            self, radio_button) -> ElementSimulation:
         """
         Get element simulation with radio button.
 
@@ -124,8 +129,9 @@ class ElementManager:
                 if button == radio_button:
                     return element_simulation
 
-    def get_recoil_element_with_radio_button(self, radio_button,
-                                             element_simulation):
+    def get_recoil_element_with_radio_button(
+            self, radio_button,
+            element_simulation: ElementSimulation) -> RecoilElement:
         """
         Get recoil element with radio button from given element simulation.
 
@@ -140,8 +146,9 @@ class ElementManager:
             if recoil_element.widgets[0].radio_button == radio_button:
                 return recoil_element
 
-    def add_new_element_simulation(self, element, color, spectra_changed=None,
-                                   recoil_name_changed=None):
+    def add_new_element_simulation(
+            self, element, color, spectra_changed=None,
+            recoil_name_changed=None) -> ElementSimulation:
         """
         Create a new ElementSimulation and RecoilElement with default points.
 
@@ -211,8 +218,9 @@ class ElementManager:
 
         return element_simulation
 
-    def add_element_simulation(self, element_simulation, spectra_changed=None,
-                               recoil_name_changed=None):
+    def add_element_simulation(
+            self, element_simulation: ElementSimulation, spectra_changed=None,
+            recoil_name_changed=None):
         """
         Add an existing ElementSimulation.
 
@@ -220,6 +228,8 @@ class ElementManager:
             element_simulation: ElementSimulation to be added.
             spectra_changed: pyqtSignal that is emitted when recoil element
                 distribution is changed, causing the spectra to change also.
+            recoil_name_changed: pyqtSignal that is emitted when recoil name
+                changes.
         """
         main_element_widget = ElementWidget(
             self.parent, element_simulation.recoil_elements[0].element,
@@ -303,7 +313,7 @@ class ElementManager:
         if rw is not None:
             rw.radio_button.setChecked(True)
 
-    def remove_element_simulation(self, element_simulation):
+    def remove_element_simulation(self, element_simulation: ElementSimulation):
         """
         Remove element simulation.
 
@@ -382,8 +392,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
     full_edit_on = bnd.bind("edit_lock_push_button", fget=_full_edit_from_btn,
                             fset=_full_edit_to_btn)
 
-    def __init__(self, parent, simulation, target, tab, icon_manager,
-                 statusbar=None):
+    def __init__(self, parent, simulation: Simulation, target: Target,
+                 tab: BaseTab, icon_manager, statusbar=None):
         """Inits recoil atom distribution widget.
 
         Args:
@@ -1178,25 +1188,20 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             return
 
         # Check if current element simulation is running
-        if self.current_element_simulation.mcerd_objects:
+        if self.current_element_simulation.is_optimization_running() or \
+                self.current_element_simulation.is_simulation_running():
             add = "\nAlso its simulation will be stopped."
         else:
             add = ""
         # TODO use the function from dialog_functions in here
-        reply = QtWidgets.QMessageBox.question(self.parent, "Confirmation",
-                                               "If you delete selected "
-                                               "element simulation, "
-                                               "all possible recoils "
-                                               "connected to it will be "
-                                               "also deleted." + add
-                                               + "This also applies to possible"
-                                               " optimization.\n\nAre you "
-                                               "sure you want to delete "
-                                               "selected element simulation?",
-                                               QtWidgets.QMessageBox.Yes |
-                                               QtWidgets.QMessageBox.No |
-                                               QtWidgets.QMessageBox.Cancel,
-                                               QtWidgets.QMessageBox.Cancel)
+        reply = QtWidgets.QMessageBox.question(
+            self.parent, "Confirmation",
+            "If you delete selected element simulation, all possible recoils "
+            f"connected to it will be also deleted.{add} "
+            f"This also applies to possible optimization.\n\n"
+            "Are you sure you want to delete selected element simulation?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+            QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
         if reply == QtWidgets.QMessageBox.No or reply == \
                 QtWidgets.QMessageBox.Cancel:
             return  # If clicked Yes, then continue normally
@@ -1700,8 +1705,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                         self.current_element_simulation.recoil_elements[
                             0] != recoil:
                     # Check if point is added between two zeros
-                    if right_neighbor.get_y() == 0.0 and left_neighbor.get_y() == \
-                            0.0:
+                    if right_neighbor.get_y() == 0.0 and \
+                            left_neighbor.get_y() ==  0.0:
                         new_point.set_y(0.0)
                     elif new_point.get_y() < 0.0001:
                         new_point.set_y(0.0001)
@@ -2544,7 +2549,8 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
                 self.point_remove_action.setEnabled(False)
                 allow_delete = False
             if self.current_recoil_element.get_points()[-1] in \
-                    self.selected_points and not self.full_edit_on and allow_delete:
+                    self.selected_points and not self.full_edit_on and \
+                    allow_delete:
                 self.point_remove_action.setEnabled(False)
                 allow_delete = False
             if 0.0 in self.current_recoil_element.get_ys() and allow_delete:

@@ -33,6 +33,9 @@ import time
 import widgets.binding as bnd
 import widgets.input_validation as iv
 
+from modules.element_simulation import ElementSimulation
+from modules.recoil_element import RecoilElement
+
 from pathlib import Path
 
 from widgets.gui_utils import QtABCMeta
@@ -62,7 +65,8 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
     def color(self):
         return self.tmp_color.name()
 
-    def __init__(self, recoil_element, colormap, element_simulation):
+    def __init__(self, recoil_element: RecoilElement, colormap,
+                 element_simulation: ElementSimulation):
         """Inits a recoil info dialog.
 
         Args:
@@ -158,8 +162,9 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         # If current recoil is used in a running simulation
         if self.recoil_element is \
                 self.element_simulation.recoil_elements[0]:
-            if self.element_simulation.mcerd_objects and self.name != \
-                    self.recoil_element.name:
+            if (self.element_simulation.is_simulation_running() or
+                    self.element_simulation.is_optimization_running()) and \
+                    self.name != self.recoil_element.name:
                 reply = QtWidgets.QMessageBox.question(
                     self, "Recoil used in simulation",
                     "This recoil is used in a simulation that is "
@@ -189,7 +194,7 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
             self.tmp_color = color
             self.__change_color_button_color(self.recoil_element.element.symbol)
 
-    def __change_color_button_color(self, element):
+    def __change_color_button_color(self, element: str):
         """
         Change color button's color.
 
