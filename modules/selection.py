@@ -3,10 +3,10 @@
 Created on 15.3.2013
 Updated on 13.11.2018
 
-Potku is a graphical user interface for analyzation and 
-visualization of measurement data collected from a ToF-ERD 
-telescope. For physics calculations Potku uses external 
-analyzation components.  
+Potku is a graphical user interface for analyzation and
+visualization of measurement data collected from a ToF-ERD
+telescope. For physics calculations Potku uses external
+analyzation components.
 Copyright (C) 2013-2018 Jarkko Aalto, Severi Jääskeläinen, Samuel Kaiponen,
 Timo Konu, Samuli Kärkkäinen, Samuli Rahkonen, Miika Raunio, Heta Rekilä and
 Sinikka Siironen
@@ -39,14 +39,12 @@ import modules.math_functions as mf
 import modules.general_functions as gf
 
 import matplotlib as mpl
-
-from dialogs.measurement.selection import SelectionSettingsDialog
+from matplotlib.lines import Line2D
 
 from pathlib import Path
 
 from modules.element import Element
 
-from PyQt5 import QtWidgets
 
 
 class AxesLimits:
@@ -64,7 +62,7 @@ class AxesLimits:
 
     def update_limits(self, point):
         """Updates axes limits.
-        
+
         Args:
             point: A point as list (x, y) representing point.
         """
@@ -82,10 +80,10 @@ class AxesLimits:
 
     def is_inside(self, point):
         """Is point inside limits.
-        
+
         Args:
             point: A point as list (x, y) representing point.
-            
+
         Return:
             Returns True when point is within limits.
         """
@@ -107,9 +105,9 @@ class Selector:
     """
     def __init__(self, measurement, element_colormap):
         """Inits Selector.
-        
+
         Inits Selector object.
-        
+
         Args:
             measurement: Measurement object of this Selector.
             element_colormap: Default colors for new element selections.
@@ -134,7 +132,7 @@ class Selector:
 
     def count(self):
         """Get count of selections.
-        
+
         Return:
             Returns the count of selections in selector object.
         """
@@ -142,7 +140,7 @@ class Selector:
 
     def is_empty(self):
         """Check if no selections.
-        
+
         Return:
             Returns True if no selections.
         """
@@ -150,10 +148,10 @@ class Selector:
 
     def get_at(self, index):  # Get selection at index
         """Get selection at index.
-        
+
         Args:
             index: Integer of index we want to get from selections.
-            
+
         Return:
             Returns Selection at said index. If index is out of range, returns
             None.
@@ -164,9 +162,9 @@ class Selector:
 
     def get_selected(self):  # Get selection by id
         """Get currently selected selection.
-        
+
         Return:
-            Returns Selection of selected Selection on matplotlib graph. If none 
+            Returns Selection of selected Selection on matplotlib graph. If none
             selected, returns None.
         """
         if self.selected_id is None:
@@ -178,18 +176,18 @@ class Selector:
 
     def add_point(self, point, canvas):
         """Adds a new point.
-        
+
         Adds a new point to last selection. If new selection is allowed, create
         a new selection to which point is added. If point is in close proximity
-        of first point in (last) Selection, then close selection and allow new 
+        of first point in (last) Selection, then close selection and allow new
         selection to be made.
-        
+
         Args:
             point: Point (x, y) to be added to selection.
             canvas: matplotlib's FigureCanvas where selections are drawn.
-            
+
         Return:
-            1: When point closes open selection and allows new selection to 
+            1: When point closes open selection and allows new selection to
                 be made.
             0: When point was added to open selection.
             -1: When new selection is not allowed and there are no selections.
@@ -230,8 +228,8 @@ class Selector:
 
     def undo_point(self):
         """Undo last point in open (last) selection.
-        
-        Undo last point in open (last) selection. If there are no selections, 
+
+        Undo last point in open (last) selection. If there are no selections,
         do nothing.
         """
         if self.is_empty():
@@ -259,11 +257,7 @@ class Selector:
                                           self.measurement_name + ".selections")
                 self.selection_file = Path(self.directory, new_file)
         except OSError:
-            QtWidgets.QMessageBox.critical(self, "Error",
-                                           "Something went wrong while "
-                                           "renaming the selections file.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            print('error virhe')
 
     def purge(self):
         """Purges (removes) all open selections and allows new selection to be
@@ -277,7 +271,7 @@ class Selector:
 
     def remove_selected(self):
         """Remove selected selection.
-        
+
         Removes selected selection if one is selected. Otherwise do nothing.
         """
         if self.selected_id is None:  # Can be 0.
@@ -309,7 +303,7 @@ class Selector:
 
     def draw(self):
         """Draw selections.
-        
+
         Issue draw to all selections in selector.
         """
         if self.axes:
@@ -326,11 +320,11 @@ class Selector:
 
     def end_open_selection(self, canvas):
         """End last open selection.
-        
-        Ends last open selection. If selection is open, it will show dialog to 
+
+        Ends last open selection. If selection is open, it will show dialog to
         select element information and draws into canvas before opening the
         dialog.
-        
+
         Args:
             canvas: Matplotlib's FigureCanvas
 
@@ -359,38 +353,38 @@ class Selector:
 
     def select(self, point, highlight=True):
         """Select a selection based on point.
-        
+
         Args:
             point: Point (x, y) which is clicked on the graph to select
             selection.
-            highlight: Boolean to determine whether to highlight just this 
+            highlight: Boolean to determine whether to highlight just this
                        selection.
-            
+
         Return:
             1: If point is within selection.
             0: If point is not within selection.
         """
-        for selection in self.selections:
-            path = mpl.path.Path(selection.get_points())
-            if path.contains_point(point):
-                self.selected_id = selection.id
-                if highlight:
-                    self.grey_out_except(selection.id)
-                return 1
+        # for selection in self.selections:
+            # path = mpl.path.Path(selection.get_points())
+            # if path.contains_point(point):
+            #    self.selected_id = selection.id
+            #    if highlight:
+            #        self.grey_out_except(selection.id)
+            #    return 1
         return 0
 
     def reset_select(self):
         """Reset selection to None.
-        
+
         Resets current selection to None and resets colors of all selections
-        to their default values. 
+        to their default values.
         """
         self.selected_id = None
         self.reset_colors()
 
     def reset_colors(self):
         """Reset selection colors.
-        
+
         Reset all selections' colors to their default values.
         """
         for sel in self.selections:
@@ -398,7 +392,7 @@ class Selector:
 
     def get_colors(self):
         """Get colors of each selection in selector.
-        
+
         Return:
             Returns dictionary of all element selections and their colors.
         """
@@ -417,7 +411,7 @@ class Selector:
             else:
                 prefix = ""
             dirtyinteger = 0
-            # Use dirtyinteger to differentiate multiple selections of same 
+            # Use dirtyinteger to differentiate multiple selections of same
             # selection. This is roundabout method, but works as it should with
             # cut files.
             while True:
@@ -432,12 +426,12 @@ class Selector:
 
     def grey_out_except(self, selected_id):
         """Grey out all selections except selected one.
-        
+
         Sets all selections' colors to grey except selected, which is set to
         red.
-        
+
         Args:
-            selected_id: Integer of selected selection id 
+            selected_id: Integer of selected selection id
         """
         for sel in self.selections:
             if sel.id == selected_id:
@@ -457,9 +451,9 @@ class Selector:
 
     def load(self, filename, progress=None):
         """Load selections from a file.
-        
+
         Removes all current selections and loads selections from given filename.
-        
+
         Args:
             filename: String representing (full) path to selection file.
             progress: ProgressReporter object.
@@ -505,7 +499,7 @@ class Selector:
 
     def transpose(self, is_transposed):
         """Transpose graph axes.
-        
+
         Args:
             is_transposed: Boolean representing whether axes are transposed.
         """
@@ -559,13 +553,13 @@ class Selection:
     LINE_MARKER = 'o'  # Default node style for selections
     LINE_MARKER_SIZE = 3.0
     GLOBAL_ID = 0
-    
+
     def __init__(self, axes, element_colormap, measurement, element=None,
                  isotope=None,
                  element_type="ERD", color=None, points=None, scatter=None,
                  weight_factor=1.0, transposed=False):
         """Inits Selection class.
-        
+
         Args:
             axes: Matplotlib FigureCanvas's subplot
             element_colormap: Default colors for new element selections.
@@ -649,7 +643,7 @@ class Selection:
                 x.append(point[0])
                 y.append(point[1])
                 self.points.set_data(x, y)
-            self.axes.add_line(self.points)
+            #self.axes.add_line(self.points)
             return 0
 
     def undo_last(self):
@@ -748,13 +742,7 @@ class Selection:
         y.pop()
 
         selection_completed = True
-        if canvas is not None:
-            canvas.draw_idle()
-            selection_settings_dialog = SelectionSettingsDialog(self)
-            # True = ok, False = cancel -> delete selection
-            selection_completed = selection_settings_dialog.isOk
-        self.is_closed = True
-        return selection_completed
+        return None
 
     def delete(self):
         """Delete this selection.
