@@ -115,7 +115,7 @@ class MCERD:
 
         return f"{ulimit}{exec_cmd}{mcerd_path} {self.__command_file}"
 
-    def run(self, print_to_console=True, cancellation_token=None,
+    def run(self, print_to_console=False, cancellation_token=None,
             poll_interval=10, first_check=0.2, max_time=None, ct_check=0.2):
         """Starts the MCERD process.
 
@@ -181,11 +181,11 @@ class MCERD:
 
         merged = rx.merge(errs, outs).pipe(
             ops.subscribe_on(pool_scheduler),
-            MCERD.get_pipeline(self.__seed, self.__rec_filename),
+            MCERD.get_pipeline_v2(self.__seed, self.__rec_filename),
             ops.combine_latest(rx.merge(
                 is_running, ct_check, timeout
             )),
-            ops.map(MCERD._combine_items),
+            ops.map(lambda x: MCERD._combine_items(x, last_line="angave ")),
             ops.take_while(lambda x: x["is_running"], inclusive=True),
         )
 
@@ -208,14 +208,14 @@ class MCERD:
         return True
 
     @staticmethod
-    def _combine_items(items) -> dict:
+    def _combine_items(items, last_line="Beam ion: ") -> dict:
         """Helper function for combining items from two streams.
         """
         item1, item2 = items
         return {
             **item1, **item2,
             "is_running": item2["is_running"] and not item1[
-                "msg"].startswith("Beam ion: "),
+                "msg"].startswith(last_line),
         }
 
     @staticmethod
@@ -267,6 +267,47 @@ class MCERD:
             ops.scan(lambda acc, x: {
                 "presim": acc["presim"] and x[0] != "Presimulation finished",
                 **parse_raw_output(x[0])
+            }, seed={"presim": True}),
+            ops.scan(lambda acc, x: {
+                "seed": seed,
+                "name": name,
+                "presim": x["presim"],
+                "calculated": x.get("calculated", acc["calculated"]),
+                "total": x.get("total", acc["total"]),
+                "percentage": x.get("percentage", acc["percentage"]),
+                "msg": x.get("msg", "")
+            }, seed={"calculated": 0, "total": 0, "percentage": 0}),
+        )
+
+    @staticmethod
+    def get_pipeline_v2(seed: int, name: str):
+        """rx pipeline for the new version of MCERD
+        """
+        def scan_if(acc, x):
+            """Helper function to reduce the final output.
+            """
+            # TODO nicer way to reduce this
+            # TODO update this to v2
+            if x.startswith("Beam ion: "):
+                return x, False
+            if not acc[1]:
+                res = f"{acc[0]}\n{x}"
+                if x.startswith("angave "):
+                    return res, True
+                return res, False
+            return x, True
+
+        return rx.pipe(
+            ops.map(lambda x: x.decode("utf-8").strip()),
+            observing.get_printer(),
+            ops.skip_while(lambda x: x != "Starting simulation."),
+            ops.take_while(
+                lambda x: not x.startswith("angave "), inclusive=True),
+            # ops.scan(scan_if, seed=("", True)),
+            # ops.filter(lambda x: x[1]),
+            ops.scan(lambda acc, x: {
+                "presim": acc["presim"] and x != "Presimulation finished",
+                **parse_raw_output(x, last_line="angave ")
             }, seed={"presim": True}),
             ops.scan(lambda acc, x: {
                 "seed": seed,
@@ -454,7 +495,7 @@ _pattern = re.compile("Calculated (?P<calculated>\d+) of (?P<total>\d+) ions "
                       "\((?P<percentage>\d+)%\)")
 
 
-def parse_raw_output(raw_line):
+def parse_raw_output(raw_line, last_line="Beam ion: "):
     """Parses raw output produced by MCERD into something meaningful.
     """
     m = _pattern.match(raw_line)
@@ -471,7 +512,7 @@ def parse_raw_output(raw_line):
                 "percentage": 0,
                 "msg": raw_line
             }
-        elif raw_line.startswith("Beam ion: "):
+        elif raw_line.startswith(last_line):
             return {
                 "msg": raw_line,
                 "percentage": 100
