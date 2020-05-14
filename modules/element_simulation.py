@@ -781,7 +781,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.on_completed(self.get_current_status())
 
     def stop(self):
-        """ Stop the simulation.
+        """Stops all running simulation processes for this ElementSimulation.
+        Stopping will not happen immediately.
         """
         cts = list(self.__cts)
         for ct in cts:
@@ -891,6 +892,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         #   <something>-optfl.
         #   Would perhaps be better if the optimization files are in their
         #   own folder.
+        # TODO check for file name rather than startswith
 
         if optim_mode is OptimizationType.RECOIL:
             def filter_func(file):
@@ -921,6 +923,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         prefixes = {recoil.get_full_name() for recoil in self.recoil_elements}
 
         def filter_func(file):
+            # TODO check for file name rather than startswith
             return any(file.startswith(pre) for pre in prefixes) and \
                 "opt" not in file
 
@@ -945,6 +948,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             self.delete_optimization_results()
             self.__erd_filehandler.clear()
         self.unlock_edit()
+
+        self.on_completed(self.get_current_status())
 
 
 class ERDFileHandler:
