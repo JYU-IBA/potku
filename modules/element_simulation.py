@@ -53,6 +53,7 @@ from modules.observing import Observable
 from modules.recoil_element import RecoilElement
 from modules.enums import OptimizationType
 from modules.enums import SimulationState
+from modules.enums import IonDivision
 
 
 # Mappings between the names of the MCERD parameters (keys) and
@@ -535,8 +536,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
     def start(self, number_of_processes, start_value=None,
               use_old_erd_files=True, optimization_type=None,
-              shared_ions=False, cancellation_token=None, start_interval=5,
-              status_check_interval=1, **kwargs) -> Optional[rx.Observable]:
+              ion_division=IonDivision.NONE, cancellation_token=None,
+              start_interval=5, status_check_interval=1,
+              **kwargs) -> Optional[rx.Observable]:
         """
         Start the simulation.
 
@@ -546,8 +548,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             use_old_erd_files: whether the simulation continues using old erd
                 files or not
             optimization_type: either recoil, fluence or None
-            shared_ions: boolean that determines if the ion counts are
-                divided by the number of processes
+            ion_division: ion division mode that determines how ions are
+                divided per process
             cancellation_token: CancellationToken that can be used to stop
                 the start process
             start_interval: seconds between the start of each simulation
@@ -590,11 +592,14 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         if number_of_processes < 1:
             number_of_processes = 1
 
-        if shared_ions:
-            settings["number_of_ions"] //= number_of_processes
-            settings["number_of_ions_in_presimu"] //= number_of_processes
+        # Update ion counts depending on the ion_division mode
+        presim_ions, sim_ions = ion_division.get_ion_counts(
+            settings["number_of_ions_in_presimu"], settings["number_of_ions"],
+            number_of_processes)
 
         settings.update({
+            "number_of_ions_in_presimu": presim_ions,
+            "number_of_ions": sim_ions,
             "beam": run.beam,
             "target": self.simulation.target,
             "detector": detector,

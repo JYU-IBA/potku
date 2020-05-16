@@ -42,6 +42,7 @@ from timeit import default_timer as timer
 from rx import operators as ops
 
 from modules.recoil_element import RecoilElement
+from modules.element_simulation import ElementSimulation
 from modules.point import Point
 from modules.parsing import CSVParser
 from modules.energy_spectrum import EnergySpectrum
@@ -49,6 +50,7 @@ from modules.observing import Observable
 from modules.concurrency import CancellationToken
 from modules.enums import OptimizationType
 from modules.enums import OptimizationState
+from modules.enums import IonDivision
 
 
 class Nsgaii(Observable):
@@ -61,7 +63,8 @@ class Nsgaii(Observable):
     (https://github.com/ChengHust/NSGA-II).
     """
 
-    def __init__(self, gen, element_simulation=None, pop_size=100, sol_size=5,
+    def __init__(self, gen, element_simulation: ElementSimulation = None,
+                 pop_size=100, sol_size=5,
                  upper_limits=None, lower_limits=None,
                  optimization_type=OptimizationType.RECOIL,
                  recoil_type="box", number_of_processes=1, cross_p=0.9, mut_p=1,
@@ -140,7 +143,9 @@ class Nsgaii(Observable):
         self.population = None
         self.measured_espe = None
 
-    def __prepare_optimization(self, initial_pop=None, cancellation_token=None):
+    def __prepare_optimization(self, initial_pop=None,
+                               cancellation_token=None,
+                               ion_division=IonDivision.BOTH):
         """Performs internal preparation before optimization begins.
         """
         # Calculate the energy spectrum that the optimized solutions are
@@ -155,7 +160,7 @@ class Nsgaii(Observable):
                             self.channel_width, no_foil=True)
 
         # TODO maybe just use he value returned by calc_spectrum?
-        x = es.calculate_spectrum(no_foil=True)
+        es.calculate_spectrum(no_foil=True)
         # Add result files
         hist_file = Path(self.measurement.directory_energy_spectra,
                          f"{self.cut_file.stem}.no_foil.hist")
@@ -204,8 +209,9 @@ class Nsgaii(Observable):
             observable = self.element_simulation.start(
                 self.number_of_processes, start_value=201,
                 optimization_type=self.optimization_type,
-                cancellation_token=ct,
-                print_to_console=True, max_time=self.check_max)
+                cancellation_token=ct, print_to_console=True,
+                max_time=self.check_max,
+                ion_division=ion_division)
 
             if observable is not None:
                 self.on_next(self._get_message(
@@ -903,7 +909,8 @@ class Nsgaii(Observable):
         return next_pop, front_no[index], crowd_dis[index]
 
     def start_optimization(self, starting_solutions=None,
-                           cancellation_token=None):
+                           cancellation_token=None,
+                           ion_division=IonDivision.BOTH):
         """
         Start the optimization. This includes sorting based on
         non-domination and crowding distance, creating offspring population
@@ -919,7 +926,8 @@ class Nsgaii(Observable):
         self.on_next(self._get_message(
             OptimizationState.PREPARING, evaluations_left=self.evaluations))
         try:
-            self.__prepare_optimization(starting_solutions, cancellation_token)
+            self.__prepare_optimization(
+                starting_solutions, cancellation_token, ion_division)
         except (OSError, ValueError, subprocess.SubprocessError) as e:
             self.on_error(self._get_message(
                 OptimizationState.FINISHED,

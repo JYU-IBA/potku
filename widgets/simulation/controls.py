@@ -36,6 +36,7 @@ from pathlib import Path
 from modules.element_simulation import SimulationState
 from modules.element_simulation import ElementSimulation
 from modules.concurrency import CancellationToken
+from modules.enums import IonDivision
 from widgets.gui_utils import GUIObserver
 
 from PyQt5 import QtWidgets
@@ -98,7 +99,8 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
     """
 
     def __init__(self, element_simulation: ElementSimulation,
-                 recoil_dist_widget, recoil_name_changed=None):
+                 recoil_dist_widget, recoil_name_changed=None,
+                 ion_division=IonDivision.BOTH):
         """
         Initializes a SimulationControlsWidget.
 
@@ -107,6 +109,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
              recoil_dist_widget: RecoilAtomDistributionWidget.
              recoil_name_changed: signal that indicates that a recoil name
                 has changed.
+            ion_division: ion division mode
         """
         super().__init__()
         GUIObserver.__init__(self)
@@ -134,6 +137,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
 
         self.__unsub = None
 
+        self.ion_division = ion_division
         self.recoil_name_changed = recoil_name_changed
         if self.recoil_name_changed is not None:
             self.recoil_name_changed.connect(self._set_name)
@@ -218,7 +222,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         # TODO indicate to user that ion counts are shared between processes
         observable = self.element_simulation.start(
             self.process_count, use_old_erd_files=use_old_erd_files,
-            shared_ions=True, cancellation_token=CancellationToken()
+            ion_division=self.ion_division
         )
         if observable is not None:
             self.__unsub = observable.pipe(
@@ -227,6 +231,11 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
                     "started":  x["is_running"] and not acc["started"]
                 }, seed={"started": False})
             ).subscribe(self)
+        else:
+            self.mcerd_error = "Could not start simulation. Check that there " \
+                               "is no other simulation running for this " \
+                               "recoil element"
+            self.mcerd_error_lbl.show()
 
     def show_status(self, status):
         """Updates the status of simulation in the GUI

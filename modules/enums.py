@@ -75,3 +75,33 @@ class SimulationState(Enum):
         if self == SimulationState.RUNNING:
             return "Running"
         return "Done"
+
+
+class IonDivision(IntEnum):
+    """Enum that decides how the total number of ions is divided per
+    simulation process.
+    """
+    # Ions are not divided, each simulation process uses the full number of
+    # ions.
+    NONE = 0
+
+    # Simulation ions are divided per process, presimulation ions are not
+    SIM = 1
+
+    # Both simulation and presimulation ions are divided per process
+    BOTH = 2
+
+    def get_ion_counts(self, presim, sim, processes):
+        presim = presim if presim >= 0 else 0
+        sim = sim if sim >= 0 else 0
+
+        if self is IonDivision.NONE:
+            return int(presim), int(sim)
+
+        processes = processes if processes >= 1 else 1
+
+        sim /= processes
+        if self is IonDivision.BOTH:
+            presim /= processes
+
+        return int(presim), int(sim)
