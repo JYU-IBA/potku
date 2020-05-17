@@ -397,7 +397,7 @@ class Potku(QtWidgets.QMainWindow):
         """
         Save recoil elements and simulation targets and close the program.
         """
-        if self.request:
+        if self.request is not None:
             for sample in self.request.samples.samples:
                 for simulation in sample.simulations.simulations.values():
                     for elem_sim in simulation.element_simulations:
@@ -407,6 +407,22 @@ class Potku(QtWidgets.QMainWindow):
                         Path(simulation.directory, simulation.target.name +
                              ".target"), None)
 
+        if not self.are_simulations_stopped():
+            # TODO also needs to be done when new request is being opened
+            event.ignore()
+            return
+
+        widget = self.tabs.currentWidget()
+        if isinstance(widget, BaseTab):
+            widget.save_geometries()
+
+        super().closeEvent(event)
+
+    def are_simulations_stopped(self):
+        """Checks all running simulations for current request and prompts
+        user to stop them. Returns True if user chooses to stop the
+        simulations or there are no simulations, otherwise returns False.
+        """
         if self.request is not None:
             sims = {
                 *self.request.get_running_optimizations(),
@@ -422,30 +438,23 @@ class Potku(QtWidgets.QMainWindow):
                     QtWidgets.QMessageBox.Yes
                 )
                 if reply == QtWidgets.QMessageBox.Cancel:
-                    event.ignore()
-                    return
+                    return False
                 for sim in sims:
                     sim.stop()
                 while any(sim.is_simulation_running() or
                           sim.is_optimization_running() for sim in sims):
                     # TODO add timeout
                     pass
-
-        widget = self.tabs.currentWidget()
-        if isinstance(widget, BaseTab):
-            widget.save_geometries()
-
-        super().closeEvent(event)
+        return True
 
     def create_report(self):
         """
         Opens a dialog for making a report.
         """
         # TODO: Replace this with the actual dialog call.
-        QtWidgets.QMessageBox.critical(self, "Error",
-                                       "Report tool not yet implemented!",
-                                       QtWidgets.QMessageBox.Ok,
-                                       QtWidgets.QMessageBox.Ok)
+        QtWidgets.QMessageBox.critical(
+            self, "Error", "Report tool not yet implemented!",
+            QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def current_measurement_create_depth_profile(self):
         """Opens the depth profile analyzation tool for the current open
@@ -455,11 +464,10 @@ class Potku(QtWidgets.QMainWindow):
         if isinstance(widget, MeasurementTabWidget):
             widget.open_depth_profile()
         else:
-            QtWidgets.QMessageBox.question(self, "Notification",
-                                           "An open measurement is required to "
-                                           "do this action.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(
+                self, "Notification",
+                "An open measurement is required to do this action.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def current_measurement_analyze_elemental_losses(self):
         """Opens the element losses analyzation tool for the current open
@@ -469,11 +477,10 @@ class Potku(QtWidgets.QMainWindow):
         if isinstance(widget, MeasurementTabWidget):
             widget.open_element_losses()
         else:
-            QtWidgets.QMessageBox.question(self, "Notification",
-                                           "An open measurement is required to"
-                                           " do this action.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(
+                self, "Notification",
+                "An open measurement is required to do this action.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def current_measurement_create_energy_spectrum(self):
         """Opens the energy spectrum analyzation tool for the current open
@@ -483,11 +490,10 @@ class Potku(QtWidgets.QMainWindow):
         if isinstance(widget, MeasurementTabWidget):
             widget.open_energy_spectrum()
         else:
-            QtWidgets.QMessageBox.question(self, "Notification",
-                                           "An open measurement is required to"
-                                           " do this action.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(
+                self, "Notification",
+                "An open measurement is required to do this action.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def current_measurement_save_cuts(self):
         """Saves the current open measurement tab widget's selected cuts
@@ -497,11 +503,10 @@ class Potku(QtWidgets.QMainWindow):
         if isinstance(widget, MeasurementTabWidget):
             widget.measurement_save_cuts()
         else:
-            QtWidgets.QMessageBox.question(self, "Notification",
-                                           "An open measurement is required to"
-                                           " do this action.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(
+                self, "Notification",
+                "An open measurement is required to do this action.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def current_simulation_create_energy_spectrum(self):
         """
@@ -620,10 +625,8 @@ class Potku(QtWidgets.QMainWindow):
         if not self.request:
             return
         # For loading measurements.
-        import_dialog = ImportMeasurementsDialog(self.request,
-                                                 self.icon_manager,
-                                                 self.statusbar,
-                                                 self)
+        import_dialog = ImportMeasurementsDialog(
+            self.request, self.icon_manager, self.statusbar, self)
         if import_dialog.imported:
             self.__remove_info_tab()
 
@@ -634,10 +637,8 @@ class Potku(QtWidgets.QMainWindow):
         """
         if not self.request:
             return
-        import_dialog = ImportDialogBinary(self.request,
-                                           self.icon_manager,
-                                           self.statusbar,
-                                           self)  # For loading measurements.
+        import_dialog = ImportDialogBinary(
+            self.request, self.icon_manager, self.statusbar, self)
         if import_dialog.imported:
             self.__remove_info_tab()
 
@@ -730,6 +731,8 @@ class Potku(QtWidgets.QMainWindow):
     def make_new_request(self):
         """Opens a dialog for creating a new request.
         """
+        if not self.are_simulations_stopped():
+            return
         # The directory for request is already created after this
         dialog = RequestNewDialog(self)
 
@@ -919,6 +922,8 @@ class Potku(QtWidgets.QMainWindow):
     def open_request(self):
         """Shows a dialog to open a request.
         """
+        if not self.are_simulations_stopped():
+            return
         file = open_file_dialog(
             self, self.settings.get_request_directory_last_open(),
             "Open an existing request", "Request file (*.request)")
@@ -927,6 +932,8 @@ class Potku(QtWidgets.QMainWindow):
 
     def __open_request(self, file: Path):
         """Opens a request in the main"""
+        if not self.are_simulations_stopped():
+            return
         try:
             request = Request.from_file(file, self.settings, self.tab_widgets)
         except Exception as e:
