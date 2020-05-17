@@ -115,17 +115,22 @@ class Run(Serializable, AdjustableSettings):
         Return:
             Returns the created Run object.
         """
-        with open(measurement_file_path) as mesu:
+        with measurement_file_path.open("r") as mesu:
             mesu = json.load(mesu)
 
-        run = mesu["run"]
-        run["run_time"] = run.pop("time")
-        beam = mesu["beam"]
+        try:
+            run = mesu["run"]
+            run["run_time"] = run.pop("time")
+        except KeyError:
+            run = {}
 
-        ion = Element.from_string(beam.pop("ion"))
-        spot_size = tuple(beam.pop("spot_size"))
-
-        beam_object = Beam(ion=ion, spot_size=spot_size, **beam)
+        try:
+            beam = mesu["beam"]
+            ion = Element.from_string(beam.pop("ion"))
+            spot_size = tuple(beam.pop("spot_size"))
+            beam_object = Beam(ion=ion, spot_size=spot_size, **beam)
+        except KeyError:
+            beam_object = None
 
         return cls(beam=beam_object, **run)
 

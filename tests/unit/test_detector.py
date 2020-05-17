@@ -117,6 +117,7 @@ class TestBeam(unittest.TestCase):
             self.assertEqual(det1.name, det2.name)
             self.assertEqual(det1.description, det2.description)
             self.assertEqual(det1.type, det2.type)
+            self.assertIsInstance(det2.type, DetectorType)
             self.assertEqual(det1.virtual_size, det2.virtual_size)
             self.assertEqual(det1.tof_slope, det2.tof_slope)
             self.assertEqual(det1.tof_offset, det2.tof_offset)

@@ -66,7 +66,6 @@ class Request(ElementSimulationContainer):
         """
         self.directory = Path(directory)
         self.request_name = name
-        _, tmp_dirname = os.path.split(self.directory)
         self.global_settings = global_settings
         self.samples = Samples(self)
 
@@ -82,13 +81,12 @@ class Request(ElementSimulationContainer):
         self._running_int = 1  # TODO: Maybe be saved into .request file?
 
         # Check folder exists and make request file there.
-        if not self.directory.exists():
-            os.makedirs(self.directory)
+        self.directory.mkdir(exist_ok=True)
 
         # If Default folder doesn't exist, create it.
         self.default_folder = Path(self.directory, "Default")
         # Create Default folder under request folder
-        os.makedirs(self.default_folder, exist_ok=True)
+        self.default_folder.mkdir(exist_ok=True)
 
         # Try reading default objects from Default folder.
         self.default_measurement_file_path = Path(
@@ -122,11 +120,10 @@ class Request(ElementSimulationContainer):
         # If it exists, we assume old request is loaded.
         self.__request_information = configparser.ConfigParser()
 
-        # tmp_dirname has extra .potku in it, need to remove it for the
+        # directory name has extra .potku in it, need to remove it for the
         # .request file name
-        stripped_tmp_dirname = tmp_dirname.replace(".potku", "")
-        self.request_file = Path(directory, "{0}.request".format(
-            stripped_tmp_dirname))
+        self.request_file = Path(
+            self.directory, f"{self.directory.stem}.request")
 
         # Defaults
         self.__request_information.add_section("meta")
@@ -149,18 +146,14 @@ class Request(ElementSimulationContainer):
         Args:
         """
         # TODO better error checking
-        file_path = Path(file)
+        file_path = Path(file).resolve()
         if not file_path.exists():
             raise ValueError("Request file does not exist.")
         if not file_path.is_file():
             raise ValueError("Expected file, got a directory")
         if file_path.suffix != ".request":
             raise ValueError("Expected request file")
-        folder = os.path.split(file)[0]
-        folders = folder.split("/")
-        fd_with_correct_sep = os.sep.join(folders)
-        tmp_name = os.path.splitext(os.path.basename(file))[0]
-        return cls(fd_with_correct_sep, tmp_name, settings, tab_widgets)
+        return cls(file_path.parent, file_path.stem, settings, tab_widgets)
 
     def create_default_detector(self):
         """
@@ -178,8 +171,7 @@ class Request(ElementSimulationContainer):
                 self.default_detector_folder)
         else:
             # Create Detector folder under Default folder
-            if not self.default_detector_folder.exists():
-                os.makedirs(self.default_detector_folder)
+            self.default_detector_folder.mkdir(exist_ok=True)
             # Create default detector for request
             self.default_detector = Detector(
                 Path(self.default_detector_folder, "Default.detector"),

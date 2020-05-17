@@ -174,8 +174,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.run = run
         self.sample = sample
 
-        self.simulation_type = simulation_type
-        self.simulation_mode = simulation_mode
+        self.simulation_type = SimulationType(simulation_type)
+        self.simulation_mode = SimulationMode(simulation_mode)
 
         self.number_of_ions = number_of_ions
         self.number_of_preions = number_of_preions
@@ -296,14 +296,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         recoil_element.update(new_values)
 
         # Delete possible extra rec files.
-        for file in os.listdir(self.directory):
-            if file.startswith(old_name) and \
-                    (file.endswith(".rec") or file.endswith(".sct")):
-                try:
-                    os.remove(Path(self.directory, file))
-                except OSError:
-                    pass
-                break
+        # TODO use name instead of startswith
+        gf.remove_files(
+            self.directory, exts={".rec", ".sct"},
+            filter_func=lambda x: x.startwith(old_name))
 
         recoil_element.to_file(self.directory)
 
@@ -312,7 +308,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 recoil_suffix = ".recoil"
             else:
                 recoil_suffix = ".scatter"
-            recoil_file = Path(self.directory, old_name + recoil_suffix)
+            recoil_file = Path(self.directory, f"{old_name}.{recoil_suffix}")
             if recoil_file.exists():
                 new_name = recoil_element.get_full_name() + recoil_suffix
                 gf.rename_file(recoil_file, new_name)
@@ -331,7 +327,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 self.to_file()
                 self.__erd_filehandler.update()
 
-            simu_file = Path(self.directory, old_name + ".simu")
+            simu_file = Path(self.directory, f"{old_name}.simu")
             if simu_file.exists():
                 new_name = recoil_element.get_full_name() + ".simu"
                 gf.rename_file(simu_file, new_name)
@@ -367,6 +363,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         mcsimu["use_default_settings"] = \
             mcsimu["use_default_settings"] == "True"
         mcsimu["simulation_type"] = SimulationType(mcsimu["simulation_type"])
+        mcsimu["simulation_mode"] = SimulationMode(mcsimu["simulation_mode"])
 
         full_name = mcsimu.pop("name")
         try:
@@ -502,7 +499,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         try:
             if file_path is None:
                 file_path = self.get_default_file_path()
-            os.remove(file_path)
+            file_path.unlink()
         except (OSError, IsADirectoryError, PermissionError):
             pass
 
@@ -658,7 +655,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         new_erd_file = Path(self.directory, new_erd_file)
         try:
             # remove file if it exists previously
-            os.remove(new_erd_file)
+            new_erd_file.unlink()
         except OSError:
             pass
 
@@ -805,10 +802,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         Return:
             path to the espe file
         """
-        if self.simulation_type == SimulationType.ERD:
-            suffix = "recoil"
-        else:
-            suffix = "scatter"
+        suffix = self.simulation_type.get_recoil_suffix()
 
         if optimization_type is OptimizationType.RECOIL:
             recoil = self.optimization_recoils[0]
@@ -828,7 +822,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         espe_file = Path(self.directory, espe_file)
         recoil_file = Path(self.directory, recoil_file)
 
-        with open(recoil_file, "w") as rec_file:
+        with recoil_file.open("w") as rec_file:
             rec_file.write("\n".join(recoil_element.get_mcerd_params()))
 
         if ch:

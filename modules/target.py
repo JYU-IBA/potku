@@ -28,9 +28,10 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import os
 import json
 import time
+
+from pathlib import Path
 
 from modules.element import Element
 from modules.layer import Layer
@@ -83,21 +84,22 @@ class Target:
             self.layers = layers
 
     @classmethod
-    def from_file(cls, target_file_path, measurement_file_path, request):
+    def from_file(cls, target_file_path: Path, measurement_file_path: Path,
+                  request):
         """Initialize target from a JSON file.
 
         Args:
             target_file_path: A file path to JSON file containing the target
-            parameters.
+                parameters.
             measurement_file_path: A file path to JSON file containing target
-            angles.
+                angles.
             request: Request object which has default target angles.
 
         Return:
             Returns a Target object with parameters read from files.
         """
 
-        with open(target_file_path) as tgt_file:
+        with target_file_path.open("r") as tgt_file:
             target = json.load(tgt_file)
 
         target["modification_time"] = target.pop("modification_time_unix")
@@ -114,13 +116,16 @@ class Target:
             layers.append(Layer(**layer, elements=elements))
 
         try:
-            with open(measurement_file_path) as mesu:
+            with measurement_file_path.open("r") as mesu:
                 measurement = json.load(mesu)
             target_theta = measurement["geometry"]["target_theta"]
         # If keys do not exist or measurement_file_path is empty or file
         # doesn't exist:
-        except (OSError, KeyError, TypeError):
-            target_theta = request.default_target.target_theta
+        except (OSError, KeyError, AttributeError):
+            try:
+                target_theta = request.default_target.target_theta
+            except AttributeError:
+                return cls(**target, layers=layers)
 
         # Note: this way of using kwargs does make it harder to maintain
         # forward compatibility as there may be a need to add more fields
@@ -128,7 +133,7 @@ class Target:
         # the __init__ method.
         return cls(**target, target_theta=target_theta, layers=layers)
 
-    def to_file(self, target_file_path, measurement_file_path):
+    def to_file(self, target_file_path: Path, measurement_file_path: Path):
         """
         Save target parameters into files.
 
@@ -161,13 +166,13 @@ class Target:
             obj["layers"].append(layer_obj)
 
         if target_file_path is not None:
-            with open(target_file_path, "w") as file:
+            with target_file_path.open("w") as file:
                 json.dump(obj, file, indent=4)
 
         if measurement_file_path is not None:
             # Read .measurement to obj to update only target angles
-            if os.path.exists(measurement_file_path):
-                with open(measurement_file_path) as mesu:
+            if measurement_file_path.exists():
+                with measurement_file_path.open("r") as mesu:
                     obj = json.load(mesu)
                 obj["geometry"]["target_theta"] = self.target_theta
             else:
@@ -177,5 +182,5 @@ class Target:
                     }
                 }
 
-            with open(measurement_file_path, "w") as file:
+            with measurement_file_path.open("w") as file:
                 json.dump(obj, file, indent=4)

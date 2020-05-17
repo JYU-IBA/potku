@@ -140,6 +140,11 @@ class SimulationType(str, Enum):
     def get_recoil_type(self):
         return str(self).lower()
 
+    def get_recoil_suffix(self):
+        if self is SimulationType.ERD:
+            return "recoil"
+        return "scatter"
+
 
 @enum.unique
 class SimulationMode(str, Enum):

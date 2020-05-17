@@ -99,7 +99,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             self.modification_time = time.time()
         else:
             self.modification_time = modification_time
-        self.type = detector_type
+        self.type = DetectorType(detector_type)
         self.foils = foils
 
         if not self.foils:
@@ -146,10 +146,10 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             directory: Path to where all the detector information goes.
         """
         self.path = Path(directory)
-        os.makedirs(self.path, exist_ok=True)
+        self.path.mkdir(exist_ok=True)
 
         self.efficiency_directory = Path(self.path, Detector.EFFICIENCY_DIR)
-        os.makedirs(self.efficiency_directory, exist_ok=True)
+        self.efficiency_directory.mkdir(exist_ok=True)
 
     def update_directory_references(self, obj):
         """
@@ -244,7 +244,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             used_eff_file = \
                 self.get_used_efficiencies_dir() / \
                 Detector.get_used_efficiency_file_name(file_name)
-            os.remove(used_eff_file)
+            used_eff_file.unlink()
         except (OSError, ValueError):
             # File was not found in efficiency file folder or the file extension
             # was wrong.
@@ -271,6 +271,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
 
         detector["modification_time"] = detector.pop("modification_time_unix")
         detector["virtual_size"] = tuple(detector["virtual_size"])
+        detector["detector_type"] = DetectorType(detector["detector_type"])
 
         foils = []
 
@@ -304,18 +305,20 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
                    foils=foils, detector_theta=detector_theta,
                    save_on_creation=save, **detector)
 
-    def to_file(self, detector_file_path, measurement_file_path):
+    def to_file(self, detector_file_path: Path, measurement_file_path: Path):
         """Save detector settings to a file.
 
         Args:
             detector_file_path: File in which the detector settings will be
-                                saved.
+                saved.
             measurement_file_path: File in which the detector_theta angle is
-                                   saved.
+                saved.
         """
         # Delete possible extra .detector files
-        det_folder = Path(detector_file_path).parent
-        os.makedirs(det_folder, exist_ok=True)
+        detector_file_path = Path(detector_file_path)
+        measurement_file_path = Path(measurement_file_path)
+        det_folder = detector_file_path.parent
+        det_folder.mkdir(exist_ok=True)
         gf.remove_files(det_folder, exts={".detector"})
 
         timestamp = time.time()
@@ -332,14 +335,14 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             "modification_time_unix": timestamp
         }
 
-        with open(detector_file_path, "w") as file:
+        with detector_file_path.open("w") as file:
             json.dump(obj, file, indent=4)
 
         if measurement_file_path is None:
             return
         # Read .measurement to obj to update only detector angles
         try:
-            with open(measurement_file_path) as mesu:
+            with measurement_file_path.open("w") as mesu:
                 obj = json.load(mesu)
             try:
                 # Change existing detector theta
@@ -351,7 +354,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             # Write new .measurement file
             obj = {"geometry": {"detector_theta": self.detector_theta}}
 
-        with open(measurement_file_path, "w") as file:
+        with measurement_file_path.open("w") as file:
             json.dump(obj, file, indent=4)
 
     def get_mcerd_params(self):
