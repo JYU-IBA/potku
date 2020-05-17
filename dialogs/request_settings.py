@@ -55,6 +55,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
     A Dialog for modifying request settings.
     """
 
+    settings_updated = QtCore.pyqtSignal()
+
     def __init__(self, main_window, request, icon_manager):
         """Constructor for the program
 
@@ -114,7 +116,12 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.original_simulation_type = \
             self.request.default_element_simulation.simulation_type
 
-        self.exec_()
+    def closeEvent(self, event):
+        try:
+            self.settings_updated.disconnect()
+        except AttributeError:
+            pass
+        super().closeEvent(event)
 
     def __check_for_red(self):
         """
@@ -130,6 +137,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         """
         can_close = self.__update_settings()
         if can_close:
+            self.settings_updated.emit()
             self.close()
 
     def values_changed(self):

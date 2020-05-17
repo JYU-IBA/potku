@@ -87,7 +87,7 @@ class Potku(QtWidgets.QMainWindow):
     MAX_RECENT_FILES = 20
     RECENT_FILES_KEY = "recently_opened"
 
-    global_settings_updated = QtCore.pyqtSignal(GlobalSettings)
+    settings_updated = QtCore.pyqtSignal([], [GlobalSettings])
 
     def __init__(self):
         """Init main window for Potku.
@@ -601,7 +601,7 @@ class Potku(QtWidgets.QMainWindow):
 
             if type(tab) is SimulationTabWidget:
                 kwargs = {
-                    "settings_updated": self.global_settings_updated,
+                    "settings_updated": self.settings_updated,
                     "ion_division": self.settings.get_ion_division(),
                     "min_presim_ions": self.settings.get_min_presim_ions(),
                     "min_sim_ions": self.settings.get_min_simulation_ions()
@@ -769,7 +769,7 @@ class Potku(QtWidgets.QMainWindow):
         """Opens global settings dialog.
         """
         gsd = GlobalSettingsDialog(self.settings)
-        gsd.settings_updated.connect(self.global_settings_updated.emit)
+        gsd.settings_updated.connect(self.settings_updated[GlobalSettings].emit)
         gsd.exec_()
 
     def open_new_measurement(self):
@@ -1030,7 +1030,9 @@ class Potku(QtWidgets.QMainWindow):
     def open_request_settings(self):
         """Opens request settings dialog.
         """
-        RequestSettingsDialog(self, self.request, self.icon_manager)
+        rsd = RequestSettingsDialog(self, self.request, self.icon_manager)
+        rsd.settings_updated.connect(self.settings_updated.emit)
+        rsd.exec_()
 
     def remove_tab(self, tab_index):
         """Remove tab.
@@ -1174,7 +1176,7 @@ class Potku(QtWidgets.QMainWindow):
                         ion_division=self.settings.get_ion_division(),
                         min_presim_ions=self.settings.get_min_presim_ions(),
                         min_sim_ions=self.settings.get_min_simulation_ions(),
-                        settings_updated=self.global_settings_updated
+                        settings_updated=self.settings_updated
                     )
 
                     self.tabs.addTab(tab, simulation.name)

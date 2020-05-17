@@ -30,6 +30,7 @@ __version__ = "2.0"
 
 import widgets.binding as bnd
 
+from typing import Optional
 from rx import operators as ops
 from pathlib import Path
 
@@ -152,6 +153,8 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         self._settings_updated = settings_updated
         if self._settings_updated is not None:
             self._settings_updated.connect(self.settings_update_handler)
+            self._settings_updated[GlobalSettings].connect(
+                self.settings_update_handler)
 
     def closeEvent(self, event):
         """Disconnects self from recoil_name_changed signal and closes the
@@ -262,8 +265,9 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         self.observed_atoms = status["atom_count"]
         self.simulation_state = status["state"]
 
-    def settings_update_handler(self, settings):
-        if isinstance(settings, GlobalSettings):
+    def settings_update_handler(
+            self, settings: Optional[GlobalSettings] = None):
+        if settings is not None:
             self._ion_division = settings.get_ion_division()
             self._min_presim_ions = settings.get_min_presim_ions()
             self._min_sim_ions = settings.get_min_simulation_ions()

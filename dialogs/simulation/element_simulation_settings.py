@@ -36,6 +36,7 @@ from pathlib import Path
 
 from PyQt5 import uic
 from PyQt5 import QtWidgets
+from PyQt5 import QtCore
 from PyQt5.QtWidgets import QDesktopWidget
 from PyQt5.QtWidgets import QApplication
 
@@ -45,6 +46,8 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
                                       metaclass=gutils.QtABCMeta):
     """Class for creating an element simulation settings tab.
     """
+    settings_updated = QtCore.pyqtSignal()
+
     use_default_settings = bnd.bind("defaultSettingsCheckBox",
                                     track_change=True)
 
@@ -70,7 +73,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
         self.tabs.setTabBarAutoHide(True)
         screen_geometry = QDesktopWidget \
             .availableGeometry(QApplication.desktop())
-        self.resize(self.geometry().width(),
+        self.resize(self.geometry().width() * 1.2,
                     screen_geometry.size().height() * 0.8)
 
         self.OKButton.clicked.connect(self.update_settings_and_close)
@@ -81,7 +84,12 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
         self.__original_property_values = {}
         self.use_default_settings = self.element_simulation.use_default_settings
 
-        self.exec_()
+    def closeEvent(self, event):
+        try:
+            self.settings_updated.disconnect()
+        except AttributeError:
+            pass
+        super().closeEvent(event)
 
     def get_original_property_values(self):
         """Returns the original values of the properties that this widget
@@ -104,6 +112,7 @@ class ElementSimulationSettingsDialog(QtWidgets.QDialog,
         True.
         """
         if self.update_settings():
+            self.settings_updated.emit()
             self.close()
 
     def update_settings(self):

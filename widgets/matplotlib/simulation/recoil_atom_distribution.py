@@ -205,7 +205,8 @@ class ElementManager:
             self.parent, element, self.parent_tab, element_simulation, color,
             self.icon_manager, statusbar=self.statusbar,
             spectra_changed=spectra_changed,
-            recoil_name_changed=recoil_name_changed)
+            recoil_name_changed=recoil_name_changed,
+            settings_updated=settings_updated)
         recoil_element.widgets.append(element_widget)
 
         # Add simulation controls widget
@@ -240,7 +241,8 @@ class ElementManager:
             self.parent_tab, element_simulation,
             element_simulation.recoil_elements[0].color, self.icon_manager,
             statusbar=self.statusbar, spectra_changed=spectra_changed,
-            recoil_name_changed=recoil_name_changed)
+            recoil_name_changed=recoil_name_changed,
+            settings_updated=settings_updated)
         element_simulation.recoil_elements[0] \
             .widgets.append(main_element_widget)
 
@@ -624,15 +626,6 @@ class RecoilAtomDistributionWidget(MatplotlibWidget):
             interval_changed=self.limit_changed
         )
         self.tab.add_widget(percentage_widget)
-
-    def open_element_simulation_settings(self):
-        """
-        Open element simulation settings.
-        """
-        if not self.current_element_simulation:
-            return
-        ElementSimulationSettingsDialog(self.current_element_simulation,
-                                        self.tab)
 
     def open_recoil_element_info(self):
         """
