@@ -35,7 +35,6 @@ from pathlib import Path
 
 from modules.element_simulation import SimulationState
 from modules.element_simulation import ElementSimulation
-from modules.concurrency import CancellationToken
 from modules.enums import IonDivision
 from widgets.gui_utils import GUIObserver
 
@@ -100,7 +99,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
 
     def __init__(self, element_simulation: ElementSimulation,
                  recoil_dist_widget, recoil_name_changed=None,
-                 ion_division=IonDivision.BOTH):
+                 ion_division=IonDivision.BOTH, settings_updated=None):
         """
         Initializes a SimulationControlsWidget.
 
@@ -110,6 +109,8 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
              recoil_name_changed: signal that indicates that a recoil name
                 has changed.
             ion_division: ion division mode
+            settings_updated: signal that indicates that simulation settings
+                have updated.
         """
         super().__init__()
         GUIObserver.__init__(self)
@@ -142,12 +143,20 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         if self.recoil_name_changed is not None:
             self.recoil_name_changed.connect(self._set_name)
 
+        self.settings_updated = settings_updated
+        if self.settings_updated is not None:
+            self.settings_updated.connect(self.show_ions_per_process)
+
     def closeEvent(self, event):
         """Disconnects self from recoil_name_changed signal and closes the
         widget.
         """
         try:
             self.recoil_name_changed.disconnect(self._set_name)
+        except (AttributeError, TypeError):
+            pass
+        try:
+            self.settings_updated.disconnect(self.show_ions_per_process)
         except (AttributeError, TypeError):
             pass
         super().closeEvent(event)
@@ -246,7 +255,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         self.observed_atoms = status["atom_count"]
         self.simulation_state = status["state"]
 
-    def show_ions_per_process(self, process_count):
+    def show_ions_per_process(self):
         # TODO this method is supposed to show how the ion counts are divided
         #      per process. ATM cannot update ion counts immeadiately after
         #      settings change, so this function is only printing the values
@@ -255,8 +264,9 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         #      this when the simulation starts
         settings, _, _ = self.element_simulation.get_mcerd_params()
         try:
-            preions = settings["number_of_ions_in_presimu"] // process_count
-            ions = settings["number_of_ions"] // process_count
+            preions = settings["number_of_ions_in_presimu"] // \
+                      self.process_count
+            ions = settings["number_of_ions"] // self.process_count
             print("Number of ions per process (pre/full):", preions, ions)
         except ZeroDivisionError:
             # User set the value of the spinbox to 0, lets

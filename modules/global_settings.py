@@ -26,216 +26,166 @@ along with this program (file named 'LICENCE').
 """
 __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Samuli Rahkonen \n Miika Raunio \n Severi Jääskeläinen \n " \
-             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
+             "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen \n " \
+             "Juhani Sundell"
 __version__ = "2.0"
 
 import configparser
-import os
 
+from modules.enums import IonDivision
 from pathlib import Path
 
 
-class GlobalSettings:
-    """Global settings class to handle software settings.
-    """
+def handle_exceptions(return_value=None, attr=None):
+    """Decorator that handles exceptions that can occur when values are read
+    from configparser.
 
-    def __init__(self, save_on_creation=True):
+    Args:
+        return_value: default return value if an error occurs
+        attr: if return value is None, this function returns the value of the
+            given attribute. This attribute must belong to the instance whose
+            method is being decorated.
+    """
+    def outer(f):
+        def inner(instance, *args, **kwargs):
+            try:
+                return f(instance, *args, **kwargs)
+            except (configparser.NoSectionError, configparser.NoOptionError,
+                    KeyError, ValueError):
+                if return_value is not None:
+                    return return_value
+                return getattr(instance, attr)
+        return inner
+    return outer
+
+
+class GlobalSettings:
+    """Global settings class to handle portable software settings, i.e. these
+    settings can be ported from one installation to another.
+    """
+    # Config file name. Number according to release.
+    _CONFIG_FILE = "potku2.ini"
+
+    # Section keys
+    _DEFAULT = "default"
+    _COLORS = "colors"
+    _TIMING = "import_timing"
+    _DEPTH_PROFILE = "depth_profile"
+    _TOFE = "tof-e_graph"
+    _SIMULATION = "simulation"
+
+    def __init__(self, config_dir=None, save_on_creation=True):
         """Inits GlobalSettings class.
         """
-        self.__config_directory = Path(os.path.expanduser("~"), "potku")
-        # Number according to release!
-        self.__config_file = Path(self.__config_directory, "potku2.ini")
+        if config_dir is None:
+            self.__config_directory = Path.home() / "potku"
+        else:
+            self.__config_directory = Path(config_dir)
+
         self.__config = configparser.ConfigParser()
+        # Make the configparser's string handling case sensitive by defining
+        # optionxform
+        self.__config.optionxform = str
 
-        self.__request_directory = Path(self.__config_directory, "requests")
+        self._request_directory = Path(self.__config_directory, "requests")
 
-        if save_on_creation:
-            os.makedirs(self.__config_directory, exist_ok=True)
-            os.makedirs(self.__request_directory, exist_ok=True)
-
-        self.__request_directory_last_open = self.__request_directory
-        self.__element_colors = {"H": "#b4903c",
-                                 "He": "red",
-                                 "Li": "red",
-                                 "Be": "red",
-                                 "B": "red",
-                                 "C": "#513c34",
-                                 "N": "#00aa00",
-                                 "O": "#0000ff",
-                                 "F": "red",
-                                 "Ne": "red",
-                                 "Na": "red",
-                                 "Mg": "red",
-                                 "Al": "red",
-                                 "Si": "#800080",
-                                 "P": "red",
-                                 "S": "red",
-                                 "Cl": "#c200c2",
-                                 "Ar": "red",
-                                 "K": "red",
-                                 "Ca": "red",
-                                 "Sc": "red",
-                                 "Ti": "red",
-                                 "V": "red",
-                                 "Cr": "red",
-                                 "Mn": "red",
-                                 "Fe": "red",
-                                 "Co": "red",
-                                 "Ni": "red",
-                                 "Cu": "#ffaa00",
-                                 "Zn": "red",
-                                 "Ga": "red",
-                                 "Ge": "red",
-                                 "As": "red",
-                                 "Se": "red",
-                                 "Br": "red",
-                                 "Kr": "red",
-                                 "Rb": "red",
-                                 "Sr": "red",
-                                 "Y": "red",
-                                 "Zr": "red",
-                                 "Nb": "red",
-                                 "Mo": "red",
-                                 "Tc": "red",
-                                 "Ru": "red",
-                                 "Rh": "red",
-                                 "Pd": "red",
-                                 "Ag": "red",
-                                 "Cd": "red",
-                                 "In": "red",
-                                 "Sn": "red",
-                                 "Sb": "red",
-                                 "Te": "red",
-                                 "I": "red",
-                                 "Xe": "red",
-                                 "Cs": "red",
-                                 "Ba": "red",
-                                 "La": "red",
-                                 "Ce": "red",
-                                 "Pr": "red",
-                                 "Nd": "red",
-                                 "Pm": "red",
-                                 "Sm": "red",
-                                 "Eu": "red",
-                                 "Gd": "red",
-                                 "Tb": "red",
-                                 "Dy": "red",
-                                 "Ho": "red",
-                                 "Er": "red",
-                                 "Tm": "red",
-                                 "Yb": "red",
-                                 "Lu": "red",
-                                 "Hf": "red",
-                                 "Ta": "red",
-                                 "W": "red",
-                                 "Re": "red",
-                                 "Os": "red",
-                                 "Ir": "red",
-                                 "Pt": "red",
-                                 "Au": "red",
-                                 "Hg": "red",
-                                 "Tl": "red",
-                                 "Pb": "red",
-                                 "Bi": "red",
-                                 "Po": "red",
-                                 "At": "red",
-                                 "Rn": "red",
-                                 "Fr": "red",
-                                 "Ra": "red",
-                                 "Ac": "red",
-                                 "Th": "red",
-                                 "Pa": "red",
-                                 "U": "red",
-                                 "Np": "red",
-                                 "Pu": "red",
-                                 "Am": "red",
-                                 "Cm": "red",
-                                 "Bk": "red",
-                                 "Cf": "red",
-                                 "Es": "red",
-                                 "Fm": "red",
-                                 "Md": "red",
-                                 "No": "red",
-                                 "Lr": "red",
-                                 "Rf": "red",
-                                 "Db": "red",
-                                 "Sg": "red",
-                                 "Bh": "red",
-                                 "Hs": "red",
-                                 "Mt": "red",
-                                 "Ds": "red",
-                                 "Rg": "red",
-                                 "Cn": "red",
-                                 "Uut": "red",
-                                 "Fl": "red",
-                                 "Uup": "red",
-                                 "Lv": "red",
-                                 "Uus": "red",
-                                 "Uuo": "red"}
+        self._request_directory_last_open = self._request_directory
+        self.__element_colors = GlobalSettings.get_default_colors()
 
         # These are for strings in Depth Profile Dialog.
-        self.__flags_cross_section = {1: "Rutherford", 2: "L'Ecuyer",
-                                      3: "Andersen"}
+        self.__flags_cross_section = {
+            1: "Rutherford",
+            2: "L'Ecuyer",
+            3: "Andersen"
+        }
 
-        if not self.__config_file.exists():
-            self.__set_defaults()
+        self.__create_sections()
+        if not self.get_config_file().exists():
+            # self.__set_defaults()
             # Set default request directory
-            self.set_request_directory(self.__request_directory)
+            self.set_request_directory(self._request_directory)
             if save_on_creation:
                 self.save_config()
         else:
             self.__load_config()
 
+    def __create_sections(self):
+        """Creates sections for the configparser.
+        """
+        self.__config.add_section(self._DEFAULT)
+        self.__config.add_section(self._COLORS)
+        self.__config.add_section(self._TIMING)
+        self.__config.add_section(self._DEPTH_PROFILE)
+        self.__config.add_section(self._TOFE)
+        self.__config.add_section(self._SIMULATION)
+
     def __set_defaults(self):
         """Set settings to default values.
         """
-        self.__config.add_section("default")
-        self.__config.add_section("colors")
-        self.__config.add_section("import_timing")
-        self.__config.add_section("depth_profile")
-        self.__config.add_section("tof-e_graph")
-        self.__config.set("default", "request_directory",
-                          str(self.__request_directory))
-        self.__config.set("default",
-                          "request_directory_last_open",
-                          str(self.__request_directory_last_open))
-        keys = self.__element_colors.keys()
-        for key in keys:
-            self.__config.set("colors", key, self.__element_colors[key])
-        self.__config.set("import_timing", "0", "-1000,1000")
-        self.__config.set("import_timing", "1", "-1000,1000")
-        self.__config.set("import_timing", "2", "-1000,1000")
-        self.__config.set("default", "preview_coincidence_count", "10000")
-        self.__config.set("default", "es_output", "False")
-        self.__config.set("depth_profile", "cross_section", "3")
-        self.__config.set("depth_profile", "num_iter", "4")
-        self.__config.set("tof-e_graph", "transpose", "False")
-        self.__config.set("tof-e_graph", "invert_x", "False")
-        self.__config.set("tof-e_graph", "invert_y", "False")
-        self.__config.set("tof-e_graph", "color_scheme", "Default color")
-        self.__config.set("tof-e_graph", "bin_range_mode", "0")
-        self.__config.set("tof-e_graph", "bin_range_x_max", "8000")
-        self.__config.set("tof-e_graph", "bin_range_x_min", "0")
-        self.__config.set("tof-e_graph", "bin_range_y_max", "8000")
-        self.__config.set("tof-e_graph", "bin_range_y_min", "0")
-        self.__config.set("tof-e_graph", "compression_x", "6")
-        self.__config.set("tof-e_graph", "compression_y", "6")
+        # TODO remove this function
+        self.__config.set(
+            self._DEFAULT, "request_directory", str(self._request_directory))
+        self.__config.set(
+            self._DEFAULT, "request_directory_last_open",
+            str(self._request_directory_last_open))
+
+        for elem, color in self.__element_colors.items():
+            self.__config.set(self._COLORS, elem, color)
+
+        self.__config.set(self._TIMING, "0", "-1000,1000")
+        self.__config.set(self._TIMING, "1", "-1000,1000")
+        self.__config.set(self._TIMING, "2", "-1000,1000")
+        self.__config.set(self._DEFAULT, "preview_coincidence_count", "10000")
+        self.__config.set(self._DEFAULT, "es_output", "False")
+        self.__config.set(self._DEPTH_PROFILE, "cross_section", "3")
+        self.__config.set(self._DEPTH_PROFILE, "num_iter", "4")
+        self.__config.set(self._TOFE, "transpose", "False")
+        self.__config.set(self._TOFE, "invert_x", "False")
+        self.__config.set(self._TOFE, "invert_y", "False")
+        self.__config.set(self._TOFE, "color_scheme", "Default color")
+        self.__config.set(self._TOFE, "bin_range_mode", "0")
+        self.__config.set(self._TOFE, "bin_range_x_max", "8000")
+        self.__config.set(self._TOFE, "bin_range_x_min", "0")
+        self.__config.set(self._TOFE, "bin_range_y_max", "8000")
+        self.__config.set(self._TOFE, "bin_range_y_min", "0")
+        self.__config.set(self._TOFE, "compression_x", "6")
+        self.__config.set(self._TOFE, "compression_y", "6")
+        self.__config.set(self._SIMULATION, "min_presim_ions", "10000")
+        self.__config.set(self._SIMULATION, "min_sim_ions", "100000")
+        self.__config.set(self._SIMULATION, "ion_division", "2")
+        # TODO min y value
+
+    def set_config_dir(self, directory: Path):
+        """Sets the directory of the config file.
+        """
+        self.__config_directory = Path(directory)
+
+    def get_config_file(self) -> Path:
+        """Returns the path to the config file.
+        """
+        return self.__config_directory / self._CONFIG_FILE
 
     def __load_config(self):
         """Load old settings and set values.
         """
-        self.__config.read(self.__config_file)
+        try:
+            self.__config.read(self.get_config_file())
+        except configparser.ParsingError:
+            pass
 
     def save_config(self):
         """Save current global settings.
         """
-        with open(self.__config_file, 'wt+') as configfile:
-            self.__config.write(configfile)
+        config_file = self.get_config_file()
+        config_file.parent.mkdir(exist_ok=True)
+        with config_file.open("wt+") as file:
+            self.__config.write(file)
 
+    @handle_exceptions(attr="_request_directory")
     def get_request_directory(self) -> Path:
         """Get default request directory.
         """
-        return Path(self.__config["default"]["request_directory"])
+        return Path(self.__config[self._DEFAULT]["request_directory"])
 
     def set_request_directory(self, directory: Path):
         """Save default request directory.
@@ -244,13 +194,13 @@ class GlobalSettings:
             directory: String representing folder where requests will be saved
             by default.
         """
-        self.__config["default"]["request_directory"] = str(directory)
-        self.save_config()
+        self.__config[self._DEFAULT]["request_directory"] = str(directory)
 
+    @handle_exceptions(attr="_request_directory_last_open")
     def get_request_directory_last_open(self) -> Path:
         """Get directory where last request was opened.
         """
-        return Path(self.__config["default"]["request_directory_last_open"])
+        return Path(self.__config[self._DEFAULT]["request_directory_last_open"])
 
     def set_request_directory_last_open(self, directory: Path):
         """Save last opened request directory.
@@ -258,7 +208,9 @@ class GlobalSettings:
         Args:
             directory: String representing request folder.
         """
-        self.__config["default"]["request_directory_last_open"] = str(directory)
+        # TODO use qsettings to do this
+        self.__config[self._DEFAULT]["request_directory_last_open"] = str(
+            directory)
         self.save_config()
 
     def get_element_colors(self):
@@ -267,7 +219,11 @@ class GlobalSettings:
         Return:
             Returns a dictionary of elements' colors.
         """
-        return self.__config["colors"]
+        try:
+            return self.__config[self._COLORS]
+        except KeyError:
+            self.__config[self._COLORS] = self.__element_colors
+            return self.__config[self._COLORS]
 
     def get_element_color(self, element):
         """Get a specific element's color.
@@ -278,7 +234,10 @@ class GlobalSettings:
         Return:
             Returns a color (string) for a specific element.
         """
-        return self.__config["colors"][element]
+        try:
+            return self.__config[self._COLORS][element]
+        except (configparser.NoSectionError, KeyError):
+            return self.__element_colors.get(element, "red")
 
     def set_element_color(self, element, color):
         """Set default color for an element.
@@ -287,8 +246,9 @@ class GlobalSettings:
             element: String representing element.
             color: String representing color.
         """
-        self.__config["colors"][element] = color
+        self.__config[self._COLORS][element] = color
 
+    @handle_exceptions(return_value=(-1000, 1000))
     def get_import_timing(self, adc):
         """Get coincidence timings for specific ADC.
 
@@ -298,10 +258,11 @@ class GlobalSettings:
         Return:
             Returns low & high values for coincidence timing.
         """
-        try:
-            return self.__config["import_timing"][str(adc)].split(',')
-        except:  # Default if doesn't exist.
-            return -1000, 1000
+        low, high = self.__config[self._TIMING][str(adc)].split(',')
+        low, high = int(low), int(high)
+        if low <= high:
+            return low, high
+        return high, low
 
     def set_import_timing(self, adc, low, high):
         """Set coincidence timings for specific ADC.
@@ -313,26 +274,24 @@ class GlobalSettings:
         """
         if high < low:  # Quick fix just in case
             low, high = high, low
-        self.__config["import_timing"][str(adc)] = "{0},{1}".format(low, high)
+        self.__config[self._TIMING][str(adc)] = f"{low},{high}"
 
-    def get_import_coinc_count(self):
+    @handle_exceptions(return_value=10_000)
+    def get_import_coinc_count(self) -> int:
         """Get how many coincidences will be collected for timing preview.
 
         Return:
             Returns an integer representing coincidence count.
         """
-        try:
-            return int(self.__config["default"]["preview_coincidence_count"])
-        except:  # Default if doesn't exist.
-            return 10000
+        return self.__config.getint(self._DEFAULT, "preview_coincidence_count")
 
-    def set_import_coinc_count(self, count):
+    def set_import_coinc_count(self, count: int):
         """Set coincidence timings for specific ADC.
 
         Args:
             count: An integer representing coincidence count.
         """
-        self.__config["default"]["preview_coincidence_count"] = str(count)
+        self.__config[self._DEFAULT]["preview_coincidence_count"] = str(count)
 
     def get_cross_sections_text(self):
         """Get cross sections flag as text.
@@ -342,140 +301,137 @@ class GlobalSettings:
         """
         return self.__flags_cross_section[self.get_cross_sections()]
 
-    def get_cross_sections(self):
+    @handle_exceptions(return_value=3)
+    def get_cross_sections(self) -> int:
         """Get cross section model to be used in depth profile.
 
         Return:
             Returns an integer representing cross sections flag.
         """
-        try:
-            return int(self.__config["depth_profile"]["cross_section"])
-        except:  # Default if doesn't exist.
-            return 1
+        return self.__config.getint(self._DEPTH_PROFILE, "cross_section")
 
-    def set_cross_sections(self, flag):
+    def set_cross_sections(self, flag: int):
         """Set cross sections used in depth profile to settings.
 
         Args:
             flag: An integer representing cross sections flag.
         """
-        self.__config["depth_profile"]["cross_section"] = str(flag)
+        self.__config[self._DEPTH_PROFILE]["cross_section"] = str(flag)
 
-    def is_es_output_saved(self):
+    @staticmethod
+    def is_es_output_saved() -> bool:
         """Is Energy Spectrum output saved or not.
 
         Return:
             Returns a boolean representing will Potku save output or not.
         """
-        # try:
-        #     return self.__config["default"]["es_output"] == "True"
-        # except:  # Default if doesn't exist.
-        #     return False
-
         # We want to always save energy spectra.
         return True
 
-    def set_es_output_saved(self, flag):
+    def set_es_output_saved(self, flag: bool):
         """Set whether Energy Spectrum output is saved or not.
 
         Args:
             flag: A boolean representing will Potku save output or not.
         """
-        self.__config["default"]["es_output"] = str(flag)
+        self.__config[self._DEFAULT]["es_output"] = str(flag)
 
-    def get_tofe_transposed(self):
+    @handle_exceptions(return_value=False)
+    def get_tofe_transposed(self) -> bool:
         """Get boolean if the ToF-E Histogram is transposed.
 
         Return:
             Returns a boolean if the ToF-E Histogram is transposed.
         """
-        return self.__config["tof-e_graph"]["transpose"] == "True"
+        return self.__config.getboolean(self._TOFE, "transpose")
 
-    def set_tofe_transposed(self, value):
+    def set_tofe_transposed(self, value: bool):
         """Set if ToF-E histogram is transposed.
 
         Args:
             value: A boolean representing if the ToF-E Histogram's X axis
                    is inverted.
         """
-        self.__config["tof-e_graph"]["transpose"] = str(str(value) == "True")
+        self.__config[self._TOFE]["transpose"] = str(value)
 
-    def get_tofe_invert_x(self):
+    @handle_exceptions(return_value=False)
+    def get_tofe_invert_x(self) -> bool:
         """Get boolean if the ToF-E Histogram's X axis is inverted.
 
         Return:
             Returns a boolean if the ToF-E Histogram's X axis is inverted.
         """
 
-        return self.__config["tof-e_graph"]["invert_x"] == "True"
+        return self.__config.getboolean(self._TOFE, "invert_x")
 
-    def set_tofe_invert_x(self, value):
+    def set_tofe_invert_x(self, value: bool):
         """Set if ToF-E histogram's X axis inverted.
 
         Args:
             value: A boolean representing if the ToF-E Histogram's X axis
                    is inverted.
         """
-        self.__config["tof-e_graph"]["invert_x"] = str(str(value) == "True")
+        self.__config[self._TOFE]["invert_x"] = str(value)
 
-    def get_tofe_invert_y(self):
+    @handle_exceptions(return_value=False)
+    def get_tofe_invert_y(self) -> bool:
         """Get boolean if the ToF-E Histogram's Y axis is inverted.
 
         Return:
             Returns a boolean if the ToF-E Histogram's Y axis is inverted.
         """
-        return self.__config["tof-e_graph"]["invert_y"] == "True"
+        return self.__config.getboolean(self._TOFE, "invert_y")
 
-    def set_tofe_invert_y(self, value):
+    def set_tofe_invert_y(self, value: bool):
         """Set if ToF-E histogram's Y axis inverted.
 
         Args:
             value: A boolean representing if the ToF-E Histogram's Y axis
                    is inverted.
         """
-        self.__config["tof-e_graph"]["invert_y"] = str(str(value) == "True")
+        self.__config[self._TOFE]["invert_y"] = str(value)
 
-    def set_num_iterations(self, value):
+    @handle_exceptions(return_value=4)
+    def get_num_iterations(self) -> int:
+        """Set the number of iterations erd_depth is to perform
+        """
+        return self.__config.getint(self._DEPTH_PROFILE, "num_iter")
+
+    def set_num_iterations(self, value: int):
         """Get the number of iterations erd_depth is to perform
 
         Return:
             Returns the number. As an integer.
         """
-        self.__config["depth_profile"]["num_iter"] = str(value)
+        self.__config[self._DEPTH_PROFILE]["num_iter"] = str(value)
 
-    def get_num_iterations(self):
-        """Set the number of iterations erd_depth is to perform
-        """
-        try:
-            return int(self.__config["depth_profile"]["num_iter"])
-        except:  # Default
-            return 3
-
-    def get_tofe_color(self):
+    @handle_exceptions(return_value="Default color")
+    def get_tofe_color(self) -> str:
         """Get color of the ToF-E Histogram.
 
         Return:
             Returns a string representing ToF-E histogram color scheme.
         """
-        return self.__config["tof-e_graph"]["color_scheme"]
+        return self.__config[self._TOFE]["color_scheme"]
 
-    def set_tofe_color(self, value):
+    def set_tofe_color(self, value: str):
         """Set  color of the ToF-E Histogram.
 
         Args:
             value: A string representing ToF-E histogram color scheme.
         """
-        self.__config["tof-e_graph"]["color_scheme"] = str(value)
+        self.__config[self._TOFE]["color_scheme"] = str(value)
 
-    def get_tofe_bin_range_mode(self):
+    @handle_exceptions(return_value=0)
+    def get_tofe_bin_range_mode(self) -> int:
         """Get ToF-E Histogram bin range mode.
 
         Return:
             Returns an integer representing ToF-E histogram bin range mode.
         """
-        return int(self.__config["tof-e_graph"]["bin_range_mode"])
+        return self.__config.getint(self._TOFE, "bin_range_mode")
 
-    def set_tofe_bin_range_mode(self, value):
+    def set_tofe_bin_range_mode(self, value: int):
         """Set ToF-E Histogram bin range automatic or manual.
 
         Args:
@@ -483,76 +439,244 @@ class GlobalSettings:
                    Automatic = 0
                    Manual = 1
         """
-        self.__config["tof-e_graph"]["bin_range_mode"] = str(value)
+        self.__config[self._TOFE]["bin_range_mode"] = str(value)
 
-    def get_tofe_bin_range_x(self):
+    @handle_exceptions(return_value=(0, 8000))
+    def get_tofe_bin_range_x(self) -> tuple:
         """Get ToF-E Histogram X axis bin range.
 
         Return:
-            Returns an integer representing ToF-E histogram X axis bin range.
+            Returns an integer tuple representing ToF-E histogram X axis bin
+            range.
         """
-        rmin = int(self.__config["tof-e_graph"]["bin_range_x_min"])
-        rmax = int(self.__config["tof-e_graph"]["bin_range_x_max"])
+        rmin = self.__config.getint(self._TOFE, "bin_range_x_min")
+        rmax = self.__config.getint(self._TOFE, "bin_range_x_max")
         return rmin, rmax
 
-    def set_tofe_bin_range_x(self, value_min, value_max):
+    def set_tofe_bin_range_x(self, value_min: int, value_max: int):
         """Set ToF-E Histogram X axis bin range.
 
         Args:
             value_min: An integer representing the axis range minimum.
             value_max: An integer representing the axis range maximum.
         """
-        self.__config["tof-e_graph"]["bin_range_x_min"] = str(value_min)
-        self.__config["tof-e_graph"]["bin_range_x_max"] = str(value_max)
+        self.__config[self._TOFE]["bin_range_x_min"] = str(value_min)
+        self.__config[self._TOFE]["bin_range_x_max"] = str(value_max)
 
-    def get_tofe_bin_range_y(self):
+    @handle_exceptions(return_value=(0, 8000))
+    def get_tofe_bin_range_y(self) -> tuple:
         """Get ToF-E Histogram Y axis bin range.
 
         Return:
-            Returns an integer representing ToF-E histogram Y axis bin range.
+            Returns an integer tuple representing ToF-E histogram Y axis bin
+            range.
         """
-        rmin = int(self.__config["tof-e_graph"]["bin_range_y_min"])
-        rmax = int(self.__config["tof-e_graph"]["bin_range_y_max"])
+        rmin = self.__config.getint(self._TOFE, "bin_range_y_min")
+        rmax = self.__config.getint(self._TOFE, "bin_range_y_max")
         return rmin, rmax
 
-    def set_tofe_bin_range_y(self, value_min, value_max):
+    def set_tofe_bin_range_y(self, value_min: int, value_max: int):
         """Set ToF-E Histogram Y axis bin range.
 
         Args:
             value_min: An integer representing the axis range minimum.
             value_max: An integer representing the axis range maximum.
         """
-        self.__config["tof-e_graph"]["bin_range_y_min"] = str(value_min)
-        self.__config["tof-e_graph"]["bin_range_y_max"] = str(value_max)
+        self.__config[self._TOFE]["bin_range_y_min"] = str(value_min)
+        self.__config[self._TOFE]["bin_range_y_max"] = str(value_max)
 
-    def get_tofe_compression_x(self):
+    @handle_exceptions(return_value=6)
+    def get_tofe_compression_x(self) -> int:
         """Get ToF-E Histogram X axis compression.
 
         Return:
             Returns an integer representing ToF-E histogram Y axis compression.
         """
-        return int(self.__config["tof-e_graph"]["compression_x"])
+        return self.__config.getint(self._TOFE, "compression_x")
 
-    def set_tofe_compression_x(self, value):
+    def set_tofe_compression_x(self, value: int):
         """Set ToF-E Histogram X axis compression.
 
         Args:
             value: An integer representing the axis compression.
         """
-        self.__config["tof-e_graph"]["compression_x"] = str(value)
+        self.__config[self._TOFE]["compression_x"] = str(value)
 
-    def get_tofe_compression_y(self):
+    @handle_exceptions(return_value=6)
+    def get_tofe_compression_y(self) -> int:
         """Get ToF-E Histogram Y axis compression.
 
         Return:
             Returns an integer representing ToF-E histogram Y axis compression.
         """
-        return int(self.__config["tof-e_graph"]["compression_y"])
+        return self.__config.getint(self._TOFE, "compression_y")
 
-    def set_tofe_compression_y(self, value):
+    def set_tofe_compression_y(self, value: int):
         """Set ToF-E Histogram Y axis compression.
 
         Args:
             value: An integer representing the axis compression.
         """
-        self.__config["tof-e_graph"]["compression_y"] = str(value)
+        self.__config[self._TOFE]["compression_y"] = str(value)
+
+    @handle_exceptions(return_value=10_000)
+    def get_min_presim_ions(self) -> int:
+        """Returns the minimum number of presimulation ions.
+        """
+        return self.__config.getint(self._SIMULATION, "min_presim_ions")
+
+    def set_min_presim_ions(self, value: int):
+        """Sets the minimum value of presimulation ions.
+        """
+        self.__config[self._SIMULATION]["min_presim_ions"] = str(value)
+
+    @handle_exceptions(return_value=100_000)
+    def get_min_simulation_ions(self) -> int:
+        """Returns the minimum number of simulation ions.
+        """
+        return self.__config.getint(self._SIMULATION, "min_sim_ions")
+
+    def set_min_simulation_ions(self, value: int):
+        """Sets the minimum number of simulation ions.
+        """
+        self.__config[self._SIMULATION]["min_sim_ions"] = str(value)
+
+    @handle_exceptions(return_value=IonDivision.BOTH)
+    def get_ion_division(self) -> IonDivision:
+        """Returns the ion division mode used in simulation.
+        """
+        return IonDivision(
+            self.__config.getint(self._SIMULATION, "ion_division")
+        )
+
+    def set_ion_division(self, value: IonDivision):
+        """Sets the value of ion division mode.
+        """
+        self.__config[self._SIMULATION]["ion_division"] = str(int(value))
+
+    @staticmethod
+    def get_default_colors():
+        """Returns a dictionary containing default color values for all
+        elements.
+        """
+        return {
+            "H": "#b4903c",
+            "He": "red",
+            "Li": "red",
+            "Be": "red",
+            "B": "red",
+            "C": "#513c34",
+            "N": "#00aa00",
+            "O": "#0000ff",
+            "F": "red",
+            "Ne": "red",
+            "Na": "red",
+            "Mg": "red",
+            "Al": "red",
+            "Si": "#800080",
+            "P": "red",
+            "S": "red",
+            "Cl": "#c200c2",
+            "Ar": "red",
+            "K": "red",
+            "Ca": "red",
+            "Sc": "red",
+            "Ti": "red",
+            "V": "red",
+            "Cr": "red",
+            "Mn": "red",
+            "Fe": "red",
+            "Co": "red",
+            "Ni": "red",
+            "Cu": "#ffaa00",
+            "Zn": "red",
+            "Ga": "red",
+            "Ge": "red",
+            "As": "red",
+            "Se": "red",
+            "Br": "red",
+            "Kr": "red",
+            "Rb": "red",
+            "Sr": "red",
+            "Y": "red",
+            "Zr": "red",
+            "Nb": "red",
+            "Mo": "red",
+            "Tc": "red",
+            "Ru": "red",
+            "Rh": "red",
+            "Pd": "red",
+            "Ag": "red",
+            "Cd": "red",
+            "In": "red",
+            "Sn": "red",
+            "Sb": "red",
+            "Te": "red",
+            "I": "red",
+            "Xe": "red",
+            "Cs": "red",
+            "Ba": "red",
+            "La": "red",
+            "Ce": "red",
+            "Pr": "red",
+            "Nd": "red",
+            "Pm": "red",
+            "Sm": "red",
+            "Eu": "red",
+            "Gd": "red",
+            "Tb": "red",
+            "Dy": "red",
+            "Ho": "red",
+            "Er": "red",
+            "Tm": "red",
+            "Yb": "red",
+            "Lu": "red",
+            "Hf": "red",
+            "Ta": "red",
+            "W": "red",
+            "Re": "red",
+            "Os": "red",
+            "Ir": "red",
+            "Pt": "red",
+            "Au": "red",
+            "Hg": "red",
+            "Tl": "red",
+            "Pb": "red",
+            "Bi": "red",
+            "Po": "red",
+            "At": "red",
+            "Rn": "red",
+            "Fr": "red",
+            "Ra": "red",
+            "Ac": "red",
+            "Th": "red",
+            "Pa": "red",
+            "U": "red",
+            "Np": "red",
+            "Pu": "red",
+            "Am": "red",
+            "Cm": "red",
+            "Bk": "red",
+            "Cf": "red",
+            "Es": "red",
+            "Fm": "red",
+            "Md": "red",
+            "No": "red",
+            "Lr": "red",
+            "Rf": "red",
+            "Db": "red",
+            "Sg": "red",
+            "Bh": "red",
+            "Hs": "red",
+            "Mt": "red",
+            "Ds": "red",
+            "Rg": "red",
+            "Cn": "red",
+            "Uut": "red",
+            "Fl": "red",
+            "Uup": "red",
+            "Lv": "red",
+            "Uus": "red",
+            "Uuo": "red"
+        }
+

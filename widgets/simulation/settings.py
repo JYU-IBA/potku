@@ -43,6 +43,7 @@ from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
 from PyQt5.QtCore import Qt
+from PyQt5.QtCore import pyqtSignal
 
 _TYPE_CONVERSION = {
     # 'RBS' and 'ERD' are the values stored internally in ElementSimulation,
@@ -71,8 +72,7 @@ def _simulation_type_from_combobox(instance, combobox):
     return _TYPE_CONVERSION[value]
 
 
-class SimulationSettingsWidget(QtWidgets.QWidget,
-                               PropertyTrackingWidget,
+class SimulationSettingsWidget(QtWidgets.QWidget, PropertyTrackingWidget,
                                metaclass=QtABCMeta):
     """Class for creating a simulation settings tab.
     """
@@ -103,6 +103,8 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
     seed_number = bnd.bind("seedSpinBox")
     modification_time = bnd.bind(
         "dateLabel", fget=bnd.unix_time_from_label, fset=bnd.unix_time_to_label)
+
+    settings_updated = pyqtSignal()
 
     def __init__(self, element_simulation: ElementSimulation):
         """
@@ -199,3 +201,4 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
                 recoil.to_file(self.element_simulation.directory)
 
         self.element_simulation.set_settings(**params)
+        self.settings_updated.emit()

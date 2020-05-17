@@ -35,10 +35,10 @@ import widgets.gui_utils as gutils
 from pathlib import Path
 
 from modules.base import ElementSimulationContainer
-from modules.element import Element
 from modules.detector import Detector
 
 from PyQt5 import QtWidgets
+from PyQt5 import QtGui
 
 
 def check_for_red(widget):
@@ -431,3 +431,28 @@ def set_up_side_panel(qwidget, key, side):
     qwidget.hidePanelButton.clicked.connect(
         lambda: gutils.change_arrow(qwidget.hidePanelButton)
     )
+
+
+def get_btn_stylesheet(color: QtGui.QColor):
+    """Returns a stylesheet for a button based on the given color.
+    """
+    luminance = 0.2126 * color.red() + 0.7152 * color.green()
+    luminance += 0.0722 * color.blue()
+    if luminance < 50:
+        text_color = "white"
+    else:
+        text_color = "black"
+    return f"background-color: {color.name()}; color: {text_color};"
+
+
+def set_btn_color(button: QtWidgets.QPushButton, color: QtGui.QColor, colormap,
+                  element: str):
+    """Sets the background and text color of a button depending on the given
+    color, colormap and element.
+    """
+    button.setStyleSheet(get_btn_stylesheet(color))
+
+    if color.name() == colormap[element]:
+        button.setText(f"Automatic [{element}]")
+    else:
+        button.setText("")
