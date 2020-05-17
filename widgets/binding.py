@@ -87,13 +87,21 @@ def set_items(list_widget: QtWidgets.QListWidget, ls):
         list_widget.addItem(item)
 
 
+def set_selected_combobox_item(combobox: QtWidgets.QComboBox, data):
+    """Sets the current item in a combobox depending on the given
+    data.
+    """
+    idx = combobox.findData(data, QtCore.Qt.UserRole, QtCore.Qt.MatchExactly)
+    if idx != -1:
+        combobox.setCurrentIndex(idx)
+
+
 # Collections of default getter and setter methods for various QObjects.
 # Keys are the types of the QObjects and values are methods.
 _DEFAULT_GETTERS = {
     QtWidgets.QTimeEdit: lambda qobj: from_qtime(qobj.time()),
     QtWidgets.QLineEdit: lambda qobj: qobj.text(),
-    # TODO change the next one to currentData
-    QtWidgets.QComboBox: lambda qobj: qobj.currentText(),
+    QtWidgets.QComboBox: lambda qobj: qobj.currentData(QtCore.Qt.UserRole),
     QtWidgets.QTextEdit: lambda qobj: qobj.toPlainText(),
     QtWidgets.QCheckBox: lambda qobj: qobj.isChecked(),
     QtWidgets.QLabel: lambda qobj: qobj.text(),
@@ -107,8 +115,7 @@ _DEFAULT_GETTERS = {
 _DEFAULT_SETTERS = {
     QtWidgets.QTimeEdit: lambda qobj, sec: qobj.setTime(to_qtime(sec)),
     QtWidgets.QLineEdit: lambda qobj, txt: qobj.setText(txt),
-    QtWidgets.QComboBox: lambda qobj, txt: qobj.setCurrentIndex(qobj.findText(
-        txt, QtCore.Qt.MatchFixedString)),
+    QtWidgets.QComboBox: set_selected_combobox_item,
     QtWidgets.QTextEdit: lambda qobj, txt: qobj.setText(txt),
     QtWidgets.QCheckBox: lambda qobj, b: qobj.setChecked(b),
     QtWidgets.QLabel: lambda qobj, txt: qobj.setText(str(txt)),

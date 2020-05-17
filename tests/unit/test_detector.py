@@ -37,6 +37,7 @@ from pathlib import Path
 from modules.detector import Detector
 from modules.foil import CircularFoil
 from modules.foil import RectangularFoil
+from modules.enums import DetectorType
 
 
 class TestBeam(unittest.TestCase):
@@ -101,7 +102,8 @@ class TestBeam(unittest.TestCase):
             det_file = Path(tmp_dir, "d.detector")
             mesu_file = Path(tmp_dir, "mesu")
             det1 = Detector(det_file, mesu_file,
-                            name="foo", description="bar", detector_type="TOF",
+                            name="foo", description="bar",
+                            detector_type=DetectorType.TOF,
                             virtual_size=(1, 2), tof_slope=4.4e-10,
                             tof_offset=2, angle_slope=3, angle_offset=4,
                             timeres=251, detector_theta=42, tof_foils=[0, 0],

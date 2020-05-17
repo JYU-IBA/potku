@@ -44,6 +44,7 @@ from modules.foil import Foil
 from modules.foil import CircularFoil
 from modules.foil import RectangularFoil
 from modules.layer import Layer
+from modules.enums import DetectorType
 
 
 class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
@@ -61,7 +62,8 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
     USED_EFFICIENCIES_DIR = "Used_efficiencies"
 
     def __init__(self, path, measurement_settings_file_path, name="Default",
-                 description="", modification_time=None, detector_type="TOF",
+                 description="", modification_time=None,
+                 detector_type=DetectorType.TOF,
                  foils=None, tof_foils=None, virtual_size=(2.0, 5.0),
                  tof_slope=5.8e-11, tof_offset=-1.0e-9, angle_slope=0,
                  angle_offset=0, timeres=250.0, detector_theta=41,
@@ -264,7 +266,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         Return:
             Detector object.
         """
-        with open(detector_file_path) as dfp:
+        with detector_file_path.open("r") as dfp:
             detector = json.load(dfp)
 
         detector["modification_time"] = detector.pop("modification_time_unix")
@@ -290,7 +292,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
 
         try:
             # Read .measurement file and update detector angle
-            with open(measurement_file_path) as mesu_file:
+            with measurement_file_path.open("r") as mesu_file:
                 measurement_obj = json.load(mesu_file)
             detector_theta = measurement_obj["geometry"]["detector_theta"]
         except KeyError:

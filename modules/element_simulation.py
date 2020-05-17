@@ -54,6 +54,8 @@ from modules.recoil_element import RecoilElement
 from modules.enums import OptimizationType
 from modules.enums import SimulationState
 from modules.enums import IonDivision
+from modules.enums import SimulationType
+from modules.enums import SimulationMode
 
 
 # Mappings between the names of the MCERD parameters (keys) and
@@ -97,10 +99,11 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                  simulation=None, name_prefix="", sample=None,
                  detector=None, run=None, name="Default",
                  description="", modification_time=None,
-                 simulation_type="ERD", number_of_ions=1000000,
-                 number_of_preions=100000, number_of_scaling_ions=5,
+                 simulation_type=SimulationType.ERD, number_of_ions=1_000_000,
+                 number_of_preions=100_000, number_of_scaling_ions=5,
                  number_of_recoils=10, minimum_scattering_angle=0.05,
-                 minimum_main_scattering_angle=20, simulation_mode="narrow",
+                 minimum_main_scattering_angle=20,
+                 simulation_mode=SimulationMode.NARROW,
                  seed_number=101, minimum_energy=1.0, channel_width=0.025,
                  use_default_settings=True, main_recoil=None,
                  optimization_recoils=None, optimized_fluence=None,
@@ -171,8 +174,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.run = run
         self.sample = sample
 
-        # TODO raise errors if the type and mode are wrong
-        # TODO make these into enums
         self.simulation_type = simulation_type
         self.simulation_mode = simulation_mode
 
@@ -365,6 +366,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         mcsimu["modification_time"] = mcsimu.pop("modification_time_unix")
         mcsimu["use_default_settings"] = \
             mcsimu["use_default_settings"] == "True"
+        mcsimu["simulation_type"] = SimulationType(mcsimu["simulation_type"])
 
         full_name = mcsimu.pop("name")
         try:
@@ -379,11 +381,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         channel_width = prof["energy_spectra"]["channel_width"]
 
-        if mcsimu["simulation_type"] == "ERD":
-            # TODO can this be determined from the file extension?
-            rec_type = "rec"
-        else:
-            rec_type = "sct"
+        rec_type = mcsimu["simulation_type"].get_recoil_type()
 
         main_recoil = None
         optimized_fluence = None
@@ -807,7 +805,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         Return:
             path to the espe file
         """
-        if self.simulation_type == "ERD":
+        if self.simulation_type == SimulationType.ERD:
             suffix = "recoil"
         else:
             suffix = "scatter"

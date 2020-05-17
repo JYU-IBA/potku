@@ -44,6 +44,7 @@ from dialogs.simulation.foil import FoilDialog
 from modules.detector import Detector
 from modules.foil import CircularFoil
 from modules.request import Request
+from modules.enums import DetectorType
 
 from PyQt5 import QtWidgets
 from PyQt5 import uic
@@ -123,6 +124,8 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
             self.__open_calibration_dialog)
         self.executeCalibrationButton.setEnabled(
             not self.request.samples.measurements.is_empty())
+
+        gutils.fill_combobox(self.typeComboBox, DetectorType)
 
         self.fields_are_valid = False
         iv.set_input_field_red(self.nameLineEdit)

@@ -28,6 +28,7 @@ import abc
 import platform
 
 from pathlib import Path
+from enum import Enum
 
 from modules.observing import ProgressReporter
 from modules.observing import Observer
@@ -445,3 +446,12 @@ def block_treewidget_signals(func):
         instance.treeWidget.blockSignals(False)
         return res
     return wrapper
+
+
+def fill_combobox(combobox: QtWidgets.QComboBox, enum: Enum):
+    """Fills the combobox with values from the given Enum. Current items
+    of the box will be removed.
+    """
+    combobox.clear()
+    for e in enum:
+        combobox.addItem(str(e), userData=e)

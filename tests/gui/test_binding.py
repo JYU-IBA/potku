@@ -56,6 +56,7 @@ class BWidget(QtWidgets.QWidget, bnd.PropertyBindingWidget,
     not2way = bnd.bind("not2waySpinBox", twoway=False)
     sci = bnd.bind("scibox")
     lst = bnd.bind("listWidget")
+    cmb = bnd.bind("comboBox")
 
     def __init__(self):
         super().__init__()
@@ -69,6 +70,9 @@ class BWidget(QtWidgets.QWidget, bnd.PropertyBindingWidget,
         self.not2waySpinBox = QtWidgets.QSpinBox()
         self.scibox = ScientificSpinBox(0, 1, 0, 10)
         self.listWidget = QtWidgets.QListWidget()
+        self.comboBox = QtWidgets.QComboBox()
+        for i in range(3):
+            self.comboBox.addItem(f"x-{i + 42}", i)
 
 
 class TestBinding(unittest.TestCase):
@@ -77,8 +81,7 @@ class TestBinding(unittest.TestCase):
         self.widget = BWidget()
 
     def test_getproperties(self):
-        self.assertEqual(
-            {
+        self.assertEqual({
                 "foo": 0,
                 "bar": 0.0,
                 "baz": "",
@@ -88,7 +91,8 @@ class TestBinding(unittest.TestCase):
                 "lab": "",
                 "not2way": 0,
                 "sci": 0,
-                "lst": []
+                "lst": [],
+                "cmb": 0
             }, self.widget.get_properties()
         )
 
@@ -109,20 +113,24 @@ class TestBinding(unittest.TestCase):
         self.assertEqual(QTime(1, 14, 45), self.widget.timeEdit.time())
 
     def test_set_properties(self):
-        """Tests setting multiple properties at once."""
+        """Tests setting multiple properties at once.
+        """
         self.widget.set_properties(
-            foo=3, bar=4.5, baz="test", tim=100, che=True, lst=["1", 2])
+            foo=3, bar=4.5, baz="test", tim=100, che=True, lst=["1", 2],
+            cmb=1
+        )
         self.assertEqual({
-                "foo": 3,
-                "bar": 4.5,
-                "baz": "test",
-                "tim": 100,
-                "che": True,
-                "pla": "",
-                "lab": "",
-                "not2way": 0,
-                "sci": 0,
-                "lst": ["1", 2]
+            "foo": 3,
+            "bar": 4.5,
+            "baz": "test",
+            "tim": 100,
+            "che": True,
+            "pla": "",
+            "lab": "",
+            "not2way": 0,
+            "sci": 0,
+            "lst": ["1", 2],
+            "cmb": 1
             }, self.widget.get_properties()
         )
 
@@ -130,7 +138,7 @@ class TestBinding(unittest.TestCase):
         # unsuitable type. Label does however convert values to string.
         self.widget.set_properties(
             pla="foo", lab=4, not2way=7, tim="foo", sci=1.234e-6,
-            lst=[None, self.widget])
+            lst=[None, self.widget], cmb=4)
         self.assertEqual({
             "foo": 3,
             "bar": 4.5,
@@ -141,7 +149,8 @@ class TestBinding(unittest.TestCase):
             "lab": "4",
             "not2way": 0,
             "sci": 1.234e-6,
-            "lst": [None, self.widget]
+            "lst": [None, self.widget],
+            "cmb": 1
         }, self.widget.get_properties())
 
 

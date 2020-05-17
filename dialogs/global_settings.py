@@ -34,8 +34,10 @@ import platform
 
 import dialogs.dialog_functions as df
 import widgets.binding as bnd
+import widgets.gui_utils as gutils
 
 from modules.global_settings import GlobalSettings
+from modules.enums import IonDivision
 
 from pathlib import Path
 
@@ -53,6 +55,9 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     """
     A GlobalSettingsDialog.
     """
+    tofe_invert_x = bnd.bind("check_tofe_invert_x")
+    tofe_invert_y = bnd.bind("check_tofe_invert_y")
+    tofe_transposed = bnd.bind("check_tofe_transpose")
     tofe_bin_x = bnd.multi_bind(
         ("spin_tofe_bin_x_min", "spin_tofe_bin_x_max")
     )
@@ -86,6 +91,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.set_min_max_handlers(
             self.spin_tofe_bin_y_min, self.spin_tofe_bin_y_max
         )
+        gutils.fill_combobox(self.ion_div_box, IonDivision)
 
         # Connect UI buttons
         self.OKButton.clicked.connect(self.__accept_changes)
@@ -136,10 +142,9 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
 
         # ToF-E graph settings
         # TODO radio group binding
-        self.check_tofe_invert_x.setChecked(self.settings.get_tofe_invert_x())
-        self.check_tofe_invert_y.setChecked(self.settings.get_tofe_invert_y())
-        self.check_tofe_transpose.setChecked(
-            self.settings.get_tofe_transposed())
+        self.tofe_invert_x = self.settings.get_tofe_invert_x()
+        self.tofe_invert_y = self.settings.get_tofe_invert_y()
+        self.tofe_transposed = self.settings.get_tofe_transposed()
         tofe_bin_mode = self.settings.get_tofe_bin_range_mode()
         self.radio_tofe_bin_auto.setChecked(tofe_bin_mode == 0)
         self.radio_tofe_bin_manual.setChecked(tofe_bin_mode == 1)
@@ -153,7 +158,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
 
         self.presim_ions = self.settings.get_min_presim_ions()
         self.sim_ions = self.settings.get_min_simulation_ions()
-        # TODO division
+        self.ion_division = self.settings.get_ion_division()
 
         colors = sorted(MatplotlibHistogramWidget.color_scheme.items())
         for i, (key, _) in enumerate(colors):
@@ -194,17 +199,15 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.settings.set_cross_sections(flag_cross)
 
         # ToF-E graph settings
-        self.settings.set_tofe_invert_x(self.check_tofe_invert_x.isChecked())
-        self.settings.set_tofe_invert_y(self.check_tofe_invert_y.isChecked())
-        self.settings.set_tofe_transposed(
-            self.check_tofe_transpose.isChecked())
+        self.settings.set_tofe_invert_x(self.tofe_invert_x)
+        self.settings.set_tofe_invert_y(self.tofe_invert_y)
+        self.settings.set_tofe_transposed(self.tofe_transposed)
         self.settings.set_tofe_color(self.combo_tofe_colors.currentText())
         if self.radio_tofe_bin_auto.isChecked():
             self.settings.set_tofe_bin_range_mode(0)
         elif self.radio_tofe_bin_manual.isChecked():
             self.settings.set_tofe_bin_range_mode(1)
 
-        # TODO make sure that bin counts are valid
         self.settings.set_tofe_bin_range_x(*self.tofe_bin_x)
         self.settings.set_tofe_bin_range_y(*self.tofe_bin_y)
         self.settings.set_tofe_compression_x(self.comp_x)

@@ -31,10 +31,13 @@ import os
 
 import widgets.input_validation as iv
 import widgets.binding as bnd
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
 from modules.element_simulation import ElementSimulation
+from modules.enums import SimulationMode
+from modules.enums import SimulationType
 
 from widgets.binding import PropertyTrackingWidget
 from widgets.gui_utils import QtABCMeta
@@ -79,13 +82,8 @@ class SimulationSettingsWidget(QtWidgets.QWidget, PropertyTrackingWidget,
     # TODO name, desc should perhaps not be tracked
     name = bnd.bind("nameLineEdit", track_change=True)
     description = bnd.bind("descriptionPlainTextEdit", track_change=True)
-    simulation_type = bnd.bind("typeOfSimulationComboBox",
-                               fget=_simulation_type_from_combobox,
-                               fset=_simulation_type_to_combobox,
-                               track_change=True)
-    simulation_mode = bnd.bind("modeComboBox",
-                               fget=_simulation_mode_from_combobox,
-                               track_change=True)
+    simulation_type = bnd.bind("typeOfSimulationComboBox", track_change=True)
+    simulation_mode = bnd.bind("modeComboBox", track_change=True)
     number_of_ions = bnd.bind("numberOfIonsSpinBox")
     number_of_ions_in_presimu = bnd.bind("numberOfPreIonsSpinBox")
     number_of_scaling_ions = bnd.bind("numberOfScalingIonsSpinBox",
@@ -122,6 +120,8 @@ class SimulationSettingsWidget(QtWidgets.QWidget, PropertyTrackingWidget,
         self.setEnabled(False)
         self.element_simulation = element_simulation
         self.set_spinbox_maximums()
+        gutils.fill_combobox(self.modeComboBox, SimulationMode)
+        gutils.fill_combobox(self.typeOfSimulationComboBox, SimulationType)
 
         self.fields_are_valid = False
         iv.set_input_field_red(self.nameLineEdit)

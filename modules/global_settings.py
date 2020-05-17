@@ -85,6 +85,7 @@ class GlobalSettings:
         self.__config = configparser.ConfigParser()
         # Make the configparser's string handling case sensitive by defining
         # optionxform
+        # FIXME not working as intended
         self.__config.optionxform = str
 
         self._request_directory = Path(self.__config_directory, "requests")
@@ -118,42 +119,6 @@ class GlobalSettings:
         self.__config.add_section(self._DEPTH_PROFILE)
         self.__config.add_section(self._TOFE)
         self.__config.add_section(self._SIMULATION)
-
-    def __set_defaults(self):
-        """Set settings to default values.
-        """
-        # TODO remove this function
-        self.__config.set(
-            self._DEFAULT, "request_directory", str(self._request_directory))
-        self.__config.set(
-            self._DEFAULT, "request_directory_last_open",
-            str(self._request_directory_last_open))
-
-        for elem, color in self.__element_colors.items():
-            self.__config.set(self._COLORS, elem, color)
-
-        self.__config.set(self._TIMING, "0", "-1000,1000")
-        self.__config.set(self._TIMING, "1", "-1000,1000")
-        self.__config.set(self._TIMING, "2", "-1000,1000")
-        self.__config.set(self._DEFAULT, "preview_coincidence_count", "10000")
-        self.__config.set(self._DEFAULT, "es_output", "False")
-        self.__config.set(self._DEPTH_PROFILE, "cross_section", "3")
-        self.__config.set(self._DEPTH_PROFILE, "num_iter", "4")
-        self.__config.set(self._TOFE, "transpose", "False")
-        self.__config.set(self._TOFE, "invert_x", "False")
-        self.__config.set(self._TOFE, "invert_y", "False")
-        self.__config.set(self._TOFE, "color_scheme", "Default color")
-        self.__config.set(self._TOFE, "bin_range_mode", "0")
-        self.__config.set(self._TOFE, "bin_range_x_max", "8000")
-        self.__config.set(self._TOFE, "bin_range_x_min", "0")
-        self.__config.set(self._TOFE, "bin_range_y_max", "8000")
-        self.__config.set(self._TOFE, "bin_range_y_min", "0")
-        self.__config.set(self._TOFE, "compression_x", "6")
-        self.__config.set(self._TOFE, "compression_y", "6")
-        self.__config.set(self._SIMULATION, "min_presim_ions", "10000")
-        self.__config.set(self._SIMULATION, "min_sim_ions", "100000")
-        self.__config.set(self._SIMULATION, "ion_division", "2")
-        # TODO min y value
 
     def set_config_dir(self, directory: Path):
         """Sets the directory of the config file.
@@ -451,6 +416,8 @@ class GlobalSettings:
         """
         rmin = self.__config.getint(self._TOFE, "bin_range_x_min")
         rmax = self.__config.getint(self._TOFE, "bin_range_x_max")
+        if rmin > rmax:
+            return rmax, rmin
         return rmin, rmax
 
     def set_tofe_bin_range_x(self, value_min: int, value_max: int):
@@ -460,6 +427,8 @@ class GlobalSettings:
             value_min: An integer representing the axis range minimum.
             value_max: An integer representing the axis range maximum.
         """
+        if value_min < value_max:
+            value_min, value_max = value_max, value_min
         self.__config[self._TOFE]["bin_range_x_min"] = str(value_min)
         self.__config[self._TOFE]["bin_range_x_max"] = str(value_max)
 
@@ -473,6 +442,8 @@ class GlobalSettings:
         """
         rmin = self.__config.getint(self._TOFE, "bin_range_y_min")
         rmax = self.__config.getint(self._TOFE, "bin_range_y_max")
+        if rmin > rmax:
+            return rmax, rmin
         return rmin, rmax
 
     def set_tofe_bin_range_y(self, value_min: int, value_max: int):
@@ -482,6 +453,8 @@ class GlobalSettings:
             value_min: An integer representing the axis range minimum.
             value_max: An integer representing the axis range maximum.
         """
+        if value_min < value_max:
+            value_min, value_max = value_max, value_min
         self.__config[self._TOFE]["bin_range_y_min"] = str(value_min)
         self.__config[self._TOFE]["bin_range_y_max"] = str(value_max)
 
