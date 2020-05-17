@@ -241,8 +241,9 @@ class Potku(QtWidgets.QMainWindow):
 
             if valid_text != clicked_item.text(0):
                 QtWidgets.QMessageBox.information(
-                    self, "Notice", "You can't use special characters other "
-                                    "than '-' in the name.",
+                    self, "Notice",
+                    "You can't use special characters other than '-' in the "
+                    "name.",
                     QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 clicked_item.setText(0, clicked_item.obj.name)
                 return
@@ -268,11 +269,10 @@ class Potku(QtWidgets.QMainWindow):
 
                 new_dir = gf.rename_file(clicked_item.obj.directory, new_path)
             except OSError:
-                QtWidgets.QMessageBox.critical(self, "Error",
-                                               "A file or folder already exists"
-                                               " on name " + new_name,
-                                               QtWidgets.QMessageBox.Ok,
-                                               QtWidgets.QMessageBox.Ok)
+                QtWidgets.QMessageBox.critical(
+                    self, "Error",
+                    f"A file or folder already exists on name {new_name}",
+                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 clicked_item.setText(0, clicked_item.obj.name)
                 return
             clicked_item.obj.name = new_name
@@ -364,19 +364,13 @@ class Potku(QtWidgets.QMainWindow):
                 obj_type = "simulation"
             else:
                 obj_type = ""  # TODO: place for sample type checking.
-            reply = QtWidgets.QMessageBox.question(self, "Confirmation",
-                                                   "Deleting selected " +
-                                                   obj_type + " will delete"
-                                                   " all files and folders "
-                                                   "under selected " +
-                                                   obj_type + " directory."
-                                                   "\n\nAre you sure you want "
-                                                   "to delete selected "
-                                                   + obj_type + "?",
-                                                   QtWidgets.QMessageBox.Yes |
-                                                   QtWidgets.QMessageBox.No |
-                                                   QtWidgets.QMessageBox.Cancel,
-                                                   QtWidgets.QMessageBox.Cancel)
+            reply = QtWidgets.QMessageBox.question(
+                self, "Confirmation",
+                f"Deleting selected {obj_type} will delete all files and "
+                f"folders under selected {obj_type} directory.\n\n"
+                f"Are you sure you want to delete selected {obj_type}?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
             if reply == QtWidgets.QMessageBox.No or reply == \
                     QtWidgets.QMessageBox.Cancel:
                 return  # If clicked Yes, then continue normally
@@ -412,6 +406,30 @@ class Potku(QtWidgets.QMainWindow):
                     simulation.target.to_file(
                         Path(simulation.directory, simulation.target.name +
                              ".target"), None)
+
+        if self.request is not None:
+            sims = {
+                *self.request.get_running_optimizations(),
+                *self.request.get_running_simulations()
+            }
+            if sims:
+                reply = QtWidgets.QMessageBox.question(
+                    self, "Running simulations",
+                    "There are simulations currently running. These must be "
+                    "stopped before closing the program.\n"
+                    "Do you want stop the simulations?",
+                    QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Cancel,
+                    QtWidgets.QMessageBox.Yes
+                )
+                if reply == QtWidgets.QMessageBox.Cancel:
+                    event.ignore()
+                    return
+                for sim in sims:
+                    sim.stop()
+                while any(sim.is_simulation_running() or
+                          sim.is_optimization_running() for sim in sims):
+                    # TODO add timeout
+                    pass
 
         widget = self.tabs.currentWidget()
         if isinstance(widget, BaseTab):
@@ -494,11 +512,10 @@ class Potku(QtWidgets.QMainWindow):
         if isinstance(widget, MeasurementTabWidget):
             widget.open_energy_spectrum()
         else:
-            QtWidgets.QMessageBox.question(self, "Notification",
-                                           "An open simulation is required to "
-                                           "do this action.",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.question(
+                self, "Notification",
+                "An open simulation is required to do this action.",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def delete_selections(self):
         """Deletes the selected tree widget items.
@@ -507,19 +524,13 @@ class Potku(QtWidgets.QMainWindow):
         selected_tabs = [self.tab_widgets[item.tab_id] for
                          item in self.treeWidget.selectedItems()]
         if selected_tabs:  # Ask user a confirmation.
-            reply = QtWidgets.QMessageBox.question(self, "Confirmation",
-                                                   "Deleting selected "
-                                                   "measurements will delete"
-                                                   " all files and folders "
-                                                   "under selected measurement "
-                                                   "directories."
-                                                   "\n\nAre you sure you want "
-                                                   "to delete selected "
-                                                   "measurements?",
-                                                   QtWidgets.QMessageBox.Yes |
-                                                   QtWidgets.QMessageBox.No |
-                                                   QtWidgets.QMessageBox.Cancel,
-                                                   QtWidgets.QMessageBox.Cancel)
+            reply = QtWidgets.QMessageBox.question(
+                self, "Confirmation",
+                "Deleting selected measurements will delete all files and "
+                "folders under selected measurement directories.\n\n"
+                "Are you sure you want to delete selected measurements?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No |
+                QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
             if reply == QtWidgets.QMessageBox.No or reply == \
                     QtWidgets.QMessageBox.Cancel:
                 return  # If clicked Yes, then continue normally
@@ -537,10 +548,10 @@ class Potku(QtWidgets.QMainWindow):
                 Path(self.request.directory /
                      measurement.measurement_file).unlink()
             except:
-                QtWidgets.QMessageBox.question(self, "Confirmation",
-                                               "Problem with deleting files.",
-                                               QtWidgets.QMessageBox.Ok,
-                                               QtWidgets.QMessageBox.Ok)
+                QtWidgets.QMessageBox.question(
+                    self, "Confirmation",
+                    "Problem with deleting files.",
+                    QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 # TODO check that this is the intented way of setting the
                 #  loggers in case something went wrong.
                 measurement.set_loggers(measurement.directory,
@@ -838,7 +849,8 @@ class Potku(QtWidgets.QMainWindow):
 
         for f in files[:Potku.MAX_RECENT_FILES]:
             act = self.menuOpen_recent.addAction(str(f))
-            act.triggered.connect(functools.partial(self.__open_request, f))
+            act.triggered.connect(
+                functools.partial(self.__open_request, Path(f)))
 
         if not files:
             act = self.menuOpen_recent.addAction("<empty>")
@@ -907,14 +919,13 @@ class Potku(QtWidgets.QMainWindow):
     def open_request(self):
         """Shows a dialog to open a request.
         """
-        file = open_file_dialog(self,
-                                self.settings.get_request_directory_last_open(),
-                                "Open an existing request",
-                                "Request file (*.request)")
+        file = open_file_dialog(
+            self, self.settings.get_request_directory_last_open(),
+            "Open an existing request", "Request file (*.request)")
         if file:
-            self.__open_request(file)
+            self.__open_request(Path(file))
 
-    def __open_request(self, file):
+    def __open_request(self, file: Path):
         """Opens a request in the main"""
         try:
             request = Request.from_file(file, self.settings, self.tab_widgets)
@@ -937,7 +948,7 @@ class Potku(QtWidgets.QMainWindow):
             "Request: {0}".format(self.request.get_name()))
         self.__initialize_tree_view()
 
-        folder = os.path.split(file)[0]
+        folder = file.parent
         self.settings.set_request_directory_last_open(folder)
 
         sbh.reporter.report(20)
@@ -1234,17 +1245,14 @@ class Potku(QtWidgets.QMainWindow):
         """Issue commands from master measurement to all slave measurements in
         the request.
         """
-        reply = QtWidgets.QMessageBox.question(self, "Confirmation",
-                                               "You are about to issue actions "
-                                               "from master measurement to all "
-                                               "slave measurements in the "
-                                               "request. This can take several "
-                                               "minutes. Please wait until "
-                                               "notification is shown.\nDo you "
-                                               "wish to continue?",
-                                               QtWidgets.QMessageBox.Yes |
-                                               QtWidgets.QMessageBox.No,
-                                               QtWidgets.QMessageBox.Yes)
+        reply = QtWidgets.QMessageBox.question(
+            self, "Confirmation",
+            "You are about to issue actions from master measurement to all "
+            "slave measurements in the request. This can take several minutes. "
+            "Please wait until notification is shown.\n"
+            "Do you wish to continue?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.Yes)
         if reply == QtWidgets.QMessageBox.No:
             return
 
@@ -1366,12 +1374,11 @@ class Potku(QtWidgets.QMainWindow):
         time_end = datetime.now()
         time_duration = (time_end - time_start).seconds
         time_str = timedelta(seconds=time_duration)
-        QtWidgets.QMessageBox.question(self, "Notification",
-                                       "Master measurement's actions have been "
-                                       "issued to slaves. \nElapsed time: {0}"
-                                       .format(time_str),
-                                       QtWidgets.QMessageBox.Ok,
-                                       QtWidgets.QMessageBox.Ok)
+        QtWidgets.QMessageBox.question(
+            self, "Notification",
+            "Master measurement's actions have been issued to slaves. \n"
+            "Elapsed time: {0}".format(time_str),
+            QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
     def __open_info_tab(self):
         """Opens an info tab to the QTabWidget 'tab_measurements' that guides
@@ -1487,10 +1494,10 @@ class Potku(QtWidgets.QMainWindow):
             elif used_os == "Darwin":
                 subprocess.call(("open", manual_filename))
         except OSError:
-            QtWidgets.QMessageBox.critical(self, "Not found",
-                                           "There is no manual to be found!",
-                                           QtWidgets.QMessageBox.Ok,
-                                           QtWidgets.QMessageBox.Ok)
+            QtWidgets.QMessageBox.critical(
+                self, "Not found",
+                "There is no manual to be found!",
+                QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
 
 
 def main():
