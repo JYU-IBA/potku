@@ -79,10 +79,7 @@ class MCERD:
 
         self.sim_dir = Path(self.__settings["sim_dir"])
 
-        if self.__settings["simulation_type"] == "ERD":
-            suffix = "recoil"
-        else:
-            suffix = "scatter"
+        suffix = self.__settings["simulation_type"].get_recoil_suffix()
 
         res_file = f"{self.__rec_filename}.{self.__seed}.erd"
 

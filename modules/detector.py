@@ -298,7 +298,12 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             detector_theta = measurement_obj["geometry"]["detector_theta"]
         except KeyError:
             # Get default detector angle from default detector
-            detector_theta = request.default_detector.detector_theta
+            try:
+                detector_theta = request.default_detector.detector_theta
+            except AttributeError:
+                return cls(path=detector_file_path,
+                           measurement_settings_file_path=measurement_file_path,
+                           foils=foils, save_on_creation=save, **detector)
 
         return cls(path=detector_file_path,
                    measurement_settings_file_path=measurement_file_path,

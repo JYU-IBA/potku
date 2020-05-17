@@ -52,7 +52,7 @@ class TargetWidget(QtWidgets.QWidget):
     results_accepted = pyqtSignal(ElementSimulation)
 
     def __init__(self, tab, simulation, target, icon_manager,
-                 progress=None, statusbar=None):
+                 progress=None, statusbar=None, **kwargs):
         """Initializes thw widget that can be used to define target composition
         and
         recoil atom distribution.
@@ -75,16 +75,15 @@ class TargetWidget(QtWidgets.QWidget):
         self.target = target
         self.statusbar = statusbar
 
-        self.target_widget = TargetCompositionWidget(self, self.target,
-                                                     icon_manager,
-                                                     self.simulation)
+        self.target_widget = TargetCompositionWidget(
+            self, self.target, icon_manager, self.simulation)
 
         if progress is not None:
             progress.report(50)
 
         self.recoil_distribution_widget = RecoilAtomDistributionWidget(
             self, self.simulation, self.target, tab, icon_manager,
-            statusbar=self.statusbar)
+            statusbar=self.statusbar, **kwargs)
         self.results_accepted.connect(
             self.recoil_distribution_widget.update_element_simulation.emit)
         self.spectra_changed = self.recoil_distribution_widget. \
@@ -108,7 +107,7 @@ class TargetWidget(QtWidgets.QWidget):
             self.percentButton.setText("Calculate\npercents")
 
         self.exportElementsButton.clicked.connect(
-            self.recoil_distribution_widget.export_elements)
+            lambda: self.recoil_distribution_widget.export_elements(**kwargs))
 
         self.targetRadioButton.clicked.connect(self.switch_to_target)
         self.recoilRadioButton.clicked.connect(self.switch_to_recoil)

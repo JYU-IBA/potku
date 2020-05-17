@@ -171,11 +171,11 @@ class Target:
 
         if measurement_file_path is not None:
             # Read .measurement to obj to update only target angles
-            if measurement_file_path.exists():
+            try:
                 with measurement_file_path.open("r") as mesu:
                     obj = json.load(mesu)
                 obj["geometry"]["target_theta"] = self.target_theta
-            else:
+            except (OSError, KeyError):
                 obj = {
                     "geometry": {
                         "target_theta": self.target_theta

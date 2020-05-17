@@ -28,8 +28,9 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
 __version__ = "2.0"
 
 import json
-import os
 import time
+
+from pathlib import Path
 
 from modules.base import Serializable
 from modules.base import AdjustableSettings
@@ -65,7 +66,7 @@ class Run(Serializable, AdjustableSettings):
         # List for undoing fluence values
         self.previous_fluence = []
 
-    def to_file(self, measurement_file_path):
+    def to_file(self, measurement_file_path: Path):
         """
         Saves Run object and Beam object parameters into a file.
 
@@ -89,20 +90,20 @@ class Run(Serializable, AdjustableSettings):
             "profile": self.beam.profile
         }
 
-        if os.path.exists(measurement_file_path):
-            with open(measurement_file_path) as mesu:
+        try:
+            with measurement_file_path.open("r") as mesu:
                 obj = json.load(mesu)
-            obj["general"]["modification_time"] = time.strftime("%c %z %Z",
-                                                                time.localtime(
-                                                                 time.time()))
-            obj["general"]["modification_time_unix"] = time.time()
-            obj["run"] = run_obj
-            obj["beam"] = beam_obj
-        else:
-            obj = {"run": run_obj,
-                   "beam": beam_obj}
+            timestamp = time.time()
+            obj["general"]["modification_time"] = time.strftime(
+                "%c %z %Z", time.localtime(timestamp))
+            obj["general"]["modification_time_unix"] = timestamp
+        except (OSError, KeyError):
+            obj = {}
 
-        with open(measurement_file_path, "w") as file:
+        obj["run"] = run_obj
+        obj["beam"] = beam_obj
+
+        with measurement_file_path.open("w") as file:
             json.dump(obj, file, indent=4)
 
     @classmethod

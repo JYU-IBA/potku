@@ -75,6 +75,8 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
 
     coinc_count = bnd.bind("line_coinc_count")
 
+    settings_updated = QtCore.pyqtSignal(GlobalSettings)
+
     def __init__(self, settings: GlobalSettings):
         """Constructor for the program
         """
@@ -104,7 +106,15 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
             self.gridLayout.setHorizontalSpacing(15)
 
         self.__set_values()
-        self.exec_()
+
+    def closeEvent(self, event):
+        """Disconnects settings updated signal before closing.
+        """
+        try:
+            self.settings_updated.disconnect()
+        except AttributeError:
+            pass
+        super().closeEvent(event)
 
     @staticmethod
     def set_min_max_handlers(min_spinbox: QtWidgets.QSpinBox,
@@ -215,10 +225,11 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.settings.set_num_iterations(self.depth_iters)
         self.settings.set_min_presim_ions(self.presim_ions)
         self.settings.set_min_simulation_ions(self.sim_ions)
-        # TODO ion division
+        self.settings.set_ion_division(self.ion_division)
 
         # Save config and close
         self.settings.save_config()
+        self.settings_updated.emit(self.settings)
         self.close()
 
     def __change_request_directory(self):

@@ -35,6 +35,7 @@ from pathlib import Path
 
 from modules.element_simulation import SimulationState
 from modules.element_simulation import ElementSimulation
+from modules.global_settings import GlobalSettings
 from modules.enums import IonDivision
 from widgets.gui_utils import GUIObserver
 
@@ -84,6 +85,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
     observed_atoms = bnd.bind("observed_atom_count_label")
     simulation_state = bnd.bind("state_label")
     mcerd_error = bnd.bind("mcerd_error_lbl")
+    ion_settings_error = bnd.bind("ion_settings_label")
 
     # TODO these styles could use some brush up...
     PRESIM_PROGRESS_STYLE = """
@@ -99,7 +101,8 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
 
     def __init__(self, element_simulation: ElementSimulation,
                  recoil_dist_widget, recoil_name_changed=None,
-                 ion_division=IonDivision.BOTH, settings_updated=None):
+                 settings_updated=None, ion_division=IonDivision.BOTH,
+                 min_presim_ions=0, min_sim_ions=0):
         """
         Initializes a SimulationControlsWidget.
 
@@ -109,15 +112,11 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
              recoil_name_changed: signal that indicates that a recoil name
                 has changed.
             ion_division: ion division mode
-            settings_updated: signal that indicates that simulation settings
-                have updated.
         """
         super().__init__()
         GUIObserver.__init__(self)
         uic.loadUi(Path("ui_files", "ui_simulation_controls.ui"), self)
 
-        # TODO set minimum count for ions (global setting that would be checked
-        #   before running simulation, user should be warned if too low)
         self.element_simulation = element_simulation
         self.element_simulation.subscribe(self)
         self.recoil_dist_widget = recoil_dist_widget
@@ -135,28 +134,36 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         self.enable_buttons()
 
         self.mcerd_error_lbl.hide()
+        self.ion_settings_label.hide()
 
         self.__unsub = None
 
-        self.ion_division = ion_division
-        self.recoil_name_changed = recoil_name_changed
-        if self.recoil_name_changed is not None:
-            self.recoil_name_changed.connect(self._set_name)
+        self._ion_division = ion_division
+        self._min_presim_ions = min_presim_ions
+        self._min_sim_ions = min_sim_ions
+        self.show_ion_settings_label()
 
-        self.settings_updated = settings_updated
-        if self.settings_updated is not None:
-            self.settings_updated.connect(self.show_ions_per_process)
+        self.processes_spinbox.valueChanged.connect(
+            self.show_ion_settings_label)
+        self._recoil_name_changed = recoil_name_changed
+        if self._recoil_name_changed is not None:
+            self._recoil_name_changed.connect(self._set_name)
+
+        self._settings_updated = settings_updated
+        if self._settings_updated is not None:
+            self._settings_updated.connect(self.settings_update_handler)
 
     def closeEvent(self, event):
         """Disconnects self from recoil_name_changed signal and closes the
         widget.
         """
+        # FIXME not being called
         try:
-            self.recoil_name_changed.disconnect(self._set_name)
+            self._recoil_name_changed.disconnect(self._set_name)
         except (AttributeError, TypeError):
             pass
         try:
-            self.settings_updated.disconnect(self.show_ions_per_process)
+            self.settings_updated.disconnect(self.settings_update_handler)
         except (AttributeError, TypeError):
             pass
         super().closeEvent(event)
@@ -231,7 +238,7 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         # TODO indicate to user that ion counts are shared between processes
         observable = self.element_simulation.start(
             self.process_count, use_old_erd_files=use_old_erd_files,
-            ion_division=self.ion_division
+            ion_division=self._ion_division
         )
         if observable is not None:
             self.__unsub = observable.pipe(
@@ -255,23 +262,29 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         self.observed_atoms = status["atom_count"]
         self.simulation_state = status["state"]
 
-    def show_ions_per_process(self):
-        # TODO this method is supposed to show how the ion counts are divided
-        #      per process. ATM cannot update ion counts immeadiately after
-        #      settings change, so this function is only printing the values
-        #      to console
-        # TODO either bind the value of ions to some variable or only show
-        #      this when the simulation starts
+    def settings_update_handler(self, settings):
+        if isinstance(settings, GlobalSettings):
+            self._ion_division = settings.get_ion_division()
+            self._min_presim_ions = settings.get_min_presim_ions()
+            self._min_sim_ions = settings.get_min_simulation_ions()
+        self.show_ion_settings_label()
+
+    def show_ion_settings_label(self):
         settings, _, _ = self.element_simulation.get_mcerd_params()
-        try:
-            preions = settings["number_of_ions_in_presimu"] // \
-                      self.process_count
-            ions = settings["number_of_ions"] // self.process_count
-            print("Number of ions per process (pre/full):", preions, ions)
-        except ZeroDivisionError:
-            # User set the value of the spinbox to 0, lets
-            # not divide with it
-            pass
+        presim_ions, sim_ions = self._ion_division.get_ion_counts(
+            settings["number_of_ions_in_presimu"], settings["number_of_ions"],
+            self.process_count
+        )
+        txt = ""
+        if self._min_presim_ions > presim_ions:
+            txt += "Not enough pre-simulation ions. "
+        if self._min_sim_ions > sim_ions:
+            txt += "Not enough simulation ions."
+        if txt:
+            self.ion_settings_error = txt
+            self.ion_settings_label.show()
+        else:
+            self.ion_settings_label.hide()
 
     def stop_simulation(self):
         """ Calls ElementSimulation's stop method.

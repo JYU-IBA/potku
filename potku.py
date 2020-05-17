@@ -87,6 +87,8 @@ class Potku(QtWidgets.QMainWindow):
     MAX_RECENT_FILES = 20
     RECENT_FILES_KEY = "recently_opened"
 
+    global_settings_updated = QtCore.pyqtSignal(GlobalSettings)
+
     def __init__(self):
         """Init main window for Potku.
         """
@@ -597,9 +599,18 @@ class Potku(QtWidgets.QMainWindow):
             tab_id = clicked_item.tab_id
             tab = self.tab_widgets[tab_id]
 
+            if type(tab) is SimulationTabWidget:
+                kwargs = {
+                    "settings_updated": self.global_settings_updated,
+                    "ion_division": self.settings.get_ion_division(),
+                    "min_presim_ions": self.settings.get_min_presim_ions(),
+                    "min_sim_ions": self.settings.get_min_simulation_ions()
+                }
+            else:
+                kwargs = {}
             tab.load_data(progress=sbh.reporter.get_sub_reporter(
                 lambda x: 0.9 * x
-            ))
+            ), **kwargs)
 
             name = tab.obj.name
             if type(tab) is MeasurementTabWidget:
@@ -757,13 +768,15 @@ class Potku(QtWidgets.QMainWindow):
     def open_global_settings(self):
         """Opens global settings dialog.
         """
-        GlobalSettingsDialog(self.settings)
+        gsd = GlobalSettingsDialog(self.settings)
+        gsd.settings_updated.connect(self.global_settings_updated.emit)
+        gsd.exec_()
 
     def open_new_measurement(self):
         """Opens file an open dialog and if filename is given opens new
         measurement from it.
         """
-        if not self.request:
+        if self.request is None:
             return
 
         dialog = LoadMeasurementDialog(self.request.samples.samples,
@@ -1157,7 +1170,12 @@ class Potku(QtWidgets.QMainWindow):
                 self.tab_widgets[self.tab_id] = tab
                 tab.data_loaded = load_data
                 if load_data:
-                    tab.add_simulation_target_and_recoil()
+                    tab.add_simulation_target_and_recoil(
+                        ion_division=self.settings.get_ion_division(),
+                        min_presim_ions=self.settings.get_min_presim_ions(),
+                        min_sim_ions=self.settings.get_min_simulation_ions(),
+                        settings_updated=self.global_settings_updated
+                    )
 
                     self.tabs.addTab(tab, simulation.name)
                     self.tabs.setCurrentWidget(tab)
@@ -1181,7 +1199,7 @@ class Potku(QtWidgets.QMainWindow):
     def __close_request(self):
         """Closes the request for opening a new one.
         """
-        if self.request:
+        if self.request is not None:
             # TODO: Doesn't release memory
             # Clear the treewidget
             self.treeWidget.clear()

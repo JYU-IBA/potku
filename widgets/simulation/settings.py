@@ -45,34 +45,7 @@ from widgets.gui_utils import QtABCMeta
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
-from PyQt5.QtCore import Qt
 from PyQt5.QtCore import pyqtSignal
-
-_TYPE_CONVERSION = {
-    # 'RBS' and 'ERD' are the values stored internally in ElementSimulation,
-    # while 'SCT' and 'REC' are shown in the dialog.
-    "RBS": "SCT",
-    "ERD": "REC",
-    "SCT": "RBS",
-    "REC": "ERD"
-}
-
-
-def _simulation_mode_from_combobox(instance, combobox):
-    qbox = getattr(instance, combobox)
-    return qbox.currentText().lower()
-
-
-def _simulation_type_to_combobox(instance, combobox, value):
-    qbox = getattr(instance, combobox)
-    converted_type = _TYPE_CONVERSION[value]
-    qbox.setCurrentIndex(qbox.findText(converted_type, Qt.MatchFixedString))
-
-
-def _simulation_type_from_combobox(instance, combobox):
-    qbox = getattr(instance, combobox)
-    value = qbox.currentText()
-    return _TYPE_CONVERSION[value]
 
 
 class SimulationSettingsWidget(QtWidgets.QWidget, PropertyTrackingWidget,
@@ -184,7 +157,7 @@ class SimulationSettingsWidget(QtWidgets.QWidget, PropertyTrackingWidget,
         params.pop("modification_time")
 
         if self.simulation_type != self.element_simulation.simulation_type:
-            if self.simulation_type == "ERD":
+            if self.simulation_type == SimulationType.ERD:
                 new_type = "rec"
                 old_type = ".sct"
             else:
