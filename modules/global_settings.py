@@ -32,6 +32,7 @@ __version__ = "2.0"
 
 import configparser
 
+from modules.enums import CrossSection
 from modules.enums import IonDivision
 from pathlib import Path
 
@@ -92,13 +93,6 @@ class GlobalSettings:
 
         self._request_directory_last_open = self._request_directory
         self.__element_colors = GlobalSettings.get_default_colors()
-
-        # These are for strings in Depth Profile Dialog.
-        self.__flags_cross_section = {
-            1: "Rutherford",
-            2: "L'Ecuyer",
-            3: "Andersen"
-        }
 
         self.__create_sections()
         if not self.get_config_file().exists():
@@ -258,30 +252,23 @@ class GlobalSettings:
         """
         self.__config[self._DEFAULT]["preview_coincidence_count"] = str(count)
 
-    def get_cross_sections_text(self):
-        """Get cross sections flag as text.
-
-        Return:
-            Returns the cross sections flag as string
-        """
-        return self.__flags_cross_section[self.get_cross_sections()]
-
-    @handle_exceptions(return_value=3)
-    def get_cross_sections(self) -> int:
+    @handle_exceptions(return_value=CrossSection.ANDERSEN)
+    def get_cross_sections(self) -> CrossSection:
         """Get cross section model to be used in depth profile.
 
         Return:
             Returns an integer representing cross sections flag.
         """
-        return self.__config.getint(self._DEPTH_PROFILE, "cross_section")
+        return CrossSection(
+            self.__config.getint(self._DEPTH_PROFILE, "cross_section"))
 
-    def set_cross_sections(self, flag: int):
+    def set_cross_sections(self, value: CrossSection):
         """Set cross sections used in depth profile to settings.
 
         Args:
             flag: An integer representing cross sections flag.
         """
-        self.__config[self._DEPTH_PROFILE]["cross_section"] = str(flag)
+        self.__config[self._DEPTH_PROFILE]["cross_section"] = str(int(value))
 
     @staticmethod
     def is_es_output_saved() -> bool:

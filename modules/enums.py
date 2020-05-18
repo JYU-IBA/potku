@@ -155,3 +155,17 @@ class SimulationMode(str, Enum):
         if self is SimulationMode.NARROW:
             return "Narrow"
         return "Wide"
+
+
+@enum.unique
+class CrossSection(IntEnum):
+    RUTHERFORD = 1
+    LECUYER = 2
+    ANDERSEN = 3
+
+    def __str__(self):
+        if self is CrossSection.RUTHERFORD:
+            return "Rutherford"
+        if self is CrossSection.LECUYER:
+            return "L'Ecuyer"
+        return "Andersen"

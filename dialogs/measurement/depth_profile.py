@@ -116,8 +116,9 @@ class DepthProfileDialog(QtWidgets.QDialog):
         self.check_0line.setChecked(DepthProfileDialog.line_zero)
         self.check_scaleline.setChecked(DepthProfileDialog.line_scale)
         
-        str_cross = self.__global_settings.get_cross_sections_text()
-        self.label_cross.setText(str_cross)
+        self.label_cross.setText(str(
+            self.__global_settings.get_cross_sections()
+        ))
         self.spin_systerr.setValue(DepthProfileDialog.systerr)
 
         self.__show_important_settings()

@@ -170,7 +170,8 @@ def get_layer(element_count=1, randomize=False) -> Layer:
 def get_global_settings() -> GlobalSettings:
     """Returns a GlobalSettings object.
     """
-    return GlobalSettings(save_on_creation=False)
+    return GlobalSettings(
+        config_dir=tempfile.gettempdir(), save_on_creation=False)
 
 
 def get_request(return_real=False):

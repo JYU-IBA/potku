@@ -1105,7 +1105,7 @@ class Measurement(Logger):
             depth_for_concentration_to)
 
         # Cross section
-        flag_cross = global_settings.get_cross_sections()
+        flag_cross = int(global_settings.get_cross_sections())
         str_cross = "Cross section: {0}\n".format(flag_cross)
         # Cross Sections: 1=Rutherford, 2=L'Ecuyer, 3=Andersen
 

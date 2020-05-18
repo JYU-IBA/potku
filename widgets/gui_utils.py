@@ -432,3 +432,13 @@ def fill_combobox(combobox: QtWidgets.QComboBox, values: Iterable):
     combobox.clear()
     for value in values:
         combobox.addItem(str(value), userData=value)
+
+
+def set_btn_group_data(button_group: QtWidgets.QButtonGroup, values: Iterable):
+    btns = button_group.buttons()
+    if len(btns) != len(values):
+        raise ValueError(
+            "Button group and data must have the same number of items")
+    for btn, value in zip(button_group.buttons(), values):
+        btn.setText(str(value))
+        btn.data_item = value

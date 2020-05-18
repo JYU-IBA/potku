@@ -38,6 +38,7 @@ import widgets.gui_utils as gutils
 
 from modules.global_settings import GlobalSettings
 from modules.enums import IonDivision
+from modules.enums import CrossSection
 
 from pathlib import Path
 
@@ -49,6 +50,22 @@ from PyQt5 import QtWidgets
 from dialogs.measurement.import_measurement import CoincTiming
 from widgets.matplotlib.measurement.tofe_histogram import \
     MatplotlibHistogramWidget
+
+
+def get_cross(instance, attr):
+    group = getattr(instance, attr)
+    try:
+        return group.checkedButton().data_item
+    except AttributeError as e:
+        return None
+
+
+def set_cross(instance, attr, value):
+    group = getattr(instance, attr)
+    for btn in group.buttons():
+        if btn.data_item == value:
+            btn.setChecked(True)
+            break
 
 
 class GlobalSettingsDialog(QtWidgets.QDialog):
@@ -75,6 +92,9 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
 
     coinc_count = bnd.bind("line_coinc_count")
 
+    cross_section = bnd.bind(
+        "cross_section_radios", fget=get_cross, fset=set_cross)
+
     settings_updated = QtCore.pyqtSignal(GlobalSettings)
 
     def __init__(self, settings: GlobalSettings):
@@ -94,6 +114,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
             self.spin_tofe_bin_y_min, self.spin_tofe_bin_y_max
         )
         gutils.fill_combobox(self.ion_div_box, IonDivision)
+        gutils.set_btn_group_data(self.cross_section_radios, CrossSection)
 
         # Connect UI buttons
         self.OKButton.clicked.connect(self.__accept_changes)
@@ -148,7 +169,8 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
             self.grid_timing.addWidget(spin_low, 1, i + 1)
             self.grid_timing.addWidget(spin_high, 2, i + 1)
         self.coinc_count = self.settings.get_import_coinc_count()
-        self.__set_cross_sections()
+        # self.__set_cross_sections()
+        self.cross_section = self.settings.get_cross_sections()
 
         # ToF-E graph settings
         # TODO radio group binding
@@ -199,14 +221,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
                 key, coinc_timing.low.value(), coinc_timing.high.value())
         self.settings.set_import_coinc_count(self.coinc_count)
 
-        # Save cross sections
-        if self.radio_cross_1.isChecked():
-            flag_cross = 1
-        elif self.radio_cross_2.isChecked():
-            flag_cross = 2
-        elif self.radio_cross_3.isChecked():
-            flag_cross = 3
-        self.settings.set_cross_sections(flag_cross)
+        self.settings.set_cross_sections(self.cross_section)
 
         # ToF-E graph settings
         self.settings.set_tofe_invert_x(self.tofe_invert_x)
@@ -269,11 +284,3 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         if not button.isEnabled():
             return  # Do not set color for disabled buttons.
         button.setStyleSheet(style)
-
-    def __set_cross_sections(self):
-        """Set cross sections to UI.
-        """
-        flag = self.settings.get_cross_sections()
-        self.radio_cross_1.setChecked(flag == 1)
-        self.radio_cross_2.setChecked(flag == 2)
-        self.radio_cross_3.setChecked(flag == 3)

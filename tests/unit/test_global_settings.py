@@ -30,6 +30,7 @@ import tests.mock_objects as mo
 import random
 
 from modules.enums import IonDivision
+from modules.enums import CrossSection
 from modules.global_settings import GlobalSettings
 from pathlib import Path
 
@@ -79,8 +80,12 @@ class TestGlobalSettings(unittest.TestCase):
         self.gs.set_import_coinc_count("seven")
         self.assertEqual(10000, self.gs.get_import_coinc_count())
 
-        self.gs.set_cross_sections(7)
-        self.assertEqual(7, self.gs.get_cross_sections())
+    def test_cross_section(self):
+        self.assertEqual(CrossSection.ANDERSEN, self.gs.get_cross_sections())
+        self.gs.set_cross_sections(CrossSection.LECUYER)
+        self.assertEqual(CrossSection.LECUYER, self.gs.get_cross_sections())
+        self.gs.set_cross_sections(CrossSection.RUTHERFORD)
+        self.assertEqual(CrossSection.RUTHERFORD, self.gs.get_cross_sections())
 
     def test_ion_division(self):
         self.gs.set_ion_division(IonDivision.BOTH)

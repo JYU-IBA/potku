@@ -130,12 +130,15 @@ class Simulations:
                     with measurement_settings_file.open("r") as mesu_f:
                         mesu_settings = json.load(mesu_f)
 
-                    simulation.measurement_setting_file_name = \
-                        mesu_settings["general"]["name"]
-                    simulation.measurement_setting_file_description = \
-                        mesu_settings["general"]["description"]
-                    simulation.modification_time = \
-                        mesu_settings["general"]["modification_time_unix"]
+                    try:
+                        simulation.measurement_setting_file_name = \
+                            mesu_settings["general"]["name"]
+                        simulation.measurement_setting_file_description = \
+                            mesu_settings["general"]["description"]
+                        simulation.modification_time = \
+                            mesu_settings["general"]["modification_time_unix"]
+                    except KeyError:
+                        pass
                     break
 
             # Read Detector information from file.
