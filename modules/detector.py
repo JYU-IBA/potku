@@ -296,7 +296,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             with measurement_file_path.open("r") as mesu_file:
                 measurement_obj = json.load(mesu_file)
             detector_theta = measurement_obj["geometry"]["detector_theta"]
-        except KeyError:
+        except (KeyError, json.JSONDecodeError, OSError):
             # Get default detector angle from default detector
             try:
                 detector_theta = request.default_detector.detector_theta
@@ -347,7 +347,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             return
         # Read .measurement to obj to update only detector angles
         try:
-            with measurement_file_path.open("w") as mesu:
+            with measurement_file_path.open("r") as mesu:
                 obj = json.load(mesu)
             try:
                 # Change existing detector theta
@@ -355,7 +355,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             except KeyError:
                 # Add detector theta
                 obj["geometry"] = {"detector_theta": self.detector_theta}
-        except OSError:
+        except (OSError, json.JSONDecodeError):
             # Write new .measurement file
             obj = {"geometry": {"detector_theta": self.detector_theta}}
 

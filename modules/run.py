@@ -55,9 +55,10 @@ class Run(Serializable, AdjustableSettings):
             charge: Charge.
             run_time: Time of the run.
         """
-        self.beam = beam
-        if not self.beam:
+        if beam is None:
             self.beam = Beam()
+        else:
+            self.beam = beam
         self.fluence = fluence
         self.current = current
         self.charge = charge

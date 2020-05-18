@@ -333,8 +333,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 gf.rename_file(simu_file, new_name)
 
     @classmethod
-    def from_file(cls, request, prefix, simulation_folder, mcsimu_file_path,
-                  profile_file_path, sample=None, detector=None):
+    def from_file(cls, request, prefix: str, simulation_folder: Path,
+                  mcsimu_file_path: Path, profile_file_path: Path,
+                  sample=None, detector=None):
         """Initialize ElementSimulation from JSON files.
 
         Args:
@@ -351,7 +352,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             detector: detector that is used when simulation is not run with
                 request settings.
         """
-        with open(mcsimu_file_path) as mcsimu_file:
+        with mcsimu_file_path.open("r") as mcsimu_file:
             mcsimu = json.load(mcsimu_file)
 
         # Pop the recoil name so it can be converted to a RecoilElement
@@ -373,10 +374,17 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             name_prefix = ""
 
         # Read channel width from .profile file.
-        with open(profile_file_path) as prof_file:
-            prof = json.load(prof_file)
-
-        channel_width = prof["energy_spectra"]["channel_width"]
+        try:
+            with profile_file_path.open("r") as prof_file:
+                prof = json.load(prof_file)
+            kwargs = {
+                "channel_width": prof["energy_spectra"]["channel_width"]
+            }
+        except (json.JSONDecodeError, OSError, KeyError) as e:
+            logging.getLogger("request").error(
+                f"Failed to read data from file {profile_file_path}: {e}."
+            )
+            kwargs = {}
 
         rec_type = mcsimu["simulation_type"].get_recoil_type()
 
@@ -389,9 +397,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             if fp.is_recoil_file(prefix, file):
                 # Initialize a recoil element
                 rec_elem = RecoilElement.from_file(
-                    Path(simulation_folder, file),
-                    channel_width=channel_width,
-                    rec_type=rec_type
+                    Path(simulation_folder, file), rec_type=rec_type, **kwargs
                 )
 
                 if rec_elem.name == main_recoil_name:
@@ -422,21 +428,16 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             elif fp.is_optfl_result(prefix, file):
                 with open(Path(simulation_folder, file), "r") as f:
                     optimized_fluence = float(f.readline())
-        optimized_recoils = [val
-                             for key, val
-                             in sorted(optimized_recoils_dict.items())]
-        return cls(directory=simulation_folder,
-                   request=request,
-                   recoil_elements=recoil_elements,
-                   name_prefix=name_prefix,
-                   name=name,
-                   channel_width=channel_width,
-                   optimization_recoils=optimized_recoils,
-                   optimized_fluence=optimized_fluence,
-                   main_recoil=main_recoil,
-                   sample=sample,
-                   detector=detector,
-                   **mcsimu)
+        optimized_recoils = [
+            val for key, val
+            in sorted(optimized_recoils_dict.items())]
+        return cls(
+            directory=simulation_folder, request=request,
+            recoil_elements=recoil_elements, name_prefix=name_prefix, name=name,
+            optimization_recoils=optimized_recoils,
+            optimized_fluence=optimized_fluence,
+            main_recoil=main_recoil, sample=sample, detector=detector,
+            **kwargs, **mcsimu)
 
     def get_full_name(self):
         """Returns the full name of the ElementSimulation object.

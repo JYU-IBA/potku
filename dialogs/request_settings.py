@@ -36,6 +36,8 @@ import os
 
 import dialogs.dialog_functions as df
 
+from modules.request import Request
+
 from pathlib import Path
 
 from PyQt5 import QtCore
@@ -57,7 +59,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
 
     settings_updated = QtCore.pyqtSignal()
 
-    def __init__(self, main_window, request, icon_manager):
+    def __init__(self, main_window, request: Request, icon_manager):
         """Constructor for the program
 
         Args:
@@ -198,6 +200,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             default_measurement_settings_file = Path(
                 self.request.default_measurement.directory,
                 "Default.measurement")
+            self.request.default_measurement.measurement_to_file(
+                default_measurement_settings_file)
             self.request.default_measurement.profile_to_file(Path(
                 self.request.default_measurement.directory,
                 "Default.profile"))

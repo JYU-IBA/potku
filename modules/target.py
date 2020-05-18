@@ -176,11 +176,9 @@ class Target:
                     obj = json.load(mesu)
                 obj["geometry"]["target_theta"] = self.target_theta
             except (OSError, KeyError):
-                obj = {
-                    "geometry": {
+                obj["geometry"] = {
                         "target_theta": self.target_theta
                     }
-                }
 
             with measurement_file_path.open("w") as file:
                 json.dump(obj, file, indent=4)

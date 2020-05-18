@@ -453,7 +453,11 @@ class Measurement(Logger):
                     "modification_time_unix"
                 ]
             }
-        except (OSError, KeyError, AttributeError):
+        except (OSError, KeyError, AttributeError) as e:
+            logging.getLogger("request").error(
+                f"Failed to read settings from file {measurement_file_path}: "
+                f"{e}"
+            )
             mesu_general = {}
 
         try:
@@ -478,8 +482,14 @@ class Measurement(Logger):
             else:
                 use_default_profile_settings = False
 
-        except (OSError, KeyError, AttributeError):
+        except (OSError, KeyError, AttributeError, json.JSONDecodeError) as e:
+            logging.getLogger("request").error(
+                f"Failed to read settings from file {profile_file_path}: {e}"
+            )
             measurement = request.default_measurement
+            if measurement is None:
+                return cls(request=request, path=measurement_info_path,
+                           **mesu_general, use_default_profile_settings=True)
             prof_gen = {
                 "profile_name": measurement.profile_name,
                 "profile_description": measurement.profile_description,

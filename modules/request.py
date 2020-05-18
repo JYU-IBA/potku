@@ -92,12 +92,12 @@ class Request(ElementSimulationContainer):
         self.default_measurement_file_path = Path(
             self.default_folder, "Default.measurement")
 
-        self.default_detector_folder = None
-        self.default_detector = None
-        self.default_measurement = None
-        self.default_target = None
-        self.default_simulation = None
-        self.default_element_simulation = None
+        self.default_detector_folder: Path = None
+        self.default_detector: Detector = None
+        self.default_measurement: Measurement = None
+        self.default_target: Target = None
+        self.default_simulation: Simulation = None
+        self.default_element_simulation: ElementSimulation = None
 
         self.create_default_detector()
         self.create_default_measurement()

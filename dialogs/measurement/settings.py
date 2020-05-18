@@ -29,7 +29,6 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
              "\n Sinikka Siironen"
 __version__ = "2.0"
 
-import os
 import shutil
 import time
 
@@ -40,6 +39,7 @@ from pathlib import Path
 
 from modules.run import Run
 from modules.target import Target
+from modules.measurement import Measurement
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -55,7 +55,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
     Dialog class for handling the measurement parameter input.
     """
 
-    def __init__(self, measurement, icon_manager):
+    def __init__(self, measurement: Measurement, icon_manager):
         """
         Initializes the dialog.
 
