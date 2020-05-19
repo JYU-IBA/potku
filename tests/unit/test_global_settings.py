@@ -112,6 +112,19 @@ class TestGlobalSettings(unittest.TestCase):
             ToFEColorScheme.GREYSCALE, self.gs.get_tofe_color()
         )
 
+    def test_element_colors(self):
+        self.gs.set_element_color("B", "black")
+        # This is case insensitive
+        self.assertEqual("black", self.gs.get_element_color("B"))
+        self.assertEqual("black", self.gs.get_element_color("b"))
+
+        # Unknown color returns a default value
+        self.assertEqual("red", self.gs.get_element_color("foo"))
+
+        # New elements can be added
+        self.gs.set_element_color("foo", "green")
+        self.assertEqual("green", self.gs.get_element_color("foo"))
+
     def test_serialiazation(self):
         """Deserialized GlobalSettings object should have the same
         values as the serialized object.
@@ -119,7 +132,7 @@ class TestGlobalSettings(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp_dir:
             path = Path(tmp_dir, "settings")
             gs1 = GlobalSettings(config_dir=path, save_on_creation=False)
-            gs1.set_cross_sections(2)
+            gs1.set_cross_sections(CrossSection.LECUYER)
             gs1.set_element_color("He", "blue")
             gs1.set_tofe_transposed(False)
             gs1.set_request_directory(Path(tmp_dir, "requests2"))
@@ -154,7 +167,7 @@ class TestGlobalSettings(unittest.TestCase):
                     f.write(line)
 
             gs = GlobalSettings(tmp_dir, save_on_creation=False)
-            self.assert_settings_equal(self.gs, gs)
+            self.assert_settings_equal(self.gs, gs, only_check_same_size=True)
 
     def test_reading_bad_values(self):
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -164,10 +177,10 @@ class TestGlobalSettings(unittest.TestCase):
             self.gs.save_config()
 
             ini_file = self.gs.get_config_file()
-            with open(ini_file, "r") as f:
+            with ini_file.open("r") as f:
                 lines = f.readlines()
             self.assertTrue(1 < len(lines))
-            with open(ini_file, "w") as f:
+            with ini_file.open("w") as f:
                 for line in lines:
                     if line.strip().startswith("compression_y"):
                         line = "compression_y = True\n"
@@ -180,7 +193,12 @@ class TestGlobalSettings(unittest.TestCase):
             gs = GlobalSettings(config_dir=tmp_dir, save_on_creation=False)
             self.assert_settings_equal(self.gs, gs)
 
-    def assert_settings_equal(self, gs1: GlobalSettings, gs2: GlobalSettings):
+    def assert_settings_equal(self, gs1: GlobalSettings, gs2: GlobalSettings,
+                              only_check_same_size=False):
+        """Asserts that the two GlobalSettings objects return same values.
+        If only_check_same_size is True, the return values of
+        get_element_colors are only checked if they are the same size.
+        """
         getters = [
             method for method in dir(gs1) if
             method.startswith("get") or method.startswith("is")
@@ -197,5 +215,9 @@ class TestGlobalSettings(unittest.TestCase):
             val1 = getattr(gs1, getter)(*args)
             val2 = getattr(gs2, getter)(*args)
 
-            self.assertEqual(val1, val2)
+            if only_check_same_size:
+                if getter == "get_element_colors":
+                    if len(val1) != len(val2):
+                        continue
 
+            self.assertEqual(val1, val2)

@@ -96,6 +96,24 @@ def set_selected_combobox_item(combobox: QtWidgets.QComboBox, data):
         combobox.setCurrentIndex(idx)
 
 
+def get_btn_group_value(button_group: QtWidgets.QButtonGroup):
+    """Retuns the value of data_item attribute of the selected button.
+    """
+    try:
+        return button_group.checkedButton().data_item
+    except AttributeError:
+        return None
+
+
+def set_btn_group_value(button_group: QtWidgets.QButtonGroup, value):
+    """Checks the button whose data_item matches the value.
+    """
+    for btn in button_group.buttons():
+        if btn.data_item == value:
+            btn.setChecked(True)
+            break
+
+
 # Collections of default getter and setter methods for various QObjects.
 # Keys are the types of the QObjects and values are methods.
 _DEFAULT_GETTERS = {
@@ -109,7 +127,9 @@ _DEFAULT_GETTERS = {
     QtWidgets.QPushButton: lambda qobj: qobj.text(),
     ScientificSpinBox: lambda qobj: qobj.get_value(),
     IsotopeSelectionWidget: lambda qobj: qobj.get_element(),
-    QtWidgets.QListWidget: get_items
+    QtWidgets.QListWidget: get_items,
+    QtWidgets.QGroupBox: lambda qobj: qobj.title(),
+    QtWidgets.QButtonGroup: get_btn_group_value
 }
 
 _DEFAULT_SETTERS = {
@@ -123,7 +143,9 @@ _DEFAULT_SETTERS = {
     QtWidgets.QPushButton: lambda qobj, txt: qobj.setText(txt),
     ScientificSpinBox: lambda qobj, value: qobj.set_value(value),
     IsotopeSelectionWidget: lambda qobj, elem: qobj.set_element(elem),
-    QtWidgets.QListWidget: set_items
+    QtWidgets.QListWidget: set_items,
+    QtWidgets.QGroupBox: lambda qobj, txt: qobj.setTitle(txt),
+    QtWidgets.QButtonGroup: set_btn_group_value
 }
 
 

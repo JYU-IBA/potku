@@ -299,7 +299,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         # TODO use name instead of startswith
         gf.remove_files(
             self.directory, exts={".rec", ".sct"},
-            filter_func=lambda x: x.startwith(old_name))
+            filter_func=lambda x: x.startswith(old_name))
 
         recoil_element.to_file(self.directory)
 

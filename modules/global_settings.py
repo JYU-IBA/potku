@@ -53,7 +53,7 @@ def handle_exceptions(return_value=None, attr=None):
             try:
                 return f(instance, *args, **kwargs)
             except (configparser.NoSectionError, configparser.NoOptionError,
-                    KeyError, ValueError):
+                    KeyError, ValueError, AttributeError):
                 if return_value is not None:
                     return return_value
                 return getattr(instance, attr)
@@ -85,19 +85,13 @@ class GlobalSettings:
             self.__config_directory = Path(config_dir)
 
         self.__config = configparser.ConfigParser()
-        # Make the configparser's string handling case sensitive by defining
-        # optionxform
-        # FIXME not working as intended
-        self.__config.optionxform = str
 
         self._request_directory = Path(self.__config_directory, "requests")
 
         self._request_directory_last_open = self._request_directory
-        self._element_colors = GlobalSettings.get_default_colors()
 
         self.__create_sections()
         if not self.get_config_file().exists():
-            # self.__set_defaults()
             # Set default request directory
             self.set_request_directory(self._request_directory)
             if save_on_creation:
@@ -115,6 +109,8 @@ class GlobalSettings:
         self.__config.add_section(self._TOFE)
         self.__config.add_section(self._SIMULATION)
 
+        self.__config[self._COLORS] = GlobalSettings.get_default_colors()
+
     def set_config_dir(self, directory: Path):
         """Sets the directory of the config file.
         """
@@ -130,7 +126,7 @@ class GlobalSettings:
         """
         try:
             self.__config.read(self.get_config_file())
-        except configparser.ParsingError:
+        except (configparser.ParsingError, configparser.DuplicateOptionError):
             pass
 
     def save_config(self):
@@ -173,15 +169,15 @@ class GlobalSettings:
             directory)
         self.save_config()
 
-    @handle_exceptions(attr="_element_colors")
-    def get_element_colors(self) -> dict:
+    def get_element_colors(self):
         """Get all elements' colors.
 
         Return:
             Returns a dictionary of elements' colors.
         """
-        return dict(self.__config[self._COLORS])
+        return self.__config[self._COLORS]
 
+    @handle_exceptions(return_value="red")
     def get_element_color(self, element):
         """Get a specific element's color.
 
@@ -191,10 +187,7 @@ class GlobalSettings:
         Return:
             Returns a color (string) for a specific element.
         """
-        try:
-            return self.__config[self._COLORS][element]
-        except (configparser.NoSectionError, KeyError):
-            return self._element_colors.get(element, "red")
+        return self.__config[self._COLORS][element]
 
     def set_element_color(self, element, color):
         """Set default color for an element.

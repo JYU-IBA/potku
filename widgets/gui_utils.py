@@ -28,8 +28,9 @@ import abc
 import platform
 
 from pathlib import Path
-from typing import Iterable
+from typing import Sequence
 from typing import Optional
+from typing import Union
 
 from modules.observing import ProgressReporter
 from modules.observing import Observer
@@ -424,7 +425,7 @@ def block_treewidget_signals(func):
     return wrapper
 
 
-def fill_combobox(combobox: QtWidgets.QComboBox, values: Iterable):
+def fill_combobox(combobox: QtWidgets.QComboBox, values: Sequence):
     """Fills the combobox with given values. Stores the values as user data
     and displays the string representations as item labels. Previous items
     are removed from the combobox.
@@ -434,7 +435,13 @@ def fill_combobox(combobox: QtWidgets.QComboBox, values: Iterable):
         combobox.addItem(str(value), userData=value)
 
 
-def set_btn_group_data(button_group: QtWidgets.QButtonGroup, values: Iterable):
+def set_btn_group_data(button_group: QtWidgets.QButtonGroup, values: Sequence):
+    """Adds a data_item attribute for all buttons in the button group. The
+    value of the data_item is taken from the given values.
+
+    No buttons are added or removed. button_group has to contain the same
+    number of buttons as there are values.
+    """
     btns = button_group.buttons()
     if len(btns) != len(values):
         raise ValueError(
@@ -442,3 +449,19 @@ def set_btn_group_data(button_group: QtWidgets.QButtonGroup, values: Iterable):
     for btn, value in zip(button_group.buttons(), values):
         btn.setText(str(value))
         btn.data_item = value
+
+
+def set_min_max_handlers(
+        lower_box: Union[QtWidgets.QSpinBox, QtWidgets.QDoubleSpinBox],
+        upper_box: Union[QtWidgets.QSpinBox, QtWidgets.QDoubleSpinBox]):
+    """Adds valueChanged handlers that automatically adjust the minimum
+    and maximum values of spin boxes.
+
+    Args:
+        lower_box: spin box whose current value should be the minimum value of
+            the upper_box.
+        upper_box: spin box whose current value should be the maximum value of
+            the lower_box
+    """
+    lower_box.valueChanged.connect(lambda x: upper_box.setMinimum(x))
+    upper_box.valueChanged.connect(lambda x: lower_box.setMaximum(x))

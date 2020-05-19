@@ -109,5 +109,25 @@ class TestFillCombobox(unittest.TestCase):
         self.assertEqual("kissa istuu", combobox.currentData())
 
 
+class TestMinMaxHandlers(unittest.TestCase):
+    def test_min_max_handlers(self):
+        spinbox1 = QtWidgets.QDoubleSpinBox()
+        spinbox2 = QtWidgets.QDoubleSpinBox()
+        gutils.set_min_max_handlers(spinbox1, spinbox2)
+
+        spinbox1.setValue(10.5)
+        self.assertEqual(10.5, spinbox2.value())
+        self.assertEqual(10.5, spinbox1.maximum())
+        self.assertEqual(10.5, spinbox2.minimum())
+
+        # Now value of spinbox2 cannot be set below 10.5
+        spinbox2.setValue(5.6)
+        self.assertEqual(10.5, spinbox2.value())
+        self.assertEqual(10.5, spinbox1.value())
+
+        spinbox2.setValue(42)
+        self.assertEqual(42, spinbox1.maximum())
+
+
 if __name__ == '__main__':
     unittest.main()

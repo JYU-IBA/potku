@@ -30,6 +30,7 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen" \
 __version__ = "2.0"
 
 import widgets.binding as bnd
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
@@ -54,6 +55,13 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         self.parent = parent
+
+        gutils.set_min_max_handlers(
+            self.spin_range_x_min, self.spin_range_x_max
+        )
+        gutils.set_min_max_handlers(
+            self.spin_range_y_min, self.spin_range_y_max
+        )
 
         self.parent.show_yourself(self)
 

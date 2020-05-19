@@ -52,22 +52,6 @@ from PyQt5 import QtWidgets
 from dialogs.measurement.import_measurement import CoincTiming
 
 
-def get_btn_group_value(instance, attr):
-    group = getattr(instance, attr)
-    try:
-        return group.checkedButton().data_item
-    except AttributeError as e:
-        return None
-
-
-def set_btn_group_value(instance, attr, value):
-    group = getattr(instance, attr)
-    for btn in group.buttons():
-        if btn.data_item == value:
-            btn.setChecked(True)
-            break
-
-
 class GlobalSettingsDialog(QtWidgets.QDialog):
     """
     A GlobalSettingsDialog.
@@ -89,15 +73,11 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
 
     presim_ions = bnd.bind("presim_spinbox")
     sim_ions = bnd.bind("sim_spinbox")
-    ion_division = bnd.bind(
-        "ion_division_radios", fget=get_btn_group_value,
-        fset=set_btn_group_value)
+    ion_division = bnd.bind("ion_division_radios")
 
     coinc_count = bnd.bind("line_coinc_count")
 
-    cross_section = bnd.bind(
-        "cross_section_radios", fget=get_btn_group_value,
-        fset=set_btn_group_value)
+    cross_section = bnd.bind("cross_section_radios")
 
     save_window_geometries = bnd.bind("window_geom_chkbox")
 
@@ -113,10 +93,10 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.__added_timings = {}  # Placeholder for timings
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
-        self.set_min_max_handlers(
+        gutils.set_min_max_handlers(
             self.spin_tofe_bin_x_min, self.spin_tofe_bin_x_max
         )
-        self.set_min_max_handlers(
+        gutils.set_min_max_handlers(
             self.spin_tofe_bin_y_min, self.spin_tofe_bin_y_max
         )
         gutils.set_btn_group_data(self.ion_division_radios, IonDivision)
@@ -143,15 +123,6 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         except AttributeError:
             pass
         super().closeEvent(event)
-
-    @staticmethod
-    def set_min_max_handlers(min_spinbox: QtWidgets.QSpinBox,
-                             max_spinbox: QtWidgets.QSpinBox):
-        """Adds valueChanged handlers that automatically adjust the minimum
-        and maximum values of QSpinBoxes.
-        """
-        min_spinbox.valueChanged.connect(lambda x: max_spinbox.setMinimum(x))
-        max_spinbox.valueChanged.connect(lambda x: min_spinbox.setMaximum(x))
 
     def __set_values(self):
         """Set settings values to dialog.

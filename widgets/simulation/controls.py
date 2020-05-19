@@ -47,20 +47,6 @@ from PyQt5 import uic
 from PyQt5.QtCore import Qt
 
 
-def _str_from_group_box(instance, attr):
-    """Gets the title from group box.
-    """
-    # TODO make this a default getter for group boxes
-    return getattr(instance, attr).title()
-
-
-def _str_to_group_box(instance, attr, txt):
-    """Sets the title of a group box.
-    """
-    # TODO make this a default setter fro group boxes
-    getattr(instance, attr).setTitle(txt)
-
-
 def _process_count_to_label(instance, attr, value):
     """Sets the value of finished process count in GUI.
     """
@@ -77,8 +63,7 @@ def _process_count_from_label(instance, attr):
 class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
     """Class for creating simulation controls widget for the element simulation.
     """
-    recoil_name = bnd.bind(
-        "controls_group_box", fget=_str_from_group_box, fset=_str_to_group_box)
+    recoil_name = bnd.bind("controls_group_box")
     process_count = bnd.bind("processes_spinbox")
     finished_processes = bnd.bind(
         "finished_processes_label", fget=_process_count_from_label,
@@ -160,7 +145,8 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         """Disconnects self from recoil_name_changed signal and closes the
         widget.
         """
-        # FIXME not being called
+        # FIXME not being called. This is a problem as there may be memory
+        #  leaks.
         try:
             self._recoil_name_changed.disconnect(self._set_name)
         except (AttributeError, TypeError):
@@ -183,7 +169,6 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         """Switches the states of run and stop button depending on the state
         of the ElementSimulation object.
         """
-        # TODO make sure that this works when first started
         if self.element_simulation.is_optimization_running():
             start_enabled, stop_enabled = False, False
         else:
@@ -238,7 +223,6 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         self.finished_processes = 0, self.process_count
         self.remove_progress_bars()
 
-        # TODO indicate to user that ion counts are shared between processes
         observable = self.element_simulation.start(
             self.process_count, use_old_erd_files=use_old_erd_files,
             ion_division=self._ion_division
@@ -267,6 +251,8 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
 
     def settings_update_handler(
             self, settings: Optional[GlobalSettings] = None):
+        """Updates SimulationControlsWidget when a setting has been updated.
+        """
         if settings is not None:
             self._ion_division = settings.get_ion_division()
             self._min_presim_ions = settings.get_min_presim_ions()
@@ -274,6 +260,9 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
         self.show_ion_settings_label()
 
     def show_ion_settings_label(self):
+        """Shows a warning label if ion counts are below the user defined
+        treshold.
+        """
         settings, _, _ = self.element_simulation.get_mcerd_params()
         presim_ions, sim_ions = self._ion_division.get_ion_counts(
             settings["number_of_ions_in_presimu"], settings["number_of_ions"],
