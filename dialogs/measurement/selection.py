@@ -35,6 +35,7 @@ import modules.masses as masses
 
 import widgets.input_validation as iv
 import widgets.gui_utils as gutils
+import dialogs.dialog_functions as df
 
 from pathlib import Path
 
@@ -205,6 +206,7 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
             natural isotopes.
             sample: Whether the element is from sample or rbs.
         """
+        # TODO implement or remove sample parameter
         dialog = ElementSelectionDialog()
         # Only disable these once, not if you cancel after selecting once.
         if button.text() == "Select": 
@@ -295,22 +297,12 @@ class SelectionSettingsDialog(QtWidgets.QDialog):
         Args:
             element: String representing element name.
         """
-        text_color = "black"
-        luminance = 0.2126 * self.color.red() + 0.7152 * self.color.green()
-        luminance += 0.0722 * self.color.blue()
-        if luminance < 50:
-            text_color = "white"
-        style = "background-color: {0}; color: {1};".format(self.color.name(),
-                                                            text_color)
-        self.colorButton.setStyleSheet(style)
+        df.set_btn_color(
+            self.colorButton, self.color, self.element_colormap, element)
 
-        if self.color.name() == self.element_colormap[element]:
-            self.colorButton.setText("Automatic [{0}]".format(element))
-        else:
-            self.colorButton.setText("")
-
-    def __load_isotopes(self, combobox, standard_mass_label,
-                        element, current_isotope=None):
+    @staticmethod
+    def __load_isotopes(combobox, standard_mass_label, element,
+                        current_isotope=None):
         """Change isotope information regarding element
         
         Args:

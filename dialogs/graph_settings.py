@@ -29,6 +29,9 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen" \
              "Samuel Kaiponen \n Heta Rekilä \n Sinikka Siironen"
 __version__ = "2.0"
 
+import widgets.binding as bnd
+import widgets.gui_utils as gutils
+
 from pathlib import Path
 
 from PyQt5 import QtCore
@@ -39,6 +42,7 @@ from PyQt5 import QtWidgets
 class TofeGraphSettingsWidget(QtWidgets.QDialog):
     """Graph settings dialog for the ToF-E histogram graph.
     """
+    color_scheme = bnd.bind("colorbox")
 
     def __init__(self, parent):
         """Inits ToF-E graph histogram graph settings dialog.
@@ -51,6 +55,13 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
 
         self.parent = parent
+
+        gutils.set_min_max_handlers(
+            self.spin_range_x_min, self.spin_range_x_max
+        )
+        gutils.set_min_max_handlers(
+            self.spin_range_y_min, self.spin_range_y_max
+        )
 
         self.parent.show_yourself(self)
 
@@ -73,7 +84,7 @@ class TofeGraphSettingsWidget(QtWidgets.QDialog):
             self.axes_ticks.checkState() == QtCore.Qt.Checked
         self.parent.transpose_axes = \
             self.transposeAxesCheckBox.checkState() == QtCore.Qt.Checked
-        self.parent.measurement.color_scheme = self.colorbox.currentText()
+        self.parent.color_scheme = self.color_scheme
         if self.radio_range_auto.isChecked():
             self.parent.axes_range_mode = 0
         elif self.radio_range_manual.isChecked():

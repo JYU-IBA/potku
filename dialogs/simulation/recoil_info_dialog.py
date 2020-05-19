@@ -32,6 +32,7 @@ import time
 
 import widgets.binding as bnd
 import widgets.input_validation as iv
+import dialogs.dialog_functions as df
 
 from modules.element_simulation import ElementSimulation
 from modules.recoil_element import RecoilElement
@@ -201,20 +202,8 @@ class RecoilInfoDialog(QtWidgets.QDialog, bnd.PropertyBindingWidget,
         Args:
             element: String representing element name.
         """
-        text_color = "black"
-        luminance = 0.2126 * self.tmp_color.red() + 0.7152 * \
-            self.tmp_color.green()
-        luminance += 0.0722 * self.tmp_color.blue()
-        if luminance < 50:
-            text_color = "white"
-        style = "background-color: {0}; color: {1};".format(
-            self.tmp_color.name(), text_color)
-        self.colorPushButton.setStyleSheet(style)
-
-        if self.tmp_color.name() == self.colormap[element]:
-            self.colorPushButton.setText("Automatic [{0}]".format(element))
-        else:
-            self.colorPushButton.setText("")
+        df.set_btn_color(
+            self.colorPushButton, self.tmp_color, self.colormap, element)
 
     def __set_color_button_color(self, element):
         """Set default color of element to color button.

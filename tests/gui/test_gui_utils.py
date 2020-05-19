@@ -74,12 +74,6 @@ class TestGUIReporter(unittest.TestCase):
         self.assertRaises(TypeError,
                           lambda: self.reporter.report([10]))
 
-    @unittest.skip("Threading test is not yet implemented for GUIReporter")
-    def test_threading(self):
-        # This test should test that the callback is always executed in the
-        # main thread.
-        self.assertTrue(False)
-
 
 class TestLoadCombobox(unittest.TestCase):
     def test_load_combox(self):
@@ -97,6 +91,42 @@ class TestLoadCombobox(unittest.TestCase):
 
         gutils.load_isotopes("He", combo, show_std_mass=True, current_isotope=4)
         self.assertEqual(Element("He", 4), combo.currentData()["element"])
+
+
+class TestFillCombobox(unittest.TestCase):
+    def test_fill_combobox(self):
+        values = [1, {"foo": "bar"}, "foo", [1, 2]]
+        combobox = QtWidgets.QComboBox()
+        gutils.fill_combobox(combobox, values)
+        self.assertEqual(len(values), combobox.count())
+        for i, value in enumerate(values):
+            self.assertEqual(value, combobox.itemData(i))
+            self.assertEqual(str(value), combobox.itemText(i))
+
+        # Combobox is cleared when fill_combobox is called
+        gutils.fill_combobox(combobox, ["kissa istuu"])
+        self.assertEqual(1, combobox.count())
+        self.assertEqual("kissa istuu", combobox.currentData())
+
+
+class TestMinMaxHandlers(unittest.TestCase):
+    def test_min_max_handlers(self):
+        spinbox1 = QtWidgets.QDoubleSpinBox()
+        spinbox2 = QtWidgets.QDoubleSpinBox()
+        gutils.set_min_max_handlers(spinbox1, spinbox2)
+
+        spinbox1.setValue(10.5)
+        self.assertEqual(10.5, spinbox2.value())
+        self.assertEqual(10.5, spinbox1.maximum())
+        self.assertEqual(10.5, spinbox2.minimum())
+
+        # Now value of spinbox2 cannot be set below 10.5
+        spinbox2.setValue(5.6)
+        self.assertEqual(10.5, spinbox2.value())
+        self.assertEqual(10.5, spinbox1.value())
+
+        spinbox2.setValue(42)
+        self.assertEqual(42, spinbox1.maximum())
 
 
 if __name__ == '__main__':

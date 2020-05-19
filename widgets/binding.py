@@ -87,13 +87,39 @@ def set_items(list_widget: QtWidgets.QListWidget, ls):
         list_widget.addItem(item)
 
 
+def set_selected_combobox_item(combobox: QtWidgets.QComboBox, data):
+    """Sets the current item in a combobox depending on the given
+    data.
+    """
+    idx = combobox.findData(data, QtCore.Qt.UserRole, QtCore.Qt.MatchExactly)
+    if idx != -1:
+        combobox.setCurrentIndex(idx)
+
+
+def get_btn_group_value(button_group: QtWidgets.QButtonGroup):
+    """Retuns the value of data_item attribute of the selected button.
+    """
+    try:
+        return button_group.checkedButton().data_item
+    except AttributeError:
+        return None
+
+
+def set_btn_group_value(button_group: QtWidgets.QButtonGroup, value):
+    """Checks the button whose data_item matches the value.
+    """
+    for btn in button_group.buttons():
+        if btn.data_item == value:
+            btn.setChecked(True)
+            break
+
+
 # Collections of default getter and setter methods for various QObjects.
 # Keys are the types of the QObjects and values are methods.
 _DEFAULT_GETTERS = {
     QtWidgets.QTimeEdit: lambda qobj: from_qtime(qobj.time()),
     QtWidgets.QLineEdit: lambda qobj: qobj.text(),
-    # TODO change the next one to currentData
-    QtWidgets.QComboBox: lambda qobj: qobj.currentText(),
+    QtWidgets.QComboBox: lambda qobj: qobj.currentData(QtCore.Qt.UserRole),
     QtWidgets.QTextEdit: lambda qobj: qobj.toPlainText(),
     QtWidgets.QCheckBox: lambda qobj: qobj.isChecked(),
     QtWidgets.QLabel: lambda qobj: qobj.text(),
@@ -101,14 +127,15 @@ _DEFAULT_GETTERS = {
     QtWidgets.QPushButton: lambda qobj: qobj.text(),
     ScientificSpinBox: lambda qobj: qobj.get_value(),
     IsotopeSelectionWidget: lambda qobj: qobj.get_element(),
-    QtWidgets.QListWidget: get_items
+    QtWidgets.QListWidget: get_items,
+    QtWidgets.QGroupBox: lambda qobj: qobj.title(),
+    QtWidgets.QButtonGroup: get_btn_group_value
 }
 
 _DEFAULT_SETTERS = {
     QtWidgets.QTimeEdit: lambda qobj, sec: qobj.setTime(to_qtime(sec)),
     QtWidgets.QLineEdit: lambda qobj, txt: qobj.setText(txt),
-    QtWidgets.QComboBox: lambda qobj, txt: qobj.setCurrentIndex(qobj.findText(
-        txt, QtCore.Qt.MatchFixedString)),
+    QtWidgets.QComboBox: set_selected_combobox_item,
     QtWidgets.QTextEdit: lambda qobj, txt: qobj.setText(txt),
     QtWidgets.QCheckBox: lambda qobj, b: qobj.setChecked(b),
     QtWidgets.QLabel: lambda qobj, txt: qobj.setText(str(txt)),
@@ -116,7 +143,9 @@ _DEFAULT_SETTERS = {
     QtWidgets.QPushButton: lambda qobj, txt: qobj.setText(txt),
     ScientificSpinBox: lambda qobj, value: qobj.set_value(value),
     IsotopeSelectionWidget: lambda qobj, elem: qobj.set_element(elem),
-    QtWidgets.QListWidget: set_items
+    QtWidgets.QListWidget: set_items,
+    QtWidgets.QGroupBox: lambda qobj, txt: qobj.setTitle(txt),
+    QtWidgets.QButtonGroup: set_btn_group_value
 }
 
 

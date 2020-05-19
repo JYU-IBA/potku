@@ -24,16 +24,19 @@ along with this program (file named 'LICENCE').
 __author__ = "Juhani Sundell"
 __version__ = "2.0"
 
+import enum
 
 from enum import IntEnum
 from enum import Enum
 
 
+@enum.unique
 class OptimizationType(IntEnum):
     RECOIL = 1
     FLUENCE = 2
 
 
+@enum.unique
 class OptimizationState(Enum):
     PREPARING = 1
     SIMULATING = 2
@@ -55,6 +58,7 @@ class OptimizationState(Enum):
         return "Finished"
 
 
+@enum.unique
 class SimulationState(Enum):
     """This enum is used to represent the state of simulation.
     """
@@ -75,3 +79,107 @@ class SimulationState(Enum):
         if self == SimulationState.RUNNING:
             return "Running"
         return "Done"
+
+
+@enum.unique
+class IonDivision(IntEnum):
+    """Enum that decides how the total number of ions is divided per
+    simulation process.
+    """
+    # Ions are not divided, each simulation process uses the full number of
+    # ions.
+    NONE = 0
+
+    # Simulation ions are divided per process, pre-simulation ions are not
+    SIM = 1
+
+    # Both simulation and pre-simulation ions are divided per process
+    BOTH = 2
+
+    def __str__(self):
+        if self is IonDivision.NONE:
+            return "Ions are not divided per process"
+        if self is IonDivision.SIM:
+            return "Simulation ions are divided per process"
+        return "Both pre-simulation and simulation ions are divided per process"
+
+    def get_ion_counts(self, presim, sim, processes):
+        presim = presim if presim >= 0 else 0
+        sim = sim if sim >= 0 else 0
+
+        if self is IonDivision.NONE:
+            return int(presim), int(sim)
+
+        processes = processes if processes >= 1 else 1
+
+        sim /= processes
+        if self is IonDivision.BOTH:
+            presim /= processes
+
+        return int(presim), int(sim)
+
+
+@enum.unique
+class DetectorType(str, Enum):
+    TOF = "TOF"
+
+    def __str__(self):
+        return self.value
+
+
+@enum.unique
+class SimulationType(str, Enum):
+    ERD = "ERD"
+    RBS = "RBS"
+
+    def __str__(self):
+        if self is SimulationType.ERD:
+            return "REC"
+        return "SCT"
+
+    def get_recoil_type(self):
+        return str(self).lower()
+
+    def get_recoil_suffix(self):
+        if self is SimulationType.ERD:
+            return "recoil"
+        return "scatter"
+
+
+@enum.unique
+class SimulationMode(str, Enum):
+    NARROW = "narrow"
+    WIDE = "wide"
+
+    def __str__(self):
+        if self is SimulationMode.NARROW:
+            return "Narrow"
+        return "Wide"
+
+
+@enum.unique
+class CrossSection(IntEnum):
+    RUTHERFORD = 1
+    LECUYER = 2
+    ANDERSEN = 3
+
+    def __str__(self):
+        if self is CrossSection.RUTHERFORD:
+            return "Rutherford"
+        if self is CrossSection.LECUYER:
+            return "L'Ecuyer"
+        return "Andersen"
+
+
+@enum.unique
+class ToFEColorScheme(str, Enum):
+    DEFAULT = "jet"
+    GREYSCALE = "Greys"
+    INV_GREYSCALE = "gray"
+
+    def __str__(self):
+        if self is ToFEColorScheme.DEFAULT:
+            return "Default color"
+        if self is ToFEColorScheme.GREYSCALE:
+            return "Greyscale"
+        return "Greyscale (inverted)"

@@ -28,6 +28,9 @@ import abc
 import platform
 
 from pathlib import Path
+from typing import Sequence
+from typing import Optional
+from typing import Union
 
 from modules.observing import ProgressReporter
 from modules.observing import Observer
@@ -57,7 +60,7 @@ def _get_potku_settings() -> QSettings:
     return QSettings(*_SETTINGS_KEY)
 
 
-def remove_potku_setting(key=None):
+def remove_potku_setting(key: Optional[str] = None):
     """Removes a value stored for the given key. If key is None, all settings
     stored by Potku are removed.
 
@@ -102,6 +105,9 @@ def set_potku_setting(key: str, value):
 
 if platform.system() == "Darwin":
     # Mac needs event processing to display changes in the status bar
+    # TODO calling processEvents may cause problems with signal handling so
+    #   we should get rid of this. Getting rid of this requires moving all
+    #   long running operations away from the main thread.
     def _process_event_loop():
         QtCore.QCoreApplication.processEvents(
             QtCore.QEventLoop.AllEvents)
@@ -119,33 +125,6 @@ def process_event_loop(func):
         _process_event_loop()
         return res
     return wrapper
-
-
-def switch_buttons(button_a, button_b):
-    """Decorator for that switches the status of two buttons.
-
-    This decorator must be used in an object instance that has reference
-    to button_a and button_b.
-
-    Args:
-        button_a: name of a reference to a Qt button.
-        button_b: name of a reference to a Qt button.
-    """
-    def outer(func):
-        def inner(self, *args, **kwargs):
-            # TODO exception handling
-            btn_a = getattr(self, button_a)
-            btn_a.setEnabled(not btn_a.isEnabled())
-            _process_event_loop()
-
-            res = func(self, *args, **kwargs)
-
-            btn_b = getattr(self, button_b)
-            btn_b.setEnabled(not btn_b.isEnabled())
-            _process_event_loop()
-            return res
-        return inner
-    return outer
 
 
 class QtABCMeta(type(QtCore.QObject), abc.ABCMeta):
@@ -308,7 +287,6 @@ def load_isotopes(symbol, combobox, current_isotope=None, show_std_mass=False):
         current_isotope: Current isotope to select it on combobox by default.
         show_std_mass: if True, std mass is added as the first element
     """
-    # TODO this function could be moved to gui_utils
     combobox.clear()
     # Sort isotopes based on their natural abundance
     isotopes = Element.get_isotopes(symbol, include_st_mass=show_std_mass)
@@ -445,3 +423,45 @@ def block_treewidget_signals(func):
         instance.treeWidget.blockSignals(False)
         return res
     return wrapper
+
+
+def fill_combobox(combobox: QtWidgets.QComboBox, values: Sequence):
+    """Fills the combobox with given values. Stores the values as user data
+    and displays the string representations as item labels. Previous items
+    are removed from the combobox.
+    """
+    combobox.clear()
+    for value in values:
+        combobox.addItem(str(value), userData=value)
+
+
+def set_btn_group_data(button_group: QtWidgets.QButtonGroup, values: Sequence):
+    """Adds a data_item attribute for all buttons in the button group. The
+    value of the data_item is taken from the given values.
+
+    No buttons are added or removed. button_group has to contain the same
+    number of buttons as there are values.
+    """
+    btns = button_group.buttons()
+    if len(btns) != len(values):
+        raise ValueError(
+            "Button group and data must have the same number of items")
+    for btn, value in zip(button_group.buttons(), values):
+        btn.setText(str(value))
+        btn.data_item = value
+
+
+def set_min_max_handlers(
+        lower_box: Union[QtWidgets.QSpinBox, QtWidgets.QDoubleSpinBox],
+        upper_box: Union[QtWidgets.QSpinBox, QtWidgets.QDoubleSpinBox]):
+    """Adds valueChanged handlers that automatically adjust the minimum
+    and maximum values of spin boxes.
+
+    Args:
+        lower_box: spin box whose current value should be the minimum value of
+            the upper_box.
+        upper_box: spin box whose current value should be the maximum value of
+            the lower_box
+    """
+    lower_box.valueChanged.connect(lambda x: upper_box.setMinimum(x))
+    upper_box.valueChanged.connect(lambda x: lower_box.setMaximum(x))
