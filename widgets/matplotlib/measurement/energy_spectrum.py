@@ -398,7 +398,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         recoils = []
         for elem_sim in self.parent.parent.obj.element_simulations:
             for recoil in elem_sim.recoil_elements:
-                for used_file in self.histed_files.keys():
+                for used_file in self.histed_files:
                     used_file_name = os.path.split(used_file)[1]
                     if used_file_name == recoil.prefix + "-" + recoil.name + \
                             ".simu":
@@ -438,13 +438,13 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
                 # Check RBS selection
                 rbs_string = ""
                 if len(cut_file) == 3:
-                    if key + ".cut" in self.__rbs_list.keys():
+                    if key + ".cut" in self.__rbs_list:
                         element_object = self.__rbs_list[key + ".cut"]
                         element = element_object.symbol
                         isotope = element_object.isotope
                         rbs_string = "*"
                 else:
-                    if key in self.__rbs_list.keys():
+                    if key in self.__rbs_list:
                         element_object = self.__rbs_list[key]
                         element = element_object.symbol
                         isotope = element_object.isotope

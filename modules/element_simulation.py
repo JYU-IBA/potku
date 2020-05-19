@@ -53,6 +53,9 @@ from modules.observing import Observable
 from modules.recoil_element import RecoilElement
 from modules.enums import OptimizationType
 from modules.enums import SimulationState
+from modules.enums import IonDivision
+from modules.enums import SimulationType
+from modules.enums import SimulationMode
 
 
 # Mappings between the names of the MCERD parameters (keys) and
@@ -96,10 +99,11 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                  simulation=None, name_prefix="", sample=None,
                  detector=None, run=None, name="Default",
                  description="", modification_time=None,
-                 simulation_type="ERD", number_of_ions=1000000,
-                 number_of_preions=100000, number_of_scaling_ions=5,
+                 simulation_type=SimulationType.ERD, number_of_ions=1_000_000,
+                 number_of_preions=100_000, number_of_scaling_ions=5,
                  number_of_recoils=10, minimum_scattering_angle=0.05,
-                 minimum_main_scattering_angle=20, simulation_mode="narrow",
+                 minimum_main_scattering_angle=20,
+                 simulation_mode=SimulationMode.NARROW,
                  seed_number=101, minimum_energy=1.0, channel_width=0.025,
                  use_default_settings=True, main_recoil=None,
                  optimization_recoils=None, optimized_fluence=None,
@@ -170,10 +174,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.run = run
         self.sample = sample
 
-        # TODO raise errors if the type and mode are wrong
-        # TODO make these into enums
-        self.simulation_type = simulation_type
-        self.simulation_mode = simulation_mode
+        self.simulation_type = SimulationType(simulation_type)
+        self.simulation_mode = SimulationMode(simulation_mode)
 
         self.number_of_ions = number_of_ions
         self.number_of_preions = number_of_preions
@@ -294,14 +296,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         recoil_element.update(new_values)
 
         # Delete possible extra rec files.
-        for file in os.listdir(self.directory):
-            if file.startswith(old_name) and \
-                    (file.endswith(".rec") or file.endswith(".sct")):
-                try:
-                    os.remove(Path(self.directory, file))
-                except OSError:
-                    pass
-                break
+        # TODO use name instead of startswith
+        gf.remove_files(
+            self.directory, exts={".rec", ".sct"},
+            filter_func=lambda x: x.startswith(old_name))
 
         recoil_element.to_file(self.directory)
 
@@ -310,7 +308,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 recoil_suffix = ".recoil"
             else:
                 recoil_suffix = ".scatter"
-            recoil_file = Path(self.directory, old_name + recoil_suffix)
+            recoil_file = Path(self.directory, f"{old_name}.{recoil_suffix}")
             if recoil_file.exists():
                 new_name = recoil_element.get_full_name() + recoil_suffix
                 gf.rename_file(recoil_file, new_name)
@@ -329,14 +327,15 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 self.to_file()
                 self.__erd_filehandler.update()
 
-            simu_file = Path(self.directory, old_name + ".simu")
+            simu_file = Path(self.directory, f"{old_name}.simu")
             if simu_file.exists():
                 new_name = recoil_element.get_full_name() + ".simu"
                 gf.rename_file(simu_file, new_name)
 
     @classmethod
-    def from_file(cls, request, prefix, simulation_folder, mcsimu_file_path,
-                  profile_file_path, sample=None, detector=None):
+    def from_file(cls, request, prefix: str, simulation_folder: Path,
+                  mcsimu_file_path: Path, profile_file_path: Path,
+                  sample=None, detector=None):
         """Initialize ElementSimulation from JSON files.
 
         Args:
@@ -353,7 +352,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             detector: detector that is used when simulation is not run with
                 request settings.
         """
-        with open(mcsimu_file_path) as mcsimu_file:
+        with mcsimu_file_path.open("r") as mcsimu_file:
             mcsimu = json.load(mcsimu_file)
 
         # Pop the recoil name so it can be converted to a RecoilElement
@@ -364,6 +363,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         mcsimu["modification_time"] = mcsimu.pop("modification_time_unix")
         mcsimu["use_default_settings"] = \
             mcsimu["use_default_settings"] == "True"
+        mcsimu["simulation_type"] = SimulationType(mcsimu["simulation_type"])
+        mcsimu["simulation_mode"] = SimulationMode(mcsimu["simulation_mode"])
 
         full_name = mcsimu.pop("name")
         try:
@@ -373,16 +374,19 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             name_prefix = ""
 
         # Read channel width from .profile file.
-        with open(profile_file_path) as prof_file:
-            prof = json.load(prof_file)
+        try:
+            with profile_file_path.open("r") as prof_file:
+                prof = json.load(prof_file)
+            kwargs = {
+                "channel_width": prof["energy_spectra"]["channel_width"]
+            }
+        except (json.JSONDecodeError, OSError, KeyError) as e:
+            logging.getLogger("request").error(
+                f"Failed to read data from file {profile_file_path}: {e}."
+            )
+            kwargs = {}
 
-        channel_width = prof["energy_spectra"]["channel_width"]
-
-        if mcsimu["simulation_type"] == "ERD":
-            # TODO can this be determined from the file extension?
-            rec_type = "rec"
-        else:
-            rec_type = "sct"
+        rec_type = mcsimu["simulation_type"].get_recoil_type()
 
         main_recoil = None
         optimized_fluence = None
@@ -393,9 +397,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             if fp.is_recoil_file(prefix, file):
                 # Initialize a recoil element
                 rec_elem = RecoilElement.from_file(
-                    Path(simulation_folder, file),
-                    channel_width=channel_width,
-                    rec_type=rec_type
+                    Path(simulation_folder, file), rec_type=rec_type, **kwargs
                 )
 
                 if rec_elem.name == main_recoil_name:
@@ -426,21 +428,16 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             elif fp.is_optfl_result(prefix, file):
                 with open(Path(simulation_folder, file), "r") as f:
                     optimized_fluence = float(f.readline())
-        optimized_recoils = [val
-                             for key, val
-                             in sorted(optimized_recoils_dict.items())]
-        return cls(directory=simulation_folder,
-                   request=request,
-                   recoil_elements=recoil_elements,
-                   name_prefix=name_prefix,
-                   name=name,
-                   channel_width=channel_width,
-                   optimization_recoils=optimized_recoils,
-                   optimized_fluence=optimized_fluence,
-                   main_recoil=main_recoil,
-                   sample=sample,
-                   detector=detector,
-                   **mcsimu)
+        optimized_recoils = [
+            val for key, val
+            in sorted(optimized_recoils_dict.items())]
+        return cls(
+            directory=simulation_folder, request=request,
+            recoil_elements=recoil_elements, name_prefix=name_prefix, name=name,
+            optimization_recoils=optimized_recoils,
+            optimized_fluence=optimized_fluence,
+            main_recoil=main_recoil, sample=sample, detector=detector,
+            **kwargs, **mcsimu)
 
     def get_full_name(self):
         """Returns the full name of the ElementSimulation object.
@@ -503,7 +500,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         try:
             if file_path is None:
                 file_path = self.get_default_file_path()
-            os.remove(file_path)
+            file_path.unlink()
         except (OSError, IsADirectoryError, PermissionError):
             pass
 
@@ -535,8 +532,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
     def start(self, number_of_processes, start_value=None,
               use_old_erd_files=True, optimization_type=None,
-              shared_ions=False, cancellation_token=None, start_interval=5,
-              status_check_interval=1, **kwargs) -> Optional[rx.Observable]:
+              ion_division=IonDivision.NONE, cancellation_token=None,
+              start_interval=5, status_check_interval=1,
+              **kwargs) -> Optional[rx.Observable]:
         """
         Start the simulation.
 
@@ -546,8 +544,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             use_old_erd_files: whether the simulation continues using old erd
                 files or not
             optimization_type: either recoil, fluence or None
-            shared_ions: boolean that determines if the ion counts are
-                divided by the number of processes
+            ion_division: ion division mode that determines how ions are
+                divided per process
             cancellation_token: CancellationToken that can be used to stop
                 the start process
             start_interval: seconds between the start of each simulation
@@ -590,11 +588,14 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         if number_of_processes < 1:
             number_of_processes = 1
 
-        if shared_ions:
-            settings["number_of_ions"] //= number_of_processes
-            settings["number_of_ions_in_presimu"] //= number_of_processes
+        # Update ion counts depending on the ion_division mode
+        presim_ions, sim_ions = ion_division.get_ion_counts(
+            settings["number_of_ions_in_presimu"], settings["number_of_ions"],
+            number_of_processes)
 
         settings.update({
+            "number_of_ions_in_presimu": presim_ions,
+            "number_of_ions": sim_ions,
             "beam": run.beam,
             "target": self.simulation.target,
             "detector": detector,
@@ -655,7 +656,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         new_erd_file = Path(self.directory, new_erd_file)
         try:
             # remove file if it exists previously
-            os.remove(new_erd_file)
+            new_erd_file.unlink()
         except OSError:
             pass
 
@@ -802,10 +803,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         Return:
             path to the espe file
         """
-        if self.simulation_type == "ERD":
-            suffix = "recoil"
-        else:
-            suffix = "scatter"
+        suffix = self.simulation_type.get_recoil_suffix()
 
         if optimization_type is OptimizationType.RECOIL:
             recoil = self.optimization_recoils[0]
@@ -825,7 +823,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         espe_file = Path(self.directory, espe_file)
         recoil_file = Path(self.directory, recoil_file)
 
-        with open(recoil_file, "w") as rec_file:
+        with recoil_file.open("w") as rec_file:
             rec_file.write("\n".join(recoil_element.get_mcerd_params()))
 
         if ch:

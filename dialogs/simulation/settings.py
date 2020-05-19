@@ -29,7 +29,6 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä " \
 __version__ = "2.0"
 
 import json
-import os
 import time
 
 import dialogs.dialog_functions as df
@@ -39,6 +38,7 @@ import modules.general_functions as gf
 from pathlib import Path
 
 from modules.run import Run
+from modules.simulation import Simulation
 
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -54,7 +54,7 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
     """
     use_request_settings = bnd.bind("defaultSettingsCheckBox")
 
-    def __init__(self, tab, simulation, icon_manager):
+    def __init__(self, tab, simulation: Simulation, icon_manager):
         """
         Initializes the dialog.
 

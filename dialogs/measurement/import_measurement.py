@@ -161,8 +161,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         root = self.treeWidget.invisibleRootItem()
         root_child_count = root.childCount()
         timing = dict()
-        for coinc_key in self.__added_timings.keys():
-            coinc_timing = self.__added_timings[coinc_key]
+        for coinc_timing in self.__added_timings.values():
             if coinc_timing.is_not_trigger:
                 timing[coinc_timing.adc] = (coinc_timing.low.value(),
                                             coinc_timing.high.value())
@@ -323,8 +322,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
 
         timing = dict()
         timing_first = "1"
-        for coinc_key in self.__added_timings.keys():
-            coinc_timing = self.__added_timings[coinc_key]
+        for coinc_timing in self.__added_timings.values():
             if coinc_timing.is_not_trigger:
                 timing[coinc_timing.adc] = (coinc_timing.low.value(),
                                             coinc_timing.high.value())
@@ -444,8 +442,7 @@ class ImportMeasurementsDialog(QtWidgets.QDialog):
         """Update spinboxes enabled state based on selected ADC trigger.
         """
         current_adc = str(self.spin_adctrigger.value())
-        for coinc_key in self.__added_timings.keys():
-            coinc_timing = self.__added_timings[coinc_key]
+        for coinc_timing in self.__added_timings.values():
             coinc_timing.is_not_trigger = coinc_timing.adc != current_adc
             coinc_timing.low.setEnabled(coinc_timing.is_not_trigger)
             coinc_timing.high.setEnabled(coinc_timing.is_not_trigger)

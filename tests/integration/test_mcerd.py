@@ -27,13 +27,14 @@ __version__ = "2.0"
 
 import unittest
 import tempfile
-import platform
 
 import tests.mock_objects as mo
 import tests.utils as utils
 
 import modules.general_functions as gf
 
+from modules.enums import SimulationType
+from modules.enums import SimulationMode
 from modules.mcerd import MCERD
 from modules.target import Target
 from modules.layer import Layer
@@ -61,7 +62,7 @@ class TestMCERD(unittest.TestCase):
         cls.mcerd = MCERD(101, {
             "recoil_element": mo.get_recoil_element(),
             "sim_dir": tempfile.gettempdir(),
-            "simulation_type": "ERD",
+            "simulation_type": SimulationType.ERD,
             "target": target,
             "detector": mo.get_detector(),
             "beam": mo.get_beam(),
@@ -72,7 +73,7 @@ class TestMCERD(unittest.TestCase):
             "minimum_main_scattering_angle": 6.5,
             "minimum_energy_of_ions": 8.15,
             "number_of_recoils": 15,
-            "simulation_mode": "narrow",
+            "simulation_mode": SimulationMode.NARROW,
             "number_of_scaling_ions": 14,
             "number_of_ions_in_presimu": 100,
             "number_of_ions": 1000

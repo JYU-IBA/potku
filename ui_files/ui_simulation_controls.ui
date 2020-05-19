@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>280</width>
-    <height>236</height>
+    <height>304</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -42,7 +42,7 @@
      </property>
      <layout class="QVBoxLayout" name="verticalLayout_3">
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0">
+       <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0,0,0">
         <item>
          <layout class="QFormLayout" name="formLayout">
           <property name="sizeConstraint">
@@ -85,7 +85,7 @@
              </size>
             </property>
             <property name="toolTip">
-             <string>Number of processes used in simulation. Simulated ions are divided per process.</string>
+             <string>Number of processes used in simulation.</string>
             </property>
             <property name="minimum">
              <number>1</number>
@@ -177,6 +177,22 @@
            </widget>
           </item>
          </layout>
+        </item>
+        <item>
+         <widget class="QLabel" name="ion_settings_label">
+          <property name="styleSheet">
+           <string notr="true">background-color: rgb(255, 255, 0);
+padding: 3px;
+margin: 3px;
+font-weight: bold;</string>
+          </property>
+          <property name="text">
+           <string>TextLabel</string>
+          </property>
+          <property name="wordWrap">
+           <bool>true</bool>
+          </property>
+         </widget>
         </item>
         <item>
          <widget class="QLabel" name="mcerd_error_lbl">

@@ -31,6 +31,8 @@ import tempfile
 import tests.mock_objects as mo
 import tests.utils as utils
 
+from modules.enums import SimulationType
+from modules.enums import SimulationMode
 from unittest.mock import patch
 from widgets.simulation.settings import SimulationSettingsWidget
 
@@ -44,8 +46,8 @@ class TestSimulationSettingsWidget(unittest.TestCase):
         elem_sim = mo.get_element_simulation()
         elem_sim.name = "foo"
         elem_sim.description = "bar"
-        elem_sim.simulation_mode = "narrow"
-        elem_sim.simulation_type = "ERD"
+        elem_sim.simulation_mode = SimulationMode.NARROW
+        elem_sim.simulation_type = SimulationType.ERD
         elem_sim.seed_number = 42
         elem_sim.number_of_ions = 1
         elem_sim.number_of_preions = 2
@@ -81,7 +83,7 @@ class TestSimulationSettingsWidget(unittest.TestCase):
         self.assertEqual(
             7.5, sim_widget.minimumScatterAngleDoubleSpinBox.value())
 
-        sim_widget.simulation_type = "RBS"
+        sim_widget.simulation_type = SimulationType.RBS
         self.assertEqual("SCT",
                          sim_widget.typeOfSimulationComboBox.currentText())
 
@@ -94,26 +96,25 @@ class TestSimulationSettingsWidget(unittest.TestCase):
 
         Patching is used to avoid unneccessary file removal and writing.
         """
-        sim_widget = utils.run_without_warnings(
-            lambda: SimulationSettingsWidget(self.elem_sim))
+        sim_widget = SimulationSettingsWidget(self.elem_sim)
         sim_widget.name = "foofoo"
         sim_widget.description = "barbar"
-        sim_widget.simulation_type = "RBS"
-        sim_widget.simulation_mode = "wide"
+        sim_widget.simulation_type = SimulationType.RBS
+        sim_widget.simulation_mode = SimulationMode.WIDE
         sim_widget.number_of_ions = 11
         sim_widget.minimum_scattering_angle = 12.5
         sim_widget.seed_number = 45
 
         # ElementSimulation is only updated after update_settings is called
         self.assertEqual("foo", self.elem_sim.name)
-        self.assertEqual("ERD", self.elem_sim.simulation_type)
-        self.assertEqual("narrow", self.elem_sim.simulation_mode)
+        self.assertEqual(SimulationType.ERD, self.elem_sim.simulation_type)
+        self.assertEqual(SimulationMode.NARROW, self.elem_sim.simulation_mode)
 
         sim_widget.update_settings()
         self.assertEqual("foofoo", self.elem_sim.name)
         self.assertEqual("barbar", self.elem_sim.description)
-        self.assertEqual("RBS", self.elem_sim.simulation_type)
-        self.assertEqual("wide", self.elem_sim.simulation_mode)
+        self.assertEqual(SimulationType.RBS, self.elem_sim.simulation_type)
+        self.assertEqual(SimulationMode.WIDE, self.elem_sim.simulation_mode)
         self.assertEqual(11, self.elem_sim.number_of_ions)
         self.assertEqual(12.5, self.elem_sim.minimum_scattering_angle)
         self.assertEqual(45, self.elem_sim.seed_number)

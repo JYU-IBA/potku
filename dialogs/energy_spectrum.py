@@ -105,7 +105,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                 lambda: self.__accept_params(spectra_changed=spectra_changed))
 
             m_name = self.measurement.name
-            if m_name not in EnergySpectrumParamsDialog.checked_cuts.keys():
+            if m_name not in EnergySpectrumParamsDialog.checked_cuts:
                 EnergySpectrumParamsDialog.checked_cuts[m_name] = []
 
             gutils.fill_cuts_treewidget(

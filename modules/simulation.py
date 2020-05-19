@@ -41,6 +41,7 @@ from pathlib import Path
 
 from modules.base import ElementSimulationContainer
 from modules.base import Serializable
+from modules.enums import SimulationType
 from modules.detector import Detector
 from modules.element_simulation import ElementSimulation
 from modules.run import Run
@@ -94,8 +95,10 @@ class Simulations:
         """
         simulation = None
 
-        simulation_folder_path, simulation_file = os.path.split(simulation_path)
-        sample_folder, simulation_folder = os.path.split(simulation_folder_path)
+        simulation_folder_path, simulation_file = simulation_path.parent, \
+            simulation_path.name
+        sample_folder, simulation_folder = simulation_folder_path.parent, \
+            simulation_folder_path.name
         directory_prefix = Simulation.DIRECTORY_PREFIX
         target_extension = ".target"
         measurement_extension = ".measurement"
@@ -119,60 +122,62 @@ class Simulations:
             # TODO refactor these os.listdir iterations into something more
             #   reusable and stable
 
-            for f in os.listdir(simulation_folder_path):
-                if f.endswith(measurement_extension):
+            for entry in os.scandir(simulation_folder_path):
+                f = Path(entry.path)
+                if f.suffix == measurement_extension:
                     measurement_settings_file = f
-                    simulation.run = Run.from_file(
-                        Path(simulation.directory, measurement_settings_file))
-                    with open(Path(simulation.directory,
-                                   measurement_settings_file)) as mesu_f:
+                    simulation.run = Run.from_file(measurement_settings_file)
+                    with measurement_settings_file.open("r") as mesu_f:
                         mesu_settings = json.load(mesu_f)
 
-                    simulation.measurement_setting_file_name = \
-                        mesu_settings["general"]["name"]
-                    simulation.measurement_setting_file_description = \
-                        mesu_settings["general"]["description"]
-                    simulation.modification_time = \
-                        mesu_settings["general"]["modification_time_unix"]
+                    try:
+                        simulation.measurement_setting_file_name = \
+                            mesu_settings["general"]["name"]
+                        simulation.measurement_setting_file_description = \
+                            mesu_settings["general"]["description"]
+                        simulation.modification_time = \
+                            mesu_settings["general"]["modification_time_unix"]
+                    except KeyError:
+                        pass
                     break
 
             # Read Detector information from file.
             det_folder = Path(simulation_folder_path, "Detector")
-            if os.path.isdir(det_folder):
-                for file in os.listdir(det_folder):
-                    if file.endswith(detector_extension):
+            if det_folder.is_dir():
+                for entry in os.scandir(det_folder):
+                    file = Path(entry.path)
+                    if file.suffix == detector_extension:
                         simulation.detector = Detector.from_file(
-                            Path(det_folder, file),
-                            Path(simulation.directory,
-                                 measurement_settings_file),
-                            self.request)
+                            file, measurement_settings_file, self.request)
                         simulation.detector.update_directories(det_folder)
                         break
 
-            for file in os.listdir(simulation_folder_path):
+            for entry in os.scandir(simulation_folder_path):
+                file = Path(entry.path)
                 # Read Target information from file.
-                if file.endswith(target_extension):
+                if file.suffix == target_extension:
                     simulation.target = Target.from_file(
-                        Path(simulation_folder_path, file),
-                        Path(simulation_folder_path, measurement_settings_file),
-                        self.request)
+                        file, measurement_settings_file, self.request)
 
                 # Read read ElementSimulation information from files.
-                if file.endswith(element_simulation_extension):
+                elif file.suffix == element_simulation_extension:
                     # .mcsimu file
-                    mcsimu_file_path = Path(simulation.directory, file)
+                    mcsimu_file_path = file
 
-                    element_str_with_name = file.split(".")[0]
+                    element_str_with_name = file.stem
 
                     prefix, name = element_str_with_name.split("-")
-                    profile_file_path = ""
+                    profile_file_path = None
 
-                    for f in os.listdir(simulation.directory):
-                        if f.endswith(profile_extension) and f.startswith(
+                    for e in os.scandir(simulation.directory):
+                        f = Path(e.path)
+                        if f.suffix == profile_extension and f.name.startswith(
                                 prefix):
-                            profile_file_path = Path(simulation.directory, f)
+                            profile_file_path = f
+                            break
 
-                    if profile_file_path.exists():
+                    if profile_file_path is not None \
+                            and profile_file_path.exists():
                         # Create ElementSimulation from files
                         element_simulation = ElementSimulation.from_file(
                             self.request, prefix, simulation_folder_path,
@@ -332,7 +337,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
              directory: Directory to create.
         """
         if not directory.exists():
-            os.makedirs(directory)
+            directory.mkdir(exist_ok=True)
             log = "Created a directory {0}.".format(directory)
             logging.getLogger("request").info(log)
 
@@ -358,9 +363,9 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         name = self.request.default_element_simulation.name
 
         if recoil_element.type == "rec":
-            simulation_type = "ERD"
+            simulation_type = SimulationType.ERD
         else:
-            simulation_type = "RBS"
+            simulation_type = SimulationType.RBS
 
         element_simulation = ElementSimulation(
             directory=self.directory, request=self.request, simulation=self,
@@ -385,7 +390,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             run: Run used by this simulation
             sample: Sample under which this simulation belongs to
         """
-        with open(file_path) as file:
+        with file_path.open("r") as file:
             simu_obj = json.load(file)
 
         # Overwrite the human readable time stamp with unix time stamp, as

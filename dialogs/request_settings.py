@@ -36,6 +36,8 @@ import os
 
 import dialogs.dialog_functions as df
 
+from modules.request import Request
+
 from pathlib import Path
 
 from PyQt5 import QtCore
@@ -55,7 +57,9 @@ class RequestSettingsDialog(QtWidgets.QDialog):
     A Dialog for modifying request settings.
     """
 
-    def __init__(self, main_window, request, icon_manager):
+    settings_updated = QtCore.pyqtSignal()
+
+    def __init__(self, main_window, request: Request, icon_manager):
         """Constructor for the program
 
         Args:
@@ -114,7 +118,12 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.original_simulation_type = \
             self.request.default_element_simulation.simulation_type
 
-        self.exec_()
+    def closeEvent(self, event):
+        try:
+            self.settings_updated.disconnect()
+        except AttributeError:
+            pass
+        super().closeEvent(event)
 
     def __check_for_red(self):
         """
@@ -130,6 +139,7 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         """
         can_close = self.__update_settings()
         if can_close:
+            self.settings_updated.emit()
             self.close()
 
     def values_changed(self):
@@ -190,6 +200,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             default_measurement_settings_file = Path(
                 self.request.default_measurement.directory,
                 "Default.measurement")
+            self.request.default_measurement.measurement_to_file(
+                default_measurement_settings_file)
             self.request.default_measurement.profile_to_file(Path(
                 self.request.default_measurement.directory,
                 "Default.profile"))

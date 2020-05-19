@@ -31,10 +31,13 @@ import os
 
 import widgets.input_validation as iv
 import widgets.binding as bnd
+import widgets.gui_utils as gutils
 
 from pathlib import Path
 
 from modules.element_simulation import ElementSimulation
+from modules.enums import SimulationMode
+from modules.enums import SimulationType
 
 from widgets.binding import PropertyTrackingWidget
 from widgets.gui_utils import QtABCMeta
@@ -42,50 +45,18 @@ from widgets.gui_utils import QtABCMeta
 from PyQt5 import QtWidgets
 from PyQt5 import uic
 from PyQt5.QtCore import QLocale
-from PyQt5.QtCore import Qt
-
-_TYPE_CONVERSION = {
-    # 'RBS' and 'ERD' are the values stored internally in ElementSimulation,
-    # while 'SCT' and 'REC' are shown in the dialog.
-    "RBS": "SCT",
-    "ERD": "REC",
-    "SCT": "RBS",
-    "REC": "ERD"
-}
+from PyQt5.QtCore import pyqtSignal
 
 
-def _simulation_mode_from_combobox(instance, combobox):
-    qbox = getattr(instance, combobox)
-    return qbox.currentText().lower()
-
-
-def _simulation_type_to_combobox(instance, combobox, value):
-    qbox = getattr(instance, combobox)
-    converted_type = _TYPE_CONVERSION[value]
-    qbox.setCurrentIndex(qbox.findText(converted_type, Qt.MatchFixedString))
-
-
-def _simulation_type_from_combobox(instance, combobox):
-    qbox = getattr(instance, combobox)
-    value = qbox.currentText()
-    return _TYPE_CONVERSION[value]
-
-
-class SimulationSettingsWidget(QtWidgets.QWidget,
-                               PropertyTrackingWidget,
+class SimulationSettingsWidget(QtWidgets.QWidget, PropertyTrackingWidget,
                                metaclass=QtABCMeta):
     """Class for creating a simulation settings tab.
     """
     # TODO name, desc should perhaps not be tracked
     name = bnd.bind("nameLineEdit", track_change=True)
     description = bnd.bind("descriptionPlainTextEdit", track_change=True)
-    simulation_type = bnd.bind("typeOfSimulationComboBox",
-                               fget=_simulation_type_from_combobox,
-                               fset=_simulation_type_to_combobox,
-                               track_change=True)
-    simulation_mode = bnd.bind("modeComboBox",
-                               fget=_simulation_mode_from_combobox,
-                               track_change=True)
+    simulation_type = bnd.bind("typeOfSimulationComboBox", track_change=True)
+    simulation_mode = bnd.bind("modeComboBox", track_change=True)
     number_of_ions = bnd.bind("numberOfIonsSpinBox")
     number_of_ions_in_presimu = bnd.bind("numberOfPreIonsSpinBox")
     number_of_scaling_ions = bnd.bind("numberOfScalingIonsSpinBox",
@@ -104,6 +75,8 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
     modification_time = bnd.bind(
         "dateLabel", fget=bnd.unix_time_from_label, fset=bnd.unix_time_to_label)
 
+    settings_updated = pyqtSignal()
+
     def __init__(self, element_simulation: ElementSimulation):
         """
         Initializes the widget.
@@ -120,6 +93,8 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
         self.setEnabled(False)
         self.element_simulation = element_simulation
         self.set_spinbox_maximums()
+        gutils.fill_combobox(self.modeComboBox, SimulationMode)
+        gutils.fill_combobox(self.typeOfSimulationComboBox, SimulationType)
 
         self.fields_are_valid = False
         iv.set_input_field_red(self.nameLineEdit)
@@ -182,7 +157,7 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
         params.pop("modification_time")
 
         if self.simulation_type != self.element_simulation.simulation_type:
-            if self.simulation_type == "ERD":
+            if self.simulation_type == SimulationType.ERD:
                 new_type = "rec"
                 old_type = ".sct"
             else:
@@ -199,3 +174,4 @@ class SimulationSettingsWidget(QtWidgets.QWidget,
                 recoil.to_file(self.element_simulation.directory)
 
         self.element_simulation.set_settings(**params)
+        self.settings_updated.emit()

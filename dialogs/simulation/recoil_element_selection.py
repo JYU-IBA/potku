@@ -34,6 +34,7 @@ import modules.masses as masses
 
 import widgets.input_validation as iv
 import widgets.gui_utils as gutils
+import dialogs.dialog_functions as df
 
 from pathlib import Path
 
@@ -113,19 +114,8 @@ class RecoilElementSelectionDialog(QtWidgets.QDialog):
         Args:
             element: String representing element name.
         """
-        text_color = "black"
-        luminance = 0.2126 * self.color.red() + 0.7152 * self.color.green()
-        luminance += 0.0722 * self.color.blue()
-        if luminance < 50:
-            text_color = "white"
-        style = "background-color: {0}; color: {1};".format(self.color.name(),
-                                                            text_color)
-        self.colorPushButton.setStyleSheet(style)
-
-        if self.color.name() == self.colormap[element]:
-            self.colorPushButton.setText("Automatic [{0}]".format(element))
-        else:
-            self.colorPushButton.setText("")
+        df.set_btn_color(
+            self.colorPushButton, self.color, self.colormap, element)
 
     def __change_element(self):
         """Shows dialog to change selection element.

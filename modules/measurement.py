@@ -131,16 +131,18 @@ class Measurements:
 
         else:
             # TODO why is the same path split twice?
-            measurement_filename = os.path.split(file_path)[1]
-            file_directory, file_name = os.path.split(file_path)
+            measurement_filename = file_path.name
+            file_directory, file_name = file_path.parent, file_path.name
 
             profile_file_path = None
             measurement_file = None
-            for file in os.listdir(file_directory):
-                if file.endswith(".profile"):
-                    profile_file_path = Path(file_directory, file)
-                elif file.endswith(".measurement"):
-                    measurement_file = Path(file_directory, file)
+            for entry in os.scandir(file_directory):
+                file = Path(entry.path)
+                if file.is_file():
+                    if file.suffix == ".profile":
+                        profile_file_path = Path(file_directory, file)
+                    elif file.suffix == ".measurement":
+                        measurement_file = Path(file_directory, file)
 
             # Create Measurement from file
             if file_path.exists() and file_path.suffix == ".info":
@@ -148,7 +150,7 @@ class Measurements:
                     file_path, measurement_file, profile_file_path,
                     self.request)
                 measurement.sample = sample
-                measurement_folder_name = os.path.split(file_directory)[1]
+                measurement_folder_name = file_directory.name
                 serial_number = int(measurement_folder_name[
                                     len(directory_prefix):len(
                                         directory_prefix) + 2])
@@ -162,18 +164,20 @@ class Measurements:
                         Path(measurement.directory, measurement_file))
 
                 # Read Detector anf Target information from file.
-                for file in os.listdir(file_directory):
-                    if file.endswith(".target"):
+                for entry in os.scandir(file_directory):
+                    path = Path(entry.path)
+                    if path.suffix == ".target":
                         measurement.target = Target.from_file(
-                            Path(file_directory, file),
+                            Path(file_directory, path),
                             Path(file_directory, measurement_file),
                             self.request)
-                    if file.startswith("Detector"):
+                    if path.name == "Detector" and path.is_dir():
                         det_folder = Path(file_directory, "Detector")
-                        for f in os.listdir(det_folder):
-                            if f.endswith(".detector"):
+                        for e in os.scandir(path):
+                            p = Path(e.path)
+                            if p.suffix == ".detector":
                                 measurement.detector = Detector.from_file(
-                                    Path(det_folder, f),
+                                    Path(det_folder, p),
                                     Path(measurement.directory,
                                          measurement_file),
                                     self.request)
@@ -197,8 +201,7 @@ class Measurements:
                              directory_prefix + "%02d" % next_serial + "-" +
                              name)
                     sample.increase_running_int_measurement_by_1()
-                    if not measurement_directory.exists():
-                        os.makedirs(measurement_directory)
+                    measurement_directory.mkdir(exist_ok=True)
                     measurement = Measurement(
                         self.request, measurement_directory, tab_id, name)
                     measurement.sample = sample
@@ -213,7 +216,7 @@ class Measurements:
                     measurement.create_folder_structure(
                         measurement_directory, new_measurement_file,
                         selector_cls=selector_cls)
-                    if file_directory != os.path.join(
+                    if file_directory != Path(
                             measurement_directory, measurement.directory_data) \
                             and file_directory:
                         measurement.copy_file_into_measurement(file_path)
@@ -335,11 +338,8 @@ class Measurement(Logger):
 
         self.data = []
 
-        # Which color scheme is selected by default
-        self.color_scheme = "Default color"
-
         self.serial_number = 0
-        self.directory = os.path.split(self.path)[0]
+        self.directory = self.path.parent
         self.measurement_file = None
         self.directory_cuts = None
         self.directory_composition_changes = None
@@ -435,12 +435,12 @@ class Measurement(Logger):
         Return:
             Measurement object.
         """
-        with open(measurement_info_path) as mesu_info:
+        with measurement_info_path.open("r") as mesu_info:
             obj_info = json.load(mesu_info)
         obj_info["modification_time"] = obj_info.pop("modification_time_unix")
 
-        if measurement_file_path is not None and measurement_file_path.exists():
-            with open(measurement_file_path) as mesu_file:
+        try:
+            with measurement_file_path.open("r") as mesu_file:
                 obj_gen = json.load(mesu_file)["general"]
 
             mesu_general = {
@@ -450,11 +450,15 @@ class Measurement(Logger):
                     "modification_time_unix"
                 ]
             }
-        else:
+        except (OSError, KeyError, AttributeError) as e:
+            logging.getLogger("request").error(
+                f"Failed to read settings from file {measurement_file_path}: "
+                f"{e}"
+            )
             mesu_general = {}
 
-        if profile_file_path and profile_file_path.exists():
-            with open(profile_file_path) as prof_file:
+        try:
+            with profile_file_path.open("r") as prof_file:
                 obj_prof = json.load(prof_file)
 
             prof_gen = {
@@ -475,8 +479,14 @@ class Measurement(Logger):
             else:
                 use_default_profile_settings = False
 
-        else:
+        except (OSError, KeyError, AttributeError, json.JSONDecodeError) as e:
+            logging.getLogger("request").error(
+                f"Failed to read settings from file {profile_file_path}: {e}"
+            )
             measurement = request.default_measurement
+            if measurement is None:
+                return cls(request=request, path=measurement_info_path,
+                           **mesu_general, use_default_profile_settings=True)
             prof_gen = {
                 "profile_name": measurement.profile_name,
                 "profile_description": measurement.profile_description,
@@ -517,7 +527,7 @@ class Measurement(Logger):
             measurement_file_path: Path to .measurement file.
         """
         if measurement_file_path.exists():
-            with open(measurement_file_path) as mesu:
+            with measurement_file_path.open("r") as mesu:
                 obj_measurement = json.load(mesu)
         else:
             obj_measurement = {}
@@ -532,7 +542,7 @@ class Measurement(Logger):
             time.strftime("%c %z %Z", time.localtime(time_stamp))
         obj_measurement["general"]["modification_time_unix"] = time_stamp
 
-        with open(measurement_file_path, "w") as file:
+        with measurement_file_path.open("w") as file:
             json.dump(obj_measurement, file, indent=4)
 
     def info_to_file(self, info_file_path: Path):
@@ -552,7 +562,7 @@ class Measurement(Logger):
             "modification_time_unix": time_stamp
         }
 
-        with open(info_file_path, "w") as file:
+        with info_file_path.open("w") as file:
             json.dump(obj_info, file, indent=4)
 
     def profile_to_file(self, profile_file_path: Path):
@@ -595,7 +605,7 @@ class Measurement(Logger):
             self.number_of_splits
         obj_profile["composition_changes"]["normalization"] = self.normalization
 
-        with open(profile_file_path, "w") as file:
+        with profile_file_path.open("w") as file:
             json.dump(obj_profile, file, indent=4)
 
     def create_folder_structure(self, measurement_folder: Path,
@@ -615,7 +625,7 @@ class Measurement(Logger):
             self.measurement_file = None
         else:
             measurement_data_folder, measurement_name = \
-                os.path.split(measurement_file)
+                measurement_file.parent, measurement_file.name
             self.measurement_file = measurement_name  # With extension
 
         self.directory = measurement_folder
@@ -641,9 +651,6 @@ class Measurement(Logger):
         element_colors = self.request.global_settings.get_element_colors()
         if selector_cls is not None:
             self.selector = selector_cls(self, element_colors)
-
-        # Which color scheme is selected by default
-        self.color_scheme = "Default color"
 
     def __make_directories(self, directory):
         """
@@ -1102,7 +1109,7 @@ class Measurement(Logger):
             depth_for_concentration_to)
 
         # Cross section
-        flag_cross = global_settings.get_cross_sections()
+        flag_cross = int(global_settings.get_cross_sections())
         str_cross = "Cross section: {0}\n".format(flag_cross)
         # Cross Sections: 1=Rutherford, 2=L'Ecuyer, 3=Andersen
 

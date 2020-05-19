@@ -76,20 +76,18 @@ class ElementLossesDialog(QtWidgets.QDialog):
 
         # TODO: Reads cut files twice. Requires Refactor.
         m_name = self.parent.obj.name
-        if m_name not in ElementLossesDialog.reference_cut.keys():
+        if m_name not in ElementLossesDialog.reference_cut:
             ElementLossesDialog.reference_cut[m_name] = None
         cuts, unused_elemloss = parent.obj.get_cut_files()
-        dirtyinteger = 0
-        for cut in cuts:
+        for i, cut in enumerate(cuts):
             if ".potku" in cut:
                 cut = os.path.basename()
             self.cuts.append(cut)
             self.referenceCut.addItem(cut)
             if cut == ElementLossesDialog.reference_cut[m_name]:
-                self.referenceCut.setCurrentIndex(dirtyinteger)
-            dirtyinteger += 1
+                self.referenceCut.setCurrentIndex(i)
 
-        if m_name not in ElementLossesDialog.checked_cuts.keys():
+        if m_name not in ElementLossesDialog.checked_cuts:
             ElementLossesDialog.checked_cuts[m_name] = []
 
         gutils.fill_cuts_treewidget(
@@ -168,11 +166,10 @@ class ElementLossesDialog(QtWidgets.QDialog):
             log_info = "Elemental Losses split counts:\n"
 
             split_counts = self.parent.elemental_losses_widget.split_counts
-            splitinfo = "\n".join(["{0}: {1}".format(key,
-                                                     ", ".join(str(v) for v in
-                                                               split_counts[
-                                                                   key]))
-                                   for key in split_counts.keys()])
+            splitinfo = "\n".join(
+                ["{0}: {1}".format(
+                    key, ", ".join(str(v) for v in split_counts[key]))
+                    for key in split_counts])
             logging.getLogger(measurement_name).info(log_info + splitinfo)
 
             sbh.reporter.report(100)
