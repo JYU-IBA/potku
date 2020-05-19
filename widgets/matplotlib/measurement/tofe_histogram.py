@@ -32,6 +32,10 @@ __version__ = "2.0"
 import os
 import modules.math_functions as mf
 
+import widgets.gui_utils as gutils
+
+from modules.enums import ToFEColorScheme
+from modules.measurement import Measurement
 from dialogs.energy_spectrum import EnergySpectrumWidget
 from dialogs.graph_settings import TofeGraphSettingsWidget
 from dialogs.measurement.depth_profile import DepthProfileWidget
@@ -55,9 +59,6 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
     MAX_BIN_COUNT = 8000
     selectionsChanged = QtCore.pyqtSignal("PyQt_PyObject")
     saveCuts = QtCore.pyqtSignal("PyQt_PyObject")
-    color_scheme = {"Default color": "jet",
-                    "Greyscale": "Greys",
-                    "Greyscale (inverted)": "gray"}
 
     tool_modes = {0: "",
                   1: "pan/zoom",  # Matplotlib's drag
@@ -66,12 +67,13 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                   4: "selection select tool"
                   }
 
-    def __init__(self, parent, measurement_data, icon_manager, statusbar=None):
+    def __init__(self, parent, measurement: Measurement, icon_manager,
+                 statusbar=None):
         """Inits histogram widget
 
         Args:https://www.stack.nl/~dimitri/doxygen/manual/starting.html#step2
             parent: A TofeHistogramWidget class object.
-            measurement_data: A list of data points.
+            measurement: a Measurement object.
             icon_manager: IconManager class object.
             icon_manager: An iconmanager class object.
         """
@@ -88,7 +90,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.canvas.mpl_connect('motion_notify_event', self.__on_motion)
         self.__fork_toolbar_buttons()
 
-        self.measurement = measurement_data
+        self.measurement = measurement
         self.__x_data = [x[0] for x in self.measurement.data]
         self.__y_data = [x[1] for x in self.measurement.data]
 
@@ -105,7 +107,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         self.invert_Y = self.__global_settings.get_tofe_invert_y()
         self.invert_X = self.__global_settings.get_tofe_invert_x()
         self.transpose_axes = self.__global_settings.get_tofe_transposed()
-        self.measurement.color_scheme = self.__global_settings.get_tofe_color()
+        self.color_scheme = self.__global_settings.get_tofe_color()
         self.compression_x = self.__global_settings.get_tofe_compression_x()
         self.compression_y = self.__global_settings.get_tofe_compression_y()
         self.axes_range_mode = self.__global_settings.get_tofe_bin_range_mode()
@@ -180,9 +182,7 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 QtWidgets.QMessageBox.Ok,
                 QtWidgets.QMessageBox.Ok)
 
-        use_color_scheme = self.measurement.color_scheme
-        color_scheme = MatplotlibHistogramWidget.color_scheme[use_color_scheme]
-        colormap = cm.get_cmap(color_scheme)
+        colormap = cm.get_cmap(self.color_scheme.value)
 
         self.axes.hist2d(x_data,
                          y_data,
@@ -778,12 +778,8 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
         Args:
             dialog: A TofeGraphSettingsWidget.
         """
-        # Populate colorbox
-        colors = sorted(MatplotlibHistogramWidget.color_scheme.items())
-        for i, (color, _) in enumerate(colors):  # Get keys from color scheme
-            dialog.colorbox.addItem(color)
-            if color == self.measurement.color_scheme:
-                dialog.colorbox.setCurrentIndex(i)
+        gutils.fill_combobox(dialog.colorbox, ToFEColorScheme)
+        dialog.color_scheme = self.color_scheme
 
         # Get values
         dialog.bin_x.setValue(self.compression_x)

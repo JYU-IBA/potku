@@ -31,6 +31,7 @@ import random
 
 from modules.enums import IonDivision
 from modules.enums import CrossSection
+from modules.enums import ToFEColorScheme
 from modules.global_settings import GlobalSettings
 from pathlib import Path
 
@@ -96,6 +97,20 @@ class TestGlobalSettings(unittest.TestCase):
 
         self.gs.set_ion_division(IonDivision.NONE)
         self.assertEqual(IonDivision.NONE, self.gs.get_ion_division())
+
+    def test_color_scheme(self):
+        self.gs.set_tofe_color(ToFEColorScheme.DEFAULT)
+        self.assertEqual(ToFEColorScheme.DEFAULT, self.gs.get_tofe_color())
+
+        self.gs.set_tofe_color(ToFEColorScheme.INV_GREYSCALE)
+        self.assertEqual(
+            ToFEColorScheme.INV_GREYSCALE, self.gs.get_tofe_color()
+        )
+
+        self.gs.set_tofe_color(ToFEColorScheme.GREYSCALE)
+        self.assertEqual(
+            ToFEColorScheme.GREYSCALE, self.gs.get_tofe_color()
+        )
 
     def test_serialiazation(self):
         """Deserialized GlobalSettings object should have the same

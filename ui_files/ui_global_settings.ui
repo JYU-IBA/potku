@@ -32,26 +32,13 @@
    <item>
     <widget class="QTabWidget" name="tabWidget">
      <property name="currentIndex">
-      <number>1</number>
+      <number>0</number>
      </property>
      <widget class="QWidget" name="tab_6">
       <attribute name="title">
        <string>ToF-E Histogram</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_9">
-       <item row="1" column="2">
-        <spacer name="horizontalSpacer_6">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
        <item row="0" column="0">
         <layout class="QHBoxLayout" name="horizontalLayout_2">
          <item>
@@ -71,6 +58,19 @@
           <widget class="QComboBox" name="combo_tofe_colors"/>
          </item>
         </layout>
+       </item>
+       <item row="2" column="0">
+        <spacer name="verticalSpacer_8">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>20</width>
+           <height>40</height>
+          </size>
+         </property>
+        </spacer>
        </item>
        <item row="1" column="0">
         <widget class="QGroupBox" name="groupBox_8">
@@ -201,6 +201,18 @@
                    </item>
                    <item>
                     <widget class="QSpinBox" name="spin_tofe_bin_x_min">
+                     <property name="minimumSize">
+                      <size>
+                       <width>80</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>80</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
                      <property name="locale">
                       <locale language="C" country="AnyCountry"/>
                      </property>
@@ -214,6 +226,18 @@
                    </item>
                    <item>
                     <widget class="QSpinBox" name="spin_tofe_bin_x_max">
+                     <property name="minimumSize">
+                      <size>
+                       <width>80</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>80</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
                      <property name="locale">
                       <locale language="C" country="AnyCountry"/>
                      </property>
@@ -244,6 +268,18 @@
                    </item>
                    <item>
                     <widget class="QSpinBox" name="spin_tofe_bin_y_min">
+                     <property name="minimumSize">
+                      <size>
+                       <width>80</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>80</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
                      <property name="locale">
                       <locale language="C" country="AnyCountry"/>
                      </property>
@@ -257,6 +293,18 @@
                    </item>
                    <item>
                     <widget class="QSpinBox" name="spin_tofe_bin_y_max">
+                     <property name="minimumSize">
+                      <size>
+                       <width>80</width>
+                       <height>0</height>
+                      </size>
+                     </property>
+                     <property name="maximumSize">
+                      <size>
+                       <width>80</width>
+                       <height>16777215</height>
+                      </size>
+                     </property>
                      <property name="locale">
                       <locale language="C" country="AnyCountry"/>
                      </property>
@@ -285,19 +333,6 @@
           </item>
          </layout>
         </widget>
-       </item>
-       <item row="2" column="0">
-        <spacer name="verticalSpacer_8">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
        </item>
       </layout>
      </widget>
@@ -408,62 +443,99 @@
        <string>Simulation</string>
       </attribute>
       <layout class="QGridLayout" name="gridLayout_10">
+       <property name="rightMargin">
+        <number>20</number>
+       </property>
+       <item row="1" column="0">
+        <widget class="QGroupBox" name="groupBox_6">
+         <property name="title">
+          <string>Ion processing mode</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_5">
+          <item>
+           <widget class="QRadioButton" name="radioButton_4">
+            <property name="text">
+             <string>RadioButton with a long label. This text will be programmatically removed</string>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">ion_division_radios</string>
+            </attribute>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radioButton_5">
+            <property name="text">
+             <string>RadioButton</string>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">ion_division_radios</string>
+            </attribute>
+           </widget>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="radioButton_6">
+            <property name="text">
+             <string>RadioButton</string>
+            </property>
+            <attribute name="buttonGroup">
+             <string notr="true">ion_division_radios</string>
+            </attribute>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
        <item row="0" column="0">
-        <layout class="QFormLayout" name="formLayout_3">
-         <item row="0" column="0">
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>Minimum number of presimulation ions</string>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QSpinBox" name="presim_spinbox">
-           <property name="locale">
-            <locale language="C" country="AnyCountry"/>
-           </property>
-           <property name="minimum">
-            <number>0</number>
-           </property>
-           <property name="maximum">
-            <number>999999999</number>
-           </property>
-           <property name="singleStep">
-            <number>1000</number>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0">
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>Minimum number of simulation ions</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QSpinBox" name="sim_spinbox">
-           <property name="locale">
-            <locale language="C" country="AnyCountry"/>
-           </property>
-           <property name="maximum">
-            <number>999999999</number>
-           </property>
-           <property name="singleStep">
-            <number>1000</number>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0">
-          <widget class="QLabel" name="label_10">
-           <property name="text">
-            <string>Ion processing mode</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1">
-          <widget class="QComboBox" name="ion_div_box"/>
-         </item>
-        </layout>
+        <widget class="QGroupBox" name="groupBox_5">
+         <property name="title">
+          <string>Ion counts</string>
+         </property>
+         <layout class="QFormLayout" name="formLayout_5">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label">
+            <property name="text">
+             <string>Minimum number of presimulation ions</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="1">
+           <widget class="QSpinBox" name="presim_spinbox">
+            <property name="locale">
+             <locale language="C" country="AnyCountry"/>
+            </property>
+            <property name="minimum">
+             <number>0</number>
+            </property>
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+            <property name="singleStep">
+             <number>1000</number>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_3">
+            <property name="text">
+             <string>Minimum number of simulation ions</string>
+            </property>
+           </widget>
+          </item>
+          <item row="1" column="1">
+           <widget class="QSpinBox" name="sim_spinbox">
+            <property name="locale">
+             <locale language="C" country="AnyCountry"/>
+            </property>
+            <property name="maximum">
+             <number>999999999</number>
+            </property>
+            <property name="singleStep">
+             <number>1000</number>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -480,7 +552,7 @@
          <item row="0" column="0">
           <widget class="QLabel" name="label_2">
            <property name="text">
-            <string>Preview count:</string>
+            <string>Preview count</string>
            </property>
           </widget>
          </item>
@@ -2892,16 +2964,37 @@
       </attribute>
       <layout class="QGridLayout" name="gridLayout_3">
        <item row="0" column="0">
-        <widget class="QCheckBox" name="checkBox">
-         <property name="enabled">
-          <bool>false</bool>
+        <widget class="QGroupBox" name="groupBox_7">
+         <property name="title">
+          <string>Registry items</string>
          </property>
-         <property name="toolTip">
-          <string>If window geometries are saved, Potku will restore the sizes and positions of windows when the program is restarted.</string>
+         <property name="alignment">
+          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
          </property>
-         <property name="text">
-          <string>Save window geometries</string>
-         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_7">
+          <property name="rightMargin">
+           <number>300</number>
+          </property>
+          <property name="bottomMargin">
+           <number>150</number>
+          </property>
+          <item>
+           <widget class="QCheckBox" name="window_geom_chkbox">
+            <property name="enabled">
+             <bool>true</bool>
+            </property>
+            <property name="toolTip">
+             <string>If window geometries are saved, Potku will restore the sizes and positions of windows when the program is restarted.</string>
+            </property>
+            <property name="text">
+             <string>Save window geometries</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+         </layout>
         </widget>
        </item>
       </layout>
@@ -3050,6 +3143,7 @@
  <connections/>
  <buttongroups>
   <buttongroup name="elementButtons"/>
+  <buttongroup name="ion_division_radios"/>
   <buttongroup name="cross_section_radios"/>
  </buttongroups>
 </ui>

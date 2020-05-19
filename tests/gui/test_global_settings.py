@@ -30,6 +30,8 @@ import sys
 import tests.mock_objects as mo
 
 from modules.enums import CrossSection
+from modules.enums import IonDivision
+from modules.enums import ToFEColorScheme
 from tests.utils import change_wd_to_root
 from dialogs.global_settings import GlobalSettingsDialog
 from PyQt5.Qt import QApplication
@@ -53,6 +55,28 @@ class TestGlobalSettings(unittest.TestCase):
         )
         self.gsd.cross_section = CrossSection.LECUYER
         self.assertTrue(self.gsd.cross_section_radios.buttons()[1].isChecked())
+
+    def test_ion_division(self):
+        self.assertEqual(
+            self.settings.get_ion_division(), self.gsd.ion_division
+        )
+        self.gsd.ion_division = IonDivision.SIM
+        self.assertTrue(self.gsd.ion_division_radios.buttons()[1].isChecked())
+        self.gsd.ion_division_radios.buttons()[0].setChecked(True)
+        self.assertEqual(IonDivision.NONE, self.gsd.ion_division)
+
+    def test_color_scheme(self):
+        self.assertEqual(
+            self.settings.get_tofe_color(), self.gsd.color_scheme
+        )
+        self.gsd.combo_tofe_colors.setCurrentIndex(1)
+        self.assertEqual(
+            ToFEColorScheme.GREYSCALE, self.gsd.color_scheme
+        )
+        self.gsd.combo_tofe_colors.setCurrentIndex(2)
+        self.assertEqual(
+            ToFEColorScheme.INV_GREYSCALE, self.gsd.color_scheme
+        )
 
 
 if __name__ == '__main__':

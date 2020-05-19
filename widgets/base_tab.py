@@ -21,7 +21,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program (file named 'LICENCE').
 """
-__author__ = ""  # TODO
+__author__ = "Juhani Sundell"
 __version__ = "2.0"
 
 import abc
@@ -43,6 +43,8 @@ from PyQt5.QtWidgets import QWidget
 class BaseTab(abc.ABC, metaclass=QtABCMeta):
     """Base class for both Simulation and Measurement tabs.
     """
+    SAVE_WINDOW_GEOM_KEY = "save_window_geometries"
+
     def add_widget(self, widget: QWidget, minimized=None, has_close_button=True,
                    icon=None):
         """Adds a new widget to current tab.
@@ -157,6 +159,8 @@ class BaseTab(abc.ABC, metaclass=QtABCMeta):
         """Saves the geometries of all saveable widgets that this tab
         has.
         """
+        if not gutils.get_potku_setting(BaseTab.SAVE_WINDOW_GEOM_KEY, True):
+            return
         for key, widget in self.get_saveable_widgets().items():
             if widget is not None:
                 gutils.set_potku_setting(key,
@@ -167,6 +171,8 @@ class BaseTab(abc.ABC, metaclass=QtABCMeta):
         geometries saved. Activates the widget that is returned by
         get_default_widget.
         """
+        if not gutils.get_potku_setting(BaseTab.SAVE_WINDOW_GEOM_KEY, True):
+            return
         for key, widget in self.get_saveable_widgets().items():
             if widget is not None:
                 geom = gutils.get_potku_setting(key, bytes("", "utf-8"))

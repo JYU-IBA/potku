@@ -169,3 +169,17 @@ class CrossSection(IntEnum):
         if self is CrossSection.LECUYER:
             return "L'Ecuyer"
         return "Andersen"
+
+
+@enum.unique
+class ToFEColorScheme(str, Enum):
+    DEFAULT = "jet"
+    GREYSCALE = "Greys"
+    INV_GREYSCALE = "gray"
+
+    def __str__(self):
+        if self is ToFEColorScheme.DEFAULT:
+            return "Default color"
+        if self is ToFEColorScheme.GREYSCALE:
+            return "Greyscale"
+        return "Greyscale (inverted)"

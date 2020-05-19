@@ -338,9 +338,6 @@ class Measurement(Logger):
 
         self.data = []
 
-        # Which color scheme is selected by default
-        self.color_scheme = "Default color"
-
         self.serial_number = 0
         self.directory = self.path.parent
         self.measurement_file = None
@@ -654,9 +651,6 @@ class Measurement(Logger):
         element_colors = self.request.global_settings.get_element_colors()
         if selector_cls is not None:
             self.selector = selector_cls(self, element_colors)
-
-        # Which color scheme is selected by default
-        self.color_scheme = "Default color"
 
     def __make_directories(self, directory):
         """

@@ -34,6 +34,7 @@ import configparser
 
 from modules.enums import CrossSection
 from modules.enums import IonDivision
+from modules.enums import ToFEColorScheme
 from pathlib import Path
 
 
@@ -266,7 +267,7 @@ class GlobalSettings:
         """Set cross sections used in depth profile to settings.
 
         Args:
-            flag: An integer representing cross sections flag.
+            value: a CrossSection value.
         """
         self.__config[self._DEPTH_PROFILE]["cross_section"] = str(int(value))
 
@@ -357,22 +358,23 @@ class GlobalSettings:
         """
         self.__config[self._DEPTH_PROFILE]["num_iter"] = str(value)
 
-    @handle_exceptions(return_value="Default color")
-    def get_tofe_color(self) -> str:
+    @handle_exceptions(return_value=ToFEColorScheme.DEFAULT)
+    def get_tofe_color(self) -> ToFEColorScheme:
         """Get color of the ToF-E Histogram.
 
         Return:
-            Returns a string representing ToF-E histogram color scheme.
+            ToFEColorSchemeValue.
         """
-        return self.__config[self._TOFE]["color_scheme"]
+        return ToFEColorScheme(
+            self.__config[self._TOFE]["color_scheme"])
 
-    def set_tofe_color(self, value: str):
+    def set_tofe_color(self, value: ToFEColorScheme):
         """Set  color of the ToF-E Histogram.
 
         Args:
-            value: A string representing ToF-E histogram color scheme.
+            value: a ToFEColorScheme value.
         """
-        self.__config[self._TOFE]["color_scheme"] = str(value)
+        self.__config[self._TOFE]["color_scheme"] = value.value
 
     @handle_exceptions(return_value=0)
     def get_tofe_bin_range_mode(self) -> int:

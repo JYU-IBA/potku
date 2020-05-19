@@ -36,9 +36,11 @@ import dialogs.dialog_functions as df
 import widgets.binding as bnd
 import widgets.gui_utils as gutils
 
+from widgets.base_tab import BaseTab
 from modules.global_settings import GlobalSettings
 from modules.enums import IonDivision
 from modules.enums import CrossSection
+from modules.enums import ToFEColorScheme
 
 from pathlib import Path
 
@@ -48,11 +50,9 @@ from PyQt5 import QtGui
 from PyQt5 import QtWidgets
 
 from dialogs.measurement.import_measurement import CoincTiming
-from widgets.matplotlib.measurement.tofe_histogram import \
-    MatplotlibHistogramWidget
 
 
-def get_cross(instance, attr):
+def get_btn_group_value(instance, attr):
     group = getattr(instance, attr)
     try:
         return group.checkedButton().data_item
@@ -60,7 +60,7 @@ def get_cross(instance, attr):
         return None
 
 
-def set_cross(instance, attr, value):
+def set_btn_group_value(instance, attr, value):
     group = getattr(instance, attr)
     for btn in group.buttons():
         if btn.data_item == value:
@@ -72,6 +72,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
     """
     A GlobalSettingsDialog.
     """
+    color_scheme = bnd.bind("combo_tofe_colors")
     tofe_invert_x = bnd.bind("check_tofe_invert_x")
     tofe_invert_y = bnd.bind("check_tofe_invert_y")
     tofe_transposed = bnd.bind("check_tofe_transpose")
@@ -88,12 +89,17 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
 
     presim_ions = bnd.bind("presim_spinbox")
     sim_ions = bnd.bind("sim_spinbox")
-    ion_division = bnd.bind("ion_div_box")
+    ion_division = bnd.bind(
+        "ion_division_radios", fget=get_btn_group_value,
+        fset=set_btn_group_value)
 
     coinc_count = bnd.bind("line_coinc_count")
 
     cross_section = bnd.bind(
-        "cross_section_radios", fget=get_cross, fset=set_cross)
+        "cross_section_radios", fget=get_btn_group_value,
+        fset=set_btn_group_value)
+
+    save_window_geometries = bnd.bind("window_geom_chkbox")
 
     settings_updated = QtCore.pyqtSignal(GlobalSettings)
 
@@ -113,8 +119,9 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.set_min_max_handlers(
             self.spin_tofe_bin_y_min, self.spin_tofe_bin_y_max
         )
-        gutils.fill_combobox(self.ion_div_box, IonDivision)
+        gutils.set_btn_group_data(self.ion_division_radios, IonDivision)
         gutils.set_btn_group_data(self.cross_section_radios, CrossSection)
+        gutils.fill_combobox(self.combo_tofe_colors, ToFEColorScheme)
 
         # Connect UI buttons
         self.OKButton.clicked.connect(self.__accept_changes)
@@ -173,10 +180,11 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.cross_section = self.settings.get_cross_sections()
 
         # ToF-E graph settings
-        # TODO radio group binding
         self.tofe_invert_x = self.settings.get_tofe_invert_x()
         self.tofe_invert_y = self.settings.get_tofe_invert_y()
         self.tofe_transposed = self.settings.get_tofe_transposed()
+
+        # TODO binding for bin mode
         tofe_bin_mode = self.settings.get_tofe_bin_range_mode()
         self.radio_tofe_bin_auto.setChecked(tofe_bin_mode == 0)
         self.radio_tofe_bin_manual.setChecked(tofe_bin_mode == 1)
@@ -192,11 +200,10 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.sim_ions = self.settings.get_min_simulation_ions()
         self.ion_division = self.settings.get_ion_division()
 
-        colors = sorted(MatplotlibHistogramWidget.color_scheme.items())
-        for i, (key, _) in enumerate(colors):
-            self.combo_tofe_colors.addItem(key)
-            if key == self.settings.get_tofe_color():
-                self.combo_tofe_colors.setCurrentIndex(i)
+        self.save_window_geometries = gutils.get_potku_setting(
+            BaseTab.SAVE_WINDOW_GEOM_KEY, True
+        )
+        self.color_scheme = self.settings.get_tofe_color()
 
     @staticmethod
     def __create_spinbox(default):
@@ -227,7 +234,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.settings.set_tofe_invert_x(self.tofe_invert_x)
         self.settings.set_tofe_invert_y(self.tofe_invert_y)
         self.settings.set_tofe_transposed(self.tofe_transposed)
-        self.settings.set_tofe_color(self.combo_tofe_colors.currentText())
+        self.settings.set_tofe_color(self.color_scheme)
         if self.radio_tofe_bin_auto.isChecked():
             self.settings.set_tofe_bin_range_mode(0)
         elif self.radio_tofe_bin_manual.isChecked():
@@ -241,6 +248,9 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         self.settings.set_min_presim_ions(self.presim_ions)
         self.settings.set_min_simulation_ions(self.sim_ions)
         self.settings.set_ion_division(self.ion_division)
+
+        gutils.set_potku_setting(
+            BaseTab.SAVE_WINDOW_GEOM_KEY, self.save_window_geometries)
 
         # Save config and close
         self.settings.save_config()
