@@ -93,7 +93,7 @@ class GlobalSettings:
         self._request_directory = Path(self.__config_directory, "requests")
 
         self._request_directory_last_open = self._request_directory
-        self.__element_colors = GlobalSettings.get_default_colors()
+        self._element_colors = GlobalSettings.get_default_colors()
 
         self.__create_sections()
         if not self.get_config_file().exists():
@@ -173,17 +173,14 @@ class GlobalSettings:
             directory)
         self.save_config()
 
-    def get_element_colors(self):
+    @handle_exceptions(attr="_element_colors")
+    def get_element_colors(self) -> dict:
         """Get all elements' colors.
 
         Return:
             Returns a dictionary of elements' colors.
         """
-        try:
-            return self.__config[self._COLORS]
-        except KeyError:
-            self.__config[self._COLORS] = self.__element_colors
-            return self.__config[self._COLORS]
+        return dict(self.__config[self._COLORS])
 
     def get_element_color(self, element):
         """Get a specific element's color.
@@ -197,7 +194,7 @@ class GlobalSettings:
         try:
             return self.__config[self._COLORS][element]
         except (configparser.NoSectionError, KeyError):
-            return self.__element_colors.get(element, "red")
+            return self._element_colors.get(element, "red")
 
     def set_element_color(self, element, color):
         """Set default color for an element.

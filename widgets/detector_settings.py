@@ -553,7 +553,7 @@ class DetectorSettingsWidget(QtWidgets.QWidget, bnd.PropertyTrackingWidget,
         """
         measurements = [self.request.samples.measurements.get_key_value(key)
                         for key in
-                        self.request.samples.measurements.measurements.keys()]
+                        self.request.samples.measurements.measurements]
         CalibrationDialog(measurements, self.obj, self.run, self)
 
     def calculate_distance(self):

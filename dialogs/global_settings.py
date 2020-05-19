@@ -222,8 +222,7 @@ class GlobalSettingsDialog(QtWidgets.QDialog):
         """
         for button in self.groupBox_3.findChildren(QtWidgets.QPushButton):
             self.settings.set_element_color(button.text(), button.color)
-        for key in self.__added_timings.keys():
-            coinc_timing = self.__added_timings[key]
+        for key, coinc_timing in self.__added_timings.items():
             self.settings.set_import_timing(
                 key, coinc_timing.low.value(), coinc_timing.high.value())
         self.settings.set_import_coinc_count(self.coinc_count)

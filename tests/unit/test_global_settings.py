@@ -197,10 +197,5 @@ class TestGlobalSettings(unittest.TestCase):
             val1 = getattr(gs1, getter)(*args)
             val2 = getattr(gs2, getter)(*args)
 
-            if getter == "get_element_colors":
-
-                continue    # FIXME
-                val1 = dict(val1)
-                val2 = dict(val2)
             self.assertEqual(val1, val2)
 

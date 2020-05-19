@@ -424,7 +424,7 @@ class Selector:
                 color_string = "{0}{1}{2}{3}".format(prefix, isotope,
                                                      element,
                                                      dirtyinteger)
-                if color_string not in color_dict.keys():
+                if color_string not in color_dict:
                     break
                 dirtyinteger += 1
             color_dict[color_string] = sel.default_color

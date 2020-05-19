@@ -97,7 +97,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
             self.__remove_reference_density)
 
         m_name = self.parent.obj.name
-        if m_name not in DepthProfileDialog.checked_cuts.keys():
+        if m_name not in DepthProfileDialog.checked_cuts:
             DepthProfileDialog.checked_cuts[m_name] = []
 
         gutils.fill_cuts_treewidget(
