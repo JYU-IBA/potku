@@ -99,7 +99,8 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             self.modification_time = time.time()
         else:
             self.modification_time = modification_time
-        self.type = DetectorType(detector_type)
+
+        self.type = DetectorType(detector_type.upper())
         self.foils = foils
 
         if not self.foils:
@@ -271,7 +272,6 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
 
         detector["modification_time"] = detector.pop("modification_time_unix")
         detector["virtual_size"] = tuple(detector["virtual_size"])
-        detector["detector_type"] = DetectorType(detector["detector_type"])
 
         foils = []
 
