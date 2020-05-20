@@ -46,8 +46,6 @@ from rx.scheduler import ThreadPoolScheduler
 from modules.layer import Layer
 from modules.concurrency import CancellationToken
 
-# TODO consider making this module stateless
-
 
 class MCERD:
     """
@@ -57,7 +55,7 @@ class MCERD:
     __slots__ = "__settings", "__rec_filename", "__filename", \
                 "recoil_file", "sim_dir", "result_file", "__target_file", \
                 "__command_file", "__detector_file", "__foils_file", \
-                "__presimulation_file", "__process", "__seed"
+                "__presimulation_file", "__seed"
 
     def __init__(self, seed, settings, filename, optimize_fluence=False):
         """Create an MCERD object.
@@ -94,8 +92,6 @@ class MCERD:
         self.__foils_file = self.sim_dir / f"{self.__filename}.foils"
         self.__presimulation_file = self.sim_dir / f"{self.__filename}.pre"
 
-        self.__process = None
-
     def get_command(self):
         """Returns the command that is used to start the MCERD process.
         """
@@ -112,7 +108,7 @@ class MCERD:
 
         return f"{ulimit}{exec_cmd}{mcerd_path} {self.__command_file}"
 
-    def run(self, print_to_console=False, cancellation_token=None,
+    def run(self, print_to_console=True, cancellation_token=None,
             poll_interval=10, first_check=0.2, max_time=None, ct_check=0.2):
         """Starts the MCERD process.
 
@@ -137,24 +133,27 @@ class MCERD:
         if cancellation_token is None:
             cancellation_token = CancellationToken()
 
-        self.__process = subprocess.Popen(
+        process = subprocess.Popen(
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-        errs = rx.from_iterable(iter(self.__process.stderr.readline, b""))
-        outs = rx.from_iterable(iter(self.__process.stdout.readline, b""))
+        errs = rx.from_iterable(iter(process.stderr.readline, b""))
+        outs = rx.from_iterable(iter(process.stdout.readline, b""))
+
         is_running = rx.timer(first_check, poll_interval).pipe(
-            ops.map(lambda x: {
-                "is_running": MCERD.is_running(self.__process)
-            }),
+            ops.map(lambda _: {
+                "is_running": MCERD.is_running(process)
+            })
         )
 
         ct_check = rx.timer(0, ct_check).pipe(
             # Filter out all the positive values. We do not want to push
             # updates every time cancellation is checked as there is nothing
             # to update.
-            ops.map(lambda _: self._stop_if_cancelled(cancellation_token)),
+            ops.map(
+                lambda _: MCERD._stop_if_cancelled(
+                    process, cancellation_token)),
             ops.filter(lambda x: not x),
-            ops.map(lambda x: {
+            ops.map(lambda _: {
                 "is_running": False,
                 "msg": "Simulation was stopped"
             }),
@@ -163,10 +162,16 @@ class MCERD:
         if max_time is not None:
             timeout = rx.timer(max_time).pipe(
                 ops.do_action(
+                    # Request cancellation so all simulation processes that
+                    # share the same cancellation_token are also stopped.
+                    # TODO not working as intended if simulation is short enough
+                    #   to stop before max_time has elapsed. Maybe let caller
+                    #   implement its own timeout check when multiple processes
+                    #   are being run.
                     on_next=lambda _:
                     cancellation_token.request_cancellation()),
                 ops.map(lambda _: {
-                    "is_running": bool(self.stop_process()),
+                    "is_running": bool(MCERD.stop_process(process)),
                     "msg": "Simulation timed out"
                 })
             )
@@ -178,12 +183,20 @@ class MCERD:
 
         merged = rx.merge(errs, outs).pipe(
             ops.subscribe_on(pool_scheduler),
+            # TODO easier way to switch between pipeline versions before
+            #   original mcerd is ditched for good
             MCERD.get_pipeline_v2(self.__seed, self.__rec_filename),
             ops.combine_latest(rx.merge(
                 is_running, ct_check, timeout
             )),
-            ops.map(lambda x: MCERD._combine_items(x, last_line="angave ")),
+            ops.map(lambda x: {
+                **x[0], **x[1],
+                "is_running": x[0]["is_running"] and x[1]["is_running"]
+            }),
             ops.take_while(lambda x: x["is_running"], inclusive=True),
+            ops.do_action(
+                on_completed=self.delete_unneeded_files
+            )
         )
 
         if print_to_console:
@@ -194,26 +207,17 @@ class MCERD:
 
         return merged
 
-    def _stop_if_cancelled(self, cancellation_token):
-        """Stops the simulation if cancellation has been requested. Returns
+    @staticmethod
+    def _stop_if_cancelled(process: subprocess.Popen,
+                           cancellation_token: CancellationToken):
+        """Stops the process if cancellation has been requested. Returns
         True if cancellation has not been requested and simulation is still
         running, False otherwise.
         """
         if cancellation_token.is_cancellation_requested():
-            self.stop_process()
+            MCERD.stop_process(process)
             return False
         return True
-
-    @staticmethod
-    def _combine_items(items, last_line="Beam ion: ") -> dict:
-        """Helper function for combining items from two streams.
-        """
-        item1, item2 = items
-        return {
-            **item1, **item2,
-            "is_running": item2["is_running"] and not item1[
-                "msg"].startswith(last_line),
-        }
 
     @staticmethod
     def is_running(process: subprocess.Popen) -> bool:
@@ -242,28 +246,20 @@ class MCERD:
             seed: seed used in the MCERD process
             name: name of the process (usually the name of the recoil element)
         """
-        def scan_if(acc, x):
-            """Helper function to reduce the final output.
-            """
-            # TODO nicer way to reduce this
-            if x.startswith("Beam ion: "):
-                return x, False
-            if not acc[1]:
-                res = f"{acc[0]}\n{x}"
-                if x.startswith("angave"):
-                    return res, True
-                return res, False
-            return x, True
+        last_item_starts = "Beam ion: "
+        last_item_ends = "angave "
 
         return rx.pipe(
             ops.map(lambda x: x.decode("utf-8").strip()),
-            ops.take_while(
-                lambda x: not x.startswith("angave"), inclusive=True),
-            ops.scan(scan_if, seed=("", True)),
-            ops.filter(lambda x: x[1]),
+            observing.reduce_while(
+                reducer=str_reducer,
+                start_from=lambda x: x.startswith(last_item_starts),
+                end_at=lambda x: x.startswith(last_item_ends)
+            ),
             ops.scan(lambda acc, x: {
-                "presim": acc["presim"] and x[0] != "Presimulation finished",
-                **parse_raw_output(x[0])
+                "presim": acc["presim"] and x != "Presimulation finished",
+                **parse_raw_output(
+                    x, end_at=lambda x: x.startswith(last_item_starts))
             }, seed={"presim": True}),
             ops.scan(lambda acc, x: {
                 "seed": seed,
@@ -272,39 +268,46 @@ class MCERD:
                 "calculated": x.get("calculated", acc["calculated"]),
                 "total": x.get("total", acc["total"]),
                 "percentage": x.get("percentage", acc["percentage"]),
-                "msg": x.get("msg", "")
+                "msg": x.get("msg", ""),
+                "is_running": x.get("is_running", True)
             }, seed={"calculated": 0, "total": 0, "percentage": 0}),
+            ops.take_while(lambda x: x["is_running"], inclusive=True),
         )
 
     @staticmethod
     def get_pipeline_v2(seed: int, name: str):
         """rx pipeline for the new version of MCERD
         """
-        def scan_if(acc, x):
-            """Helper function to reduce the final output.
-            """
-            # TODO nicer way to reduce this
-            # TODO update this to v2
-            if x.startswith("Beam ion: "):
-                return x, False
-            if not acc[1]:
-                res = f"{acc[0]}\n{x}"
-                if x.startswith("angave "):
-                    return res, True
-                return res, False
-            return x, True
+        # TODO refactor this with the original pipeline
+        # The first line that MCERD prints out is either 'MCERD is alive'
+        # or 'Initializing parameters' depending on whether debug mode is on.
+        # We let either one of these messages pass to observers and start
+        # reducing from the next line which is:
+        first_line_init = "Reading input files."
+        last_line_init = "Starting simulation."
+        # Note: there are quite a bit of lines between those two, some of which
+        # maybe of interest for the user. Maybe implement parsing for them too.
+
+        first_line_end = "Opening target file "
+        last_line_end = "angave "
 
         return rx.pipe(
             ops.map(lambda x: x.decode("utf-8").strip()),
-            observing.get_printer(),
-            ops.skip_while(lambda x: x != "Starting simulation."),
-            ops.take_while(
-                lambda x: not x.startswith("angave "), inclusive=True),
-            # ops.scan(scan_if, seed=("", True)),
-            # ops.filter(lambda x: x[1]),
+            # observing.get_printer(),
+            observing.reduce_while(
+                reducer=str_reducer,
+                start_from=lambda x: x == first_line_init,
+                end_at=lambda x: x == last_line_init
+            ),
+            observing.reduce_while(
+                reducer=str_reducer,
+                start_from=lambda x: x.startswith(first_line_end),
+                end_at=lambda x: x.startswith(last_line_end)
+            ),
             ops.scan(lambda acc, x: {
                 "presim": acc["presim"] and x != "Presimulation finished",
-                **parse_raw_output(x, last_line="angave ")
+                **parse_raw_output(
+                    x, end_at=lambda y: y.startswith(first_line_end))
             }, seed={"presim": True}),
             ops.scan(lambda acc, x: {
                 "seed": seed,
@@ -313,20 +316,21 @@ class MCERD:
                 "calculated": x.get("calculated", acc["calculated"]),
                 "total": x.get("total", acc["total"]),
                 "percentage": x.get("percentage", acc["percentage"]),
-                "msg": x.get("msg", "")
+                "msg": x.get("msg", ""),
+                "is_running": x.get("is_running", True)
             }, seed={"calculated": 0, "total": 0, "percentage": 0}),
+            ops.take_while(lambda x: x["is_running"], inclusive=True)
         )
 
-    def stop_process(self):
+    @staticmethod
+    def stop_process(process: subprocess.Popen):
         """Stop the MCERD process and delete the MCERD object.
         """
         if platform.system() == "Windows":
-            cmd = f"TASKKILL /F /PID {self.__process.pid} /T"
+            cmd = f"TASKKILL /F /PID {process.pid} /T"
             subprocess.call(cmd)
         else:
-            self.__process.kill()
-
-        self.delete_unneeded_files()
+            process.kill()
 
     def __create_mcerd_files(self):
         """Creates the temporary files needed for running MCERD.
@@ -472,13 +476,16 @@ class MCERD:
         """
         Delete mcerd files that are not needed anymore.
         """
-        try:
-            os.remove(self.__command_file)
-            os.remove(self.__detector_file)
-            os.remove(self.__target_file)
-            os.remove(self.__foils_file)
-        except OSError:
-            pass  # Could not delete all the files
+        def delete_files(*files):
+            for f in files:
+                try:
+                    f.unlink()
+                except OSError:
+                    pass
+
+        delete_files(
+            self.__command_file, self.__detector_file, self.__target_file,
+            self.__foils_file)
 
         def filter_func(f):
             return f.startswith(self.__rec_filename)
@@ -492,7 +499,7 @@ _pattern = re.compile("Calculated (?P<calculated>\d+) of (?P<total>\d+) ions "
                       "\((?P<percentage>\d+)%\)")
 
 
-def parse_raw_output(raw_line, last_line="Beam ion: "):
+def parse_raw_output(raw_line, end_at=None):
     """Parses raw output produced by MCERD into something meaningful.
     """
     m = _pattern.match(raw_line)
@@ -509,11 +516,19 @@ def parse_raw_output(raw_line, last_line="Beam ion: "):
                 "percentage": 0,
                 "msg": raw_line
             }
-        elif raw_line.startswith(last_line):
+        elif end_at is not None and end_at(raw_line):
             return {
                 "msg": raw_line,
-                "percentage": 100
+                "percentage": 100,
+                "is_running": False
             }
         return {
             "msg": raw_line
         }
+
+
+def str_reducer(acc, x):
+    """Helper function for reducing strings from multiple lines.
+    Appends a newline and x to the previously accumulated string.
+    """
+    return f"{acc}\n{x}"

@@ -27,9 +27,13 @@ __version__ = "2.0"
 
 import unittest
 
+import rx
+import modules.observing as observing
+
 from modules.observing import Observable
 from modules.observing import Observer
 from modules.observing import ProgressReporter
+from tests.mock_objects import TestObserver
 
 
 # Mock observable and observer
@@ -37,25 +41,6 @@ class Pub(Observable):
     """Mock Observable"""
     pass
 
-
-class Sub(Observer):
-    """Mock Observer that appends messages it receives to its collections."""
-    def __init__(self):
-        self.errs = []
-        self.nexts = []
-        self.compl = []
-
-    def on_completed(self, msg):
-        self.compl.append(msg)
-
-    def on_error(self, err):
-        self.errs.append(err)
-
-    def on_next(self, msg):
-        self.nexts.append(msg)
-
-
-# TODO add tests for multithreaded system
 
 class TestObserving(unittest.TestCase):
     def test_subscription(self):
@@ -65,7 +50,9 @@ class TestObserving(unittest.TestCase):
 
         self.assertEqual(0, pub.get_observer_count())
 
-        sub = Sub()
+        sub = TestObserver()
+        self.assertIsInstance(sub, Observer)
+
         pub.subscribe(sub)
         self.assertEqual(1, pub.get_observer_count())
 
@@ -94,7 +81,7 @@ class TestObserving(unittest.TestCase):
         """Tests that the publisher uses the correct callbacks to publish
         messages."""
         pub = Pub()
-        sub = Sub()
+        sub = TestObserver()
 
         pub.subscribe(sub)
 
@@ -119,8 +106,8 @@ class TestObserving(unittest.TestCase):
         pub1 = Pub()
         pub2 = Pub()
 
-        sub1 = Sub()
-        sub2 = Sub()
+        sub1 = TestObserver()
+        sub2 = TestObserver()
 
         # Subscriber can receive messages from multiple observables and
         # publisher can send messages to multiple subscribers
@@ -146,7 +133,7 @@ class TestObserving(unittest.TestCase):
         """Observers are weakly referenced so they should be removed when
         they no longer exist"""
         pub = Pub()
-        sub = Sub()
+        sub = TestObserver()
 
         pub.subscribe(sub)
         self.assertEqual(1, pub.get_observer_count())
@@ -164,7 +151,7 @@ class TestObserving(unittest.TestCase):
 
         # Also if the Sub is only initialized in the context of the subscribe
         # function, observer count stays at 0
-        pub.subscribe(Sub())
+        pub.subscribe(TestObserver())
         self.assertEqual(0, pub.get_observer_count())
 
     def test_unreferenceable(self):
@@ -247,6 +234,101 @@ class TestProgressReporting(unittest.TestCase):
         sub_reporter = reporter.get_sub_reporter(list)
 
         self.assertRaises(TypeError, lambda: sub_reporter.report(1))
+
+
+class TestRxOps(unittest.TestCase):
+    def setUp(self):
+        self.kwargs = {
+            "data": (1, 2, 3, 4, 5),
+            "reduce_func": lambda acc, x: acc + x,
+            "exp_errs": [],
+            "exp_compl": ["done"]
+        }
+
+    def test_reduce_while_start_cond(self):
+        self.kwargs["end_cond"] = lambda x: x == 4
+
+        self.assert_observed_data_ok(
+            start_cond=lambda x: x == 0, exp_nexts=[1, 2, 3, 4, 5],
+            **self.kwargs)
+
+        self.assert_observed_data_ok(
+            start_cond=lambda x: x == 1, exp_nexts=[10, 5], **self.kwargs)
+
+        self.assert_observed_data_ok(
+            start_cond=lambda x: x == 2, exp_nexts=[1, 9, 5], **self.kwargs)
+
+        self.assert_observed_data_ok(
+            start_cond=lambda x: x == 3, exp_nexts=[1, 2, 7, 5], **self.kwargs)
+
+        self.assert_observed_data_ok(
+            start_cond=lambda x: x == 4, exp_nexts=[1, 2, 3, 4, 5],
+            **self.kwargs)
+
+        self.assert_observed_data_ok(
+            start_cond=lambda x: x == 5, exp_nexts=[1, 2, 3, 4],
+            **self.kwargs)
+
+        self.assert_observed_data_ok(
+            start_cond=lambda x: x == 6, exp_nexts=[1, 2, 3, 4, 5],
+            **self.kwargs)
+
+    def test_reduce_while_end_cond(self):
+        self.kwargs["start_cond"] = lambda x: x == 2
+
+        self.assert_observed_data_ok(
+            end_cond=lambda x: x == 0, exp_nexts=[1],
+            **self.kwargs)
+
+        self.assert_observed_data_ok(
+            end_cond=lambda x: x == 1, exp_nexts=[1], **self.kwargs)
+
+        self.assert_observed_data_ok(
+            end_cond=lambda x: x == 2, exp_nexts=[1, 2, 3, 4, 5], **self.kwargs)
+
+        self.assert_observed_data_ok(
+            end_cond=lambda x: x == 3, exp_nexts=[1, 5, 4, 5], **self.kwargs)
+
+        self.assert_observed_data_ok(
+            end_cond=lambda x: x == 4, exp_nexts=[1, 9, 5],
+            **self.kwargs)
+
+        self.assert_observed_data_ok(
+            end_cond=lambda x: x == 5, exp_nexts=[1, 14],
+            **self.kwargs)
+
+        self.assert_observed_data_ok(
+            end_cond=lambda x: x == 6, exp_nexts=[1],
+            **self.kwargs)
+
+    def test_same_values_in_data(self):
+        self.kwargs.pop("data")
+        self.kwargs["start_cond"] = lambda x: x == 1
+        self.kwargs["end_cond"] = lambda x: x == 2
+
+        self.assert_observed_data_ok(
+            data=(1, 2, 1, 2), exp_nexts=[3, 3], **self.kwargs
+        )
+        self.assert_observed_data_ok(
+            data=(1, 2, 2, 1, 2), exp_nexts=[3, 2, 3], **self.kwargs
+        )
+
+        self.assert_observed_data_ok(
+            data=(1, 2, 2, 1, 1, 2), exp_nexts=[3, 2, 4], **self.kwargs
+        )
+
+    def assert_observed_data_ok(self, data, reduce_func, start_cond, end_cond,
+                                exp_nexts, exp_errs, exp_compl):
+        obs = TestObserver()
+
+        stream = rx.from_iterable(data)
+        stream.pipe(
+            observing.reduce_while(reduce_func, start_cond, end_cond)
+        ).subscribe(obs)
+
+        self.assertEqual(exp_nexts, obs.nexts)
+        self.assertEqual(exp_errs, obs.errs)
+        self.assertEqual(exp_compl, obs.compl)
 
 
 if __name__ == "__main__":

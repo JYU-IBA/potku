@@ -29,7 +29,8 @@ import rx
 import itertools
 
 import modules.mcerd as mcerd
-import modules.observing as observing
+
+from tests.mock_objects import TestObserver
 
 
 class TestParseOutput(unittest.TestCase):
@@ -92,34 +93,17 @@ class TestParseOutput(unittest.TestCase):
             b"bar"
         ]
 
-        class Observer:
-            def __init__(self):
-                self.nexts = []
-                self.errs = []
-                self.compl_called = False
-
-            def on_next(self, x):
-                self.nexts.append(x)
-
-            def on_error(self, x):
-                self.errs.append(x)
-
-            def on_completed(self):
-                self.compl_called = True
-
-        obs = Observer()
+        obs = TestObserver()
         rx.from_iterable(iter(output)).pipe(
             mcerd.MCERD.get_pipeline(100, "foo"),
-            # observing.get_printer()
         ).subscribe(obs)
 
         self.assertEqual(len(output) - 3, len(obs.nexts))
         self.assertTrue(all(
-            x.keys() == y.keys() for x, y in itertools.combinations(
-                obs.nexts, 2)
-        ))
+            obs.nexts[0].keys() == x.keys() for x in obs.nexts[1:])
+        )
         self.assertEqual([], obs.errs)
-        self.assertTrue(obs.compl_called)
+        self.assertEqual(["done"], obs.compl)
 
         self.assertEqual({
             "presim": True,
@@ -128,7 +112,8 @@ class TestParseOutput(unittest.TestCase):
             "percentage": 100,
             "seed": 100,
             "name": "foo",
-            "msg": ""
+            "msg": "",
+            "is_running": True
         }, obs.nexts[1])
 
         self.assertEqual({
@@ -138,7 +123,8 @@ class TestParseOutput(unittest.TestCase):
             "name": "foo",
             "calculated": 0,
             "percentage": 0,
-            "total": 100
+            "total": 100,
+            "is_running": True
         }, obs.nexts[2])
 
         self.assertEqual({
@@ -150,7 +136,8 @@ class TestParseOutput(unittest.TestCase):
             "name": "foo",
             "percentage": 100,
             "calculated": 50,
-            "total": 100
+            "total": 100,
+            "is_running": False
         }, obs.nexts[-1])
 
 

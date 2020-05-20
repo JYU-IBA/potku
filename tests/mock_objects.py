@@ -45,6 +45,7 @@ from modules.layer import Layer
 from modules.measurement import Measurement
 from modules.global_settings import GlobalSettings
 from modules.sample import Samples
+from modules.observing import Observer
 
 
 # This module can be used to generate various helper objects for testing
@@ -192,3 +193,22 @@ def get_request(return_real=False):
             self.global_settings = get_global_settings()
             self.samples = Samples(self)
     return MockRequest()
+
+
+class TestObserver(Observer):
+    """Observer that appends messages it receives to its collections.
+    """
+    def __init__(self):
+        self.nexts = []
+        self.errs = []
+        self.compl = []
+
+    def on_next(self, msg):
+        self.nexts.append(msg)
+
+    def on_error(self, err):
+        self.errs.append(err)
+
+    def on_completed(self, msg="done"):
+        self.compl.append(msg)
+

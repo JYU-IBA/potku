@@ -261,3 +261,36 @@ def get_printer(completed_msg=""):
         on_error=lambda x: print("Error:", x, file=sys.stderr),
         on_completed=lambda: print("Completed:", completed_msg)
     )
+
+
+def _flag_start_end(start_condition, end_condition):
+    """Helper operator that adds two boolean flags to the item depending on
+    if the conditiotions are met.
+    """
+    return ops.scan(
+        lambda acc, x: (
+            x,
+            start_condition(x) or acc[1] and not acc[2],
+            end_condition(x)
+        ), seed=(None, False)
+    )
+
+
+def reduce_while(reducer, start_from, end_at):
+    """Reduces items into a single item while a condition is met.
+
+    Args:
+        reducer: function that takes as an input the last output of itself and
+            an item and returns a combined result.
+        start_from: function that takes an item and returns a boolean
+        end_at: function that takes an item and returns a boolean
+    """
+    return ops.pipe(
+        _flag_start_end(start_from, end_at),
+        ops.scan(lambda acc, x: (
+            reducer(acc[0], x[0]) if acc[1] else x[0],
+            x[1] and not x[2]
+        )),
+        ops.filter(lambda x: not x[1]),
+        ops.map(lambda x: x[0])
+    )
