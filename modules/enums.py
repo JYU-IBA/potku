@@ -152,9 +152,7 @@ class SimulationMode(str, Enum):
     WIDE = "wide"
 
     def __str__(self):
-        if self is SimulationMode.NARROW:
-            return "Narrow"
-        return "Wide"
+        return self.value.capitalize()
 
 
 @enum.unique

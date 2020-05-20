@@ -174,8 +174,8 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         self.run = run
         self.sample = sample
 
-        self.simulation_type = SimulationType(simulation_type)
-        self.simulation_mode = SimulationMode(simulation_mode)
+        self.simulation_type = SimulationType(simulation_type.upper())
+        self.simulation_mode = SimulationMode(simulation_mode.lower())
 
         self.number_of_ions = number_of_ions
         self.number_of_preions = number_of_preions
@@ -363,8 +363,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         mcsimu["modification_time"] = mcsimu.pop("modification_time_unix")
         mcsimu["use_default_settings"] = \
             mcsimu["use_default_settings"] == "True"
-        mcsimu["simulation_type"] = SimulationType(mcsimu["simulation_type"])
-        mcsimu["simulation_mode"] = SimulationMode(mcsimu["simulation_mode"])
+        mcsimu["simulation_type"] = SimulationType(
+            mcsimu["simulation_type"].upper())
+        mcsimu["simulation_mode"] = SimulationMode(
+            mcsimu["simulation_mode"].lower())
 
         full_name = mcsimu.pop("name")
         try:

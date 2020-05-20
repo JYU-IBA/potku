@@ -29,6 +29,8 @@ import random
 import math
 
 from modules.enums import IonDivision
+from modules.enums import SimulationMode
+from modules.enums import SimulationType
 
 
 class TestIonDivision(unittest.TestCase):
@@ -92,3 +94,23 @@ class TestIonDivision(unittest.TestCase):
             self.assertTrue(0 <= sim <= math.fabs(args[1]))
             self.assertIsInstance(presim, int)
             self.assertIsInstance(sim, int)
+
+
+class TestSimulationEnums(unittest.TestCase):
+    def test_init(self):
+        self.assertEqual(SimulationMode.NARROW, SimulationMode("narrow"))
+        self.assertEqual(SimulationMode.WIDE, SimulationMode("wide"))
+        self.assertRaises(ValueError, lambda: SimulationMode("Narrow"))
+        self.assertRaises(ValueError, lambda: SimulationMode("Wide"))
+
+        self.assertEqual(SimulationType.RBS, SimulationType("RBS"))
+        self.assertEqual(SimulationType.ERD, SimulationType("ERD"))
+        self.assertRaises(ValueError, lambda: SimulationMode("rbs"))
+        self.assertRaises(ValueError, lambda: SimulationMode("erd"))
+
+    def test_str(self):
+        self.assertEqual("Narrow", str(SimulationMode.NARROW))
+        self.assertEqual("Wide", str(SimulationMode.WIDE))
+
+        self.assertEqual("SCT", str(SimulationType("RBS")))
+        self.assertEqual("REC", str(SimulationType("ERD")))
