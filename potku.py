@@ -441,12 +441,9 @@ class Potku(QtWidgets.QMainWindow):
                 )
                 if reply == QtWidgets.QMessageBox.Cancel:
                     return False
-                for sim in sims:
-                    sim.stop()
-                while any(sim.is_simulation_running() or
-                          sim.is_optimization_running() for sim in sims):
-                    # TODO add timeout
-                    pass
+                events = [sim.stop() for sim in sims]
+                for e in events:
+                    e.wait(timeout=1)
         return True
 
     def create_report(self):
