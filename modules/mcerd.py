@@ -134,7 +134,8 @@ class MCERD:
             cancellation_token = CancellationToken()
 
         process = subprocess.Popen(
-            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            cwd=gf.get_bin_dir())
 
         errs = rx.from_iterable(iter(process.stderr.readline, b""))
         outs = rx.from_iterable(iter(process.stdout.readline, b""))
@@ -156,7 +157,7 @@ class MCERD:
             ops.map(lambda _: {
                 "is_running": False,
                 "msg": "Simulation was stopped"
-            }),
+            })
         )
 
         if max_time is not None:
@@ -194,9 +195,6 @@ class MCERD:
                 "is_running": x[0]["is_running"] and x[1]["is_running"]
             }),
             ops.take_while(lambda x: x["is_running"], inclusive=True),
-            ops.do_action(
-                on_completed=self.delete_unneeded_files
-            )
         )
 
         if print_to_console:
@@ -205,7 +203,19 @@ class MCERD:
                     f"simulation process with seed {self.__seed}.")
             )
 
-        return merged
+        # on_completed does not get called if the take_while condition is
+        # inclusive so this is a quick fix to get the files deleted.
+        # TODO surely there is a way to get the on_completed called?
+        def del_if_not_running(x):
+            if not x["is_running"]:
+                self.delete_unneeded_files()
+
+        return merged.pipe(
+            ops.do_action(
+                on_next=del_if_not_running,
+                on_error=lambda _: self.delete_unneeded_files(),
+                on_completed=self.delete_unneeded_files)
+        )
 
     @staticmethod
     def _stop_if_cancelled(process: subprocess.Popen,
@@ -293,7 +303,6 @@ class MCERD:
 
         return rx.pipe(
             ops.map(lambda x: x.decode("utf-8").strip()),
-            # observing.get_printer(),
             observing.reduce_while(
                 reducer=str_reducer,
                 start_from=lambda x: x == first_line_init,

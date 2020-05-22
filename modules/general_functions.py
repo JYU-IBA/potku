@@ -754,3 +754,31 @@ def get_bin_dir() -> Path:
     """
     this_dir = Path(__file__).parent
     return Path(this_dir, os.pardir, "external", "Potku-bin").resolve()
+
+
+def write_jibal_conf():
+    """Writes a jibal.conf file into Potku-bin directory.
+
+    TODO relative paths in the .conf file did not work on Windows, therefore
+        this workaround. Should be unneccessary in the future.
+    """
+    conf_file = get_bin_dir() / "jibal.conf"
+    if conf_file.exists():
+        # Let's not overwrite any existing .conf files
+        return
+
+    # Write all file paths
+    data_dir = get_bin_dir().parent / "Potku-data"
+    configs = {
+        "datadir": data_dir,
+        "userdatadir": data_dir,
+        "masses_file": data_dir / "masses2.dat",
+        "abundances_file": data_dir / "abundances.dat",
+        "files_file": data_dir / "files.txt",
+        "assignments_file": data_dir / "assignments.txt",
+        "Z_max": 92,
+        "extrapolate": "false"  # lower case just in case
+    }
+    with conf_file.open("w") as file:
+        for k, v in configs.items():
+            file.write(f"{k} = {v}\n")

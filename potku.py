@@ -95,6 +95,9 @@ class Potku(QtWidgets.QMainWindow):
         super().__init__()
         uic.loadUi(Path("ui_files", "ui_main_window.ui"), self)
 
+        # TODO this is a workaround for relative paths not working in jibal.conf
+        gf.write_jibal_conf()
+
         self.title = self.windowTitle()
         self.treeWidget.setHeaderLabel("")
 
