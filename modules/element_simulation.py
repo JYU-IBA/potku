@@ -42,6 +42,7 @@ from typing import Optional
 from rx import operators as ops
 from pathlib import Path
 from collections import deque
+from threading import Event
 
 from modules.concurrency import CancellationToken
 from modules.base import Serializable
@@ -93,7 +94,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
                 "__full_edit_on", "y_min", "main_recoil",\
                 "optimization_recoils", "optimization_widget", \
                 "_optimization_running", "optimized_fluence", \
-                "sample", "__cts", "_simulation_running"
+                "sample", "__cts", "_simulation_running", "_running_event"
 
     def __init__(self, directory, request, recoil_elements,
                  simulation=None, name_prefix="", sample=None,
@@ -223,6 +224,9 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         self._simulation_running = False
         self._optimization_running = False
+        # Also set up an Event that will be locked during simulation
+        self._running_event = Event()
+        self._running_event.set()
         self.optimization_widget = None
         # Store fluence optimization results
         self.optimized_fluence = optimized_fluence
@@ -506,7 +510,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         except (OSError, IsADirectoryError, PermissionError):
             pass
 
-    def profile_to_file(self, file_path):
+    def profile_to_file(self, file_path: Path):
         """Save profile settings (only channel width) to file.
 
         Args:
@@ -514,22 +518,23 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """
         # Read .profile to obj to update only channel width
         time_stamp = time.time()
-        if Path(file_path).exists():
-            with open(file_path) as file:
+        try:
+            with file_path.open("r") as file:
                 obj_profile = json.load(file)
 
             obj_profile["modification_time"] = time.strftime(
                 "%c %z %Z", time.localtime(time_stamp))
             obj_profile["modification_time_unix"] = time_stamp
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
-        else:
-            obj_profile = {"energy_spectra": {},
-                           "modification_time": time.strftime(
-                               "%c %z %Z", time.localtime(time_stamp)),
-                           "modification_time_unix": time_stamp}
+        except (OSError, json.JSONDecodeError):
+            obj_profile = {
+                "energy_spectra": {},
+                "modification_time": time.strftime(
+                    "%c %z %Z", time.localtime(time_stamp)),
+                "modification_time_unix": time_stamp}
             obj_profile["energy_spectra"]["channel_width"] = self.channel_width
 
-        with open(file_path, "w") as file:
+        with file_path.open("w") as file:
             json.dump(obj_profile, file, indent=4)
 
     def start(self, number_of_processes, start_value=None,
@@ -675,6 +680,11 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         """Sets the boolean flags that indicate the state of
         simulation accordingly.
         """
+        # TODO could just replace the boolean flags with the Event
+        if b:
+            self._running_event.clear()
+        else:
+            self._running_event.set()
         self._simulation_running = b and optim_mode is None
         self._optimization_running = b and optim_mode is not None
 
@@ -751,7 +761,6 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
     def is_optimization_finished(self) -> bool:
         """Whether optimization has finished.
         """
-        # TODO better way to determine this
         return not self.is_optimization_running() and (any(
             self.optimization_recoils) or self.optimized_fluence is not None)
 
@@ -783,13 +792,16 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         self.on_completed(self.get_current_status())
 
-    def stop(self):
+    def stop(self) -> Event:
         """Stops all running simulation processes for this ElementSimulation.
-        Stopping will not happen immediately.
+        Returns an Event that can be waited for until all processes have
+        stopped.
         """
         cts = list(self.__cts)
         for ct in cts:
             ct.request_cancellation()
+
+        return self._running_event
 
     def calculate_espe(self, recoil_element, ch=None, fluence=None,
                        optimization_type=None):
@@ -938,10 +950,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         Args:
             remove_files: whether simulation result files are also removed
         """
-        self.stop()
-        # TODO should wait here until the simulation fully stops
-
-        self._set_flags(False)
+        self.stop().wait(1)
 
         if remove_files:
             self.delete_simulation_results()
