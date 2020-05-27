@@ -79,16 +79,19 @@ class OptimizedRecoilsWidget(QtWidgets.QWidget, GUIObserver):
         self.pareto_front = RecoilAtomParetoFront(self)
 
         self.recoil_atoms.results_accepted.connect(self.results_accepted.emit)
-        self.pushButton.clicked.connect(self.switch_widget)
+        self.rb_group_optim.buttonToggled.connect(self.switch_widget)
 
-    def switch_widget(self):
-        self.stackedWidget: QtWidgets.QStackedWidget
-        if self.stackedWidget.currentIndex() == 1:
-            self.pushButton.setText("Show Pareto front")
+    def switch_widget(self, rb: QtWidgets.QRadioButton, b: bool):
+        """Switches between Recoil distribution and Pareto front views.
+        """
+        if not b:
+            return
+        if rb.text().startswith("Recoil"):
             self.stackedWidget.setCurrentIndex(0)
+            self.beamLabel.show()
         else:
-            self.pushButton.setText("Show distribution")
             self.stackedWidget.setCurrentIndex(1)
+            self.beamLabel.hide()
 
     def delete(self):
         """Delete variables and do clean up.

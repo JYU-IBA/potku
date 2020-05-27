@@ -32,16 +32,26 @@
    <item row="0" column="0" rowspan="2" colspan="2">
     <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
-      <widget class="QPushButton" name="pushButton">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>0</height>
-        </size>
-       </property>
+      <widget class="QRadioButton" name="rb_dist">
        <property name="text">
-        <string>Show Pareto front</string>
+        <string>Recoil distributions</string>
        </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">rb_group_optim</string>
+       </attribute>
+      </widget>
+     </item>
+     <item>
+      <widget class="QRadioButton" name="rb_pareto">
+       <property name="text">
+        <string>Pareto front</string>
+       </property>
+       <attribute name="buttonGroup">
+        <string notr="true">rb_group_optim</string>
+       </attribute>
       </widget>
      </item>
      <item>
@@ -113,4 +123,7 @@
  <layoutdefault spacing="6" margin="11"/>
  <resources/>
  <connections/>
+ <buttongroups>
+  <buttongroup name="rb_group_optim"/>
+ </buttongroups>
 </ui>
