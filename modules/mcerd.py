@@ -133,14 +133,28 @@ class MCERD:
         if cancellation_token is None:
             cancellation_token = CancellationToken()
 
+        use_new_mcerd = True
+        if use_new_mcerd:
+            cwd = gf.get_bin_dir()
+            pipeline = MCERD.get_pipeline_v2
+        else:
+            cwd = os.getcwd()
+            pipeline = MCERD.get_pipeline
+
         process = subprocess.Popen(
             cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            cwd=gf.get_bin_dir())
+            cwd=cwd)
 
         errs = rx.from_iterable(iter(process.stderr.readline, b""))
         outs = rx.from_iterable(iter(process.stdout.readline, b""))
 
         is_running = rx.timer(first_check, poll_interval).pipe(
+            # TODO change this to run at an increasing interval, i.e:
+            #       - first check after 0.0 seconds,
+            #       - second check after 0.2 seconds,
+            #       - third after 1.0, ... etc.
+            #   MCERD is likely to crash early (?) so it makes sense to
+            #   run the check more frequently at the beginning.
             ops.map(lambda _: {
                 "is_running": MCERD.is_running(process)
             })
@@ -184,9 +198,7 @@ class MCERD:
 
         merged = rx.merge(errs, outs).pipe(
             ops.subscribe_on(pool_scheduler),
-            # TODO easier way to switch between pipeline versions before
-            #   original mcerd is ditched for good
-            MCERD.get_pipeline_v2(self.__seed, self.__rec_filename),
+            pipeline(self.__seed, self.__rec_filename),
             ops.combine_latest(rx.merge(
                 is_running, ct_check, timeout
             )),

@@ -363,9 +363,16 @@ class SimulationControlsWidget(QtWidgets.QWidget, GUIObserver):
             # Align the percentage display to the right side of the
             # progress bar.
             progress_bar.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+
+            # Make sure it fills the horizontal space by setting size policy
+            # to expanding.
+            progress_bar.setSizePolicy(
+                QtWidgets.QSizePolicy.Expanding,
+                QtWidgets.QSizePolicy.Fixed)
+
             self.progress_bars[seed] = progress_bar
-            self.process_layout.addRow(QtWidgets.QLabel(str(seed)),
-                                       progress_bar)
+            self.process_layout.addRow(
+                QtWidgets.QLabel(str(seed)), progress_bar)
         else:
             progress_bar = self.progress_bars[seed]
             if stylesheet is not None:

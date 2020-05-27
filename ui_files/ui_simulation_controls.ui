@@ -7,11 +7,11 @@
     <x>0</x>
     <y>0</y>
     <width>280</width>
-    <height>304</height>
+    <height>356</height>
    </rect>
   </property>
   <property name="sizePolicy">
-   <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+   <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
     <horstretch>18</horstretch>
     <verstretch>0</verstretch>
    </sizepolicy>
@@ -20,6 +20,12 @@
    <size>
     <width>280</width>
     <height>180</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>280</width>
+    <height>16777215</height>
    </size>
   </property>
   <property name="windowTitle">
@@ -187,7 +193,7 @@ margin: 3px;
 font-weight: bold;</string>
           </property>
           <property name="text">
-           <string>TextLabel</string>
+           <string>TextLabel                                               234</string>
           </property>
           <property name="wordWrap">
            <bool>true</bool>
@@ -203,7 +209,7 @@ margin: 3px;
 font-weight: bold;</string>
           </property>
           <property name="text">
-           <string>TextLabel</string>
+           <string>TextLabel                                                           234</string>
           </property>
           <property name="wordWrap">
            <bool>true</bool>
@@ -212,6 +218,15 @@ font-weight: bold;</string>
         </item>
         <item>
          <layout class="QFormLayout" name="process_layout">
+          <property name="fieldGrowthPolicy">
+           <enum>QFormLayout::ExpandingFieldsGrow</enum>
+          </property>
+          <property name="labelAlignment">
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+          </property>
+          <property name="formAlignment">
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+          </property>
           <property name="leftMargin">
            <number>6</number>
           </property>
