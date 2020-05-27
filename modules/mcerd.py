@@ -133,7 +133,7 @@ class MCERD:
         if cancellation_token is None:
             cancellation_token = CancellationToken()
 
-        use_new_mcerd = True
+        use_new_mcerd = False
         if use_new_mcerd:
             cwd = gf.get_bin_dir()
             pipeline = MCERD.get_pipeline_v2
