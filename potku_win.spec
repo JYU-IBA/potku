@@ -13,7 +13,7 @@ a = Analysis(['potku.py'],
                     ('ui_icons\\potku\\*', 'ui_icons\\potku'),
                     ('images\\*', 'images')
 					],
-             hiddenimports=['scipy._lib.messagestream'],
+             hiddenimports=['scipy._lib.messagestream', 'pkg_resources.py2_warn'],
              hookspath=[],
              runtime_hooks=[],
              excludes=['tkagg'],
