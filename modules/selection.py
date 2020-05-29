@@ -174,7 +174,8 @@ class Selector:
                 return selection
         return None
 
-    def add_point(self, point, canvas):
+    # changes made for this to make epotku selections work
+    def add_point(self, point):
         """Adds a new point.
 
         Adds a new point to last selection. If new selection is allowed, create
@@ -208,10 +209,7 @@ class Selector:
         if sel.count() >= 3:  # Requirement for there to be selection
             # If we are close enough, close selection
             if mf.distance(sel.get_first(), point) < self.looseness:
-                selection_is_ok = sel.end_selection(canvas)
-                # If selection was cancelled -> remove just made selection
-                if not selection_is_ok:
-                    self.__remove_last()
+
                 self.reset_colors()
                 self.auto_save()
                 self.new_selection_is_allowed = True
@@ -318,7 +316,7 @@ class Selector:
                     line_points.append(lines[k])
                 self.axes.legend(line_points, line_text, loc=0)
 
-    def end_open_selection(self, canvas):
+    def end_open_selection(self):
         """End last open selection.
 
         Ends last open selection. If selection is open, it will show dialog to
@@ -340,7 +338,7 @@ class Selector:
             logging.getLogger(self.measurement_name).error(message)
             return 0
         elif not sel.is_closed:
-            selection_is_ok = sel.end_selection(canvas)
+            selection_is_ok = sel.end_selection()
             if not selection_is_ok:
                 self.__remove_last()
             self.reset_colors()
@@ -715,7 +713,7 @@ class Selection:
             return 0
         return len(self.points.get_data()[0])  # X data count is fine.
 
-    def end_selection(self, canvas=None):
+    def end_selection(self):
         """End selection.
 
         Ends selection. If selection is open and canvas is not None, it will
