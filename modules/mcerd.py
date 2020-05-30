@@ -96,19 +96,13 @@ class MCERD:
         """Returns the command that is used to start the MCERD process.
         """
         if platform.system() == "Windows":
-            executable = "mcerd.exe"
-            ulimit = ""
-            exec_cmd = ""
+            cmd = str(gf.get_bin_dir() / "mcerd.exe")
         else:
-            executable = "mcerd"
-            ulimit = "ulimit -s 64000; "
-            exec_cmd = "exec "
+            cmd = "./mcerd"
 
-        mcerd_path = gf.get_bin_dir() / executable
+        return cmd, self.__command_file
 
-        return f"{ulimit}{exec_cmd}{mcerd_path} {self.__command_file}"
-
-    def run(self, print_to_console=True, cancellation_token=None,
+    def run(self, print_to_console=False, cancellation_token=None,
             poll_interval=10, first_check=0.2, max_time=None, ct_check=0.2):
         """Starts the MCERD process.
 
@@ -133,7 +127,7 @@ class MCERD:
         if cancellation_token is None:
             cancellation_token = CancellationToken()
 
-        use_new_mcerd = False
+        use_new_mcerd = True
         if use_new_mcerd:
             cwd = gf.get_bin_dir()
             pipeline = MCERD.get_pipeline_v2
@@ -142,8 +136,7 @@ class MCERD:
             pipeline = MCERD.get_pipeline
 
         process = subprocess.Popen(
-            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            cwd=cwd)
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=cwd)
 
         errs = rx.from_iterable(iter(process.stderr.readline, b""))
         outs = rx.from_iterable(iter(process.stdout.readline, b""))
@@ -315,6 +308,7 @@ class MCERD:
 
         return rx.pipe(
             ops.map(lambda x: x.decode("utf-8").strip()),
+            observing.get_printer(),
             observing.reduce_while(
                 reducer=str_reducer,
                 start_from=lambda x: x == first_line_init,

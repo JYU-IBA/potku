@@ -13,8 +13,6 @@
 * scoef.*
 
 # Ignore these directories
-/external/data/
-/external/Examples/
 /sample_data
 /Sample-data
 /.idea
@@ -22,11 +20,18 @@
 /__pycache__
 /venv
 *.bak
-/external/*
 .gitignore
 Pipfile.lock
 
+# Ignore everything in external folder...
+/external/*
+/external/Potku-bin/*
+# except for these
 !/external/Makefile
+!/external/submodules/
+!/external/submodules/*
+!/external/Potku-bin/
+!/external/Potku-bin/jibal.conf
 
 # Temporary QT Creator files
 *.ui.autosave

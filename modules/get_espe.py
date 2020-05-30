@@ -112,8 +112,7 @@ class GetEspe:
         """Run get_espe binary with given parameters.
         """
         command = self.get_command()
-        # TODO change the cwd for new get_espe
-        subprocess.call(command, shell=True)
+        subprocess.call(command, shell=True, cwd=gf.get_bin_dir())
 
     def get_command(self):
         """Returns the command to run get_espe executable"""

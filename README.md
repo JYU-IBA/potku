@@ -6,8 +6,7 @@ Linux and Mac.
 
 This repository contains the Python source code for Potku's graphical user 
 interface as well as the source code for external C programs that perform 
-most of the number crunching. Source code for simulation programs is not 
-included.
+most of the number crunching.
 
 ### Getting started with development
 
@@ -15,37 +14,55 @@ First step is to install Python 3.6 along with pip package installer. Make
 sure they are added to your PATH. Then install Pipenv:
  
 ````
-pip install --user pipenv
+$ pip install --user pipenv
 ````
 
 Once these prerequisites are met, you can clone the repository and 
 checkout the development branch to get the most up-to-date version of Potku.
  
 ````
-git clone https://github.com/JYU-IBA/potku.git
-cd potku
-git checkout development
+$ git clone --recursive https://github.com/JYU-IBA/potku.git
+$ cd potku
+$ git checkout development
 ````
 
 Install and activate the virtual environment with Pipenv:
 
 ````
-pipenv install
-pipenv shell
+$ pipenv install
+$ pipenv shell
 ````
 
 Once the virtual environment is up and running, Potku can be launched from the 
 command line:
  
 ````
-python run_potku.py
+$ python run_potku.py
 ````
 
 ### Compiling the C code
 
-Compilation requires ``make`` and ``gcc``. All programs can be compiled by 
-running ``make`` in the ``/external`` directory. This installs the binaries and 
-other files into their correct locations.
+Requirements:
+
+- make
+- gcc
+- See Jibal requirements (for Windows, follow the installation instructions 1
+ - 4)
+
+To compile all of the programs on Mac or Linux, run:
+
+````
+$ ./build.sh
+````
+
+On Windows, run:
+
+````
+TODO
+````
+
+Also download an archive of additional data files from LINK and extract them
+ into ``external/Potku-data`` folder.
 
 ### Tests
 
@@ -57,8 +74,17 @@ Tests have been written using unittest framework. With the virtual environment
 activated, they can be run from the root directory of the project with:
 
 ````
-python -m unittest discover
+$ python -m unittest discover
 ````
+
+### Packaging Potku into an executable (work in progress)
+
+````
+$ pipenv shell
+$ pip install pyinstaller
+$ pyinstaller potku_[win or unix].spec
+````
+
 
 ### Licence
 
