@@ -17,14 +17,16 @@ cd submodules/jibal/
 cp data/abundances.dat "$DATA_DIR"
 cp data/masses.dat "$DATA_DIR"/masses2.dat
 
-rm -r build/* || mkdir build
+rm -r build || echo Creating new build directory
+mkdir build
 cd build
 cmake ../
 make
 cp jibal/libJibal.* "$BIN_DIR"
 
 cd ../../mcerd
-rm -r build/* || mkdir build
+rm -r build || echo Creating new build directory
+mkdir build
 cd build
 cmake -DCMAKE_PREFIX_PATH="$JIBAL_DIR" ../
 make

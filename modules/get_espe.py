@@ -27,9 +27,11 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import os
 import platform
 import subprocess
+import shutil
+import shlex
+import glob
 
 import modules.general_functions as gf
 
@@ -136,7 +138,7 @@ class GetEspe:
             cat_cmd = "cmd", "/c", "type", str(self.__erd_file)
             espe_cmd = f"{gf.get_bin_dir() / 'get_espe.exe'} {self.__params}"
         else:
-            cat_cmd = "cat", str(self.__erd_file)
-            espe_cmd = f"./get_espe {self.__params}"
+            cat_cmd = shutil.which("cat"), *glob.glob(str(self.__erd_file))
+            espe_cmd = "./get_espe", *shlex.split(self.__params)
 
         return cat_cmd, espe_cmd
