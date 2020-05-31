@@ -52,7 +52,7 @@ class GetEspe:
         Args:
              settings: All settings that get_espe needs in one dictionary.
         """
-        # Options for get_espe, here only temporarily:
+        # Options for get_espe
         #
         # get_espe - Calculate an energy spectrum from simulated ERD data
         #
@@ -96,6 +96,12 @@ class GetEspe:
         toflen -= self.__detector.foils[self.__detector.tof_foils[0]].distance
         toflen_in_meters = toflen / 1000
 
+        # After get_espe update, spectra are calculated differently (values are
+        # roughly 10^8 times smaller than previously). To correct this, increase
+        # the dose by same amount.
+        # TODO check that this is correct
+        dose = self.__fluence * 10**8
+
         self.__params = "-beam " + str(self.__beam.ion.isotope) + \
                         self.__beam.ion.symbol \
                         + " -energy " + str(self.__beam.energy) \
@@ -104,7 +110,7 @@ class GetEspe:
                         + " -timeres " + str(self.__timeres) \
                         + " -toflen " + str(toflen_in_meters) \
                         + " -solid " + str(self.__solid) \
-                        + " -dose " + str(self.__fluence) \
+                        + " -dose " + str(dose) \
                         + " -avemass" \
                         + " -density " + str(self.__density) \
                         + " -dist " + str(self.__recoil_file) \
@@ -112,33 +118,43 @@ class GetEspe:
 
     def run_get_espe(self, write_to_file=True):
         """Run get_espe binary with given parameters.
+
+        Args:
+            write_to_file: whether get_espe output is written to file
         """
-        cat_cmd, espe_cmd = self.get_command()
+        espe_cmd = self.get_command()
         bin_dir = gf.get_bin_dir()
 
-        # Pipe the output from 'cat *.erd' to get_espe
-        cat_process = subprocess.Popen(
-            cat_cmd, cwd=bin_dir, stdout=subprocess.PIPE)
-        espe_process = subprocess.run(
-            espe_cmd, cwd=bin_dir, stdin=cat_process.stdout,
-            stdout=subprocess.PIPE)
+        espe_process = subprocess.Popen(
+            espe_cmd, cwd=bin_dir, stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, universal_newlines=True)
 
+        for f in glob.glob(str(self.__erd_file)):
+            with open(f, "r") as file:
+                for line in file:
+                    espe_process.stdin.write(f"{line}")
+
+        espe_process.stdin.close()
+
+        stdout = iter(espe_process.stdout.readline, "")
+        output = []
         # TODO parse stdout so caller can actually do something with it
-        decoded = espe_process.stdout.decode("utf-8").splitlines()
+
         if write_to_file:
             with self.__output_file.open("w") as file:
-                for line in decoded:
-                    file.write(f"{line}\n")
-        return decoded
+                for line in stdout:
+                    file.write(line)
+                    output.append(line.strip())
+        else:
+            output = [line.strip() for line in stdout]
+        return output
 
     def get_command(self):
         """Returns the command to run get_espe executable.
         """
         if platform.system() == "Windows":
-            cat_cmd = "cmd", "/c", "type", str(self.__erd_file)
-            espe_cmd = f"{gf.get_bin_dir() / 'get_espe.exe'} {self.__params}"
-        else:
-            cat_cmd = shutil.which("cat"), *glob.glob(str(self.__erd_file))
-            espe_cmd = "./get_espe", *shlex.split(self.__params)
-
-        return cat_cmd, espe_cmd
+            return (
+                str(gf.get_bin_dir() / "get_espe.exe"),
+                *shlex.split(self.__params)
+            )
+        return ("./get_espe", *shlex.split(self.__params))
