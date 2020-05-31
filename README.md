@@ -42,27 +42,45 @@ $ python run_potku.py
 
 ### Compiling the C code
 
-Requirements:
+#### Requirements
 
 - make
 - gcc
-- See Jibal requirements (for Windows, follow the installation instructions 1
- - 4)
+- See requirements for [Jibal](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#minimum-requirements)
 
-To compile all of the programs on Mac or Linux, run:
+#### Linux and MacOS
+
+Install cmake and gsl using the package manager of your distribution or 
+homebrew. Then run
 
 ````
 $ ./build.sh
 ````
 
-On Windows, run:
+to compile all C programs.
+
+#### Windows (work in progress)
+
+Follow the instructions 1 - 4 from [here](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#installation-instructions-for-microsoft-windows-10).
+
+To compile the programs, run
 
 ````
 TODO
 ````
 
-Also download an archive of additional data files from LINK and extract them
- into ``external/Potku-data`` folder.
+#### Data files
+
+Jibal requires additional data files, which can be downloaded from 
+[here](http://users.jyu.fi/~jaakjuli/jibal/data/). 
+These files need to be extracted to ``external/Potku-data``. You can run the 
+following command from the root folder of the repository to download and 
+extract the files.
+
+````
+$ curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && \
+tar -xvf data.tar.gz -C external/Potku-data
+````
 
 ### Tests
 

@@ -12,6 +12,15 @@
 # Ignore scoef-binaries
 * scoef.*
 
+# Ignore libraries
+*.dll
+*.dylib
+*.so
+
+# Ignore compressed archives
+*.tar.gz
+*.zip
+
 # Ignore these directories
 /sample_data
 /Sample-data
