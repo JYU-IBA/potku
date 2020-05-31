@@ -88,11 +88,11 @@ class TestMCERD(unittest.TestCase):
         file_path = self.directory / "He-Default"
 
         with utils.PlatformSwitcher("Windows"):
-            cmd = f"{bin_path}.exe {file_path}"
+            cmd = f"{bin_path}.exe", str(file_path)
             self.assertEqual(cmd, self.mcerd.get_command())
 
         with utils.PlatformSwitcher("Linux"):
-            cmd = f"ulimit -s 64000; exec {bin_path} {file_path}"
+            cmd = "./mcerd", str(file_path)
             self.assertEqual(cmd, self.mcerd.get_command())
 
         with utils.PlatformSwitcher("Darwin"):

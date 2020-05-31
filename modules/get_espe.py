@@ -108,26 +108,35 @@ class GetEspe:
                         + " -dist " + str(self.__recoil_file) \
                         + " -ch " + str(self.__channel_width)
 
-    def run_get_espe(self):
+    def run_get_espe(self, write_to_file=True):
         """Run get_espe binary with given parameters.
         """
-        command = self.get_command()
-        subprocess.call(command, shell=True, cwd=gf.get_bin_dir())
+        cat_cmd, espe_cmd = self.get_command()
+        bin_dir = gf.get_bin_dir()
+
+        # Pipe the output from 'cat *.erd' to get_espe
+        cat_process = subprocess.Popen(
+            cat_cmd, cwd=bin_dir, stdout=subprocess.PIPE)
+        espe_process = subprocess.run(
+            espe_cmd, cwd=bin_dir, stdin=cat_process.stdout,
+            stdout=subprocess.PIPE)
+
+        # TODO parse stdout so caller can actually do something with it
+        decoded = espe_process.stdout.decode("utf-8").splitlines()
+        if write_to_file:
+            with self.__output_file.open("w") as file:
+                for line in decoded:
+                    file.write(f"{line}\n")
+        return decoded
 
     def get_command(self):
-        """Returns the command to run get_espe executable"""
+        """Returns the command to run get_espe executable.
+        """
         if platform.system() == "Windows":
-            first_cmd = "type"
-            executable = "get_espe.exe"
+            cat_cmd = "cmd", "/c", "type", str(self.__erd_file)
+            espe_cmd = f"{gf.get_bin_dir() / 'get_espe.exe'} {self.__params}"
         else:
-            first_cmd = "cat"
-            executable = "get_espe"
+            cat_cmd = "cat", str(self.__erd_file)
+            espe_cmd = f"./get_espe {self.__params}"
 
-        bin_dir = gf.get_bin_dir()
-        espe_path = bin_dir / executable
-        # TODO refactor the command into tuples
-        return "{0} {1} | {2} {3} > {4}".format(first_cmd,
-                                                self.__erd_file,
-                                                espe_path,
-                                                self.__params,
-                                                self.__output_file)
+        return cat_cmd, espe_cmd

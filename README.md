@@ -8,7 +8,7 @@ This repository contains the Python source code for Potku's graphical user
 interface as well as the source code for external C programs that perform 
 most of the number crunching.
 
-### Getting started with development
+## Getting started with development
 
 First step is to install Python 3.6 along with pip package installer. Make 
 sure they are added to your PATH. Then install Pipenv:
@@ -40,13 +40,15 @@ command line:
 $ python run_potku.py
 ````
 
-### Compiling the C code
+## Compiling the external C programs
 
-#### Requirements
+The graphical user interface won't be of much use without the C programs that 
+perform analysis and simulation. In order to compile them, following tools 
+must be installed:
 
 - make
 - gcc
-- See requirements for [Jibal](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#minimum-requirements)
+- Requirements for [Jibal](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#minimum-requirements)
 
 #### Linux and MacOS
 
@@ -57,16 +59,16 @@ homebrew. Then run
 $ ./build.sh
 ````
 
-to compile all C programs.
+to compile all programs.
 
-#### Windows (work in progress)
+#### Windows
 
-Follow the instructions 1 - 4 from [here](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#installation-instructions-for-microsoft-windows-10).
+Follow the instructions 1 - 4 described in [here](https://github.com/JYU-IBA/jibal/blob/master/INSTALL.md#installation-instructions-for-microsoft-windows-10).
 
 To compile the programs, run
 
 ````
-TODO
+$ build.bat
 ````
 
 #### Data files
@@ -95,7 +97,7 @@ activated, they can be run from the root directory of the project with:
 $ python -m unittest discover
 ````
 
-### Packaging Potku into an executable (work in progress)
+## Packaging Potku into an executable (work in progress)
 
 ````
 $ pipenv shell
@@ -104,6 +106,6 @@ $ pyinstaller potku_[win or unix].spec
 ````
 
 
-### Licence
+## Licence
 
 Potku is licensed under GPL-2.0. See 'LICENCE' for details.
