@@ -34,13 +34,13 @@ Pipfile.lock
 
 # Ignore everything in external folder...
 /external/*
-/external/Potku-bin/*
+/external/bin/*
 # except for these
 !/external/Makefile
 !/external/submodules/
 !/external/submodules/*
-!/external/Potku-bin/
-!/external/Potku-bin/jibal.conf
+!/external/bin/
+!/external/bin/jibal.conf
 
 # Temporary QT Creator files
 *.ui.autosave
