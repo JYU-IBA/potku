@@ -223,7 +223,9 @@ class Nsgaii(Observable):
                         cancellation_token, ct)),
                     ops.filter(lambda _: False),
                 )
-
+                # FIXME spectra_chk should only be performed when pre-simulation
+                #   has finished, otherwise there will be no new observed atoms
+                #   and the difference between the two spectra is 0
                 spectra_chk = rx.timer(self.check_min, self.check_time).pipe(
                     ops.merge(ct_check),
                     ops.map(lambda _: get_optim_espe(
@@ -922,6 +924,7 @@ class Nsgaii(Observable):
                 None, initialize new solutions.
             cancellation_token: CancellationToken that is used to stop the
                 optimization before all evaluations have been evaluated.
+            ion_division: ion division mode used when simulating
         """
         self.on_next(self._get_message(
             OptimizationState.PREPARING, evaluations_left=self.evaluations))

@@ -387,7 +387,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         except AttributeError:
             return None
 
-    def __sortt(self, key):
+    @staticmethod
+    def __sortt(key):
         cut_file = key.split('.')
         # TODO sort by RBS selection
         # TODO provide elements as parameters, do not initialize them here

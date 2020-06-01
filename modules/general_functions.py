@@ -727,7 +727,7 @@ def get_bin_dir() -> Path:
     """Returns the absolute Path to Potku's bin directory.
     """
     this_dir = Path(__file__).parent
-    return Path(this_dir, os.pardir, "external", "Potku-bin").resolve()
+    return Path(this_dir, os.pardir, "external", "bin").resolve()
 
 
 def write_jibal_conf():

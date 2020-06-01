@@ -81,7 +81,7 @@ extract the files.
 
 ````
 $ curl http://users.jyu.fi/~jaakjuli/jibal/data/data.tar.gz -o data.tar.gz && \
-tar -xvf data.tar.gz -C external/Potku-data
+tar -xvf data.tar.gz -C external/share/jibal
 ````
 
 ### Tests

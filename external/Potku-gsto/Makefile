@@ -1,6 +1,6 @@
-BINDIR = ../Potku-bin/
-LIBDIR     = ../Potku-lib/
-INCDIR     = ../Potku-include/
+BINDIR = ../bin/
+LIBDIR     = ../lib/
+INCDIR     = ../include/
 DATADIR = ../Potku-data/
 
 CC = gcc
