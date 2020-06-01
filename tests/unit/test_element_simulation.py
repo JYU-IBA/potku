@@ -393,7 +393,7 @@ class TestElementSimulation(unittest.TestCase):
                           lambda: utils.slots_test(self.elem_sim))
 
     @patch("modules.get_espe.GetEspe.__init__", return_value=None)
-    @patch("modules.get_espe.GetEspe.run_get_espe")
+    @patch("modules.get_espe.GetEspe.run", return_value=None)
     def test_calculate_spectrum(self, mock_run, mock_get_espe):
         """Tests that the file paths generated during energy spectrum
         calculation are correct depending on the type of optimization.
@@ -458,13 +458,13 @@ class TestElementSimulation(unittest.TestCase):
 
     def assert_files_equal(self, mock_get_espe, kwargs, rec_file, erd_file,
                            espe_file):
-        result_file = self.elem_sim.calculate_espe(**kwargs)
+        _, file = self.elem_sim.calculate_espe(**kwargs)
 
-        args, = mock_get_espe.call_args[0]
+        args = mock_get_espe.call_args[1]
         self.assertEqual(rec_file, args["recoil_file"])
         self.assertEqual(erd_file, args["erd_file"])
         self.assertEqual(espe_file, args["spectrum_file"])
-        self.assertEqual(espe_file, result_file)
+        self.assertEqual(espe_file, file)
 
         self.assertTrue(rec_file.exists())
         rec_file.unlink()

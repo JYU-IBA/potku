@@ -804,7 +804,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         return self._running_event
 
     def calculate_espe(self, recoil_element, ch=None, fluence=None,
-                       optimization_type=None):
+                       optimization_type=None, write_to_file=True):
         """
         Calculate the energy spectrum from the MCERD result file.
 
@@ -813,9 +813,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             ch: Channel width to use.
             fluence: Fluence to use.
             optimization_type: either recoil, fluence or None
+            write_to_file: whether spectrum is written to file
 
         Return:
-            path to the espe file
+            tuple consisting of spectrum and espe file
         """
         suffix = self.simulation_type.get_recoil_suffix()
 
@@ -866,11 +867,10 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             "spectrum_file": espe_file,
             "recoil_file": recoil_file
         }
-        get_espe = GetEspe(espe_settings)
-        get_espe.run_get_espe()
-
-        # TODO could also return the contents of the espe_file
-        return Path(espe_file)
+        # TODO returning espe_file is a bit pointless if write_to_file is
+        #   False
+        return GetEspe.calculate_simulated_spectrum(
+            write_to_file=write_to_file, **espe_settings), espe_file
 
     def get_mcerd_params(self):
         """Returns the parameters for MCERD simulations.

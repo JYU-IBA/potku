@@ -337,10 +337,10 @@ class Nsgaii(Observable):
 
             for recoil in self.element_simulation.optimization_recoils:
                 # Run get_espe
-                espe_file = self.element_simulation.calculate_espe(
+                espe, _ = self.element_simulation.calculate_espe(
                     recoil, optimization_type=self.optimization_type,
-                    ch=self.channel_width)
-                objective_values.append(self.get_objective_values(espe_file))
+                    ch=self.channel_width, write_to_file=False)
+                objective_values.append(self.get_objective_values(espe))
 
         else:  # Evaluate fluence
             recoil = self.element_simulation.recoil_elements[0]
@@ -348,21 +348,21 @@ class Nsgaii(Observable):
                 # Round solution appropriately
                 sol_fluence = gf.round_value_by_four_biggest(solution[0])
                 # Run get_espe
-                espe_file = self.element_simulation.calculate_espe(
+                espe, _ = self.element_simulation.calculate_espe(
                     recoil, optimization_type=self.optimization_type,
-                    ch=self.channel_width, fluence=sol_fluence)
-                objective_values.append(self.get_objective_values(espe_file))
+                    ch=self.channel_width, fluence=sol_fluence,
+                    write_to_file=False)
+                objective_values.append(self.get_objective_values(espe))
 
         pop = collections.namedtuple("Population",
                                      ("solutions", "objective_values"))
         return pop(sols, objective_values)
 
-    def get_objective_values(self, espe_file):
+    def get_objective_values(self, optim_espe):
         """Calculates the objective values and returns them as a np.array.
         """
-        obj_values = collections.namedtuple("ObjectiveValues",
-                                            ("area", "sum_distance"))
-        optim_espe = gf.read_espe_file(espe_file)
+        obj_values = collections.namedtuple(
+            "ObjectiveValues", ("area", "sum_distance"))
         if optim_espe:
             # Make spectra the same size
             optim_espe, measured_espe = gf.uniform_espe_lists(
@@ -1386,15 +1386,16 @@ def get_ys(y_lower, y_upper, pop_size, z=None, lower_limit_at_first=False):
     return np.array([y_coords[0], y_coords[1], y_coords[2], low_limit])
 
 
-def get_optim_espe(elem_sim, optimization_type):
+def get_optim_espe(elem_sim: ElementSimulation,
+                   optimization_type: OptimizationType):
     if optimization_type is OptimizationType.RECOIL:
         recoil = elem_sim.optimization_recoils[0]
     else:
         recoil = elem_sim.recoil_elements[0]
 
-    espe_file = elem_sim.calculate_espe(
-        recoil, optimization_type=optimization_type)
-    return gf.read_espe_file(espe_file)
+    espe, _ = elem_sim.calculate_espe(
+        recoil, optimization_type=optimization_type, write_to_file=False)
+    return espe
 
 
 def calculate_change(espe1, espe2, channel_width):
