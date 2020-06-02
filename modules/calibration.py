@@ -423,7 +423,7 @@ class TOFCalibrationPoint:
         # Carbon stopping gives a list of different result values.
         # The last value is the stopping energy.
         try:
-            carbon_stopping_energy = gf.carbon_stopping(
+            carbon_energy_loss = gf.carbon_stopping(
                 self.cut.element.symbol, isotope, energy,
                 carbon_foil_thickness_in_nm, density_in_g_per_cm3)
         except Exception as e:
@@ -431,9 +431,8 @@ class TOFCalibrationPoint:
                         f"without it. Carbon stopping energy set to 0."
             # logging.getLogger("").error(error_msg) # TODO: Add to error logger
             print(error_msg)
-            carbon_stopping_energy = 0
-        print(carbon_stopping_energy)
-        self.stopping_energy = carbon_stopping_energy
+            carbon_energy_loss = 0
+        self.energy_loss = carbon_energy_loss
 
         self.time_of_flight_channel = time_of_flight  # (CHANNEL)
         self.time_of_flight_seconds = self.calculate_time_of_flight()
@@ -443,9 +442,9 @@ class TOFCalibrationPoint:
               "\nRecoiled/scattered particle energy [J]: " + str(energy) +
               "\nBeam mass [kg]: " + str(self.beam_mass) +
               "\nBeam energy [J]: " + str(self.beam_energy) +
-              "\nToF lenght [m]: " + str(self.length) +
+              "\nToF length [m]: " + str(self.length) +
               "\nTarget angle [rads]" + str(self.recoiled_mass) +
-              "\nStopping energy [J]: " + str(self.stopping_energy) +
+              "\nEnergy loss in foil [J]: " + str(self.energy_loss) +
               "\nTime of Flight [Channel]: " + str(
             self.time_of_flight_channel) +
               "\nTime of Flight [seconds]: " + str(self.time_of_flight_seconds))
@@ -564,7 +563,7 @@ class TOFCalibrationPoint:
             not either ERD or RBS.
         """
         kinematic_factor = self.__kinematic_factor(self.type)
-        energy = kinematic_factor * self.beam_energy - self.stopping_energy
+        energy = kinematic_factor * self.beam_energy + self.energy_loss
         t = self.length / sqrt(2.0 * energy / self.recoiled_mass)
         # ERD: Uses recoiled_mass
         # RBS: Uses beam_mass, which is the same as recoiled_mass
