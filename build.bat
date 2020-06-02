@@ -11,17 +11,17 @@ make
 
 cd submodules\jibal\
 
-rm -r build || echo Creating new build directory
+rmdir /s /q build
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=%EXT_DIR% ..
 msbuild INSTALL.vcxproj /property:Configuration=Release
 
 cd ..\..\mcerd
-rm -r build || echo Creating new build directory
+rmdir /s /q build
 mkdir build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX=%EXT_DIR% -DCMAKE_PREFIX_PATH=%EXT_DIR% ..
+cmake -DCMAKE_INSTALL_PREFIX=%EXT_DIR% ..
 msbuild INSTALL.vcxproj /property:Configuration=Release
 
 cd %CUR_DIR%
