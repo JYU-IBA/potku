@@ -37,7 +37,7 @@ import os
 import shutil
 import time
 
-import modules.general_functions as gf
+from . import general_functions as gf
 
 from pathlib import Path
 
