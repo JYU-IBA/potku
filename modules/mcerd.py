@@ -516,8 +516,8 @@ class MCERD:
             filter_func=filter_func)
 
 
-_pattern = re.compile("Calculated (?P<calculated>\d+) of (?P<total>\d+) ions "
-                      "\((?P<percentage>\d+)%\)")
+_pattern = re.compile(r"Calculated (?P<calculated>\d+) of (?P<total>\d+) ions "
+                      r"\((?P<percentage>\d+)%\)")
 
 
 def parse_raw_output(raw_line, end_at=None):
