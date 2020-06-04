@@ -30,7 +30,7 @@ __version__ = "2.0"
 
 from pathlib import Path
 
-from modules.enums import OptimizationType
+from .enums import OptimizationType
 
 
 def get_erd_file_name(recoil_element, seed, optim_mode=None):

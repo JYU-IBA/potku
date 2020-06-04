@@ -31,10 +31,10 @@ import os
 
 from pathlib import Path
 
-from modules.measurement import Measurements
-from modules.measurement import Measurement
-from modules.simulation import Simulations
-from modules.simulation import Simulation
+from .measurement import Measurements
+from .measurement import Measurement
+from .simulation import Simulations
+from .simulation import Simulation
 
 
 class Samples:

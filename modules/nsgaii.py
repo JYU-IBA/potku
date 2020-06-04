@@ -32,25 +32,25 @@ import rx
 import subprocess
 import math
 
-import modules.optimization as opt
-import modules.general_functions as gf
-import modules.file_paths as fp
-import modules.math_functions as mf
+from . import optimization as opt
+from . import general_functions as gf
+from . import file_paths as fp
+from . import math_functions as mf
 
 from pathlib import Path
 from timeit import default_timer as timer
 from rx import operators as ops
 
-from modules.recoil_element import RecoilElement
-from modules.element_simulation import ElementSimulation
-from modules.point import Point
-from modules.parsing import CSVParser
-from modules.energy_spectrum import EnergySpectrum
-from modules.observing import Observable
-from modules.concurrency import CancellationToken
-from modules.enums import OptimizationType
-from modules.enums import OptimizationState
-from modules.enums import IonDivision
+from .recoil_element import RecoilElement
+from .element_simulation import ElementSimulation
+from .point import Point
+from .parsing import CSVParser
+from .energy_spectrum import EnergySpectrum
+from .observing import Observable
+from .concurrency import CancellationToken
+from .enums import OptimizationType
+from .enums import OptimizationState
+from .enums import IonDivision
 
 
 class Nsgaii(Observable):

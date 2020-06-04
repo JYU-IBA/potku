@@ -32,9 +32,9 @@ __version__ = "2.0"
 
 import configparser
 
-from modules.enums import CrossSection
-from modules.enums import IonDivision
-from modules.enums import ToFEColorScheme
+from .enums import CrossSection
+from .enums import IonDivision
+from .enums import ToFEColorScheme
 from pathlib import Path
 
 

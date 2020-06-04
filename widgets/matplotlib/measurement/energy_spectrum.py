@@ -52,8 +52,6 @@ from scipy import integrate
 
 from widgets.matplotlib.base import MatplotlibWidget
 
-from tests.utils import stopwatch
-
 
 class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
     """Energy spectrum widget
@@ -694,7 +692,7 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.canvas.draw()
         self.canvas.flush_events()
 
-    @stopwatch()
+    @gf.stopwatch()
     def update_spectra(self, rec_elem, elem_sim):
         """Updates spectra line that belongs to given recoil element.
 

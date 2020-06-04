@@ -32,10 +32,10 @@ import time
 
 from pathlib import Path
 
-from modules.base import Serializable
-from modules.base import AdjustableSettings
-from modules.beam import Beam
-from modules.element import Element
+from .base import Serializable
+from .base import AdjustableSettings
+from .beam import Beam
+from .element import Element
 
 
 class Run(Serializable, AdjustableSettings):

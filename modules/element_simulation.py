@@ -35,8 +35,8 @@ import itertools
 import functools
 import rx
 
-import modules.file_paths as fp
-import modules.general_functions as gf
+from . import file_paths as fp
+from . import general_functions as gf
 
 from typing import Optional
 from rx import operators as ops
@@ -44,19 +44,19 @@ from pathlib import Path
 from collections import deque
 from threading import Event
 
-from modules.concurrency import CancellationToken
-from modules.base import Serializable
-from modules.base import AdjustableSettings
-from modules.base import MCERDParameterContainer
-from modules.get_espe import GetEspe
-from modules.mcerd import MCERD
-from modules.observing import Observable
-from modules.recoil_element import RecoilElement
-from modules.enums import OptimizationType
-from modules.enums import SimulationState
-from modules.enums import IonDivision
-from modules.enums import SimulationType
-from modules.enums import SimulationMode
+from .concurrency import CancellationToken
+from .base import Serializable
+from .base import AdjustableSettings
+from .base import MCERDParameterContainer
+from .get_espe import GetEspe
+from .mcerd import MCERD
+from .observing import Observable
+from .recoil_element import RecoilElement
+from .enums import OptimizationType
+from .enums import SimulationState
+from .enums import IonDivision
+from .enums import SimulationType
+from .enums import SimulationMode
 
 
 # Mappings between the names of the MCERD parameters (keys) and

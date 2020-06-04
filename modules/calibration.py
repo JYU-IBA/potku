@@ -31,7 +31,7 @@ __version__ = "2.0"
 import collections
 import scipy.optimize as optimize
 
-import modules.general_functions as gf
+from . import general_functions as gf
 
 from numpy import array
 from numpy import linspace

@@ -35,18 +35,18 @@ import logging
 import os
 import time
 
-import modules.general_functions as gf
+from . import general_functions as gf
 
 from pathlib import Path
 
-from modules.base import ElementSimulationContainer
-from modules.base import Serializable
-from modules.enums import SimulationType
-from modules.detector import Detector
-from modules.element_simulation import ElementSimulation
-from modules.run import Run
-from modules.target import Target
-from modules.ui_log_handlers import Logger
+from .base import ElementSimulationContainer
+from .base import Serializable
+from .enums import SimulationType
+from .detector import Detector
+from .element_simulation import ElementSimulation
+from .run import Run
+from .target import Target
+from .ui_log_handlers import Logger
 
 
 class Simulations:

@@ -27,11 +27,10 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import os
 import platform
 import subprocess
 
-import modules.general_functions as gf
+from . import general_functions as gf
 
 
 class GetEspe:

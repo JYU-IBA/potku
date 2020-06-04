@@ -31,11 +31,10 @@ __version__ = "2.0"
 
 import logging
 import os
-import sys
 
-import modules.general_functions as gf
+from . import general_functions as gf
 
-from modules.element import Element
+from .element import Element
 
 
 class EnergySpectrum:

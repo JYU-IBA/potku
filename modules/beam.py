@@ -28,9 +28,9 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-from modules.base import AdjustableSettings
-from modules.base import MCERDParameterContainer
-from modules.element import Element
+from .base import AdjustableSettings
+from .base import MCERDParameterContainer
+from .element import Element
 
 
 class Beam(AdjustableSettings, MCERDParameterContainer):
