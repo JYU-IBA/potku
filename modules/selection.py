@@ -35,8 +35,8 @@ __version__ = "2.0"
 import logging
 import os
 
-import modules.math_functions as mf
-import modules.general_functions as gf
+from . import math_functions as mf
+from . import general_functions as gf
 
 import matplotlib as mpl
 
@@ -44,7 +44,7 @@ from dialogs.measurement.selection import SelectionSettingsDialog
 
 from pathlib import Path
 
-from modules.element import Element
+from .element import Element
 
 from PyQt5 import QtWidgets
 

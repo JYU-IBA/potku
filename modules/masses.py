@@ -32,14 +32,10 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
              "Juhani Sundell"
 __version__ = "2.0"
 
-import os
-
-import modules.general_functions as gf
-
-from modules.parsing import CSVParser
-
-from pathlib import Path
 from collections import defaultdict
+
+from . import general_functions as gf
+from .parsing import CSVParser
 
 _ISOTOPES = defaultdict(list)
 NUMBER_KEY = "number"

@@ -37,15 +37,15 @@ import os
 import shutil
 import time
 
-import modules.general_functions as gf
+from . import general_functions as gf
 
 from pathlib import Path
 
-from modules.cut_file import CutFile
-from modules.detector import Detector
-from modules.run import Run
-from modules.target import Target
-from modules.ui_log_handlers import Logger
+from .cut_file import CutFile
+from .detector import Detector
+from .run import Run
+from .target import Target
+from .ui_log_handlers import Logger
 
 
 class Measurements:

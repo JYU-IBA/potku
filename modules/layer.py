@@ -28,7 +28,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n" \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-from modules.base import MCERDParameterContainer
+from .base import MCERDParameterContainer
 
 
 class Layer(MCERDParameterContainer):

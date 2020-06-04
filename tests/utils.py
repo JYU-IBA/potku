@@ -59,6 +59,12 @@ def get_resource_dir() -> Path:
     return Path(__file__).parent / "resource"
 
 
+def get_root_folder() -> Path:
+    """Returns root folder of Potku.
+    """
+    return Path(__file__).parent.parent.resolve()
+
+
 def change_wd_to_root(func):
     """Helper wrapper function that changes the working directory to the root
     directory of Potku for the duration of the wrapped function. After the
@@ -72,13 +78,13 @@ def change_wd_to_root(func):
     """
     # Get old working directory and path to this file. Then traverse to
     # parent directory (i.e. the root)
-    old_wd = os.getcwd()
-    path_to_root = Path(__file__).parent.parent.resolve()
+    old_wd = Path.cwd()
+    root = get_root_folder()
 
     def wrapper(*args, **kwargs):
         # Change the dir, run the func and change back in the finally
         # block
-        os.chdir(path_to_root)
+        os.chdir(root)
         try:
             func(*args, **kwargs)
         finally:
@@ -195,30 +201,6 @@ def get_template_file_contents(template_file, **kwargs):
         temp = Template(file.read())
 
     return temp.substitute(kwargs)
-
-
-def stopwatch(log_file=None):
-    """Decorator that measures the time it takes to execute a function
-    and prints the results or writes them to a log file if one is provided
-    as an argument.
-    """
-    def outer(func):
-        def inner(*args, **kwargs):
-            start = timer()
-            res = func(*args, **kwargs)
-            stop = timer()
-
-            timestamp = time.strftime("%y/%m/%D %H:%M.%S")
-            msg = f"{timestamp}: {func.__name__}({args, kwargs})\n\t" \
-                  f"took {stop - start} to execute.\n"
-            if log_file is None:
-                print(msg)
-            else:
-                with open(log_file, "a") as file:
-                    file.write(msg)
-            return res
-        return inner
-    return outer
 
 
 def expected_failure_if(cond):

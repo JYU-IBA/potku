@@ -41,15 +41,15 @@ import platform
 import subprocess
 import logging
 
-import modules.math_functions as mf
-import modules.comparison as comp
-import modules.general_functions as gf
+from . import math_functions as mf
+from . import comparison as comp
+from . import general_functions as gf
 
 from pathlib import Path
 from functools import lru_cache
 
-from modules.element import Element
-from modules.parsing import CSVParser
+from .element import Element
+from .parsing import CSVParser
 
 
 class DepthFileGenerator:

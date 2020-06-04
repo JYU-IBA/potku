@@ -33,8 +33,8 @@ import time
 
 from pathlib import Path
 
-from modules.element import Element
-from modules.layer import Layer
+from .element import Element
+from .layer import Layer
 
 
 class Target:

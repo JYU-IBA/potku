@@ -32,12 +32,12 @@ import subprocess
 import shlex
 import glob
 
-import modules.general_functions as gf
+from . import general_functions as gf
 
-from modules.beam import Beam
-from modules.detector import Detector
-from modules.target import Target
-from modules.parsing import CSVParser
+from .beam import Beam
+from .detector import Detector
+from .target import Target
+from .parsing import CSVParser
 from pathlib import Path
 
 
