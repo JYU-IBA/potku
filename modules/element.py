@@ -32,9 +32,9 @@ __version__ = "2.0"
 
 import re
 
-import modules.masses as masses
+from . import masses as masses
 
-from modules.base import MCERDParameterContainer
+from .base import MCERDParameterContainer
 
 
 class Element(MCERDParameterContainer):

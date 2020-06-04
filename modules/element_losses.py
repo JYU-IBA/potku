@@ -32,8 +32,8 @@ __version__ = "2.0"
 import os
 
 from pathlib import Path
-from modules.cut_file import CutFile
-from modules.element import Element
+from .cut_file import CutFile
+from .element import Element
 
 
 class ElementLosses:

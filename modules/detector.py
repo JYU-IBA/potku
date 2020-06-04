@@ -32,19 +32,19 @@ import os
 import shutil
 import time
 
-import modules.general_functions as gf
+from . import general_functions as gf
 
 from pathlib import Path
 
-from modules.base import Serializable
-from modules.base import AdjustableSettings
-from modules.base import MCERDParameterContainer
-from modules.element import Element
-from modules.foil import Foil
-from modules.foil import CircularFoil
-from modules.foil import RectangularFoil
-from modules.layer import Layer
-from modules.enums import DetectorType
+from .base import Serializable
+from .base import AdjustableSettings
+from .base import MCERDParameterContainer
+from .element import Element
+from .foil import Foil
+from .foil import CircularFoil
+from .foil import RectangularFoil
+from .layer import Layer
+from .enums import DetectorType
 
 
 class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):

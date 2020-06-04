@@ -34,7 +34,7 @@ __version__ = "2.0"
 
 import os
 
-from modules.parsing import CSVParser
+from .parsing import CSVParser
 
 from pathlib import Path
 from collections import defaultdict

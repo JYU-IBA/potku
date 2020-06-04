@@ -27,7 +27,7 @@ __author__ = "Severi Jääskeläinen \n Samuel Kaiponen \n Heta Rekilä \n " \
              "Sinikka Siironen"
 __version__ = "2.0"
 
-import modules.math_functions as mf
+from . import math_functions as mf
 
 
 class Point:

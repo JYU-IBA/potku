@@ -38,16 +38,16 @@ import time
 
 from pathlib import Path
 
-from modules.base import ElementSimulationContainer
-from modules.detector import Detector
-from modules.element import Element
-from modules.element_simulation import ElementSimulation
-from modules.measurement import Measurement
-from modules.run import Run
-from modules.sample import Samples
-from modules.simulation import Simulation
-from modules.target import Target
-from modules.recoil_element import RecoilElement
+from .base import ElementSimulationContainer
+from .detector import Detector
+from .element import Element
+from .element_simulation import ElementSimulation
+from .measurement import Measurement
+from .run import Run
+from .sample import Samples
+from .simulation import Simulation
+from .target import Target
+from .recoil_element import RecoilElement
 
 
 class Request(ElementSimulationContainer):

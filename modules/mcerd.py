@@ -36,15 +36,15 @@ import re
 import multiprocessing
 import rx
 
-import modules.general_functions as gf
-import modules.observing as observing
+from . import general_functions as gf
+from . import observing
 
 from pathlib import Path
 from rx import operators as ops
 from rx.scheduler import ThreadPoolScheduler
 
-from modules.layer import Layer
-from modules.concurrency import CancellationToken
+from .layer import Layer
+from .concurrency import CancellationToken
 
 
 class MCERD:

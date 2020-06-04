@@ -59,6 +59,12 @@ def get_resource_dir() -> Path:
     return Path(__file__).parent / "resource"
 
 
+def get_root_folder() -> Path:
+    """Returns root folder of Potku.
+    """
+    return Path(__file__).parent.parent.resolve()
+
+
 def change_wd_to_root(func):
     """Helper wrapper function that changes the working directory to the root
     directory of Potku for the duration of the wrapped function. After the
@@ -72,13 +78,13 @@ def change_wd_to_root(func):
     """
     # Get old working directory and path to this file. Then traverse to
     # parent directory (i.e. the root)
-    old_wd = os.getcwd()
-    path_to_root = Path(__file__).parent.parent.resolve()
+    old_wd = Path.cwd()
+    root = get_root_folder()
 
     def wrapper(*args, **kwargs):
         # Change the dir, run the func and change back in the finally
         # block
-        os.chdir(path_to_root)
+        os.chdir(root)
         try:
             func(*args, **kwargs)
         finally:
