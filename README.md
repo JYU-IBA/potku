@@ -75,7 +75,7 @@ $ build.bat
 
 Jibal requires additional data files, which can be downloaded from 
 [here](http://users.jyu.fi/~jaakjuli/jibal/data/). 
-These files need to be extracted to ``external/Potku-data``. You can run the 
+These files need to be extracted to ``external/share/jibal``. You can run the 
 following command from the root folder of the repository to download and 
 extract the files.
 

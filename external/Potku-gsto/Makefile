@@ -1,7 +1,7 @@
 BINDIR = ../bin/
 LIBDIR     = ../lib/
 INCDIR     = ../include/
-DATADIR = ../Potku-data/
+DATADIR = ../share/
 
 CC = gcc
 CFLAGS = -g -Wall

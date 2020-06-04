@@ -366,7 +366,7 @@ def carbon_stopping(element, isotope, energy, carbon_thickness, carbon_density):
         if platform.system() == 'Windows':
             get_stop = str(bin_dir / "get_stop.exe")
         else:
-            get_stop = './get_stop';
+            get_stop = './get_stop'
 
         args = [get_stop, "{0}{1}".format(isotope, element), str(energy),
                 '-l', 'C', '-t', "{0}tfu".format(areal_density_tfu)]
@@ -720,8 +720,23 @@ def combine_files(file_paths, destination):
                 pass
 
 
-def get_bin_dir() -> Path:
-    """Returns the absolute Path to Potku's bin directory.
+def _get_external_dir() -> Path:
+    """Returns absolute path to 'external' folder
     """
-    this_dir = Path(__file__).parent
-    return Path(this_dir, os.pardir, "external", "bin").resolve()
+    root_dir = Path(__file__).parent.parent
+    return (root_dir / "external").resolve()
+
+
+def get_bin_dir() -> Path:
+    """Returns absolute path to Potku's bin directory.
+    """
+    return _get_external_dir() / "bin"
+
+
+def get_data_dir() -> Path:
+    """Returns absolute path to Potku's data directory.
+    """
+    # TODO maybe add -DDEVELOPER_MODE_ENABLE=ON option to Jibal's CMake
+    #   configuration and change data dir to external/data instead of
+    #   external/share
+    return _get_external_dir() / "share"

@@ -10,16 +10,16 @@ make
 
 cd submodules/jibal/
 
-rm -r build || echo Creating new build directory
-mkdir build
+rm build/CMakeCache.txt && echo Removed Jibal cache file
+mkdir -p build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX="$EXT_DIR" ../
 make
 make install
 
 cd ../../mcerd
-rm -r build || echo Creating new build directory
-mkdir build
+rm build/CMakeCache.txt && echo Removed MCERD cache file
+mkdir -p build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX="$EXT_DIR" -DCMAKE_INSTALL_RPATH="$EXT_DIR/lib" ../
 make

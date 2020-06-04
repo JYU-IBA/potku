@@ -11,14 +11,14 @@ make
 
 cd submodules\jibal\
 
-rmdir /s /q build
+del /q build\CMakeCache.txt
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=%EXT_DIR% ..
 msbuild INSTALL.vcxproj /property:Configuration=Release
 
 cd ..\..\mcerd
-rmdir /s /q build
+del /q build\CMakeCache.txt
 mkdir build
 cd build
 cmake -DCMAKE_INSTALL_PREFIX=%EXT_DIR% ..

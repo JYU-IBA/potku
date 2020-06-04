@@ -1,6 +1,6 @@
 
 INSTALLDIR = ../bin
-DATADIR    = ../Potku-data
+DATADIR    = ../share
 LIBDIR     = ../lib
 INCDIR     = ../include
 
