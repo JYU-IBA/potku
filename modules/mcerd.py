@@ -96,19 +96,13 @@ class MCERD:
         """Returns the command that is used to start the MCERD process.
         """
         if platform.system() == "Windows":
-            executable = "mcerd.exe"
-            ulimit = ""
-            exec_cmd = ""
+            cmd = str(gf.get_bin_dir() / "mcerd.exe")
         else:
-            executable = "mcerd"
-            ulimit = "ulimit -s 64000; "
-            exec_cmd = "exec "
+            cmd = "./mcerd"
 
-        mcerd_path = gf.get_bin_dir() / executable
+        return cmd, str(self.__command_file)
 
-        return f"{ulimit}{exec_cmd}{mcerd_path} {self.__command_file}"
-
-    def run(self, print_to_console=True, cancellation_token=None,
+    def run(self, print_to_console=False, cancellation_token=None,
             poll_interval=10, first_check=0.2, max_time=None, ct_check=0.2):
         """Starts the MCERD process.
 
@@ -133,17 +127,9 @@ class MCERD:
         if cancellation_token is None:
             cancellation_token = CancellationToken()
 
-        use_new_mcerd = False
-        if use_new_mcerd:
-            cwd = gf.get_bin_dir()
-            pipeline = MCERD.get_pipeline_v2
-        else:
-            cwd = os.getcwd()
-            pipeline = MCERD.get_pipeline
-
         process = subprocess.Popen(
-            cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            cwd=cwd)
+            cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+            cwd=gf.get_bin_dir())
 
         errs = rx.from_iterable(iter(process.stderr.readline, b""))
         outs = rx.from_iterable(iter(process.stdout.readline, b""))
@@ -198,7 +184,7 @@ class MCERD:
 
         merged = rx.merge(errs, outs).pipe(
             ops.subscribe_on(pool_scheduler),
-            pipeline(self.__seed, self.__rec_filename),
+            MCERD.get_pipeline(self.__seed, self.__rec_filename),
             ops.combine_latest(rx.merge(
                 is_running, ct_check, timeout
             )),
@@ -255,7 +241,7 @@ class MCERD:
             f"MCERD stopped with an error code {res}.")
 
     @staticmethod
-    def get_pipeline(seed: int, name: str):
+    def get_pipeline(seed: int, name: str) -> rx.pipe:
         """Returns an rx pipeline that parses the raw output from MCERD
         into dictionaries.
 
@@ -268,39 +254,7 @@ class MCERD:
             seed: seed used in the MCERD process
             name: name of the process (usually the name of the recoil element)
         """
-        last_item_starts = "Beam ion: "
-        last_item_ends = "angave "
-
-        return rx.pipe(
-            ops.map(lambda x: x.decode("utf-8").strip()),
-            observing.reduce_while(
-                reducer=str_reducer,
-                start_from=lambda x: x.startswith(last_item_starts),
-                end_at=lambda x: x.startswith(last_item_ends)
-            ),
-            ops.scan(lambda acc, x: {
-                "presim": acc["presim"] and x != "Presimulation finished",
-                **parse_raw_output(
-                    x, end_at=lambda x: x.startswith(last_item_starts))
-            }, seed={"presim": True}),
-            ops.scan(lambda acc, x: {
-                "seed": seed,
-                "name": name,
-                "presim": x["presim"],
-                "calculated": x.get("calculated", acc["calculated"]),
-                "total": x.get("total", acc["total"]),
-                "percentage": x.get("percentage", acc["percentage"]),
-                "msg": x.get("msg", ""),
-                "is_running": x.get("is_running", True)
-            }, seed={"calculated": 0, "total": 0, "percentage": 0}),
-            ops.take_while(lambda x: x["is_running"], inclusive=True),
-        )
-
-    @staticmethod
-    def get_pipeline_v2(seed: int, name: str):
-        """rx pipeline for the new version of MCERD
-        """
-        # TODO refactor this with the original pipeline
+        # TODO add handling for fatal error messages
         # The first line that MCERD prints out is either 'MCERD is alive'
         # or 'Initializing parameters' depending on whether debug mode is on.
         # We let either one of these messages pass to observers and start
@@ -315,6 +269,7 @@ class MCERD:
 
         return rx.pipe(
             ops.map(lambda x: x.decode("utf-8").strip()),
+            observing.get_printer(),
             observing.reduce_while(
                 reducer=str_reducer,
                 start_from=lambda x: x == first_line_init,

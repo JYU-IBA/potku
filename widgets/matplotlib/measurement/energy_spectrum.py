@@ -44,6 +44,8 @@ from matplotlib.widgets import SpanSelector
 
 from modules.element import Element
 from modules.measurement import Measurement
+from modules.recoil_element import RecoilElement
+from modules.element_simulation import ElementSimulation
 
 from PyQt5 import QtWidgets
 from PyQt5.QtGui import QGuiApplication
@@ -383,7 +385,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         except AttributeError:
             return None
 
-    def __sortt(self, key):
+    @staticmethod
+    def __sortt(key):
         cut_file = key.split('.')
         # TODO sort by RBS selection
         # TODO provide elements as parameters, do not initialize them here
@@ -693,7 +696,8 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         self.canvas.flush_events()
 
     @gf.stopwatch()
-    def update_spectra(self, rec_elem, elem_sim):
+    def update_spectra(self, rec_elem: RecoilElement,
+                       elem_sim: ElementSimulation):
         """Updates spectra line that belongs to given recoil element.
 
         Args:
@@ -714,10 +718,9 @@ class MatplotlibEnergySpectrumWidget(MatplotlibWidget):
         espe_file = Path(elem_sim.directory, f"{rec_elem.get_full_name()}.simu")
 
         if espe_file in self.plots:
-            elem_sim.calculate_espe(rec_elem, ch=self.channel_width)
-            espe_data = gf.read_espe_file(espe_file)
+            espe, _ = elem_sim.calculate_espe(rec_elem, ch=self.channel_width)
 
-            data = get_axis_values(espe_data)
+            data = get_axis_values(espe)
 
             self.plots[espe_file].set_data(data)
 

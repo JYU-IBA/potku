@@ -216,7 +216,7 @@ class TestBinDir(unittest.TestCase):
             d1 = gf.get_bin_dir()
 
             self.assertTrue(d1.is_absolute())
-            self.assertEqual("Potku-bin", d1.name)
+            self.assertEqual("bin", d1.name)
 
             os.chdir(tempfile.gettempdir())
 

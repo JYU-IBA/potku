@@ -36,7 +36,6 @@ import shutil
 
 import dialogs.dialog_functions as df
 import widgets.gui_utils as gutils
-import modules.general_functions as gf
 import modules.cut_file as cut_file
 import dialogs.file_dialogs as fdialogs
 
@@ -45,6 +44,7 @@ from pathlib import Path
 from widgets.gui_utils import StatusBarHandler
 from modules.energy_spectrum import EnergySpectrum
 from modules.measurement import Measurement
+from modules.get_espe import GetEspe
 from modules.enums import OptimizationType
 
 from PyQt5 import uic
@@ -343,8 +343,8 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # Calculate espes for simulations
         for elem_sim, lst in used_simulations.items():
             for d in lst:
-                self.result_files.append(
-                    elem_sim.calculate_espe(**d, ch=self.bin_width))
+                _, espe_file = elem_sim.calculate_espe(**d, ch=self.bin_width)
+                self.result_files.append(espe_file)
 
         sbh.reporter.report(66)
 
@@ -569,7 +569,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 self.save_file = "widget_energy_spectrum_" + str(
                     save_file_int) + ".save"
                 for file in use_cuts:
-                    self.energy_spectrum_data[file] = gf.read_espe_file(file)
+                    self.energy_spectrum_data[file] = GetEspe.read_espe_file(
+                        file)
 
             # Graph in matplotlib widget and add to window
             self.matplotlib = MatplotlibEnergySpectrumWidget(

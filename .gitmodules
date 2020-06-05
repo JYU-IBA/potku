@@ -1,0 +1,6 @@
+[submodule "external/submodules/jibal"]
+	path = external/submodules/jibal
+	url = https://github.com/JYU-IBA/jibal.git
+[submodule "external/submodules/mcerd"]
+	path = external/submodules/mcerd
+	url = https://github.com/JYU-IBA/mcerd.git

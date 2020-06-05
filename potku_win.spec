@@ -6,8 +6,9 @@ block_cipher = None
 a = Analysis(['potku.py'],
              pathex=[
 			 'C:\\Users\\localadmin\\.virtualenvs\\potku-s0gTnhB1\\Lib\\site-packages\\scipy\\extra-dll'],
-             binaries=[('external\\Potku-bin\\*', 'external\\Potku-bin')],
+             binaries=[('external\\bin\\*', 'external\\bin')],
              datas=[('external\\Potku-data\\*', 'external\\Potku-data'),
+                    ('external\\share\\jibal\\*', 'external\\share\\jibal'),
                     ('ui_files\\*', 'ui_files'),
                     ('ui_icons\\reinhardt\\*', 'ui_icons\\reinhardt'),
                     ('ui_icons\\potku\\*', 'ui_icons\\potku'),

@@ -12,9 +12,16 @@
 # Ignore scoef-binaries
 * scoef.*
 
+# Ignore libraries
+*.dll
+*.dylib
+*.so
+
+# Ignore compressed archives
+*.tar.gz
+*.zip
+
 # Ignore these directories
-/external/data/
-/external/Examples/
 /sample_data
 /Sample-data
 /.idea
@@ -22,11 +29,18 @@
 /__pycache__
 /venv
 *.bak
-/external/*
 .gitignore
 Pipfile.lock
 
+# Ignore everything in external folder...
+/external/*
+/external/bin/*
+# except for these
 !/external/Makefile
+!/external/submodules/
+!/external/submodules/*
+!/external/bin/
+!/external/bin/jibal.conf
 
 # Temporary QT Creator files
 *.ui.autosave
