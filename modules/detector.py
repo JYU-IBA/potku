@@ -253,7 +253,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
 
     @classmethod
     def from_file(cls, detector_file_path: Path, measurement_file_path: Path,
-                  request, save=True):
+                  request, save_on_creation=True):
         """Initialize Detector from a JSON file.
 
         Args:
@@ -262,7 +262,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             measurement_file_path: A file path to measurement settings file
                                    which has detector angles.
             request: Request object which has default detector angles.
-            save: Whether to save created detector or not.
+            save_on_creation: Whether to save created detector or not.
 
         Return:
             Detector object.
@@ -303,12 +303,13 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
             except AttributeError:
                 return cls(path=detector_file_path,
                            measurement_settings_file_path=measurement_file_path,
-                           foils=foils, save_on_creation=save, **detector)
+                           foils=foils, save_on_creation=save_on_creation,
+                           **detector)
 
         return cls(path=detector_file_path,
                    measurement_settings_file_path=measurement_file_path,
                    foils=foils, detector_theta=detector_theta,
-                   save_on_creation=save, **detector)
+                   save_on_creation=save_on_creation, **detector)
 
     def to_file(self, detector_file_path: Path, measurement_file_path: Path):
         """Save detector settings to a file.

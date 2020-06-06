@@ -112,7 +112,7 @@ class TestBeam(unittest.TestCase):
             det1.to_file(det_file, mesu_file)
 
             det2 = Detector.from_file(det_file, mesu_file, mo.get_request(),
-                                      save=False)
+                                      save_on_creation=False)
             self.assertIsNot(det1, det2)
             self.assertEqual(det1.name, det2.name)
             self.assertEqual(det1.description, det2.description)

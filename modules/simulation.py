@@ -307,18 +307,15 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         self.detector = detector
         self.target = target
         self.use_request_settings = use_request_settings
-        if not self.target:
+        if self.target is None:
             self.target = Target()
 
         self.serial_number = 0
 
-        self.defaultlog = None
-        self.errorlog = None
-
         self.directory, self.simulation_file = self.path.parent, self.path.name
-        self.create_folder_structure()
 
         if save_on_creation:
+            self.create_folder_structure()
             self.to_file(self.path)
 
     def create_folder_structure(self):
@@ -378,7 +375,7 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
 
     @classmethod
     def from_file(cls, request, file_path: Path, detector=None, target=None,
-                  run=None, sample=None):
+                  run=None, sample=None, save_on_creation=True):
         """Initialize Simulation from a JSON file.
 
         Args:
@@ -389,6 +386,8 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
             target: Target used by this simulation
             run: Run used by this simulation
             sample: Sample under which this simulation belongs to
+            save_on_creation: whether Simulation object is saved to file
+                after initialization
         """
         with file_path.open("r") as file:
             simu_obj = json.load(file)
@@ -397,8 +396,9 @@ class Simulation(Logger, ElementSimulationContainer, Serializable):
         # that is what the Simulation object uses internally
         simu_obj["modification_time"] = simu_obj.pop("modification_time_unix")
 
-        return cls(file_path, request, detector=detector, target=target,
-                   run=run, sample=sample, **simu_obj)
+        return cls(
+            file_path, request, detector=detector, target=target, run=run,
+            sample=sample, **simu_obj, save_on_creation=save_on_creation)
 
     def to_file(self, file_path):
         """Save simulation settings to a file.

@@ -33,14 +33,14 @@ import logging
 import os
 
 from . import general_functions as gf
-
+from .measurement import Measurement
 from .element import Element
 
 
 class EnergySpectrum:
-    """ Class for energy spectrum.
+    """Class for energy spectrum.
     """
-    def __init__(self, measurement, cut_files, spectrum_width,
+    def __init__(self, measurement: Measurement, cut_files, spectrum_width,
                  progress=None, no_foil=False):
         """Inits energy spectrum
         

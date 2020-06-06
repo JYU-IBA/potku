@@ -72,8 +72,8 @@ class RequestSettingsDialog(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         screen_geometry = \
             QDesktopWidget.availableGeometry(QApplication.desktop())
-        self.resize(self.geometry().width() * 1.2,
-                    screen_geometry.size().height() * 0.8)
+        self.resize(int(self.geometry().width() * 1.2),
+                    int(screen_geometry.size().height() * 0.8))
 
         self.main_window = main_window
         self.request = request
@@ -200,13 +200,17 @@ class RequestSettingsDialog(QtWidgets.QDialog):
             default_measurement_settings_file = Path(
                 self.request.default_measurement.directory,
                 "Default.measurement")
+
             self.request.default_measurement.measurement_to_file(
                 default_measurement_settings_file)
+
             self.request.default_measurement.profile_to_file(Path(
                 self.request.default_measurement.directory,
                 "Default.profile"))
+
             self.request.default_measurement.run.to_file(
                 default_measurement_settings_file)
+            
             self.request.default_target.to_file(
                 None, default_measurement_settings_file)
 

@@ -44,25 +44,25 @@ import logging
 from . import math_functions as mf
 from . import comparison as comp
 from . import general_functions as gf
+from .element import Element
+from .parsing import CSVParser
+from .measurement import Measurement
 
 from pathlib import Path
 from functools import lru_cache
-
-from .element import Element
-from .parsing import CSVParser
 
 
 class DepthFileGenerator:
     """DepthFiles handles calling the external programs to create depth files.
     """
-    def __init__(self, file_paths, output_directory, prefix="depth",
+    def __init__(self, file_paths, output_directory: Path, prefix="depth",
                  tof_in_dir=None):
         """Inits DepthFiles.
 
         Args:
             file_paths: file paths of cut files to be used.
-            output_path: path to the directory where depth files are to be
-            created.
+            output_directory: path to the directory where depth files are to be
+                created.
             tof_in_dir: path to directory where tof.in is located
         """
         self.__new_cut_files = [gf.copy_cut_file_to_temp(f) for f in file_paths]
@@ -98,8 +98,9 @@ class DepthFileGenerator:
             print(f"tof_list|erd_depth pipeline returned an error code: {ret}")
 
 
-def generate_depth_files(cut_files, output_directory, measurement=None,
-                         tof_in_dir=None, progress=None):
+def generate_depth_files(cut_files, output_dir: Path,
+                         measurement: Measurement = None,
+                         tof_in_dir: Path = None, progress=None):
     """Generates depth files from given cut files and writes them to output
     directory.
 
@@ -107,7 +108,7 @@ def generate_depth_files(cut_files, output_directory, measurement=None,
 
     Args:
         cut_files: list of file paths to .cut files
-        output_directory: directory where the depth files will be generated
+        output_dir: directory where the depth files will be generated
         measurement: Measurement object to generate tof.in
         tof_in_dir: directory in which the tof.in is to be generated.
         progress: a ProgressReporter object
@@ -117,21 +118,24 @@ def generate_depth_files(cut_files, output_directory, measurement=None,
         # tof.in file needs to exists before running DepthFileGenerator
         measurement.generate_tof_in(directory=tof_in_dir)
 
-    os.makedirs(output_directory, exist_ok=True)
+    output_dir.mkdir(exist_ok=True)
 
     # Delete previous depth files to avoid mixup when assigning the
     # result files back to their cut files
-    for file in os.listdir(output_directory):
-        if file.startswith("depth."):
+    for file in os.scandir(output_dir):
+        fp = Path(file.path)
+        # TODO check that depth files are always named as 'depth.symbol'
+        #   and that there are no extra dots in the file name
+        if fp.stem == "depth":
             try:
-                Path(output_directory, file).unlink()
+                fp.unlink()
             except OSError:
                 pass
 
     if progress is not None:
         progress.report(30)
 
-    dp = DepthFileGenerator(cut_files, output_directory, tof_in_dir=tof_in_dir)
+    dp = DepthFileGenerator(cut_files, output_dir, tof_in_dir=tof_in_dir)
     dp.run()
 
     if progress is not None:

@@ -96,66 +96,31 @@ class ProfileSettingsWidget(QtWidgets.QWidget):
         """
         Show profile settings.
         """
-        if not self.measurement.use_default_profile_settings:
-            self.nameLineEdit.setText(
-                self.measurement.profile_name)
-            self.descriptionPlainTextEdit.setPlainText(
-                self.measurement.profile_description)
-            self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
-                self.measurement.profile_modification_time)))
-            self.referenceDensityDoubleSpinBox.setValue(
-                self.measurement.reference_density)
-            self.numberOfDepthStepsSpinBox.setValue(
-                self.measurement.number_of_depth_steps)
-            self.depthStepForStoppingSpinBox.setValue(
-                self.measurement.depth_step_for_stopping)
-            self.depthStepForOutputSpinBox.setValue(
-                self.measurement.depth_step_for_output)
-            self.depthForConcentrationFromDoubleSpinBox.setValue(
-                self.measurement.depth_for_concentration_from)
-            self.depthForConcentrationToDoubleSpinBox.setValue(
-                self.measurement.depth_for_concentration_to)
-            self.channelWidthDoubleSpinBox.setValue(
-                self.measurement.channel_width)
-            self.numberOfSplitsSpinBox.setValue(
-                self.measurement.number_of_splits)
-            self.normalizationComboBox.setCurrentIndex(
-                self.normalizationComboBox.findText(
-                    self.measurement.normalization))
-        else:
-            self.nameLineEdit.setText(
-                self.measurement.request.default_measurement.profile_name)
-            self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
-                self.measurement.request.default_measurement
-                    .profile_modification_time)))
-            self.descriptionPlainTextEdit.setPlainText(
-                self.measurement.request.default_measurement
-                    .profile_description)
-            self.referenceDensityDoubleSpinBox.setValue(
-                self.measurement.request.default_measurement
-                    .reference_density)
-            self.numberOfDepthStepsSpinBox.setValue(
-                self.measurement.request.default_measurement
-                    .number_of_depth_steps)
-            self.depthStepForStoppingSpinBox.setValue(
-                self.measurement.request.default_measurement
-                    .depth_step_for_stopping)
-            self.depthStepForOutputSpinBox.setValue(
-                self.measurement.request.default_measurement
-                    .depth_step_for_output)
-            self.depthForConcentrationFromDoubleSpinBox.setValue(
-                self.measurement.request.default_measurement
-                    .depth_for_concentration_from)
-            self.depthForConcentrationToDoubleSpinBox.setValue(
-                self.measurement.request.default_measurement
-                    .depth_for_concentration_to)
-            self.channelWidthDoubleSpinBox.setValue(
-                self.measurement.request.default_measurement.channel_width)
-            self.numberOfSplitsSpinBox.setValue(
-                self.measurement.request.default_measurement.number_of_splits)
-            self.normalizationComboBox.setCurrentIndex(
-                self.normalizationComboBox.findText(
-                    self.measurement.request.default_measurement.normalization))
+        self.nameLineEdit.setText(
+            self.measurement.profile_name)
+        self.descriptionPlainTextEdit.setPlainText(
+            self.measurement.profile_description)
+        self.dateLabel.setText(time.strftime("%c %z %Z", time.localtime(
+            self.measurement.profile_modification_time)))
+        self.referenceDensityDoubleSpinBox.setValue(
+            self.measurement.reference_density)
+        self.numberOfDepthStepsSpinBox.setValue(
+            self.measurement.number_of_depth_steps)
+        self.depthStepForStoppingSpinBox.setValue(
+            self.measurement.depth_step_for_stopping)
+        self.depthStepForOutputSpinBox.setValue(
+            self.measurement.depth_step_for_output)
+        self.depthForConcentrationFromDoubleSpinBox.setValue(
+            self.measurement.depth_for_concentration_from)
+        self.depthForConcentrationToDoubleSpinBox.setValue(
+            self.measurement.depth_for_concentration_to)
+        self.channelWidthDoubleSpinBox.setValue(
+            self.measurement.channel_width)
+        self.numberOfSplitsSpinBox.setValue(
+            self.measurement.number_of_splits)
+        self.normalizationComboBox.setCurrentIndex(
+            self.normalizationComboBox.findText(
+                self.measurement.normalization))
 
     def update_settings(self):
         """

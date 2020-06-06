@@ -33,14 +33,11 @@ import hashlib
 import unittest
 import logging
 import platform
-import time
 import warnings
-import random
 
 from pathlib import Path
-
 from string import Template
-from timeit import default_timer as timer
+from typing import Dict
 
 
 def get_sample_data_dir() -> Path:
@@ -231,3 +228,37 @@ def slots_test(obj):
         if not hasattr(obj, attr) and attr not in getattr(obj, "__slots__"):
             setattr(obj, attr, "foo")
             break
+
+
+def assert_folder_structure_equal(expected_structure: Dict, directory: Path):
+    """Tests if the given directory contains the expected folder structure.
+
+    Args:
+        expected_structure: folder structure defined as dictionary. Keys are
+            fjles and folders, values are dictionaries (if the key is a folder)
+            or NoneTypes.
+        directory: path to a directory whose structure is being tested.
+    """
+    if not isinstance(expected_structure, dict):
+        raise ValueError(f"Expected folder structure should be defined as "
+                         f"dictionary, {type(expected_structure)} given")
+    fnames = set(f.name for f in os.scandir(directory))
+    keys = set(expected_structure.keys())
+    if keys != fnames:
+        raise AssertionError(
+            f"Contents of the directory {directory} did not match expected "
+            f"values. Expected:\n{keys}\nGot:\n{fnames}")
+    for k, v in expected_structure.items():
+        p = directory / k
+        if isinstance(v, dict):
+            assert_folder_structure_equal(v, p)
+        elif v is None:
+            if not p.is_file():
+                raise AssertionError(
+                    f"Expected {p} to be a file but it was not."
+                )
+        else:
+            raise ValueError(
+                f"Value should either be 'None' or a dictionary. {type(v)} "
+                f"given.")
+
