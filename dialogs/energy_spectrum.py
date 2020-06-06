@@ -354,11 +354,11 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
         # histograms to the right on the x axis.
         for mesu, lst in used_measurements.items():
             self.result_files.extend(d["result_file"] for d in lst)
-            es = EnergySpectrum(mesu,
-                                [d["cut_file"] for d in lst],
-                                self.bin_width,
-                                no_foil=True)
-            es.calculate_spectrum(no_foil=True)
+            # TODO use the return values instead of reading the files further
+            #   down the execution path
+            EnergySpectrum.calculate_measured_spectra(
+                mesu, [d["cut_file"] for d in lst], self.bin_width,
+                no_foil=True)
 
         # Add external files
         self.result_files.extend(used_externals)
@@ -542,16 +542,12 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 # is set to False
                 sbh = StatusBarHandler(statusbar, autoremove=False)
 
-                # Generate new tof.in file for external programs
-                self.measurement.generate_tof_in()
                 # Do energy spectrum stuff on this
-                self.energy_spectrum = EnergySpectrum(
-                    self.measurement,
-                    use_cuts,
-                    bin_width,
-                    progress=sbh.reporter)
-                self.energy_spectrum_data = self.energy_spectrum.\
-                    calculate_spectrum()
+                self.energy_spectrum_data = \
+                    EnergySpectrum.calculate_measured_spectra(
+                        self.measurement, use_cuts, bin_width,
+                        progress=sbh.reporter
+                    )
 
                 # Check for RBS selections.
                 for cut in self.use_cuts:
@@ -574,12 +570,8 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
 
             # Graph in matplotlib widget and add to window
             self.matplotlib = MatplotlibEnergySpectrumWidget(
-                self,
-                self.energy_spectrum_data,
-                rbs_list,
-                spectrum_type,
-                spectra_changed=spectra_changed,
-                channel_width=bin_width
+                self, self.energy_spectrum_data, rbs_list, spectrum_type,
+                spectra_changed=spectra_changed, channel_width=bin_width
             )
         except (PermissionError, IsADirectoryError, FileNotFoundError) as e:
             # If the file path points to directory, this will either raise
@@ -606,7 +598,6 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
     def delete(self):
         """Delete variables and do clean up.
         """
-        self.energy_spectrum = None
         if self.matplotlib is not None:
             self.matplotlib.delete()
         self.matplotlib = None

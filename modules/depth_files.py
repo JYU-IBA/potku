@@ -65,7 +65,7 @@ class DepthFileGenerator:
                 created.
             tof_in_dir: path to directory where tof.in is located
         """
-        self.__new_cut_files = [gf.copy_cut_file_to_temp(f) for f in file_paths]
+        self.__new_cut_files = [gf.copy_file_to_temp(f) for f in file_paths]
         self.__output_path = Path(output_directory, prefix)
         if tof_in_dir is None:
             self.__tof_in_path = Path("tof.in")

@@ -245,14 +245,14 @@ class TestFileIO(unittest.TestCase):
             self.assertTrue(foo2_file.exists())
             self.assertTrue(bar_dir.exists())
 
-            gf.remove_files(tmp_dir, exts={".bar"})
+            gf.remove_matching_files(tmp_dir, exts={".bar"})
 
             self.assertFalse(bar_file.exists())
             self.assertTrue(foo_file.exists())
             self.assertTrue(foo2_file.exists())
             self.assertTrue(bar_dir.exists())
 
-            gf.remove_files(tmp_dir, exts={".foo", ".foo2"})
+            gf.remove_matching_files(tmp_dir, exts={".foo", ".foo2"})
 
             self.assertFalse(foo_file.exists())
             self.assertFalse(foo2_file.exists())
@@ -264,12 +264,12 @@ class TestFileIO(unittest.TestCase):
             open(no_ext, "a").close()
             self.assertTrue(no_ext.exists())
 
-            gf.remove_files(tmp_dir)
-            gf.remove_files(tmp_dir, exts=[])
+            gf.remove_matching_files(tmp_dir)
+            gf.remove_matching_files(tmp_dir, exts=[])
 
             self.assertTrue(no_ext.exists())
 
-            gf.remove_files(tmp_dir, exts=[""])
+            gf.remove_matching_files(tmp_dir, exts=[""])
             self.assertFalse(no_ext.exists())
 
     def test_file_name_conditions(self):
@@ -289,8 +289,8 @@ class TestFileIO(unittest.TestCase):
             self.assertTrue(foo_file.exists())
             self.assertTrue(foo2_file.exists())
 
-            gf.remove_files(tmp_dir, exts={".bar"},
-                            filter_func=lambda f: f.startswith("bar."))
+            gf.remove_matching_files(tmp_dir, exts={".bar"},
+                                     filter_func=lambda f: f.startswith("bar."))
 
             self.assertTrue(bar_file.exists())
             self.assertFalse(bar2_file.exists())
@@ -302,13 +302,13 @@ class TestFileIO(unittest.TestCase):
             # Nonexistent directories cause no changes
             path = Path(tmp_dir, "foo.bar")
             self.assertFalse(path.exists())
-            gf.remove_files(path, exts={".bar"})
+            gf.remove_matching_files(path, exts={".bar"})
             self.assertFalse(path.exists())
 
             # Neither if the directory is actually a file
             open(path, "a").close()
             self.assertTrue(path.is_file())
-            gf.remove_files(path, exts={".bar"})
+            gf.remove_matching_files(path, exts={".bar"})
             self.assertTrue(path.is_file())
 
 

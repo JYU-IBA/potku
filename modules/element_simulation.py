@@ -301,7 +301,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
 
         # Delete possible extra rec files.
         # TODO use name instead of startswith
-        gf.remove_files(
+        gf.remove_matching_files(
             self.directory, exts={".rec", ".sct"},
             filter_func=lambda x: x.startswith(old_name))
 
@@ -923,7 +923,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
         else:
             raise ValueError(f"Unknown optimization type: {optim_mode}.")
 
-        gf.remove_files(
+        gf.remove_matching_files(
             self.directory,
             exts={".recoil", ".erd", ".simu", ".scatter", ".rec"},
             filter_func=filter_func)
@@ -940,7 +940,7 @@ class ElementSimulation(Observable, Serializable, AdjustableSettings,
             return any(file.startswith(pre) for pre in prefixes) and \
                 "opt" not in file
 
-        gf.remove_files(
+        gf.remove_matching_files(
             self.directory,
             exts={".recoil", ".erd", ".simu", ".scatter"},
             filter_func=filter_func)

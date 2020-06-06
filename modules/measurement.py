@@ -947,20 +947,6 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         """
         self.selector.remove_selected()
 
-    def delete_all_cuts(self):
-        """
-        Delete all cuts from cut folder.
-
-        Return:
-            If something was deletd or not.
-        """
-        deleted = False
-        for file in os.listdir(self.directory_cuts):
-            file_path = Path(self.directory_cuts, file)
-            gf.remove_file(file_path)
-            deleted = True
-        return deleted
-
     def save_cuts(self, progress=None):
         """ Save cut files
         
@@ -1028,10 +1014,10 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         """
         Remove old cut files.
         """
-        gf.remove_files(self.directory_cuts, exts={".cut"})
+        gf.remove_matching_files(self.directory_cuts, exts={".cut"})
         directory_changes = Path(
             self.directory_composition_changes, "Changes")
-        gf.remove_files(directory_changes, exts={".cut"})
+        gf.remove_matching_files(directory_changes, exts={".cut"})
 
     def get_cut_files(self):
         """ Get cut files from a measurement.

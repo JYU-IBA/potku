@@ -178,7 +178,7 @@ class MeasurementSettingsDialog(QtWidgets.QDialog):
                          f"{self.measurement.detector.name}.detector")
 
                 # Delete possible extra .measurement and .profile files
-                gf.remove_files(
+                gf.remove_matching_files(
                     self.measurement.directory,
                     exts={".measurement", ".profile"})
 

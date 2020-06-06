@@ -74,8 +74,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
         self.setAttribute(QtCore.Qt.WA_DeleteOnClose)
         screen_geometry = QtWidgets.QDesktopWidget.availableGeometry(
             QtWidgets.QApplication.desktop())
-        self.resize(self.geometry().width() * 1.2,
-                    screen_geometry.size().height() * 0.8)
+        self.resize(int(self.geometry().width() * 1.2),
+                    int(screen_geometry.size().height() * 0.8))
         self.defaultSettingsCheckBox.stateChanged.connect(
             self.__change_used_settings)
         self.OKButton.clicked.connect(self.__save_settings_and_close)
@@ -224,8 +224,8 @@ class SimulationSettingsDialog(QtWidgets.QDialog):
                 }
 
             # Delete possible extra .measurement files
-            gf.remove_files(self.simulation.directory,
-                            exts={".measurement"})
+            gf.remove_matching_files(self.simulation.directory,
+                                     exts={".measurement"})
 
             # Write measurement settings to file
             with open(new_measurement_settings_file_path, "w") as file:

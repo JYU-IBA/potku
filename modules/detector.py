@@ -325,7 +325,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         measurement_file_path = Path(measurement_file_path)
         det_folder = detector_file_path.parent
         det_folder.mkdir(exist_ok=True)
-        gf.remove_files(det_folder, exts={".detector"})
+        gf.remove_matching_files(det_folder, exts={".detector"})
 
         timestamp = time.time()
 
@@ -447,7 +447,7 @@ class Detector(MCERDParameterContainer, Serializable, AdjustableSettings):
         destination = self.get_used_efficiencies_dir()
         destination.mkdir(exist_ok=True)
         # Remove previous files
-        gf.remove_files(destination, {".eff"})
+        gf.remove_matching_files(destination, {".eff"})
 
         for eff in self.get_efficiency_files(full_path=True):
             try:

@@ -156,11 +156,10 @@ class Nsgaii(Observable):
 
         self.element_simulation.optimized_fluence = None
 
-        es = EnergySpectrum(self.measurement, [self.cut_file],
-                            self.channel_width, no_foil=True)
+        EnergySpectrum.calculate_measured_spectra(
+            self.measurement, [self.cut_file], self.channel_width, no_foil=True)
 
         # TODO maybe just use he value returned by calc_spectrum?
-        es.calculate_spectrum(no_foil=True)
         # Add result files
         hist_file = Path(self.measurement.directory_energy_spectra,
                          f"{self.cut_file.stem}.no_foil.hist")
@@ -368,8 +367,8 @@ class Nsgaii(Observable):
         if optim_espe:
             # Make spectra the same size
             optim_espe, measured_espe = gf.uniform_espe_lists(
-                [optim_espe, self.measured_espe],
-                self.element_simulation.channel_width)
+                optim_espe, self.measured_espe,
+                channel_width=self.element_simulation.channel_width)
 
             # Find the area between simulated and measured energy
             # spectra
@@ -1404,7 +1403,8 @@ def get_optim_espe(elem_sim: ElementSimulation,
 def calculate_change(espe1, espe2, channel_width):
     if not espe1 or not espe2:
         return math.inf
-    uniespe1, uniespe2 = gf.uniform_espe_lists([espe1, espe2], channel_width)
+    uniespe1, uniespe2 = gf.uniform_espe_lists(
+        espe1, espe2, channel_width=channel_width)
 
     # Calculate distance between energy spectra
     # TODO move this to math_functions
