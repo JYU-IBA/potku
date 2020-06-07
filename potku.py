@@ -302,9 +302,8 @@ class Potku(QtWidgets.QMainWindow):
                         QtWidgets.QMessageBox.Ok, QtWidgets.QMessageBox.Ok)
                 # Rename all split files
                 try:
-                    clicked_item.obj.rename_files_in_directory(Path(
-                        clicked_item.obj.directory_composition_changes,
-                        "Changes"))
+                    clicked_item.obj.rename_files_in_directory(
+                        clicked_item.obj.get_changes_dir())
                 except OSError as e:
                     QtWidgets.QMessageBox.critical(
                         self, "Error", f"Failed to rename splits {e}",
@@ -1289,9 +1288,9 @@ class Potku(QtWidgets.QMainWindow):
         master = self.request.get_master()
         master_tab = self.tab_widgets[master.tab_id]
         master_name = master.name
-        directory_d = master.directory_depth_profiles
-        directory_e = master.directory_energy_spectra
-        directory_c = master.directory_composition_changes
+        directory_d = master.get_depth_profile_dir()
+        directory_e = master.get_energy_spectra_dir()
+        directory_c = master.get_composition_changes_dir()
 
         # Load selections and save cut files
         # TODO: Make a check for these if identical already -> don't redo.

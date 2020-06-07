@@ -349,7 +349,7 @@ class Request(ElementSimulationContainer):
         """
         return self.__request_information["meta"]["request_name"]
 
-    def get_master(self):
+    def get_master(self) -> Measurement:
         """ Get master measurement of the request.
         """
         return self.__master_measurement

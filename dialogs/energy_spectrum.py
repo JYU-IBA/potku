@@ -188,10 +188,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                                     file.rsplit('.', 1)[0]
                                 all_cuts.append(file_name_without_suffix)
 
-                        for file_2 in os.listdir(
-                                os.path.join(
-                                    measurement.directory_composition_changes,
-                                    "Changes")):
+                        for file_2 in os.listdir(measurement.get_changes_dir()):
                             if file_2.endswith(".cut"):
                                 file_name_without_suffix = \
                                     file_2.rsplit('.', 1)[0]
@@ -262,9 +259,9 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                                         f"{item.text(0)}.cut")
                     else:
                         cut_file = Path(
-                            measurement.directory_composition_changes,
-                            "Changes", f"{item.text(0)}.cut")
-                    result_file = Path(measurement.directory_energy_spectra,
+                            measurement.get_changes_dir(),
+                            f"{item.text(0)}.cut")
+                    result_file = Path(measurement.get_energy_spectra_dir(),
                                        f"{item.text(0)}.no_foil.hist")
                     used_measurements.setdefault(measurement, []).append({
                             "cut_file": cut_file,
@@ -390,8 +387,7 @@ class EnergySpectrumParamsDialog(QtWidgets.QDialog):
                     item.file_name)
             child_count = item.childCount()
             if child_count > 0:  # Elemental Losses
-                dir_elo = os.path.join(
-                    self.measurement.directory_composition_changes, "Changes")
+                dir_elo = self.measurement.get_changes_dir()
                 for j in range(child_count):
                     item_child = item.child(j)
                     if item_child.checkState(0):
@@ -587,13 +583,11 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
                 sbh.remove_progress_bar()
 
     def update_use_cuts(self):
+        """Update used cuts list with new Measurement cuts.
         """
-        Update used cuts list with new Measurement cuts.
-        """
-        changes_dir = Path(self.parent.obj.directory_composition_changes,
-                           "Changes")
+        changes_dir = self.measurement.get_changes_dir()
         df.update_cuts(
-            self.use_cuts, self.parent.obj.directory_cuts, changes_dir)
+            self.use_cuts, self.measurement.directory_cuts, changes_dir)
 
     def delete(self):
         """Delete variables and do clean up.
@@ -628,7 +622,7 @@ class EnergySpectrumWidget(QtWidgets.QWidget):
             files = "\t".join([os.path.relpath(tmp,
                                                self.measurement.directory)
                                for tmp in self.use_cuts])
-            file = os.path.join(self.measurement.directory_energy_spectra,
+            file = os.path.join(self.measurement.get_energy_spectra_dir(),
                                 self.save_file)
         else:
             files = "\t".join([str(tmp) for tmp in self.use_cuts])

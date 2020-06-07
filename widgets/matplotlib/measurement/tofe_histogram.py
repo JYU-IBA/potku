@@ -30,7 +30,9 @@ __author__ = "Jarkko Aalto \n Timo Konu \n Samuli Kärkkäinen \n " \
 __version__ = "2.0"
 
 import os
+from pathlib import Path
 import modules.math_functions as mf
+import modules.general_functions as gf
 
 import widgets.gui_utils as gutils
 
@@ -651,19 +653,13 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                     # Remove unnecessary tof_list and hist files
                     # TODO check that also no_foil.hist file is removed
                     cut_file_name = os.path.split(cut)[1].rsplit('.', 1)[0]
-                    removed_files = []
-                    for file in \
-                            os.listdir(
-                                self.measurement.directory_energy_spectra):
-                        if file == cut_file_name + ".hist" or file == \
-                                cut_file_name + ".tof_list":
-                            removed_files.append(file)
-                    for f in removed_files:
-                        os.remove(os.path.join(
-                            self.measurement.directory_energy_spectra, f))
+                    gf.remove_matching_files(
+                        self.measurement.get_energy_spectra_dir(),
+                        exts={".hist", ".tof_list"},
+                        filter_func=lambda f: f.name == cut_file_name)
             if delete_es:
                 save_file = os.path.join(
-                    self.measurement.directory_energy_spectra,
+                    self.measurement.get_energy_spectra_dir(),
                     es_widget.save_file)
                 if os.path.exists(save_file):
                     os.remove(save_file)
@@ -678,11 +674,10 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                     delete_depth = True
                     # TODO: Delete depth files
             if delete_depth:
-                save_file = os.path.join(
-                    self.measurement.directory_depth_profiles,
-                    depth_widget.save_file)
-                if os.path.exists(save_file):
-                    os.remove(save_file)
+                gf.remove_files(
+                    self.measurement.get_depth_profile_dir() /
+                    depth_widget.save_file
+                )
                 self.parent.tab.del_widget(depth_widget)
 
         # Update composition changes
@@ -693,11 +688,9 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
                 if not os.path.exists(cut):
                     delete_comp = True
             if delete_comp:
-                save_file = os.path.join(
-                    self.measurement.directory_composition_changes,
+                gf.remove_files(
+                    self.measurement.get_composition_changes_dir() /
                     comp_widget.save_file)
-                if os.path.exists(save_file):
-                    os.remove(save_file)
                 self.parent.tab.del_widget(comp_widget)
 
         self.elementSelectDeleteButton.setEnabled(False)
@@ -724,42 +717,39 @@ class MatplotlibHistogramWidget(MatplotlibWidget):
 
             es_widget = self.parent.tab.energy_spectrum_widget
             if es_widget:
-                save_file = os.path.join(
-                    self.measurement.directory_energy_spectra,
+                save_file = Path(
+                    self.measurement.get_energy_spectra_dir(),
                     es_widget.save_file)
                 self.parent.tab.del_widget(es_widget)
             else:
-                save_file = os.path.join(
-                    self.measurement.directory_energy_spectra,
+                save_file = Path(
+                    self.measurement.get_energy_spectra_dir(),
                     EnergySpectrumWidget.save_file)
-            if os.path.exists(save_file):
-                os.remove(save_file)
+            gf.remove_files(save_file)
 
             comp_widget = self.parent.tab.elemental_losses_widget
             if comp_widget:
-                save_file = os.path.join(
-                    self.measurement.directory_composition_changes,
+                save_file = Path(
+                    self.measurement.get_composition_changes_dir(),
                     comp_widget.save_file)
                 self.parent.tab.del_widget(comp_widget)
             else:
-                save_file = os.path.join(
-                    self.measurement.directory_composition_changes,
+                save_file = Path(
+                    self.measurement.get_composition_changes_dir(),
                     ElementLossesWidget.save_file)
-            if os.path.exists(save_file):
-                os.remove(save_file)
+            gf.remove_files(save_file)
 
             depth_widget = self.parent.tab.depth_profile_widget
             if depth_widget:
-                save_file = os.path.join(
-                    self.measurement.directory_depth_profiles,
+                save_file = Path(
+                    self.measurement.get_depth_profile_dir(),
                     depth_widget.save_file)
                 self.parent.tab.del_widget(depth_widget)
             else:
-                save_file = os.path.join(
-                    self.measurement.directory_depth_profiles,
+                save_file = Path(
+                    self.measurement.get_depth_profile_dir(),
                     DepthProfileWidget.save_file)
-            if os.path.exists(save_file):
-                os.remove(save_file)
+            gf.remove_files(save_file)
 
             self.__on_draw_legend()
             self.canvas.draw_idle()

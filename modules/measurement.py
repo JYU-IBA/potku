@@ -327,9 +327,6 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         self.directory = self.path.parent
         self.measurement_file = None
         self.directory_cuts = None
-        self.directory_composition_changes = None
-        self.directory_depth_profiles = None
-        self.directory_energy_spectra = None
         self.directory_data = None
 
         if run is None:
@@ -355,8 +352,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         self.use_default_profile_settings = use_default_profile_settings
 
     def get_detector_or_default(self):
-        """
-        Get measurement specific detector of default.
+        """Get measurement specific detector of default.
 
         Return:
             A Detector.
@@ -378,9 +374,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             #  some default values for each folder
             # TODO it makes little sense to just iterate all these
             path = Path(entry.path)
-            if path.name == "Composition_changes":
-                self.directory_composition_changes = path
-            elif path.name == "Data":
+            if path.name == "Data":
                 self.directory_data = path
                 for e in os.scandir(path):
                     p = Path(e.path)
@@ -388,10 +382,6 @@ class Measurement(Logger, AdjustableSettings, Serializable):
                         self.measurement_file = p
                     elif p.name == "Cuts":
                         self.directory_cuts = p
-            elif path.name == "Depth_profiles":
-                self.directory_depth_profiles = path
-            elif path.name == "Energy_spectra":
-                self.directory_energy_spectra = path
 
         self.set_loggers(self.directory, self.request.directory)
 
@@ -400,8 +390,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             self.selector = selector_cls(self, element_colors)
 
     def update_directory_references(self, new_dir: Path):
-        """
-        Update directory references.
+        """Update directory references.
 
         Args:
             new_dir: Path to measurement folder with new name.
@@ -409,10 +398,6 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         self.directory = new_dir
         self.directory_data = Path(self.directory, "Data")
         self.directory_cuts = Path(self.directory_data, "Cuts")
-        self.directory_composition_changes = Path(
-            self.directory, "Composition_changes")
-        self.directory_depth_profiles = Path(self.directory, "Depth_profiles")
-        self.directory_energy_spectra = Path(self.directory, "Energy_spectra")
 
         self.detector.update_directory_references(self)
 
@@ -453,8 +438,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
     def from_file(cls, measurement_info_path: Path, measurement_file_path: Path,
                   profile_file_path: Path, request, detector=None, run=None,
                   target=None, sample=None):
-        """
-        Read Measurement information from filea.
+        """Read Measurement information from file.
 
         Args:
             measurement_info_path: Path to .info file.
@@ -554,12 +538,41 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             use_default_profile_settings=use_default_profile_settings,
             sample=sample)
 
+    def get_energy_spectra_dir(self) -> Path:
+        """Returns the path to energy spectra directory.
+        """
+        return self.directory / "Energy_spectra"
+
+    def get_depth_profile_dir(self) -> Path:
+        """Returns the path to depth profile directory.
+        """
+        return self.directory / "Depth_profiles"
+
+    def get_composition_changes_dir(self) -> Path:
+        """Returns the path to composition changes directory.
+        """
+        return self.directory / "Composition_changes"
+
+    def get_changes_dir(self):
+        """Returns the path to 'Composition_changes/Changes directory.
+        """
+        return self.get_composition_changes_dir() / "Changes"
+
     def _get_settings_file(self) -> Path:
+        """Returns the path to .measuremnent file.
+        """
         return Path(
             self.directory, f"{self.measurement_setting_file_name}.measurement")
 
     def _get_profile_file(self) -> Path:
+        """Returns the path to .profile file
+        """
         return self.directory / f"{self.profile_name}.profile"
+
+    def _get_tof_in_dir(self) -> Path:
+        """Returns the directory where tof.in is located.
+        """
+        return self.directory / "tof_in"
 
     def to_file(self, mesu_file: Path = None, profile_file: Path = None):
         # Save general measurement settings parameters.
@@ -684,29 +697,23 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         """
         # TODO refactor this and update_directory references
         if measurement_file is None:
-            measurement_data_folder = Path(measurement_folder, "Data")
+            measurement_data_folder = measurement_folder / "Data"
             self.measurement_file = None
         else:
-            measurement_data_folder, measurement_name = \
-                measurement_file.parent, measurement_file.name
-            self.measurement_file = measurement_name  # With extension
+            measurement_data_folder = measurement_file.parent
+            self.measurement_file = measurement_file.name  # With extension
 
         self.directory = measurement_folder
         self.directory_data = measurement_data_folder
-        self.directory_cuts = Path(self.directory_data, "Cuts")
-        self.directory_composition_changes = Path(
-            self.directory, "Composition_changes")
-        self.directory_depth_profiles = Path(
-            self.directory, "Depth_profiles")
-        self.directory_energy_spectra = Path(self.directory, "Energy_spectra")
+        self.directory_cuts = self.directory_data / "Cuts"
 
         self.__make_directories(self.directory)
         self.__make_directories(self.directory_data)
         self.__make_directories(self.directory_cuts)
-        self.__make_directories(self.directory_composition_changes)
-        self.__make_directories(self.directory_composition_changes / "Changes")
-        self.__make_directories(self.directory_depth_profiles)
-        self.__make_directories(self.directory_energy_spectra)
+        self.__make_directories(self.get_composition_changes_dir())
+        self.__make_directories(self.get_changes_dir())
+        self.__make_directories(self.get_depth_profile_dir())
+        self.__make_directories(self.get_energy_spectra_dir())
         self.__make_directories(self._get_tof_in_dir())
 
         self.set_loggers(self.directory, self.request.directory)
@@ -716,8 +723,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             self.selector = selector_cls(self, element_colors)
 
     def __make_directories(self, directory):
-        """
-        Make directories.
+        """Make directories.
 
         Args:
             directory: Directory to be made under measurement.
@@ -734,8 +740,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
                 )
 
     def copy_file_into_measurement(self, file_path):
-        """
-         Copies the given file into the measurement's data folder
+        """Copies the given file into the measurement's data folder
 
         Args:
             file_path: The file that needs to be copied.
@@ -815,7 +820,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
                 gf.rename_file(old_path, new_name)
 
     def set_axes(self, axes, progress=None):
-        """ Set axes information to selector within measurement.
+        """Set axes information to selector within measurement.
         
         Sets axes information to selector to add selection points. Since 
         previously when creating measurement old selection could not be checked.
@@ -830,7 +835,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         self.__check_for_old_selection(progress)
 
     def __check_for_old_selection(self, progress=None):
-        """ Use old selection file_path if exists.
+        """Use old selection file_path if exists.
 
         Args:
             progress: ProgressReporter object
@@ -851,7 +856,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             logging.getLogger(self.name).info(log_msg)
 
     def add_point(self, point, canvas):
-        """ Add point into selection or create new selection if first or all
+        """Add point into selection or create new selection if first or all
         closed.
         
         Args:
@@ -878,23 +883,23 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         return self.selector.undo_point()
 
     def purge_selection(self):
-        """ Purges (removes) all open selections and allows new selection to be
+        """Purges (removes) all open selections and allows new selection to be
         made.
         """
         self.selector.purge()
 
     def remove_all(self):
-        """ Remove all selections in selector.
+        """Remove all selections in selector.
         """
         self.selector.remove_all()
 
     def draw_selection(self):
-        """ Draw all selections in measurement.
+        """Draw all selections in measurement.
         """
         self.selector.draw()
 
     def end_open_selection(self, canvas):
-        """ End last open selection.
+        """End last open selection.
         
         Ends last open selection. If selection is open, it will show dialog to 
         select element information and draws into canvas before opening the
@@ -910,7 +915,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         return self.selector.end_open_selection(canvas)
 
     def selection_select(self, cursorpoint, highlight=True):
-        """ Select a selection based on point.
+        """Select a selection based on point.
         
         Args:
             cursorpoint: Point (x, y) which is clicked on the graph to select
@@ -925,7 +930,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         return self.selector.select(cursorpoint, highlight)
 
     def selection_count(self):
-        """ Get count of selections.
+        """Get count of selections.
         
         Return:
             Returns the count of selections in selector object.
@@ -933,7 +938,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         return self.selector.count()
 
     def reset_select(self):
-        """ Reset selection to None.
+        """Reset selection to None.
         
         Resets current selection to None and resets colors of all selections
         to their default values. 
@@ -941,14 +946,14 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         self.selector.reset_select()
 
     def remove_selected(self):
-        """ Remove selection
+        """Remove selection
         
         Removes currently selected selection.
         """
         self.selector.remove_selected()
 
     def save_cuts(self, progress=None):
-        """ Save cut files
+        """Save cut files
         
         Saves data points within selections into cut files.
         """
@@ -1015,27 +1020,23 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         Remove old cut files.
         """
         gf.remove_matching_files(self.directory_cuts, exts={".cut"})
-        directory_changes = Path(
-            self.directory_composition_changes, "Changes")
+        directory_changes = self.get_changes_dir()
         gf.remove_matching_files(directory_changes, exts={".cut"})
 
     def get_cut_files(self):
-        """ Get cut files from a measurement.
+        """Get cut files from a measurement.
         
         Return:
             Returns a list of cut files in measurement.
         """
         cuts = [f for f in os.listdir(Path(self.directory, self.directory_cuts))
                 if os.path.isfile(Path(self.directory, self.directory_cuts, f))]
-        elemloss = [f for f in os.listdir(Path(
-            self.directory, self.directory_composition_changes, "Changes"))
-                    if os.path.isfile(Path(
-                        self.directory, self.directory_composition_changes,
-                        "Changes", f))]
+        elemloss = [f for f in os.listdir(self.get_changes_dir())
+                    if os.path.isfile(Path(self.get_changes_dir(), f))]
         return cuts, elemloss
 
     def load_selection(self, filename, progress=None):
-        """ Load selections from a file_path.
+        """Load selections from a file_path.
         
         Removes all current selections and loads selections from given filename.
         
@@ -1058,9 +1059,6 @@ class Measurement(Logger, AdjustableSettings, Serializable):
             target = self.target
             mesu = self
         return detector, run, target, mesu
-
-    def _get_tof_in_dir(self) -> Path:
-        return self.directory / "tof_in"
 
     def generate_tof_in(self, no_foil: bool = False, directory: Path = None):
         """ Generate tof.in file for external programs.
@@ -1199,23 +1197,8 @@ class Measurement(Logger, AdjustableSettings, Serializable):
                 format(tof_in.replace("\n", "; "))
             logging.getLogger(self.name).info(str_logmsg)
 
-    def copy_settings_from(self, other):
-        """Copies settings from another Measurement.
+        # Copy tof.in to bin-directory so tof_list can find it
+        # TODO this would be unnecessary if the path to tof.in is a
+        #   parameter given to tof_list
+        shutil.copy(tof_in_file, gf.get_bin_dir() / tof_in_file.name)
 
-        Args:
-            other: Measurement object
-        """
-        if not isinstance(other, Measurement):
-            raise TypeError("Measurement can only copy settings from "
-                            "another Measurement object")
-
-        self.profile_description = other.profile_description
-        self.reference_density = other.reference_density
-        self.number_of_depth_steps = other.number_of_depth_steps
-        self.depth_step_for_stopping = other.depth_step_for_stopping
-        self.depth_step_for_output = other.depth_step_for_output
-        self.depth_for_concentration_from = other.depth_for_concentration_from
-        self.depth_for_concentration_to = other.depth_for_concentration_to
-        self.channel_width = other.channel_width
-        self.number_of_splits = other.number_of_splits
-        self.normalization = other.normalization

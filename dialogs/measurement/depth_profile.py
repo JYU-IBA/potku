@@ -131,7 +131,7 @@ class DepthProfileDialog(QtWidgets.QDialog):
 
         try:
             use_cut = []
-            output_dir = self.measurement.directory_depth_profiles
+            output_dir = self.measurement.get_depth_profile_dir()
             elements = []
 
             sbh.reporter.report(10)
@@ -155,12 +155,10 @@ class DepthProfileDialog(QtWidgets.QDialog):
                         item_child = item.child(j)
                         if item_child.checkState(0):
                             name = item_child.file_name
-                            dir_e = Path(
-                                self.parent.obj.directory_composition_changes,
-                                "Changes")
+                            dir_e = self.measurement.get_changes_dir()
                             use_cut.append(Path(dir_e, name))
-                            element = Element.from_string(item_child.file_name.
-                                                          split(".")[1])
+                            element = Element.from_string(
+                                item_child.file_name.split(".")[1])
                             elements.append(element)
                             DepthProfileDialog.checked_cuts[m_name].\
                                 append(item_child.file_name)
@@ -518,7 +516,7 @@ class DepthProfileWidget(QtWidgets.QWidget):
         output_dir = os.path.relpath(self.output_dir,
                                      self.parent.obj.directory)
 
-        file = Path(self.parent.obj.directory_depth_profiles, self.save_file)
+        file = Path(self.parent.obj.get_depth_profile_dir(), self.save_file)
 
         with open(file, "wt") as fh:
             fh.write("{0}\n".format(output_dir))
@@ -535,10 +533,9 @@ class DepthProfileWidget(QtWidgets.QWidget):
         """
         Update used cuts list with new Measurement cuts.
         """
-        changes_dir = Path(self.parent.obj.directory_composition_changes,
-                           "Changes")
+        changes_dir = self.measurement.get_changes_dir()
         df.update_cuts(self.use_cuts,
-                       self.parent.obj.directory_cuts,
+                       self.measurement.directory_cuts,
                        changes_dir)
 
-        self.output_dir = self.parent.obj.directory_depth_profiles
+        self.output_dir = self.measurement.get_depth_profile_dir()

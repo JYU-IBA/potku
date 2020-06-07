@@ -400,10 +400,7 @@ def fill_cuts_treewidget(measurement, treewidget, use_elemloss=False,
         elem_root = QtWidgets.QTreeWidgetItem(["Elemental Losses"])
         for elemloss in cuts_elemloss:
             item = QtWidgets.QTreeWidgetItem([elemloss])
-            item.directory = Path(
-                measurement.directory,
-                measurement.directory_composition_changes,
-                "Changes")
+            item.directory = measurement.get_changes_dir()
             item.file_name = elemloss
             if item.file_name in checked_files:
                 item.setCheckState(0, QtCore.Qt.Checked)

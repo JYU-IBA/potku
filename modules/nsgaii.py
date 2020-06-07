@@ -161,7 +161,7 @@ class Nsgaii(Observable):
 
         # TODO maybe just use he value returned by calc_spectrum?
         # Add result files
-        hist_file = Path(self.measurement.directory_energy_spectra,
+        hist_file = Path(self.measurement.get_energy_spectra_dir(),
                          f"{self.cut_file.stem}.no_foil.hist")
 
         parser = CSVParser((0, float), (1, float))

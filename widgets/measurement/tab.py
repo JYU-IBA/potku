@@ -169,7 +169,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         sample_folder_name = "Sample_" + "%02d" % \
                              self.obj.sample.serial_number + "-" + \
                              self.obj.sample.name
-        directory_c = self.obj.directory_composition_changes
+        directory_c = self.obj.get_composition_changes_dir()
         self.make_elemental_losses(
             directory_c, self.obj.name, self.obj.serial_number,
             sample_folder_name)
@@ -177,7 +177,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         if progress is not None:
             progress.report(33)
 
-        directory_e = self.obj.directory_energy_spectra
+        directory_e = self.obj.get_energy_spectra_dir()
         self.make_energy_spectrum(
             directory_e, self.obj.name, self.obj.serial_number,
             sample_folder_name)
@@ -188,7 +188,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         else:
             sub_progress = None
 
-        directory_d = self.obj.directory_depth_profiles
+        directory_d = self.obj.get_depth_profile_dir()
         self.make_depth_profile(
             directory_d, self.obj.name, self.obj.serial_number,
             sample_folder_name, progress=sub_progress)
@@ -208,7 +208,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             progress: a ProgressReporter object
         """
         file = Path(directory, DepthProfileWidget.save_file)
-        lines = self.__load_file(file)
+        lines = MeasurementTabWidget._load_file(file)
         if not lines:
             return
         m_name = self.obj.name
@@ -263,7 +263,7 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             progress: a ProgressReporter object
         """
         file = Path(directory, ElementLossesWidget.save_file)
-        lines = self.__load_file(file)
+        lines = MeasurementTabWidget._load_file(file)
         if not lines:
             return
         m_name = self.obj.name
@@ -308,9 +308,10 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             directory: A string representing directory.
             name: A string representing measurement's name.
             serial_number: Measurement's serial number.
+            old_sample_name: TODO
         """
         file = Path(directory, EnergySpectrumWidget.save_file)
-        lines = self.__load_file(file)
+        lines = MeasurementTabWidget._load_file(file)
         if not lines:
             return
         m_name = self.obj.name
@@ -414,16 +415,16 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         if type(filepath) == str:
             # Replace two for measurement and cut file's name. Not all, in case 
             # the request or directories above it have same name.
-            file = self.__rreplace(filepath, name, m_name,
-                                   old_folder_prefix, new_folder_prefix,
-                                   old_sample_name, new_sample_name)
+            file = rreplace(
+                filepath, name, m_name, old_folder_prefix, new_folder_prefix,
+                old_sample_name, new_sample_name)
             return self.__validate_file_path(file)
         elif type(filepath) == list:
             newfiles = []
             for file in filepath:
-                file = self.__rreplace(file, name, m_name, old_folder_prefix,
-                                       new_folder_prefix, old_sample_name,
-                                       new_sample_name)
+                file = rreplace(
+                    file, name, m_name, old_folder_prefix, new_folder_prefix,
+                    old_sample_name, new_sample_name)
                 newfiles.append(self.__validate_file_path(file))
             return newfiles
         raise TypeError("Expected either a string or a list")
@@ -438,7 +439,8 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             return file_path
         return Path(self.obj.directory, file_path)
 
-    def __load_file(self, file):
+    @staticmethod
+    def _load_file(file: Path):
         """Load file
 
         Args:
@@ -446,10 +448,10 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
         """
         lines = []
         try:
-            with open(file, "rt") as fp:
+            with file.open("r") as fp:
                 for line in fp:
                     lines.append(line)
-        except (IOError, UnicodeDecodeError) as e:
+        except (OSError, UnicodeDecodeError) as e:
             # TODO when opening a widget_safe_file that was saved on another
             #      platform, UnicodeDecodeError is raised. Log this.
             print(e)
@@ -467,44 +469,6 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
             master_name = None
         if meas_name == master_name:
             self.issueMaster.emit()
-
-    def __rreplace(self, s, old, new, old_folder_prefix, new_folder_prefix,
-                   old_sample_name, new_sample_name):
-        """Replace from last occurrence.
-        
-        http://stackoverflow.com/questions/2556108/how-to-replace-the-last-
-        occurence-of-an-expression-in-a-string
-
-        Args:
-            s: String to modify.
-            old: Old name.
-            new: New name.
-            old_folder_prefix: Folder prefix of the old name.
-            new_folder_prefix: Folder prefix of the new name.
-            old_sample_name: Name of the old sample folder.
-            new_sample_name: Name of the new sample folder.
-        """
-        li = s.rsplit(old, 2)
-        if old_folder_prefix in li[0]:
-            new_f = li[0].replace(old_folder_prefix, new_folder_prefix)
-            li[0] = new_f
-        if old_sample_name in li[0]:
-            new_f = li[0].replace(old_sample_name, new_sample_name)
-            li[0] = new_f
-        # first = s.split(old_folder_prefix, 1)[0]
-        # f_done = first + new_folder_name
-        # second = s.rsplit(old, 1)[1]
-        # s_done = new + second
-        #
-        # result = f_done + s_done
-        result = new.join(li)
-        if "\\" in result and "/" not in result:
-            # This is a patch to make it possible to open .cut files made
-            # on another os.
-            # TODO it would be better to use Path when writing these paths
-            #      to file in the first place
-            result = result.replace("\\", "/")
-        return Path(result)
 
     def __set_cut_button_enabled(self, selections):
         """Enables save cuts button if the given selections list's lenght is
@@ -563,3 +527,42 @@ class MeasurementTabWidget(QtWidgets.QWidget, BaseTab):
 
         if progress is not None:
             progress.report(100)
+
+
+def rreplace(s, old, new, old_folder_prefix, new_folder_prefix,
+             old_sample_name, new_sample_name):
+    """Replace from last occurrence.
+
+    http://stackoverflow.com/questions/2556108/how-to-replace-the-last-
+    occurence-of-an-expression-in-a-string
+
+    Args:
+        s: String to modify.
+        old: Old name.
+        new: New name.
+        old_folder_prefix: Folder prefix of the old name.
+        new_folder_prefix: Folder prefix of the new name.
+        old_sample_name: Name of the old sample folder.
+        new_sample_name: Name of the new sample folder.
+    """
+    li = s.rsplit(old, 2)
+    if old_folder_prefix in li[0]:
+        new_f = li[0].replace(old_folder_prefix, new_folder_prefix)
+        li[0] = new_f
+    if old_sample_name in li[0]:
+        new_f = li[0].replace(old_sample_name, new_sample_name)
+        li[0] = new_f
+    # first = s.split(old_folder_prefix, 1)[0]
+    # f_done = first + new_folder_name
+    # second = s.rsplit(old, 1)[1]
+    # s_done = new + second
+    #
+    # result = f_done + s_done
+    result = new.join(li)
+    if "\\" in result and "/" not in result:
+        # This is a patch to make it possible to open .cut files made
+        # on another os.
+        # TODO it would be better to use Path when writing these paths
+        #      to file in the first place
+        result = result.replace("\\", "/")
+    return Path(result)

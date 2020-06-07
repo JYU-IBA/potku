@@ -65,7 +65,7 @@ class EnergySpectrum:
         self.__global_settings = self.__measurement.request.global_settings
         self.__cut_files = cut_files
         self.__spectrum_width = spectrum_width
-        self.__directory_es = measurement.directory_energy_spectra
+        self.__directory_es = measurement.get_energy_spectra_dir()
         # TODO ATM tof_in is generated twice when calculating espes. This
         #      should be refactored
         self.__measurement.generate_tof_in(no_foil=no_foil)
@@ -125,7 +125,7 @@ class EnergySpectrum:
             save_output = self.__global_settings.is_es_output_saved()
             count = len(self.__cut_files)
             
-            os.makedirs(self.__directory_es, exist_ok=True)
+            self.__directory_es.mkdir(exist_ok=True)
             
             for i, cut_file in enumerate(self.__cut_files):
                 filename_split = os.path.basename(cut_file).split('.')
@@ -172,7 +172,8 @@ class EnergySpectrum:
             logger_name: name of a logging entity
 
         Returns:
-            Returns cut file as list transformed through Arstila's tof_list program.
+            Returns cut file as list transformed through Arstila's tof_list
+            program.
         """
         bin_dir = gf.get_bin_dir()
 
@@ -201,7 +202,7 @@ class EnergySpectrum:
                 if directory is None:
                     directory = Path.cwd() / "energy_spectrum_output"
 
-                os.makedirs(directory, exist_ok=True)
+                directory.mkdir(exist_ok=True)
 
                 if no_foil:
                     foil_txt = ".no_foil"
