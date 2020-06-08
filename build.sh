@@ -21,6 +21,6 @@ cd ../../mcerd
 rm build/CMakeCache.txt && echo Removed MCERD cache file
 mkdir -p build
 cd build
-cmake -DCMAKE_INSTALL_PREFIX="$EXT_DIR" -DCMAKE_INSTALL_RPATH="$EXT_DIR/lib" ../
+cmake -DCMAKE_PREFIX_PATH="$EXT_DIR" -DCMAKE_INSTALL_PREFIX="$EXT_DIR" -DCMAKE_INSTALL_RPATH="$EXT_DIR/lib" ../
 make
 make install
