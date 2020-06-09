@@ -163,22 +163,16 @@ class GetEspe:
         #         -toflen  time-of-flight length (m)
         #         -beam    mass number and the chemical symbol of the primary
         #                  ion
-        #         -dose    dose of the beam (particle-┬╡C) = fluence
+        #         -dose    dose of the beam = fluence, in particles (6.24e12 == 1 p-uC)
         #         -energy  beam energy (MeV)
         #         -theta   scattering angle (deg)
         #         -tangle  angle between target surface and beam (deg)
         #         -solid   solid angle of the detector (msr)
-        #         -density surface atomic density of the first 10 nm layer
-        #                  (at/cm^2)
+        #         -density average atomic density of the first 10 nm layer
+        #                  (at./cm^3)
         toflen = self.__detector.foils[self.__detector.tof_foils[1]].distance
         toflen -= self.__detector.foils[self.__detector.tof_foils[0]].distance
         toflen_in_meters = toflen / 1000
-
-        # After get_espe update, spectra are calculated differently (values are
-        # roughly 10^8 times smaller than previously). To correct this, increase
-        # the dose by same amount.
-        # TODO check that this is correct
-        dose = self.__fluence * 10**8
 
         params = f"-beam {self.__beam.ion.get_prefix()} " \
                  f"-energy {self.__beam.energy} " \
@@ -187,7 +181,7 @@ class GetEspe:
                  f"-timeres {self.__timeres} " \
                  f"-toflen {toflen_in_meters} " \
                  f"-solid {self.__solid} " \
-                 f"-dose {dose} " \
+                 f"-dose {self.__fluence} " \
                  f"-avemass " \
                  f"-density {self.__density} " \
                  f"-ch {self.__channel_width}"
