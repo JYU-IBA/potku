@@ -283,7 +283,9 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         self.tab_id = tab_id
 
         self.request = request  # To which request be belong to
-        self.path = Path(path)
+        self.sample = sample
+
+        self.path = Path(path)  # TODO rename this to info_file
         self.name = name
         self.description = description
         if modification_time is None:
@@ -291,8 +293,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         else:
             self.modification_time = modification_time
 
-        self.sample = sample
-
+        # TODO rename 'measurement_setting_file_name' to 'measurement_file_name'
         self.measurement_setting_file_name = measurement_setting_file_name
         if not self.measurement_setting_file_name:
             self.measurement_setting_file_name = name
@@ -337,7 +338,7 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         if detector is None:
             self.detector = Detector(
                 self.directory / "Detector" / "measurement.detector",
-                self.measurement_setting_file_name,
+                self.get_measurement_file(),
                 save_on_creation=save_on_creation)
         else:
             self.detector = detector
@@ -359,6 +360,13 @@ class Measurement(Logger, AdjustableSettings, Serializable):
         """
         detector, *_ = self._get_used_settings()
         return detector
+
+    def get_measurement_file(self) -> Path:
+        """Returns the path to .measurement file that contains the settings
+        of this Measurement.
+        """
+        return Path(self.path.parent,
+                    f"{self.measurement_setting_file_name}.measurement")
 
     def update_folders_and_selector(self, selector_cls=None):
         """Update folders and selector. Initializes a new selector if
